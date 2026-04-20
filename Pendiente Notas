@@ -1,78 +1,39 @@
-
-
-- que me envie un correo cuando el servidor inicia, que el servidor guarde un log con el error omotivo por sisereinicio el vps oservidor virtual, al correo que envia debe estar en la configuracion avanzada, para registrarlo. es decir el correo al que se le vaa enviar la informacion del reinicio del servidor. y tambien de debe poder activar y desactivar esta funcion en configuracion avanzada.
-
-
-
-
 apikey deepseek
 sk-c75bc2c9e04f4c5ea21f4714320e1489
-
-
-
-- crear una pagina que se llame juegos 
-
-
-
-
-
-
-
-
-
- - crear el modulo de vendedor de licencias o de asesor comercial. 
-
-
-
 
 https://firmaautenticaciondigital.and.gov.co/
 
 clave de firma digital en la Dian Azz19861986#
 
-contraseña root hostiger Azz19861986#
+contrase�a root hostiger Azz19861986#
 ssh root@2.24.197.58
 usuario: root
 clave: Azz19861986#
 
-añadir la herramienta de  word a pdf la pagina para la ayuda de la DIAN
+a�adir la herramienta de  word a pdf la pagina para la ayuda de la DIAN
 
 IP VPS : ssh root@2.24.197.58
 usuario
 
 vnc clave: G1H9dv45QyP3
 
-
-limpia el proyecto con los archivos que no se uses,  actualiza la documentacion y eliminas planes de tareas antiguos que ya se hicieron. solo deja la documentacion necesario,  elimina archivos que ya no se usasn, que alfuna vez se usaron  en pruebas automaticas
-
-
 la base de datos dede ser una base de datos relacional. empresas
-
-
 
 ver si facturar por un proveedor tecnologico es una opcion.
 
 migrar a PostgreSQL
 
-Crea un plan de trabajo para migrar las dos base de datos: superadministrador y empresas de mysqlite a PostgreSQL,  se hara paso a paso probando cada base de datos.  y de ahora en adelante la base de datos no etara en local sino en el servidor virtual o vps. agrega esa regla al agente_go.   por medio de ssh instala PostgreSQL en el vps .  
+Crea un plan de trabajo para migrar las dos base de datos: superadministrador y empresas de mysqlite a PostgreSQL, se hara paso a paso probando cada base de datos. y de ahora en adelante la base de datos no etara en local sino en el servidor virtual o vps. agrega esa regla al agente_go. por medio de ssh instala PostgreSQL en el vps.
 
-
-
-
-
-
-hacer  un sistema que detecto o que evites demasiadas consultas de una empresa a la base de datoas , para evitar que la base de datos colapse, o para evitar ataques como de hacker.
+hacer un sistema que detecto o que evites demasiadas consultas de una empresa a la base de datoas , para evitar que la base de datos colapse, o para evitar ataques como de hacker.
 
 el vnc quedo en puerto 5901
 
+la firma electronica o certificado esta en la raiz del proyecto: certificado.crt
 
-crear un agente que se encargue de la documentacion y que ademas pregunte, para tener un plan de trabao siempre
+crear una pagina de modo mantenimiento.
 
-la firma electronica  o certificado esta en la raiz del proyecto: certificado.crt
-
-crear una pagina de modo mantenimiento. 
-
-
-despues de  migrar a postgre, hacer la limpieza de archivos y documentacion.
+despues de migrar a postgre, hacer la limpieza de archivos y documentacion.
 
 En el backup se debepoder elegir entre guardar en local o pc o celular, en la nube propia de google de cada usuario administrador en una carpeta que ya esta establecida.
 
@@ -80,227 +41,56 @@ Para tu proyecto multiempresa:
 Subdominios por Empresa:
 empresa1.powerfulcontrolsystem.com
 empresa2.powerfulcontrolsystem.com
- este subdominio lo quiero usar para la pagina de venta publica automatizada por empresa. 
+este subdominio lo quiero usar para la pagina de venta publica automatizada por empresa.
 
- - al modulo de chat y tareas agregale un agenta de citas caon calendario grande,  que se puedan programar citas y que halla notificaciones antes para que le recuerde.
+- al modulo de chat y tareas agregale un agenta de citas caon calendario grande, que se puedan programar citas y que halla notificaciones antes para que le recuerde.
 
- - nose si hostiguer tiene apis para hacer en el super_administrador una pagina para el estado del servidor, con todo lo que permita la api. a esta pagina nueva le llamaremos.  vps_hostinger
+- nose si hostiguer tiene apis para hacer en el super_administrador una pagina para el estado del servidor, con todo lo que permita la api. a esta pagina nueva le llamaremos. vps_hostinger
 
--  cpmpactar verticalmente las tarjetas en la pagina index.
-
- se configura un titulo, una descripcion por cada tarjeta. cambia el estilo de las tarjetas por unos mas coloridos, cada tarjeta representa un producto que vendo. y debajo debe haber un boton dentro de cada tajeta que diga: Explorar oferta. todo esto se debe almacenar en la pasede datos superusuario
-
-
+- compactar verticalmente las tarjetas en la pagina index.
+se configura un titulo, una descripcion por cada tarjeta. cambia el estilo de las tarjetas por unos mas coloridos, cada tarjeta representa un producto que vendo. y debajo debe haber un boton dentro de cada tajeta que diga: Explorar oferta. todo esto se debe almacenar en la pasede datos superusuario
 
 - toda la configuracion de una empresa se debe poder exportar, y tambien debe estar la opcion de cargar configuracion.
 
-- Todo absolutamente todo debeser configurable por empresa, cada campo, cada boton, cada pagina etc.  todo con unn check en la configuracion de cada empresa.  lo mismo para cuando se crea un rrol debe poder activar o desactivar todo en su configuracion. y esto permitiraque el sistema de adapte o configure a cada empresa. 
+- Todo absolutamente todo debeser configurable por empresa, cada campo, cada boton, cada pagina etc. todo con unn check en la configuracion de cada empresa. lo mismo para cuando se crea un rrol debe poder activar o desactivar todo en su configuracion. y esto permitiraque el sistema de adapte o configure a cada empresa.
 
 - Pruebalo gratis por 15 dis.
 
+- crea un modulo de horarios, el cual debe tener un calendario grafico en donde en casa fecha o cuadro de fecha s puede mostrar los turnos de los trabajadores, y que todos en el sistema lo puedan ver. este modulo de horarios por ahora loso lo puede editar el administrador de la empresa-
 
-- crea un modulo de horarios, el cual debe tener un calendario grafico en donde en casa fecha o cuadro de fecha s puede  mostrar los turnos de los trabajadores, y que todos en el sistema lo puedan ver. este modulo de horarios por ahora loso lo puede editar el administrador de la empresa-
-
--hacer un modulo de consumo de datos por empresa,  modulo de deteccion de consultas por minuto o algo asi. preguntale a chat gtp
-
+- hacer un modulo de consumo de datos por empresa, modulo de deteccion de consultas por minuto o algo asi. preguntale a chat gtp
 
 - Nuevo modulo de historial de un cliente, un modulo que permita llevar todo el historial de los servicios o productos que se le venden a un cliente, parecido a una historia clinica, para volverlo universal , que no solo este enfocado a clientes, sino por ejemplo a automoviles, para llevar una hoja de viade los cambios de los mantenimientos, que este modulo permita tener reportes de alerta de servicios que se hacen frecuentemente en las empresas.
 
+segundo metodo para facturar electronicamente por provedores tecnologicos      
 
- segundo metodo para facturar electronicamente por provedores tecnologicos
+- que el sistema acceda por ssh al raspberry o sensor y leasigne un numero unico que lo saca de aca del mismo sistema.
 
---
- - que el sistema acceda por ssh al raspberry o sensor y leasigne un numero unico que lo saca de aca del mismo sistema.
+- paginas adaptadas al celular tambien.
+- roles y se le aplican a las licncias. el rol es la manera de configurar una empres con infinidad de checj
+- que el titulo de la pagina web se amolde a pantallas de celular. bueno eso debe ser en todo el proyecto, que todo se adapte automaticamente a moviles y a pc. ademas coloca esta regla al agente_go
 
- - paginas adaptadas al celular tambien.
- -roles y se le aplican a las licncias.
- el rol es la manera de configurar una empres con infinidad de checj
+el login tambien debe ser por correo y clave, y tambien por cuenta de google, pero si el usuario no ha creado una contrase�a e intenta hacer login por medio de la cuenta fe google, le debe pedir le debe salir una pagina para que cree su contrase�a.
 
- - que el titulo de la pagina web se amolde a pantallas de celular. bueno eso debe ser en todo el proyecto, que todo se adapte automaticamente a moviles y a pc. ademas coloca esta regla al agente_go
+en login tambien debe ser por corrao y el qentra por google la prmera vez despues de aceptar el contrado le debe exigir crear una contrase�a. esta para cuando entre no por google sino por correo y clave-
 
+crear un modulo para prestamista hacer que chat gtp te haga el pron, esto con todos los modulos nuevos
 
- el login tambien debe ser por correo y clave, y tambien por cuenta de google, pero si el usuario no ha creado una contraseña e intenta hacer login  por medio  de la cuenta fe google, le debe pedir le debe salir una pagina para que cree su contraseña.
+- la pagina de rervas de cada empresa debe ser publica, que no sea necesario registrarse.
 
- en la carpeta juegos, crea una pagina llamada menu_juegos esta debe tener una tarjeta por cada juego que creemos. la pagina menu juegos la colocas en el menu flotante. y luego creas el juego del patito volando que solo hay que undir un boton pora que se eleve o baje segun los obstaculos. este juego lo debes crear como una nueva pagina estilo ventana que cargue de un pataño pequeño unos 700 x 700 pixeles. el juego debe indicar al comienzo con que tecla del teclado salta, en pc sera con la barra espaciadora y en celular seria cuando toquen la pantalla.
+- crear red social y un chat para todas las empresas.
 
- en login tambien debe ser por corrao y el qentra por google la prmera vez despues de aceptar el contrado le debe exigir crear una contraseña. esta para cuando entre no por google sino por correo y clave-
-
- crear un modulo para prestamista hacer que chat gtp te haga el pron, esto con todos los modulos nuevos
-
- -  la pagina de rervas de cada empresa debe ser publica, que no sea necesario registrarse.
-
- -crear red social y un chat para todas las empresas.
-
-
-
- asistente a distancia por medio de la herramienta de windows o nose si hay alguna herramienta que haga lo mismo de codigo libre.
-
-
-
-
-
- ## modulo
- Desarrolla un módulo de acceso remoto tipo AnyDesk/TeamViewer para integrarlo en un sistema POS multiempresa ya existente.
-
-### OBJETIVO
-
-Permitir que técnicos autorizados puedan conectarse remotamente a los equipos de las empresas clientes para:
-
-* Ver la pantalla en tiempo real
-* Controlar mouse y teclado
-* Brindar soporte técnico
-
-El sistema debe estar basado en un servidor VPS propio (self-hosted), utilizando preferiblemente RustDesk como base o implementando una solución compatible (cliente + servidor).
-
----
-
-### ARQUITECTURA GENERAL
-
-1. El VPS actuará como servidor central de conexiones remotas.
-2. Cada empresa (tenant) tendrá uno o varios dispositivos registrados.
-3. Cada dispositivo tendrá un agente instalado (cliente remoto).
-4. Los técnicos se conectarán desde un panel web del sistema POS.
-5. Todas las conexiones deben pasar por el VPS (sin depender de servicios externos).
-
----
-
-### FUNCIONALIDADES PRINCIPALES
-
-#### 1. Registro de dispositivos
-
-* Cada empresa puede registrar dispositivos (PCs)
-* Generar un ID único por dispositivo
-* Asociar dispositivo a empresa (multi-tenant)
-* Guardar:
-
-  * ID del dispositivo
-  * Nombre del equipo
-  * Última conexión
-  * Estado (activo/inactivo)
-
-#### 2. Control remoto
-
-* Conexión segura mediante ID + credenciales
-* Visualización en tiempo real
-* Control de mouse y teclado
-* Opción de solo visualización o control total
-
-#### 3. Panel de técnicos (backend + frontend)
-
-* Lista de empresas
-* Lista de dispositivos por empresa
-* Botón “Conectar”
-* Historial de conexiones:
-
-  * Técnico
-  * Empresa
-  * Fecha/hora
-  * Duración
-
----
-
-### CONTROL DE USO POR PLAN (IMPORTANTE)
-
-Implementar sistema de limitación por empresa:
-
-Cada empresa tiene un plan con restricciones como:
-
-* Máximo número de conexiones al mes
-* Máximo tiempo de conexión (minutos)
-* Máximo número de dispositivos
-
-#### Lógica:
-
-* Antes de iniciar conexión:
-
-  * Validar si la empresa tiene acceso activo
-  * Verificar si no ha superado su límite
-* Durante la sesión:
-
-  * Medir duración en tiempo real
-* Al finalizar:
-
-  * Registrar consumo
-
-#### Bloqueo automático:
-
-* Si supera límites:
-
-  * Denegar nuevas conexiones
-  * Registrar intento
-  * Mostrar mensaje: “Límite de soporte remoto alcanzado”
-
----
-
-### SEGURIDAD
-
-* Autenticación por usuario técnico (JWT o sesión)
-* Autorización por empresa (multi-tenant isolation)
-* Cifrado de conexión (usar protocolo seguro tipo RustDesk)
-* Logs de auditoría completos
-* Opcional: confirmación del usuario final antes de permitir control
-
----
-
-- en super administrador en administrar base de datos agregar una tarjeta con un boton que diga "Cargar Empresas", este debe cargar en una tabla de la base de datos de cada empresa, organizada de mayor a menor, de la que mas espacio en mega bite tiene. es para saber cuanta base de datos ocupa cada empresa.
-
-
+## modulo
+Desarrolla un m�dulo de acceso remoto tipo AnyDesk/TeamViewer para integrarlo en un sistema POS multiempresa ya existente.
+(Ver especificaciones en historial)
 
 - la pagina cuenta de usuario en donde el usuario pueda editar sus datos como contrasea, cambiar correo celular nombre etc,
 
-
-
 - la base ded atos debe ser relacioal
-
 
 - ya registre mi firma electronica en la Dian ahora has las pruebas de emitir una factura electronica haber que responde la Dian
 
 que el sistema permita subir fotos de las facturas de compras o comprobantes de gastos o egresos
 
-
-
-## DATOS IMPORTANTES
-- Tarjetas de Crédito de Pruebas
-Aceptada
-Franquicia: Visa
-Número: 4575623182290326
-Fecha Expiración: 12/2027
-CVV: 123
-Estado: Aceptada
-Response: Aceptada
-
-Fondos insuficientes
-Franquicia: Visa
-Número: 4151611527583283
-Fecha Expiración: 12/2027
-CVV: 123
-Estado: Rechazada
-Response: Fondos insuficientes
-
-Fallida
-Franquicia: Mastercard
-Número: 5170394490379427
-Fecha Expiración: 12/2027
-CVV: 123
-Estado: Fallida
-Response: Error de comunicación con el centro de autorizaciones
-
-Pendiente
-Franquicia: American Express
-Número: 373118856457642
-Fecha Expiración: 12/2027
-CVV: 123
-Estado: Pendiente
-Response: Transacción pendiente por validación
-
-Cuentas Daviplata de prueba
-Cédula de Ciudadanía (CC): 1134568019
-Cédula de Extranjería (CE): 786630
-
-
-
-## lo que tengo que probar en el momento
-- pagos de epayco
-
-contraseña de aplicacion de correo de power...
+contrase�a de aplicacion de correo de power...
 sysc xyxc okot ivvv

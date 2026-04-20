@@ -1009,6 +1009,9 @@ func main() {
 		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
 			log.Printf("warning: failed to ensure usuario configuracion schema: %v", err)
 		}
+		if err := dbpkg.EnsureHorariosTrabajadoresSchema(); err != nil {
+			log.Printf("warning: failed to ensure horarios trabajadores schema: %v", err)
+		}
 		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
 			log.Printf("warning: failed to ensure super contract schema in super db: %v", err)
 			utils.ReportProcessError("startup.super_contract_schema", "contract_schema_init", "No se pudo preparar el esquema del contrato super durante el arranque", err, utils.ErrorLevelError, nil)
@@ -1720,6 +1723,8 @@ func main() {
 	http.HandleFunc("/super/api/chat_con_ia_global/historial", superAIChatController.HistorialHandler)
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
+	// Endpoint para configuración de modo mantenimiento global
+	http.HandleFunc("/super/api/config/mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema

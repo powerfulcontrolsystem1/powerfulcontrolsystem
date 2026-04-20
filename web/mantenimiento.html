@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modo Mantenimiento - Regresaremos Pronto</title>
+    <link rel="stylesheet" href="/estilos.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f6f9;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+        }
+        .maintenance-container {
+            max-width: 600px;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-top: 5px solid #ff7b00;
+        }
+        .maintenance-container svg {
+            width: 80px;
+            height: 80px;
+            color: #ff7b00;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 1.1em;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .btn-retry {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .btn-retry:hover {
+            background-color: #0056b3;
+        }
+        .super-login-link {
+            display: block;
+            margin-top: 30px;
+            font-size: 0.85em;
+            color: #aaa;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="maintenance-container">
+        <!-- Ícono de mantenimiento -->
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+
+        <h1>Modo Mantenimiento</h1>
+        <p>Estamos realizando mejoras y actualizaciones en nuestra plataforma para brindarte un servicio más potente y estable.<br><br><strong>El sistema se encuentra temporalmente fuera de línea.</strong> <br>Estaremos de vuelva muy pronto.</p>
+        
+        <a href="/" class="btn-retry">Recargar Página</a>
+
+        <a href="/login.html" class="super-login-link">Acceso exclusivo para Administradores de Sistema</a>
+    </div>
+
+</body>
+</html>

@@ -6,47 +6,45 @@
   <title>Soporte remoto multiempresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body { background: #f3f6fb; }
-    .sr-shell { padding: 20px; display: grid; gap: 16px; }
-    .sr-hero { background: linear-gradient(135deg, #0f172a, #1d4ed8); color: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16); }
-    .sr-hero h1 { margin: 0 0 8px; font-size: 28px; }
-    .sr-hero p { margin: 0; max-width: 820px; opacity: 0.92; }
-    .sr-layout { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
-    .sr-card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08); }
+    body { background: #edf3fb; }
+    .sr-shell { padding: 18px; display: grid; gap: 16px; }
+    .sr-hero { border-radius: 24px; padding: 24px; color: #fff; background: linear-gradient(135deg, #071a2f 0%, #0f4c81 44%, #14b8a6 100%); box-shadow: 0 24px 50px rgba(8, 20, 39, 0.2); }
+    .sr-hero h1 { margin: 0 0 8px; font-size: 30px; }
+    .sr-hero p { margin: 0; max-width: 920px; color: rgba(255,255,255,0.92); }
+    .sr-layout { display: grid; gap: 16px; grid-template-columns: 340px 1fr; align-items: start; }
+    .sr-card { background: #fff; border-radius: 22px; padding: 18px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
     .sr-card h2, .sr-card h3 { margin-top: 0; }
     .sr-search { display: grid; gap: 10px; }
     .sr-company-list { display: grid; gap: 10px; max-height: 72vh; overflow: auto; }
-    .sr-company { width: 100%; text-align: left; border: 1px solid #dbe5f1; border-radius: 14px; background: #f8fbff; padding: 14px; cursor: pointer; }
-    .sr-company.active { border-color: #1d4ed8; background: #e9f1ff; box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.18); }
-    .sr-company strong, .sr-grid strong { display: block; }
-    .sr-muted { color: #516173; font-size: 13px; }
-    .sr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
-    .sr-metric { border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; background: #f8fafc; }
-    .sr-metric span { display: block; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
-    .sr-metric strong { font-size: 24px; margin-top: 4px; }
-    .sr-sections { display: grid; gap: 16px; }
-    .sr-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .sr-company { width: 100%; text-align: left; border: 1px solid #dbe5f1; border-radius: 16px; background: #f8fbff; padding: 14px; cursor: pointer; }
+    .sr-company.active { border-color: #0f4c81; background: #e8f3ff; box-shadow: inset 0 0 0 1px rgba(15, 76, 129, 0.16); }
+    .sr-company strong { display: block; }
+    .sr-muted { color: #556477; font-size: 13px; }
+    .sr-main { display: grid; gap: 16px; }
+    .sr-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sr-grid-2 { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sr-kpi { border: 1px solid #d8e4ef; border-radius: 18px; padding: 14px; background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%); }
+    .sr-kpi span { display: block; font-size: 12px; color: #607083; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sr-kpi strong { display: block; margin-top: 4px; font-size: 24px; color: #0f172a; }
+    .sr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .sr-status { min-height: 22px; font-size: 14px; color: #556477; }
     .sr-table { width: 100%; border-collapse: collapse; }
-    .sr-table th, .sr-table td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; text-align: left; }
-    .sr-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
-    .sr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .sr-actions button, .sr-primary, .sr-secondary { border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; font-weight: 600; }
-    .sr-primary { background: #1d4ed8; color: #fff; }
-    .sr-secondary { background: #e2e8f0; color: #0f172a; }
-    .sr-warning { padding: 12px; border-radius: 12px; background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
-    .sr-status { min-height: 24px; font-size: 14px; }
-    .sr-viewer { width: 100%; min-height: 420px; border: 1px solid #dbe5f1; border-radius: 16px; background: #0f172a; }
+    .sr-table th, .sr-table td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    .sr-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #66768a; }
+    .sr-viewer { width: 100%; min-height: 420px; border-radius: 18px; border: 1px solid #d7dfeb; background: #0f172a; }
+    .sr-link { display: block; padding: 12px 14px; border-radius: 16px; background: #0f172a; color: #fff; text-decoration: none; word-break: break-all; }
+    .sr-link:hover { color: #fff; opacity: 0.92; }
+    .sr-code { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 13px; }
     @media (max-width: 1100px) {
       .sr-layout { grid-template-columns: 1fr; }
-      .sr-grid, .sr-toolbar { grid-template-columns: 1fr 1fr; }
+      .sr-grid { grid-template-columns: 1fr 1fr; }
     }
-    @media (max-width: 720px) {
+    @media (max-width: 760px) {
       .sr-shell { padding: 12px; }
-      .sr-hero, .sr-card { padding: 16px; }
-      .sr-grid, .sr-toolbar { grid-template-columns: 1fr; }
-      .sr-company-list { max-height: none; }
-      .sr-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .sr-actions button, .sr-primary, .sr-secondary { width: 100%; }
+      .sr-card, .sr-hero { padding: 16px; }
+      .sr-grid, .sr-grid-2 { grid-template-columns: 1fr; }
+      .sr-actions button { width: 100%; }
+      .sr-table { display: block; overflow-x: auto; }
       .sr-viewer { min-height: 320px; }
     }
   </style>
@@ -55,7 +53,7 @@
   <div class="sr-shell">
     <section class="sr-hero">
       <h1>Soporte remoto multiempresa</h1>
-      <p>Panel tecnico central para revisar cupos por plan, dispositivos conectados, sesiones del mes y abrir asistencia remota compatible con noVNC, Guacamole o RustDesk Web segun la URL del agente registrada por cada empresa.</p>
+      <p>Esta mesa técnica central ahora no solo abre sesiones y revisa consumo: también administra el portal público de soporte remoto de cada empresa con enlaces de descarga del cliente y del servidor estilo RustDesk.</p>
     </section>
 
     <section class="sr-layout">
@@ -63,35 +61,152 @@
         <div class="sr-search">
           <h2>Empresas</h2>
           <input id="srSearch" class="form-input" type="search" placeholder="Buscar por nombre, NIT o nota">
-          <button id="srRefreshCompanies" class="sr-secondary" type="button">Actualizar listado</button>
+          <button id="srRefreshCompanies" class="btn secondary" type="button">Actualizar listado</button>
         </div>
         <div id="srCompanyList" class="sr-company-list"></div>
       </aside>
 
-      <main class="sr-sections">
+      <main class="sr-main">
         <section class="sr-card">
-          <div id="srCompanyHeader" class="sr-muted">Seleccione una empresa para ver sus dispositivos y consumo.</div>
-          <div id="srAlert"></div>
-          <div id="srUsage" class="sr-grid"></div>
-          <div class="sr-toolbar">
-            <input id="srOperatorName" class="form-input" type="text" placeholder="Operador tecnico">
-            <input id="srOperatorEmail" class="form-input" type="email" placeholder="correo tecnico opcional">
-            <input id="srSessionReason" class="form-input" type="text" placeholder="Motivo de soporte">
-            <input id="srDuration" class="form-input" type="number" min="5" max="480" value="30" placeholder="Duracion (min)">
+          <div class="page-header" style="margin-bottom:12px;">
+            <div>
+              <h2 id="srCompanyHeader" style="margin-bottom:6px;">Seleccione una empresa</h2>
+              <p id="srStatus" class="sr-status">Elija una empresa para ver su configuración, dispositivos y sesiones.</p>
+            </div>
+            <div class="sr-actions">
+              <button id="srOpenPublicPortal" type="button" class="btn secondary">Abrir último portal</button>
+            </div>
           </div>
-          <div id="srStatus" class="sr-status sr-muted"></div>
+          <div id="srUsage" class="sr-grid"></div>
+        </section>
+
+        <section class="sr-card form">
+          <h3>Configuración pública de la empresa</h3>
+          <div class="sr-grid-2">
+            <div>
+              <label class="form-label" for="srCfgHabilitado">Módulo habilitado</label>
+              <select id="srCfgHabilitado" class="form-input"><option value="1">Sí</option><option value="0">No</option></select>
+            </div>
+            <div>
+              <label class="form-label" for="srCfgPortal">Portal público habilitado</label>
+              <select id="srCfgPortal" class="form-input"><option value="1">Sí</option><option value="0">No</option></select>
+            </div>
+            <div>
+              <label class="form-label" for="srCfgProveedor">Proveedor</label>
+              <select id="srCfgProveedor" class="form-input">
+                <option value="novnc">noVNC</option>
+                <option value="guacamole">Guacamole</option>
+                <option value="rustdesk_web">RustDesk Web</option>
+                <option value="rustdesk_oss">RustDesk nativo</option>
+                <option value="custom_url">URL personalizada</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="srCfgModo">Modo operación</label>
+              <select id="srCfgModo" class="form-input">
+                <option value="agente_web">Agente web</option>
+                <option value="agente_local">Agente local</option>
+                <option value="cliente_local">Cliente local</option>
+                <option value="hibrido">Híbrido</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="srCfgAprobacion">Requiere aprobación de operador</label>
+              <select id="srCfgAprobacion" class="form-input"><option value="1">Sí</option><option value="0">No</option></select>
+            </div>
+            <div>
+              <label class="form-label" for="srCfgAutoCerrar">Auto cierre (minutos)</label>
+              <input id="srCfgAutoCerrar" class="form-input" type="number" min="5" max="480" value="30">
+            </div>
+          </div>
+          <div class="sr-grid" style="margin-top:12px;">
+            <div>
+              <label class="form-label" for="srCfgMaxDispositivos">Máximo dispositivos</label>
+              <input id="srCfgMaxDispositivos" class="form-input" type="number" min="0" value="0">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgMaxConexiones">Máximo sesiones/mes</label>
+              <input id="srCfgMaxConexiones" class="form-input" type="number" min="0" value="0">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgMaxMinutos">Máximo minutos/mes</label>
+              <input id="srCfgMaxMinutos" class="form-input" type="number" min="0" value="0">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgMaxMinutosDiaRustDesk">Límite diario RustDesk (minutos)</label>
+              <input id="srCfgMaxMinutosDiaRustDesk" class="form-input" type="number" min="0" value="0">
+              <div class="sr-muted">0 = sin tope diario. Se evalúa por día operativo del servidor.</div>
+            </div>
+          </div>
+          <div class="sr-grid-2" style="margin-top:12px;">
+            <div>
+              <label class="form-label" for="srCfgHost">Host RustDesk</label>
+              <input id="srCfgHost" class="form-input sr-code" type="text" placeholder="rustdesk.powerfulcontrolsystem.com:21116">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgKey">Clave pública</label>
+              <input id="srCfgKey" class="form-input sr-code" type="text" placeholder="Fingerprint o clave pública">
+            </div>
+          </div>
+          <div class="sr-grid-2" style="margin-top:12px;">
+            <div>
+              <label class="form-label" for="srCfgClienteWin">Cliente Windows</label>
+              <input id="srCfgClienteWin" class="form-input" type="url" placeholder="https://.../client-win.exe">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgClienteLinux">Cliente Linux</label>
+              <input id="srCfgClienteLinux" class="form-input" type="url" placeholder="https://.../client-linux.deb">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgServidorWin">Servidor Windows</label>
+              <input id="srCfgServidorWin" class="form-input" type="url" placeholder="https://.../server-win.zip">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgServidorLinux">Servidor Linux</label>
+              <input id="srCfgServidorLinux" class="form-input" type="url" placeholder="https://.../server-linux.tar.gz">
+            </div>
+          </div>
+          <div class="sr-grid-2" style="margin-top:12px;">
+            <div>
+              <label class="form-label" for="srCfgTransfer">Carpeta transferencia</label>
+              <input id="srCfgTransfer" class="form-input sr-code" type="text" placeholder="/srv/rustdesk/transfer">
+            </div>
+            <div>
+              <label class="form-label" for="srCfgObs">Observaciones</label>
+              <input id="srCfgObs" class="form-input" type="text" placeholder="Notas internas del equipo técnico">
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <label class="form-label" for="srCfgInstrucciones">Instrucciones públicas</label>
+            <textarea id="srCfgInstrucciones" class="form-input" rows="4" placeholder="Texto visible en la página pública para guiar la descarga y conexión."></textarea>
+          </div>
+          <div class="sr-actions" style="margin-top:14px;">
+            <button id="srSaveConfig" type="button" class="btn">Guardar configuración</button>
+          </div>
+          <div id="srConfigMsg" class="sr-status"></div>
+        </section>
+
+        <section class="sr-card">
+          <h3>Último portal público generado</h3>
+          <a id="srPublicLink" class="sr-link" href="#" target="_self">Sin sesión pública generada todavía.</a>
         </section>
 
         <section class="sr-card">
           <h3>Dispositivos</h3>
+          <div class="sr-actions" style="margin-bottom:10px;">
+            <input id="srOperatorName" class="form-input" type="text" placeholder="Operador técnico">
+            <input id="srOperatorEmail" class="form-input" type="email" placeholder="correo técnico opcional">
+            <input id="srSessionReason" class="form-input" type="text" placeholder="Motivo de soporte">
+            <input id="srDuration" class="form-input" type="number" min="5" max="480" value="30" placeholder="Duración (min)">
+          </div>
           <table class="sr-table">
             <thead>
               <tr>
                 <th>Equipo</th>
-                <th>Conexion</th>
-                <th>Agente</th>
-                <th>Ubicacion</th>
-                <th>Accion</th>
+                <th>Conexión</th>
+                <th>Modo</th>
+                <th>Portal</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody id="srDevicesBody">
@@ -105,11 +220,11 @@
           <table class="sr-table">
             <thead>
               <tr>
-                <th>Codigo</th>
+                <th>Código</th>
                 <th>Equipo</th>
                 <th>Estado</th>
                 <th>Consumo</th>
-                <th>Accion</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody id="srSessionsBody">
@@ -131,9 +246,18 @@
       companies: [],
       selectedEmpresaId: 0,
       selectedSummary: null,
+      selectedConfig: null,
       devices: [],
-      sessions: []
+      sessions: [],
+      sessionTokens: {},
+      lastPortalURL: ''
     };
+
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, function(char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+      });
+    }
 
     async function fetchJSON(url, options) {
       const response = await fetch(url, Object.assign({ credentials: 'include' }, options || {}));
@@ -143,7 +267,7 @@
         try {
           data = JSON.parse(text);
         } catch (error) {
-          throw new Error(text || 'Respuesta invalida del servidor');
+          throw new Error(text || 'Respuesta inválida del servidor');
         }
       }
       if (!response.ok) {
@@ -158,19 +282,46 @@
     function setStatus(message, isError) {
       const node = document.getElementById('srStatus');
       node.textContent = message || '';
-      node.style.color = isError ? '#b91c1c' : '#516173';
+      node.style.color = isError ? '#b91c1c' : '#556477';
     }
 
-    function renderAlert(summary) {
-      const node = document.getElementById('srAlert');
-      node.innerHTML = '';
-      if (!summary || !summary.uso || !summary.uso.bloqueo_motivo) {
+    function formatCap(value) {
+      return Number(value || 0) > 0 ? value : 'sin tope';
+    }
+
+    function updatePublicLink(url) {
+      state.lastPortalURL = String(url || '').trim();
+      const link = document.getElementById('srPublicLink');
+      if (!state.lastPortalURL) {
+        link.href = '#';
+        link.textContent = 'Sin sesión pública generada todavía.';
         return;
       }
-      const div = document.createElement('div');
-      div.className = 'sr-warning';
-      div.textContent = 'Alerta de plan: ' + summary.uso.bloqueo_motivo;
-      node.appendChild(div);
+      link.href = state.lastPortalURL;
+      link.textContent = state.lastPortalURL;
+    }
+
+    function loadConfigIntoForm(config) {
+      const item = config || {};
+      document.getElementById('srCfgHabilitado').value = item.habilitado ? '1' : '0';
+      document.getElementById('srCfgPortal').value = item.portal_publico_habilitado ? '1' : '0';
+      document.getElementById('srCfgProveedor').value = item.proveedor_preferido || 'rustdesk_oss';
+      document.getElementById('srCfgModo').value = item.modo_operacion || 'cliente_local';
+      document.getElementById('srCfgAprobacion').value = item.requiere_aprobacion_operador ? '1' : '0';
+      document.getElementById('srCfgAutoCerrar').value = Number(item.auto_cerrar_minutos || 30);
+      document.getElementById('srCfgMaxDispositivos').value = Number(item.max_dispositivos || 0);
+      document.getElementById('srCfgMaxConexiones').value = Number(item.max_conexiones_mes || 0);
+      document.getElementById('srCfgMaxMinutos').value = Number(item.max_minutos_mes || 0);
+      document.getElementById('srCfgMaxMinutosDiaRustDesk').value = Number(item.max_minutos_dia_rustdesk || 0);
+      document.getElementById('srCfgHost').value = item.rustdesk_server_host || '';
+      document.getElementById('srCfgKey').value = item.rustdesk_server_key || '';
+      document.getElementById('srCfgClienteWin').value = item.cliente_windows_url || '';
+      document.getElementById('srCfgClienteLinux').value = item.cliente_linux_url || '';
+      document.getElementById('srCfgServidorWin').value = item.servidor_windows_url || '';
+      document.getElementById('srCfgServidorLinux').value = item.servidor_linux_url || '';
+      document.getElementById('srCfgTransfer').value = item.carpeta_transferencia || '';
+      document.getElementById('srCfgInstrucciones').value = item.instrucciones_publicas || '';
+      document.getElementById('srCfgObs').value = item.observaciones || '';
     }
 
     function renderCompanies() {
@@ -195,31 +346,27 @@
     }
 
     function renderUsage(summary) {
-      const header = document.getElementById('srCompanyHeader');
-      const usage = document.getElementById('srUsage');
-      usage.innerHTML = '';
+      const container = document.getElementById('srUsage');
+      container.innerHTML = '';
       if (!summary) {
-        header.textContent = 'Seleccione una empresa para ver sus dispositivos y consumo.';
         return;
       }
-      header.innerHTML = '<strong>' + escapeHTML(summary.empresa.nombre || '') + '</strong> · ' +
-        'Proveedor: ' + escapeHTML(summary.config.proveedor_preferido || 'novnc') + ' · ' +
-        'Modo: ' + escapeHTML(summary.config.modo_operacion || 'agente_web');
+      document.getElementById('srCompanyHeader').textContent = (summary.empresa.nombre || 'Empresa') + ' · soporte remoto';
       const metrics = [
-        ['Dispositivos activos', summary.uso.dispositivos_activos + ' / ' + formatCap(summary.uso.max_dispositivos)],
-        ['Dispositivos online', summary.uso.dispositivos_online],
-        ['Sesiones del mes', summary.uso.sesiones_mes + ' / ' + formatCap(summary.uso.max_conexiones_mes)],
-        ['Intentos bloqueados', summary.uso.intentos_bloqueados_mes],
-        ['Minutos consumidos', summary.uso.minutos_consumidos_mes + ' / ' + formatCap(summary.uso.max_minutos_mes)],
-        ['Aprobacion operador', summary.config.requiere_aprobacion_operador ? 'Si' : 'No']
+        ['Dispositivos activos', (summary.uso.dispositivos_activos || 0) + ' / ' + formatCap(summary.uso.max_dispositivos)],
+        ['Dispositivos online', summary.uso.dispositivos_online || 0],
+        ['Sesiones del mes', (summary.uso.sesiones_mes || 0) + ' / ' + formatCap(summary.uso.max_conexiones_mes)],
+        ['Intentos bloqueados', summary.uso.intentos_bloqueados_mes || 0],
+        ['Minutos consumidos', (summary.uso.minutos_consumidos_mes || 0) + ' / ' + formatCap(summary.uso.max_minutos_mes)],
+        ['RustDesk hoy', (summary.uso.minutos_consumidos_dia_rustdesk || 0) + ' / ' + formatCap(summary.uso.max_minutos_dia_rustdesk)],
+        ['Portal público', summary.config.portal_publico_habilitado ? 'Activo' : 'Inactivo']
       ];
       metrics.forEach(function(metric) {
         const div = document.createElement('div');
-        div.className = 'sr-metric';
+        div.className = 'sr-kpi';
         div.innerHTML = '<span>' + escapeHTML(metric[0]) + '</span><strong>' + escapeHTML(String(metric[1])) + '</strong>';
-        usage.appendChild(div);
+        container.appendChild(div);
       });
-      renderAlert(summary);
     }
 
     function renderDevices() {
@@ -232,11 +379,12 @@
       state.devices.forEach(function(device) {
         const tr = document.createElement('tr');
         const disabled = state.selectedSummary && state.selectedSummary.uso && !state.selectedSummary.uso.puede_crear_sesion;
+        const mode = device.rustdesk_device_id ? ('RustDesk ID ' + device.rustdesk_device_id) : 'Visor embebible';
         tr.innerHTML = '<td><strong>' + escapeHTML(device.nombre_equipo || '') + '</strong><div class="sr-muted">' + escapeHTML(device.codigo_dispositivo || '') + '</div></td>' +
-          '<td>' + escapeHTML(device.estado_conexion || 'offline') + '</td>' +
-          '<td>' + escapeHTML(device.agente_version || 'sin version') + '<div class="sr-muted">' + escapeHTML(device.sistema_operativo || 'sin SO') + '</div></td>' +
-          '<td>' + escapeHTML(device.ubicacion || 'sin ubicacion') + '</td>' +
-          '<td><div class="sr-actions"><button class="sr-primary" type="button" ' + (disabled ? 'disabled' : '') + '>Conectar</button></div></td>';
+          '<td>' + escapeHTML(device.estado_conexion || 'offline') + '<div class="sr-muted">' + escapeHTML(device.ultimo_heartbeat || '-') + '</div></td>' +
+          '<td>' + escapeHTML(mode) + '</td>' +
+          '<td>' + (device.acceso_publico_habilitado === false ? 'Deshabilitado' : 'Habilitado') + '</td>' +
+          '<td><div class="sr-actions"><button class="btn" type="button" ' + (disabled ? 'disabled' : '') + '>Conectar</button></div></td>';
         tr.querySelector('button').addEventListener('click', function() {
           createSession(device.id);
         });
@@ -259,19 +407,27 @@
           '<td>' + escapeHTML(String(session.duracion_min_consumida || 0)) + ' min<div class="sr-muted">solicitada: ' + escapeHTML(String(session.duracion_min_solicitada || 0)) + ' min</div></td>' +
           '<td><div class="sr-actions"></div></td>';
         const actions = tr.querySelector('.sr-actions');
-        if (session.token_visualizacion) {
-          const openBtn = document.createElement('button');
-          openBtn.className = 'sr-secondary';
-          openBtn.type = 'button';
-          openBtn.textContent = 'Abrir visor';
-          openBtn.addEventListener('click', function() {
-            openViewer('/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(state.selectedEmpresaId) + '&codigo_sesion=' + encodeURIComponent(session.codigo_sesion) + '&token=' + encodeURIComponent(session.token_visualizacion));
-          });
-          actions.appendChild(openBtn);
-        }
+        const openBtn = document.createElement('button');
+        openBtn.className = 'btn secondary';
+        openBtn.type = 'button';
+        openBtn.textContent = 'Abrir visor';
+        openBtn.addEventListener('click', function() {
+          openViewerForSession(session.codigo_sesion);
+        });
+        actions.appendChild(openBtn);
+
+        const portalBtn = document.createElement('button');
+        portalBtn.className = 'btn secondary';
+        portalBtn.type = 'button';
+        portalBtn.textContent = 'Portal público';
+        portalBtn.addEventListener('click', function() {
+          openPortalForSession(session.codigo_sesion);
+        });
+        actions.appendChild(portalBtn);
+
         if (session.estado_sesion === 'pendiente') {
           const approveBtn = document.createElement('button');
-          approveBtn.className = 'sr-secondary';
+          approveBtn.className = 'btn secondary';
           approveBtn.type = 'button';
           approveBtn.textContent = 'Aprobar';
           approveBtn.addEventListener('click', function() {
@@ -281,7 +437,7 @@
         }
         if (session.estado_sesion === 'pendiente' || session.estado_sesion === 'aprobada' || session.estado_sesion === 'activa') {
           const closeBtn = document.createElement('button');
-          closeBtn.className = 'sr-secondary';
+          closeBtn.className = 'btn secondary';
           closeBtn.type = 'button';
           closeBtn.textContent = 'Finalizar';
           closeBtn.addEventListener('click', function() {
@@ -293,16 +449,6 @@
       });
     }
 
-    function formatCap(value) {
-      return Number(value || 0) > 0 ? value : 'sin tope';
-    }
-
-    function escapeHTML(value) {
-      return String(value || '').replace(/[&<>"']/g, function(char) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
-      });
-    }
-
     async function loadCompanies() {
       setStatus('Cargando empresas...', false);
       const q = document.getElementById('srSearch').value.trim();
@@ -311,6 +457,7 @@
       if (state.selectedEmpresaId && !state.companies.some(function(item) { return item.empresa.empresa_id === state.selectedEmpresaId; })) {
         state.selectedEmpresaId = 0;
         state.selectedSummary = null;
+        state.selectedConfig = null;
         state.devices = [];
         state.sessions = [];
       }
@@ -318,10 +465,10 @@
       renderUsage(state.selectedSummary);
       renderDevices();
       renderSessions();
-      setStatus('Empresas actualizadas.', false);
       if (!state.selectedEmpresaId && state.companies.length) {
-        selectEmpresa(state.companies[0].empresa.empresa_id);
+        await selectEmpresa(state.companies[0].empresa.empresa_id);
       }
+      setStatus('Empresas actualizadas.', false);
     }
 
     async function selectEmpresa(empresaId) {
@@ -329,7 +476,21 @@
       state.selectedSummary = state.companies.find(function(item) { return item.empresa.empresa_id === state.selectedEmpresaId; }) || null;
       renderCompanies();
       renderUsage(state.selectedSummary);
-      await Promise.all([loadDevices(), loadSessions()]);
+      await Promise.all([loadConfig(), loadDevices(), loadSessions()]);
+    }
+
+    async function loadConfig() {
+      if (!state.selectedEmpresaId) return;
+      const data = await fetchJSON('/super/api/soporte_remoto?action=config&empresa_id=' + encodeURIComponent(state.selectedEmpresaId));
+      state.selectedConfig = data.config || null;
+      if (state.selectedSummary && state.selectedConfig) {
+        state.selectedSummary.config = state.selectedConfig;
+      }
+      if (state.selectedSummary && data.uso) {
+        state.selectedSummary.uso = data.uso;
+      }
+      loadConfigIntoForm(state.selectedConfig || {});
+      renderUsage(state.selectedSummary);
     }
 
     async function loadDevices() {
@@ -340,9 +501,7 @@
       }
       const data = await fetchJSON('/super/api/soporte_remoto?action=dispositivos&empresa_id=' + encodeURIComponent(state.selectedEmpresaId));
       state.devices = Array.isArray(data.rows) ? data.rows : [];
-      if (data.uso && state.selectedSummary) {
-        state.selectedSummary.uso = data.uso;
-      }
+      if (data.uso && state.selectedSummary) state.selectedSummary.uso = data.uso;
       renderUsage(state.selectedSummary);
       renderDevices();
     }
@@ -355,70 +514,134 @@
       }
       const data = await fetchJSON('/super/api/soporte_remoto?action=sesiones&empresa_id=' + encodeURIComponent(state.selectedEmpresaId));
       state.sessions = Array.isArray(data.rows) ? data.rows : [];
-      if (data.uso && state.selectedSummary) {
-        state.selectedSummary.uso = data.uso;
-      }
+      if (data.uso && state.selectedSummary) state.selectedSummary.uso = data.uso;
       renderUsage(state.selectedSummary);
       renderSessions();
     }
 
-    async function createSession(deviceId) {
-      if (!state.selectedEmpresaId) {
-        return;
+    async function saveConfig() {
+      if (!state.selectedEmpresaId) return;
+      setStatus('Guardando configuración pública...', false);
+      try {
+        const payload = {
+          habilitado: document.getElementById('srCfgHabilitado').value === '1',
+          portal_publico_habilitado: document.getElementById('srCfgPortal').value === '1',
+          proveedor_preferido: document.getElementById('srCfgProveedor').value,
+          modo_operacion: document.getElementById('srCfgModo').value,
+          requiere_aprobacion_operador: document.getElementById('srCfgAprobacion').value === '1',
+          auto_cerrar_minutos: Number(document.getElementById('srCfgAutoCerrar').value || 30),
+          max_dispositivos: Number(document.getElementById('srCfgMaxDispositivos').value || 0),
+          max_conexiones_mes: Number(document.getElementById('srCfgMaxConexiones').value || 0),
+          max_minutos_mes: Number(document.getElementById('srCfgMaxMinutos').value || 0),
+          max_minutos_dia_rustdesk: Number(document.getElementById('srCfgMaxMinutosDiaRustDesk').value || 0),
+          rustdesk_server_host: document.getElementById('srCfgHost').value.trim(),
+          rustdesk_server_key: document.getElementById('srCfgKey').value.trim(),
+          cliente_windows_url: document.getElementById('srCfgClienteWin').value.trim(),
+          cliente_linux_url: document.getElementById('srCfgClienteLinux').value.trim(),
+          servidor_windows_url: document.getElementById('srCfgServidorWin').value.trim(),
+          servidor_linux_url: document.getElementById('srCfgServidorLinux').value.trim(),
+          carpeta_transferencia: document.getElementById('srCfgTransfer').value.trim(),
+          instrucciones_publicas: document.getElementById('srCfgInstrucciones').value.trim(),
+          observaciones: document.getElementById('srCfgObs').value.trim()
+        };
+        const data = await fetchJSON('/super/api/soporte_remoto?action=config&empresa_id=' + encodeURIComponent(state.selectedEmpresaId), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        state.selectedConfig = data.config || payload;
+        if (state.selectedSummary) {
+          state.selectedSummary.config = state.selectedConfig;
+          if (data.uso) state.selectedSummary.uso = data.uso;
+        }
+        loadConfigIntoForm(state.selectedConfig);
+        renderUsage(state.selectedSummary);
+        document.getElementById('srConfigMsg').textContent = 'Configuración guardada correctamente.';
+        setStatus('Configuración actualizada para la empresa seleccionada.', false);
+      } catch (error) {
+        document.getElementById('srConfigMsg').textContent = error.message || 'No se pudo guardar la configuración.';
+        setStatus(error.message || 'No se pudo guardar la configuración.', true);
       }
+    }
+
+    async function createSession(deviceId) {
+      if (!state.selectedEmpresaId) return;
       const payload = {
         empresa_id: state.selectedEmpresaId,
         dispositivo_id: Number(deviceId || 0),
         operador_nombre: document.getElementById('srOperatorName').value.trim(),
         operador_email: document.getElementById('srOperatorEmail').value.trim(),
-        motivo: document.getElementById('srSessionReason').value.trim() || 'Soporte tecnico central',
+        motivo: document.getElementById('srSessionReason').value.trim() || 'Soporte técnico central',
         duracion_min: Number(document.getElementById('srDuration').value || 30)
       };
-      setStatus('Creando sesion remota...', false);
+      setStatus('Creando sesión remota...', false);
       try {
         const data = await fetchJSON('/super/api/soporte_remoto?action=solicitar_sesion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (data.uso && state.selectedSummary) {
-          state.selectedSummary.uso = data.uso;
+        if (data.session && data.session.codigo_sesion && data.session.token_visualizacion) {
+          state.sessionTokens[data.session.codigo_sesion] = data.session.token_visualizacion;
         }
+        updatePublicLink(String(data.portal_publico_url || '').trim());
+        if (data.uso && state.selectedSummary) state.selectedSummary.uso = data.uso;
         await loadSessions();
         renderUsage(state.selectedSummary);
         if (data.viewer_url) {
           openViewer(data.viewer_url);
         }
-        setStatus('Sesion creada correctamente.', false);
+        setStatus('Sesión creada correctamente.', false);
       } catch (error) {
         if (error.payload && error.payload.uso && state.selectedSummary) {
           state.selectedSummary.uso = error.payload.uso;
           renderUsage(state.selectedSummary);
         }
-        setStatus(error.message || 'No se pudo crear la sesion.', true);
+        setStatus(error.message || 'No se pudo crear la sesión.', true);
       }
     }
 
     async function updateSessionState(codigoSesion, action) {
-      if (!state.selectedEmpresaId || !codigoSesion) {
-        return;
-      }
-      setStatus('Actualizando sesion...', false);
+      if (!state.selectedEmpresaId || !codigoSesion) return;
+      setStatus('Actualizando sesión...', false);
       try {
         const data = await fetchJSON('/super/api/soporte_remoto?action=' + encodeURIComponent(action), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ empresa_id: state.selectedEmpresaId, codigo_sesion: codigoSesion })
         });
-        if (data.uso && state.selectedSummary) {
-          state.selectedSummary.uso = data.uso;
-        }
+        if (data.uso && state.selectedSummary) state.selectedSummary.uso = data.uso;
         await loadSessions();
         renderUsage(state.selectedSummary);
-        setStatus('Sesion actualizada.', false);
+        setStatus('Sesión actualizada.', false);
       } catch (error) {
-        setStatus(error.message || 'No se pudo actualizar la sesion.', true);
+        setStatus(error.message || 'No se pudo actualizar la sesión.', true);
       }
+    }
+
+    function buildPortalURLForSession(code) {
+      const token = state.sessionTokens[code] || window.prompt('Ingresa el token del portal público de la sesión:');
+      if (!token) return '';
+      state.sessionTokens[code] = token;
+      const url = new URL('/soporte_remoto_acceso.html', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.selectedEmpresaId));
+      url.searchParams.set('codigo_sesion', String(code));
+      url.searchParams.set('token', String(token));
+      return url.toString();
+    }
+
+    function openPortalForSession(code) {
+      const url = buildPortalURLForSession(code);
+      if (!url) return;
+      updatePublicLink(url);
+      window.open(url, '_self');
+    }
+
+    function openViewerForSession(code) {
+      const token = state.sessionTokens[code] || window.prompt('Ingresa el token de visualización de la sesión:');
+      if (!token) return;
+      state.sessionTokens[code] = token;
+      openViewer('/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(state.selectedEmpresaId) + '&codigo_sesion=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(token));
     }
 
     function openViewer(url) {
@@ -435,7 +658,20 @@
         setStatus(error.message || 'No se pudieron cargar empresas.', true);
       });
     });
+    document.getElementById('srSaveConfig').addEventListener('click', function() {
+      saveConfig().catch(function(error) {
+        setStatus(error.message || 'No se pudo guardar la configuración.', true);
+      });
+    });
+    document.getElementById('srOpenPublicPortal').addEventListener('click', function() {
+      if (!state.lastPortalURL) {
+        setStatus('Aún no hay portal público generado. Crea una sesión o abre una existente.', true);
+        return;
+      }
+      window.open(state.lastPortalURL, '_self');
+    });
 
+    updatePublicLink('');
     loadCompanies().catch(function(error) {
       setStatus(error.message || 'No se pudo iniciar el panel.', true);
     });

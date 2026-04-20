@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -172,6 +173,80 @@ func TestPublicSoporteRemotoAgentHeartbeatAndStateUpdate(t *testing.T) {
 	}
 }
 
+func TestPublicSoporteRemotoResolverAccesoExponeDescargasRustDesk(t *testing.T) {
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")))
+
+	dbEmp := openPermsTestDB(t, "soporte_remoto_public_access.db")
+	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaSoporteRemotoSchema: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, dbpkg.EmpresaSoporteRemotoConfig{
+		EmpresaID:               778,
+		Habilitado:              true,
+		ProveedorPreferido:      "rustdesk_oss",
+		ModoOperacion:           "cliente_local",
+		PortalPublicoHabilitado: true,
+		RustDeskServerHost:      "rustdesk.powerfulcontrolsystem.com:21116",
+		RustDeskServerKey:       "PUB-KEY-778",
+		ClienteWindowsURL:       "https://downloads.example/rustdesk-client-win.exe",
+		ClienteLinuxURL:         "https://downloads.example/rustdesk-client-linux.deb",
+		ServidorWindowsURL:      "https://downloads.example/rustdesk-server-win.zip",
+		ServidorLinuxURL:        "https://downloads.example/rustdesk-server-linux.tar.gz",
+		CarpetaTransferencia:    "/transferencias/empresa-778",
+		InstruccionesPublicas:   "Descarga el cliente, agrega el host y comparte el ID visible con soporte.",
+		UsuarioCreador:          "admin778@test.local",
+		Estado:                  "activo",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaSoporteRemotoConfig: %v", err)
+	}
+
+	deviceID, err := dbpkg.CreateEmpresaSoporteRemotoDispositivo(dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
+		EmpresaID:               778,
+		CodigoDispositivo:       "DEV-778-A",
+		NombreEquipo:            "Recepcion 778",
+		RustDeskDeviceID:        "778-DEVICE",
+		RustDeskPasswordEnc:     "clave-778",
+		CarpetaTransferencia:    "/transferencias/recepcion-778",
+		AccesoPublicoHabilitado: true,
+		UsuarioCreador:          "admin778@test.local",
+		Estado:                  "activo",
+	}, "7780")
+	if err != nil {
+		t.Fatalf("CreateEmpresaSoporteRemotoDispositivo: %v", err)
+	}
+
+	session, err := dbpkg.CreateEmpresaSoporteRemotoSession(dbEmp, 778, deviceID, "admin778@test.local", "Operador 778", "op778@test.local", "acceso publico", 30, false)
+	if err != nil {
+		t.Fatalf("CreateEmpresaSoporteRemotoSession: %v", err)
+	}
+
+	publicHandler := PublicEmpresaSoporteRemotoAgentHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/soporte_remoto?action=resolver_acceso_publico&empresa_id=778&codigo_sesion="+session.CodigoSesion+"&token="+session.TokenVisualizacionRaw, nil)
+	rr := httptest.NewRecorder()
+	publicHandler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 public resolve, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	body := decodeSoporteRemotoBody(t, rr)
+	if !boolValue(body["acceso_permitido"]) {
+		t.Fatalf("expected acceso_permitido=true, got %#v", body)
+	}
+	access, ok := body["access"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected access object, got %#v", body)
+	}
+	if strings.TrimSpace(stringValue(access["cliente_windows_url"])) == "" || strings.TrimSpace(stringValue(access["servidor_linux_url"])) == "" {
+		t.Fatalf("expected download urls in access bundle, got %#v", access)
+	}
+	if strings.TrimSpace(stringValue(access["rustdesk_device_id"])) != "778-DEVICE" {
+		t.Fatalf("expected rustdesk_device_id, got %#v", access)
+	}
+	if strings.TrimSpace(stringValue(access["portal_publico_url"])) == "" {
+		t.Fatalf("expected portal_publico_url, got %#v", access)
+	}
+}
+
 func TestEmpresaSoporteRemotoHandlerBlocksSessionWhenPlanLimitReached(t *testing.T) {
 	dbEmp := openPermsTestDB(t, "soporte_remoto_limit_handler.db")
 	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmp); err != nil {
@@ -236,6 +311,92 @@ func TestEmpresaSoporteRemotoHandlerBlocksSessionWhenPlanLimitReached(t *testing
 	}
 	if numberValue(usoRaw["intentos_bloqueados_mes"]) < 1 {
 		t.Fatalf("expected blocked attempts >= 1, got %#v", usoRaw)
+	}
+}
+
+func TestEmpresaSoporteRemotoHandlerBlocksApprovalWhenRustDeskDailyLimitReached(t *testing.T) {
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")))
+
+	dbEmp := openPermsTestDB(t, "soporte_remoto_daily_approval_handler.db")
+	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaSoporteRemotoSchema: %v", err)
+	}
+
+	h := EmpresaSoporteRemotoHandler(dbEmp)
+
+	reqCfg := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=config&empresa_id=916", strings.NewReader(`{"habilitado":true,"proveedor_preferido":"rustdesk_oss","modo_operacion":"cliente_local","requiere_aprobacion_operador":true,"auto_cerrar_minutos":30,"max_conexiones_mes":10,"max_minutos_mes":100,"max_minutos_dia_rustdesk":1,"max_dispositivos":2}`))
+	reqCfg.Header.Set("Content-Type", "application/json")
+	reqCfg.Header.Set("X-Admin-Email", "admin916@test.local")
+	rrCfg := httptest.NewRecorder()
+	h.ServeHTTP(rrCfg, reqCfg)
+	if rrCfg.Code != http.StatusOK {
+		t.Fatalf("expected 200 config with daily rustdesk limit, got %d body=%s", rrCfg.Code, rrCfg.Body.String())
+	}
+
+	reqDevice := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=crear_dispositivo&empresa_id=916", strings.NewReader(`{"nombre_equipo":"RustDesk 916","rustdesk_device_id":"916-RUSTDESK","rustdesk_password":"clave-916","acceso_pin":"9160"}`))
+	reqDevice.Header.Set("Content-Type", "application/json")
+	reqDevice.Header.Set("X-Admin-Email", "admin916@test.local")
+	rrDevice := httptest.NewRecorder()
+	h.ServeHTTP(rrDevice, reqDevice)
+	if rrDevice.Code != http.StatusCreated {
+		t.Fatalf("expected 201 create rustdesk device, got %d body=%s", rrDevice.Code, rrDevice.Body.String())
+	}
+	deviceResp := decodeSoporteRemotoBody(t, rrDevice)
+	deviceRaw := deviceResp["dispositivo"].(map[string]interface{})
+	deviceID := int64(numberValue(deviceRaw["id"]))
+
+	reqSession1 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=solicitar_sesion&empresa_id=916", strings.NewReader(`{"dispositivo_id":`+itoa64(deviceID)+`,"motivo":"Primera sesion diaria","duracion_min":1}`))
+	reqSession1.Header.Set("Content-Type", "application/json")
+	reqSession1.Header.Set("X-Admin-Email", "admin916@test.local")
+	rrSession1 := httptest.NewRecorder()
+	h.ServeHTTP(rrSession1, reqSession1)
+	if rrSession1.Code != http.StatusCreated {
+		t.Fatalf("expected 201 first pending session, got %d body=%s", rrSession1.Code, rrSession1.Body.String())
+	}
+	firstSession := decodeSoporteRemotoBody(t, rrSession1)["session"].(map[string]interface{})
+	firstCode := stringValue(firstSession["codigo_sesion"])
+
+	reqApprove1 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=aprobar_sesion&empresa_id=916", strings.NewReader(`{"codigo_sesion":"`+firstCode+`"}`))
+	reqApprove1.Header.Set("Content-Type", "application/json")
+	rrApprove1 := httptest.NewRecorder()
+	h.ServeHTTP(rrApprove1, reqApprove1)
+	if rrApprove1.Code != http.StatusOK {
+		t.Fatalf("expected 200 first approve, got %d body=%s", rrApprove1.Code, rrApprove1.Body.String())
+	}
+
+	reqFinish1 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=finalizar_sesion&empresa_id=916", strings.NewReader(`{"codigo_sesion":"`+firstCode+`"}`))
+	reqFinish1.Header.Set("Content-Type", "application/json")
+	rrFinish1 := httptest.NewRecorder()
+	h.ServeHTTP(rrFinish1, reqFinish1)
+	if rrFinish1.Code != http.StatusOK {
+		t.Fatalf("expected 200 finish first rustdesk session, got %d body=%s", rrFinish1.Code, rrFinish1.Body.String())
+	}
+
+	reqSession2 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=solicitar_sesion&empresa_id=916", strings.NewReader(`{"dispositivo_id":`+itoa64(deviceID)+`,"motivo":"Segunda sesion diaria","duracion_min":1}`))
+	reqSession2.Header.Set("Content-Type", "application/json")
+	reqSession2.Header.Set("X-Admin-Email", "admin916@test.local")
+	rrSession2 := httptest.NewRecorder()
+	h.ServeHTTP(rrSession2, reqSession2)
+	if rrSession2.Code != http.StatusCreated {
+		t.Fatalf("expected 201 second pending session, got %d body=%s", rrSession2.Code, rrSession2.Body.String())
+	}
+	secondSession := decodeSoporteRemotoBody(t, rrSession2)["session"].(map[string]interface{})
+	secondCode := stringValue(secondSession["codigo_sesion"])
+
+	reqApprove2 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=aprobar_sesion&empresa_id=916", strings.NewReader(`{"codigo_sesion":"`+secondCode+`"}`))
+	reqApprove2.Header.Set("Content-Type", "application/json")
+	rrApprove2 := httptest.NewRecorder()
+	h.ServeHTTP(rrApprove2, reqApprove2)
+	if rrApprove2.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected 412 second approve blocked by rustdesk daily limit, got %d body=%s", rrApprove2.Code, rrApprove2.Body.String())
+	}
+	body := decodeSoporteRemotoBody(t, rrApprove2)
+	usoRaw, ok := body["uso"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected uso object in blocked approval response: %#v", body)
+	}
+	if numberValue(usoRaw["minutos_consumidos_dia_rustdesk"]) < 1 {
+		t.Fatalf("expected minutos_consumidos_dia_rustdesk >= 1, got %#v", usoRaw)
 	}
 }
 

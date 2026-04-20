@@ -1,3 +1,17 @@
+- Actualizacion 2026-04-20: soporte remoto publico RustDesk y configuracion central
+	- web/soporte_remoto_acceso.html : Portal publico por token para soporte remoto con estado de sesion, descargas cliente/servidor RustDesk, datos de conexion y visor web opcional.
+	- web/administrar_empresa/soporte_remoto.html : Consolida la configuracion del portal publico de soporte remoto, host RustDesk, descargas, dispositivos y sesiones por empresa.
+	- web/super/soporte_remoto.html : Amplia la mesa tecnica super para editar la configuracion publica de cada empresa y abrir el portal publico generado por sesion.
+	- backend/handlers/soporte_remoto.go : Devuelve `portal_publico_url` y amplía el bundle publico con URLs de servidor e instrucciones visibles.
+	- backend/handlers/super_soporte_remoto.go : Añade `action=config` para editar configuración pública de soporte remoto por empresa desde super.
+	- backend/db/soporte_remoto.go : Amplía la tabla de configuración remota con descargas del servidor e instrucciones públicas.
+
+- Actualizacion 2026-04-20.2: tope diario RustDesk en soporte remoto
+	- backend/db/soporte_remoto.go : Añade `max_minutos_dia_rustdesk`, consumo diario RustDesk y validación del límite al crear o aprobar sesiones.
+	- backend/handlers/soporte_remoto.go : Propaga el nuevo campo de configuración y devuelve `412` con uso cuando el tope diario bloquea la sesión.
+	- backend/handlers/super_soporte_remoto.go : Expone el tope diario en configuración/resumen/exporte del panel super.
+	- web/super/soporte_remoto.html : Permite editar el nuevo tope diario RustDesk y visualizar el consumo del día.
+	- backend/db/soporte_remoto_test.go, backend/handlers/soporte_remoto_test.go, backend/handlers/super_soporte_remoto_test.go : Cubren persistencia, aprobación bloqueada y guardado/lectura del nuevo campo.
 Actualizacion 2026-04-20: apariencia global reparada y rutas de juegos restauradas
  - Archivos creados:
 	 - web/Juegos/menu_juegos.html : Puerta de entrada estable del menú flotante hacia el módulo público de Juegos, con enlaces mínimos y apariencia sincronizada con el tema global.

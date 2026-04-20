@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/base64"
 	"database/sql"
 	"errors"
 	"strings"
@@ -31,12 +32,20 @@ func TestSoporteRemotoDBFlow(t *testing.T) {
 		ModoOperacion:              "agente_local",
 		RequiereAprobacionOperador: false,
 		AutoCerrarMinutos:          45,
+		MaxMinutosDiaRustDesk:      90,
 		UsuarioCreador:             "qa@local",
 		Estado:                     "activo",
 		Observaciones:              "configuracion de test",
 	})
 	if err != nil {
 		t.Fatalf("upsert config: %v", err)
+	}
+	cfgAfter, err := GetEmpresaSoporteRemotoConfig(dbConn, 61)
+	if err != nil {
+		t.Fatalf("get config after upsert: %v", err)
+	}
+	if cfgAfter.MaxMinutosDiaRustDesk != 90 {
+		t.Fatalf("expected max_minutos_dia_rustdesk=90, got %d", cfgAfter.MaxMinutosDiaRustDesk)
 	}
 
 	deviceID, err := CreateEmpresaSoporteRemotoDispositivo(dbConn, EmpresaSoporteRemotoDispositivo{
@@ -222,5 +231,79 @@ func TestSoporteRemotoDBPlanLimitsAndBlockedAttempts(t *testing.T) {
 	}
 	if !rows[0].BloqueadaPorLimite && !rows[1].BloqueadaPorLimite {
 		t.Fatalf("expected at least one blocked session attempt in rows")
+	}
+}
+
+func TestSoporteRemotoDBDailyRustDeskLimit(t *testing.T) {
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")))
+
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaSoporteRemotoSchema(dbConn); err != nil {
+		t.Fatalf("ensure soporte remoto schema: %v", err)
+	}
+
+	if _, err := UpsertEmpresaSoporteRemotoConfig(dbConn, EmpresaSoporteRemotoConfig{
+		EmpresaID:                  95,
+		Habilitado:                 true,
+		ProveedorPreferido:         "rustdesk_oss",
+		ModoOperacion:              "cliente_local",
+		RequiereAprobacionOperador: false,
+		AutoCerrarMinutos:          30,
+		MaxConexionesMes:           10,
+		MaxMinutosMes:              120,
+		MaxMinutosDiaRustDesk:      1,
+		MaxDispositivos:            2,
+		UsuarioCreador:             "qa@local",
+		Estado:                     "activo",
+	}); err != nil {
+		t.Fatalf("upsert config with daily rustdesk limit: %v", err)
+	}
+
+	deviceID, err := CreateEmpresaSoporteRemotoDispositivo(dbConn, EmpresaSoporteRemotoDispositivo{
+		EmpresaID:          95,
+		NombreEquipo:       "RustDesk caja diaria",
+		RustDeskDeviceID:   "95-RUSTDESK",
+		RustDeskPasswordEnc: "clave-95",
+		UsuarioCreador:     "qa@local",
+		Estado:             "activo",
+	}, "9500")
+	if err != nil {
+		t.Fatalf("create rustdesk device: %v", err)
+	}
+
+	session, err := CreateEmpresaSoporteRemotoSession(dbConn, 95, deviceID, "qa@local", "Mesa central", "mesa@local", "Sesion diaria 1", 1, false)
+	if err != nil {
+		t.Fatalf("create first rustdesk session: %v", err)
+	}
+	if err := SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn, 95, session.CodigoSesion, "finalizada", "consumo diario completo"); err != nil {
+		t.Fatalf("finish first rustdesk session: %v", err)
+	}
+
+	if _, err := CreateEmpresaSoporteRemotoSession(dbConn, 95, deviceID, "qa@local", "Mesa central", "mesa@local", "Sesion diaria 2", 1, false); !errors.Is(err, ErrSoporteRemotoPlanLimit) {
+		t.Fatalf("expected ErrSoporteRemotoPlanLimit for rustdesk daily limit, got: %v", err)
+	}
+
+	uso, err := GetEmpresaSoporteRemotoUso(dbConn, 95)
+	if err != nil {
+		t.Fatalf("get uso after daily limit: %v", err)
+	}
+	if uso.MinutosConsumidosDiaRustDesk < 1 {
+		t.Fatalf("expected minutos_consumidos_dia_rustdesk >= 1, got %d", uso.MinutosConsumidosDiaRustDesk)
+	}
+	if uso.MaxMinutosDiaRustDesk != 1 {
+		t.Fatalf("expected max_minutos_dia_rustdesk=1, got %d", uso.MaxMinutosDiaRustDesk)
+	}
+	if uso.MinutosDisponiblesDiaRustDesk != 0 {
+		t.Fatalf("expected minutos_disponibles_dia_rustdesk=0, got %d", uso.MinutosDisponiblesDiaRustDesk)
+	}
+	if !strings.Contains(strings.ToLower(uso.BloqueoMotivo), "rustdesk") {
+		t.Fatalf("expected bloqueo motivo mentioning rustdesk, got %q", uso.BloqueoMotivo)
+	}
+	rows, total, err := ListEmpresaSoporteRemotoSesiones(dbConn, 95, EmpresaSoporteRemotoSessionFilter{Limit: 20})
+	if err != nil {
+		t.Fatalf("list sessions after rustdesk daily block: %v", err)
+	}
+	if total != 2 || len(rows) != 2 {
+		t.Fatalf("expected 2 session rows including blocked daily attempt, got total=%d len=%d", total, len(rows))
 	}
 }

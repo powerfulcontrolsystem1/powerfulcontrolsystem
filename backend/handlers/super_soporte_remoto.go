@@ -33,6 +33,8 @@ func normalizeSuperSoporteRemotoAction(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "empresas", "resumen_empresas":
 		return "empresas"
+	case "config", "configuracion":
+		return "config"
 	case "dispositivos":
 		return "dispositivos"
 	case "sesiones":
@@ -63,6 +65,8 @@ func SuperSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			switch action {
 			case "empresas":
 				superSoporteRemotoEmpresasGet(w, r, dbEmp)
+			case "config":
+				superSoporteRemotoConfigGet(w, r, dbEmp)
 			case "dispositivos":
 				superSoporteRemotoDispositivosGet(w, r, dbEmp)
 			case "sesiones":
@@ -74,6 +78,8 @@ func SuperSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 		case http.MethodPost, http.MethodPut, http.MethodPatch:
 			switch action {
+			case "config":
+				superSoporteRemotoConfigUpsert(w, r, dbEmp)
 			case "solicitar_sesion":
 				superSoporteRemotoSesionCreate(w, r, dbEmp)
 			case "aprobar_sesion":
@@ -115,6 +121,59 @@ func superSoporteRemotoEmpresasGet(w http.ResponseWriter, r *http.Request, dbEmp
 		rows = append(rows, superSoporteRemotoEmpresaResumen{Empresa: empresa, Config: cfg, Uso: uso})
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": len(rows), "rows": rows})
+}
+
+func superSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
+		return
+	}
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
+}
+
+func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var payload empresaSoporteRemotoConfigPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	current, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuracion actual", http.StatusInternalServerError)
+		return
+	}
+	empresaSoporteRemotoApplyConfigPayload(&current, payload, adminEmailFromRequest(r))
+	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
+		http.Error(w, "No se pudo guardar configuracion de soporte remoto: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
 }
 
 func superSoporteRemotoDispositivosGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -211,9 +270,16 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 			"modo_operacion": cfg.ModoOperacion,
 			"portal_publico_habilitado": cfg.PortalPublicoHabilitado,
 			"rustdesk_server_host": cfg.RustDeskServerHost,
+			"max_minutos_dia_rustdesk": cfg.MaxMinutosDiaRustDesk,
 			"cliente_windows_url": cfg.ClienteWindowsURL,
 			"cliente_linux_url": cfg.ClienteLinuxURL,
+			"servidor_windows_url": cfg.ServidorWindowsURL,
+			"servidor_linux_url": cfg.ServidorLinuxURL,
 			"carpeta_transferencia": cfg.CarpetaTransferencia,
+			"instrucciones_publicas": cfg.InstruccionesPublicas,
+			"dia_referencia": uso.DiaReferencia,
+			"minutos_consumidos_dia_rustdesk": uso.MinutosConsumidosDiaRustDesk,
+			"minutos_disponibles_dia_rustdesk": uso.MinutosDisponiblesDiaRustDesk,
 			"dispositivos_activos": uso.DispositivosActivos,
 			"dispositivos_online": uso.DispositivosOnline,
 			"sesiones_mes": uso.SesionesMes,
@@ -233,7 +299,8 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 		GeneratedAt: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
 		Columns: []string{
 			"empresa_id", "empresa", "nit", "proveedor", "modo_operacion", "portal_publico_habilitado",
-			"rustdesk_server_host", "cliente_windows_url", "cliente_linux_url", "carpeta_transferencia",
+			"rustdesk_server_host", "max_minutos_dia_rustdesk", "cliente_windows_url", "cliente_linux_url", "servidor_windows_url", "servidor_linux_url", "carpeta_transferencia", "instrucciones_publicas",
+			"dia_referencia", "minutos_consumidos_dia_rustdesk", "minutos_disponibles_dia_rustdesk",
 			"dispositivos_activos", "dispositivos_online", "sesiones_mes", "intentos_bloqueados_mes",
 			"minutos_consumidos_mes", "max_dispositivos", "max_conexiones_mes", "max_minutos_mes", "bloqueo_motivo",
 		},
@@ -283,7 +350,7 @@ func superSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, dbEm
 	}
 	viewerURL := empresaSoporteRemotoBuildViewerURL(r, payload.EmpresaID, session.CodigoSesion, session.TokenVisualizacionRaw)
 	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "session": session, "viewer_url": viewerURL, "uso": uso})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "session": session, "viewer_url": viewerURL, "portal_publico_url": empresaSoporteRemotoBuildPublicPortalURL(r, payload.EmpresaID, session.CodigoSesion, session.TokenVisualizacionRaw), "uso": uso})
 }
 
 func superSoporteRemotoSesionEstado(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, estado string) {
@@ -308,6 +375,11 @@ func superSoporteRemotoSesionEstado(w http.ResponseWriter, r *http.Request, dbEm
 	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, payload.EmpresaID, payload.CodigoSesion, estado, payload.Observaciones); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
 		http.Error(w, "No se pudo actualizar la sesion", http.StatusInternalServerError)

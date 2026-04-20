@@ -1872,6 +1872,42 @@ flowchart TD
   - `web/super/soporte_remoto.html` (nuevo):
     - panel tecnico central con lista de empresas, consumo mensual, cupos por plan, dispositivos, sesiones y visor embebido/reapertura en nueva pestaña.
 
+## Actualizacion 2026-04-20 (soporte remoto publico estilo RustDesk)
+
+- Backend DB:
+  - `backend/db/soporte_remoto.go`:
+    - amplía `empresa_soporte_remoto_configuracion` con URLs de descarga del servidor (`servidor_windows_url`, `servidor_linux_url`) e instrucciones públicas por empresa.
+- Backend handlers:
+  - `backend/handlers/soporte_remoto.go`:
+    - agrega `portal_publico_url` al crear sesiones y amplía el bundle público con descargas de cliente/servidor e instrucciones visibles en `resolver_acceso_publico`.
+  - `backend/handlers/super_soporte_remoto.go`:
+    - agrega `action=config` para que la mesa técnica super edite la configuración pública de soporte remoto por empresa.
+- Integracion de arranque/rutas:
+  - `backend/utils/utils.go`:
+    - habilita acceso público a `soporte_remoto_acceso.html` además de `/api/public/soporte_remoto`.
+- Frontend:
+  - `web/administrar_empresa/soporte_remoto.html`:
+    - reorganiza el módulo para administrar host RustDesk, descargas cliente/servidor, dispositivos y portal público por sesión.
+  - `web/super/soporte_remoto.html`:
+    - integra en la mesa técnica la edición central de configuración pública por empresa sin salir del módulo.
+  - `web/soporte_remoto_acceso.html` (nuevo):
+    - página pública de acceso remoto por token con estado de sesión, descargas cliente/servidor, datos de conexión y visor web opcional.
+
+## Actualizacion 2026-04-20.2 (soporte remoto: tope diario RustDesk)
+
+- Backend DB:
+  - `backend/db/soporte_remoto.go`:
+    - agrega `max_minutos_dia_rustdesk` a la configuración empresarial y calcula consumo diario específico de sesiones RustDesk para el día operativo actual.
+    - valida el tope tanto en creación directa de sesión como al pasar una sesión pendiente a `aprobada/activa`.
+- Backend handlers:
+  - `backend/handlers/soporte_remoto.go`:
+    - devuelve `412` con resumen de uso cuando la aprobación o creación de una sesión RustDesk supera el límite diario configurado.
+  - `backend/handlers/super_soporte_remoto.go`:
+    - expone el nuevo campo en configuración/reportes y devuelve el mismo `412` en la mesa técnica super.
+- Frontend:
+  - `web/super/soporte_remoto.html`:
+    - agrega el control visual del límite diario RustDesk y el KPI de consumo del día junto a los topes mensuales.
+
 ## Actualizacion 2026-04-08 (modulo venta digital global: super + publico)
 
 - Backend DB:

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Acceso de soporte remoto</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body { margin: 0; background: radial-gradient(circle at top, #113a5c 0%, #091321 48%, #050b13 100%); color: #ecf6ff; }
+    .sr-public { max-width: 1220px; margin: 0 auto; padding: 24px 16px 32px; display: grid; gap: 16px; }
+    .sr-hero { border-radius: 28px; padding: 26px; background: linear-gradient(135deg, rgba(20,184,166,0.22), rgba(9,19,33,0.92)); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 60px rgba(0,0,0,0.28); }
+    .sr-hero h1 { margin: 0 0 10px; font-size: 32px; }
+    .sr-hero p { margin: 0; max-width: 860px; color: rgba(236,246,255,0.88); }
+    .sr-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 12px; border-radius: 999px; background: rgba(20,184,166,0.16); color: #8ff6ea; font-weight: 700; font-size: 13px; }
+    .sr-grid { display: grid; gap: 16px; grid-template-columns: 1.1fr .9fr; }
+    .sr-stack { display: grid; gap: 16px; }
+    .sr-card { background: rgba(9, 19, 33, 0.78); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; box-shadow: 0 22px 50px rgba(0,0,0,0.24); }
+    .sr-card h2, .sr-card h3 { margin-top: 0; }
+    .sr-status { display: grid; gap: 10px; }
+    .sr-status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+    .sr-status-pill.ok { background: rgba(34,197,94,0.16); color: #9ff1b8; }
+    .sr-status-pill.wait { background: rgba(251,191,36,0.16); color: #fde68a; }
+    .sr-status-pill.blocked { background: rgba(248,113,113,0.16); color: #fecaca; }
+    .sr-downloads { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sr-download { border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px; background: rgba(255,255,255,0.04); }
+    .sr-download h3 { margin-bottom: 6px; }
+    .sr-download p { margin: 0 0 12px; color: rgba(236,246,255,0.78); font-size: 14px; }
+    .sr-download .btn, .sr-actions .btn { width: 100%; }
+    .sr-fields { display: grid; gap: 10px; }
+    .sr-field { border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 12px 14px; background: rgba(255,255,255,0.04); }
+    .sr-field span { display: block; font-size: 12px; color: rgba(236,246,255,0.66); text-transform: uppercase; letter-spacing: 0.04em; }
+    .sr-field strong { display: block; margin-top: 6px; word-break: break-all; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 14px; }
+    .sr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .sr-note { color: rgba(236,246,255,0.78); font-size: 14px; }
+    .sr-steps { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: rgba(236,246,255,0.84); }
+    .sr-viewer { width: 100%; min-height: 480px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.12); background: #02060c; }
+    .sr-viewer-hidden { display: none; }
+    .sr-empty { padding: 16px; border-radius: 18px; background: rgba(248,113,113,0.12); color: #fecaca; }
+    .sr-success { padding: 14px; border-radius: 18px; background: rgba(34,197,94,0.12); color: #bbf7d0; }
+    @media (max-width: 980px) {
+      .sr-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .sr-public { padding: 14px 12px 28px; }
+      .sr-hero, .sr-card { padding: 16px; border-radius: 20px; }
+      .sr-downloads { grid-template-columns: 1fr; }
+      .sr-actions .btn { width: 100%; }
+      .sr-viewer { min-height: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sr-public">
+    <section class="sr-hero">
+      <div class="sr-badge">Soporte remoto público</div>
+      <h1>Conéctate con el equipo técnico</h1>
+      <p id="srHeroText">Validando tu sesión de soporte remoto y preparando descargas, datos del servidor y acceso guiado para esta empresa.</p>
+    </section>
+
+    <section class="sr-grid">
+      <div class="sr-stack">
+        <article class="sr-card">
+          <h2>Estado de la sesión</h2>
+          <div id="srStatusBox" class="sr-status"></div>
+        </article>
+
+        <article class="sr-card">
+          <h2>Descargas disponibles</h2>
+          <div id="srDownloads" class="sr-downloads"></div>
+        </article>
+
+        <article class="sr-card">
+          <h2>Cómo usar este acceso</h2>
+          <ol class="sr-steps">
+            <li>Descarga el cliente RustDesk si tu equipo aún no lo tiene instalado.</li>
+            <li>Configura el host del servidor y la clave pública que aparecen en esta pantalla.</li>
+            <li>Comparte con soporte el ID mostrado o espera que el técnico use el visor web si está disponible.</li>
+            <li>Usa la carpeta de transferencia indicada para mover archivos cuando el soporte lo solicite.</li>
+          </ol>
+        </article>
+      </div>
+
+      <div class="sr-stack">
+        <article class="sr-card">
+          <h2>Datos de conexión</h2>
+          <div id="srConnectionFields" class="sr-fields"></div>
+          <div id="srActions" class="sr-actions" style="margin-top:14px;"></div>
+        </article>
+
+        <article class="sr-card">
+          <h2>Instrucciones visibles para el usuario</h2>
+          <div id="srInstructions" class="sr-note">Esperando configuración pública...</div>
+        </article>
+
+        <article class="sr-card">
+          <h2>Visor web</h2>
+          <p id="srViewerMsg" class="sr-note">Si esta empresa tiene una URL embebible, podrás abrir el visor aquí mismo.</p>
+          <iframe id="srViewer" class="sr-viewer sr-viewer-hidden" title="Visor de soporte remoto"></iframe>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || '');
+      var empresaID = Number(params.get('empresa_id') || 0);
+      var codigoSesion = String(params.get('codigo_sesion') || '').trim();
+      var token = String(params.get('token') || '').trim();
++
+      var statusBox = document.getElementById('srStatusBox');
+      var downloadsBox = document.getElementById('srDownloads');
+      var fieldsBox = document.getElementById('srConnectionFields');
+      var actionsBox = document.getElementById('srActions');
+      var instructionsBox = document.getElementById('srInstructions');
+      var viewer = document.getElementById('srViewer');
+      var viewerMsg = document.getElementById('srViewerMsg');
+      var heroText = document.getElementById('srHeroText');
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function copyText(value) {
+        if (!value) return Promise.reject(new Error('No hay valor para copiar.'));
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(value);
+        }
+        return Promise.reject(new Error('El navegador no soporta copia directa.'));
+      }
+
+      function createField(label, value) {
+        if (!String(value || '').trim()) return '';
+        return '<div class="sr-field"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(value) + '</strong></div>';
+      }
+
+      function createDownloadCard(title, description, url) {
+        if (!String(url || '').trim()) {
+          return '<div class="sr-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><div class="sr-empty">Descarga no configurada.</div></div>';
+        }
+        return '<div class="sr-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><a class="btn" href="' + escapeHTML(url) + '" target="_self" rel="noopener">Descargar</a></div>';
+      }
+
+      function setStatus(accessAllowed, motivoBloqueo, session) {
+        var estado = String((session && session.estado_sesion) || '').trim();
+        if (accessAllowed) {
+          statusBox.innerHTML = '<div class="sr-status-pill ok">Acceso habilitado</div><div class="sr-success">La sesión ' + escapeHTML(session.codigo_sesion || '') + ' está lista. Puedes usar el cliente RustDesk o el visor web si la empresa lo tiene configurado.</div>';
+          return;
+        }
+        var css = estado === 'pendiente' ? 'wait' : 'blocked';
+        var title = estado === 'pendiente' ? 'Esperando aprobación' : 'Acceso restringido';
+        statusBox.innerHTML = '<div class="sr-status-pill ' + css + '">' + escapeHTML(title) + '</div><div class="sr-empty">' + escapeHTML(motivoBloqueo || 'La sesión aún no permite conexión.') + '</div>';
+      }
+
+      function renderAccess(data) {
+        var access = data.access || {};
+        var session = data.session || {};
+        heroText.textContent = data.acceso_permitido
+          ? 'La sesión ya está habilitada. Descarga el cliente o usa el visor web según el modo configurado por la empresa.'
+          : 'El enlace es válido, pero la sesión todavía no permite acceso. Puedes preparar descargas y datos del servidor mientras el equipo autoriza la conexión.';
+        setStatus(!!data.acceso_permitido, data.motivo_bloqueo, session);
+
+        downloadsBox.innerHTML = [
+          createDownloadCard('Cliente Windows', 'Instalador del cliente para estaciones Windows.', access.cliente_windows_url),
+          createDownloadCard('Cliente Linux', 'Paquete del cliente para equipos Linux.', access.cliente_linux_url),
+          createDownloadCard('Servidor Windows', 'Binario o paquete del servidor RustDesk para Windows.', access.servidor_windows_url),
+          createDownloadCard('Servidor Linux', 'Paquete del servidor o relay RustDesk para Linux.', access.servidor_linux_url)
+        ].join('');
+
+        fieldsBox.innerHTML = [
+          createField('Host RustDesk', access.rustdesk_server_host),
+          createField('Clave pública', access.rustdesk_server_key),
+          createField('ID del dispositivo', access.rustdesk_device_id),
+          createField('Contraseña del dispositivo', access.rustdesk_password),
+          createField('Carpeta de transferencia', access.carpeta_transferencia),
+          createField('Código de sesión', session.codigo_sesion)
+        ].join('') || '<div class="sr-empty">Esta sesión no expone datos de conexión públicos.</div>';
+
+        instructionsBox.textContent = String(access.instrucciones_publicas || 'El administrador aún no publicó instrucciones personalizadas. Usa el cliente RustDesk, configura el host y comparte el ID con el soporte.').trim();
+
+        actionsBox.innerHTML = '';
+        [
+          ['Copiar host', access.rustdesk_server_host],
+          ['Copiar clave', access.rustdesk_server_key],
+          ['Copiar ID', access.rustdesk_device_id],
+          ['Copiar contraseña', access.rustdesk_password]
+        ].forEach(function (item) {
+          if (!String(item[1] || '').trim()) return;
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'btn secondary';
+          button.textContent = item[0];
+          button.addEventListener('click', function () {
+            copyText(item[1]).then(function () {
+              viewerMsg.textContent = item[0] + ' copiado al portapapeles.';
+            }).catch(function (err) {
+              viewerMsg.textContent = err.message || 'No se pudo copiar el valor.';
+            });
+          });
+          actionsBox.appendChild(button);
+        });
+
+        if (data.acceso_permitido && String(access.embed_url || '').trim()) {
+          var openButton = document.createElement('button');
+          openButton.type = 'button';
+          openButton.className = 'btn';
+          openButton.textContent = 'Abrir visor web';
+          openButton.addEventListener('click', function () {
+            viewer.src = access.embed_url;
+            viewer.classList.remove('sr-viewer-hidden');
+            viewerMsg.textContent = 'Visor web cargado.';
+          });
+          actionsBox.appendChild(openButton);
+        }
+
+        if (!data.acceso_permitido || !String(access.embed_url || '').trim()) {
+          viewer.classList.add('sr-viewer-hidden');
+          viewer.src = 'about:blank';
+          viewerMsg.textContent = String(access.embed_url || '').trim()
+            ? 'El visor web quedará disponible cuando la sesión sea aprobada.'
+            : 'Esta empresa está operando en modo cliente local RustDesk. Usa las descargas y los datos de conexión.';
+        }
+      }
+
+      async function loadAccess() {
+        if (!(empresaID > 0) || !codigoSesion || !token) {
+          statusBox.innerHTML = '<div class="sr-empty">El enlace es inválido. Verifica empresa_id, codigo_sesion y token.</div>';
+          downloadsBox.innerHTML = '';
+          fieldsBox.innerHTML = '';
+          instructionsBox.textContent = 'Solicita un nuevo enlace público de soporte remoto al administrador de la empresa.';
+          return;
+        }
+        try {
+          var url = new URL('/api/public/soporte_remoto', window.location.origin);
+          url.searchParams.set('action', 'resolver_acceso_publico');
+          url.searchParams.set('empresa_id', String(empresaID));
+          url.searchParams.set('codigo_sesion', codigoSesion);
+          url.searchParams.set('token', token);
+          var response = await fetch(url.toString(), { credentials: 'same-origin' });
+          var text = await response.text();
+          var data = text ? JSON.parse(text) : {};
+          if (!response.ok) {
+            throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
+          }
+          renderAccess(data);
+        } catch (err) {
+          statusBox.innerHTML = '<div class="sr-empty">' + escapeHTML(err.message || 'No se pudo resolver el acceso remoto.') + '</div>';
+          downloadsBox.innerHTML = '';
+          fieldsBox.innerHTML = '';
+          instructionsBox.textContent = 'No fue posible cargar la configuración pública de esta sesión.';
+          viewer.classList.add('sr-viewer-hidden');
+          viewer.src = 'about:blank';
+          viewerMsg.textContent = 'Visor no disponible.';
+        }
+      }
+
+      loadAccess();
+    })();
+  </script>
+</body>
+</html>

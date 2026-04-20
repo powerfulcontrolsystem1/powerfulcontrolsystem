@@ -23,7 +23,7 @@
 
   function normalizeTheme(theme){
     var value = String(theme || '').trim().toLowerCase();
-    return THEME_VALUES[value] ? value : 'dark';
+    return THEME_VALUES[value] ? value : 'light';
   }
 
   function isLightTheme(theme){

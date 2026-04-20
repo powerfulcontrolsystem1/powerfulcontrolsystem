@@ -140,18 +140,28 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_soporte_remoto_configuracion:
   - empresa_id (UNIQUE)
   - habilitado
-  - proveedor_preferido (`novnc`, `guacamole`, `rustdesk_web`, `custom_url`)
-  - modo_operacion (`agente_web`, `agente_local`, `hibrido`)
+  - proveedor_preferido (`novnc`, `guacamole`, `rustdesk_web`, `rustdesk_oss`, `custom_url`)
+  - modo_operacion (`agente_web`, `agente_local`, `cliente_local`, `hibrido`)
   - requiere_aprobacion_operador
   - auto_cerrar_minutos
   - max_conexiones_mes
   - max_minutos_mes
+  - max_minutos_dia_rustdesk
   - max_dispositivos
+  - portal_publico_habilitado
+  - rustdesk_server_host, rustdesk_server_key
+  - cliente_windows_url, cliente_linux_url
+  - servidor_windows_url, servidor_linux_url
+  - carpeta_transferencia
+  - instrucciones_publicas
 - empresa_soporte_remoto_dispositivos:
   - empresa_id, codigo_dispositivo (UNIQUE por empresa)
   - nombre_equipo, alias_operativo, ubicacion
   - sistema_operativo, agente_version
   - stream_url
+  - rustdesk_device_id, rustdesk_password_enc
+  - carpeta_transferencia
+  - acceso_publico_habilitado
   - estado_conexion (`online`, `offline`, `intermitente`)
   - ultimo_heartbeat
   - acceso_pin_hash
@@ -165,6 +175,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - token_visualizacion_hash
   - url_visualizacion
   - iniciada_en, expira_en, finalizada_en
+  - Regla operativa: cuando la empresa usa RustDesk y configura `max_minutos_dia_rustdesk > 0`, el sistema bloquea nuevas activaciones o aprobaciones que excedan el cupo diario consumido para ese `empresa_id`.
 
 ### Tabla de metricas de ventas simples por estacion
 - empresa_ventas_estacion_metricas:
@@ -1090,7 +1101,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catÃ¡logo de categorÃ­as por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en empresas.db y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
-\r\n### Tabla: super_juegos_records (superadministrador)\r\nAlmacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el público.\r\n- **Columnas**: \id\ (INTEGER/SERIAL), \juego\ (TEXT), \
+\r\n### Tabla: super_juegos_records (superadministrador)\r\nAlmacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el pï¿½blico.\r\n- **Columnas**: \id\ (INTEGER/SERIAL), \juego\ (TEXT), \
 ombre_jugador\ (TEXT), \empresa_id\ (TEXT, DEFAULT 'Publico'), \puntaje\ (INTEGER), \
-ivel\ (INTEGER), \echa_creacion\ (TEXT/TIMESTAMP), \echa_actualizacion\ (TEXT/TIMESTAMP), \usuario_creador\ (TEXT), \estado\ (TEXT), \observaciones\ (TEXT).\r\n- **Único**: ID autoincremental.\r\n- **Indice**: \idx_super_juegos_records_top\ en (juego, puntaje DESC, fecha_creacion ASC).
+ivel\ (INTEGER), \echa_creacion\ (TEXT/TIMESTAMP), \echa_actualizacion\ (TEXT/TIMESTAMP), \usuario_creador\ (TEXT), \estado\ (TEXT), \observaciones\ (TEXT).\r\n- **ï¿½nico**: ID autoincremental.\r\n- **Indice**: \idx_super_juegos_records_top\ en (juego, puntaje DESC, fecha_creacion ASC).
 

@@ -583,6 +583,20 @@ Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica centra
 - `web/super/soporte_remoto.html` incorpora el panel super para seleccionar empresa, abrir soporte, revisar cupos/consumo y operar un visor central sin romper el aislamiento por `empresa_id`.
 - Impacto de permisos: el panel empresa mantiene `linkSoporteRemoto` bajo modulo `seguridad` con accion `A`; el panel super queda reservado a `super_administrador` mediante `/super/api/soporte_remoto` y su vista dedicada.
 
+Actualizacion 2026-04-20 (soporte remoto: portal publico RustDesk y configuracion central desde super):
+- Se amplía el modulo `soporte remoto` para que la misma sesión pública pueda funcionar como portal de acceso tipo RustDesk, mostrando descargas del cliente y del servidor junto con host, clave pública, ID del dispositivo, contraseña y carpeta de transferencia cuando la sesión lo permita.
+- `backend/db/soporte_remoto.go` amplía la configuración empresarial con `servidor_windows_url`, `servidor_linux_url` e `instrucciones_publicas`, preservando la operación por `empresa_id` sin romper el esquema existente.
+- `backend/handlers/soporte_remoto.go` devuelve `portal_publico_url` al crear sesiones y expone el bundle público completo en `/api/public/soporte_remoto?action=resolver_acceso_publico`.
+- `backend/handlers/super_soporte_remoto.go` añade `action=config` para que `super_administrador` pueda editar la configuración pública de cada empresa desde la mesa técnica central.
+- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html` y `web/soporte_remoto_acceso.html` alinean la experiencia del módulo con descargas de cliente/servidor RustDesk, visor web opcional y enlace público reutilizable por sesión.
+- Impacto de permisos: sin cambios en roles empresariales; `linkSoporteRemoto` sigue bajo `seguridad/A` y la configuración central continúa siendo exclusiva de `super_administrador` en `/super/api/soporte_remoto`.
+
+Actualizacion 2026-04-20.2 (soporte remoto: limite diario RustDesk por empresa):
+- Se agrega un tope operativo `max_minutos_dia_rustdesk` por empresa para controlar desde super el tiempo diario de conexión al servidor RustDesk, expresado en minutos.
+- `backend/db/soporte_remoto.go` calcula `minutos_consumidos_dia_rustdesk`, `minutos_disponibles_dia_rustdesk` y aplica el rechazo cuando una nueva sesión activa o una aprobación supera el tope del día.
+- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` devuelven `412 Precondition Failed` con el resumen de uso cuando el límite diario se agota.
+- `web/super/soporte_remoto.html` incorpora el campo editable del límite diario RustDesk y lo muestra junto al consumo diario del día.
+
 Actualizacion 2026-04-16 (portal publico: contacto reubicado bajo las tarjetas del home):
 - Se ajusta el submodulo `pagina principal publica` para mover `Informacion de contacto` fuera de la cabecera y dejarlo centrado debajo de todas las tarjetas dinamicas del home.
 - `web/index.html` mantiene el acceso superior de login y `web/estilos.css` reutiliza el lenguaje visual del CTA comercial para el nuevo bloque de contacto inferior.

@@ -15,21 +15,25 @@ import (
 )
 
 type empresaSoporteRemotoConfigPayload struct {
-	Habilitado                 *bool  `json:"habilitado"`
-	ProveedorPreferido         string `json:"proveedor_preferido"`
-	ModoOperacion              string `json:"modo_operacion"`
-	RequiereAprobacionOperador *bool  `json:"requiere_aprobacion_operador"`
-	AutoCerrarMinutos          int    `json:"auto_cerrar_minutos"`
-	MaxConexionesMes           int    `json:"max_conexiones_mes"`
-	MaxMinutosMes              int    `json:"max_minutos_mes"`
-	MaxDispositivos            int    `json:"max_dispositivos"`
-	PortalPublicoHabilitado    *bool  `json:"portal_publico_habilitado"`
-	RustDeskServerHost         string `json:"rustdesk_server_host"`
-	RustDeskServerKey          string `json:"rustdesk_server_key"`
-	ClienteWindowsURL          string `json:"cliente_windows_url"`
-	ClienteLinuxURL            string `json:"cliente_linux_url"`
-	CarpetaTransferencia       string `json:"carpeta_transferencia"`
-	Observaciones              string `json:"observaciones"`
+	Habilitado                 *bool   `json:"habilitado"`
+	ProveedorPreferido         *string `json:"proveedor_preferido"`
+	ModoOperacion              *string `json:"modo_operacion"`
+	RequiereAprobacionOperador *bool   `json:"requiere_aprobacion_operador"`
+	AutoCerrarMinutos          int     `json:"auto_cerrar_minutos"`
+	MaxConexionesMes           int     `json:"max_conexiones_mes"`
+	MaxMinutosMes              int     `json:"max_minutos_mes"`
+	MaxMinutosDiaRustDesk      *int    `json:"max_minutos_dia_rustdesk"`
+	MaxDispositivos            int     `json:"max_dispositivos"`
+	PortalPublicoHabilitado    *bool   `json:"portal_publico_habilitado"`
+	RustDeskServerHost         *string `json:"rustdesk_server_host"`
+	RustDeskServerKey          *string `json:"rustdesk_server_key"`
+	ClienteWindowsURL          *string `json:"cliente_windows_url"`
+	ClienteLinuxURL            *string `json:"cliente_linux_url"`
+	ServidorWindowsURL         *string `json:"servidor_windows_url"`
+	ServidorLinuxURL           *string `json:"servidor_linux_url"`
+	CarpetaTransferencia       *string `json:"carpeta_transferencia"`
+	InstruccionesPublicas      *string `json:"instrucciones_publicas"`
+	Observaciones              *string `json:"observaciones"`
 }
 
 type empresaSoporteRemotoDispositivoPayload struct {
@@ -73,7 +77,10 @@ type empresaSoporteRemotoAccessBundle struct {
 	RustDeskPassword     string `json:"rustdesk_password,omitempty"`
 	ClienteWindowsURL    string `json:"cliente_windows_url,omitempty"`
 	ClienteLinuxURL      string `json:"cliente_linux_url,omitempty"`
+	ServidorWindowsURL   string `json:"servidor_windows_url,omitempty"`
+	ServidorLinuxURL     string `json:"servidor_linux_url,omitempty"`
 	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
+	InstruccionesPublicas string `json:"instrucciones_publicas,omitempty"`
 }
 
 type empresaSoporteRemotoHeartbeatPayload struct {
@@ -181,7 +188,10 @@ func empresaSoporteRemotoBuildAccessBundle(r *http.Request, cfg dbpkg.EmpresaSop
 		RustDeskDeviceID:     strings.TrimSpace(device.RustDeskDeviceID),
 		ClienteWindowsURL:    strings.TrimSpace(cfg.ClienteWindowsURL),
 		ClienteLinuxURL:      strings.TrimSpace(cfg.ClienteLinuxURL),
+		ServidorWindowsURL:   strings.TrimSpace(cfg.ServidorWindowsURL),
+		ServidorLinuxURL:     strings.TrimSpace(cfg.ServidorLinuxURL),
 		CarpetaTransferencia: strings.TrimSpace(device.CarpetaTransferencia),
+		InstruccionesPublicas: strings.TrimSpace(cfg.InstruccionesPublicas),
 	}
 	if bundle.CarpetaTransferencia == "" {
 		bundle.CarpetaTransferencia = strings.TrimSpace(cfg.CarpetaTransferencia)
@@ -196,6 +206,70 @@ func empresaSoporteRemotoBuildAccessBundle(r *http.Request, cfg dbpkg.EmpresaSop
 		bundle.RequiereCliente = false
 	}
 	return bundle
+}
+
+func empresaSoporteRemotoApplyConfigPayload(current *dbpkg.EmpresaSoporteRemotoConfig, payload empresaSoporteRemotoConfigPayload, actor string) {
+	if current == nil {
+		return
+	}
+	if payload.Habilitado != nil {
+		current.Habilitado = *payload.Habilitado
+	}
+	if payload.RequiereAprobacionOperador != nil {
+		current.RequiereAprobacionOperador = *payload.RequiereAprobacionOperador
+	}
+	if payload.ProveedorPreferido != nil {
+		current.ProveedorPreferido = strings.TrimSpace(*payload.ProveedorPreferido)
+	}
+	if payload.ModoOperacion != nil {
+		current.ModoOperacion = strings.TrimSpace(*payload.ModoOperacion)
+	}
+	if payload.AutoCerrarMinutos > 0 {
+		current.AutoCerrarMinutos = payload.AutoCerrarMinutos
+	}
+	if payload.MaxConexionesMes >= 0 {
+		current.MaxConexionesMes = payload.MaxConexionesMes
+	}
+	if payload.MaxMinutosMes >= 0 {
+		current.MaxMinutosMes = payload.MaxMinutosMes
+	}
+	if payload.MaxMinutosDiaRustDesk != nil && *payload.MaxMinutosDiaRustDesk >= 0 {
+		current.MaxMinutosDiaRustDesk = *payload.MaxMinutosDiaRustDesk
+	}
+	if payload.MaxDispositivos >= 0 {
+		current.MaxDispositivos = payload.MaxDispositivos
+	}
+	if payload.PortalPublicoHabilitado != nil {
+		current.PortalPublicoHabilitado = *payload.PortalPublicoHabilitado
+	}
+	if payload.RustDeskServerHost != nil {
+		current.RustDeskServerHost = strings.TrimSpace(*payload.RustDeskServerHost)
+	}
+	if payload.RustDeskServerKey != nil {
+		current.RustDeskServerKey = strings.TrimSpace(*payload.RustDeskServerKey)
+	}
+	if payload.ClienteWindowsURL != nil {
+		current.ClienteWindowsURL = strings.TrimSpace(*payload.ClienteWindowsURL)
+	}
+	if payload.ClienteLinuxURL != nil {
+		current.ClienteLinuxURL = strings.TrimSpace(*payload.ClienteLinuxURL)
+	}
+	if payload.ServidorWindowsURL != nil {
+		current.ServidorWindowsURL = strings.TrimSpace(*payload.ServidorWindowsURL)
+	}
+	if payload.ServidorLinuxURL != nil {
+		current.ServidorLinuxURL = strings.TrimSpace(*payload.ServidorLinuxURL)
+	}
+	if payload.CarpetaTransferencia != nil {
+		current.CarpetaTransferencia = strings.TrimSpace(*payload.CarpetaTransferencia)
+	}
+	if payload.InstruccionesPublicas != nil {
+		current.InstruccionesPublicas = strings.TrimSpace(*payload.InstruccionesPublicas)
+	}
+	if payload.Observaciones != nil {
+		current.Observaciones = strings.TrimSpace(*payload.Observaciones)
+	}
+	current.UsuarioCreador = strings.TrimSpace(actor)
 }
 
 func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.EmpresaSoporteRemotoSession, total int64) empresaReporteDataset {
@@ -406,50 +480,7 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "No se pudo consultar configuracion actual", http.StatusInternalServerError)
 		return
 	}
-	if payload.Habilitado != nil {
-		current.Habilitado = *payload.Habilitado
-	}
-	if payload.RequiereAprobacionOperador != nil {
-		current.RequiereAprobacionOperador = *payload.RequiereAprobacionOperador
-	}
-	if strings.TrimSpace(payload.ProveedorPreferido) != "" {
-		current.ProveedorPreferido = payload.ProveedorPreferido
-	}
-	if strings.TrimSpace(payload.ModoOperacion) != "" {
-		current.ModoOperacion = payload.ModoOperacion
-	}
-	if payload.AutoCerrarMinutos > 0 {
-		current.AutoCerrarMinutos = payload.AutoCerrarMinutos
-	}
-	if payload.MaxConexionesMes >= 0 {
-		current.MaxConexionesMes = payload.MaxConexionesMes
-	}
-	if payload.MaxMinutosMes >= 0 {
-		current.MaxMinutosMes = payload.MaxMinutosMes
-	}
-	if payload.MaxDispositivos >= 0 {
-		current.MaxDispositivos = payload.MaxDispositivos
-	}
-	if payload.PortalPublicoHabilitado != nil {
-		current.PortalPublicoHabilitado = *payload.PortalPublicoHabilitado
-	}
-	if strings.TrimSpace(payload.RustDeskServerHost) != "" {
-		current.RustDeskServerHost = payload.RustDeskServerHost
-	}
-	if strings.TrimSpace(payload.RustDeskServerKey) != "" {
-		current.RustDeskServerKey = payload.RustDeskServerKey
-	}
-	if strings.TrimSpace(payload.ClienteWindowsURL) != "" {
-		current.ClienteWindowsURL = payload.ClienteWindowsURL
-	}
-	if strings.TrimSpace(payload.ClienteLinuxURL) != "" {
-		current.ClienteLinuxURL = payload.ClienteLinuxURL
-	}
-	if strings.TrimSpace(payload.CarpetaTransferencia) != "" {
-		current.CarpetaTransferencia = payload.CarpetaTransferencia
-	}
-	current.UsuarioCreador = adminEmailFromRequest(r)
-	current.Observaciones = strings.TrimSpace(payload.Observaciones)
+	empresaSoporteRemotoApplyConfigPayload(&current, payload, adminEmailFromRequest(r))
 	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
 		http.Error(w, "No se pudo guardar configuracion de soporte remoto: "+err.Error(), http.StatusBadRequest)
 		return
@@ -733,6 +764,7 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 		"ok":         true,
 		"session":    session,
 		"viewer_url": viewerURL,
+		"portal_publico_url": empresaSoporteRemotoBuildPublicPortalURL(r, empresaID, session.CodigoSesion, session.TokenVisualizacionRaw),
 		"uso":        uso,
 	})
 }
@@ -765,11 +797,17 @@ func empresaSoporteRemotoSesionAprobar(w http.ResponseWriter, r *http.Request, d
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
 			return
 		}
+		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
+			return
+		}
 		http.Error(w, "No se pudo actualizar sesion", http.StatusInternalServerError)
 		return
 	}
 	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, empresaID, payload.CodigoSesion)
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session})
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session, "uso": uso})
 }
 
 func empresaSoporteRemotoSesionFinalizar(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -1014,9 +1052,15 @@ func empresaSoporteRemotoSesionAgentUpdate(w http.ResponseWriter, r *http.Reques
 		estadoDestino = "finalizada"
 	}
 	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, hb.EmpresaID, codigoSesion, estadoDestino, "actualizado por agente remoto"); err != nil {
+		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, hb.EmpresaID)
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
+			return
+		}
 		http.Error(w, "No se pudo actualizar estado de sesion", http.StatusInternalServerError)
 		return
 	}
 	session, _ = dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, hb.EmpresaID, codigoSesion)
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session})
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, hb.EmpresaID)
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session, "uso": uso})
 }

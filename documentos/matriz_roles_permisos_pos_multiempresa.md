@@ -465,6 +465,15 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `backend/handlers/super_soporte_remoto.go` expone `/super/api/soporte_remoto` y `web/super/soporte_remoto.html` agrega una mesa tecnica central solo para `super_administrador`.
 	- Impacto de matriz: `linkSoporteRemoto` sigue requiriendo accion `A` sobre `seguridad` en panel empresa; el nuevo panel super de soporte remoto es exclusivo de `super_administrador` y no amplía permisos de roles empresariales.
 
+- Actualizacion 2026-04-20 (soporte remoto: portal público RustDesk y configuración desde super):
+	- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` mantienen el mismo wrapper empresarial/super, pero ahora la mesa técnica super también puede editar la configuración pública por empresa vía `action=config`.
+	- `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` muestran descargas de cliente/servidor y portal público sin ampliar los permisos del resto de módulos.
+	- Impacto de matriz: `linkSoporteRemoto` sigue exigiendo acción `A` sobre `seguridad` en empresa; el portal público `soporte_remoto_acceso.html` es libre por token de sesión y no agrega privilegios permanentes; la edición central sigue reservada a `super_administrador`.
+
+- Actualizacion 2026-04-20.2 (soporte remoto: tope diario RustDesk):
+	- La edición del nuevo campo `max_minutos_dia_rustdesk` se concentra en `/super/api/soporte_remoto?action=config` y su vista super asociada.
+	- Impacto de matriz: no se amplían permisos empresariales; el control del tope diario sigue reservado a `super_administrador` y solo afecta la creación/aprobación de sesiones RustDesk para la empresa configurada.
+
 - Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos previos del backend):
 	- `scripts/sync_to_vps.ps1` limpia procesos previos asociados a `backend/bin/server_linux_amd64` antes del arranque y genera una unidad `systemd` sin el warning de clave invalida en `Service`.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es operativo de infraestructura.

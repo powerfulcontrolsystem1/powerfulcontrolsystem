@@ -457,12 +457,25 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
+
+		// Verificación de Modo Mantenimiento
+		if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
+			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
+			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
+			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js"
+			if !isMntAllowed && !isStatic {
+				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
 			"/":                               {},
 			"/index.html":                     {},
 			"/descripcion_de_los_sistemas.ht": {},
 			"/Informacion_de_contacto.html":   {},
+			"/soporte_remoto_acceso.html":     {},
 			"/venta_publica.html":             {},
 			"/venta_digital.html":             {},
 			"/login.html":                     {},

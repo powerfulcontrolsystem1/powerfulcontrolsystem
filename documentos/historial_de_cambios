@@ -1,3 +1,67 @@
+- 2026-04-20: Se amplía soporte remoto con portal público RustDesk y configuración central desde super.
+    - Archivos modificados:
+        - backend/db/soporte_remoto.go
+        - backend/handlers/soporte_remoto.go
+        - backend/handlers/super_soporte_remoto.go
+        - backend/handlers/soporte_remoto_test.go
+        - backend/handlers/super_soporte_remoto_test.go
+        - backend/handlers/auth_users_carritos_test.go
+        - backend/utils/utils.go
+        - web/administrar_empresa/soporte_remoto.html
+        - web/super/soporte_remoto.html
+        - web/soporte_remoto_acceso.html
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/estructura_bd.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La sesión pública de soporte remoto ahora aterriza en una página visible para el cliente que muestra descargas del cliente y del servidor RustDesk, datos de conexión y visor web opcional. La empresa configura host, claves, descargas e instrucciones públicas desde su módulo; super puede ajustar esa misma configuración por empresa desde la mesa técnica central con `action=config`.
+    - Verificación:
+        - `go test ./handlers -run "Test(EmpresaSoporteRemotoHandlerFlow|PublicSoporteRemotoAgentHeartbeatAndStateUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|EmpresaSoporteRemotoHandlerBlocksSessionWhenPlanLimitReached)$" -count=1`
+        - `go test ./handlers -run "Test(SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession|SuperSoporteRemotoHandlerConfigGetAndUpdate|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI)$" -count=1`
+
+- 2026-04-20: Se agrega límite diario RustDesk por empresa en soporte remoto.
+    - Archivos modificados:
+        - backend/db/soporte_remoto.go
+        - backend/handlers/soporte_remoto.go
+        - backend/handlers/super_soporte_remoto.go
+        - backend/db/soporte_remoto_test.go
+        - backend/handlers/soporte_remoto_test.go
+        - backend/handlers/super_soporte_remoto_test.go
+        - web/super/soporte_remoto.html
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/estructura_bd.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La mesa técnica super ahora puede fijar `max_minutos_dia_rustdesk` por empresa. El backend calcula el consumo diario de sesiones RustDesk, expone minutos disponibles del día y bloquea con `412` cualquier creación o aprobación que exceda el cupo diario.
+    - Verificación:
+        - `go test ./db -run "Test(SoporteRemotoDBFlow|SoporteRemotoDBIsolationByEmpresa|SoporteRemotoDBPlanLimitsAndBlockedAttempts|SoporteRemotoDBDailyRustDeskLimit)$" -count=1`
+        - `go test ./handlers -run "Test(EmpresaSoporteRemotoHandlerFlow|PublicSoporteRemotoAgentHeartbeatAndStateUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|EmpresaSoporteRemotoHandlerBlocksSessionWhenPlanLimitReached|EmpresaSoporteRemotoHandlerBlocksApprovalWhenRustDeskDailyLimitReached|SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession|SuperSoporteRemotoHandlerConfigGetAndUpdate)$" -count=1`
+        - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`
+
+- 2026-04-20: Se cambia la apariencia inicial del menú flotante a Blanco Corporativo.
+    - Archivos modificados:
+        - web/menu.js
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El fallback de apariencia para primera visita pasa de `dark` a `light`. Si no existe una preferencia previa en navegador o backend, el menú flotante y las páginas sincronizadas arrancan con el tema blanco corporativo.
+    - Verificación:
+        - Inspección estática del fallback en `normalizeTheme()` de `web/menu.js`.
+
+- 2026-04-20: Se corrige contraste de modo claro en index y estilos compartidos.
+    - Archivos modificados:
+        - web/index.html
+        - web/estilos.css
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El título principal del header en `index.html` deja de forzar color blanco y varios componentes compartidos del proyecto pasan a usar variables de tema para responder correctamente al cambio entre modo oscuro y claro, especialmente en botones base, tablas, login, portal público y bloques públicos reutilizados.
+    - Verificación:
+        - Inspección estática de `index.html` y `estilos.css`.
 - 2026-04-20: Se corrige compatibilidad PostgreSQL en inventario avanzado, tablero financiero y salida PEPS de inventario.
     - Archivos modificados:
         - backend/db/productos.go
@@ -13182,4 +13246,8 @@ Archivos modificados:
 
 [20/04/2026] Actualizada la posicion del boton flotante de WhatsApp.
 - web/estilos.css: Se modifico la clase .whatsapp-floating-cta para posicionar el boton en la esquina inferior derecha en resoluciones mayores, usando bottom:20px y top:auto.
+
+[20/04/2026] Implementación Frontend del Módulo Asesores Comerciales y Vendedores.
+- web/super_administrador.html: Se agregó el hipervínculo en el sidebar hacia el panel de "Vendedores y Asesores".
+- web/super/vendedores_licencias.html: Se creó la interfaz de gestión que permite a los Súper Administradores crear Asesores, vincularles un Plan de Comisión (Venta o Renovación) y auditar sus liquidaciones mediante los endpoints REST (`/super/api/asesores` y `/super/api/asesor_comercial`).
 
