@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Juegos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body { margin: 0; }
+    .games-shell { max-width: 980px; margin: 0 auto; padding: 96px 20px 40px; }
+    .games-hero { text-align: center; margin-bottom: 28px; }
+    .games-hero p { color: var(--muted); max-width: 720px; margin: 0.75rem auto 0; }
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .games-card { background: linear-gradient(180deg, var(--surface), var(--surface-soft)); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+    .games-card h2 { margin-top: 0; }
+    .games-card p { color: var(--muted); line-height: 1.6; }
+    .games-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .games-note { margin-top: 28px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <main class="games-shell">
+    <header class="games-hero">
+      <h1>Centro de juegos</h1>
+      <p>Accesos restaurados para las experiencias ligeras del sistema. La apariencia global se mantiene sincronizada con tu cuenta.</p>
+    </header>
+
+    <section class="games-grid">
+      <article class="games-card">
+        <h2>Arcade N64</h2>
+        <p>Entrada rápida a la colección recreativa restaurada para pruebas visuales y navegación interna.</p>
+        <div class="games-actions">
+          <a class="btn" href="/Juegos/n64/index.html">Abrir N64</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Acceso rápido</h2>
+        <p>Este módulo queda disponible desde el menú flotante y responde a los seis modos de apariencia, igual que el resto del portal.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/index.html">Volver al portal</a>
+        </div>
+      </article>
+    </section>
+
+    <p class="games-note">Si se agregan más juegos, deben publicarse desde este menú para conservar un punto de entrada estable.</p>
+  </main>
+</body>
+</html>

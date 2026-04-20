@@ -1,3 +1,19 @@
+2026-04-20: Nota operativa para `creditos`, `chat_y_tareas` y `administrar_empresa`
+- La correccion final de PostgreSQL para abonos y citas no cambia roles, wrappers ni alcance por `empresa_id`. Solo elimina fallos de persistencia y de autorreparacion de esquema en runtime.
+- `administrador` y usuarios autorizados de empresa mantienen exactamente las mismas acciones sobre creditos y agenda compartida; el cambio solo evita errores `400/500` falsos al ejecutar abonos o gestionar citas sobre PostgreSQL.
+
+2026-04-20: Nota operativa para `creditos`, `finanzas` y `administrar_empresa`
+- La correccion PostgreSQL de cartera y resumen de creditos no cambia permisos ni wrappers: solo reemplaza el mecanismo de insercion y endurece la consulta agregada para que las rutas existentes respondan coherentemente en PostgreSQL.
+- Los roles empresariales siguen sujetos al mismo contexto `empresa_id`; el cambio evita respuestas falsas `400/500` en altas y resumenes sin ampliar alcance funcional.
+
+2026-04-20: Nota operativa para `red_social_comercial`, `administrar_empresa` y portal publico
+- La correccion PostgreSQL del modulo de publicaciones comerciales no agrega permisos nuevos ni modifica wrappers: la escritura sigue exigiendo el contexto autenticado de empresa y la lectura publica conserva el alcance ya previsto para vitrinas comerciales.
+- El cambio solo estabiliza persistencia y lectura por `empresa_id` en PostgreSQL para que las publicaciones creadas por la empresa aparezcan tanto en su panel como en el feed publico sin error `500`.
+
+2026-04-20: Nota operativa para apariencia global, autenticacion y acceso publico a Juegos
+- La reparacion de `menu.js`, `login.js`, `login_usuario.js` y los endpoints de login solo sincroniza una preferencia visual por usuario (`apariencia`) y no agrega permisos nuevos ni altera wrappers de acceso.
+- La entrada `Juegos` vuelve al menú flotante como acceso público controlado a `/Juegos/menu_juegos.html` y `/Juegos/n64/index.html`, sin exponer módulos privados ni modificar el alcance de `super_administrador`, `administrador` o usuarios de empresa.
+
 2026-04-19: Nota operativa para mensajeria multiusuario en `administrar_empresa` y `chat_y_tareas`
 - La administradora puede buscar y marcar varios usuarios activos de su misma empresa para crear o ampliar conversaciones, pero el cambio no amplía roles ni wrappers: la operación sigue limitada al contexto autenticado y al `empresa_id` ya permitido.
 - El backend ahora rechaza participantes tipo `usuario` cuyo `participante_ref_id` o correo pertenezcan a otra empresa, cerrando un cruce de datos sin conceder privilegios nuevos a administradores o usuarios empresa.

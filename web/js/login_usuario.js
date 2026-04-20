@@ -236,6 +236,17 @@
     return fallback;
   }
 
+  function persistThemePreference(theme) {
+    var normalized = String(theme || "").trim();
+    if (!normalized) return;
+    try {
+      window.localStorage.setItem("theme", normalized);
+    } catch (error) {}
+    try {
+      document.cookie = "pcs_theme=" + encodeURIComponent(normalized) + "; Path=/; Max-Age=31536000; SameSite=Lax";
+    } catch (error) {}
+  }
+
   function handleContractRequirement(payload, formKey) {
     setContractPanelAttention(true);
     if (contractCheckbox) {
@@ -269,6 +280,7 @@
         state.empresaID = persistEmpresaID(payload.empresa_id);
         updateEmpresaContextHint();
       }
+      persistThemePreference(payload.apariencia);
       redirectAfterAuth(payload);
       return;
     }

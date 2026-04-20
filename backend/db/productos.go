@@ -1245,7 +1245,7 @@ func SetBodegaEstado(dbConn *sql.DB, empresaID, bodegaID int64, estado string) e
 
 // CreateCategoriaProducto inserta una categoría de producto para una empresa.
 func CreateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) (int64, error) {
-	res, err := dbConn.Exec(`INSERT INTO categorias_productos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO categorias_productos (
 		empresa_id, codigo, nombre, descripcion, color_hex, orden,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
 	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
@@ -1254,7 +1254,7 @@ func CreateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) (int64, error)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetCategoriasProductoByEmpresa lista categorías de producto por empresa.
@@ -1399,7 +1399,7 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 		p.Categoria = categoriaNombre
 	}
 
-	res, err := tx.Exec(`INSERT INTO productos (
+	productoID, err := insertTxSQLCompat(tx, `INSERT INTO productos (
 		empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
 		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
@@ -1407,10 +1407,6 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 		p.EmpresaID, nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
 		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL),
 		strings.TrimSpace(p.UsuarioCreador), strings.TrimSpace(p.Estado), strings.TrimSpace(p.Observaciones))
-	if err != nil {
-		return 0, err
-	}
-	productoID, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1472,10 +1468,14 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.categoria_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, COALESCE(NULLIF(cp.nombre, ''), p.categoria), p.marca, p.unidad_medida,
 		p.costo, p.precio, p.impuesto_porcentaje, p.stock_minimo, p.stock_maximo, p.imagen_url,
 		p.fecha_creacion, p.fecha_actualizacion, p.usuario_creador, p.estado, p.observaciones,
-		COALESCE(SUM(e.cantidad), 0) AS stock_total
+		COALESCE(inv.stock_total, 0) AS stock_total
 	FROM productos p
 	LEFT JOIN categorias_productos cp ON cp.empresa_id = p.empresa_id AND cp.id = p.categoria_id
-	LEFT JOIN inventario_existencias e ON e.empresa_id = p.empresa_id AND e.producto_id = p.id
+	LEFT JOIN (
+		SELECT empresa_id, producto_id, COALESCE(SUM(cantidad), 0) AS stock_total
+		FROM inventario_existencias
+		GROUP BY empresa_id, producto_id
+	) inv ON inv.empresa_id = p.empresa_id AND inv.producto_id = p.id
 	WHERE p.empresa_id = ?`
 
 	args := []interface{}{empresaID}
@@ -1500,10 +1500,10 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		args = append(args, categoriaID)
 	}
 
-	query += ` GROUP BY p.id ORDER BY p.id DESC LIMIT ? OFFSET ?`
+	query += ` ORDER BY p.id DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -3363,7 +3363,7 @@ func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
 		return 0, err
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO proveedores (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO proveedores (
 		empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion, catalogo_referencia,
 		precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
@@ -3387,7 +3387,7 @@ func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetProveedoresByEmpresa lista proveedores por empresa.

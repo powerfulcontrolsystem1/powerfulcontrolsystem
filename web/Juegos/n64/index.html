@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arcade N64</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body { margin: 0; }
+    .arcade-shell { min-height: 100vh; display: grid; place-items: center; padding: 96px 20px 32px; }
+    .arcade-card { width: min(720px, 100%); background: linear-gradient(180deg, var(--surface), var(--surface-soft)); border: 1px solid var(--border); border-radius: 24px; padding: 28px; box-shadow: 0 24px 54px rgba(0,0,0,0.16); text-align: center; }
+    .arcade-card p { color: var(--muted); line-height: 1.7; }
+    .arcade-actions { margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .arcade-badge { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--focus); color: var(--accent); font-weight: 700; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <main class="arcade-shell">
+    <section class="arcade-card">
+      <span class="arcade-badge">Juegos restaurados</span>
+      <h1>Arcade N64</h1>
+      <p>La ruta volvió a estar disponible para que el enlace del menú no quede roto. Si luego deseas reconectar un emulador o catálogo real, esta página puede convertirse en el contenedor definitivo.</p>
+      <div class="arcade-actions">
+        <a class="btn" href="/Juegos/menu_juegos.html">Volver al menú de juegos</a>
+        <a class="btn secondary" href="/index.html">Ir al portal</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

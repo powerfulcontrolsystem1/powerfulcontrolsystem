@@ -5167,3 +5167,108 @@
 2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149323868600-8066ea1d09ed event=request_end method=GET path=/ status=304 dur_ms=101
 2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149498885300-6c9bf9703aa6 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
 2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149498885300-6c9bf9703aa6 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=433
+2026-04-19T17:51:28-05:00 [INFO] req_id=req-1776639088619047700-309d24bd1f63 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:28-05:00 [INFO] req_id=req-1776639088619047700-309d24bd1f63 event=request_end method=GET path=/ status=200 dur_ms=331
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089152087600-840190c16b20 event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089152737500-c49e47d955ac event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089152087600-840190c16b20 event=request_end method=GET path=/estilos.css status=200 dur_ms=1
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089152737500-c49e47d955ac event=request_end method=GET path=/menu.js status=200 dur_ms=1
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089167500100-36347adc0bb0 event=request_start method=GET path=/img/punto_venta.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089167500100-36347adc0bb0 event=request_end method=GET path=/img/punto_venta.png status=200 dur_ms=33
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089364180400-68df55cff503 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089574000000-1211cee10168 event=request_start method=GET path=/img/punto_venta.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089574000000-1211cee10168 event=request_end method=GET path=/img/punto_venta.png status=200 dur_ms=1
+2026-04-19T17:51:29-05:00 [INFO] req_id=req-1776639089364180400-68df55cff503 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=630
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138601014200-3d13d90e8e23 event=request_start method=GET path=/login.html ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138601014200-3d13d90e8e23 event=request_end method=GET path=/login.html status=200 dur_ms=53
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138752657300-86629cc9868c event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138752657300-86629cc9868c event=request_end method=GET path=/menu.js status=304 dur_ms=4
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138757298400-c43c3ecdaff1 event=request_start method=GET path=/js/login.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:52:18-05:00 [INFO] req_id=req-1776639138757298400-c43c3ecdaff1 event=request_end method=GET path=/js/login.js status=200 dur_ms=70
+2026-04-20T00:01:22-05:00 [INFO] req_id=req-1776661282982540100-5ca565a8ff78 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:01:23-05:00 [INFO] req_id=req-1776661282982540100-5ca565a8ff78 event=request_end method=GET path=/ status=200 dur_ms=240
+2026-04-20T00:01:47-05:00 [INFO] req_id=req-1776661307561278700-0e0d2bc4fda0 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:01:59-05:00 [WARNING] req_id=req-1776661307561278700-0e0d2bc4fda0 event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-20T00:01:59-05:00 [WARNING] req_id=req-1776661307561278700-0e0d2bc4fda0 event=request_end method=GET path=/me status=401 dur_ms=11540
+2026-04-20T00:02:20-05:00 [INFO] req_id=req-1776661340272918400-016116ee2826 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:02:32-05:00 [WARNING] req_id=req-1776661340272918400-016116ee2826 event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-20T00:02:32-05:00 [WARNING] req_id=req-1776661340272918400-016116ee2826 event=request_end method=GET path=/me status=401 dur_ms=11753
+2026-04-20T00:04:10-05:00 [INFO] req_id=req-1776661450500382900-4fc791286878 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:04:22-05:00 [WARNING] req_id=req-1776661450500382900-4fc791286878 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-20T00:04:22-05:00 [WARNING] req_id=req-1776661450500382900-4fc791286878 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=12404
+2026-04-20T00:04:53-05:00 [INFO] req_id=req-1776661493021581900-9f628969e8aa event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:05:05-05:00 [WARNING] req_id=req-1776661493021581900-9f628969e8aa event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-20T00:05:05-05:00 [WARNING] req_id=req-1776661493021581900-9f628969e8aa event=request_end method=GET path=/me status=401 dur_ms=12080
+2026-04-20T00:07:22-05:00 [INFO] req_id=req-1776661642024098400-2c27b474f02c event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:07:23-05:00 [INFO] req_id=req-1776661642024098400-2c27b474f02c event=request_end method=GET path=/me status=200 dur_ms=1035
+2026-04-20T00:18:49-05:00 [INFO] req_id=req-1776662329598530100-499c78322455 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:18:50-05:00 [INFO] req_id=req-1776662329598530100-499c78322455 event=request_end method=GET path=/me status=200 dur_ms=453
+2026-04-20T00:20:41-05:00 [INFO] req_id=req-1776662441297999600-c7db10d6c97c event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:20:53-05:00 [ERROR] req_id=req-1776662441297999600-c7db10d6c97c event=api_error method=GET path=/api/public/publicaciones status=500 error="ERROR: relation \"empresa_publicaciones_red_social\" does not exist (SQLSTATE 42P01)"
+2026-04-20T00:20:53-05:00 [ERROR] req_id=req-1776662441297999600-c7db10d6c97c event=request_end method=GET path=/api/public/publicaciones status=500 dur_ms=12592
+2026-04-20T00:22:07-05:00 [INFO] req_id=req-1776662527436733600-7c4a9228963e event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:22:08-05:00 [INFO] req_id=req-1776662527436733600-7c4a9228963e event=request_end method=GET path=/me status=200 dur_ms=1502
+2026-04-20T00:23:35-05:00 [INFO] req_id=req-1776662615014511300-fa694907b93d event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:23:45-05:00 [ERROR] req_id=req-1776662615014511300-fa694907b93d event=api_error method=GET path=/api/public/publicaciones status=500 error="ERROR: relation \"empresa_publicaciones_red_social\" does not exist (SQLSTATE 42P01)"
+2026-04-20T00:23:45-05:00 [ERROR] req_id=req-1776662615014511300-fa694907b93d event=request_end method=GET path=/api/public/publicaciones status=500 dur_ms=10396
+2026-04-20T00:24:07-05:00 [INFO] req_id=req-1776662647130744000-686c81f52e77 event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:24:18-05:00 [ERROR] req_id=req-1776662647130744000-686c81f52e77 event=api_error method=GET path=/api/public/venta_publica status=500 error="No se pudo cargar configuracion publica"
+2026-04-20T00:24:18-05:00 [ERROR] req_id=req-1776662647130744000-686c81f52e77 event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=500 dur_ms=11254
+2026-04-20T00:25:11-05:00 [INFO] req_id=req-1776662711497847900-3f79b0cdb135 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:25:13-05:00 [INFO] req_id=req-1776662711497847900-3f79b0cdb135 event=request_end method=GET path=/me status=200 dur_ms=2020
+2026-04-20T00:25:35-05:00 [INFO] req_id=req-1776662735821913600-fb57e1ef3504 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:25:37-05:00 [INFO] req_id=req-1776662735821913600-fb57e1ef3504 event=request_end method=GET path=/me status=200 dur_ms=2143
+2026-04-20T00:27:04-05:00 [INFO] req_id=req-1776662824252586800-f660a825f291 event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:27:10-05:00 [INFO] req_id=req-1776662830743793800-7a3a173d5e5c event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:27:14-05:00 [ERROR] req_id=req-1776662824252586800-f660a825f291 event=api_error method=GET path=/api/public/publicaciones status=500 error="ERROR: relation \"empresa_publicaciones_red_social\" does not exist (SQLSTATE 42P01)"
+2026-04-20T00:27:14-05:00 [ERROR] req_id=req-1776662824252586800-f660a825f291 event=request_end method=GET path=/api/public/publicaciones status=500 dur_ms=10378
+2026-04-20T00:27:21-05:00 [ERROR] req_id=req-1776662830743793800-7a3a173d5e5c event=api_error method=GET path=/api/public/venta_publica status=500 error="No se pudo cargar configuracion publica"
+2026-04-20T00:27:21-05:00 [ERROR] req_id=req-1776662830743793800-7a3a173d5e5c event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=500 dur_ms=11020
+2026-04-20T00:30:49-05:00 [INFO] req_id=req-1776663049106696500-9a4bb6f295f5 event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:31:00-05:00 [ERROR] req_id=req-1776663049106696500-9a4bb6f295f5 event=api_error method=GET path=/api/public/venta_publica status=500 error="No se pudo cargar configuracion publica"
+2026-04-20T00:31:00-05:00 [ERROR] req_id=req-1776663049106696500-9a4bb6f295f5 event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=500 dur_ms=11820
+2026-04-20T00:34:00-05:00 [INFO] req_id=req-1776663240018002000-d4f6de353f0f event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T00:34:12-05:00 [ERROR] req_id=req-1776663240018002000-d4f6de353f0f event=api_error method=GET path=/api/public/publicaciones status=500 error="ERROR: relation \"empresa_publicaciones_red_social\" does not exist (SQLSTATE 42P01)"
+2026-04-20T00:34:12-05:00 [ERROR] req_id=req-1776663240018002000-d4f6de353f0f event=request_end method=GET path=/api/public/publicaciones status=500 dur_ms=12464
+2026-04-20T01:03:21-05:00 [INFO] req_id=req-1776665001220113200-4b1880d24017 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:03:32-05:00 [WARNING] req_id=req-1776665001220113200-4b1880d24017 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-20T01:03:32-05:00 [WARNING] req_id=req-1776665001220113200-4b1880d24017 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=11520
+2026-04-20T01:07:22-05:00 [INFO] req_id=req-1776665242978998000-6f25c06052ee event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:07:23-05:00 [INFO] req_id=req-1776665242978998000-6f25c06052ee event=request_end method=GET path=/me status=200 dur_ms=735
+2026-04-20T01:09:00-05:00 [INFO] req_id=req-1776665340508797400-10569661809d event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:09:01-05:00 [INFO] req_id=req-1776665340508797400-10569661809d event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=639
+2026-04-20T01:10:50-05:00 [INFO] req_id=req-1776665450344189400-0d7d7850edef event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:10:51-05:00 [INFO] req_id=req-1776665450344189400-0d7d7850edef event=request_end method=GET path=/me status=200 dur_ms=704
+2026-04-20T01:12:28-05:00 [INFO] req_id=req-1776665548402429200-592debcce9d8 event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:12:28-05:00 [INFO] req_id=req-1776665548402429200-592debcce9d8 event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=359
+2026-04-20T01:13:09-05:00 [INFO] req_id=req-1776665589229252900-1c6198c7d331 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:13:10-05:00 [INFO] req_id=req-1776665589229252900-1c6198c7d331 event=request_end method=GET path=/me status=200 dur_ms=868
+2026-04-20T01:13:25-05:00 [INFO] req_id=req-1776665605251402500-180732457fc7 event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:13:35-05:00 [ERROR] req_id=req-1776665605251402500-180732457fc7 event=api_error method=GET path=/api/public/publicaciones status=500 error="error creando empresa_publicaciones_red_social: ERROR: type \"datetime\" does not exist (SQLSTATE 42704)"
+2026-04-20T01:13:35-05:00 [ERROR] req_id=req-1776665605251402500-180732457fc7 event=request_end method=GET path=/api/public/publicaciones status=500 dur_ms=10667
+2026-04-20T01:16:48-05:00 [INFO] req_id=req-1776665808762697700-77ead14c74f3 event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:16:49-05:00 [INFO] req_id=req-1776665808762697700-77ead14c74f3 event=request_end method=GET path=/api/public/publicaciones status=200 dur_ms=606
+2026-04-20T01:21:16-05:00 [INFO] req_id=req-1776666076227443600-5163d8fe1ef3 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:21:16-05:00 [INFO] req_id=req-1776666076227443600-5163d8fe1ef3 event=request_end method=GET path=/me status=200 dur_ms=456
+2026-04-20T01:23:02-05:00 [INFO] req_id=req-1776666182292324900-3f2684245ffc event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:23:03-05:00 [INFO] req_id=req-1776666182292324900-3f2684245ffc event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=943
+2026-04-20T01:23:15-05:00 [INFO] req_id=req-1776666195685285300-11890b711071 event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:23:16-05:00 [INFO] req_id=req-1776666195685285300-11890b711071 event=request_end method=GET path=/api/public/publicaciones status=200 dur_ms=490
+2026-04-20T01:26:49-05:00 [INFO] req_id=req-1776666409075349500-517721ad3b9a event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:27:01-05:00 [WARNING] req_id=req-1776666409075349500-517721ad3b9a event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-20T01:27:01-05:00 [WARNING] req_id=req-1776666409075349500-517721ad3b9a event=request_end method=GET path=/me status=401 dur_ms=12632
+2026-04-20T01:27:40-05:00 [INFO] req_id=req-1776666460750857900-9dd07d87592d event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:27:52-05:00 [WARNING] req_id=req-1776666460750857900-9dd07d87592d event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-20T01:27:52-05:00 [WARNING] req_id=req-1776666460750857900-9dd07d87592d event=request_end method=GET path=/me status=401 dur_ms=12003
+2026-04-20T01:28:52-05:00 [INFO] req_id=req-1776666532495401700-fb5838e7e095 event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:28:53-05:00 [INFO] req_id=req-1776666532495401700-fb5838e7e095 event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=749
+2026-04-20T01:28:53-05:00 [INFO] req_id=req-1776666533267021300-33a965defc59 event=request_start method=GET path=/api/public/publicaciones ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:28:53-05:00 [INFO] req_id=req-1776666533267021300-33a965defc59 event=request_end method=GET path=/api/public/publicaciones status=200 dur_ms=698
+2026-04-20T01:35:41-05:00 [INFO] req_id=req-1776666941564282700-57800275df58 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:35:42-05:00 [INFO] req_id=req-1776666941564282700-57800275df58 event=request_end method=GET path=/me status=200 dur_ms=717
+2026-04-20T01:46:33-05:00 [INFO] req_id=req-1776667593719166300-097a1a5a6647 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:46:34-05:00 [INFO] req_id=req-1776667593719166300-097a1a5a6647 event=request_end method=GET path=/me status=200 dur_ms=758
+2026-04-20T01:55:07-05:00 [INFO] req_id=req-1776668107116417500-389ff82baea2 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-20T01:55:07-05:00 [INFO] req_id=req-1776668107116417500-389ff82baea2 event=request_end method=GET path=/me status=200 dur_ms=597
+2026-04-20T01:58:25-05:00 [INFO] req_id=req-1776668305407105300-d60d801a27b9 event=request_start method=GET path=/me ip=127.0.0.1 ua="curl/8.18.0"
+2026-04-20T01:58:26-05:00 [INFO] req_id=req-1776668305407105300-d60d801a27b9 event=request_end method=GET path=/me status=200 dur_ms=725

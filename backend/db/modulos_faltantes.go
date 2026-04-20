@@ -1258,11 +1258,7 @@ func CreateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID int64, payl
 	}
 
 	query := "INSERT INTO " + table + " (" + strings.Join(columns, ", ") + ") VALUES (" + strings.Join(placeholders, ", ") + ")"
-	res, err := dbConn.Exec(query, values...)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	return insertSQLCompat(dbConn, query, values...)
 }
 
 // UpdateEmpresaGenericRow actualiza columnas permitidas de un registro por empresa e id.

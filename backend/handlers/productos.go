@@ -1563,21 +1563,43 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(rows)
 			return
 		case http.MethodPost:
-			var payload dbpkg.Proveedor
+			var payload struct {
+				dbpkg.Proveedor
+				NombreComercial string `json:"nombre_comercial"`
+				RazonSocial     string `json:"razon_social"`
+				NIT             string `json:"nit"`
+			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
+			}
+			if payload.EmpresaID <= 0 {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+			}
+			if strings.TrimSpace(payload.Nombre) == "" {
+				payload.Nombre = strings.TrimSpace(payload.NombreComercial)
+			}
+			if strings.TrimSpace(payload.Nombre) == "" {
+				payload.Nombre = strings.TrimSpace(payload.RazonSocial)
+			}
+			if strings.TrimSpace(payload.Documento) == "" {
+				payload.Documento = strings.TrimSpace(payload.NIT)
 			}
 			if payload.EmpresaID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
 				http.Error(w, "empresa_id y nombre son obligatorios", http.StatusBadRequest)
 				return
 			}
-			if err := validateProveedorComercialPayload(payload); err != nil {
+			if err := validateProveedorComercialPayload(payload.Proveedor); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
-			id, err := dbpkg.CreateProveedor(dbEmp, payload)
+			id, err := dbpkg.CreateProveedor(dbEmp, payload.Proveedor)
 			if err != nil {
 				http.Error(w, "failed to create proveedor: "+err.Error(), http.StatusInternalServerError)
 				return

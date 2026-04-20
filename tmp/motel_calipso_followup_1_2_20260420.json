@@ -1,0 +1,586 @@
+﻿{
+    "me":  {
+               "ok":  true,
+               "status":  200,
+               "body":  "{\"id\":1,\"email\":\"powerfulcontrolsystem@gmail.com\",\"name\":\"Ivan\",\"role\":\"super_administrador\",\"photo\":\"https://lh3.googleusercontent.com/a/ACg8ocJ8tNEbKThb7E2ENg00F3VI6z7TXdHEYxu4FylaVfbEZUIOMII=s96-c\",\"fecha_creacion\":\"2026-03-26 17:45:25\",\"fecha_actualizacion\":\"2026-04-20 05:03:54.496358+00\",\"estado\":\"activo\",\"acepta_contrato\":1}\n",
+               "json":  {
+                            "id":  1,
+                            "email":  "powerfulcontrolsystem@gmail.com",
+                            "name":  "Ivan",
+                            "role":  "super_administrador",
+                            "photo":  "https://lh3.googleusercontent.com/a/ACg8ocJ8tNEbKThb7E2ENg00F3VI6z7TXdHEYxu4FylaVfbEZUIOMII=s96-c",
+                            "fecha_creacion":  "2026-03-26 17:45:25",
+                            "fecha_actualizacion":  "2026-04-20 05:03:54.496358+00",
+                            "estado":  "activo",
+                            "acepta_contrato":  1
+                        }
+           },
+    "credito_create":  {
+                           "ok":  true,
+                           "status":  201,
+                           "body":  "{\"credito\":{\"id\":10,\"empresa_id\":7,\"codigo\":\"CRE-7-10\",\"cliente_id\":0,\"cliente_nombre\":\"Cliente Credito QA Final 20260420013541\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":2300,\"cupo_credito\":2600,\"saldo_actual\":2300,\"saldo_disponible\":300,\"tasa_interes\":11,\"tasa_mora\":0,\"plazo_dias\":0,\"plazo_cuotas\":6,\"fecha_inicio\":\"2026-04-20\",\"fecha_vencimiento\":\"2026-10-20\",\"dias_mora\":0,\"clasificacion_cartera\":\"al_dia\",\"bloqueo_automatico_mora\":false,\"estado_credito\":\"activo\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},\"empresa_id\":7,\"ok\":true}\n",
+                           "json":  {
+                                        "credito":  {
+                                                        "id":  10,
+                                                        "empresa_id":  7,
+                                                        "codigo":  "CRE-7-10",
+                                                        "cliente_id":  0,
+                                                        "cliente_nombre":  "Cliente Credito QA Final 20260420013541",
+                                                        "tipo_credito":  "cuotas",
+                                                        "monto_aprobado":  2300,
+                                                        "cupo_credito":  2600,
+                                                        "saldo_actual":  2300,
+                                                        "saldo_disponible":  300,
+                                                        "tasa_interes":  11,
+                                                        "tasa_mora":  0,
+                                                        "plazo_dias":  0,
+                                                        "plazo_cuotas":  6,
+                                                        "fecha_inicio":  "2026-04-20",
+                                                        "fecha_vencimiento":  "2026-10-20",
+                                                        "dias_mora":  0,
+                                                        "clasificacion_cartera":  "al_dia",
+                                                        "bloqueo_automatico_mora":  false,
+                                                        "estado_credito":  "activo",
+                                                        "fecha_creacion":  "2026-04-20 06:35:44",
+                                                        "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                        "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                        "estado":  "activo"
+                                                    },
+                                        "empresa_id":  7,
+                                        "ok":  true
+                                    }
+                       },
+    "credito_estado_inicial":  {
+                                   "ok":  true,
+                                   "status":  200,
+                                   "body":  "{\"credito\":{\"id\":10,\"empresa_id\":7,\"codigo\":\"CRE-7-10\",\"cliente_id\":0,\"cliente_nombre\":\"Cliente Credito QA Final 20260420013541\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":2300,\"cupo_credito\":2600,\"saldo_actual\":2300,\"saldo_disponible\":300,\"tasa_interes\":11,\"tasa_mora\":0,\"plazo_dias\":0,\"plazo_cuotas\":6,\"fecha_inicio\":\"2026-04-20\",\"fecha_vencimiento\":\"2026-10-20\",\"dias_mora\":0,\"clasificacion_cartera\":\"al_dia\",\"bloqueo_automatico_mora\":false,\"estado_credito\":\"activo\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},\"cuotas\":[{\"id\":31,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":1,\"fecha_vencimiento\":\"2026-05-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":32,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":2,\"fecha_vencimiento\":\"2026-06-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":33,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":3,\"fecha_vencimiento\":\"2026-07-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":34,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":4,\"fecha_vencimiento\":\"2026-08-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":35,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":5,\"fecha_vencimiento\":\"2026-09-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":36,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":6,\"fecha_vencimiento\":\"2026-10-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.35,\"interes_cuota\":42.15,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"}],\"empresa_id\":7,\"movimientos\":[],\"ok\":true}\n",
+                                   "json":  {
+                                                "credito":  {
+                                                                "id":  10,
+                                                                "empresa_id":  7,
+                                                                "codigo":  "CRE-7-10",
+                                                                "cliente_id":  0,
+                                                                "cliente_nombre":  "Cliente Credito QA Final 20260420013541",
+                                                                "tipo_credito":  "cuotas",
+                                                                "monto_aprobado":  2300,
+                                                                "cupo_credito":  2600,
+                                                                "saldo_actual":  2300,
+                                                                "saldo_disponible":  300,
+                                                                "tasa_interes":  11,
+                                                                "tasa_mora":  0,
+                                                                "plazo_dias":  0,
+                                                                "plazo_cuotas":  6,
+                                                                "fecha_inicio":  "2026-04-20",
+                                                                "fecha_vencimiento":  "2026-10-20",
+                                                                "dias_mora":  0,
+                                                                "clasificacion_cartera":  "al_dia",
+                                                                "bloqueo_automatico_mora":  false,
+                                                                "estado_credito":  "activo",
+                                                                "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                "estado":  "activo"
+                                                            },
+                                                "cuotas":  [
+                                                               {
+                                                                   "id":  31,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  1,
+                                                                   "fecha_vencimiento":  "2026-05-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.33,
+                                                                   "interes_cuota":  42.17,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               },
+                                                               {
+                                                                   "id":  32,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  2,
+                                                                   "fecha_vencimiento":  "2026-06-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.33,
+                                                                   "interes_cuota":  42.17,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               },
+                                                               {
+                                                                   "id":  33,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  3,
+                                                                   "fecha_vencimiento":  "2026-07-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.33,
+                                                                   "interes_cuota":  42.17,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               },
+                                                               {
+                                                                   "id":  34,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  4,
+                                                                   "fecha_vencimiento":  "2026-08-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.33,
+                                                                   "interes_cuota":  42.17,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               },
+                                                               {
+                                                                   "id":  35,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  5,
+                                                                   "fecha_vencimiento":  "2026-09-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.33,
+                                                                   "interes_cuota":  42.17,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               },
+                                                               {
+                                                                   "id":  36,
+                                                                   "empresa_id":  7,
+                                                                   "credito_id":  10,
+                                                                   "numero_cuota":  6,
+                                                                   "fecha_vencimiento":  "2026-10-20",
+                                                                   "valor_cuota":  425.5,
+                                                                   "capital_cuota":  383.35,
+                                                                   "interes_cuota":  42.15,
+                                                                   "interes_mora":  0,
+                                                                   "valor_pagado":  0,
+                                                                   "saldo_cuota":  425.5,
+                                                                   "estado_cuota":  "pendiente",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo",
+                                                                   "observaciones":  "generacion automatica de cuota"
+                                                               }
+                                                           ],
+                                                "empresa_id":  7,
+                                                "movimientos":  [
+
+                                                                ],
+                                                "ok":  true
+                                            }
+                               },
+    "credito_abono":  {
+                          "ok":  false,
+                          "status":  400,
+                          "body":  "",
+                          "json":  null
+                      },
+    "credito_estado_post_abono":  {
+                                      "ok":  true,
+                                      "status":  200,
+                                      "body":  "{\"credito\":{\"id\":10,\"empresa_id\":7,\"codigo\":\"CRE-7-10\",\"cliente_id\":0,\"cliente_nombre\":\"Cliente Credito QA Final 20260420013541\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":2300,\"cupo_credito\":2600,\"saldo_actual\":2300,\"saldo_disponible\":300,\"tasa_interes\":11,\"tasa_mora\":0,\"plazo_dias\":0,\"plazo_cuotas\":6,\"fecha_inicio\":\"2026-04-20\",\"fecha_vencimiento\":\"2026-10-20\",\"dias_mora\":0,\"clasificacion_cartera\":\"al_dia\",\"bloqueo_automatico_mora\":false,\"estado_credito\":\"activo\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},\"cuotas\":[{\"id\":31,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":1,\"fecha_vencimiento\":\"2026-05-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":32,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":2,\"fecha_vencimiento\":\"2026-06-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":33,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":3,\"fecha_vencimiento\":\"2026-07-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":34,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":4,\"fecha_vencimiento\":\"2026-08-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":35,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":5,\"fecha_vencimiento\":\"2026-09-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.33,\"interes_cuota\":42.17,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"},{\"id\":36,\"empresa_id\":7,\"credito_id\":10,\"numero_cuota\":6,\"fecha_vencimiento\":\"2026-10-20\",\"valor_cuota\":425.5,\"capital_cuota\":383.35,\"interes_cuota\":42.15,\"interes_mora\":0,\"valor_pagado\":0,\"saldo_cuota\":425.5,\"estado_cuota\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:35:44\",\"fecha_actualizacion\":\"2026-04-20 06:35:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\",\"observaciones\":\"generacion automatica de cuota\"}],\"empresa_id\":7,\"movimientos\":[],\"ok\":true}\n",
+                                      "json":  {
+                                                   "credito":  {
+                                                                   "id":  10,
+                                                                   "empresa_id":  7,
+                                                                   "codigo":  "CRE-7-10",
+                                                                   "cliente_id":  0,
+                                                                   "cliente_nombre":  "Cliente Credito QA Final 20260420013541",
+                                                                   "tipo_credito":  "cuotas",
+                                                                   "monto_aprobado":  2300,
+                                                                   "cupo_credito":  2600,
+                                                                   "saldo_actual":  2300,
+                                                                   "saldo_disponible":  300,
+                                                                   "tasa_interes":  11,
+                                                                   "tasa_mora":  0,
+                                                                   "plazo_dias":  0,
+                                                                   "plazo_cuotas":  6,
+                                                                   "fecha_inicio":  "2026-04-20",
+                                                                   "fecha_vencimiento":  "2026-10-20",
+                                                                   "dias_mora":  0,
+                                                                   "clasificacion_cartera":  "al_dia",
+                                                                   "bloqueo_automatico_mora":  false,
+                                                                   "estado_credito":  "activo",
+                                                                   "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                   "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                   "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                   "estado":  "activo"
+                                                               },
+                                                   "cuotas":  [
+                                                                  {
+                                                                      "id":  31,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  1,
+                                                                      "fecha_vencimiento":  "2026-05-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.33,
+                                                                      "interes_cuota":  42.17,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  },
+                                                                  {
+                                                                      "id":  32,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  2,
+                                                                      "fecha_vencimiento":  "2026-06-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.33,
+                                                                      "interes_cuota":  42.17,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  },
+                                                                  {
+                                                                      "id":  33,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  3,
+                                                                      "fecha_vencimiento":  "2026-07-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.33,
+                                                                      "interes_cuota":  42.17,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  },
+                                                                  {
+                                                                      "id":  34,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  4,
+                                                                      "fecha_vencimiento":  "2026-08-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.33,
+                                                                      "interes_cuota":  42.17,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  },
+                                                                  {
+                                                                      "id":  35,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  5,
+                                                                      "fecha_vencimiento":  "2026-09-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.33,
+                                                                      "interes_cuota":  42.17,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  },
+                                                                  {
+                                                                      "id":  36,
+                                                                      "empresa_id":  7,
+                                                                      "credito_id":  10,
+                                                                      "numero_cuota":  6,
+                                                                      "fecha_vencimiento":  "2026-10-20",
+                                                                      "valor_cuota":  425.5,
+                                                                      "capital_cuota":  383.35,
+                                                                      "interes_cuota":  42.15,
+                                                                      "interes_mora":  0,
+                                                                      "valor_pagado":  0,
+                                                                      "saldo_cuota":  425.5,
+                                                                      "estado_cuota":  "pendiente",
+                                                                      "fecha_creacion":  "2026-04-20 06:35:44",
+                                                                      "fecha_actualizacion":  "2026-04-20 06:35:44",
+                                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                                      "estado":  "activo",
+                                                                      "observaciones":  "generacion automatica de cuota"
+                                                                  }
+                                                              ],
+                                                   "empresa_id":  7,
+                                                   "movimientos":  [
+
+                                                                   ],
+                                                   "ok":  true
+                                               }
+                                  },
+    "credito_resumen":  {
+                            "ok":  true,
+                            "status":  200,
+                            "body":  "{\"empresa_id\":7,\"ok\":true,\"resumen\":{\"total_creditos\":6,\"creditos_activos\":6,\"creditos_vencidos\":0,\"creditos_mora\":0,\"creditos_cerrados\":0,\"monto_aprobado\":13600,\"saldo_total\":13600,\"cupo_disponible\":2700}}\n",
+                            "json":  {
+                                         "empresa_id":  7,
+                                         "ok":  true,
+                                         "resumen":  {
+                                                         "total_creditos":  6,
+                                                         "creditos_activos":  6,
+                                                         "creditos_vencidos":  0,
+                                                         "creditos_mora":  0,
+                                                         "creditos_cerrados":  0,
+                                                         "monto_aprobado":  13600,
+                                                         "saldo_total":  13600,
+                                                         "cupo_disponible":  2700
+                                                     }
+                                     }
+                        },
+    "proveedor_create":  {
+                             "ok":  false,
+                             "status":  400,
+                             "body":  "",
+                             "json":  null
+                         },
+    "proveedor_list":  {
+                           "ok":  true,
+                           "status":  200,
+                           "body":  "[]\n",
+                           "json":  {
+                                        "value":  [
+
+                                                  ],
+                                        "Count":  0
+                                    }
+                       },
+    "categoria_create":  {
+                             "ok":  true,
+                             "status":  200,
+                             "body":  "{\"id\":7}\n",
+                             "json":  {
+                                          "id":  7
+                                      }
+                         },
+    "categoria_list":  {
+                           "ok":  true,
+                           "status":  200,
+                           "body":  "[{\"id\":4,\"empresa_id\":7,\"codigo\":\"CAT-001846\",\"nombre\":\"Categoria QA 20260420001846\",\"descripcion\":\"Categoria creada para prueba integral\",\"fecha_creacion\":\"2026-04-20 05:22:07\",\"fecha_actualizacion\":\"2026-04-20 05:22:07\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},{\"id\":5,\"empresa_id\":7,\"codigo\":\"CAT-002207\",\"nombre\":\"Categoria QA 20260420002207\",\"descripcion\":\"Categoria QA runtime\",\"fecha_creacion\":\"2026-04-20 05:24:52\",\"fecha_actualizacion\":\"2026-04-20 05:24:52\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},{\"id\":6,\"empresa_id\":7,\"codigo\":\"CAT-002535\",\"nombre\":\"Categoria QA 20260420002535\",\"descripcion\":\"Categoria QA runtime\",\"fecha_creacion\":\"2026-04-20 05:28:19\",\"fecha_actualizacion\":\"2026-04-20 05:28:19\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"},{\"id\":7,\"empresa_id\":7,\"codigo\":\"CAT-013541\",\"nombre\":\"Categoria Seguimiento 20260420013541\",\"descripcion\":\"Categoria creada en validacion 1 y 2\",\"fecha_creacion\":\"2026-04-20 06:36:47\",\"fecha_actualizacion\":\"2026-04-20 06:36:47\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"}]\n",
+                           "json":  {
+                                        "value":  [
+                                                      {
+                                                          "id":  4,
+                                                          "empresa_id":  7,
+                                                          "codigo":  "CAT-001846",
+                                                          "nombre":  "Categoria QA 20260420001846",
+                                                          "descripcion":  "Categoria creada para prueba integral",
+                                                          "fecha_creacion":  "2026-04-20 05:22:07",
+                                                          "fecha_actualizacion":  "2026-04-20 05:22:07",
+                                                          "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                          "estado":  "activo"
+                                                      },
+                                                      {
+                                                          "id":  5,
+                                                          "empresa_id":  7,
+                                                          "codigo":  "CAT-002207",
+                                                          "nombre":  "Categoria QA 20260420002207",
+                                                          "descripcion":  "Categoria QA runtime",
+                                                          "fecha_creacion":  "2026-04-20 05:24:52",
+                                                          "fecha_actualizacion":  "2026-04-20 05:24:52",
+                                                          "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                          "estado":  "activo"
+                                                      },
+                                                      {
+                                                          "id":  6,
+                                                          "empresa_id":  7,
+                                                          "codigo":  "CAT-002535",
+                                                          "nombre":  "Categoria QA 20260420002535",
+                                                          "descripcion":  "Categoria QA runtime",
+                                                          "fecha_creacion":  "2026-04-20 05:28:19",
+                                                          "fecha_actualizacion":  "2026-04-20 05:28:19",
+                                                          "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                          "estado":  "activo"
+                                                      },
+                                                      {
+                                                          "id":  7,
+                                                          "empresa_id":  7,
+                                                          "codigo":  "CAT-013541",
+                                                          "nombre":  "Categoria Seguimiento 20260420013541",
+                                                          "descripcion":  "Categoria creada en validacion 1 y 2",
+                                                          "fecha_creacion":  "2026-04-20 06:36:47",
+                                                          "fecha_actualizacion":  "2026-04-20 06:36:47",
+                                                          "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                          "estado":  "activo"
+                                                      }
+                                                  ],
+                                        "Count":  4
+                                    }
+                       },
+    "producto_create":  {
+                            "ok":  true,
+                            "status":  200,
+                            "body":  "{\"id\":28}\n",
+                            "json":  {
+                                         "id":  28
+                                     }
+                        },
+    "producto_list":  {
+                          "ok":  false,
+                          "status":  500,
+                          "body":  "",
+                          "json":  null
+                      },
+    "compra_create":  {
+                          "ok":  false,
+                          "status":  400,
+                          "body":  "",
+                          "json":  null
+                      },
+    "compra_list":  {
+                        "ok":  true,
+                        "status":  200,
+                        "body":  "[]\n",
+                        "json":  {
+                                     "value":  [
+
+                                               ],
+                                     "Count":  0
+                                 }
+                    },
+    "conversacion_create":  {
+                                "ok":  true,
+                                "status":  201,
+                                "body":  "{\"id\":4,\"ok\":true}\n",
+                                "json":  {
+                                             "id":  4,
+                                             "ok":  true
+                                         }
+                            },
+    "mensaje_create":  {
+                           "ok":  true,
+                           "status":  201,
+                           "body":  "{\"id\":1,\"ok\":true}\n",
+                           "json":  {
+                                        "id":  1,
+                                        "ok":  true
+                                    }
+                       },
+    "tarea_create":  {
+                         "ok":  true,
+                         "status":  201,
+                         "body":  "{\"id\":1,\"ok\":true}\n",
+                         "json":  {
+                                      "id":  1,
+                                      "ok":  true
+                                  }
+                     },
+    "cita_create":  {
+                        "ok":  false,
+                        "status":  400,
+                        "body":  "",
+                        "json":  null
+                    },
+    "conversacion_list":  {
+                              "ok":  true,
+                              "status":  200,
+                              "body":  "[{\"id\":4,\"empresa_id\":7,\"titulo\":\"Conversacion Seguimiento 20260420013541\",\"descripcion\":\"Conversacion de validacion QA 1 y 2\",\"prioridad\":\"alta\",\"estado_conversacion\":\"abierta\",\"ultimo_mensaje_en\":\"2026-04-20 06:38:21\",\"mensajes_count\":1,\"tareas_pendientes\":1,\"fecha_creacion\":\"2026-04-20 06:37:58\",\"fecha_actualizacion\":\"2026-04-20 06:38:21\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"}]\n",
+                              "json":  {
+                                           "value":  [
+                                                         {
+                                                             "id":  4,
+                                                             "empresa_id":  7,
+                                                             "titulo":  "Conversacion Seguimiento 20260420013541",
+                                                             "descripcion":  "Conversacion de validacion QA 1 y 2",
+                                                             "prioridad":  "alta",
+                                                             "estado_conversacion":  "abierta",
+                                                             "ultimo_mensaje_en":  "2026-04-20 06:38:21",
+                                                             "mensajes_count":  1,
+                                                             "tareas_pendientes":  1,
+                                                             "fecha_creacion":  "2026-04-20 06:37:58",
+                                                             "fecha_actualizacion":  "2026-04-20 06:38:21",
+                                                             "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                             "estado":  "activo"
+                                                         }
+                                                     ],
+                                           "Count":  1
+                                       }
+                          },
+    "tarea_list":  {
+                       "ok":  true,
+                       "status":  200,
+                       "body":  "[{\"id\":1,\"empresa_id\":7,\"conversacion_id\":4,\"titulo\":\"Tarea Seguimiento 20260420013541\",\"descripcion\":\"Tarea de prueba\",\"prioridad\":\"alta\",\"asignado_tipo\":\"usuario\",\"creado_por_tipo\":\"admin\",\"creado_por_email\":\"powerfulcontrolsystem@gmail.com\",\"estado_tarea\":\"pendiente\",\"fecha_creacion\":\"2026-04-20 06:38:44\",\"fecha_actualizacion\":\"2026-04-20 06:38:44\",\"usuario_creador\":\"powerfulcontrolsystem@gmail.com\",\"estado\":\"activo\"}]\n",
+                       "json":  {
+                                    "value":  [
+                                                  {
+                                                      "id":  1,
+                                                      "empresa_id":  7,
+                                                      "conversacion_id":  4,
+                                                      "titulo":  "Tarea Seguimiento 20260420013541",
+                                                      "descripcion":  "Tarea de prueba",
+                                                      "prioridad":  "alta",
+                                                      "asignado_tipo":  "usuario",
+                                                      "creado_por_tipo":  "admin",
+                                                      "creado_por_email":  "powerfulcontrolsystem@gmail.com",
+                                                      "estado_tarea":  "pendiente",
+                                                      "fecha_creacion":  "2026-04-20 06:38:44",
+                                                      "fecha_actualizacion":  "2026-04-20 06:38:44",
+                                                      "usuario_creador":  "powerfulcontrolsystem@gmail.com",
+                                                      "estado":  "activo"
+                                                  }
+                                              ],
+                                    "Count":  1
+                                }
+                   },
+    "cita_list":  {
+                      "ok":  false,
+                      "status":  500,
+                      "body":  "",
+                      "json":  null
+                  }
+}

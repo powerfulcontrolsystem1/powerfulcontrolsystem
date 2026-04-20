@@ -29,6 +29,7 @@
   --floating-menu-panel-gap: 12px;
   --floating-menu-clearance: calc(var(--floating-menu-size) + var(--floating-menu-edge) + var(--floating-menu-panel-gap));
   --index-logo-size: 92px;
+  --ambient-glow: rgba(34,67,107,0.35);
 }
 
 /* Tema Oscuro Violeta (Morado medianoche) */
@@ -54,6 +55,7 @@ html[data-theme="dark-violet"] {
   --form-surface-bottom: #392257;
   --form-border: rgba(199,145,238,0.4);
   --form-input-bg: #160d22;
+  --ambient-glow: rgba(126,72,187,0.34);
 }
 
 /* Tema Oscuro Esmeralda (Negro esmeralda/Cyberpunk) */
@@ -79,6 +81,7 @@ html[data-theme="dark-emerald"] {
   --form-surface-bottom: #1e574d;
   --form-border: rgba(94,238,185,0.4);
   --form-input-bg: #071714;
+  --ambient-glow: rgba(36,210,154,0.2);
 }
 
 /* Modo claro (Blanco crudo/Azul corporativo) */
@@ -104,6 +107,7 @@ html[data-theme="light"] {
   --form-surface-bottom: #dbeaff;
   --form-border: rgba(41,94,152,0.24);
   --form-input-bg: #ffffff;
+  --ambient-glow: rgba(120,175,233,0.24);
 }
 
 /* Tema Claro Rosa (Tonos pastel cálidos) */
@@ -129,6 +133,7 @@ html[data-theme="light-rose"] {
   --form-surface-bottom: #ffdbe5;
   --form-border: rgba(152,41,75,0.24);
   --form-input-bg: #ffffff;
+  --ambient-glow: rgba(230,153,182,0.24);
 }
 
 /* Tema Claro Dorado (Blanco con dorado energético) */
@@ -154,6 +159,7 @@ html[data-theme="light-gold"] {
   --form-surface-bottom: #fff7cc;
   --form-border: rgba(152,126,41,0.24);
   --form-input-bg: #ffffff;
+  --ambient-glow: rgba(224,196,97,0.22);
 }
 
 *{box-sizing:border-box}
@@ -162,7 +168,7 @@ html,body{
   margin:0;
   padding:0;
   background:
-    radial-gradient(circle at 10% 5%, rgba(34,67,107,0.35) 0, rgba(34,67,107,0) 36%),
+    radial-gradient(circle at 10% 5%, var(--ambient-glow) 0, transparent 36%),
     linear-gradient(180deg, var(--bg-alt), var(--bg));
   color:var(--text);
   font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif;
@@ -233,19 +239,19 @@ p{color:var(--muted);line-height:1.5}
 
 /* Layout del panel de administración (sidebar + contenido) */
 .admin-layout{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
-.admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg,#102036,#0d1a2d);box-shadow:2px 0 26px rgba(3,10,20,0.62);border-right:1px solid var(--border)}
+.admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:2px 0 26px rgba(3,10,20,0.24);border-right:1px solid var(--border)}
 .admin-sidebar h2{margin:0 0 12px 0}
 .admin-sidebar h2{color:var(--accent-yellow);font-weight:800;font-size:0.95rem;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .admin-sidebar .nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
-.admin-sidebar .nav a{display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:10px;background:rgba(24,42,66,0.88);border:1px solid rgba(148,176,206,0.2);font-weight:700;font-size:0.95rem;min-height:44px}
-.admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(54,95,146,0.42), rgba(30,55,85,0.9));color:#f2f8ff}
+.admin-sidebar .nav a{display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:10px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);font-weight:700;font-size:0.95rem;min-height:44px}
+.admin-sidebar .nav a:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}
 .admin-sidebar .nav a.active{background:linear-gradient(180deg,var(--accent),#1475cc);color:#fff;border-color:rgba(20,95,162,0.6);box-shadow:0 10px 18px rgba(7,31,58,0.42)}
 .admin-sidebar .nav a img.icon{width:18px;height:18px;vertical-align:middle;margin-right:8px;transition:filter .15s ease}
 .admin-menu-visibility-item{display:none}
-.admin-menu-visibility-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px dashed rgba(148,176,206,0.35);background:rgba(10,21,36,0.72);color:var(--text);font-weight:800;font-size:0.95rem;min-height:44px;cursor:pointer;box-sizing:border-box}
-.admin-menu-visibility-toggle:hover{background:linear-gradient(180deg, rgba(63,104,153,0.28), rgba(22,40,64,0.92));color:#f2f8ff}
+.admin-menu-visibility-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px dashed var(--border);background:var(--surface-soft);color:var(--text);font-weight:800;font-size:0.95rem;min-height:44px;cursor:pointer;box-sizing:border-box}
+.admin-menu-visibility-toggle:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}
 .admin-menu-visibility-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:1rem;line-height:1}
-.admin-content{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,rgba(17,31,49,0.34),rgba(11,22,37,0.28))}
+.admin-content{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
 /* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
 .admin-content .btn{
   padding:10px 14px;
@@ -258,9 +264,15 @@ p{color:var(--muted);line-height:1.5}
   font-size:0.95rem;
 }
 /* Icon visibility: make icons light in dark theme so they contrast with dark buttons */
-html:not(.theme-light) .admin-sidebar .nav a img.icon{filter:invert(1) brightness(1.8) saturate(1.15)}
-html.theme-light .admin-sidebar .nav a img.icon{filter:none}
-.admin-toolbar{padding:8px 10px;border-bottom:1px solid var(--border);background:rgba(17,33,52,0.35);flex:0 0 auto}
+html.theme-dark .admin-sidebar .nav a img.icon,
+html[data-theme="dark"] .admin-sidebar .nav a img.icon,
+html[data-theme="dark-violet"] .admin-sidebar .nav a img.icon,
+html[data-theme="dark-emerald"] .admin-sidebar .nav a img.icon{filter:invert(1) brightness(1.8) saturate(1.15)}
+html.theme-light .admin-sidebar .nav a img.icon,
+html[data-theme="light"] .admin-sidebar .nav a img.icon,
+html[data-theme="light-rose"] .admin-sidebar .nav a img.icon,
+html[data-theme="light-gold"] .admin-sidebar .nav a img.icon{filter:none}
+.admin-toolbar{padding:8px 10px;border-bottom:1px solid var(--border);background:var(--surface-soft);flex:0 0 auto}
 
 /* Hacer que el iframe de administrar_empresa ocupe el espacio restante y evitar doble scrollbar */
 .admin-empresa-frame{flex:1 1 auto;width:100%;min-height:0;border:0;display:block;background:transparent}
@@ -1450,14 +1462,14 @@ ul{padding-left:18px}
 }
 
 /* Formularios con fondo más oscuro sólo en páginas específicas (tipos_empresas, licencias) */
-.form-bg-dark .form{background:linear-gradient(180deg,#1d344b,#294b6b);border-color:rgba(152,197,234,0.44)}
-.form-bg-dark .form .form-input, .form-bg-dark .form .form-textarea{background:#0e2134}
+.form-bg-dark .form{background:linear-gradient(180deg,var(--form-surface-top),var(--form-surface-bottom));border-color:var(--form-border)}
+.form-bg-dark .form .form-input, .form-bg-dark .form .form-textarea{background:var(--form-input-bg)}
 
 /* Tablas CRUD: cuadricula y zebra */
 .table th, .table td{padding:12px;border:1px solid var(--border);text-align:left}
-.table thead th{background:rgba(17,37,61,0.7)}
-.table tbody tr:nth-child(odd){background:rgba(16,32,52,0.4)}
-.table tbody tr:nth-child(even){background:rgba(12,24,39,0.24)}
+.table thead th{background:var(--surface-soft)}
+.table tbody tr:nth-child(odd){background:rgba(127,152,184,0.08)}
+.table tbody tr:nth-child(even){background:rgba(127,152,184,0.03)}
 
 /* Asegurar que botones en sidebar y en encabezados tengan tamaño de texto consistente */
 .admin-sidebar .nav a, .page-header .btn.add{font-size:0.95rem}
@@ -1473,7 +1485,7 @@ ul{padding-left:18px}
 .floating-menu .fm-panel{display:none;position:absolute;top:56px;right:0;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:8px;border-radius:10px;min-width:180px;box-shadow:0 14px 30px rgba(4,11,21,0.56)}
 .floating-menu .fm-panel.open{display:block}
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600;word-break:break-word;touch-action:manipulation}
-.floating-menu .fm-item:hover{background:rgba(56,91,133,0.32)}
+.floating-menu .fm-item:hover{background:var(--focus)}
 
 /* Estilos Selector Tema popup */
 .theme-selector-popup {
@@ -1510,13 +1522,16 @@ ul{padding-left:18px}
     background: var(--input-bg);
   }
 }
-.floating-menu .fm-country{cursor:default;background:rgba(56,91,133,0.18);border:1px solid rgba(145,198,238,0.24)}
-.floating-menu .fm-country:hover{background:rgba(56,91,133,0.18)}
+.floating-menu .fm-country{cursor:default;background:var(--surface-soft);border:1px solid var(--border)}
+.floating-menu .fm-country:hover{background:var(--surface-soft)}
 
 /* SVG dentro de items del menú: mantener color legible según tema */
 .floating-menu .fm-item svg{width:18px;height:18px;vertical-align:middle;fill:currentColor}
 .floating-menu #themeToggle{background:transparent;border:none;padding:8px 12px;display:flex;width:100%;align-items:center;justify-content:flex-start;gap:8px;color:var(--accent-yellow);box-sizing:border-box;border-radius:8px;margin-bottom:6px}
-html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
+html.theme-light .floating-menu #themeToggle,
+html[data-theme="light"] .floating-menu #themeToggle,
+html[data-theme="light-rose"] .floating-menu #themeToggle,
+html[data-theme="light-gold"] .floating-menu #themeToggle{color:var(--accent-2)}
 
 .floating-menu .google-btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:white;color:#202124;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);text-decoration:none;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-size:0.95rem;width:100%;box-sizing:border-box}
 .floating-menu .google-btn:hover{box-shadow:0 4px 14px rgba(2,6,23,0.12)}

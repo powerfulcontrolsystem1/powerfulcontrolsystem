@@ -781,7 +781,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		return 0, ErrPeriodoFinancieroCerrado
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_finanzas_movimientos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_movimientos (
 		empresa_id, tipo_movimiento, codigo, fecha_movimiento,
 		periodo_contable,
 		categoria, subcategoria, concepto, descripcion,
@@ -820,7 +820,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaFinanzasMovimientos lista movimientos financieros por empresa con filtros.
@@ -1254,7 +1254,7 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_cierres_caja (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_cierres_caja (
 		empresa_id, sucursal_id, caja_codigo, turno,
 		fecha_operacion, fecha_apertura, fecha_cierre, estado_cierre,
 		apertura_monto, ingresos_efectivo, egresos_efectivo, retiros_efectivo,
@@ -1290,7 +1290,7 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCajaFilter) ([]EmpresaCierreCaja, error) {

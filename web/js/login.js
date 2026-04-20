@@ -184,6 +184,18 @@
     }
   }
 
+  function persistThemePreference(theme) {
+    var normalized = String(theme || '').trim();
+    if (!normalized) {
+      return;
+    }
+    try {
+      window.localStorage.setItem('theme', normalized);
+    } catch (error) {}
+    try {
+      document.cookie = 'pcs_theme=' + encodeURIComponent(normalized) + '; Path=/; Max-Age=31536000; SameSite=Lax';
+    } catch (error) {}
+  }
   function openForgotPasswordView(event) {
     if (event) {
       event.preventDefault();
@@ -227,6 +239,7 @@
       try {
         var response = await postJson('/super/api/administradores/login', {email: email, password: password});
         if (response.ok && response.json && response.json.redirect_url) {
+          persistThemePreference(response.json.apariencia);
           window.location.href = response.json.redirect_url;
           return;
         }

@@ -164,7 +164,7 @@ func CreateEmpresaUsuario(
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO users (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO users (
 		email,
 		name,
 		role,
@@ -194,7 +194,7 @@ func CreateEmpresaUsuario(
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetEmpresaUsuarios lista usuarios por empresa.

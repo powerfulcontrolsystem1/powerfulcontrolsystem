@@ -944,7 +944,7 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		}
 	}()
 
-	res, err := tx.Exec(`INSERT INTO empresa_creditos (
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos (
 		empresa_id,
 		codigo,
 		cliente_id,
@@ -997,11 +997,6 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1603,7 +1598,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		}
 	}()
 
-	row := tx.QueryRow(`SELECT
+	row := queryRowTxSQLCompat(tx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
@@ -1653,7 +1648,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 	interesAplicado := 0.0
 	moraAplicada := 0.0
 
-	cuotasRows, err := tx.Query(`SELECT
+	cuotasRows, err := queryTxSQLCompat(tx, `SELECT
 		id,
 		COALESCE(valor_cuota, 0),
 		COALESCE(capital_cuota, 0),
@@ -1672,16 +1667,46 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 	if err != nil {
 		return 0, nil, err
 	}
-	defer cuotasRows.Close()
-
-	for cuotasRows.Next() && restante > 0 {
-		var cuotaID int64
-		var valorCuota, capitalCuota, interesCuota, interesMora, valorPagado, saldoCuota float64
-		var fechaVencimiento string
-		var estadoCuota string
-		if err := cuotasRows.Scan(&cuotaID, &valorCuota, &capitalCuota, &interesCuota, &interesMora, &valorPagado, &saldoCuota, &fechaVencimiento, &estadoCuota); err != nil {
+	type cuotaPendiente struct {
+		id               int64
+		valorCuota       float64
+		capitalCuota     float64
+		interesCuota     float64
+		interesMora      float64
+		valorPagado      float64
+		saldoCuota       float64
+		fechaVencimiento string
+		estadoCuota      string
+	}
+	cuotasPendientes := make([]cuotaPendiente, 0)
+	for cuotasRows.Next() {
+		var cuota cuotaPendiente
+		if err := cuotasRows.Scan(&cuota.id, &cuota.valorCuota, &cuota.capitalCuota, &cuota.interesCuota, &cuota.interesMora, &cuota.valorPagado, &cuota.saldoCuota, &cuota.fechaVencimiento, &cuota.estadoCuota); err != nil {
+			_ = cuotasRows.Close()
 			return 0, nil, err
 		}
+		cuotasPendientes = append(cuotasPendientes, cuota)
+	}
+	if err := cuotasRows.Err(); err != nil {
+		_ = cuotasRows.Close()
+		return 0, nil, err
+	}
+	if err := cuotasRows.Close(); err != nil {
+		return 0, nil, err
+	}
+
+	for _, cuota := range cuotasPendientes {
+		if restante <= 0 {
+			break
+		}
+		cuotaID := cuota.id
+		valorCuota := cuota.valorCuota
+		capitalCuota := cuota.capitalCuota
+		interesCuota := cuota.interesCuota
+		interesMora := cuota.interesMora
+		valorPagado := cuota.valorPagado
+		saldoCuota := cuota.saldoCuota
+		fechaVencimiento := cuota.fechaVencimiento
 		saldoCuota = creditoRound(creditoMax(saldoCuota, 0))
 		if saldoCuota <= 0 {
 			continue
@@ -1716,7 +1741,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 			moraAplicada = creditoRound(moraAplicada)
 		}
 
-		if _, err := tx.Exec(`UPDATE empresa_creditos_cuotas SET
+		if _, err := execTxSQLCompat(tx, `UPDATE empresa_creditos_cuotas SET
 			valor_pagado = ?,
 			saldo_cuota = ?,
 			estado_cuota = ?,
@@ -1738,9 +1763,6 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 
 		restante = creditoRound(restante - aplicar)
 	}
-	if err := cuotasRows.Err(); err != nil {
-		return 0, nil, err
-	}
 
 	if restante > 0 {
 		capitalAplicado = creditoRound(capitalAplicado + restante)
@@ -1760,7 +1782,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 	clasificacion := creditoResolveClasificacion(estadoNuevo, credito.FechaVencimiento, saldoNuevo)
 	diasMora := creditoDaysMora(credito.FechaVencimiento, saldoNuevo)
 
-	if _, err := tx.Exec(`UPDATE empresa_creditos SET
+	if _, err := execTxSQLCompat(tx, `UPDATE empresa_creditos SET
 		saldo_actual = ?,
 		saldo_disponible = ?,
 		estado_credito = ?,
@@ -1782,7 +1804,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		return 0, nil, err
 	}
 
-	res, err := tx.Exec(`INSERT INTO empresa_creditos_movimientos (
+	movID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos_movimientos (
 		empresa_id,
 		credito_id,
 		cuota_id,
@@ -1815,10 +1837,6 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		strings.TrimSpace(input.UsuarioCreador),
 		strings.TrimSpace(input.Observaciones),
 	)
-	if err != nil {
-		return 0, nil, err
-	}
-	movID, err := res.LastInsertId()
 	if err != nil {
 		return 0, nil, err
 	}
@@ -2071,7 +2089,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 	}
 
 	if err == sql.ErrNoRows {
-		res, insertErr := dbConn.Exec(`INSERT INTO empresa_creditos_clientes_limites (
+		id, insertErr := insertSQLCompat(dbConn, `INSERT INTO empresa_creditos_clientes_limites (
 			empresa_id,
 			cliente_id,
 			limite_saldo_total,
@@ -2095,7 +2113,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 		if insertErr != nil {
 			return 0, insertErr
 		}
-		return res.LastInsertId()
+		return id, nil
 	}
 
 	_, err = dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET
@@ -2147,7 +2165,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	query := `SELECT
 		COUNT(1),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'activo' THEN 1 ELSE 0 END),
-		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime') THEN 1 ELSE 0 END),
+		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), SUBSTR(datetime('now','localtime'), 1, 10)) < SUBSTR(datetime('now','localtime'), 1, 10) THEN 1 ELSE 0 END),
 		SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 THEN 1 ELSE 0 END),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'cerrado' THEN 1 ELSE 0 END),
 		COALESCE(SUM(COALESCE(monto_aprobado, 0)), 0),
@@ -2161,7 +2179,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	}
 
 	var out EmpresaCreditoCarteraResumen
-	if err := dbConn.QueryRow(query, args...).Scan(
+	if err := queryRowSQLCompat(dbConn, query, args...).Scan(
 		&out.TotalCreditos,
 		&out.CreditosActivos,
 		&out.CreditosVencidos,
@@ -2610,7 +2628,7 @@ func CreateEmpresaCreditoWorkflowSolicitud(dbConn *sql.DB, input EmpresaCreditoW
 		return 0, err
 	}
 
-	res, err := tx.Exec(`INSERT INTO empresa_creditos_workflow (
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos_workflow (
 		empresa_id,
 		credito_id,
 		workflow_codigo,
@@ -2641,11 +2659,6 @@ func CreateEmpresaCreditoWorkflowSolicitud(dbConn *sql.DB, input EmpresaCreditoW
 		input.UsuarioCreador,
 		strings.TrimSpace(input.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -2931,7 +2944,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 	intRev := -creditoRound(interesMov * ratio)
 	moraRev := -creditoRound(moraMov * ratio)
 
-	res, err := tx.Exec(`INSERT INTO empresa_creditos_movimientos (
+	nuevoMovimientoID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos_movimientos (
 		empresa_id,
 		credito_id,
 		cuota_id,
@@ -2965,10 +2978,6 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 		actor,
 		fmt.Sprintf("workflow_id=%d movimiento_origen=%d", workflow.ID, workflow.MovimientoOrigenID),
 	)
-	if err != nil {
-		return 0, nil, err
-	}
-	nuevoMovimientoID, err := res.LastInsertId()
 	if err != nil {
 		return 0, nil, err
 	}
@@ -3109,7 +3118,7 @@ func executeEmpresaCreditoRefinanciacionWorkflowTx(tx *sql.Tx, workflow *Empresa
 		return 0, nil, err
 	}
 
-	resMov, err := tx.Exec(`INSERT INTO empresa_creditos_movimientos (
+	nuevoMovimientoID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos_movimientos (
 		empresa_id,
 		credito_id,
 		cuota_id,
@@ -3138,10 +3147,6 @@ func executeEmpresaCreditoRefinanciacionWorkflowTx(tx *sql.Tx, workflow *Empresa
 		actor,
 		fmt.Sprintf("workflow_id=%d refinanciacion", workflow.ID),
 	)
-	if err != nil {
-		return 0, nil, err
-	}
-	nuevoMovimientoID, err := resMov.LastInsertId()
 	if err != nil {
 		return 0, nil, err
 	}

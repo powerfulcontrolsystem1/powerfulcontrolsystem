@@ -426,7 +426,7 @@ func UpsertEmpresaAsistenciaConfiguracion(dbConn *sql.DB, payload EmpresaAsisten
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_asistencia_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_asistencia_configuracion (
 		empresa_id,
 		tolerancia_entrada_minutos,
 		tolerancia_salida_minutos,
@@ -456,7 +456,7 @@ func UpsertEmpresaAsistenciaConfiguracion(dbConn *sql.DB, payload EmpresaAsisten
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaAsistenciaPeriodosCerrados lista cierres de periodo registrados para una empresa.
@@ -588,7 +588,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 		return 0, fmt.Errorf("%w: [%s a %s]", ErrAsistenciaPeriodoSolapado, overlap.PeriodoDesde, overlap.PeriodoHasta)
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_asistencia_periodos_cerrados (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_asistencia_periodos_cerrados (
 		empresa_id,
 		periodo_desde,
 		periodo_hasta,
@@ -615,7 +615,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func getAsistenciaCierreByFecha(dbConn *sql.DB, empresaID int64, fechaAsistencia string) (*EmpresaAsistenciaPeriodoCierre, error) {
@@ -840,7 +840,7 @@ func CreateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_asistencia_empleados (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_asistencia_empleados (
 		empresa_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento,
 		cargo, turno, fecha_asistencia, hora_entrada, hora_salida,
 		minutos_tarde, horas_trabajadas, estado_asistencia, novedad,
@@ -874,7 +874,7 @@ func CreateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaAsistenciaEmpleados lista asistencias por empresa con filtros operativos.

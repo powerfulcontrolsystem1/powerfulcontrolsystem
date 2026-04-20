@@ -1,3 +1,23 @@
+2026-04-20: Creditos y chat/tareas quedan validados en PostgreSQL sobre runtime real de Motel Calipso
+- Modulos afectados: `creditos`, `chat_y_tareas`, `administrar_empresa`
+- Cambio funcional: `backend/db/creditos.go` reordena el flujo de abono para leer primero las cuotas pendientes y actualizar despues, evitando desconexion del driver PostgreSQL cuando la transaccion mezcla lectura abierta y escrituras sobre la misma tabla. `backend/db/chat_tareas.go` autorrepara `chat_tareas_citas` si la tabla o columnas faltan en PostgreSQL legacy y usa lectura compatible para el listado; `backend/handlers/chat_tareas.go` deja trazabilidad puntual del error real de creacion.
+- Impacto operativo: Motel Calipso vuelve a poder registrar abonos sobre creditos activos, crear citas ligadas a conversaciones empresariales y listarlas por busqueda sin respuestas `400/500` espurias. En esta iteracion no fue necesario tocar frontend porque el problema restante era exclusivamente de persistencia y runtime backend.
+
+2026-04-20: Cartera financiera y resumen de creditos recuperan compatibilidad PostgreSQL
+- Modulos afectados: `creditos`, `finanzas`, `administrar_empresa`
+- Cambio funcional: `backend/db/modulos_faltantes.go` inserta registros genericos con `insertSQLCompat`, corrigiendo el alta de `cuentas_cobrar` y `cuentas_pagar` sobre PostgreSQL. `backend/db/creditos.go` normaliza la consulta de `resumen_cartera` para tolerar vencimientos vacios o legacy sin lanzar error del motor y cierra el cursor de cuotas antes del `commit` en abonos para evitar desconexiones del driver PostgreSQL.
+- Impacto operativo: el flujo de cartera deja de persistir datos con respuesta engañosa `400`, y el panel de creditos vuelve a poder consultar su resumen ejecutivo en la base PostgreSQL de Motel Calipso.
+
+2026-04-20: Red social comercial queda operativa sobre PostgreSQL en flujo empresa/publico
+- Modulos afectados: `administrar_empresa`, `red_social_comercial`, `portal_publico`
+- Cambio funcional: `backend/db/red_social.go` crea `empresa_publicaciones_red_social` con DDL compatible segun dialecto y usa la capa `sql_compat` para listar, actualizar y eliminar publicaciones. Con esto, las publicaciones creadas desde el panel empresa vuelven a aparecer tanto en la vista privada como en el feed publico.
+- Impacto operativo: Motel Calipso ya puede registrar publicaciones comerciales reales en PostgreSQL sin errores `500`, manteniendo el mismo aislamiento por `empresa_id` y sin cambiar permisos ni rutas visibles.
+
+2026-04-20: Apariencia global y acceso a juegos quedan restaurados en autenticacion y portal publico
+- Modulos afectados: `autenticacion`, `portal_publico`, `super`, `administrar_empresa`, `Juegos`
+- Cambio funcional: `web/menu.js` pasa a ser el orquestador real de apariencia para todo el frontend. Aplica los seis temas desde el arranque, replica el tema en iframes mismo-origen, repara el popup de apariencia y vuelve a mostrar `Juegos` en el menú flotante. `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` ahora retornan `apariencia` en el login exitoso para que `web/js/login.js` y `web/js/login_usuario.js` la persistan antes de redirigir. También se vuelve a publicar `web/Juegos/menu_juegos.html` como entrada estable y `web/Juegos/n64/index.html` como destino funcional mínimo.
+- Impacto operativo: la persona usuaria vuelve a ver cambios reales entre los 3 modos oscuros y los 3 claros, incluso al entrar por login o navegar shells con iframe. No cambian roles ni wrappers; solo se estabiliza la experiencia visual y se evita un enlace roto en el menú global.
+
 2026-04-19: Chat y tareas agrega mensajeria multiusuario buscable y fotos dentro de la empresa
 - Modulos afectados: `administrar_empresa`, `chat_y_tareas`
 - Cambio funcional: `chat_y_tareas.html` ahora muestra una lista filtrable con checks para que la administradora cree conversaciones directas o grupales seleccionando usuarios activos de su misma empresa, y otro selector similar para agregar varios participantes a un chat existente. El formulario de mensajes deja explicito el envio de fotos, audio y documentos. En backend, `chat_tareas` valida que cada participante tipo `usuario` pertenezca realmente a la empresa antes de persistirlo.

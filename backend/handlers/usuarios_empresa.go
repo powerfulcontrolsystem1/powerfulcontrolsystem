@@ -2017,12 +2017,18 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 	SetBrowserSessionStateCookie(w, r, true)
 
 	redirectURL := "/administrar_empresa.html?id=" + strconv.FormatInt(item.EmpresaID, 10)
+	apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, item.Email)
+	if appearanceErr != nil {
+		log.Println("createEmpresaUsuarioSessionAndRespond get appearance error:", appearanceErr)
+		apariencia = "dark"
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok":           true,
 		"empresa_id":   item.EmpresaID,
 		"usuario_id":   item.ID,
 		"redirect_url": redirectURL,
+		"apariencia":   apariencia,
 	})
 	return nil
 }

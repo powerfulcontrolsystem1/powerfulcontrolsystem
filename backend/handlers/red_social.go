@@ -28,8 +28,15 @@ func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 
 func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		empresaID, ok := r.Context().Value("empresa_id").(int)
-		if !ok || empresaID == 0 {
+		empresaID := 0
+		if ctxEmpresaID, ok := r.Context().Value("empresaID").(int64); ok && ctxEmpresaID > 0 {
+			empresaID = int(ctxEmpresaID)
+		} else if ctxEmpresaID, ok := r.Context().Value("empresa_id").(int); ok && ctxEmpresaID > 0 {
+			empresaID = ctxEmpresaID
+		} else if queryEmpresaID, err := parseEmpresaIDQuery(r); err == nil && queryEmpresaID > 0 {
+			empresaID = int(queryEmpresaID)
+		}
+		if empresaID == 0 {
 			http.Error(w, "Acceso denegado o empresa no seleccionada", http.StatusForbidden)
 			return
 		}

@@ -362,7 +362,7 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 	if err := ensureClienteNoDuplicados(dbConn, payload, 0); err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO clientes (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO clientes (
 		empresa_id,
 		tipo_documento,
 		numero_documento,
@@ -413,7 +413,7 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 		}
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetClientesByEmpresa lista clientes por empresa.

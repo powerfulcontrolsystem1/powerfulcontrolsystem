@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -1261,6 +1262,7 @@ func EmpresaChatTareasCitasHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			id, err := dbpkg.CreateChatCita(dbEmp, payload)
 			if err != nil {
+				log.Printf("EmpresaChatTareasCitasHandler CreateChatCita error empresa_id=%d conversacion_id=%d: %v", payload.EmpresaID, payload.ConversacionID, err)
 				http.Error(w, "No se pudo crear la cita", http.StatusBadRequest)
 				return
 			}

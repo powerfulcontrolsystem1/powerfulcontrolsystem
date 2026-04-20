@@ -223,7 +223,7 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 	metadata = enrichAuditoriaRetentionMetadata(metadata, in.Modulo, severidad, retencionDias)
 	ttlExpr := fmt.Sprintf("+%d days", retencionDias)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_auditoria_eventos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_auditoria_eventos (
 		empresa_id,
 		modulo,
 		accion,
@@ -277,7 +277,7 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaAuditoriaEventos lista eventos de auditoria por empresa con filtros.

@@ -103,16 +103,16 @@ type PaginaPublica struct {
 }
 
 type ProductoPublico struct {
-	ID          int64          `json:"id"`
-	PaginaID    int64          `json:"pagina_id"`
-	Nombre      string         `json:"nombre"`
-	Descripcion string         `json:"descripcion"`
-	PrecioCents int64          `json:"precio_cents"`
-	Moneda      string         `json:"moneda"`
-	Stock       sql.NullInt64  `json:"-"`
-	SKU         string         `json:"sku"`
-	YoutubeURL  string         `json:"youtube_url"`
-	Activo      bool           `json:"activo"`
+	ID          int64         `json:"id"`
+	PaginaID    int64         `json:"pagina_id"`
+	Nombre      string        `json:"nombre"`
+	Descripcion string        `json:"descripcion"`
+	PrecioCents int64         `json:"precio_cents"`
+	Moneda      string        `json:"moneda"`
+	Stock       sql.NullInt64 `json:"-"`
+	SKU         string        `json:"sku"`
+	YoutubeURL  string        `json:"youtube_url"`
+	Activo      bool          `json:"activo"`
 }
 
 // Use ventaPublicaBoolToInt más abajo; evitar colisiones de nombre en paquete db.
@@ -121,28 +121,28 @@ func CreatePaginaPublica(db *sql.DB, empresaID int64, slug, titulo, descripcion,
 	if empresaID <= 0 || strings.TrimSpace(slug) == "" || strings.TrimSpace(titulo) == "" {
 		return 0, fmt.Errorf("empresa_id, slug y titulo son obligatorios")
 	}
-	res, err := db.Exec(`INSERT INTO paginas_publicas (
+	id, err := insertSQLCompat(db, `INSERT INTO paginas_publicas (
 		empresa_id, slug, titulo, descripcion, video_url, activo, creado_en, actualizado_en
 	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		empresaID, strings.TrimSpace(slug), strings.TrimSpace(titulo), strings.TrimSpace(descripcion), strings.TrimSpace(videoURL), ventaPublicaBoolToInt(activo))
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func CreateProductoPublico(db *sql.DB, paginaID int64, nombre, descripcion string, precioCents int64, moneda string, stock sql.NullInt64, sku, youtubeURL string, activo bool) (int64, error) {
 	if paginaID <= 0 || strings.TrimSpace(nombre) == "" {
 		return 0, fmt.Errorf("pagina_id y nombre son obligatorios")
 	}
-	res, err := db.Exec(`INSERT INTO productos_publicos (
+	id, err := insertSQLCompat(db, `INSERT INTO productos_publicos (
 		pagina_id, nombre, descripcion, precio_cents, moneda, stock, sku, youtube_url, activo, creado_en, actualizado_en
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		paginaID, strings.TrimSpace(nombre), strings.TrimSpace(descripcion), precioCents, strings.TrimSpace(moneda), nullableInt64Value(stock), strings.TrimSpace(sku), strings.TrimSpace(youtubeURL), ventaPublicaBoolToInt(activo))
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func nullableInt64Value(v sql.NullInt64) interface{} {
@@ -190,44 +190,43 @@ func ListPaginasPublicasByEmpresa(db *sql.DB, empresaID int64) ([]PaginaPublica,
 	return out, rows.Err()
 }
 
-
 const (
-	ventaPublicaWompiModeSandbox = "sandbox"
-	ventaPublicaWompiModeReal    = "real"
-	ventaPublicaEpaycoModeSandbox   = "sandbox"
+	ventaPublicaWompiModeSandbox     = "sandbox"
+	ventaPublicaWompiModeReal        = "real"
+	ventaPublicaEpaycoModeSandbox    = "sandbox"
 	ventaPublicaEpaycoModeProduction = "production"
 )
 
 // EmpresaVentaPublicaConfig define la configuracion de catalogo/pagos publicos por empresa.
 type EmpresaVentaPublicaConfig struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	EmpresaSlug        string `json:"empresa_slug"`
-	NombreTienda       string `json:"nombre_tienda"`
-	DescripcionTienda  string `json:"descripcion_tienda,omitempty"`
-	LogoURL            string `json:"logo_url,omitempty"`
-	BannerURL          string `json:"banner_url,omitempty"`
-	ColorPrimario      string `json:"color_primario,omitempty"`
-	TemaVisual         string `json:"tema_visual,omitempty"`
-	Moneda             string `json:"moneda"`
-	DominioPublico     string `json:"dominio_publico,omitempty"`
-	MostrarStock       bool   `json:"mostrar_stock"`
-	WompiActivo        bool   `json:"wompi_activo"`
-	WompiMode          string `json:"wompi_mode"`
-	WompiPublicKey     string `json:"wompi_public_key,omitempty"`
-	WompiPrivateKeyRef string `json:"wompi_private_key_ref,omitempty"`
-	WompiIntegrityRef  string `json:"wompi_integrity_key_ref,omitempty"`
-	WompiEventKeyRef   string `json:"wompi_event_key_ref,omitempty"`
-	EpaycoActivo       bool   `json:"epayco_activo"`
-	EpaycoMode         string `json:"epayco_mode"`
-	EpaycoPublicKey    string `json:"epayco_public_key,omitempty"`
+	ID                  int64  `json:"id"`
+	EmpresaID           int64  `json:"empresa_id"`
+	EmpresaSlug         string `json:"empresa_slug"`
+	NombreTienda        string `json:"nombre_tienda"`
+	DescripcionTienda   string `json:"descripcion_tienda,omitempty"`
+	LogoURL             string `json:"logo_url,omitempty"`
+	BannerURL           string `json:"banner_url,omitempty"`
+	ColorPrimario       string `json:"color_primario,omitempty"`
+	TemaVisual          string `json:"tema_visual,omitempty"`
+	Moneda              string `json:"moneda"`
+	DominioPublico      string `json:"dominio_publico,omitempty"`
+	MostrarStock        bool   `json:"mostrar_stock"`
+	WompiActivo         bool   `json:"wompi_activo"`
+	WompiMode           string `json:"wompi_mode"`
+	WompiPublicKey      string `json:"wompi_public_key,omitempty"`
+	WompiPrivateKeyRef  string `json:"wompi_private_key_ref,omitempty"`
+	WompiIntegrityRef   string `json:"wompi_integrity_key_ref,omitempty"`
+	WompiEventKeyRef    string `json:"wompi_event_key_ref,omitempty"`
+	EpaycoActivo        bool   `json:"epayco_activo"`
+	EpaycoMode          string `json:"epayco_mode"`
+	EpaycoPublicKey     string `json:"epayco_public_key,omitempty"`
 	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref,omitempty"`
-	EpaycoCustomerID   string `json:"epayco_customer_id,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	EpaycoCustomerID    string `json:"epayco_customer_id,omitempty"`
+	FechaCreacion       string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion  string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador      string `json:"usuario_creador,omitempty"`
+	Estado              string `json:"estado,omitempty"`
+	Observaciones       string `json:"observaciones,omitempty"`
 }
 
 // EmpresaVentaPublicaItem representa un producto publicado para venta por internet.
@@ -859,6 +858,9 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 	if cfg.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id invalido")
 	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return 0, err
+	}
 
 	nombreEmpresa, _ := getEmpresaNombreByID(dbConn, cfg.EmpresaID)
 	if strings.TrimSpace(cfg.NombreTienda) == "" {
@@ -886,7 +888,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 	}
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_venta_publica_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_venta_publica_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
@@ -951,7 +953,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_venta_publica_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_venta_publica_configuracion (
 		empresa_id,
 		empresa_slug,
 		nombre_tienda,
@@ -1004,10 +1006,6 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1120,6 +1118,9 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	if item.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id invalido")
 	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return 0, err
+	}
 	if item.Precio < 0 {
 		return 0, fmt.Errorf("precio invalido")
 	}
@@ -1140,7 +1141,7 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	item.Moneda = ventaPublicaNormalizeMoneda(item.Moneda)
 	item.Estado = ventaPublicaNormalizeEstado(item.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_venta_publica_items (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_venta_publica_items (
 		empresa_id,
 		producto_id,
 		codigo_publico,
@@ -1171,10 +1172,6 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 		item.Estado,
 		strings.TrimSpace(item.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1452,6 +1449,9 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 	if order.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id invalido")
 	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return 0, err
+	}
 	if order.Total < 0 || order.Subtotal < 0 || order.ImpuestoTotal < 0 || order.DescuentoTotal < 0 {
 		return 0, fmt.Errorf("totales invalidos")
 	}
@@ -1470,7 +1470,7 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		order.Estado = "activo"
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_venta_publica_ordenes (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_venta_publica_ordenes (
 		empresa_id,
 		codigo_orden,
 		comprador_nombre,
@@ -1513,10 +1513,6 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		order.Estado,
 		strings.TrimSpace(order.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}

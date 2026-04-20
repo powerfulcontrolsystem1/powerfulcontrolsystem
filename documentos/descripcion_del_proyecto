@@ -249,4 +249,4 @@ Regla general de tablas:
 - La guia operativa para publicar el dominio en VPS con Nginx reverse proxy (backend en `127.0.0.1:8080`) esta en `documentos/deploy_nginx_reverse_proxy_vps.md`.
 - Regla de mantenimiento documental por modulo: cuando se crea o modifica un modulo, se deben actualizar en la misma iteracion `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`, junto con la documentacion tecnica relacionada.
 - Regla de higiene documental: los documentos obsoletos o duplicados en `documentos/` deben depurarse de forma controlada y con trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
-   
+   - Incorporacion de modulo de minijuegos Arcade (con niveles, puntajes y poderes) construidos en HTML5/JS nativo como experiencia interactiva de retencion comercial.

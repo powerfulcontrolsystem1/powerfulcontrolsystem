@@ -300,7 +300,12 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
 			redirectURL = "/super_administrador.html"
 		}
-		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL})
+		apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, admin.Email)
+		if appearanceErr != nil {
+			log.Println("AdminLoginHandler get appearance error:", appearanceErr)
+			apariencia = "dark"
+		}
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "apariencia": apariencia})
 	}
 }
 

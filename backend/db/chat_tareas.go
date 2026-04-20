@@ -634,7 +634,7 @@ func clampPercent(v int) int {
 
 // CreateChatConversacion crea una conversacion de chat por empresa.
 func CreateChatConversacion(dbConn *sql.DB, payload ChatConversacion) (int64, error) {
-	res, err := dbConn.Exec(`INSERT INTO chat_tareas_conversaciones (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO chat_tareas_conversaciones (
 		empresa_id,
 		titulo,
 		descripcion,
@@ -659,7 +659,7 @@ func CreateChatConversacion(dbConn *sql.DB, payload ChatConversacion) (int64, er
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetChatConversaciones lista conversaciones por empresa.
@@ -715,7 +715,7 @@ func GetChatConversaciones(dbConn *sql.DB, empresaID int64, includeInactive bool
 		COALESCE(c.ultimo_mensaje_en, c.fecha_creacion) DESC,
 		c.id DESC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -978,7 +978,7 @@ func DeleteChatParticipante(dbConn *sql.DB, empresaID, conversacionID, id int64)
 
 // CreateChatMensaje crea un mensaje en una conversacion.
 func CreateChatMensaje(dbConn *sql.DB, payload ChatMensaje) (int64, error) {
-	res, err := dbConn.Exec(`INSERT INTO chat_tareas_mensajes (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO chat_tareas_mensajes (
 		empresa_id,
 		conversacion_id,
 		autor_tipo,
@@ -1006,11 +1006,6 @@ func CreateChatMensaje(dbConn *sql.DB, payload ChatMensaje) (int64, error) {
 		normalizeChatEstado(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1342,7 +1337,7 @@ func CreateChatTarea(dbConn *sql.DB, payload ChatTarea) (int64, error) {
 		porcentaje = 100
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO chat_tareas (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO chat_tareas (
 		empresa_id,
 		conversacion_id,
 		titulo,
@@ -1394,7 +1389,7 @@ func CreateChatTarea(dbConn *sql.DB, payload ChatTarea) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetChatTareas lista tareas por empresa con filtros opcionales.
@@ -1629,7 +1624,8 @@ func CreateChatCita(dbConn *sql.DB, payload ChatCita) (int64, error) {
 		recordatorioEnviado = 1
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO chat_tareas_citas (
+	insertCita := func() (int64, error) {
+		return insertSQLCompat(dbConn, `INSERT INTO chat_tareas_citas (
 		empresa_id,
 		conversacion_id,
 		titulo,
@@ -1673,11 +1669,23 @@ func CreateChatCita(dbConn *sql.DB, payload ChatCita) (int64, error) {
 		strings.TrimSpace(payload.UsuarioCreador),
 		normalizeChatEstado(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),
-	)
+		)
+	}
+
+	id, err := insertCita()
+	if err != nil {
+		if !isMissingTableError(err) && !isMissingColumnError(err) {
+			return 0, err
+		}
+		if schemaErr := EnsureEmpresaChatTareasSchema(dbConn); schemaErr != nil {
+			return 0, err
+		}
+		id, err = insertCita()
+	}
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetChatCitas lista citas de agenda por empresa con filtros opcionales.
@@ -1745,7 +1753,20 @@ func GetChatCitas(dbConn *sql.DB, empresaID int64, desde, hasta string, includeI
 		COALESCE(fecha_inicio, '') ASC,
 		id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	runQuery := func() (*sql.Rows, error) {
+		return querySQLCompat(dbConn, query, args...)
+	}
+
+	rows, err := runQuery()
+	if err != nil {
+		if !isMissingTableError(err) && !isMissingColumnError(err) {
+			return nil, err
+		}
+		if schemaErr := EnsureEmpresaChatTareasSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		rows, err = runQuery()
+	}
 	if err != nil {
 		return nil, err
 	}

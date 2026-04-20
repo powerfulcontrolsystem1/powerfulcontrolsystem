@@ -1,3 +1,18 @@
+## Actualizacion 2026-04-20 (apariencia global, login y acceso a juegos restaurados)
+
+- Frontend compartido:
+  - `web/menu.js` deja de depender de la sola inyección del menú flotante para aplicar el tema; ahora arranca primero como gestor global de apariencia, replica `data-theme` y clases `theme-light/theme-dark` en documentos e iframes mismo-origen, y luego monta el menú flotante cuando hay sesión.
+  - `web/estilos.css` alinea shells administrativos, formularios, tablas, menú flotante y páginas públicas con los seis temas disponibles (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`).
+  - `web/login_usuario.html`, `web/configuracion_de_la_cuenta.html` y `web/red_social_comercial.html` quedan dentro del mismo bootstrap visual global.
+- Backend autenticación:
+  - `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` devuelven `apariencia` junto con el login exitoso para que el frontend pueda fijar el tema antes del redirect al shell autenticado.
+- Frontend autenticación y juegos:
+  - `web/js/login.js` y `web/js/login_usuario.js` persisten la apariencia recibida en `localStorage` y cookie ligera `pcs_theme` antes de navegar.
+  - `web/Juegos/menu_juegos.html` y `web/Juegos/n64/index.html` se restauran como rutas públicas funcionales enlazadas desde el menú flotante.
+- Flujo:
+  - `login.html` o `login_usuario.html` -> `POST` de autenticación -> respuesta con `redirect_url` + `apariencia` -> persistencia local inmediata del tema -> redirect al panel correspondiente -> `menu.js` reaplica tema y lo sincroniza con iframes.
+  - Cualquier página pública con `menu.js` -> lectura de tema local/cookie -> aplicación visual inmediata -> si existe sesión, `GET /api/user/configuracion` refresca la preferencia guardada en backend.
+
 # Estructura del codigo
 
 Fecha de actualizacion: 2026-04-18
