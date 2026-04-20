@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Patito Volando</title>
+  <style>
+    body {
+      margin: 0; padding: 0; overflow: hidden;
+      background: #87CEEB; /* Cielo */
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    #gameArea {
+      position: relative;
+      width: 100vw; height: 100vh;
+      max-width: 700px; max-height: 700px;
+      margin: 0 auto;
+      background-color: #a0d8ef;
+      overflow: hidden;
+      border: 2px solid #555;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    #pato {
+      position: absolute;
+      left: 10%; top: 50%;
+      width: 40px; height: 30px;
+      background: #ffcc00;
+      border-radius: 50% 50% 40% 40%;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      /* Pico del pato */
+      border-right: 15px solid #ff8800;
+      border-bottom: 5px solid transparent;
+      border-top: 5px solid transparent;
+      z-index: 10;
+      transition: transform 0.1s;
+    }
+    .obstaculo {
+      position: absolute;
+      width: 50px;
+      background: #2E8B57; /* Verde tubo */
+      border: 3px solid #1E5B37;
+      z-index: 5;
+    }
+    #scoreBoard {
+      position: absolute; top: 10px; right: 20px;
+      font-size: 24px; font-weight: bold; color: #fff;
+      text-shadow: 2px 2px 0 #000;
+      z-index: 20;
+    }
+    #startScreen {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      color: white; z-index: 30; text-align: center; padding: 20px;
+      box-sizing: border-box;
+    }
+    .btn-start {
+      background: #ffaa00; border: none; padding: 15px 30px;
+      font-size: 20px; font-weight: bold; color: white;
+      border-radius: 8px; cursor: pointer; margin-top: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .btn-start:hover { background: #e69900; }
+    #gameOverScreen {
+      display: none;
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      flex-direction: column; justify-content: center; align-items: center;
+      color: white; z-index: 30;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="scoreBoard">0</div>
+    <div id="pato"></div>
+
+    <div id="startScreen">
+      <h1>Patito Volando</h1>
+      <p>Esquiva los obst&aacute;culos.<br><br><b>En PC:</b> Presiona la barra espaciadora para saltar.<br><b>En celular:</b> Toca la pantalla para saltar.</p>
+      <button class="btn-start" onclick="startGame()">Comenzar Juego</button>
+    </div>
+
+    <div id="gameOverScreen">
+      <h1>Â¡Chocaste!</h1>
+      <p>Puntuaci&oacute;n: <span id="finalScore">0</span></p>
+      <button class="btn-start" onclick="resetGame()">Intentar de nuevo</button>
+    </div>
+  </div>
+
+  <script>
+    const pato = document.getElementById('pato');
+    const gameArea = document.getElementById('gameArea');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreLabel = document.getElementById('finalScore');
+
+    let gameInterval;
+    let patoY = 50;
+    let velocity = 0;
+    const gravity = 0.4;
+    const jumpPower = -7;
+    let isGameOver = false;
+    let score = 0;
+    let obstaculos = [];
+    let frameCount = 0;
+    
+    // Altura dinÃ¡mica basada en el contenedor
+    let areaH = gameArea.clientHeight;
+    let areaW = gameArea.clientWidth;
+
+    window.onresize = () => {
+      areaH = gameArea.clientHeight;
+      areaW = gameArea.clientWidth;
+    };
+
+    function jump() {
+      if (isGameOver) return;
+      velocity = jumpPower;
+      pato.style.transform = 'rotate(-20deg)';
+    }
+
+    // Controles
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if(startScreen.style.display !== 'none' || gameOverScreen.style.display === 'flex'){
+           // Let the buttons handle start, not space directly to avoid jumping right away
+        } else {
+           jump();
+        }
+      }
+    });
+    
+    gameArea.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Evita scroll o doble click zoom
+      if(startScreen.style.display === 'none' && gameOverScreen.style.display !== 'flex') {
+         jump();
+      }
+    });
+    gameArea.addEventListener('mousedown', (e) => {
+      if(e.target.tagName !== 'BUTTON' && startScreen.style.display === 'none' && gameOverScreen.style.display !== 'flex') {
+         jump();
+      }
+    });
+
+    function createObstacle() {
+      const gap = 150; // Espacio para pasar
+      const minHeight = 50;
+      const maxHeight = areaH - gap - minHeight;
+      const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
+
+      // Tubo superior
+      const topObs = document.createElement('div');
+      topObs.className = 'obstaculo';
+      topObs.style.top = '0px';
+      topObs.style.height = topHeight + 'px';
+      topObs.style.left = areaW + 'px';
+      gameArea.appendChild(topObs);
+
+      // Tubo inferior
+      const bottomObs = document.createElement('div');
+      bottomObs.className = 'obstaculo';
+      const bottomTop = topHeight + gap;
+      bottomObs.style.top = bottomTop + 'px';
+      bottomObs.style.height = (areaH - bottomTop) + 'px';
+      bottomObs.style.left = areaW + 'px';
+      gameArea.appendChild(bottomObs);
+
+      obstaculos.push({ top: topObs, bottom: bottomObs, x: areaW, passed: false });
+    }
+
+    function gameLoop() {
+      if (isGameOver) return;
+
+      frameCount++;
+      
+      // Aplicar gravedad
+      velocity += gravity;
+      patoY += velocity;
+      
+      // RotaciÃ³n basada en la velocidad de caÃ­da
+      if(velocity > 3) pato.style.transform = 'rotate(20deg)';
+
+      // Actualizar posiciÃ³n (convertir % a px aprox o dejar en % y usar math. Pero lo cambiamos a px en la lÃ³gica)
+      // Como inicialmente el pato estÃ¡ en % (left 10%), calculamos top en px absolutos
+      pato.style.top = patoY + 'px';
+
+      // Chocar lÃ­mites
+      if (patoY <= 0 || patoY + 30 >= areaH) {
+        gameOver();
+      }
+
+      // Crear obstÃ¡culos nuevos cada cierto frame
+      if (frameCount % 100 === 0) {
+        createObstacle();
+      }
+
+      // Mover obstÃ¡culos y detectar colisiones
+      const patoRect = pato.getBoundingClientRect();
+      const areaRect = gameArea.getBoundingClientRect();
+      
+      // Rect absolute a relativo al Ã¡rea
+      const patoRel = {
+         left: patoRect.left - areaRect.left,
+         right: patoRect.right - areaRect.left,
+         top: patoRect.top - areaRect.top,
+         bottom: patoRect.bottom - areaRect.top
+      };
+
+      for (let i = 0; i < obstaculos.length; i++) {
+        let obs = obstaculos[i];
+        obs.x -= 3; // Velocidad del escenario
+        obs.top.style.left = obs.x + 'px';
+        obs.bottom.style.left = obs.x + 'px';
+
+        // Eliminar si sale de pantalla
+        if (obs.x < -60) {
+          obs.top.remove();
+          obs.bottom.remove();
+          obstaculos.splice(i, 1);
+          i--;
+          continue;
+        }
+
+        // PuntuaciÃ³n
+        if (!obs.passed && obs.x < patoRel.left) {
+          score++;
+          scoreBoard.innerText = score;
+          obs.passed = true;
+        }
+
+        // ColisiÃ³n (anchos 50px de obstaculo)
+        const obsLeft = obs.x;
+        const obsRight = obs.x + 50;
+        const topBottom = parseFloat(obs.top.style.height);
+        const bottomTop = parseFloat(obs.bottom.style.top);
+
+        if (patoRel.right > obsLeft && patoRel.left < obsRight) {
+          if (patoRel.top < topBottom || patoRel.bottom > bottomTop) {
+            gameOver();
+          }
+        }
+      }
+    }
+
+    function gameOver() {
+      isGameOver = true;
+      clearInterval(gameInterval);
+      finalScoreLabel.innerText = score;
+      gameOverScreen.style.display = 'flex';
+      
+      // Opcional: pequeÃ±o efecto visual de caÃ­da final
+      pato.style.transform = 'rotate(90deg) translateY(20px)';
+    }
+
+    function resetGame() {
+      // Limpiar obstÃ¡culos de la UI
+      obstaculos.forEach(obs => {
+        obs.top.remove();
+        obs.bottom.remove();
+      });
+      obstaculos = [];
+      pato.style.transform = 'rotate(0deg)';
+      startGame();
+    }
+
+    function startGame() {
+      // Reset variables
+      areaH = gameArea.clientHeight;
+      areaW = gameArea.clientWidth;
+      patoY = areaH / 2;
+      velocity = 0;
+      isGameOver = false;
+      score = 0;
+      frameCount = 0;
+      scoreBoard.innerText = score;
+      startScreen.style.display = 'none';
+      gameOverScreen.style.display = 'none';
+      pato.style.top = patoY + 'px';
+
+      clearInterval(gameInterval);
+      gameInterval = setInterval(gameLoop, 20); // ~50fps
+    }
+  </script>
+</body>
+</html>

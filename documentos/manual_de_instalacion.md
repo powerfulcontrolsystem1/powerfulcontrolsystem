@@ -397,3 +397,45 @@ Si Gmail rechaza el envio, valida:
 - que la contrasena sea de aplicacion,
 - que host y puerto sean correctos,
 - que no exista un bloqueo temporal de seguridad en la cuenta.
+
+## 10) Configuracion del Servidor de Soporte Remoto (RustDesk)
+
+El sistema de soporte remoto nativo funciona integrando un servidor propio de RustDesk (hbbs y hbbr) en el VPS, que permite saltarse intermediarios publicos y reducir la latencia para el soporte a empresas clientes.
+
+### 10.1 Instalacion en Ubuntu / Debian VPS
+
+1. Descargar el script oficial de instalacion de RustDesk Server:
+   \\\ash
+   wget https://raw.githubusercontent.com/rustdesk/rustdesk-server/master/setup.sh
+   chmod +x setup.sh
+   ./setup.sh
+   \\\
+   
+2. Obtener la Clave Publica de cifrado (Key):
+   El script mostrara en pantalla la Public Key del servidor, necesaria para que los clientes se conecten. Tambien puedes verla luego en:
+   \\\ash
+   cat /opt/rustdesk/id_ed25519.pub
+   \\\
+
+3. Comprobar que los servicios esten en ejecucion:
+   \\\ash
+   systemctl is-active rustdesk-hbbs
+   systemctl is-active rustdesk-hbbr
+   \\\
+   *(Deben responder 'active')*
+
+### 10.2 Administracion desde el Panel Super
+Una vez instalados los servicios en el VPS, el panel Super Administrador en la seccion **Servidores** (`/super/servidores.html`) leerá su estado usando comandos `systemctl` nativos sobre el sistema anfitrion, mostrando *Active* o *Inactive*.
+
+Se proveen botones para detener o reiniciar el servicio de forma visual. Para que los botones del panel funcionen en produccion (Linux VPS), el usuario interno que ejecuta el backend (`server_linux_amd64`) debera tener permisos sudo sin contrasena *exclusivamente para los servicios rustdesk*:
+
+\\\ash
+# Ejecutar en el servidor VPS con root
+visudo
+
+# Anadir al final del archivo para el usuario 'miusuario':
+miusuario ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rustdesk-hbbs, /usr/bin/systemctl stop rustdesk-hbbs, /usr/bin/systemctl restart rustdesk-hbbs, /usr/bin/systemctl start rustdesk-hbbr, /usr/bin/systemctl stop rustdesk-hbbr, /usr/bin/systemctl restart rustdesk-hbbr
+\\\
+
+### 10.3 Cliente y Modulo Empresa
+El modulo de 'Soporte Remoto' del administrador de empresa en el ERP proveera instrucciones para descargar el cliente RustDesk e instruira introducir la IP del servidor ID (hbbs/hbbr) y opcionalmente su Clave (Key), garantizando conexiones privadas y directas desde el portal hacia el equipo del cliente.

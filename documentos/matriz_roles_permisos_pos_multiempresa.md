@@ -1,3 +1,7 @@
+2026-04-20: Nota operativa para `inventario`, `compras`, `finanzas` y `reportes`
+- La correccion PostgreSQL de tendencia, proyeccion, reposicion preventiva, tablero financiero y salida PEPS no cambia roles, wrappers ni alcance por `empresa_id`. Solo sustituye SQL no portable y corrige la transaccion de lotes para que las mismas rutas protegidas respondan correctamente en PostgreSQL real.
+- El flujo de `compras` para emitir, recepcionar y contabilizar ordenes de reposicion, asi como `finanzas/cierres_caja` y el dataset `empresarial_tablero`, mantienen exactamente el mismo modelo de permisos. La validacion runtime confirma operacion real sin ampliar privilegios para `inventario`, `compras`, `contabilidad`, `admin_empresa` o `super_administrador`.
+
 2026-04-20: Nota operativa para `creditos`, `chat_y_tareas` y `administrar_empresa`
 - La correccion final de PostgreSQL para abonos y citas no cambia roles, wrappers ni alcance por `empresa_id`. Solo elimina fallos de persistencia y de autorreparacion de esquema en runtime.
 - `administrador` y usuarios autorizados de empresa mantienen exactamente las mismas acciones sobre creditos y agenda compartida; el cambio solo evita errores `400/500` falsos al ejecutar abonos o gestionar citas sobre PostgreSQL.

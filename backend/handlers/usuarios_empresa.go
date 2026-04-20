@@ -2020,7 +2020,7 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 	apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, item.Email)
 	if appearanceErr != nil {
 		log.Println("createEmpresaUsuarioSessionAndRespond get appearance error:", appearanceErr)
-		apariencia = "dark"
+		apariencia = ""
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

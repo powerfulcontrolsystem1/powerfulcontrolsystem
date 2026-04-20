@@ -1,3 +1,24 @@
+- 2026-04-20: Se corrige compatibilidad PostgreSQL en inventario avanzado, tablero financiero y salida PEPS de inventario.
+    - Archivos modificados:
+        - backend/db/productos.go
+        - backend/db/finanzas.go
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: `GetInventarioTendenciaByEmpresa`, `GetInventarioProyeccionQuiebreByEmpresa`, `GetInventarioPlanReposicionByEmpresa`, `GetInventarioPlanReposicionResumenByEmpresa` y `GetEmpresaReportesTableroResumen` quedan portables entre SQLite y PostgreSQL. Además, la salida de inventario por PEPS deja de fallar en PostgreSQL al usar wrappers SQL compatibles y cerrar el cursor de lotes antes de actualizar dentro de la misma transacción.
+    - Verificación:
+        - `go test ./db -run "TestRegistrarMovimientoInventario|Test(GetInventarioTendenciaByEmpresaDevuelveSerieDiaria|GetInventarioProyeccionQuiebreByEmpresaPriorizaRiesgo|GetInventarioPlanReposicionByEmpresaConsolidaProveedorYCosto|GetInventarioPlanReposicionResumenByEmpresaAgrupaProveedor|GetEmpresaReportesTableroResumen|GetEmpresaReportesTableroResumenConAsientosCanonicos)$" -count=1`
+        - Runtime PostgreSQL real sobre Motel Calipso (`empresa_id=7`): tendencia/proyección/reposición/tablero/dataset -> `200`; emisión/recepción/contabilización de reposición -> `200`; cierre de caja crear `201`, aprobar antes de cerrar `409`, cerrar `200`, aprobar `200`; `POST /api/empresa/inventario/ajustar` tipo `salida` -> `200`.
+
+- 2026-04-20: Se habilitó la impresión en el panel de Reportes Globales del Super Administrador.
+    - Archivos modificados:
+        - web/super/reportes_globales.html
+        - web/js/super_reportes_globales.js
+        - web/estilos.css
+        - CHANGELOG.md
+    - Descripción: El módulo de reportes globales ya cumplía con los requisitos de filtros empresariales y métricas individuales o consolidadas en base a fechas elegidas, junto con su respectiva capacidad de exportación a JSON, CSV, TXT, Excel/XLS y PDF desde backend. Se le añadió a la interfaz un botón explícito de impresión ('rgImprimir') y estilos @media print en 'estilos.css' para formatear limpia y apropiadamente el panel a impresoras nativas/PDF del sistema.
+
 - 2026-04-20: Se cierra la validacion PostgreSQL de creditos y chat/tareas en Motel Calipso.
     - Archivos modificados:
         - backend/db/creditos.go
@@ -13145,3 +13166,20 @@ Archivos modificados:
  
  - 2026-04-19: A�adido endpoint de persistencia de apariencia en base de datos PostgreSQL (super). Los 6 modos oscuros y claros ahora se guardan por usuario en backend usando la tabla usuario_configuracion y /api/user/configuracion.
 - 2026-04-19: Actualizaci�n de documentos/descripcion_del_proyecto para autorizar el desarrollo de minijuegos con niveles, puntajes y poderes como parte del alcance comercial.
+2026-04-20: Ejecuci�n exhaustiva completa de pruebas sobre handlers para Documentos Transaccionales (facturaci�n electr�nica, notas cr�dito, env�os DIAN), Backups Empresariales, Impresi�n y Reportes. Todas las dependencias cumplen con 200/201 (go test -run TestDocumento|Facturacion|Backup|Impresion).
+
+
+[20/04/2026] Agregada funcionalidad Servidores y Soporte Remoto (RustDesk).
+- backend/handlers/super_servidores_handlers.go: Endpoints de gestion de systemctl para supervisar RustDesk.
+- backend/main.go: Rutas /super/api/servidores expuestas.
+- web/super/servidores.html: Tarjeta de estado y controles on/off/reiniciar de RustDesk en Super admin.
+- web/super_administrador.html: Enlace anadido a menu Servidores.
+- web/administrar_empresa.html: Enlace anadido a menu Soporte Remoto.
+- web/administrar_empresa/soporte_remoto.html: Instrucciones y descarga de cliente RustDesk para las empresas.
+- documentos/manual_de_instalacion.md: Documentacion sobre la instalacion y configuracion del RustDesk hbbs/hbbr.
+
+
+
+[20/04/2026] Actualizada la posicion del boton flotante de WhatsApp.
+- web/estilos.css: Se modifico la clase .whatsapp-floating-cta para posicionar el boton en la esquina inferior derecha en resoluciones mayores, usando bottom:20px y top:auto.
+

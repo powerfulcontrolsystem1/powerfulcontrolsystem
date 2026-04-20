@@ -2237,13 +2237,8 @@ func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, 
 		desde, hasta = hasta, desde
 	}
 
-	query := `WITH RECURSIVE dias(fecha) AS (
-		SELECT date(?)
-		UNION ALL
-		SELECT date(fecha, '+1 day') FROM dias WHERE fecha < date(?)
-	)
-	SELECT
-		d.fecha,
+	query := `SELECT
+		date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) AS fecha,
 		COALESCE(SUM(CASE
 			WHEN LOWER(COALESCE(m.tipo, '')) IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo') THEN COALESCE(m.cantidad, 0)
 			ELSE 0 END), 0),
@@ -2258,34 +2253,56 @@ func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, 
 			WHEN LOWER(COALESCE(m.tipo, '')) IN ('traslado', 'cambio_producto') THEN COALESCE(m.cantidad, 0)
 			ELSE 0 END), 0),
 		COALESCE(COUNT(m.id), 0)
-	FROM dias d
-	LEFT JOIN inventario_movimientos m
-		ON m.empresa_id = ?
+	FROM inventario_movimientos m
+	WHERE m.empresa_id = ?
 		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
-		AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) = d.fecha`
-	args := []interface{}{desde, hasta, empresaID}
+		AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date(?)
+		AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) <= date(?)`
+	args := []interface{}{empresaID, desde, hasta}
 	if bodegaID > 0 {
-		query += " AND (m.bodega_origen_id = ? OR m.bodega_destino_id = ?)"
+		query += ` AND (m.bodega_origen_id = ? OR m.bodega_destino_id = ?)`
 		args = append(args, bodegaID, bodegaID)
 	}
 	query += `
-	GROUP BY d.fecha
-	ORDER BY d.fecha ASC`
+	GROUP BY date(COALESCE(m.fecha_movimiento, m.fecha_creacion))
+	ORDER BY fecha ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	out := make([]InventarioTendenciaDia, 0)
+	seriesByDate := make(map[string]InventarioTendenciaDia)
 	for rows.Next() {
 		var row InventarioTendenciaDia
 		if err := rows.Scan(&row.Fecha, &row.Entradas, &row.Salidas, &row.AjusteNeto, &row.Traslados, &row.Eventos); err != nil {
 			return nil, err
 		}
 		row.Neto = row.Entradas - row.Salidas
-		out = append(out, row)
+		seriesByDate[row.Fecha] = row
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	fechaInicio, err := time.Parse("2006-01-02", desde)
+	if err != nil {
+		return nil, err
+	}
+	fechaFin, err := time.Parse("2006-01-02", hasta)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]InventarioTendenciaDia, 0, int(fechaFin.Sub(fechaInicio).Hours()/24)+1)
+	for cursor := fechaInicio; !cursor.After(fechaFin); cursor = cursor.AddDate(0, 0, 1) {
+		fecha := cursor.Format("2006-01-02")
+		if row, ok := seriesByDate[fecha]; ok {
+			out = append(out, row)
+			continue
+		}
+		out = append(out, InventarioTendenciaDia{Fecha: fecha})
 	}
 
 	return out, nil
@@ -2431,7 +2448,7 @@ func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID
 		offset = 0
 	}
 
-	periodExpr := fmt.Sprintf("-%d day", diasVentana-1)
+	fechaDesde := time.Now().AddDate(0, 0, -diasVentana+1).Format("2006-01-02")
 	query := `SELECT
 		e.empresa_id,
 		e.producto_id,
@@ -2449,7 +2466,7 @@ func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID
 				AND m.bodega_origen_id = e.bodega_id
 				AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
 				AND LOWER(COALESCE(m.tipo, '')) IN ('salida', 'perdida', 'ajuste_negativo', 'ajuste_salida', 'traslado', 'cambio_producto')
-				AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date('now', ?)
+				AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date(?)
 		), 0) / CAST(? AS REAL) AS salida_promedio
 	FROM inventario_existencias e
 	JOIN productos p ON p.id = e.producto_id AND p.empresa_id = e.empresa_id
@@ -2458,7 +2475,7 @@ func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID
 		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'
 		AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
 		AND LOWER(COALESCE(b.estado, 'activo')) = 'activo'`
-	args := []interface{}{periodExpr, diasVentana, empresaID}
+	args := []interface{}{fechaDesde, diasVentana, empresaID}
 	if bodegaID > 0 {
 		query += " AND e.bodega_id = ?"
 		args = append(args, bodegaID)
@@ -2466,7 +2483,7 @@ func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID
 	query += " ORDER BY p.nombre ASC, b.nombre ASC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -2636,7 +2653,7 @@ func GetInventarioPlanReposicionByEmpresa(dbConn *sql.DB, empresaID, bodegaID in
 	WHERE p.empresa_id = ?
 		AND p.id IN (` + strings.Join(placeholders, ",") + `)`
 
-	metaRows, err := dbConn.Query(metaQuery, args...)
+	metaRows, err := querySQLCompat(dbConn, metaQuery, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4593,7 +4610,7 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 	}
 
 	var costoUnitario float64
-	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoUnitario); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoUnitario); err != nil {
 		return err
 	}
 	if costoUnitario < 0 {
@@ -4641,7 +4658,7 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 	}
 
 	var stockActual float64
-	err = tx.QueryRow(`SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, empresaID, productoID, bodegaID).Scan(&stockActual)
+	err = queryRowTxSQLCompat(tx, `SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, empresaID, productoID, bodegaID).Scan(&stockActual)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrStockInsuficiente
@@ -4679,7 +4696,7 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 		}
 	}
 
-	if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaID); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaID); err != nil {
 		return err
 	}
 	if err := insertMovimientoTx(tx, InventarioMovimiento{
@@ -5215,7 +5232,7 @@ func insertProductoPrecioHistorialTx(tx *sql.Tx, h ProductoPrecioHistorial) erro
 
 func getInventarioPoliticaCostoTx(tx *sql.Tx, empresaID int64) (string, error) {
 	var politica sql.NullString
-	err := tx.QueryRow(`SELECT politica_costo FROM empresa_inventario_configuracion WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&politica)
+	err := queryRowTxSQLCompat(tx, `SELECT politica_costo FROM empresa_inventario_configuracion WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&politica)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return inventarioPoliticaCostoPromedio, nil
@@ -5240,7 +5257,7 @@ func calcularCostoPromedioDisponibleTx(tx *sql.Tx, empresaID, productoID, bodega
 
 	var totalCosto float64
 	var totalCantidad float64
-	if err := tx.QueryRow(query, args...).Scan(&totalCosto, &totalCantidad); err != nil {
+	if err := queryRowTxSQLCompat(tx, query, args...).Scan(&totalCosto, &totalCantidad); err != nil {
 		return 0, err
 	}
 	if totalCantidad <= 0 {
@@ -5257,7 +5274,7 @@ func recalcularCostoPromedioProductoTx(tx *sql.Tx, empresaID, productoID int64) 
 	if promedio <= 0 {
 		return nil
 	}
-	_, err = tx.Exec(`UPDATE productos
+	_, err = execTxSQLCompat(tx, `UPDATE productos
 		SET costo = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND id = ?`, promedio, empresaID, productoID)
 	return err
@@ -5265,7 +5282,7 @@ func recalcularCostoPromedioProductoTx(tx *sql.Tx, empresaID, productoID int64) 
 
 func ensureCostoLotesSeedTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, usuario string) error {
 	var existenciaActual float64
-	err := tx.QueryRow(`SELECT COALESCE(cantidad, 0)
+	err := queryRowTxSQLCompat(tx, `SELECT COALESCE(cantidad, 0)
 		FROM inventario_existencias
 		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?
 		LIMIT 1`, empresaID, productoID, bodegaID).Scan(&existenciaActual)
@@ -5280,7 +5297,7 @@ func ensureCostoLotesSeedTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, u
 	}
 
 	var lotesActuales float64
-	if err := tx.QueryRow(`SELECT COALESCE(SUM(cantidad_disponible), 0)
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(SUM(cantidad_disponible), 0)
 		FROM inventario_costos_lotes
 		WHERE empresa_id = ?
 			AND producto_id = ?
@@ -5295,7 +5312,7 @@ func ensureCostoLotesSeedTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, u
 	}
 
 	var costoBase float64
-	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoBase); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoBase); err != nil {
 		return err
 	}
 	if costoBase < 0 {
@@ -5312,7 +5329,7 @@ func registerCostoLoteTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, cant
 	if costoUnitario < 0 {
 		costoUnitario = 0
 	}
-	_, err := tx.Exec(`INSERT INTO inventario_costos_lotes (
+	_, err := execTxSQLCompat(tx, `INSERT INTO inventario_costos_lotes (
 		empresa_id,
 		producto_id,
 		bodega_id,
@@ -5343,14 +5360,14 @@ func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64,
 		return 0, nil
 	}
 
-	rows, err := tx.Query(`SELECT id, COALESCE(cantidad_disponible, 0), COALESCE(costo_unitario, 0)
+	rows, err := queryTxSQLCompat(tx, `SELECT id, COALESCE(cantidad_disponible, 0), COALESCE(costo_unitario, 0)
 		FROM inventario_costos_lotes
 		WHERE empresa_id = ?
 			AND producto_id = ?
 			AND bodega_id = ?
 			AND LOWER(COALESCE(estado, 'activo')) = 'activo'
 			AND COALESCE(cantidad_disponible, 0) > 0
-		ORDER BY datetime(COALESCE(fecha_lote, fecha_creacion)) ASC, id ASC`, empresaID, productoID, bodegaID)
+		ORDER BY COALESCE(fecha_lote, fecha_creacion, '') ASC, id ASC`, empresaID, productoID, bodegaID)
 	if err != nil {
 		return 0, err
 	}
@@ -5391,6 +5408,12 @@ func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64,
 		totalCosto += lote.consumir * lote.costo
 		consumos = append(consumos, lote)
 	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
 
 	if restante > 0 {
 		return 0, ErrStockInsuficiente
@@ -5398,7 +5421,7 @@ func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64,
 
 	for _, lote := range consumos {
 		if lote.debeCerrar {
-			if _, err := tx.Exec(`UPDATE inventario_costos_lotes
+			if _, err := execTxSQLCompat(tx, `UPDATE inventario_costos_lotes
 				SET cantidad_disponible = 0,
 					estado = 'consumido',
 					fecha_actualizacion = datetime('now','localtime')
@@ -5407,7 +5430,7 @@ func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64,
 			}
 			continue
 		}
-		if _, err := tx.Exec(`UPDATE inventario_costos_lotes
+		if _, err := execTxSQLCompat(tx, `UPDATE inventario_costos_lotes
 			SET cantidad_disponible = ?, fecha_actualizacion = datetime('now','localtime')
 			WHERE id = ?`, lote.saldoFinal, lote.id); err != nil {
 			return 0, err
@@ -5439,7 +5462,7 @@ func transferirCostoLotesEntreBodegasTx(tx *sql.Tx, empresaID, productoID, bodeg
 
 func validateProductoEmpresaTx(tx *sql.Tx, empresaID, productoID int64) error {
 	var exists int
-	if err := tx.QueryRow(`SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&exists); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&exists); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("producto %d no pertenece a la empresa %d", productoID, empresaID)
 		}
@@ -5450,7 +5473,7 @@ func validateProductoEmpresaTx(tx *sql.Tx, empresaID, productoID int64) error {
 
 func validateBodegaEmpresaTx(tx *sql.Tx, empresaID, bodegaID int64) error {
 	var exists int
-	if err := tx.QueryRow("SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, bodegaID).Scan(&exists); err != nil {
+	if err := queryRowTxSQLCompat(tx, "SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, bodegaID).Scan(&exists); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("bodega %d no pertenece a la empresa %d", bodegaID, empresaID)
 		}
@@ -5461,7 +5484,7 @@ func validateBodegaEmpresaTx(tx *sql.Tx, empresaID, bodegaID int64) error {
 
 func validateProveedorEmpresaTx(tx *sql.Tx, empresaID, proveedorID int64) error {
 	var exists int
-	if err := tx.QueryRow("SELECT 1 FROM proveedores WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, proveedorID).Scan(&exists); err != nil {
+	if err := queryRowTxSQLCompat(tx, "SELECT 1 FROM proveedores WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, proveedorID).Scan(&exists); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("proveedor %d no pertenece a la empresa %d", proveedorID, empresaID)
 		}
@@ -5471,7 +5494,7 @@ func validateProveedorEmpresaTx(tx *sql.Tx, empresaID, proveedorID int64) error 
 }
 
 func upsertExistenciaTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, delta float64, usuario, observaciones string) error {
-	res, err := tx.Exec(`UPDATE inventario_existencias
+	res, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
 		SET cantidad = cantidad + ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`,
 		delta, empresaID, productoID, bodegaID)
@@ -5485,7 +5508,7 @@ func upsertExistenciaTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, delta
 	if affected > 0 {
 		return nil
 	}
-	_, err = tx.Exec(`INSERT INTO inventario_existencias (
+	_, err = execTxSQLCompat(tx, `INSERT INTO inventario_existencias (
 		empresa_id, producto_id, bodega_id, cantidad, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
 	) VALUES (?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		empresaID, productoID, bodegaID, delta, strings.TrimSpace(usuario), strings.TrimSpace(observaciones))
@@ -5493,7 +5516,7 @@ func upsertExistenciaTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, delta
 }
 
 func insertMovimientoTx(tx *sql.Tx, m InventarioMovimiento) error {
-	_, err := tx.Exec(`INSERT INTO inventario_movimientos (
+	_, err := execTxSQLCompat(tx, `INSERT INTO inventario_movimientos (
 		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,

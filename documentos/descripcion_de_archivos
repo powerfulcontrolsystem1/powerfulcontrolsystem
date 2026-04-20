@@ -8295,3 +8295,4 @@ backend/handlers/erp_compras_proveedores.go: Handlers REST para gestionar el cic
  
  backend/db/usuario_config_schema.go - Define el esquema de la tabla de configuraciones por administrador/usuario y metodos de GET/POST. Creado el 2026-04-19.
 backend/handlers/user_config.go - Controlador que expone /api/user/configuracion para persistir en DB el modo apariencia de la UI. Creado el 2026-04-19.
+- \ackend/handlers/super_servidores_handlers.go\: Controlador de endpoints para interactuar con servicios del OS como \systemctl\, especificamente para gestionar RustDesk.

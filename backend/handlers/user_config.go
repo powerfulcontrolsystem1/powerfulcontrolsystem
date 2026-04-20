@@ -27,15 +27,15 @@ func UserConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			apariencia, err := dbpkg.GetUsuarioApariencia(dbSuper, session.AdminEmail)
 			if err != nil {
 				log.Println("Error obteniendo apariencia:", err)
-				apariencia = "dark" // default seguro
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"ok":         true,
-				"apariencia": apariencia,
-			})
-			return
-		}
+                                apariencia = "" // No sobreescribir
+                        }
+                        w.Header().Set("Content-Type", "application/json")
+                        json.NewEncoder(w).Encode(map[string]interface{}{
+                                "ok":         true,
+                                "apariencia": apariencia,
+                        })
+                        return
+                }
 
 		if r.Method == http.MethodPost {
 			var payload struct {
@@ -62,3 +62,4 @@ func UserConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
+

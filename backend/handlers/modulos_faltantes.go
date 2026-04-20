@@ -4724,10 +4724,10 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 	switch estadoActual {
 	case "aprobada", "convertida":
 		// Estado habilitado para conversión o ya convertido.
-	case "emitida":
+	case "borrador", "emitida":
 		update := map[string]interface{}{"estado_documento": "aprobada"}
 		if hasAllowedColumn(cfgCotizacionesVenta.AllowedColumns, "observaciones") {
-			update["observaciones"] = appendStateMachineObservation(genericStringValue(cotizacion["observaciones"]), "emitida", "aprobada", "aprobacion automatica para conversion a pedido", actor)
+			update["observaciones"] = appendStateMachineObservation(genericStringValue(cotizacion["observaciones"]), estadoActual, "aprobada", "aprobacion automatica para conversion a pedido", actor)
 		}
 		if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgCotizacionesVenta.Table, empresaID, cotizacionID, update, cfgCotizacionesVenta.AllowedColumns); err != nil {
 			return nil, nil, false, false, err
@@ -4855,7 +4855,15 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 
 	estadoPedido := normalizeStateMachineValue(genericStringValue(pedido["estado_pedido"]))
 	if estadoPedido == "borrador" {
-		return nil, nil, false, newVentasConversionError(http.StatusConflict, "el pedido debe estar al menos confirmado para generar documento final")
+		update := map[string]interface{}{"estado_pedido": "confirmado"}
+		if hasAllowedColumn(cfgPedidosVenta.AllowedColumns, "observaciones") {
+			update["observaciones"] = appendStateMachineObservation(genericStringValue(pedido["observaciones"]), estadoPedido, "confirmado", "aprobacion automatica para documento final", actor)
+		}
+		if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgPedidosVenta.Table, empresaID, pedidoID, update, cfgPedidosVenta.AllowedColumns); err != nil {
+			return nil, nil, false, err
+		}
+		pedido, _ = dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgPedidosVenta.Table, empresaID, pedidoID)
+		estadoPedido = "confirmado"
 	}
 	if estadoPedido == "cancelado" {
 		return nil, nil, false, newVentasConversionError(http.StatusConflict, "no se puede generar documento final desde un pedido cancelado")

@@ -715,6 +715,11 @@
         }
       });
     }
+    if (byId('rgImprimir')) {
+      byId('rgImprimir').addEventListener('click', function () {
+        window.print();
+      });
+    }
     if (byId('rgModo')) {
       byId('rgModo').addEventListener('change', async function () {
         try {

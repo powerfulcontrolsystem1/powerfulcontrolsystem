@@ -303,7 +303,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, admin.Email)
 		if appearanceErr != nil {
 			log.Println("AdminLoginHandler get appearance error:", appearanceErr)
-			apariencia = "dark"
+                  apariencia = ""
 		}
 		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "apariencia": apariencia})
 	}

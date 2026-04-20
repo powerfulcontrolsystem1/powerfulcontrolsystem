@@ -24,11 +24,10 @@ func GetUsuarioApariencia(dbConn *sql.DB, email string) (string, error) {
 	var ap string
 	err := dbConn.QueryRow("SELECT apariencia FROM usuario_configuracion WHERE email = $1", email).Scan(&ap)
 	if err == sql.ErrNoRows {
-		return "dark", nil // Por defecto si no hay
-	}
-	return ap, err
+                return "", nil // Por defecto no sobreescribir preferencia local si no hay configuracion
+        }
+        return ap, err
 }
-
 func SetUsuarioApariencia(dbConn *sql.DB, email, apariencia string) error {
 	q := `INSERT INTO usuario_configuracion (email, apariencia, fecha_actualizacion) 
 		VALUES ($1, $2, CURRENT_TIMESTAMP)

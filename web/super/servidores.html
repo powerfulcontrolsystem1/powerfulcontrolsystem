@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Super Administrador - Servidores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="admin-empresa-shell">
+  <main class="admin-content">
+    <div class="content-header">
+      <h1>Servidores y Servicios Base</h1>
+      <p>Supervisa, activa y prueba los servicios esenciales del VPS que soportan la operaciÃ³n.</p>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Tarjeta RustDesk -->
+      <div class="card" id="card-rustdesk">
+        <div class="card-header">
+          <h3>RustDesk (Soporte Remoto)</h3>
+        </div>
+        <div class="card-body" style="padding-top:15px;">
+          <p>Servidor propio para soporte remoto a los clientes.</p>
+          <p><strong>Estado:</strong> <span class="badge" id="rustdesk-badge">Cargando...</span></p>
+          <div class="form-actions" style="margin-top:20px; justify-content: flex-start; gap:10px;">
+            <button type="button" class="btn btn-primary" onclick="toggleService('rustdesk', 'start')">Iniciar</button>
+            <button type="button" class="btn btn-danger" onclick="toggleService('rustdesk', 'stop')">Detener</button>
+            <button type="button" class="btn btn-outline" onclick="testRustDesk()">Probar ConexiÃ³n</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    async function loadServidores() {
+      try {
+        const res = await fetch('/super/api/servidores');
+        const data = await res.json();
+        if (data.ok && data.servicios) {
+          const rd = data.servicios.find(s => s.id === "rustdesk");
+          if (rd) {
+            updateBadge("rustdesk", rd.estado);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading servidores:", err);
+      }
+    }
+    
+    async function toggleService(id, action) {
+      if(!confirm("Â¿Seguro que deseas " + (action==="start"?"iniciar":"detener") + " el servicio " + id + "?")) return;
+      try {
+        updateBadge(id, "PROCESANDO...");
+        const res = await fetch('/super/api/servidores/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({id, accion: action})
+        });
+        if (res.ok) {
+          setTimeout(loadServidores, 2000);
+        } else {
+          alert("Error al cambiar estado del servicio.");
+          loadServidores();
+        }
+      } catch (err) {
+        console.error("Error toggling service:", err);
+        loadServidores();
+      }
+    }
+    
+    function updateBadge(id, status) {
+      const badge = document.getElementById(id + "-badge");
+      if (!badge) return;
+      badge.textContent = status.toUpperCase();
+      badge.className = "badge"; 
+      if (status === "active") badge.classList.add("badge-success");
+      else if (status === "inactive") badge.classList.add("badge-danger");
+      else badge.classList.add("badge-warning");
+    }
+    
+    function testRustDesk() {
+      alert("Para probar RustDesk, abre un cliente apuntando al servidor o verifica visualmente que el panel conecte.");
+      // Futuro: Endpoint de check tcp en puerto 21116
+    }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      loadServidores();
+      setInterval(loadServidores, 10000);
+    });
+  </script>
+</body>
+</html>
