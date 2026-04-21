@@ -13590,3 +13590,8 @@ Archivos modificados:
 - web/super_administrador.html: Se agregó el hipervínculo en el sidebar hacia el panel de "Vendedores y Asesores".
 - web/super/vendedores_licencias.html: Se creó la interfaz de gestión que permite a los Súper Administradores crear Asesores, vincularles un Plan de Comisión (Venta o Renovación) y auditar sus liquidaciones mediante los endpoints REST (`/super/api/asesores` y `/super/api/asesor_comercial`).
 
+
+2026-04-20: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
