@@ -13690,3 +13690,35 @@ Archivos modificados:
 - web/soporte_remoto_acceso.html
 - web/super/configuracion_avanzada.html
 - web/venta_publica.html
+
+2026-04-21: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/documentos_transaccionales.go
+- backend/handlers/auth_users_carritos_test.go
+- backend/handlers/soporte_remoto.go
+- backend/handlers/super_soporte_remoto_test.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/server.exe
+- backend/utils/utils.go
+- descargas/rustdesk-cliente-linux-amd64.deb
+- descargas/rustdesk-cliente-macos-x64.dmg
+- descargas/rustdesk-cliente-windows-x64.exe
+- descargas/rustdesk-servidor-linux-amd64.zip
+- descargas/rustdesk-servidor-windows-x64.zip
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/soporte_remoto.html
+- web/estilos.css
+- web/js/seleccionar_empresa.js
+- web/login.html
+- web/registrar_nuevo_usuario_administrador.html
+- web/soporte_remoto_acceso.html
+- web/super/configuracion_avanzada.html
+- web/super/servidores.html
+- web/super/soporte_remoto.html
+- web/super_administrador.html
