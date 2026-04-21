@@ -6,6 +6,7 @@
   var viewKey = "seleccionar_empresa:view";
   var currentEmpresas = [];
   var currentAccount = null;
+  var shareNoticeEl = document.getElementById("selectorShareNotice");
 
   try {
     storage = window.sessionStorage;
@@ -34,6 +35,31 @@
         "'": "&#39;"
       }[match];
     });
+  }
+
+  function setShareNotice(text, isError) {
+    if (!shareNoticeEl) return;
+    shareNoticeEl.style.display = text ? "block" : "none";
+    shareNoticeEl.textContent = text || "";
+    shareNoticeEl.classList.toggle("error", !!isError);
+    shareNoticeEl.classList.toggle("success", !isError && !!text);
+  }
+
+  function getQueryParam(name) {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return String(params.get(name) || "").trim();
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function clearQueryParam(name) {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete(name);
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+    } catch (e) {}
   }
 
   function persistView(view) {
@@ -98,17 +124,41 @@
     return 0;
   }
 
+  function getEmpresaFromCurrentList(empresaId) {
+    var normalizedId = Number(empresaId || 0);
+    if (!normalizedId) {
+      return null;
+    }
+    for (var i = 0; i < currentEmpresas.length; i += 1) {
+      if (Number(currentEmpresas[i].id || 0) === normalizedId) {
+        return currentEmpresas[i];
+      }
+    }
+    return null;
+  }
+
   function normalizeEmail(value) {
     return String(value || "").trim().toLowerCase();
   }
 
+  function getAccountAdmin(account) {
+    if (!account) {
+      return null;
+    }
+    if (account.admin && typeof account.admin === "object") {
+      return account.admin;
+    }
+    return account;
+  }
+
   function isPrincipalSuperAccount(account) {
-    if (!account || !account.admin) {
+    var admin = getAccountAdmin(account);
+    if (!admin) {
       return false;
     }
-    var email = normalizeEmail(account.email || (account.admin && account.admin.email));
-    var creator = normalizeEmail(account.admin.usuario_creador);
-    var role = normalizeEmail(account.role || (account.admin && account.admin.role));
+    var email = normalizeEmail(account.email || admin.email);
+    var creator = normalizeEmail(admin.usuario_creador);
+    var role = normalizeEmail(account.role || admin.role);
     if (role !== "super_administrador") {
       return false;
     }
@@ -116,11 +166,21 @@
   }
 
   function canManageScopedLicencias(account) {
-    if (!account) {
+    var admin = getAccountAdmin(account);
+    if (!admin) {
       return false;
     }
-    var role = normalizeEmail(account.role || (account.admin && account.admin.role));
+    var role = normalizeEmail(account.role || admin.role);
     return role === "super_administrador" || role === "administrador";
+  }
+
+  function isSidebarLinkVisible(link) {
+    if (!link) {
+      return false;
+    }
+    var listItem = link.closest ? link.closest("li") : null;
+    var target = listItem || link;
+    return target.style.display !== "none";
   }
 
   function setElementVisible(element, visible) {
@@ -174,6 +234,9 @@
     if (!href) return;
     var normalized = normalizeHref(href);
     if (!normalized) return;
+    if (link && !isSidebarLinkVisible(link)) {
+      return;
+    }
     if (!contentFrame || !empresasPanel) {
       window.location.href = normalized;
       return;
@@ -293,6 +356,15 @@
     return hasLicense ? visual.activeCopy : visual.pendingCopy;
   }
 
+  function buildEmpresaAccessLabel(empresa) {
+    var accessSource = String(empresa && empresa.access_source ? empresa.access_source : "owner").toLowerCase();
+    if (accessSource === "shared") {
+      var compartidaPor = String(empresa && empresa.compartida_por ? empresa.compartida_por : "").trim();
+      return compartidaPor ? "Compartida por " + compartidaPor : "Empresa compartida contigo";
+    }
+    return "Empresa propia";
+  }
+
   function buildEmpresaCard(empresa, hasLicense) {
     var visual = getEmpresaTypeVisual(empresa);
     var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
@@ -334,6 +406,9 @@
       '<h3 class="card-title">' +
       escapeHtml(empresa.nombre || "--") +
       "</h3>" +
+      '<p class="empresa-shared-note">' +
+      escapeHtml(buildEmpresaAccessLabel(empresa)) +
+      "</p>" +
       '<p class="card-desc muted">' +
       escapeHtml(descripcion || "") +
       "</p>" +
@@ -471,6 +546,7 @@
 
   async function render() {
     try {
+      setShareNotice("", false);
       var meRes = await fetch("/me");
       if (!meRes.ok) {
         window.location.href = "/login.html";
@@ -514,11 +590,6 @@
         }
       });
 
-      var myEmpresas = empresas.filter(function (e) {
-        if (!e.usuario_creador) return false;
-        return e.usuario_creador.toLowerCase() === (me.email || "").toLowerCase();
-      });
-
       var container = document.getElementById("cards");
       container.innerHTML = "";
 
@@ -534,7 +605,14 @@
         });
       }
 
-      var list = myEmpresas.length > 0 ? myEmpresas : empresas;
+      var list = empresas.slice().sort(function (left, right) {
+        var leftShared = String(left && left.access_source ? left.access_source : "owner").toLowerCase() === "shared";
+        var rightShared = String(right && right.access_source ? right.access_source : "owner").toLowerCase() === "shared";
+        if (leftShared !== rightShared) {
+          return leftShared ? 1 : -1;
+        }
+        return String(left && left.nombre ? left.nombre : "").localeCompare(String(right && right.nombre ? right.nombre : ""), "es", { sensitivity: "base" });
+      });
       currentEmpresas = list.slice();
       if (!readEmpresaContext() && list.length > 0) {
         persistEmpresaContext(list[0].id);
@@ -632,6 +710,11 @@
 
     if (view.mode === "frame" && view.href) {
       var targetLink = findLinkByHref(view.href);
+      if (!targetLink || !isSidebarLinkVisible(targetLink)) {
+        showEmpresasPanel();
+        setActiveNav(linkAgregar);
+        return;
+      }
       openInRightFrame(view.href, targetLink);
       if (targetLink) setActiveNav(targetLink);
       return;
@@ -670,6 +753,11 @@
           window.alert("Primero crea o selecciona una empresa para editarla.");
           return;
         }
+        var empresa = getEmpresaFromCurrentList(empresaId);
+        if (empresa && String(empresa.access_source || "owner").toLowerCase() === "shared") {
+          window.alert("Solo el administrador propietario puede editar o eliminar la ficha de una empresa compartida.");
+          return;
+        }
         persistEmpresaContext(empresaId);
         setActiveNav(linkEditarEmpresaMenu);
         window.location.href = "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId));
@@ -685,11 +773,49 @@
     });
   }
 
+  async function processSharedInvitationToken() {
+    var token = getQueryParam("shared_invitation_token");
+    if (!token) {
+      return;
+    }
+    try {
+      var res = await fetch("/super/api/empresas/compartidos/aceptar", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token })
+      });
+      var raw = await res.text();
+      var data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        data = null;
+      }
+      if (!res.ok) {
+        throw new Error((data && (data.message || data.error)) || raw || "No se pudo aceptar la invitación compartida.");
+      }
+      if (data && data.empresa_id) {
+        persistEmpresaContext(data.empresa_id);
+      }
+      setShareNotice((data && data.message) || "La empresa compartida ya está disponible en tu selector.", false);
+      clearQueryParam("shared_invitation_token");
+      showEmpresasPanel();
+    } catch (err) {
+      setShareNotice(err && err.message ? err.message : "No se pudo aceptar la invitación compartida.", true);
+      clearQueryParam("shared_invitation_token");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     applySidebarPermissions(null);
     wireSidebarFrameLinks();
-    fetchCurrentAccount();
-    restoreLastView();
+    fetchCurrentAccount().finally(async function () {
+      await render();
+      await processSharedInvitationToken();
+      await render();
+      restoreLastView();
+    });
 
     var form = document.getElementById("form");
     if (!form) return;
@@ -758,6 +884,4 @@
     persistEmpresaContext(id);
     window.location.href = '/descargar_informacion_de_la_empresa.html?' + params.toString();
   });
-
-  render();
 })();

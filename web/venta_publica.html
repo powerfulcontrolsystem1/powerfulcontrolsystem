@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta publica</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="venta-publica-page">
+  <main class="venta-publica-shell">
+    <section class="venta-publica-hero card">
+      <div class="venta-publica-hero-copy">
+        <p class="venta-publica-kicker">Venta publica</p>
+        <h1 id="ventaPublicaTitle">Cargando tienda...</h1>
+        <p id="ventaPublicaDescription" class="venta-publica-description">Estamos consultando la configuracion publica de la empresa.</p>
+        <div id="ventaPublicaMeta" class="venta-publica-meta"></div>
+      </div>
+      <div class="venta-publica-hero-actions">
+        <a id="ventaPublicaLocalLink" class="btn secondary" href="/">Ir al inicio</a>
+      </div>
+    </section>
+
+    <section id="ventaPublicaStatus" class="card venta-publica-status" style="display:none"></section>
+
+    <section class="venta-publica-grid">
+      <article class="card venta-publica-section">
+        <div class="venta-publica-section-head">
+          <h2>Catalogo disponible</h2>
+          <span id="ventaPublicaItemsCount" class="form-help">0 items</span>
+        </div>
+        <div id="ventaPublicaItems" class="venta-publica-items muted">Cargando catalogo...</div>
+      </article>
+
+      <article class="card venta-publica-section">
+        <div class="venta-publica-section-head">
+          <h2>Publicaciones comerciales</h2>
+          <span id="ventaPublicaPublicacionesCount" class="form-help">0 publicaciones</span>
+        </div>
+        <div id="ventaPublicaPublicaciones" class="venta-publica-publicaciones muted">Cargando publicaciones...</div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (match) {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          }[match];
+        });
+      }
+
+      function formatCurrency(value, currency) {
+        var amount = Number(value || 0);
+        var iso = String(currency || 'COP').trim().toUpperCase() || 'COP';
+        try {
+          return new Intl.NumberFormat('es-CO', { style: 'currency', currency: iso, maximumFractionDigits: 0 }).format(amount);
+        } catch (e) {
+          return amount.toFixed(0) + ' ' + iso;
+        }
+      }
+
+      function getSlugFromLocation() {
+        var params = new URLSearchParams(window.location.search || '');
+        var querySlug = String(params.get('empresa_slug') || '').trim();
+        if (querySlug) return querySlug;
+        var parts = window.location.pathname.split('/').filter(Boolean);
+        if (parts.length >= 2 && String(parts[parts.length - 1]).toLowerCase() === 'venta_publica.html') {
+          return String(parts[parts.length - 2] || '').trim();
+        }
+        return '';
+      }
+
+      function getStatusContext() {
+        var params = new URLSearchParams(window.location.search || '');
+        return {
+          orderCode: String(params.get('order_code') || params.get('codigo_orden') || '').trim(),
+          provider: String(params.get('provider') || '').trim(),
+          transactionId: String(params.get('transaction_id') || '').trim(),
+          reference: String(params.get('reference') || '').trim(),
+          status: String(params.get('status') || '').trim()
+        };
+      }
+
+      async function fetchJSON(url) {
+        var response = await fetch(url, { credentials: 'same-origin' });
+        var raw = await response.text();
+        var data = null;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          data = null;
+        }
+        if (!response.ok) {
+          throw new Error((data && (data.error || data.message)) || raw || 'Solicitud fallida');
+        }
+        return data;
+      }
+
+      function renderCatalog(payload) {
+        var tienda = payload && payload.tienda ? payload.tienda : {};
+        var items = Array.isArray(payload && payload.items) ? payload.items : [];
+        document.getElementById('ventaPublicaTitle').textContent = tienda.nombre_tienda || 'Tienda publica';
+        document.getElementById('ventaPublicaDescription').textContent = tienda.descripcion_tienda || 'Catalogo publico disponible para esta empresa.';
+        document.getElementById('ventaPublicaItemsCount').textContent = items.length + (items.length === 1 ? ' item' : ' items');
+        document.getElementById('ventaPublicaLocalLink').href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(String(payload && payload.empresa_slug || ''));
+
+        var meta = [];
+        if (payload && payload.empresa_slug) meta.push('<span>Slug: <strong>' + escapeHtml(payload.empresa_slug) + '</strong></span>');
+        if (tienda && tienda.moneda) meta.push('<span>Moneda: <strong>' + escapeHtml(tienda.moneda) + '</strong></span>');
+        if (tienda && tienda.color_primario) meta.push('<span>Color: <strong>' + escapeHtml(tienda.color_primario) + '</strong></span>');
+        document.getElementById('ventaPublicaMeta').innerHTML = meta.join('');
+
+        var target = document.getElementById('ventaPublicaItems');
+        if (!items.length) {
+          target.innerHTML = '<p class="muted">No hay items publicados por ahora.</p>';
+          return;
+        }
+        target.innerHTML = items.map(function (item) {
+          return '<article class="venta-publica-item">'
+            + '<div class="venta-publica-item-copy">'
+            + '<h3>' + escapeHtml(item.nombre || 'Item publico') + '</h3>'
+            + '<p>' + escapeHtml(item.descripcion || 'Sin descripcion publica.') + '</p>'
+            + '<div class="venta-publica-item-meta">'
+            + '<span>' + escapeHtml(item.codigo_publico || 'Sin codigo') + '</span>'
+            + '<span>' + formatCurrency(item.precio, item.moneda || tienda.moneda || 'COP') + '</span>'
+            + '</div>'
+            + '</div>'
+            + '<div class="venta-publica-item-badges">'
+            + '<span class="venta-publica-badge">Stock: ' + escapeHtml(item.stock_publicado || 0) + '</span>'
+            + (item.destacado ? '<span class="venta-publica-badge is-highlight">Destacado</span>' : '')
+            + '</div>'
+            + '</article>';
+        }).join('');
+      }
+
+      function renderPublicaciones(rows) {
+        var items = Array.isArray(rows) ? rows : [];
+        document.getElementById('ventaPublicaPublicacionesCount').textContent = items.length + (items.length === 1 ? ' publicacion' : ' publicaciones');
+        var target = document.getElementById('ventaPublicaPublicaciones');
+        if (!items.length) {
+          target.innerHTML = '<p class="muted">No hay publicaciones comerciales activas en este momento.</p>';
+          return;
+        }
+        target.innerHTML = items.map(function (item) {
+          return '<article class="venta-publica-post">'
+            + '<h3>' + escapeHtml(item.nombre || 'Publicacion') + '</h3>'
+            + '<p>' + escapeHtml(item.descripcion || 'Sin descripcion.') + '</p>'
+            + '<div class="venta-publica-item-meta"><span>Estado: ' + escapeHtml(item.estado || 'activo') + '</span></div>'
+            + '</article>';
+        }).join('');
+      }
+
+      function renderStatus(payload) {
+        if (!payload || !payload.order || !payload.order.codigo_orden) {
+          return;
+        }
+        var order = payload.order;
+        var target = document.getElementById('ventaPublicaStatus');
+        target.style.display = '';
+        var statusLocal = String(payload.status_local || order.estado_pago || 'pendiente').trim();
+        target.innerHTML = '<h2>Estado del pago</h2>'
+          + '<p><strong>Orden:</strong> ' + escapeHtml(order.codigo_orden || '') + '</p>'
+          + '<p><strong>Estado local:</strong> ' + escapeHtml(statusLocal) + '</p>'
+          + '<p><strong>Referencia:</strong> ' + escapeHtml(order.referencia_externa || '') + '</p>'
+          + '<p><strong>Total:</strong> ' + formatCurrency(order.total || 0, order.moneda || 'COP') + '</p>';
+      }
+
+      async function run() {
+        var slug = getSlugFromLocation();
+        if (!slug) {
+          document.getElementById('ventaPublicaTitle').textContent = 'Tienda publica no disponible';
+          document.getElementById('ventaPublicaDescription').textContent = 'No se encontro un slug de empresa para cargar la tienda publica.';
+          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">Falta el parametro empresa_slug.</p>';
+          document.getElementById('ventaPublicaPublicaciones').innerHTML = '<p class="muted">No se pudo cargar publicaciones sin empresa seleccionada.</p>';
+          return;
+        }
+
+        try {
+          var catalog = await fetchJSON('/api/public/venta_publica?action=catalogo&empresa_slug=' + encodeURIComponent(slug));
+          renderCatalog(catalog);
+          var empresaID = Number(catalog && catalog.empresa_id || 0);
+          var publicaciones = await fetchJSON('/api/public/publicaciones?empresa_id=' + encodeURIComponent(String(empresaID || '')));
+          renderPublicaciones(publicaciones);
+
+          var statusContext = getStatusContext();
+          if (statusContext.orderCode) {
+            var statusURL = '/api/public/venta_publica?action=estado_pago&empresa_slug=' + encodeURIComponent(slug)
+              + '&order_code=' + encodeURIComponent(statusContext.orderCode);
+            if (statusContext.transactionId) statusURL += '&transaction_id=' + encodeURIComponent(statusContext.transactionId);
+            if (statusContext.provider) statusURL += '&metodo_pago=' + encodeURIComponent(statusContext.provider);
+            var paymentStatus = await fetchJSON(statusURL);
+            renderStatus(paymentStatus);
+          }
+        } catch (err) {
+          document.getElementById('ventaPublicaTitle').textContent = 'No se pudo cargar la tienda';
+          document.getElementById('ventaPublicaDescription').textContent = err && err.message ? err.message : 'Ocurrio un error cargando la experiencia publica.';
+          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">' + escapeHtml(err && err.message ? err.message : 'Error cargando catalogo') + '</p>';
+          document.getElementById('ventaPublicaPublicaciones').innerHTML = '<p class="muted">No se pudieron cargar publicaciones comerciales.</p>';
+        }
+      }
+
+      run();
+    })();
+  </script>
+</body>
+</html>

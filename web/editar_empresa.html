@@ -62,6 +62,39 @@
         </form>
       </article>
 
+      <article class="card empresa-edit-card empresa-edit-share-card">
+        <h2>Compartir con otro administrador</h2>
+        <p class="empresa-edit-panel-copy">Envía una invitación por correo a otro administrador ya registrado para que, después de aceptarla, también vea esta empresa en su selector.</p>
+        <form id="empresaShareForm" class="form empresa-edit-form empresa-share-form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empresaShareEmail">Correo del administrador</label>
+              <input id="empresaShareEmail" class="form-input" type="email" maxlength="160" placeholder="admin@empresa.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col form-col-full">
+              <label class="form-label" for="empresaShareMessage">Mensaje opcional</label>
+              <textarea id="empresaShareMessage" class="form-input empresa-edit-textarea" rows="4" maxlength="800" placeholder="Mensaje breve que aparecerá en el correo de invitación"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Enviar invitación</button>
+          </div>
+          <div id="empresaShareMessageBox" class="form-help"></div>
+        </form>
+        <div class="empresa-share-lists">
+          <div>
+            <h3>Accesos activos</h3>
+            <div id="empresaShareAccessList" class="empresa-share-list muted">Cargando accesos compartidos...</div>
+          </div>
+          <div>
+            <h3>Invitaciones</h3>
+            <div id="empresaShareInviteList" class="empresa-share-list muted">Cargando invitaciones...</div>
+          </div>
+        </div>
+      </article>
+
       <article class="card empresa-edit-card empresa-edit-danger empresa-edit-delete-card">
         <h2>Eliminar</h2>
         <p class="empresa-edit-panel-copy">Esta accion borra la empresa y todos los datos asociados por empresa_id. El sistema exige confirmacion por nombre exacto.</p>

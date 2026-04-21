@@ -244,17 +244,21 @@
             }
           }catch(e){}
 
-          const [res, empRes, methodsRes] = await Promise.all([
-            fetch('/super/api/licencias'),
-            fetch('/super/api/empresas'),
-            fetch('/api/public/licencias/payment_methods')
+          const summaryParams = new URLSearchParams();
+          summaryParams.set('licencia_id', String(licenciaId));
+          if (empresaId) summaryParams.set('empresa_id', String(empresaId));
+
+          const [summaryRes, methodsRes] = await Promise.all([
+            fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
+            fetch('/api/public/licencias/payment_methods', { credentials: 'same-origin' })
           ]);
-          if (!res.ok) { container.innerText = 'Error al obtener licencias'; return }
+          if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen público de la licencia'; return }
           if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
 
-          const licencias = await res.json();
-          const empresas = empRes.ok ? await empRes.json() : [];
+          const summaryPayload = await summaryRes.json();
           const methodsPayload = await methodsRes.json();
+          const lic = summaryPayload && summaryPayload.licencia ? summaryPayload.licencia : null;
+          const selectedEmpresa = summaryPayload && summaryPayload.empresa ? summaryPayload.empresa : null;
           const paymentProviders = Array.isArray(methodsPayload.providers) ? methodsPayload.providers : [];
           const epaycoProvider = paymentProviders.find(function(provider){ return provider && provider.id === 'epayco'; }) || null;
           const wompiProvider = paymentProviders.find(function(provider){ return provider && provider.id === 'wompi'; }) || null;
@@ -296,10 +300,8 @@
             );
           }
 
-          const lic = (licencias || []).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
 
-          const selectedEmpresa = empresaId ? ((empresas || []).find(function(x){ return String(x.id) === String(empresaId) }) || null) : null;
           const empresaNombre = selectedEmpresa ? String(selectedEmpresa.nombre || selectedEmpresa.Nombre || '').trim() : '';
           const tipoNombre = String(params.get('tipo_nombre') || lic.tipo_nombre || lic.TipoNombre || '').trim();
           const licenciaNombre = String(lic.nombre || lic.Nombre || '').trim();
@@ -456,7 +458,7 @@
             paymentHub: document.getElementById('paymentHub')
           };
 
-          var checkoutSummaryState = null;
+          var checkoutSummaryState = summaryPayload && summaryPayload.summary ? summaryPayload.summary : null;
           var summaryTimer = null;
 
           async function fetchCheckoutSummary(){
@@ -470,7 +472,7 @@
             var data = null;
             try { data = raw ? JSON.parse(raw) : null; } catch(e) { data = null; }
             if (!res.ok) throw new Error((data && data.error) || raw || 'No se pudo calcular el total de la licencia.');
-            return data && data.summary ? data.summary : null;
+            return data || null;
           }
 
           function togglePaymentVisibility(showPaymentHub){
@@ -478,7 +480,8 @@
             if (ui.freeActivationSection) ui.freeActivationSection.style.display = showPaymentHub ? 'none' : '';
           }
 
-          function renderCheckoutSummary(summary){
+          function renderCheckoutSummary(payloadOrSummary){
+            var summary = payloadOrSummary && payloadOrSummary.summary ? payloadOrSummary.summary : payloadOrSummary;
             checkoutSummaryState = summary || null;
             var originalValue = summary && typeof summary.original_value === 'number' ? summary.original_value : licenciaValor;
             var discountValue = summary && typeof summary.discount_value === 'number' ? summary.discount_value : 0;
@@ -511,8 +514,8 @@
 
           async function refreshCheckoutSummary(){
             try {
-              var summary = await fetchCheckoutSummary();
-              renderCheckoutSummary(summary);
+              var summaryPayload = await fetchCheckoutSummary();
+              renderCheckoutSummary(summaryPayload);
             } catch (err) {
               if (ui.discountCodeStatus) {
                 ui.discountCodeStatus.textContent = err && err.message ? err.message : String(err);
@@ -521,6 +524,8 @@
               }
             }
           }
+
+          renderCheckoutSummary(summaryPayload);
 
           function scheduleCheckoutSummaryRefresh(){
             if (summaryTimer) window.clearTimeout(summaryTimer);

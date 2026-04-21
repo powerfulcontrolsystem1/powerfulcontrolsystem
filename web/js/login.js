@@ -159,6 +159,15 @@
     } catch (e) {}
   }
 
+  function getSharedInvitationTokenFromQuery() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return normalizeEmail(params.get('shared_invitation_token')).replace(/\s+/g, '');
+    } catch (e) {
+      return '';
+    }
+  }
+
   function showAuthView(view) {
     clearMsgs();
     if (emailLoginForm) {
@@ -267,6 +276,11 @@
         var response = await postJson('/super/api/administradores/login', {email: email, password: password});
         if (response.ok && response.json && response.json.redirect_url) {
           persistThemePreference(response.json.apariencia);
+          var sharedInvitationToken = getSharedInvitationTokenFromQuery();
+          if (sharedInvitationToken) {
+            window.location.href = '/seleccionar_empresa.html?shared_invitation_token=' + encodeURIComponent(sharedInvitationToken);
+            return;
+          }
           window.location.href = response.json.redirect_url;
           return;
         }

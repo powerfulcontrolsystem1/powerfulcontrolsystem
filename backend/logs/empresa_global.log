@@ -5504,3 +5504,92 @@
 2026-04-20T15:54:55-05:00 [INFO] req_id=req-1776718495093671900-4a148fa5489e event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=621
 2026-04-20T15:54:56-05:00 [INFO] req_id=req-1776718496238504200-81e3611be8bf event=request_start method=GET path=/img/red%20social.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
 2026-04-20T15:54:56-05:00 [INFO] req_id=req-1776718496238504200-81e3611be8bf event=request_end method=GET path=/img/red%20social.png status=304 dur_ms=100
+2026-04-21T00:06:17-05:00 [INFO] req_id=req-1776747977502746700-2dfb3a8ef2ec event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:06:17-05:00 [INFO] req_id=req-1776747977502746700-2dfb3a8ef2ec event=request_end method=GET path=/ status=200 dur_ms=402
+2026-04-21T00:06:18-05:00 [INFO] req_id=req-1776747978083164100-f893be1a069a event=request_start method=GET path=/login.html ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:06:18-05:00 [INFO] req_id=req-1776747978083164100-f893be1a069a event=request_end method=GET path=/login.html status=200 dur_ms=88
+2026-04-21T00:06:34-05:00 [INFO] req_id=req-1776747994449571800-afe051f76dd2 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:06:41-05:00 [WARNING] req_id=req-1776747994449571800-afe051f76dd2 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:06:41-05:00 [WARNING] req_id=req-1776747994449571800-afe051f76dd2 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6884
+2026-04-21T00:06:41-05:00 [INFO] req_id=req-1776748001544798300-f9bce26f7fd3 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:06:48-05:00 [WARNING] req_id=req-1776748001544798300-f9bce26f7fd3 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:06:48-05:00 [WARNING] req_id=req-1776748001544798300-f9bce26f7fd3 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6896
+2026-04-21T00:06:48-05:00 [INFO] req_id=req-1776748008465230800-a39e0aef0cde event=request_start method=GET path=/me ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:06:55-05:00 [WARNING] req_id=req-1776748008465230800-a39e0aef0cde event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-21T00:06:55-05:00 [WARNING] req_id=req-1776748008465230800-a39e0aef0cde event=request_end method=GET path=/me status=401 dur_ms=6673
+2026-04-21T00:07:06-05:00 [INFO] req_id=req-1776748026335773000-04023b721984 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:07:13-05:00 [WARNING] req_id=req-1776748026335773000-04023b721984 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:07:13-05:00 [WARNING] req_id=req-1776748026335773000-04023b721984 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6982
+2026-04-21T00:07:13-05:00 [INFO] req_id=req-1776748033563924900-d90930461347 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:07:20-05:00 [WARNING] req_id=req-1776748033563924900-d90930461347 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:07:20-05:00 [WARNING] req_id=req-1776748033563924900-d90930461347 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6562
+2026-04-21T00:07:28-05:00 [INFO] req_id=req-1776748048459855100-23aef1ddbbe2 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="curl/8.18.0"
+2026-04-21T00:07:35-05:00 [WARNING] req_id=req-1776748048459855100-23aef1ddbbe2 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:07:35-05:00 [WARNING] req_id=req-1776748048459855100-23aef1ddbbe2 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6831
+2026-04-21T00:10:15-05:00 [INFO] req_id=req-1776748215209465200-a6724ceba843 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="curl/8.18.0"
+2026-04-21T00:10:22-05:00 [WARNING] req_id=req-1776748215209465200-a6724ceba843 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:10:22-05:00 [WARNING] req_id=req-1776748215209465200-a6724ceba843 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=7500
+2026-04-21T00:10:22-05:00 [INFO] req_id=req-1776748222940317500-9a4966294c1e event=request_start method=GET path=/me ip=::1 ua="curl/8.18.0"
+2026-04-21T00:10:29-05:00 [WARNING] req_id=req-1776748222940317500-9a4966294c1e event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-21T00:10:29-05:00 [WARNING] req_id=req-1776748222940317500-9a4966294c1e event=request_end method=GET path=/me status=401 dur_ms=6895
+2026-04-21T00:10:51-05:00 [INFO] req_id=req-1776748251149286300-6dbe2ea9913a event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="curl/8.18.0"
+2026-04-21T00:10:57-05:00 [WARNING] req_id=req-1776748251149286300-6dbe2ea9913a event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:10:57-05:00 [WARNING] req_id=req-1776748251149286300-6dbe2ea9913a event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6706
+2026-04-21T00:10:58-05:00 [INFO] req_id=req-1776748258013250000-7f20345d3435 event=request_start method=GET path=/me ip=::1 ua="curl/8.18.0"
+2026-04-21T00:11:04-05:00 [WARNING] req_id=req-1776748258013250000-7f20345d3435 event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-21T00:11:04-05:00 [WARNING] req_id=req-1776748258013250000-7f20345d3435 event=request_end method=GET path=/me status=401 dur_ms=6741
+2026-04-21T00:11:04-05:00 [INFO] req_id=req-1776748264873911000-f4bdfd1f0690 event=request_start method=HEAD path=/seleccionar_empresa.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:11:04-05:00 [WARNING] req_id=req-1776748264873911000-f4bdfd1f0690 event=request_end method=HEAD path=/seleccionar_empresa.html status=401 dur_ms=96
+2026-04-21T00:11:05-05:00 [INFO] req_id=req-1776748265115476200-7c9a8c7937b4 event=request_start method=HEAD path=/super/licencias.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:11:05-05:00 [WARNING] req_id=req-1776748265115476200-7c9a8c7937b4 event=request_end method=HEAD path=/super/licencias.html status=401 dur_ms=87
+2026-04-21T00:11:52-05:00 [INFO] req_id=req-1776748312838671900-fa9154c08827 event=request_start method=POST path=/super/api/administradores/login ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T00:11:59-05:00 [WARNING] req_id=req-1776748312838671900-fa9154c08827 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T00:11:59-05:00 [WARNING] req_id=req-1776748312838671900-fa9154c08827 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6914
+2026-04-21T00:13:02-05:00 [INFO] req_id=req-1776748382879089800-331e93184234 event=request_start method=GET path=/me ip=::1 ua="curl/8.18.0"
+2026-04-21T00:13:03-05:00 [INFO] req_id=req-1776748382879089800-331e93184234 event=request_end method=GET path=/me status=200 dur_ms=919
+2026-04-21T00:13:03-05:00 [INFO] req_id=req-1776748383947403700-7e45873367a6 event=request_start method=HEAD path=/seleccionar_empresa.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:13:04-05:00 [INFO] req_id=req-1776748383947403700-7e45873367a6 event=request_end method=HEAD path=/seleccionar_empresa.html status=200 dur_ms=261
+2026-04-21T00:13:04-05:00 [INFO] req_id=req-1776748384357050600-1d1d50eddba7 event=request_start method=HEAD path=/super/licencias.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:13:04-05:00 [WARNING] req_id=req-1776748384357050600-1d1d50eddba7 event=request_end method=HEAD path=/super/licencias.html status=403 dur_ms=253
+2026-04-21T00:13:16-05:00 [INFO] req_id=req-1776748396480829700-e9c44c655be8 event=request_start method=GET path=/super/licencias.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:13:16-05:00 [INFO] req_id=req-1776748396480829700-e9c44c655be8 event=request_end method=GET path=/super/licencias.html status=200 dur_ms=340
+2026-04-21T00:13:16-05:00 [INFO] req_id=req-1776748396963159100-575038669d53 event=request_start method=GET path=/super/licencias.html ip=::1 ua="curl/8.18.0"
+2026-04-21T00:13:17-05:00 [INFO] req_id=req-1776748396963159100-575038669d53 event=request_end method=GET path=/super/licencias.html status=200 dur_ms=253
+2026-04-21T01:19:03-05:00 [INFO] req_id=req-1776752343846418800-894c4f0816cc event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:19:10-05:00 [WARNING] req_id=req-1776752343846418800-894c4f0816cc event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T01:19:10-05:00 [WARNING] req_id=req-1776752343846418800-894c4f0816cc event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6919
+2026-04-21T01:19:24-05:00 [INFO] req_id=req-1776752364375379900-0289b6598035 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:19:31-05:00 [WARNING] req_id=req-1776752364375379900-0289b6598035 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T01:19:31-05:00 [WARNING] req_id=req-1776752364375379900-0289b6598035 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=7112
+2026-04-21T01:19:42-05:00 [INFO] req_id=req-1776752382016534000-88591f049f2d event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:19:48-05:00 [WARNING] req_id=req-1776752382016534000-88591f049f2d event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T01:19:48-05:00 [WARNING] req_id=req-1776752382016534000-88591f049f2d event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6782
+2026-04-21T01:20:15-05:00 [INFO] req_id=req-1776752415297817600-9a2677d6f8dd event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:20:16-05:00 [INFO] req_id=req-1776752415297817600-9a2677d6f8dd event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=1154
+2026-04-21T01:20:19-05:00 [INFO] req_id=req-1776752419142893400-255a048a4751 event=request_start method=GET path=/motel-calipso/venta_publica.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.116.0 Chrome/142.0.7444.265 Electron/39.8.7 Safari/537.36"
+2026-04-21T01:20:19-05:00 [WARNING] req_id=req-1776752419142893400-255a048a4751 event=request_end method=GET path=/motel-calipso/venta_publica.html status=404 dur_ms=209
+2026-04-21T01:20:35-05:00 [INFO] req_id=req-1776752435272831500-caf7ac58ff06 event=request_start method=GET path=/motel-calipso/venta_publica.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:20:35-05:00 [WARNING] req_id=req-1776752435272831500-caf7ac58ff06 event=request_end method=GET path=/motel-calipso/venta_publica.html status=404 dur_ms=177
+2026-04-21T01:25:29-05:00 [INFO] req_id=req-1776752729614097000-a9a437ff644a event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:25:30-05:00 [INFO] req_id=req-1776752729614097000-a9a437ff644a event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=629
+2026-04-21T01:27:46-05:00 [INFO] req_id=req-1776752866707205900-38bd0ee4bb27 event=request_start method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:27:47-05:00 [INFO] req_id=req-1776752866707205900-38bd0ee4bb27 event=request_end method=GET path=/api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso status=200 dur_ms=856
+2026-04-21T01:27:48-05:00 [INFO] req_id=req-1776752868114266300-6b1b17107ff8 event=request_start method=GET path=/motel-calipso/venta_publica.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:27:48-05:00 [INFO] req_id=req-1776752868114266300-6b1b17107ff8 event=request_end method=GET path=/motel-calipso/venta_publica.html status=200 dur_ms=387
+2026-04-21T01:57:01-05:00 [INFO] req_id=req-1776754621387516400-4654fd78cae0 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:57:08-05:00 [WARNING] req_id=req-1776754621387516400-4654fd78cae0 event=api_error method=POST path=/super/api/administradores/login status=401 error="unauthorized"
+2026-04-21T01:57:08-05:00 [WARNING] req_id=req-1776754621387516400-4654fd78cae0 event=request_end method=POST path=/super/api/administradores/login status=401 dur_ms=6810
+2026-04-21T01:57:08-05:00 [INFO] req_id=req-1776754628225956800-9ccacfffaea0 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:57:14-05:00 [WARNING] req_id=req-1776754628225956800-9ccacfffaea0 event=api_error method=GET path=/me status=401 error="unauthorized"
+2026-04-21T01:57:14-05:00 [WARNING] req_id=req-1776754628225956800-9ccacfffaea0 event=request_end method=GET path=/me status=401 dur_ms=6585
+2026-04-21T01:57:14-05:00 [INFO] req_id=req-1776754634829975400-dcbc8a9bff8b event=request_start method=GET path=/super/api/empresas ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T01:57:21-05:00 [WARNING] req_id=req-1776754634829975400-dcbc8a9bff8b event=api_error method=GET path=/super/api/empresas status=401 error="unauthorized"
+2026-04-21T01:57:21-05:00 [WARNING] req_id=req-1776754634829975400-dcbc8a9bff8b event=request_end method=GET path=/super/api/empresas status=401 dur_ms=6434
+2026-04-21T02:00:02-05:00 [INFO] req_id=req-1776754802169840500-3349aa84e5f8 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T02:00:03-05:00 [INFO] req_id=req-1776754802169840500-3349aa84e5f8 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=973
+2026-04-21T02:00:03-05:00 [INFO] req_id=req-1776754803170268700-ba6f88f41dc5 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T02:00:03-05:00 [INFO] req_id=req-1776754803170268700-ba6f88f41dc5 event=request_end method=GET path=/me status=200 dur_ms=603
+2026-04-21T02:00:03-05:00 [INFO] req_id=req-1776754803790169900-54051591cfc6 event=request_start method=GET path=/super/api/empresas ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T02:00:07-05:00 [INFO] req_id=req-1776754803790169900-54051591cfc6 event=request_end method=GET path=/super/api/empresas status=200 dur_ms=3251
+2026-04-21T02:01:46-05:00 [INFO] req_id=req-1776754906039890700-07dbf6b9f585 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-21T02:01:46-05:00 [INFO] req_id=req-1776754906039890700-07dbf6b9f585 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=585

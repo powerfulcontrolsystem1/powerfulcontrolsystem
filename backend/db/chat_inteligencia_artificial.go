@@ -613,6 +613,13 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 		return true, nil
 	}
 	if dbSuper != nil {
+		access, err := GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
+		if err != nil {
+			return false, err
+		}
+		if access != nil {
+			return true, nil
+		}
 		resolvedCreator, err := ResolveAdminPrincipalEmail(dbSuper, creador)
 		if err != nil && err != sql.ErrNoRows {
 			return false, err

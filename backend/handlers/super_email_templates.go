@@ -15,6 +15,7 @@ import (
 const (
 	superEmailTemplateKeyAdminConfirmation        = "admin_confirmation"
 	superEmailTemplateKeyEmpresaConfirmation      = "empresa_user_confirmation"
+	superEmailTemplateKeyEmpresaAdminShareInvite  = "empresa_admin_share_invitation"
 	superEmailTemplateKeyLicenciaActivation       = "licencia_activation_payment"
 	superEmailTemplateKeyAdminPasswordRecovery    = "admin_password_recovery"
 	superEmailTemplateKeyEmpresaPasswordRecovery  = "empresa_user_password_recovery"
@@ -66,6 +67,16 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject: "Confirma tu correo - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nEl administrador de la empresa {{company_name}} te ha invitado a registrarte al sistema de motel Powerful Control System.\n\n{{admin_message_block_text}}Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\nHaz clic en este enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>El administrador de la empresa <strong>{{company_name}}</strong> te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>.</p>{{admin_message_block_html}}<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
+	},
+	{
+		Key:         superEmailTemplateKeyEmpresaAdminShareInvite,
+		Label:       "Invitación para compartir empresa entre administradores",
+		Category:    "administracion",
+		Description: "Correo enviado a un administrador registrado para darle acceso compartido a una empresa.",
+		Variables:   []string{"name", "company_name", "invited_by_name", "accept_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
+		DefaultSubject: "Te compartieron una empresa en Powerful Control System",
+		DefaultBodyText: "Hola {{name}},\n\n{{invited_by_name}} te compartió acceso administrativo a la empresa {{company_name}} en Powerful Control System.\n\n{{admin_message_block_text}}Para aceptar el acceso, inicia sesión con tu cuenta administrativa desde este enlace:\n{{accept_url}}\n\nSi prefieres entrar primero al login, usa:\n{{login_url}}\n\nSi no esperabas esta invitación, ignora este mensaje.\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p><strong>{{invited_by_name}}</strong> te compartió acceso administrativo a la empresa <strong>{{company_name}}</strong> en Powerful Control System.</p>{{admin_message_block_html}}<p>Para aceptar el acceso, inicia sesión con tu cuenta administrativa desde este enlace:</p><p><a href=\"{{accept_url}}\">Aceptar acceso compartido</a></p><p>Si prefieres entrar primero al login, usa <a href=\"{{login_url}}\">este acceso</a>.</p><p>Si no esperabas esta invitación, ignora este mensaje.</p></body></html>",
 	},
 	{
 		Key:         superEmailTemplateKeyLicenciaActivation,

@@ -60,8 +60,16 @@ func ensurePaymentsHandlerTestSchema(t *testing.T, dbSuper *sql.DB) {
 
 	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
 		nombre TEXT,
-		usuario_creador TEXT
+		nit TEXT,
+		tipo_id INTEGER,
+		tipo_nombre TEXT,
+		fecha_creacion TEXT,
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT,
+		observaciones TEXT
 	);`)
 	if err != nil {
 		t.Fatalf("create empresas schema: %v", err)
@@ -358,7 +366,7 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	}
 }
 
-func TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey(t *testing.T) {
+func TestEpaycoCreateTransactionHandlerRequiresPrivateKey(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_epayco_checkout_without_private_key.db")
 	ensurePaymentsHandlerTestSchema(t, dbSuper)
 
@@ -991,6 +999,12 @@ func TestLicenciaCheckoutSummaryHandlerAllowsZeroTotalByConfiguredDiscount(t *te
 	if err := dbpkg.SetConfigValue(dbSuper, "licencias.discount_codes", "PROMO100=100%", false); err != nil {
 		t.Fatalf("seed licencias.discount_codes: %v", err)
 	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO empresas (id, empresa_id, nombre, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador)
+		VALUES (77, 77, 'Motel Calipso', 5, 'Motel', datetime('now','localtime'), datetime('now','localtime'), 'powerfulcontrolsystem@gmail.com')
+	`); err != nil {
+		t.Fatalf("seed empresa: %v", err)
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/public/licencias/checkout_summary?licencia_id=1&empresa_id=77&discount_code=PROMO100", nil)
 	rr := httptest.NewRecorder()
@@ -1000,6 +1014,17 @@ func TestLicenciaCheckoutSummaryHandlerAllowsZeroTotalByConfiguredDiscount(t *te
 		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
 	}
 	var resp struct {
+		Licencia struct {
+			Nombre       string  `json:"nombre"`
+			Descripcion  string  `json:"descripcion"`
+			Valor        float64 `json:"valor"`
+			DuracionDias int64   `json:"duracion_dias"`
+			TipoNombre   string  `json:"tipo_nombre"`
+		} `json:"licencia"`
+		Empresa *struct {
+			Nombre     string `json:"nombre"`
+			TipoNombre string `json:"tipo_nombre"`
+		} `json:"empresa"`
 		Summary struct {
 			OriginalValue             float64 `json:"original_value"`
 			DiscountValue             float64 `json:"discount_value"`
@@ -1017,6 +1042,12 @@ func TestLicenciaCheckoutSummaryHandlerAllowsZeroTotalByConfiguredDiscount(t *te
 	}
 	if !resp.Summary.DiscountApplied || !resp.Summary.IsZeroTotal || !resp.Summary.CanActivateWithoutPayment {
 		t.Fatalf("expected zero-total summary ready for activation, got %+v", resp.Summary)
+	}
+	if resp.Licencia.Nombre != "Plan Promo" || resp.Licencia.Descripcion != "Licencia con descuento total" || resp.Licencia.Valor != 120000 {
+		t.Fatalf("unexpected licencia payload: %+v", resp.Licencia)
+	}
+	if resp.Empresa == nil || resp.Empresa.Nombre != "Motel Calipso" || resp.Empresa.TipoNombre != "Motel" {
+		t.Fatalf("unexpected empresa payload: %+v", resp.Empresa)
 	}
 }
 

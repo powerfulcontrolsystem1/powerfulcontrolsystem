@@ -253,6 +253,11 @@ func TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession(t *testin
 		path   string
 	}{
 		{method: http.MethodGet, path: "/api/public/licencias/payment_methods"},
+		{method: http.MethodGet, path: "/api/public/publicaciones?empresa_id=7"},
+		{method: http.MethodPost, path: "/super/api/administradores/register"},
+		{method: http.MethodPost, path: "/super/api/administradores/login"},
+		{method: http.MethodPost, path: "/super/api/administradores/solicitar_recuperacion"},
+		{method: http.MethodPost, path: "/super/api/administradores/restablecer_password"},
 		{method: http.MethodGet, path: "/epayco/transaction_status?reference=demo"},
 		{method: http.MethodGet, path: "/wompi/transaction_status?reference=demo"},
 		{method: http.MethodPost, path: "/epayco/webhook"},

@@ -27,7 +27,7 @@ func EnsureEmpresaPublicacionesRedSocialSchema(db *sql.DB) error {
 		fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
 		estado TEXT DEFAULT 'activo'
 	);`
-	if isPostgresDialect() {
+	if shouldUsePostgresCompat(db) {
 		query = `
 		CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social (
 			id BIGSERIAL PRIMARY KEY,

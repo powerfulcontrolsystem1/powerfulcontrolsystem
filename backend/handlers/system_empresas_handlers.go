@@ -410,6 +410,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 			if err != nil {
 				log.Println("GET /super/api/empresas scope error:", err)
@@ -498,6 +499,11 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					return
 				}
+				if err := decorateEmpresaAccessForRequester(dbSuper, requesterEmail, principalEmail, empresa); err != nil {
+					log.Println("GET /super/api/empresas?id= decorate access error:", err)
+					http.Error(w, "failed to decorate empresa access: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(empresa)
 				return
@@ -509,10 +515,10 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to query empresas: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			empresas, err = filterEmpresasByPrincipalScope(dbSuper, principalEmail, empresas)
+			empresas, err = decorateEmpresasByEffectiveAccess(dbSuper, requesterEmail, principalEmail, empresas)
 			if err != nil {
-				log.Println("GET /super/api/empresas filter scope error:", err)
-				http.Error(w, "failed to filter empresas: "+err.Error(), http.StatusInternalServerError)
+				log.Println("GET /super/api/empresas effective access error:", err)
+				http.Error(w, "failed to resolve empresa access: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -572,6 +578,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			} else if !ok {
 				http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
+				return
+			}
+			if _, _, owner, err := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, id); err != nil {
+				log.Printf("PUT /super/api/empresas id=%d owner error: %v", id, err)
+				http.Error(w, "failed to validate empresa owner: "+err.Error(), http.StatusInternalServerError)
+				return
+			} else if !owner {
+				http.Error(w, "solo el administrador propietario puede modificar o desactivar la empresa", http.StatusForbidden)
 				return
 			}
 
@@ -679,6 +693,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			} else if !ok {
 				http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
+				return
+			}
+			if _, _, owner, err := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, id); err != nil {
+				log.Printf("DELETE /super/api/empresas id=%d owner error: %v", id, err)
+				http.Error(w, "failed to validate empresa owner: "+err.Error(), http.StatusInternalServerError)
+				return
+			} else if !owner {
+				http.Error(w, "solo el administrador propietario puede eliminar la empresa", http.StatusForbidden)
 				return
 			}
 			if action == "eliminar_total" || action == "purge" || action == "eliminacion_total" {

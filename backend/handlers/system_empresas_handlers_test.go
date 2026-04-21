@@ -1255,7 +1255,7 @@ func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T)
 	}
 }
 
-func TestPublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly(t *testing.T) {
+func TestPublicLicenciasPaymentMethodsHandlerRequiresPrivateKeyForEpaycoAvailability(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_payment_methods_epayco_public_only.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
 
@@ -1280,6 +1280,7 @@ func TestPublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly(t *te
 			ID         string `json:"id"`
 			Configured bool   `json:"configured"`
 			Available  bool   `json:"available"`
+			Enabled    bool   `json:"enabled"`
 		} `json:"providers"`
 		DefaultMethod string `json:"default_method"`
 	}
@@ -1289,11 +1290,11 @@ func TestPublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly(t *te
 	if len(body.Providers) == 0 {
 		t.Fatalf("expected providers in response, got %s", rr.Body.String())
 	}
-	if body.Providers[0].ID != "epayco" || !body.Providers[0].Configured || !body.Providers[0].Available {
-		t.Fatalf("expected epayco available with public key only, got %+v", body.Providers[0])
+	if body.Providers[0].ID != "epayco" || body.Providers[0].Configured || body.Providers[0].Available || !body.Providers[0].Enabled {
+		t.Fatalf("expected epayco enabled but unavailable without private key, got %+v", body.Providers[0])
 	}
-	if body.DefaultMethod != "epayco" {
-		t.Fatalf("expected default_method epayco, got %q", body.DefaultMethod)
+	if body.DefaultMethod != "" {
+		t.Fatalf("expected no default_method when epayco is incomplete, got %q", body.DefaultMethod)
 	}
 }
 
@@ -1381,6 +1382,9 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 	mux.HandleFunc("/super/api/config/ai", AIModelsConfigHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/backup", SuperConfigBackupHandler(dbSuper))
 	mux.HandleFunc("/super/api/soporte_remoto", SuperSoporteRemotoHandler(dbEmp))
+	mux.HandleFunc("/super/licencias.html", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	protected := utils.AuthMiddleware(dbSuper, mux)
 
@@ -1440,6 +1444,7 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 	}
 
 	adminReadableEndpoints := []string{
+		"/super/licencias.html",
 		"/super/api/empresas",
 		"/super/api/tipos_empresas",
 		"/super/api/licencias",
@@ -1642,4 +1647,8 @@ func TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida(t *
 	if !strings.EqualFold(admin.Role, "administrador") {
 		t.Fatalf("expected new admin role administrador, got %q", admin.Role)
 	}
+}
+
+func TestNuevoAdminRegistradoNoObtieneAccesoSuperParaCrearEmpresa(t *testing.T) {
+	TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida(t)
 }

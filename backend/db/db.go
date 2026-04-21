@@ -1180,6 +1180,8 @@ type Empresa struct {
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
 	Estado             string `json:"estado,omitempty"`
 	Observaciones      string `json:"observaciones,omitempty"`
+	AccessSource       string `json:"access_source,omitempty"`
+	CompartidaPor      string `json:"compartida_por,omitempty"`
 }
 
 // CreateEmpresa inserta una nueva empresa en la base empresas.db

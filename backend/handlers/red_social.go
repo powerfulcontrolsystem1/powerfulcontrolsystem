@@ -13,7 +13,16 @@ import (
 func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			pubs, err := db.GetPublicacionesRedSocialActivas(dbEmpresas)
+			empresaID, _ := parseEmpresaIDQuery(r)
+			var (
+				pubs []db.PublicacionRedSocial
+				err  error
+			)
+			if empresaID > 0 {
+				pubs, err = db.GetPublicacionesRedSocialByEmpresa(dbEmpresas, int(empresaID))
+			} else {
+				pubs, err = db.GetPublicacionesRedSocialActivas(dbEmpresas)
+			}
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

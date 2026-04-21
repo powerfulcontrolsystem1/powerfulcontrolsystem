@@ -1,3 +1,47 @@
+- 2026-04-21: Se repara el frente publico de Motel Calipso para publicaciones y venta publica amigable.
+    - Archivos modificados:
+        - backend/db/red_social.go
+        - backend/handlers/red_social.go
+        - backend/handlers/red_social_test.go
+        - backend/utils/utils.go
+        - backend/utils/utils_test.go
+        - web/venta_publica.html
+        - web/estilos.css
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+    - Descripcion: se habilita `/api/public/publicaciones` como ruta publica real en el middleware, el handler pasa a respetar `empresa_id` cuando el catalogo publico solicita publicaciones de una empresa concreta y se crea la pagina `web/venta_publica.html` que respalda la URL amigable `/{slug}/venta_publica.html`. Con esto la venta publica de Motel Calipso vuelve a exponer catalogo, publicaciones y shell HTML desde la ruta prometida por el backend.
+    - Verificacion:
+        - `go test ./handlers -run '^TestPublicacionesRedSocialHandlerFiltersByEmpresaWhenProvided$' -count=1`
+        - `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`
+        - `GET /api/public/venta_publica?action=catalogo&empresa_slug=motel-calipso -> 200`
+        - `GET /api/public/publicaciones?empresa_id=7 -> 200`
+        - `GET /motel-calipso/venta_publica.html -> 200`
+
+- 2026-04-21: Se habilita compartir empresas entre administradores con invitación por correo y aceptación autenticada.
+    - Archivos modificados:
+        - backend/db/empresa_admin_compartida.go
+        - backend/db/chat_inteligencia_artificial.go
+        - backend/db/db.go
+        - backend/handlers/empresa_compartida_handlers.go
+        - backend/handlers/empresa_compartida_handlers_test.go
+        - backend/handlers/system_empresas_handlers.go
+        - backend/handlers/super_email_templates.go
+        - backend/main.go
+        - backend/utils/utils.go
+        - web/js/login.js
+        - web/js/seleccionar_empresa.js
+        - web/js/editar_empresa.js
+        - web/seleccionar_empresa.html
+        - web/editar_empresa.html
+        - web/estilos.css
+        - documentos/historial_de_cambios
+        - documentos/descripcion_de_archivos
+    - Descripción: se agrega un ACL explícito en la base super para compartir una empresa con otro administrador ya registrado sin reutilizar `usuario_creador`. El propietario puede invitar, reenviar y revocar desde editar empresa; el invitado acepta con un token incluido en el correo, entra autenticado y la empresa aparece en el selector con marca visual de acceso compartido. Los accesos compartidos también se propagan al control central `CanAdminAccessEmpresaIA`, mientras los administradores compartidos quedan bloqueados para editar o eliminar la ficha estructural de la empresa.
+    - Verificación:
+        - `get_errors` sin errores en backend y frontend modificados.
+        - `go test ./handlers -run 'Test(EmpresasHandlerListsSharedEmpresaForInvitedAdmin|EmpresasHandlerBlocksSharedAdminFromUpdatingEmpresa|EmpresaCompartidaAcceptHandlerCreatesAccessAndMarksInvitationAccepted|EmpresaCompartidaInviteRejectsDuplicatePendingInvitation|CanAdminAccessEmpresaIAAllowsSharedAccess|SuperEndpointsPermisosPorRol|NuevoAdminRegistradoNoObtieneAccesoSuperParaCrearEmpresa)$' -count=1`
+        - `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`
+
 - 2026-04-20: El menú flotante se limita a sesiones autenticadas reales.
     - Archivos modificados:
         - web/menu.js

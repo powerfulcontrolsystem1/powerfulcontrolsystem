@@ -9,14 +9,14 @@
     .public-shell { max-width: 1120px; margin: 0 auto; padding: 18px; display:grid; gap:16px; }
     .public-grid { display:grid; gap:16px; grid-template-columns:1.1fr .9fr; }
     .public-downloads { display:grid; gap:12px; grid-template-columns:repeat(3, minmax(0, 1fr)); }
-    .public-card { background: rgba(9, 19, 33, 0.82); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:16px; color:#ecf6ff; }
-    .public-download { border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; background:rgba(255,255,255,0.04); }
+    .public-card { background: var(--public-panel-bg); border:1px solid var(--public-panel-border); border-radius:18px; padding:16px; color:var(--public-panel-text); box-shadow: 0 18px 38px var(--public-panel-shadow); }
+    .public-download { border:1px solid var(--public-panel-soft-border); border-radius:14px; padding:12px; background:var(--public-panel-soft-bg); }
     .public-fields { display:grid; gap:10px; }
-    .public-field { border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; background:rgba(255,255,255,0.04); }
-    .public-field span { display:block; font-size:.75rem; color:rgba(236,246,255,0.7); text-transform:uppercase; }
+    .public-field { border:1px solid var(--public-panel-soft-border); border-radius:14px; padding:12px; background:var(--public-panel-soft-bg); }
+    .public-field span { display:block; font-size:.75rem; color:var(--public-panel-muted); text-transform:uppercase; }
     .public-field strong { display:block; margin-top:6px; word-break:break-all; font-family:Consolas, monospace; }
-    .public-note { color:rgba(236,246,255,0.82); }
-    .public-empty { padding:12px; border-radius:14px; background:rgba(248,113,113,0.14); color:#fecaca; }
+    .public-note { color:var(--public-panel-muted); }
+    .public-empty { padding:12px; border-radius:14px; background:color-mix(in srgb, var(--danger) 14%, transparent); color:var(--status-danger); border:1px solid color-mix(in srgb, var(--danger) 28%, transparent); }
     .public-actions { display:flex; flex-wrap:wrap; gap:10px; }
     @media (max-width:900px) { .public-grid, .public-downloads { grid-template-columns:1fr; } }
   </style>
@@ -25,7 +25,7 @@
   <div class="public-shell">
     <section class="public-card">
       <h1>Soporte remoto</h1>
-      <p id="heroText" class="public-note">Validando la sesiÃ³n de soporte remoto y cargando los enlaces de descarga.</p>
+      <p id="heroText" class="public-note">Validando la sesión de soporte remoto y cargando los enlaces de descarga.</p>
     </section>
 
     <section class="public-grid">
@@ -39,22 +39,22 @@
           <div id="instructionsBox" class="public-note">Esperando datos...</div>
           <ol class="public-note" style="padding-left:18px; margin-top:12px; display:grid; gap:8px;">
             <li>Descarga el cliente para tu sistema operativo.</li>
-            <li>Configura el host del VPS Hostinger y la clave pÃºblica.</li>
-            <li>Si vas a montar tu propio nodo, usa tambiÃ©n la descarga del servidor.</li>
-            <li>Comparte con soporte el ID del dispositivo y la contraseÃ±a solo cuando lo soliciten.</li>
+            <li>Configura el host del VPS Hostinger y la clave pública.</li>
+            <li>Si vas a montar tu propio nodo, usa también la descarga del servidor.</li>
+            <li>Comparte con soporte el ID del dispositivo y la contraseña solo cuando lo soliciten.</li>
           </ol>
         </article>
       </div>
 
       <div style="display:grid; gap:16px;">
         <article class="public-card">
-          <h2>Datos de conexiÃ³n</h2>
+          <h2>Datos de conexión</h2>
           <div id="fieldsBox" class="public-fields"></div>
           <div id="actionsBox" class="public-actions" ></div>
         </article>
         <article class="public-card">
           <h2>Estado</h2>
-          <div id="statusBox" class="public-note">Sin validar todavÃ­a.</div>
+          <div id="statusBox" class="public-note">Sin validar todavía.</div>
         </article>
       </div>
     </section>
@@ -108,12 +108,12 @@
         var access = data.access || {};
         var session = data.session || {};
         heroText.textContent = data.acceso_permitido
-          ? 'La sesiÃ³n fue validada. Usa el cliente RustDesk o descarga tambiÃ©n el servidor si vas a publicar tu propio nodo.'
-          : 'La sesiÃ³n aÃºn no estÃ¡ habilitada, pero puedes preparar la descarga y la configuraciÃ³n del host.';
+          ? 'La sesión fue validada. Usa el cliente RustDesk o descarga también el servidor si vas a publicar tu propio nodo.'
+          : 'La sesión aún no está habilitada, pero puedes preparar la descarga y la configuración del host.';
         statusBox.textContent = data.acceso_permitido
-          ? 'SesiÃ³n ' + (session.codigo_sesion || '') + ' habilitada.'
-          : (data.motivo_bloqueo || 'SesiÃ³n pendiente o restringida.');
-        instructionsBox.textContent = String(access.instrucciones_publicas || 'Descarga RustDesk, configura el host del VPS Hostinger y la clave pÃºblica, luego comparte el ID con soporte.').trim();
+          ? 'Sesión ' + (session.codigo_sesion || '') + ' habilitada.'
+          : (data.motivo_bloqueo || 'Sesión pendiente o restringida.');
+        instructionsBox.textContent = String(access.instrucciones_publicas || 'Descarga RustDesk, configura el host del VPS Hostinger y la clave pública, luego comparte el ID con soporte.').trim();
         downloadsBox.innerHTML = [
           createDownload('Cliente Windows', 'Cliente oficial para Windows.', access.cliente_windows_url),
           createDownload('Cliente Linux', 'Cliente oficial para Linux.', access.cliente_linux_url),
@@ -124,14 +124,14 @@
         ].join('');
         fieldsBox.innerHTML = [
           createField('Host RustDesk', access.rustdesk_server_host),
-          createField('Clave pÃºblica', access.rustdesk_server_key),
+          createField('Clave pública', access.rustdesk_server_key),
           createField('ID del dispositivo', access.rustdesk_device_id),
-          createField('ContraseÃ±a del dispositivo', access.rustdesk_password),
+          createField('Contraseña del dispositivo', access.rustdesk_password),
           createField('Carpeta de transferencia', access.carpeta_transferencia),
-          createField('CÃ³digo de sesiÃ³n', session.codigo_sesion)
-        ].join('') || '<div class="public-empty">No hay datos de conexiÃ³n visibles.</div>';
+          createField('Código de sesión', session.codigo_sesion)
+        ].join('') || '<div class="public-empty">No hay datos de conexión visibles.</div>';
         actionsBox.innerHTML = '';
-        [['Copiar host', access.rustdesk_server_host], ['Copiar clave', access.rustdesk_server_key], ['Copiar ID', access.rustdesk_device_id], ['Copiar contraseÃ±a', access.rustdesk_password]].forEach(function (item) {
+        [['Copiar host', access.rustdesk_server_host], ['Copiar clave', access.rustdesk_server_key], ['Copiar ID', access.rustdesk_device_id], ['Copiar contraseña', access.rustdesk_password]].forEach(function (item) {
           if (!String(item[1] || '').trim()) return;
           var button = document.createElement('button');
           button.type = 'button';
@@ -144,7 +144,7 @@
 
       async function loadAccess() {
         if (!(empresaID > 0) || !codigoSesion || !token) {
-          statusBox.innerHTML = '<div class="public-empty">Enlace invÃ¡lido.</div>';
+          statusBox.innerHTML = '<div class="public-empty">Enlace inválido.</div>';
           return;
         }
         try {
@@ -162,12 +162,6 @@
           statusBox.innerHTML = '<div class="public-empty">' + escapeHTML(error.message || 'No se pudo cargar el acceso remoto.') + '</div>';
         }
       }
-
-      loadAccess();
-    })();
-  </script>
-</body>
-</html>
 
       loadAccess();
     })();

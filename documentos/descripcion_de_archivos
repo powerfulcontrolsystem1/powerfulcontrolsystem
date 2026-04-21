@@ -1,3 +1,23 @@
+- Actualizacion 2026-04-21: reparacion del frente publico de Motel Calipso
+	- backend/db/red_social.go : corrige la decision de dialecto del schema de publicaciones para usar la conexion efectiva y evitar inconsistencias entre PostgreSQL real y SQLite de pruebas.
+	- backend/handlers/red_social.go : permite que el endpoint publico de publicaciones filtre por `empresa_id` cuando se consulta una empresa especifica.
+	- backend/handlers/red_social_test.go : valida que `/api/public/publicaciones` devuelva solo las publicaciones de la empresa solicitada.
+	- backend/utils/utils.go : incorpora `/api/public/publicaciones` al whitelist publico del middleware de autenticacion.
+	- backend/utils/utils_test.go : agrega cobertura para la nueva ruta publica permitida sin sesion.
+	- web/venta_publica.html : crea la pagina publica real usada por la ruta amigable `/{slug}/venta_publica.html`, con carga de catalogo, publicaciones y estado de pago.
+	- web/estilos.css : agrega el layout y estilos responsivos de la nueva experiencia publica de venta.
+
+- Actualizacion 2026-04-21: empresas compartidas entre administradores
+	- backend/db/empresa_admin_compartida.go : persistencia del ACL de empresas compartidas, incluyendo invitaciones pendientes, accesos activos, aceptación, revocación y consultas por empresa o administrador.
+	- backend/handlers/empresa_compartida_handlers.go : endpoints super para listar accesos, invitar por correo, reenviar, revocar y aceptar una empresa compartida autenticada.
+	- backend/handlers/empresa_compartida_handlers_test.go : pruebas dirigidas del flujo de empresa compartida sobre listado, bloqueo de edición, aceptación, duplicados y propagación del ACL.
+	- web/js/seleccionar_empresa.js : consume el acceso efectivo `owner/shared`, acepta tokens de invitación autenticados y bloquea la edición estructural cuando la empresa es compartida.
+	- web/js/editar_empresa.js : administra invitaciones y accesos compartidos desde la ficha de empresa y degrada a solo lectura cuando el acceso es compartido.
+	- web/editar_empresa.html : agrega la tarjeta visual para compartir empresa con otro administrador y revisar accesos/invitaciones vigentes.
+	- web/js/login.js : preserva `shared_invitation_token` durante el login para redirigir la aceptación al selector.
+	- web/seleccionar_empresa.html : incorpora el aviso visible de aceptación o error del flujo de invitación compartida.
+	- web/estilos.css : añade estilos de badges, avisos y listas operativas del flujo de empresas compartidas.
+
 - Actualizacion 2026-04-21: simplificacion operativa de RustDesk y soporte remoto
 	- web/super/servidores.html : panel super reducido a estado, acciones y prueba real del servicio RustDesk del VPS usando los componentes `rustdesk-hbbs` y `rustdesk-hbbr`.
 	- web/administrar_empresa/soporte_remoto.html : formulario empresarial simple para definir host, clave pública, instrucciones y descargas de cliente/servidor RustDesk por sistema operativo.

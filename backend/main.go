@@ -1008,6 +1008,9 @@ func main() {
 		if err := dbpkg.EnsureAdministradoresAuthSchema(dbSuper); err != nil {
 			log.Printf("warning: failed to ensure administradores auth schema: %v", err)
 		}
+		if err := dbpkg.EnsureAdminEmpresaCompartidaSchema(dbSuper); err != nil {
+			log.Printf("warning: failed to ensure admin empresa compartida schema: %v", err)
+		}
 		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
 			log.Printf("warning: failed to ensure usuario configuracion schema: %v", err)
 		}
@@ -1587,6 +1590,8 @@ func main() {
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/empresas/compartidos", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper))
 	// Endpoints para gestiÃ³n de vendedores (vendedor_de_licencia) y sus planes
 	http.HandleFunc("/super/api/asesores", handlers.AsesoresHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedores", handlers.AsesoresHandler(dbSuper))

@@ -442,8 +442,14 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 		return false
 	}
 	switch strings.TrimSpace(path) {
+	case "/super/licencias.html":
+		return method == http.MethodGet
 	case "/super/api/empresas":
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodPut || method == http.MethodDelete
+	case "/super/api/empresas/compartidos":
+		return method == http.MethodGet || method == http.MethodPost || method == http.MethodPut || method == http.MethodDelete
+	case "/super/api/empresas/compartidos/aceptar":
+		return method == http.MethodPost
 	case "/super/api/tipos_empresas", "/super/api/licencias":
 		return method == http.MethodGet
 	default:
@@ -484,12 +490,17 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/registrar_nuevo_usuario_administrador.html":           {},
 			"/login_usuario.html":                                   {},
 			"/contrato.html":                                        {},
+			"/super/api/administradores/register":                   {},
+			"/super/api/administradores/login":                      {},
+			"/super/api/administradores/solicitar_recuperacion":     {},
+			"/super/api/administradores/restablecer_password":       {},
 			"/auth/google/login":                                    {},
 			"/auth/google/callback":                                 {},
 			"/auth/confirmar_correo":                                {},
 			"/auth/confirmar_admin":                                 {},
 			"/auth/logout":                                          {},
 			"/api/public/venta_publica":                             {},
+			"/api/public/publicaciones":                            {},
 			"/api/public/soporte_remoto":                            {},
 			"/api/public/venta_digital":                             {},
 			"/api/public/pagina_principal":                          {},

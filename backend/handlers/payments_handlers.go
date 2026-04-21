@@ -762,6 +762,10 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
 		}
+		var empresa *dbpkg.Empresa
+		if empresaID > 0 {
+			empresa, _ = dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		}
 		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode)
 		if err != nil {
 			http.Error(w, "failed to resolve checkout summary: "+err.Error(), http.StatusInternalServerError)
@@ -771,6 +775,27 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"licencia_id": licenciaID,
 			"empresa_id":  empresaID,
+			"licencia": map[string]interface{}{
+				"id":            lic.ID,
+				"nombre":        lic.Nombre,
+				"descripcion":   lic.Descripcion,
+				"valor":         lic.Valor,
+				"duracion_dias": lic.DuracionDias,
+				"tipo_id":       lic.TipoID,
+				"tipo_nombre":   lic.TipoNombre,
+			},
+			"empresa": func() interface{} {
+				if empresa == nil {
+					return nil
+				}
+				return map[string]interface{}{
+					"id":          empresa.ID,
+					"empresa_id":  empresa.EmpresaID,
+					"nombre":      empresa.Nombre,
+					"tipo_id":     empresa.TipoID,
+					"tipo_nombre": empresa.TipoNombre,
+				}
+			}(),
 			"summary":     summary,
 		})
 	}
@@ -1135,7 +1160,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethod
 	if err != nil {
 		return nil, err
 	}
-	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != ""
+	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != "" && strings.TrimSpace(epaycoPrivateKey) != ""
 	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
 	if err != nil {
 		return nil, err
