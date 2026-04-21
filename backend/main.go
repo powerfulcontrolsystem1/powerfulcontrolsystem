@@ -502,8 +502,52 @@ func resolveWebDir() string {
 	if fallback != "" {
 		return fallback
 	}
-
 	return "web"
+}
+
+func resolveDownloadsDir() string {
+	candidates := []string{
+		"descargas",
+		"../descargas",
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates = append(candidates,
+			filepath.Join(exeDir, "descargas"),
+			filepath.Join(exeDir, "..", "descargas"),
+			filepath.Join(exeDir, "..", "..", "descargas"),
+			filepath.Join(exeDir, "..", "..", "..", "descargas"),
+		)
+	}
+
+	seen := map[string]bool{}
+	for _, cand := range candidates {
+		cand = strings.TrimSpace(cand)
+		if cand == "" {
+			continue
+		}
+
+		absCand, err := filepath.Abs(cand)
+		if err != nil {
+			absCand = cand
+		}
+		if seen[absCand] {
+			continue
+		}
+		seen[absCand] = true
+
+		info, statErr := os.Stat(absCand)
+		if statErr != nil || !info.IsDir() {
+			continue
+		}
+		return absCand
+	}
+
+	if absCand, err := filepath.Abs("../descargas"); err == nil {
+		return absCand
+	}
+	return "../descargas"
 }
 
 func main() {
@@ -1555,6 +1599,7 @@ func main() {
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
+	downloadsDir := resolveDownloadsDir()
 	vpsSecurityService, err := vpssecurity.NewService(nil, nil, nil)
 	if err != nil {
 		log.Fatalf("failed to initialize VPS security service: %v", err)
@@ -1806,6 +1851,7 @@ func main() {
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
+	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
 
 	// Servir pÃ¡ginas estÃ¡ticas desde la carpeta `web` detectada
 	// Verificar existencia de index.html y loguear la ruta usada

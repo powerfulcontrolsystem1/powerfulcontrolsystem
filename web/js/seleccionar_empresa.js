@@ -37,6 +37,25 @@
     });
   }
 
+  async function fetchJSON(url, options) {
+    var requestOptions = options ? Object.assign({}, options) : {};
+    if (!requestOptions.credentials) {
+      requestOptions.credentials = "same-origin";
+    }
+    var res = await fetch(url, requestOptions);
+    var raw = await res.text();
+    var data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      data = null;
+    }
+    if (!res.ok) {
+      throw new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+    }
+    return data;
+  }
+
   function setShareNotice(text, isError) {
     if (!shareNoticeEl) return;
     shareNoticeEl.style.display = text ? "block" : "none";
@@ -365,29 +384,165 @@
     return "Empresa propia";
   }
 
+  function isSharedEmpresa(empresa) {
+    return String(empresa && empresa.access_source ? empresa.access_source : "owner").toLowerCase() === "shared";
+  }
+
+  function navigateToEmpresa(empresa, hasLicense) {
+    persistEmpresaContext(empresa.id);
+    if (hasLicense) {
+      var adminURL =
+        "/administrar_empresa.html?id=" + encodeURIComponent(empresa.id) +
+        "&empresa_id=" + encodeURIComponent(empresa.id);
+      window.location.href = adminURL;
+      return;
+    }
+    var params = new URLSearchParams();
+    params.set("empresa_id", empresa.id);
+    params.set("id", empresa.id);
+    if (empresa.tipo_id) params.set("tipo_id", empresa.tipo_id);
+    if (empresa.tipo_nombre) params.set("tipo_nombre", empresa.tipo_nombre);
+    window.location.href = "/elegir_licencia.html?" + params.toString();
+  }
+
+  function buildEmpresaShareButton(empresa) {
+    var disabled = isSharedEmpresa(empresa);
+    var title = disabled
+      ? "Solo el administrador propietario puede compartir una empresa que recibió por invitación"
+      : "Compartir empresa con otro administrador";
+    return '' +
+      '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M15 8a3 3 0 1 0-2.83-4H12a3 3 0 0 0 .17 1L8.91 6.63a3 3 0 0 0-1.91-.68A3 3 0 1 0 10 9a2.9 2.9 0 0 0-.17-.98l3.26-1.63A3 3 0 0 0 15 8Zm-8 3a3 3 0 0 0 1.91-.68l3.26 1.63A3 3 0 0 0 12 13a3 3 0 1 0 1.09-2.31l-3.26-1.63A2.9 2.9 0 0 0 10 8a2.9 2.9 0 0 0-.09-.69l3.26-1.63A3 3 0 0 0 15 6a3 3 0 1 0-1.09-2.31L10.65 5.32A3 3 0 1 0 7 11Zm8 8a3 3 0 0 0-2.83-4H12a3 3 0 0 0 .17 1l-3.26 1.63A3 3 0 1 0 10 20a2.9 2.9 0 0 0-.17-.98l3.26-1.63A3 3 0 1 0 15 19Z"/></svg>' +
+      '</button>';
+  }
+
+  function buildEmpresaSharePanel(empresa) {
+    if (isSharedEmpresa(empresa)) {
+      return '' +
+        '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
+        '<p class="empresa-card-share-feedback is-error">Solo el administrador propietario puede enviar nuevas invitaciones para esta empresa.</p>' +
+        '</div>';
+    }
+    return '' +
+      '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
+      '<form class="empresa-card-share-form" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '">' +
+      '<label class="empresa-card-share-label" for="share-email-' + escapeHtml(String(empresa.id || '')) + '">Compartir con otro administrador</label>' +
+      '<div class="empresa-card-share-row">' +
+      '<input id="share-email-' + escapeHtml(String(empresa.id || '')) + '" class="form-input empresa-card-share-input" data-share-email type="email" placeholder="correo@ejemplo.com" required>' +
+      '<button type="submit" class="btn empresa-card-share-submit">Enviar</button>' +
+      '</div>' +
+      '<p class="empresa-card-share-feedback" data-share-feedback></p>' +
+      '</form>' +
+      '</div>';
+  }
+
+  function findEmpresaSharePanel(empresaId) {
+    return document.querySelector('.empresa-card-share-panel[data-empresa-id="' + String(empresaId || '') + '"]');
+  }
+
+  function findEmpresaShareButton(empresaId) {
+    return document.querySelector('.empresa-share-toggle[data-empresa-id="' + String(empresaId || '') + '"]');
+  }
+
+  function setEmpresaShareFeedback(empresaId, text, isError) {
+    var panel = findEmpresaSharePanel(empresaId);
+    if (!panel) return;
+    var feedback = panel.querySelector('[data-share-feedback]');
+    if (!feedback) return;
+    feedback.textContent = text || '';
+    feedback.classList.toggle('is-error', !!isError && !!text);
+    feedback.classList.toggle('is-success', !isError && !!text);
+  }
+
+  function closeAllEmpresaSharePanels(exceptEmpresaId) {
+    Array.prototype.forEach.call(document.querySelectorAll('.empresa-card-share-panel'), function (panel) {
+      var panelEmpresaId = parseInt(panel.getAttribute('data-empresa-id') || '0', 10);
+      var shouldKeepOpen = exceptEmpresaId > 0 && panelEmpresaId === exceptEmpresaId;
+      panel.hidden = !shouldKeepOpen;
+      var btn = findEmpresaShareButton(panelEmpresaId);
+      if (btn) {
+        btn.classList.toggle('is-open', shouldKeepOpen);
+      }
+    });
+  }
+
+  function toggleEmpresaSharePanel(empresaId) {
+    var panel = findEmpresaSharePanel(empresaId);
+    var btn = findEmpresaShareButton(empresaId);
+    if (!panel || !btn) return;
+    var willOpen = panel.hidden;
+    closeAllEmpresaSharePanels(willOpen ? empresaId : 0);
+    if (willOpen) {
+      var emailInput = panel.querySelector('[data-share-email]');
+      if (emailInput) {
+        window.setTimeout(function () {
+          try {
+            emailInput.focus();
+          } catch (e) {}
+        }, 30);
+      }
+    }
+  }
+
+  async function submitEmpresaShareInvitation(form) {
+    var empresaId = parseInt(form.getAttribute('data-empresa-id') || '0', 10);
+    if (!empresaId) {
+      return;
+    }
+    var emailInput = form.querySelector('[data-share-email]');
+    var email = String(emailInput && emailInput.value ? emailInput.value : '').trim();
+    if (!email) {
+      setEmpresaShareFeedback(empresaId, 'Debes escribir el correo del otro administrador.', true);
+      return;
+    }
+    setEmpresaShareFeedback(empresaId, 'Enviando invitación...', false);
+    try {
+      var data = await fetchJSON('/super/api/empresas/compartidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empresa_id: empresaId, email: email, mensaje: '' })
+      });
+      var message = data && data.message ? data.message : 'Invitación enviada correctamente.';
+      setEmpresaShareFeedback(empresaId, message, false);
+      setShareNotice(message, false);
+      if (emailInput) {
+        emailInput.value = '';
+      }
+    } catch (err) {
+      var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitación.';
+      setEmpresaShareFeedback(empresaId, errorMessage, true);
+      setShareNotice(errorMessage, true);
+    }
+  }
+
   function buildEmpresaCard(empresa, hasLicense) {
     var visual = getEmpresaTypeVisual(empresa);
     var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
-    var a = document.createElement("a");
-    a.href = "#";
-    a.className = "card-link";
-    a.addEventListener("click", function (evt) {
-      evt.preventDefault();
-      persistEmpresaContext(empresa.id);
+    var cardLink = document.createElement("div");
+    cardLink.className = "card-link empresa-card-link";
+    cardLink.tabIndex = 0;
+    cardLink.setAttribute("role", "button");
+    cardLink.setAttribute("aria-label", (hasLicense ? "Administrar " : "Elegir licencia para ") + String(empresa.nombre || "empresa"));
+    cardLink.addEventListener("click", function (evt) {
+      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data')) {
+        return;
+      }
       try {
-        if (hasLicense) {
-          var adminURL =
-            "/administrar_empresa.html?id=" + encodeURIComponent(empresa.id) +
-            "&empresa_id=" + encodeURIComponent(empresa.id);
-          window.location.href = adminURL;
-        } else {
-          var params = new URLSearchParams();
-          params.set("empresa_id", empresa.id);
-          params.set("id", empresa.id);
-          if (empresa.tipo_id) params.set("tipo_id", empresa.tipo_id);
-          if (empresa.tipo_nombre) params.set("tipo_nombre", empresa.tipo_nombre);
-          window.location.href = "/elegir_licencia.html?" + params.toString();
-        }
+        navigateToEmpresa(empresa, hasLicense);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+    cardLink.addEventListener("keydown", function (evt) {
+      if (evt.key !== 'Enter' && evt.key !== ' ') {
+        return;
+      }
+      if (evt.target !== cardLink) {
+        return;
+      }
+      evt.preventDefault();
+      try {
+        navigateToEmpresa(empresa, hasLicense);
       } catch (err) {
         console.error(err);
       }
@@ -395,6 +550,7 @@
 
     var div = document.createElement("div");
     div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone;
+    div.setAttribute('data-tone', visual.tone || 'generic');
     div.innerHTML =
       '<span class="empresa-card-badge">' +
       escapeHtml(visual.label || "Empresa") +
@@ -418,7 +574,11 @@
       '" type="button" aria-hidden="true">' +
       (hasLicense ? "Licencia activa" : "Sin licencia") +
       "</button>" +
+      '<div class="empresa-card-quick-actions">' +
+      buildEmpresaShareButton(empresa) +
+      '</div>' +
       "</div>" +
+      buildEmpresaSharePanel(empresa) +
       "</div>";
 
     if (!hasLicense) {
@@ -436,8 +596,8 @@
       }
     }
 
-    a.appendChild(div);
-    return a;
+    cardLink.appendChild(div);
+    return cardLink;
   }
 
   async function fetchEmpresaImpacto(empresaId) {
@@ -869,19 +1029,50 @@
     document.getElementById("cancelBtn").onclick = hideForm;
   });
 
-  document.addEventListener('click', function(ev){
-    var btn = ev.target.closest && ev.target.closest('button.download-data');
-    if (!btn) return;
+  document.addEventListener('submit', function (ev) {
+    var shareForm = ev.target.closest && ev.target.closest('form.empresa-card-share-form');
+    if (!shareForm) return;
     ev.preventDefault();
     ev.stopPropagation();
-    var id = parseInt(btn.getAttribute('data-empresa-id') || '0', 10);
-    var name = btn.getAttribute('data-empresa-name') || '';
-    if (!id) return;
-    var params = new URLSearchParams();
-    params.set('empresa_id', String(id));
-    params.set('id', String(id));
-    if (name) params.set('empresa_nombre', name);
-    persistEmpresaContext(id);
-    window.location.href = '/descargar_informacion_de_la_empresa.html?' + params.toString();
+    submitEmpresaShareInvitation(shareForm);
+  });
+
+  document.addEventListener('click', function(ev){
+    var shareBtn = ev.target.closest && ev.target.closest('button.empresa-share-toggle');
+    if (shareBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var disabled = shareBtn.getAttribute('data-share-disabled') === '1';
+      var empresaIdShare = parseInt(shareBtn.getAttribute('data-empresa-id') || '0', 10);
+      if (disabled) {
+        setShareNotice('Solo el administrador propietario puede enviar invitaciones para una empresa compartida.', true);
+        return;
+      }
+      if (empresaIdShare > 0) {
+        setShareNotice('', false);
+        toggleEmpresaSharePanel(empresaIdShare);
+      }
+      return;
+    }
+
+    var btn = ev.target.closest && ev.target.closest('button.download-data');
+    if (btn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var id = parseInt(btn.getAttribute('data-empresa-id') || '0', 10);
+      var name = btn.getAttribute('data-empresa-name') || '';
+      if (!id) return;
+      var params = new URLSearchParams();
+      params.set('empresa_id', String(id));
+      params.set('id', String(id));
+      if (name) params.set('empresa_nombre', name);
+      persistEmpresaContext(id);
+      window.location.href = '/descargar_informacion_de_la_empresa.html?' + params.toString();
+      return;
+    }
+
+    if (!ev.target.closest || !ev.target.closest('.empresa-card-share-panel')) {
+      closeAllEmpresaSharePanels(0);
+    }
   });
 })();

@@ -2293,7 +2293,7 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 	mux.HandleFunc("/js/login.js", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	mux.HandleFunc("/js/login.js", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/descargas/rustdesk-cliente-windows-x64.exe", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("/api/public/pagina_principal", func(w http.ResponseWriter, r *http.Request) {
@@ -2308,7 +2308,7 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 
 	h := utils.AuthMiddleware(dbSuper, mux)
 
-	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/soporte_remoto_acceso.html", "/registrar_nuevo_usuario_administrador.html", "/auth/confirmar_admin", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
+	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/soporte_remoto_acceso.html", "/registrar_nuevo_usuario_administrador.html", "/auth/confirmar_admin", "/js/login.js", "/descargas/rustdesk-cliente-windows-x64.exe", "/api/public/pagina_principal", "/api/public/contrato"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rr := httptest.NewRecorder()
 		h.ServeHTTP(rr, req)

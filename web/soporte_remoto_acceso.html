@@ -7,164 +7,81 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .public-shell { max-width: 1120px; margin: 0 auto; padding: 18px; display:grid; gap:16px; }
-    .public-grid { display:grid; gap:16px; grid-template-columns:1.1fr .9fr; }
-    .public-downloads { display:grid; gap:12px; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .public-grid { display:grid; gap:16px; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .public-downloads { display:grid; gap:12px; }
     .public-card { background: var(--public-panel-bg); border:1px solid var(--public-panel-border); border-radius:18px; padding:16px; color:var(--public-panel-text); box-shadow: 0 18px 38px var(--public-panel-shadow); }
-    .public-download { border:1px solid var(--public-panel-soft-border); border-radius:14px; padding:12px; background:var(--public-panel-soft-bg); }
-    .public-fields { display:grid; gap:10px; }
-    .public-field { border:1px solid var(--public-panel-soft-border); border-radius:14px; padding:12px; background:var(--public-panel-soft-bg); }
-    .public-field span { display:block; font-size:.75rem; color:var(--public-panel-muted); text-transform:uppercase; }
-    .public-field strong { display:block; margin-top:6px; word-break:break-all; font-family:Consolas, monospace; }
+    .public-download { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--public-panel-soft-border); border-radius:14px; padding:12px; background:var(--public-panel-soft-bg); }
     .public-note { color:var(--public-panel-muted); }
-    .public-empty { padding:12px; border-radius:14px; background:color-mix(in srgb, var(--danger) 14%, transparent); color:var(--status-danger); border:1px solid color-mix(in srgb, var(--danger) 28%, transparent); }
-    .public-actions { display:flex; flex-wrap:wrap; gap:10px; }
-    @media (max-width:900px) { .public-grid, .public-downloads { grid-template-columns:1fr; } }
+    .public-steps { margin:0; padding-left:18px; display:grid; gap:10px; }
+    @media (max-width:900px) { .public-grid, .public-download { grid-template-columns:1fr; } .public-download { flex-direction:column; align-items:flex-start; } }
   </style>
 </head>
 <body>
   <div class="public-shell">
     <section class="public-card">
       <h1>Soporte remoto</h1>
-      <p id="heroText" class="public-note">Validando la sesión de soporte remoto y cargando los enlaces de descarga.</p>
+      <p class="public-note">Página pública de soporte remoto por empresa. Solo publica descargas locales y el tutorial operativo para RustDesk.</p>
     </section>
 
     <section class="public-grid">
-      <div style="display:grid; gap:16px;">
-        <article class="public-card">
-          <h2>Descargas</h2>
-          <div id="downloadsBox" class="public-downloads"></div>
-        </article>
-        <article class="public-card">
-          <h2>Instrucciones</h2>
-          <div id="instructionsBox" class="public-note">Esperando datos...</div>
-          <ol class="public-note" style="padding-left:18px; margin-top:12px; display:grid; gap:8px;">
-            <li>Descarga el cliente para tu sistema operativo.</li>
-            <li>Configura el host del VPS Hostinger y la clave pública.</li>
-            <li>Si vas a montar tu propio nodo, usa también la descarga del servidor.</li>
-            <li>Comparte con soporte el ID del dispositivo y la contraseña solo cuando lo soliciten.</li>
-          </ol>
-        </article>
-      </div>
+      <article class="public-card">
+        <h2>Cliente RustDesk</h2>
+        <div class="public-downloads">
+          <div class="public-download">
+            <div>
+              <strong>Windows 64-bit</strong>
+              <div class="public-note">Instalador principal para atención remota.</div>
+            </div>
+            <a class="btn" href="/descargas/rustdesk-cliente-windows-x64.exe">Descargar</a>
+          </div>
+          <div class="public-download">
+            <div>
+              <strong>Linux AMD64</strong>
+              <div class="public-note">Paquete .deb para Ubuntu, Debian y derivados.</div>
+            </div>
+            <a class="btn" href="/descargas/rustdesk-cliente-linux-amd64.deb">Descargar</a>
+          </div>
+          <div class="public-download">
+            <div>
+              <strong>macOS</strong>
+              <div class="public-note">Imagen .dmg para equipos Mac.</div>
+            </div>
+            <a class="btn" href="/descargas/rustdesk-cliente-macos-x64.dmg">Descargar</a>
+          </div>
+        </div>
+      </article>
 
-      <div style="display:grid; gap:16px;">
-        <article class="public-card">
-          <h2>Datos de conexión</h2>
-          <div id="fieldsBox" class="public-fields"></div>
-          <div id="actionsBox" class="public-actions" ></div>
-        </article>
-        <article class="public-card">
-          <h2>Estado</h2>
-          <div id="statusBox" class="public-note">Sin validar todavía.</div>
-        </article>
-      </div>
+      <article class="public-card">
+        <h2>Servidor RustDesk</h2>
+        <div class="public-downloads">
+          <div class="public-download">
+            <div>
+              <strong>Windows 64-bit</strong>
+              <div class="public-note">Paquete del servidor para infraestructura Windows.</div>
+            </div>
+            <a class="btn secondary" href="/descargas/rustdesk-servidor-windows-x64.zip">Descargar</a>
+          </div>
+          <div class="public-download">
+            <div>
+              <strong>Linux AMD64</strong>
+              <div class="public-note">Paquete recomendado para VPS Linux con hbbs y hbbr.</div>
+            </div>
+            <a class="btn secondary" href="/descargas/rustdesk-servidor-linux-amd64.zip">Descargar</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="public-card" style="grid-column:1 / -1;">
+        <h2>Tutorial de funcionamiento</h2>
+        <ol class="public-steps public-note">
+          <li>Descarga el cliente RustDesk para el sistema operativo del equipo que recibirá soporte.</li>
+          <li>Instala el programa y déjalo abierto cuando el operador vaya a conectarse.</li>
+          <li>Si tu empresa administra un nodo propio, descarga además el servidor para el VPS o el host dedicado.</li>
+          <li>La activación y prueba del servicio RustDesk del VPS se hace desde configuración avanzada del super administrador.</li>
+          <li>Conserva estos instaladores como referencia oficial del proyecto para evitar mezclar versiones no validadas.</li>
+        </ol>
+      </article>
     </section>
   </div>
-
-  <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search || '');
-      var empresaID = Number(params.get('empresa_id') || 0);
-      var codigoSesion = String(params.get('codigo_sesion') || '').trim();
-      var token = String(params.get('token') || '').trim();
-
-      var heroText = document.getElementById('heroText');
-      var downloadsBox = document.getElementById('downloadsBox');
-      var instructionsBox = document.getElementById('instructionsBox');
-      var fieldsBox = document.getElementById('fieldsBox');
-      var actionsBox = document.getElementById('actionsBox');
-      var statusBox = document.getElementById('statusBox');
-
-      function escapeHTML(value) {
-        return String(value == null ? '' : value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function createDownload(title, description, url) {
-        if (!String(url || '').trim()) {
-          return '<div class="public-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><div class="public-empty">No configurado.</div></div>';
-        }
-        return '<div class="public-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><a class="btn" href="' + escapeHTML(url) + '" target="_self" rel="noopener">Descargar</a></div>';
-      }
-
-      function createField(label, value) {
-        if (!String(value || '').trim()) return '';
-        return '<div class="public-field"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(value) + '</strong></div>';
-      }
-
-      function copyValue(value, label) {
-        if (!navigator.clipboard || !String(value || '').trim()) return;
-        navigator.clipboard.writeText(value).then(function () {
-          statusBox.textContent = label + ' copiado al portapapeles.';
-        }).catch(function () {
-          statusBox.textContent = 'No se pudo copiar ' + label + '.';
-        });
-      }
-
-      function render(data) {
-        var access = data.access || {};
-        var session = data.session || {};
-        heroText.textContent = data.acceso_permitido
-          ? 'La sesión fue validada. Usa el cliente RustDesk o descarga también el servidor si vas a publicar tu propio nodo.'
-          : 'La sesión aún no está habilitada, pero puedes preparar la descarga y la configuración del host.';
-        statusBox.textContent = data.acceso_permitido
-          ? 'Sesión ' + (session.codigo_sesion || '') + ' habilitada.'
-          : (data.motivo_bloqueo || 'Sesión pendiente o restringida.');
-        instructionsBox.textContent = String(access.instrucciones_publicas || 'Descarga RustDesk, configura el host del VPS Hostinger y la clave pública, luego comparte el ID con soporte.').trim();
-        downloadsBox.innerHTML = [
-          createDownload('Cliente Windows', 'Cliente oficial para Windows.', access.cliente_windows_url),
-          createDownload('Cliente Linux', 'Cliente oficial para Linux.', access.cliente_linux_url),
-          createDownload('Cliente macOS', 'Cliente oficial para macOS.', access.cliente_mac_url),
-          createDownload('Servidor Windows', 'Servidor o relay para Windows.', access.servidor_windows_url),
-          createDownload('Servidor Linux', 'Servidor o relay para Linux.', access.servidor_linux_url),
-          createDownload('Servidor macOS', 'Servidor para macOS, si fue configurado.', access.servidor_mac_url)
-        ].join('');
-        fieldsBox.innerHTML = [
-          createField('Host RustDesk', access.rustdesk_server_host),
-          createField('Clave pública', access.rustdesk_server_key),
-          createField('ID del dispositivo', access.rustdesk_device_id),
-          createField('Contraseña del dispositivo', access.rustdesk_password),
-          createField('Carpeta de transferencia', access.carpeta_transferencia),
-          createField('Código de sesión', session.codigo_sesion)
-        ].join('') || '<div class="public-empty">No hay datos de conexión visibles.</div>';
-        actionsBox.innerHTML = '';
-        [['Copiar host', access.rustdesk_server_host], ['Copiar clave', access.rustdesk_server_key], ['Copiar ID', access.rustdesk_device_id], ['Copiar contraseña', access.rustdesk_password]].forEach(function (item) {
-          if (!String(item[1] || '').trim()) return;
-          var button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'btn secondary';
-          button.textContent = item[0];
-          button.addEventListener('click', function () { copyValue(item[1], item[0]); });
-          actionsBox.appendChild(button);
-        });
-      }
-
-      async function loadAccess() {
-        if (!(empresaID > 0) || !codigoSesion || !token) {
-          statusBox.innerHTML = '<div class="public-empty">Enlace inválido.</div>';
-          return;
-        }
-        try {
-          var url = new URL('/api/public/soporte_remoto', window.location.origin);
-          url.searchParams.set('action', 'resolver_acceso_publico');
-          url.searchParams.set('empresa_id', String(empresaID));
-          url.searchParams.set('codigo_sesion', codigoSesion);
-          url.searchParams.set('token', token);
-          var response = await fetch(url.toString(), { credentials: 'same-origin' });
-          var text = await response.text();
-          var data = text ? JSON.parse(text) : {};
-          if (!response.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
-          render(data);
-        } catch (error) {
-          statusBox.innerHTML = '<div class="public-empty">' + escapeHTML(error.message || 'No se pudo cargar el acceso remoto.') + '</div>';
-        }
-      }
-
-      loadAccess();
-    })();
-  </script>
 </body>
 </html>

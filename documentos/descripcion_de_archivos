@@ -1,3 +1,7 @@
+- Actualizacion 2026-04-21: compartir empresa directo desde el selector
+	- web/js/seleccionar_empresa.js : agrega el icono de compartir en cada tarjeta del selector, despliega un formulario compacto por empresa para invitar por correo a otro administrador y reutiliza el endpoint existente `/super/api/empresas/compartidos` sin obligar a entrar primero a `editar_empresa.html`.
+	- web/estilos.css : añade el botón iconográfico y el popover responsivo del formulario de compartir dentro de las tarjetas empresariales del selector.
+
 - Actualizacion 2026-04-21: reparacion del frente publico de Motel Calipso
 	- backend/db/red_social.go : corrige la decision de dialecto del schema de publicaciones para usar la conexion efectiva y evitar inconsistencias entre PostgreSQL real y SQLite de pruebas.
 	- backend/handlers/red_social.go : permite que el endpoint publico de publicaciones filtre por `empresa_id` cuando se consulta una empresa especifica.

@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configuración avanzada</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .rustdesk-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:110px; padding:6px 10px; border-radius:999px; border:1px solid var(--content-soft-border); background:var(--content-soft-bg); color:var(--muted); text-transform:uppercase; font-size:.78rem; letter-spacing:.03em; }
+    .rustdesk-status-badge.active { background:#dcfce7; color:#166534; border-color:#86efac; }
+    .rustdesk-status-badge.inactive { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+    .rustdesk-downloads { display:grid; gap:10px; }
+    .rustdesk-download-item { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--content-soft-border); border-radius:12px; padding:12px; background:var(--content-soft-bg); }
+    .rustdesk-download-item span { display:block; color:var(--muted); font-size:.88rem; }
+    .rustdesk-probe-list { margin:0; padding-left:18px; display:grid; gap:8px; }
+    .rustdesk-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
+    @media (max-width: 900px) { .rustdesk-download-item { flex-direction:column; align-items:flex-start; } }
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -19,6 +30,97 @@
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios rápidos
       </button>
     </div>
+
+    <section class="card form advanced-card" data-brand="system" id="rustdeskVpsCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path><rect x="3" y="3" width="18" height="18" rx="4"></rect></svg>
+        RustDesk en el VPS
+      </h2>
+      <p class="form-help">Activa, reinicia, apaga y prueba el servicio RustDesk del VPS desde aquí. Las páginas de soporte remoto públicas ahora solo publican los instaladores locales y el tutorial operativo.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estado general</label>
+          <div><span id="rustdesk-status-badge" class="rustdesk-status-badge">Cargando...</span></div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Servicio hbbs</label>
+          <div><span id="rustdesk-hbbs-badge" class="rustdesk-status-badge">Cargando...</span></div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Servicio hbbr</label>
+          <div><span id="rustdesk-hbbr-badge" class="rustdesk-status-badge">Cargando...</span></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="rustdeskStartBtn" type="button" class="btn">Iniciar</button>
+        <button id="rustdeskRestartBtn" type="button" class="btn secondary">Reiniciar</button>
+        <button id="rustdeskStopBtn" type="button" class="btn danger">Detener</button>
+        <button id="rustdeskProbeBtn" type="button" class="btn secondary">Probar funcionamiento</button>
+      </div>
+      <div id="rustdeskStatusMsg" class="form-help"></div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <h3>Instaladores públicos</h3>
+          <div class="rustdesk-downloads">
+            <div class="rustdesk-download-item">
+              <div>
+                <strong>Cliente Windows</strong>
+                <span>/descargas/rustdesk-cliente-windows-x64.exe</span>
+              </div>
+              <a class="btn secondary" href="/descargas/rustdesk-cliente-windows-x64.exe" target="_top">Abrir</a>
+            </div>
+            <div class="rustdesk-download-item">
+              <div>
+                <strong>Cliente Linux</strong>
+                <span>/descargas/rustdesk-cliente-linux-amd64.deb</span>
+              </div>
+              <a class="btn secondary" href="/descargas/rustdesk-cliente-linux-amd64.deb" target="_top">Abrir</a>
+            </div>
+            <div class="rustdesk-download-item">
+              <div>
+                <strong>Cliente macOS</strong>
+                <span>/descargas/rustdesk-cliente-macos-x64.dmg</span>
+              </div>
+              <a class="btn secondary" href="/descargas/rustdesk-cliente-macos-x64.dmg" target="_top">Abrir</a>
+            </div>
+            <div class="rustdesk-download-item">
+              <div>
+                <strong>Servidor Windows</strong>
+                <span>/descargas/rustdesk-servidor-windows-x64.zip</span>
+              </div>
+              <a class="btn secondary" href="/descargas/rustdesk-servidor-windows-x64.zip" target="_top">Abrir</a>
+            </div>
+            <div class="rustdesk-download-item">
+              <div>
+                <strong>Servidor Linux</strong>
+                <span>/descargas/rustdesk-servidor-linux-amd64.zip</span>
+              </div>
+              <a class="btn secondary" href="/descargas/rustdesk-servidor-linux-amd64.zip" target="_top">Abrir</a>
+            </div>
+          </div>
+        </div>
+        <div class="form-col">
+          <h3>Tutorial operativo</h3>
+          <ol class="rustdesk-steps form-help">
+            <li>Descarga los binarios públicos desde la carpeta descargas servida por el backend.</li>
+            <li>Usa esta tarjeta para arrancar o reiniciar hbbs y hbbr en el VPS.</li>
+            <li>Ejecuta la prueba cuando cambies el servicio o actualices los binarios del servidor.</li>
+            <li>Comparte con cada empresa únicamente la página pública de soporte remoto con sus enlaces locales.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px; padding:16px; background:var(--content-soft-bg); border:1px solid var(--content-soft-border);">
+        <h3>Última comprobación</h3>
+        <p id="rustdeskProbeSummary" class="form-help">Aún no se ha ejecutado la prueba.</p>
+        <ul id="rustdeskProbeDetails" class="rustdesk-probe-list">
+          <li>Sin datos todavía.</li>
+        </ul>
+      </div>
+    </section>
 
     <section class="card form advanced-card" data-brand="store" id="ventaDigitalConfigShortcut">
       <h2>
@@ -367,6 +469,87 @@
       ];
       const globalSaveButtons = [document.getElementById('saveAllConfigTopBtn'), document.getElementById('saveAllConfigBottomBtn')];
 
+      function normalizeRustDeskStatus(value){
+        const status = String(value || '').trim().toLowerCase();
+        return status || 'sin dato';
+      }
+
+      function applyRustDeskBadge(id, status){
+        const node = document.getElementById(id);
+        if (!node) return;
+        const value = normalizeRustDeskStatus(status);
+        node.textContent = value;
+        node.className = 'rustdesk-status-badge';
+        if (value === 'active' || value === 'activo') node.classList.add('active');
+        else if (value === 'inactive' || value === 'inactivo' || value === 'failed' || value === 'error') node.classList.add('inactive');
+      }
+
+      function renderRustDeskService(service){
+        const componentes = service.componentes || {};
+        applyRustDeskBadge('rustdesk-status-badge', service.estado);
+        applyRustDeskBadge('rustdesk-hbbs-badge', componentes['rustdesk-hbbs']);
+        applyRustDeskBadge('rustdesk-hbbr-badge', componentes['rustdesk-hbbr']);
+      }
+
+      async function fetchRustDeskJSON(url, options){
+        const response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!response.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
+        return data;
+      }
+
+      async function loadRustDeskCard(message){
+        const statusNode = document.getElementById('rustdeskStatusMsg');
+        if (message && statusNode) statusNode.innerText = message;
+        try {
+          const data = await fetchRustDeskJSON('/super/api/servidores');
+          const service = (data.servicios || []).find(function(item){ return item.id === 'rustdesk'; });
+          if (!service) throw new Error('No se encontró el servicio RustDesk.');
+          renderRustDeskService(service);
+          if (statusNode) statusNode.innerText = 'Estado del VPS actualizado.';
+        } catch (err) {
+          if (statusNode) statusNode.innerText = err.message || 'No se pudo consultar el servicio RustDesk.';
+        }
+      }
+
+      async function toggleRustDeskService(action){
+        const statusNode = document.getElementById('rustdeskStatusMsg');
+        if (statusNode) statusNode.innerText = 'Ejecutando ' + action + '...';
+        try {
+          const data = await fetchRustDeskJSON('/super/api/servidores/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: 'rustdesk', accion: action })
+          });
+          if (data.servicio) renderRustDeskService(data.servicio);
+          if (statusNode) statusNode.innerText = 'Acción completada: ' + action + '.';
+        } catch (err) {
+          if (statusNode) statusNode.innerText = err.message || 'No se pudo cambiar el estado del servicio.';
+        }
+      }
+
+      async function probeRustDeskCard(){
+        const statusNode = document.getElementById('rustdeskStatusMsg');
+        if (statusNode) statusNode.innerText = 'Probando RustDesk...';
+        try {
+          const data = await fetchRustDeskJSON('/super/api/servidores/probar?id=rustdesk');
+          const service = data.servicio || {};
+          renderRustDeskService(service);
+          const prueba = service.prueba || {};
+          document.getElementById('rustdeskProbeSummary').innerText = prueba.resumen || 'Prueba terminada sin resumen.';
+          const details = [];
+          const servicios = prueba.servicios || {};
+          Object.keys(servicios).forEach(function(key){ details.push('<li>' + key + ': ' + servicios[key] + '</li>'); });
+          const puertos = prueba.puertos || {};
+          Object.keys(puertos).forEach(function(key){ details.push('<li>Puerto ' + key + ': ' + puertos[key] + '</li>'); });
+          document.getElementById('rustdeskProbeDetails').innerHTML = details.length ? details.join('') : '<li>Sin detalles de prueba.</li>';
+          if (statusNode) statusNode.innerText = prueba.ok ? 'RustDesk respondió correctamente.' : 'RustDesk respondió con alertas. Revisa el detalle.';
+        } catch (err) {
+          if (statusNode) statusNode.innerText = err.message || 'No se pudo ejecutar la prueba.';
+        }
+      }
+
       function setGlobalSaveMessage(message, type){
         ['globalConfigMsgTop', 'globalConfigMsgBottom'].forEach(function(id){
           const node = document.getElementById(id);
@@ -385,6 +568,7 @@
       }
 
       async function load(){
+        await loadRustDeskCard();
         loadMantenimientoConfig();
         // cargar estado Wompi
         try {
@@ -1363,6 +1547,10 @@
       }
 
       document.getElementById('saveWompiBtn').addEventListener('click', saveWompi);
+      document.getElementById('rustdeskStartBtn').addEventListener('click', function(){ toggleRustDeskService('start'); });
+      document.getElementById('rustdeskRestartBtn').addEventListener('click', function(){ toggleRustDeskService('restart'); });
+      document.getElementById('rustdeskStopBtn').addEventListener('click', function(){ toggleRustDeskService('stop'); });
+      document.getElementById('rustdeskProbeBtn').addEventListener('click', probeRustDeskCard);
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
       document.getElementById('saveEpaycoBtn').addEventListener('click', saveEpayco);

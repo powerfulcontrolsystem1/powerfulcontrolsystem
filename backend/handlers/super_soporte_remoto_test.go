@@ -157,6 +157,12 @@ func TestSuperSoporteRemotoHandlerConfigGetAndUpdate(t *testing.T) {
 	if !boolValue(cfgDefault["portal_publico_habilitado"]) {
 		t.Fatalf("expected default portal_publico_habilitado=true, got %#v", cfgDefault)
 	}
+	if strings.TrimSpace(stringValue(cfgDefault["cliente_windows_url"])) != "/descargas/rustdesk-cliente-windows-x64.exe" {
+		t.Fatalf("expected default cliente_windows_url local download, got %#v", cfgDefault)
+	}
+	if strings.TrimSpace(stringValue(cfgDefault["servidor_linux_url"])) != "/descargas/rustdesk-servidor-linux-amd64.zip" {
+		t.Fatalf("expected default servidor_linux_url local download, got %#v", cfgDefault)
+	}
 
 	reqSave := httptest.NewRequest(http.MethodPost, "/super/api/soporte_remoto?action=config&empresa_id="+itoa64(empresaID), strings.NewReader(`{"habilitado":true,"portal_publico_habilitado":true,"proveedor_preferido":"rustdesk_oss","modo_operacion":"cliente_local","max_minutos_dia_rustdesk":240,"rustdesk_server_host":"rustdesk.powerfulcontrolsystem.com:21116","rustdesk_server_key":"PUBKEY-90117","cliente_windows_url":"https://downloads.example/client-win.exe","cliente_linux_url":"https://downloads.example/client-linux.deb","cliente_mac_url":"https://downloads.example/client-mac.dmg","servidor_windows_url":"https://downloads.example/server-win.zip","servidor_linux_url":"https://downloads.example/server-linux.tar.gz","servidor_mac_url":"https://downloads.example/server-mac.pkg","carpeta_transferencia":"/srv/rustdesk/transfer","instrucciones_publicas":"Descarga el cliente y comparte el ID de RustDesk con soporte."}`))
 	reqSave.Header.Set("Content-Type", "application/json")

@@ -711,7 +711,7 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 	var requiereAprobacionRaw int64
 	var nivelesAprobacionRaw int64
 	var nivelAprobacionRaw int64
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(proveedor_id, 0),
@@ -827,7 +827,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		payload.MontoTotal = 0
 	}
 
-	_, err := dbConn.Exec(`INSERT INTO empresa_compras_documentos (
+	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_compras_documentos (
 		empresa_id,
 		proveedor_id,
 		tipo_documento,
@@ -1006,7 +1006,7 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 	LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}

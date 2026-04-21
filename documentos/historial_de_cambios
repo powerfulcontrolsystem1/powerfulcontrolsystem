@@ -1,3 +1,13 @@
+- 2026-04-21: El selector de empresas agrega el acceso directo para compartir desde cada tarjeta.
+    - Archivos modificados:
+        - web/js/seleccionar_empresa.js
+        - web/estilos.css
+        - documentos/historial_de_cambios
+        - documentos/descripcion_de_archivos
+    - Descripción: cada tarjeta del selector incorpora un icono de compartir visible dentro de la propia card. El propietario puede desplegar un formulario compacto, escribir el correo de otro administrador ya registrado y enviar la invitación sin salir de `seleccionar_empresa.html`, reutilizando el endpoint existente de empresas compartidas. Las empresas recibidas por invitación también muestran el icono, pero bloqueado para evitar que un administrador compartido reencadene accesos que no le pertenecen.
+    - Verificación:
+        - `get_errors` sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
+
 - 2026-04-21: Se repara el frente publico de Motel Calipso para publicaciones y venta publica amigable.
     - Archivos modificados:
         - backend/db/red_social.go

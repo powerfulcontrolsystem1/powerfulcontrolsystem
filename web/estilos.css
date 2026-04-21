@@ -6296,10 +6296,16 @@ body.has-floating-menu .header .form-actions{
 }
 
 .chat-calendar-main{
+  width:min(550px,100%);
+  height:550px;
   border:1px solid var(--border);
   border-radius:18px;
   background:rgba(255,255,255,0.03);
   padding:14px;
+  display:grid;
+  grid-template-rows:auto 1fr;
+  justify-self:start;
+  overflow:hidden;
 }
 
 .chat-calendar-weekdays{
@@ -6319,11 +6325,13 @@ body.has-floating-menu .header .form-actions{
 .chat-calendar-grid{
   display:grid;
   grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));
   gap:10px;
+  min-height:0;
 }
 
 .chat-calendar-day{
-  min-height:156px;
+  min-height:0;
   border:1px solid rgba(255,255,255,0.08);
   border-radius:14px;
   background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
@@ -6739,6 +6747,110 @@ body.has-floating-menu .header .form-actions{
   margin-top:auto;
 }
 
+.empresas-grid .portal-card.empresa-card .empresa-card-quick-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon-action{
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  color:#16324a;
+  background:rgba(255,255,255,0.92);
+  border:1px solid rgba(18,48,71,0.1);
+  box-shadow:0 10px 18px rgba(15,23,42,0.08);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon-action:hover{
+  transform:translateY(-1px);
+  box-shadow:0 14px 24px rgba(15,23,42,0.12);
+  border-color:rgba(18,48,71,0.16);
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon-action.is-open{
+  color:#ffffff;
+  background:linear-gradient(135deg, #2f6fed, #1e4dbe);
+  border-color:transparent;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon-action.is-disabled{
+  cursor:not-allowed;
+  opacity:0.58;
+  box-shadow:none;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-panel{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:18px;
+  z-index:4;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid rgba(18,48,71,0.12);
+  background:rgba(255,255,255,0.98);
+  box-shadow:0 24px 38px rgba(15,23,42,0.18);
+  backdrop-filter:blur(10px);
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-panel[hidden]{
+  display:none !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-form{
+  display:grid;
+  gap:10px;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-label{
+  margin:0;
+  color:#16324a;
+  font-size:0.84rem;
+  font-weight:900;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-input{
+  min-width:0;
+  background:#ffffff;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-submit{
+  min-height:42px;
+  white-space:nowrap;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-feedback{
+  margin:0;
+  min-height:1.1rem;
+  color:#5c6f81;
+  font-size:0.78rem;
+  font-weight:700;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-feedback.is-success{
+  color:#166534;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-feedback.is-error{
+  color:#b42318;
+}
+
 .empresas-grid .portal-card.empresa-card .empresa-card-cta{
   color:#16324a;
   font-size:0.94rem;
@@ -6821,6 +6933,16 @@ body.has-floating-menu .header .form-actions{
 
   .empresas-grid .portal-card.empresa-card .card-download{
     padding:0 16px 16px;
+  }
+
+  .empresas-grid .portal-card.empresa-card .empresa-card-share-panel{
+    left:14px;
+    right:14px;
+    bottom:14px;
+  }
+
+  .empresas-grid .portal-card.empresa-card .empresa-card-share-row{
+    grid-template-columns:1fr;
   }
 }
 .task-status.cancel{color:#d9c6c6}
@@ -7431,12 +7553,33 @@ body.has-floating-menu .header .form-actions{
     text-align:left;
   }
 
+  .chat-calendar-main{
+    width:min(100%, 52vh);
+    height:min(52vh, 460px);
+    padding:10px;
+    justify-self:center;
+  }
+
   .chat-calendar-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:6px;
   }
 
   .chat-calendar-day{
-    min-height:132px;
+    min-height:0;
+    padding:8px 6px;
+    border-radius:10px;
+  }
+
+  .chat-calendar-day-top{
+    margin-bottom:4px;
+  }
+
+  .chat-calendar-day-top span,
+  .chat-calendar-day-top small,
+  .chat-calendar-event,
+  .chat-calendar-more{
+    font-size:.68rem;
   }
 
   .lic-modulos-grid{

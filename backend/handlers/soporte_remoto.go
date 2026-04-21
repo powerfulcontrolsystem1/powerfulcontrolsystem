@@ -88,8 +88,11 @@ type empresaSoporteRemotoAccessBundle struct {
 }
 
 const (
-	rustDeskClientDownloadsURL = "https://github.com/rustdesk/rustdesk/releases/latest"
-	rustDeskServerDownloadsURL = "https://github.com/rustdesk/rustdesk-server/releases/latest"
+	rustDeskClientWindowsURL = "/descargas/rustdesk-cliente-windows-x64.exe"
+	rustDeskClientLinuxURL   = "/descargas/rustdesk-cliente-linux-amd64.deb"
+	rustDeskClientMacURL     = "/descargas/rustdesk-cliente-macos-x64.dmg"
+	rustDeskServerWindowsURL = "/descargas/rustdesk-servidor-windows-x64.zip"
+	rustDeskServerLinuxURL   = "/descargas/rustdesk-servidor-linux-amd64.zip"
 )
 
 func applyRustDeskDownloadDefaults(cfg *dbpkg.EmpresaSoporteRemotoConfig) {
@@ -97,22 +100,22 @@ func applyRustDeskDownloadDefaults(cfg *dbpkg.EmpresaSoporteRemotoConfig) {
 		return
 	}
 	if strings.TrimSpace(cfg.ClienteWindowsURL) == "" {
-		cfg.ClienteWindowsURL = rustDeskClientDownloadsURL
+		cfg.ClienteWindowsURL = rustDeskClientWindowsURL
 	}
 	if strings.TrimSpace(cfg.ClienteLinuxURL) == "" {
-		cfg.ClienteLinuxURL = rustDeskClientDownloadsURL
+		cfg.ClienteLinuxURL = rustDeskClientLinuxURL
 	}
 	if strings.TrimSpace(cfg.ClienteMacURL) == "" {
-		cfg.ClienteMacURL = rustDeskClientDownloadsURL
+		cfg.ClienteMacURL = rustDeskClientMacURL
 	}
 	if strings.TrimSpace(cfg.ServidorWindowsURL) == "" {
-		cfg.ServidorWindowsURL = rustDeskServerDownloadsURL
+		cfg.ServidorWindowsURL = rustDeskServerWindowsURL
 	}
 	if strings.TrimSpace(cfg.ServidorLinuxURL) == "" {
-		cfg.ServidorLinuxURL = rustDeskServerDownloadsURL
+		cfg.ServidorLinuxURL = rustDeskServerLinuxURL
 	}
 	if strings.TrimSpace(cfg.ServidorMacURL) == "" {
-		cfg.ServidorMacURL = rustDeskServerDownloadsURL
+		cfg.ServidorMacURL = ""
 	}
 }
 
