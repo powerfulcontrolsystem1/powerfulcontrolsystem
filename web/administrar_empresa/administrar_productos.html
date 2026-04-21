@@ -57,7 +57,7 @@
         <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
       </div>
 
-      <form id="bodegaForm" class="form" style="display:none;">
+      <form id="bodegaForm" class="form is-hidden">
         <input type="hidden" id="bodegaId">
         <div class="form-row">
           <div class="form-col">
@@ -113,7 +113,7 @@
         <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
       </div>
 
-      <form id="proveedorForm" class="form" style="display:none;">
+      <form id="proveedorForm" class="form is-hidden">
         <input type="hidden" id="proveedorId">
         <div class="form-row">
           <div class="form-col">
@@ -197,7 +197,7 @@
         </div>
       </div>
 
-      <form id="categoriaProductoForm" class="form" style="display:none;">
+      <form id="categoriaProductoForm" class="form is-hidden">
         <input type="hidden" id="categoriaProductoId">
         <div class="form-row">
           <div class="form-col">
@@ -263,7 +263,7 @@
         </div>
       </div>
 
-      <form id="productoForm" class="form" style="display:none;">
+      <form id="productoForm" class="form is-hidden">
         <input type="hidden" id="productoId">
         <div class="form-row">
           <div class="form-col">
@@ -399,7 +399,7 @@
         <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
       </div>
 
-      <form id="servicioForm" class="form" style="display:none;">
+      <form id="servicioForm" class="form is-hidden">
         <input type="hidden" id="servicioId">
         <div class="form-row">
           <div class="form-col">
@@ -471,10 +471,10 @@
     <section class="empresa-grid-2" data-view-section="bodegas">
       <section class="card empresa-section">
         <h2>Ajustes de inventario (devoluciones/pérdidas)</h2>
-        <div class="empresa-section-header" style="margin-bottom:12px;">
-          <h3 style="margin:0;">Política de costo por empresa</h3>
-          <div class="empresa-inline-actions" style="gap:8px;">
-            <select id="inventarioPoliticaCosto" class="form-input" style="min-width:180px;">
+        <div class="empresa-section-header section-header-tight">
+          <h3 class="section-heading">Política de costo por empresa</h3>
+          <div class="empresa-inline-actions inline-actions-gap-sm">
+            <select id="inventarioPoliticaCosto" class="form-input minw-180">
               <option value="promedio">Promedio</option>
               <option value="peps">PEPS</option>
             </select>
@@ -523,8 +523,8 @@
           </div>
         </form>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Conteo cíclico con ajuste auditado</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Conteo cíclico con ajuste auditado</h3>
         </div>
         <form id="conteoCiclicoForm" class="form">
           <div class="form-row">
@@ -556,7 +556,7 @@
           </div>
         </form>
 
-        <div class="table-wrap" style="margin-top:10px;">
+        <div class="table-wrap table-wrap-spaced">
           <table class="table" id="conteosCiclicosTable">
             <thead>
               <tr>
@@ -667,8 +667,8 @@
           </table>
         </div>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Alertas operativas proactivas (quiebre/sobrestock)</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Alertas operativas proactivas (quiebre/sobrestock)</h3>
           <div class="empresa-inline-actions">
             <select id="alertaBodegaFiltro" class="form-input">
               <option value="">Todas las bodegas</option>
@@ -696,8 +696,8 @@
           </table>
         </div>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Top productos críticos (déficit)</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Top productos críticos (déficit)</h3>
         </div>
         <div class="table-wrap">
           <table class="table" id="inventarioCriticosTable">
@@ -757,8 +757,8 @@
         </div>
         <p id="inventarioResumenContexto" class="form-help">Movimientos del periodo: cargando resumen...</p>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Tendencia diaria inventario</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Tendencia diaria inventario</h3>
         </div>
         <div class="table-wrap">
           <table class="table" id="inventarioTendenciaTable">
@@ -777,8 +777,8 @@
         </div>
         <p id="inventarioTendenciaContexto" class="form-help">Tendencia: cargando...</p>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Balance por bodega</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Balance por bodega</h3>
         </div>
         <div class="table-wrap">
           <table class="table" id="inventarioBalanceBodegasTable">
@@ -797,8 +797,8 @@
         </div>
         <p id="inventarioBalanceBodegasContexto" class="form-help">Balance por bodega: cargando...</p>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Proyección de quiebre (preventiva)</h3>
+        <div class="empresa-section-header section-header-spaced">
+          <h3 class="section-heading">Proyección de quiebre (preventiva)</h3>
         </div>
         <div class="table-wrap">
           <table class="table" id="inventarioProyeccionTable">
@@ -836,8 +836,8 @@
       </div>
       <p id="inventarioResumenContexto" class="form-help">Compras preventivas: cargando resumen...</p>
 
-      <div class="empresa-section-header" style="margin-top:16px;">
-        <h3 style="margin:0;">Plan de reposición por proveedor (fase 8)</h3>
+      <div class="empresa-section-header section-header-spaced">
+        <h3 class="section-heading">Plan de reposición por proveedor (fase 8)</h3>
         <div class="empresa-inline-actions">
           <button id="btnLimpiarPlanProveedor" class="btn secondary" type="button">Ver todos</button>
         </div>
@@ -861,8 +861,8 @@
       </div>
       <p id="inventarioPlanReposicionContexto" class="form-help">Plan de reposición: cargando...</p>
 
-      <div class="empresa-section-header" style="margin-top:16px;">
-        <h3 style="margin:0;">Consolidado de compra por proveedor (fase 9)</h3>
+      <div class="empresa-section-header section-header-spaced">
+        <h3 class="section-heading">Consolidado de compra por proveedor (fase 9)</h3>
       </div>
       <div class="table-wrap">
         <table class="table" id="inventarioPlanReposicionResumenTable">
@@ -883,8 +883,8 @@
       </div>
       <p id="inventarioPlanReposicionResumenContexto" class="form-help">Consolidado de compra: cargando...</p>
 
-      <div class="empresa-section-header" style="margin-top:16px;">
-        <h3 style="margin:0;">Borrador y ciclo de orden por proveedor (fases 10-12)</h3>
+      <div class="empresa-section-header section-header-spaced">
+        <h3 class="section-heading">Borrador y ciclo de orden por proveedor (fases 10-12)</h3>
         <div class="empresa-inline-actions">
           <button id="btnEmitirOrdenBorrador" class="btn" type="button">Emitir orden</button>
           <button id="btnRecepcionarOrdenBorrador" class="btn secondary" type="button">Recepcionar orden</button>
@@ -1856,7 +1856,7 @@
         variacionAbsoluta += Math.abs(variacion);
         const variacionStyle = variacion === 0
           ? ''
-          : (variacion > 0 ? ' style="color:#027A48;font-weight:600;"' : ' style="color:#B42318;font-weight:600;"');
+          : (variacion > 0 ? ' class="value-positive"' : ' class="value-negative"');
         return '<tr>' +
           '<td>' + sanitize(r.fecha_conteo || '') + '</td>' +
           '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
@@ -1990,8 +1990,8 @@
         netoTotal += neto;
         eventosTotal += Number(r.eventos || 0);
         const netoStyle = neto < 0
-          ? ' style="color:#B42318;font-weight:600;"'
-          : (neto > 0 ? ' style="color:#027A48;font-weight:600;"' : '');
+          ? ' class="value-negative"'
+          : (neto > 0 ? ' class="value-positive"' : '');
         return '<tr>' +
           '<td>' + sanitize(r.fecha || '') + '</td>' +
           '<td>' + Number(r.entradas || 0).toFixed(2) + '</td>' +
@@ -2046,8 +2046,8 @@
         netoTotal += neto;
         eventosTotal += Number(r.eventos || 0);
         const netoStyle = neto < 0
-          ? ' style="color:#B42318;font-weight:600;"'
-          : (neto > 0 ? ' style="color:#027A48;font-weight:600;"' : '');
+          ? ' class="value-negative"'
+          : (neto > 0 ? ' class="value-positive"' : '');
         return '<tr>' +
           '<td>' + sanitize(r.bodega_nombre || ('Bodega #' + Number(r.bodega_id || 0))) + '</td>' +
           '<td>' + Number(r.entradas || 0).toFixed(2) + '</td>' +
@@ -2114,9 +2114,9 @@
         const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
         const estadoSafe = sanitize(estado);
         const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
-          ? ' style="color:#B42318;font-weight:600;"'
+          ? ' class="value-negative"'
           : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
-            ? ' style="color:#B54708;font-weight:600;"' : '');
+            ? ' class="value-negative"' : '');
         return '<tr>' +
           '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
           '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
@@ -2164,9 +2164,9 @@
         const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
         const estadoSafe = sanitize(estado);
         const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
-          ? ' style="color:#B42318;font-weight:600;"'
+          ? ' class="value-negative"'
           : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
-            ? ' style="color:#B54708;font-weight:600;"' : '');
+            ? ' class="value-negative"' : '');
         const sugerido = Number(r.sugerido_reposicion || 0);
         const costoUnit = Number(r.costo_unitario_ref || 0);
         const costoEst = Number(r.costo_estimado || 0);
@@ -2303,9 +2303,9 @@
         const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
         const estadoSafe = sanitize(estado);
         const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
-          ? ' style="color:#B42318;font-weight:600;"'
+          ? ' class="value-negative"'
           : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
-            ? ' style="color:#B54708;font-weight:600;"' : '');
+            ? ' class="value-negative"' : '');
         return '<tr>' +
           '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
           '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +

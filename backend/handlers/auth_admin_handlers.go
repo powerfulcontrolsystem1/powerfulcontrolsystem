@@ -555,9 +555,9 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 	if safeName == "" {
 		safeName = "administrador"
 	}
-	subject, body, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminPasswordRecovery, map[string]string{
+	subject, bodyPlain, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminPasswordRecovery, map[string]string{
 		"name":      safeName,
-		"token":     token,
+		"token":     "",
 		"reset_url": resetHintURL,
 	})
 	if err != nil {
@@ -565,7 +565,7 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 	}
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"reset_hint_url":%q,"mail_mode":"test"}`, resetHintURL)
-		if err := captureEmpresaUsuarioMailNotification(dbSuper, "recuperacion_password_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "recuperacion_password_admin", 0, toEmail, subject, bodyPlain, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
 			return resetHintURL, err
 		}
 		return resetHintURL, nil
@@ -612,12 +612,21 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 		addr = smtpHost + ":" + smtpPort
 	}
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
 		"To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
+		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n" +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyPlain + "\r\n" +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyHTML + "\r\n" +
+		"--" + boundary + "--\r\n"
 	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
 		return resetHintURL, err
 	}

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -711,7 +711,7 @@
       }
 
       async function deleteEmployee(id) {
-        if (!confirm('¿Eliminar empleado de nomina?')) return;
+        if (!confirm('Â¿Eliminar empleado de nomina?')) return;
         await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=empleado&id=' + encodeURIComponent(id), {
           method: 'DELETE'
         });
@@ -815,7 +815,7 @@
       }
 
       async function deleteFestivo(id) {
-        if (!confirm('¿Eliminar dia festivo?')) return;
+        if (!confirm('Â¿Eliminar dia festivo?')) return;
         await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=festivo&id=' + encodeURIComponent(id), {
           method: 'DELETE'
         });
@@ -874,7 +874,7 @@
 
         const items = Array.isArray(result.items) ? result.items : [];
         if (items.length > 0) {
-          html += '<div style="margin-top:6px;max-height:220px;overflow:auto;">' +
+          html += '<div >' +
             items.map(function (row) {
               const nombre = esc(row.empleado_nombre || ('Empleado #' + String(row.empleado_nomina_id || 0)));
               const estado = esc(row.estado || 'sin_estado');
@@ -911,12 +911,12 @@
         const dias = toNumber(doc.dias_liquidados, 0).toFixed(2);
 
         const html = '<div><strong>Desprendible estandar</strong> | Periodo: ' + period + '</div>' +
-          '<div class="form-help" style="margin-top:4px;">Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Contrato: ' + contrato + '</div>' +
-          '<div class="form-help" style="margin-top:4px;">Dias liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
-          '<div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">' +
-            '<div class="card" style="padding:8px;"><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
-            '<div class="card" style="padding:8px;"><strong>Deducciones</strong><br>Salud: ' + esc(money(doc.deduccion_salud)) + '<br>Pension: ' + esc(money(doc.deduccion_pension)) + '<br>Fondo solidaridad: ' + esc(money(doc.deduccion_fondo_solidaridad)) + '<br>Fija: ' + esc(money(doc.deduccion_fija)) + '<br>Otras: ' + esc(money(doc.otras_deducciones)) + '<br><strong>Total deducciones: ' + esc(money(doc.deduccion_total)) + '</strong></div>' +
-            '<div class="card" style="padding:8px;"><strong>Pago</strong><br>IBC: ' + esc(money(doc.ingreso_base_cotizacion)) + '<br>Valor hora: ' + esc(money(doc.valor_hora_ordinaria)) + '<br><strong>Neto a pagar: ' + esc(money(doc.neto_pagar)) + '</strong></div>' +
+          '<div class="form-help" >Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Contrato: ' + contrato + '</div>' +
+          '<div class="form-help" >Dias liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
+          '<div >' +
+            '<div class="card" ><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
+            '<div class="card" ><strong>Deducciones</strong><br>Salud: ' + esc(money(doc.deduccion_salud)) + '<br>Pension: ' + esc(money(doc.deduccion_pension)) + '<br>Fondo solidaridad: ' + esc(money(doc.deduccion_fondo_solidaridad)) + '<br>Fija: ' + esc(money(doc.deduccion_fija)) + '<br>Otras: ' + esc(money(doc.otras_deducciones)) + '<br><strong>Total deducciones: ' + esc(money(doc.deduccion_total)) + '</strong></div>' +
+            '<div class="card" ><strong>Pago</strong><br>IBC: ' + esc(money(doc.ingreso_base_cotizacion)) + '<br>Valor hora: ' + esc(money(doc.valor_hora_ordinaria)) + '<br><strong>Neto a pagar: ' + esc(money(doc.neto_pagar)) + '</strong></div>' +
           '</div>';
 
         root.innerHTML = html;
@@ -1225,3 +1225,4 @@
   </script>
 </body>
 </html>
+

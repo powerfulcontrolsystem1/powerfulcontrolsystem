@@ -112,6 +112,7 @@ func superConfigCriticalKeys() []string {
 		"gmail.smtp_host",
 		"gmail.smtp_port",
 		"gmail.confirm_base_url",
+		"portal.whatsapp_contact_number",
 		"gmail.restart_alert_to",
 		"gmail.restart_alert_enabled",
 		"gmail.smtp_test_mode",

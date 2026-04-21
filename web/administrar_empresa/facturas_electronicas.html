@@ -225,15 +225,15 @@
 
       function showMessage(text, type) {
         messageBox.textContent = text || "";
+        messageBox.classList.remove("value-negative", "value-positive");
         if (type === "error") {
-          messageBox.style.color = "#ff7f7f";
+          messageBox.classList.add("value-negative");
           return;
         }
         if (type === "ok") {
-          messageBox.style.color = "#7de09e";
+          messageBox.classList.add("value-positive");
           return;
         }
-        messageBox.style.color = "";
       }
 
       function makeKey(item) {

@@ -92,6 +92,13 @@ func resolveEmpresaUsuarioLoginURLFromBase(baseURL, empresaSlug, dominioPublico 
 			configuredDomain = "https://" + configuredDomain
 		}
 		if parsedDomain, err := url.Parse(configuredDomain); err == nil && parsedDomain.Host != "" {
+			// Si el host es solo un slug (sin dot), presumir subdominio bajo powerfulcontrolsystem.com
+			host := parsedDomain.Host
+			if !strings.Contains(host, ".") {
+				host = host + ".powerfulcontrolsystem.com"
+			}
+			parsedDomain.Scheme = "https"
+			parsedDomain.Host = host
 			parsedDomain.Path = "/login_usuario.html"
 			parsedDomain.RawPath = ""
 			parsedDomain.Fragment = ""
@@ -1144,6 +1151,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			host, _, _, hostUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_host")
 			port, _, _, portUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_port")
 			baseURL, _, _, baseURLUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.confirm_base_url")
+			whatsAppNumber, _, _, whatsAppNumberUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "portal.whatsapp_contact_number")
 			restartAlertTo, _, _, restartAlertUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.restart_alert_to")
 			restartAlertEnabledRaw, _, _, restartAlertEnabledUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.restart_alert_enabled")
 			restartAlertEnabled := parseEmpresaUsuarioBool(restartAlertEnabledRaw, true)
@@ -1179,6 +1187,9 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"smtp_port_updated":             portUpdated,
 				"confirm_base_url":              baseURL,
 				"confirm_base_url_updated":      baseURLUpdated,
+				"whatsapp_contact_number":       whatsAppNumber,
+				"whatsapp_contact_number_set":   strings.TrimSpace(whatsAppNumber) != "",
+				"whatsapp_contact_number_updated": whatsAppNumberUpdated,
 				"restart_alert_to_set":          strings.TrimSpace(restartAlertTo) != "",
 				"restart_alert_to":              restartAlertTo,
 				"restart_alert_to_updated":      restartAlertUpdated,
@@ -1222,6 +1233,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				SMTPHost            string `json:"smtp_host"`
 				SMTPPort            string `json:"smtp_port"`
 				ConfirmBaseURL      string `json:"confirm_base_url"`
+				WhatsAppContactNumber string `json:"whatsapp_contact_number"`
 				RestartAlertTo      string `json:"restart_alert_to"`
 				RestartAlertEnabled *bool  `json:"restart_alert_enabled"`
 				Encrypt             bool   `json:"encrypt"`
@@ -1297,6 +1309,19 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "gmail.confirm_base_url", confirmBaseURL, false); err != nil {
 					http.Error(w, "failed to save gmail.confirm_base_url: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			whatsAppContactNumber := strings.TrimSpace(payload.WhatsAppContactNumber)
+			if whatsAppContactNumber != "" {
+				normalizedWhatsApp := normalizePortalWhatsAppContactNumber(whatsAppContactNumber)
+				if normalizedWhatsApp == "" {
+					http.Error(w, "whatsapp_contact_number inválido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "portal.whatsapp_contact_number", normalizedWhatsApp, false); err != nil {
+					http.Error(w, "failed to save portal.whatsapp_contact_number: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}

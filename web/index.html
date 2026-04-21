@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -66,17 +66,18 @@
         Powerful Control System - Plataforma SaaS POS Multiempresa
       </a>
       <nav class="nav-actions">
-        <a class="portal-header-btn" href="/login.html">Iniciar sesion</a>
+        <a class="btn dark" href="/login.html">Iniciar sesiÃ³n</a>
+        <a class="btn dark" href="/registrar_nuevo_usuario_administrador.html">Crear cuenta</a>
       </nav>
     </header>
 
     <main class="portal-main container">
-      <!-- Sección principal reservada para tarjetas (sin texto introductorio superior) -->
-      <section id="portalCardsGrid" class="portal-grid" aria-live="polite" style="margin-top: 60px;"></section>
+      <!-- SecciÃ³n principal reservada para tarjetas (sin texto introductorio superior) -->
+      <section id="portalCardsGrid" class="portal-grid" aria-live="polite" ></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
 
     </main>
-    <footer class="portal-footer">&copy; 2026 - Powerful Control System - Desarrollado para la Gobernanza Tecnológica Multiempresa</footer>
+    <footer class="portal-footer">&copy; 2026 - Powerful Control System - Desarrollado para la Gobernanza TecnolÃ³gica Multiempresa</footer>
   </div>
 
   <a class="whatsapp-floating-cta" href="https://wa.me/573043306506" rel="noopener noreferrer" aria-label="Contactenos por WhatsApp">
@@ -92,6 +93,7 @@
     (function () {
       var gridEl = document.getElementById('portalCardsGrid');
       var statusEl = document.getElementById('portalCardsStatus');
+      var whatsAppFloatingCTA = document.querySelector('.whatsapp-floating-cta');
 
       var fallbackCards = [
         {
@@ -190,6 +192,18 @@
         gridEl.setAttribute('data-text-size', settings.index_text_size);
       }
 
+      function normalizeWhatsAppNumber(raw) {
+        return String(raw || '').replace(/[^\d]/g, '').trim();
+      }
+
+      function applyWhatsAppContactNumber(raw) {
+        if (!whatsAppFloatingCTA) {
+          return;
+        }
+        var normalized = normalizeWhatsAppNumber(raw) || '573043306506';
+        whatsAppFloatingCTA.setAttribute('href', 'https://wa.me/' + normalized);
+      }
+
       function normalizeCards(rawCards) {
         var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
         return source.map(function (card, idx) {
@@ -243,11 +257,13 @@
           }
 
           applyVisualSettings(payload && payload.estilos);
+          applyWhatsAppContactNumber(payload && payload.whatsapp_contact_number);
           var cards = normalizeCards(payload && payload.tarjetas);
           renderCards(cards);
           statusEl.textContent = '';
         } catch (err) {
           applyVisualSettings(null);
+          applyWhatsAppContactNumber('573043306506');
           renderCards(normalizeCards(fallbackCards));
           statusEl.textContent = 'Se mostraron ofertas predeterminadas por un problema temporal de conexion.';
         }
@@ -259,3 +275,4 @@
 
 </body>
 </html>
+

@@ -1,3 +1,342 @@
+- 2026-04-20: El menú flotante se limita a sesiones autenticadas reales.
+    - Archivos modificados:
+        - web/menu.js
+        - documentos/historial_de_cambios
+    - Descripción: `menu.js` ya no confía solo en la cookie visual `browser_session_active`; primero valida `/me` y solo entonces inyecta el menú flotante. Si la sesión expiró o no existe, elimina el menú, limpia el estado visual residual y borra la cookie visible para evitar falsas apariciones en páginas públicas.
+    - Verificación:
+        - `get_errors` sin errores en `web/menu.js`.
+        - Revisión de `web/menu.js` para confirmar validación previa con `/me` y remoción automática con `removeFloatingMenu()`.
+
+- 2026-04-20: Se retira el menú flotante del registro administrativo público.
+    - Archivos modificados:
+        - web/registrar_nuevo_usuario_administrador.html
+        - documentos/historial_de_cambios
+    - Descripción: la página pública de registro administrativo deja de cargar `menu.js` para alinearse con la regla operativa de que el menú flotante solo debe aparecer en vistas autenticadas.
+    - Verificación:
+        - Inspección directa de `web/registrar_nuevo_usuario_administrador.html` para confirmar que ya no incluye `/menu.js`.
+
+- 2026-04-20: Soporte remoto/RustDesk arranca activo por defecto en configuracion super.
+    - Archivos modificados:
+        - backend/db/soporte_remoto.go
+        - backend/handlers/soporte_remoto.go
+        - backend/db/soporte_remoto_test.go
+        - backend/handlers/super_soporte_remoto_test.go
+        - web/super/servidores.html
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: una empresa sin configuración previa de soporte remoto ahora se presenta activa por defecto en la vista super de RustDesk, con portal público habilitado, descargas oficiales completas y modo operativo alineado a `rustdesk_oss` + `cliente_local`.
+    - Verificación:
+        - `go test ./db -run '^TestSoporteRemotoDBFlow$' -count=1`
+        - `go test ./handlers -run '^TestSuperSoporteRemotoHandlerConfigGetAndUpdate$' -count=1`
+
+- 2026-04-21: Se habilitan comprobantes adjuntos por empresa en compras y finanzas.
+    - Archivos modificados:
+        - backend/db/documentos_transaccionales.go
+        - backend/db/finanzas.go
+        - backend/handlers/compras.go
+        - backend/handlers/finanzas.go
+        - backend/handlers/compras_documentos_test.go
+        - backend/handlers/eventos_contables_modulos_test.go
+        - backend/main.go
+        - web/administrar_empresa/compras.html
+        - web/administrar_empresa/finanzas.html
+        - documentos/estructura_bd.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: compras y finanzas ahora permiten adjuntar fotos, PDFs y otros soportes documentales en carpetas físicas separadas por `empresa_id` y módulo. Compras amplía su tabla documental con `comprobante_url` y `comprobante_nombre_archivo`, finanzas reutiliza `comprobante_url` con carga física real, y ambos listados exponen el acceso directo para ver el soporte guardado.
+    - Verificación:
+        - `get_errors` sin errores en backend y frontend modificados.
+        - Validación intentada con `go test ./handlers -run 'Test(EmpresaComprasDocumentoComprobanteUploadHandler|EmpresaFinanzasMovimientoComprobanteUploadHandler)$' -count=1` y `go test ./db -run 'TestEmpresaFinanzasMovimientosCRUDFlow$' -count=1`, bloqueada por un fallo preexistente ajeno en `backend/db/carritos_compras.go`.
+
+- 2026-04-20: Se cierra la limpieza visual de ayuda y vendedores para eliminar estilos inline estructurales.
+    - Archivos modificados:
+        - web/estilos.css
+        - web/super/vendedores_licencias.html
+        - web/ayuda/ayuda.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: `vendedores_licencias.html` deja de depender de `style=` para espaciado, alineación, tamaños y estados vacíos, usando utilidades compartidas en `web/estilos.css`. `ayuda.html` se normaliza por bloques completos de títulos, subtítulos y párrafos auxiliares para que la guía también herede correctamente los seis temas sin márgenes inline repetidos.
+    - Verificación:
+        - `get_errors` sin errores en `web/estilos.css`, `web/super/vendedores_licencias.html` y `web/ayuda/ayuda.html`.
+        - `grep_search` sin remanentes de `style="` en `web/super/vendedores_licencias.html` y `web/ayuda/ayuda.html`.
+
+- 2026-04-20: Se simplifica el módulo de soporte remoto y se agrega control operativo real de RustDesk desde super.
+    - Archivos modificados:
+        - backend/db/soporte_remoto.go
+        - backend/handlers/soporte_remoto.go
+        - backend/handlers/super_soporte_remoto.go
+        - backend/handlers/super_servidores_handlers.go
+        - backend/main.go
+        - backend/handlers/soporte_remoto_test.go
+        - backend/handlers/super_soporte_remoto_test.go
+        - web/super/servidores.html
+        - web/administrar_empresa/soporte_remoto.html
+        - web/super/soporte_remoto.html
+        - web/soporte_remoto_acceso.html
+        - documentos/descripcion_de_archivos
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: soporte remoto deja la interfaz extensa de dispositivos, visor y paneles secundarios para concentrarse en la configuración mínima pedida: host del VPS Hostinger, clave pública, descargas oficiales de cliente/servidor RustDesk para Windows, Linux y macOS, e instrucciones visibles por empresa. El panel super de servidores ahora controla RustDesk con acciones de iniciar, detener, reiniciar y probar, apoyándose en el estado agregado de rustdesk-hbbs y rustdesk-hbbr y en un probe real de puertos. En la última iteración se unifica también la UI super en una sola vista `RustDesk`, eliminando la separación visual entre `Servidores` y `Soporte remoto`.
+    - Ajuste visual final:
+        - `web/super/servidores.html` integra el selector de empresa y la configuración mínima dentro de la misma pantalla del estado del servidor.
+        - `web/super/soporte_remoto.html` queda como redirección de compatibilidad hacia la vista unificada.
+        - `web/super_administrador.html` deja una sola entrada lateral `RustDesk`.
+    - Verificación:
+        - `get_errors` sin errores en `web/super/servidores.html`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html` y `web/soporte_remoto_acceso.html`.
+        - `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus|SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession)$' -count=1`
+
+- 2026-04-20: Se alinea la cabecera pública del home con la landing descriptiva y se agrega CTA de registro.
+    - Archivos modificados:
+        - web/index.html
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: el header de `index.html` deja de usar el botón visual propio de la portada y reutiliza el mismo estilo `btn dark` de `descripcion_de_los_sistemas.ht`. Además se agrega el acceso público `Crear cuenta` a la derecha de `Iniciar sesión`, apuntando a `/registrar_nuevo_usuario_administrador.html`, y se ajusta el responsive compartido para que ambos botones queden compactos y consistentes en móvil.
+    - Verificación:
+        - `get_errors` sin errores en `web/index.html` y `web/estilos.css`.
+
+- 2026-04-20: Se amplía la segunda pasada de limpieza visual para eliminar estilos inline estructurales en módulos operativos del frontend.
+    - Archivos modificados:
+        - web/estilos.css
+        - web/login.html
+        - web/login_usuario.html
+        - web/accept.html
+        - web/configuracion_de_la_cuenta.html
+        - web/administrar_empresa/administrar_productos.html
+        - web/administrar_empresa/carrito_de_compras.html
+        - web/administrar_empresa/administrar_clientes.html
+        - web/administrar_empresa/administrar_usuarios.html
+        - web/administrar_empresa/compras.html
+        - web/administrar_empresa/facturas_electronicas.html
+        - web/administrar_empresa/chat_con_inteligencia_artificial.html
+        - web/red_social_comercial.html
+        - web/administrar_empresa/graficos_estadisticas.html
+        - web/administrar_empresa/estaciones.html
+        - web/js/super_reportes_globales.js
+        - web/super/chat_con_ia_global.html
+        - web/super/configuracion_avanzada.html
+        - web/super/reportes_globales.html
+        - web/super/vendedores_licencias.html
+        - web/ayuda/login_administradores.html
+        - web/administrar_empresa/soporte_remoto_view.html
+        - web/administrar_empresa/historial_productos.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: se sustituyen estilos inline de color, gradientes, márgenes, anchos, ocultación y alineación por clases utilitarias y variables CSS compartidas. También se mueven a clases semánticas varios mensajes de error y estados renderizados desde JavaScript en login, cuentas, chat IA, compras, facturas, clientes, productos y carritos para mantener consistencia entre los seis temas.
+    - Verificación:
+        - `get_errors` sin errores en los archivos principales modificados de `web/`.
+        - `grep_search` sin remanentes de `style="...color/background..."` ni de `style.color = "#..."` en los archivos frontend intervenidos.
+        - `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus)$' -count=1`
+
+- 2026-04-20: Se migran pruebas dirigidas de permisos super desde SQLite hacia PostgreSQL por túnel local y se corrige un panic en `AuthMiddleware`.
+    - Archivos modificados:
+        - backend/handlers/postgres_test_helpers_test.go
+        - backend/handlers/system_empresas_handlers_test.go
+        - backend/handlers/auth_users_carritos_test.go
+        - backend/handlers/auth_admin_handlers_test.go
+        - backend/utils/utils.go
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: las pruebas dirigidas de permisos del panel super dejan de abrir bases SQLite temporales y pasan a usar esquemas efímeros en PostgreSQL reutilizando la regla operativa del túnel local (`DB_VPS_LOCAL_PORT`). Además, `AuthMiddleware` deja de consultar configuración de mantenimiento cuando `dbSuper` es `nil`, evitando un `panic` en rutas públicas y en sus pruebas unitarias.
+    - Verificación:
+        - `go test ./handlers -run 'TestSuperEndpointsPermisosPorRol|TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida|TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida' -count=1`
+        - `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`
+
+- 2026-04-20: Se corrige el contraste visual global para los seis modos de apariencia del sistema.
+    - Archivos modificados:
+        - web/estilos.css
+        - web/administrar_empresa/soporte_remoto.html
+        - web/super/soporte_remoto.html
+        - web/administrar_empresa/publicar_red_social.html
+        - web/red_social_comercial.html
+        - web/pantalla_publica.html
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: se migran textos, paneles, tarjetas, estados vacíos y módulos con estilos embebidos a variables compatibles con los seis temas disponibles para evitar combinaciones de texto demasiado claro en modos claros y mantener consistencia visual general del sistema.
+
+- 2026-04-20: Se simplifica la recuperación administrativa para restablecer contraseña desde un enlace directo sin token manual.
+    - Archivos modificados:
+        - backend/handlers/auth_admin_handlers.go
+        - backend/handlers/super_email_templates.go
+        - backend/handlers/auth_admin_handlers_test.go
+        - web/login.html
+        - web/js/login.js
+        - documentos/descripcion_del_proyecto
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: el correo de recuperación administrativa pasa a enviar un enlace directo al formulario de nueva contraseña y el login deja de pedir que el usuario escriba un token manual. El backend mantiene la validación del código de recuperación internamente y las pruebas verifican que el correo ya no instruye a copiar tokens visibles.
+
+- 2026-04-20: Se acorta el enlace de recuperación en el correo mediante un botón HTML de cambio de contraseña.
+    - Archivos modificados:
+        - backend/handlers/auth_admin_handlers.go
+        - backend/handlers/super_email_templates.go
+        - backend/handlers/auth_admin_handlers_test.go
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: los correos de recuperación administrativa y de usuario empresa ahora muestran un botón visible `Cambiar contraseña` en la versión HTML, manteniendo el enlace completo únicamente como respaldo debajo del botón. El envío administrativo pasa además a formato `multipart/alternative` para entregar texto plano y HTML en el mismo mensaje.
+    - Verificación:
+        - `go test ./handlers -run '^TestAdminPasswordRecoveryTemplateRendersButton$' -count=1`
+        - `get_errors` sin errores en `backend/handlers/auth_admin_handlers.go` y `backend/handlers/super_email_templates.go`
+
+- 2026-04-20: Se endurece la gobernanza PostgreSQL-only y se elimina soporte operativo residual de SQLite en helpers base.
+    - Archivos modificados:
+        - .github/agents/agente_go.agent.md
+        - .github/agents/agente_backend_db.agent.md
+        - copilot-instructions.md
+        - backend/db/compat_wrappers.go
+        - backend/db/sql_compat.go
+        - backend/db/horarios_trabajadores.go
+        - .gitignore
+        - documentos/descripcion_del_proyecto
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: `agente_go` y `agente_backend_db` quedan alineados a una regla explícita de uso exclusivo de PostgreSQL. Se elimina el fallback SQLite en memoria, el dialecto por defecto pasa a PostgreSQL y el módulo de horarios deja de conservar ramas de esquema legacy para SQLite.
+
+- 2026-04-20: Se implementa la Fase 2 de exportar/importar configuracion por empresa sobre el modulo de backups.
+    - Archivos modificados:
+        - backend/db/backups_empresariales.go
+        - backend/handlers/backups_empresariales.go
+        - backend/handlers/backups_empresariales_test.go
+        - web/administrar_empresa/backups.html
+        - backend/.env.example
+        - backend/main.go
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El modulo de backups empresariales agrega un alcance canonico de configuracion para exportar e importar en JSON las tablas de configuracion de una empresa (integraciones, apariencia, parametros operativos, impresoras, venta publica, soporte remoto y preferencias relacionadas), restaurandolas sobre PostgreSQL con trazabilidad por backup. Tambien se eliminan referencias operativas falsas a SQLite en `.env.example` y en comentarios de arranque del backend.
+    - Verificacion:
+        - Prueba dirigida del handler de exportar/importar configuracion por empresa.
+        - Diagnostico del editor sobre los archivos modificados.
+
+- 2026-04-20: Se extiende la estación especial Notas con múltiples recordatorios persistentes y repetición automática local.
+    - Archivos modificados:
+        - web/administrar_empresa/configuracion_de_estaciones.html
+        - web/administrar_empresa/estaciones.html
+        - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: la tarjeta `Notas` del módulo `estaciones` deja de operar como recordatorio único y pasa a soportar varias notas dentro de la misma estación, con selección activa, cuenta regresiva persistente tras recarga y repetición automática de alarma cada cierto número de minutos hasta detenerla manualmente. La configuración base agrega `notas_repeat_minutes`, pero el runtime múltiple queda aislado en el navegador por `empresa_id`.
+    - Verificación:
+        - Diagnóstico del editor sin errores en `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/estilos.css`.
+
+- 2026-04-20: Se agrega la estación especial Notas y el orden configurable de estaciones especiales en el módulo de estaciones.
+    - Archivos modificados:
+        - web/administrar_empresa/configuracion_de_estaciones.html
+        - web/administrar_empresa/estaciones.html
+        - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: el módulo `estaciones` ahora soporta tres estaciones especiales (`Caja`, `YouTube`, `Notas`) con opción individual para cargar antes o después de las estaciones numeradas. Se agrega la nueva tarjeta `Notas`, que permite escribir una nota operativa, programar un temporizador y disparar parpadeo y pitido cuando vence. También se actualiza la vista de configuración para persistir estos campos en `estaciones_config` sin perderlos desde otras pantallas del módulo.
+    - Verificación:
+        - Diagnóstico del editor sin errores en `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/estilos.css`.
+
+- 2026-04-20: Se cierra la Fase 1 de limpieza postmigracion PostgreSQL.
+    - Archivos modificados:
+        - backend/db/superadministrador.db
+        - documentos/estructura_bd.md
+        - documentos/descripcion_de_archivos
+        - documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md
+        - Pendiente Notas
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se elimina el artefacto SQLite legacy que aun quedaba versionado en `backend/db/`, se verifica que no sobreviven backups `.bak` reales en el workspace y se corrigen referencias documentales activas para dejar PostgreSQL como unica base operativa canonica del repositorio. Tambien se marca la Fase 1 como completada y se detallan las fases 2 y 3 en el backlog.
+
+- 2026-04-20: Se depura el archivo `Pendiente Notas` y se convierte en backlog vigente.
+    - Archivos modificados:
+        - Pendiente Notas
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: Se elimina del documento la mezcla de credenciales y tareas ya implementadas, y se reemplaza por un backlog depurado con prioridades, plan de ejecución y criterio de cierre. Se conservan solo frentes pendientes reales al corte del 2026-04-20.
+    - Verificación:
+        - Revisión documental del backlog contra `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y el estado actual del repositorio.
+
+- 2026-04-20: Se corrige la activacion del ojito para mostrar la contraseña en el login administrativo.
+    - Archivos modificados:
+        - web/js/login.js
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: `initPasswordVisibilityToggles()` habia quedado incrustada dentro de `showMsg`, por lo que el boton visual podia renderizar pero no enlazarse correctamente al cargar `login.html`. Se mueve la inicializacion al flujo principal del script para que el campo `adminPassword` alterne entre `password` y `text` desde el clic en el icono.
+    - Verificación:
+        - Diagnostico del editor sin errores en `web/js/login.js`.
+
+- 2026-04-20: Se agrega una tarjeta para configurar el WhatsApp del botón flotante del portal público.
+    - Archivos modificados:
+        - backend/handlers/usuarios_empresa.go
+        - backend/handlers/pagina_principal_handlers.go
+        - backend/handlers/pagina_principal_handlers_test.go
+        - backend/handlers/system_empresas_handlers_test.go
+        - backend/handlers/super_config_backup_handlers.go
+        - web/super/configuracion_avanzada.html
+        - web/index.html
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: Configuración avanzada ahora incluye una tarjeta dedicada al número de WhatsApp del botón flotante de la portada. El valor se guarda en configuración super, viaja por `/api/public/pagina_principal` y `index.html` construye el enlace `wa.me` desde ese dato en lugar de usar un número fijo en el HTML.
+    - Verificación:
+        - `go test ./handlers -run "Test(PublicPaginaPrincipalHandlerExposesLandingFields|GmailConfigHandlerSaveWhatsAppContactNumber)$" -count=1`
+
+- 2026-04-20: Se agrega el ojito para mostrar u ocultar la contraseña en el login administrativo.
+    - Archivos modificados:
+        - web/login.html
+        - web/js/login.js
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El formulario de `/login.html` ahora incorpora un botón visual tipo ojo dentro del campo de contraseña para alternar entre texto oculto y visible sin salir del flujo de inicio de sesión.
+    - Verificación:
+        - Inspección estática de `web/login.html` y `web/js/login.js`.
+
+- 2026-04-20: Se eliminan las dos tarjetas superiores de la landing publica de soluciones.
+    - Archivos modificados:
+        - web/descripcion_de_los_sistemas.ht
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La landing de `descripcion_de_los_sistemas.ht` ya no muestra el bloque introductorio `Catalogo unificado` ni la tarjeta completa de `Accesos rapidos`. Ahora la página abre directamente en las tarjetas detalladas y conserva la navegación por hash sin depender del menú superior.
+    - Verificación:
+        - Inspección estática de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+
+- 2026-04-20: Se refina la landing publica de soluciones con menu profesional y soporte real de apariencia clara/oscura.
+    - Archivos modificados:
+        - web/descripcion_de_los_sistemas.ht
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La seccion de accesos rapidos de la landing publica deja de ser una grilla simple y pasa a un menu interno con numeracion, descripcion breve y estado activo segun la seccion visible. Ademas, la pagina deja de forzar una estetica oscura y ahora reutiliza variables del sistema de temas para responder correctamente al modo claro u oscuro del portal.
+    - Verificación:
+        - Inspección estática de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+
 - 2026-04-20: Se amplía soporte remoto con portal público RustDesk y configuración central desde super.
     - Archivos modificados:
         - backend/db/soporte_remoto.go

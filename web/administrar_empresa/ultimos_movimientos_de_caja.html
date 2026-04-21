@@ -1,23 +1,23 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Últimos movimientos de caja</title>
+  <title>Ãšltimos movimientos de caja</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="container">
     <section class="card">
       <div class="header">
-        <h1>Últimos movimientos de caja</h1>
+        <h1>Ãšltimos movimientos de caja</h1>
         <div>
           <button id="reloadBtn" class="btn secondary">Actualizar</button>
         </div>
       </div>
 
       <div id="productosSection">
-        <h2>Últimos productos vendidos</h2>
+        <h2>Ãšltimos productos vendidos</h2>
         <div id="productosLoading" class="form-help">Cargando...</div>
         <table id="productosTable" class="table" style="display:none; width:100%;">
           <thead>
@@ -34,15 +34,15 @@
         </table>
       </div>
 
-      <div id="facturasSection" style="margin-top:18px">
-        <h2>Últimas facturas</h2>
+      <div id="facturasSection" >
+        <h2>Ãšltimas facturas</h2>
         <div id="facturasLoading" class="form-help">Cargando...</div>
         <table id="facturasTable" class="table" style="display:none; width:100%;">
           <thead>
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Código</th>
+              <th>CÃ³digo</th>
               <th>Cliente</th>
               <th>Total</th>
               <th>Estado</th>
@@ -208,7 +208,7 @@
       items.forEach(it => {
         const tr = document.createElement('tr');
         const fecha = it.fecha_documento || it.fecha_creacion || '';
-        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' · ' + it.cliente_documento) : '');
+        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' Â· ' + it.cliente_documento) : '');
         tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
                        '<td>' + sanitize(it.tipo_documento || '') + '</td>' +
                        '<td>' + sanitize(it.documento_codigo || '') + '</td>' +
@@ -233,3 +233,4 @@
 </script>
 </body>
 </html>
+

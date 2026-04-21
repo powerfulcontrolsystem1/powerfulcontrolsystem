@@ -255,3 +255,151 @@ func TestEmpresaBackupsHandlerPurgeByDate(t *testing.T) {
 		t.Fatalf("expected empresa 78 untouched, got %d", empresa78Count)
 	}
 }
+
+func TestEmpresaBackupsHandlerExportImportConfiguracionEmpresa(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresa_backups_handler_config_scope.db")
+	if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaBackupsSchema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionGeneralSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaConfiguracionGeneralSchema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaConfiguracionAvanzadaSchema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaEstacionPrefsSchema: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, dbpkg.EmpresaConfiguracionGeneral{
+		EmpresaID:                    31,
+		AreaDespacho:                 "barra principal",
+		DescuentosHabilitados:        true,
+		PermitirDescuentoPorcentaje:  true,
+		PermitirDescuentoCodigo:      true,
+		PermitirDescuentoValor:       false,
+		LectorCodigoBarrasHabilitado: true,
+		UsuarioCreador:               "qa",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaConfiguracionGeneral: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, dbpkg.EmpresaConfiguracionAvanzada{
+		EmpresaID:           31,
+		ModoDocumentoVenta:  "factura_electronica",
+		RazonSocial:         "Empresa QA",
+		NombreComercial:     "Empresa QA Comercial",
+		MonedaCodigo:        "USD",
+		SistemaNumerico:     "internacional",
+		UsarDecimales:       true,
+		CantidadDecimales:   3,
+		UsuarioCreador:      "qa",
+		ColorCarritoActivo:  "#112233",
+		ColorCarritoInactivo:"#445566",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaConfiguracionAvanzada: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      31,
+		EstacionID:     0,
+		Clave:          "estaciones_config",
+		Valor:          `{"cantidad":2,"estaciones":[{"id":1,"nombre":"Caja"}]}`,
+		UsuarioCreador: "qa",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaEstacionPref: %v", err)
+	}
+
+	h := EmpresaBackupsHandler(dbEmp)
+	exportReq := httptest.NewRequest(http.MethodPost, "/api/empresa/backups?empresa_id=31&action=exportar_configuracion", strings.NewReader(`{"empresa_id":31}`))
+	exportReq.Header.Set("Content-Type", "application/json")
+	exportRR := httptest.NewRecorder()
+	h.ServeHTTP(exportRR, exportReq)
+	if exportRR.Code != http.StatusOK {
+		t.Fatalf("export config status=%d body=%s", exportRR.Code, exportRR.Body.String())
+	}
+
+	var exported dbpkg.EmpresaBackupPayload
+	if err := json.Unmarshal(exportRR.Body.Bytes(), &exported); err != nil {
+		t.Fatalf("decode export payload: %v", err)
+	}
+	if exported.Scope != "configuracion_empresa" {
+		t.Fatalf("expected scope=configuracion_empresa, got=%s", exported.Scope)
+	}
+	if exported.TotalTables < 3 {
+		t.Fatalf("expected at least 3 config tables, got=%d", exported.TotalTables)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, dbpkg.EmpresaConfiguracionGeneral{
+		EmpresaID:                    31,
+		AreaDespacho:                 "mutado",
+		DescuentosHabilitados:        false,
+		PermitirDescuentoPorcentaje:  false,
+		PermitirDescuentoCodigo:      false,
+		PermitirDescuentoValor:       false,
+		LectorCodigoBarrasHabilitado: false,
+		UsuarioCreador:               "qa_mutation",
+	}); err != nil {
+		t.Fatalf("mutate config general: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, dbpkg.EmpresaConfiguracionAvanzada{
+		EmpresaID:          31,
+		ModoDocumentoVenta: "comprobante_pago",
+		RazonSocial:        "Empresa alterada",
+		MonedaCodigo:       "COP",
+		SistemaNumerico:    "latino",
+		CantidadDecimales:  2,
+		UsuarioCreador:     "qa_mutation",
+	}); err != nil {
+		t.Fatalf("mutate config avanzada: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      31,
+		EstacionID:     0,
+		Clave:          "estaciones_config",
+		Valor:          `{"cantidad":1}`,
+		UsuarioCreador: "qa_mutation",
+	}); err != nil {
+		t.Fatalf("mutate estacion pref: %v", err)
+	}
+
+	importReq := httptest.NewRequest(http.MethodPost, "/api/empresa/backups?empresa_id=31&action=importar_configuracion", strings.NewReader(`{"empresa_id":31,"payload":`+string(exportRR.Body.Bytes())+`}`))
+	importReq.Header.Set("Content-Type", "application/json")
+	importRR := httptest.NewRecorder()
+	h.ServeHTTP(importRR, importReq)
+	if importRR.Code != http.StatusOK {
+		t.Fatalf("import config status=%d body=%s", importRR.Code, importRR.Body.String())
+	}
+
+	general, err := dbpkg.GetEmpresaConfiguracionGeneral(dbEmp, 31)
+	if err != nil {
+		t.Fatalf("GetEmpresaConfiguracionGeneral: %v", err)
+	}
+	if general.AreaDespacho != "barra principal" || !general.DescuentosHabilitados || general.PermitirDescuentoValor {
+		t.Fatalf("general not restored: %+v", general)
+	}
+
+	avanzada, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, 31)
+	if err != nil {
+		t.Fatalf("GetEmpresaConfiguracionAvanzada: %v", err)
+	}
+	if avanzada.ModoDocumentoVenta != "factura_electronica" || avanzada.MonedaCodigo != "USD" || avanzada.CantidadDecimales != 3 {
+		t.Fatalf("avanzada not restored: %+v", avanzada)
+	}
+
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, 31, 0, "estaciones_config")
+	if err != nil {
+		t.Fatalf("GetEmpresaEstacionPref: %v", err)
+	}
+	if pref == nil || !strings.Contains(pref.Valor, `"cantidad":2`) {
+		t.Fatalf("pref not restored: %+v", pref)
+	}
+
+	var importResp struct {
+		Resultado dbpkg.EmpresaBackupRestoreResult `json:"resultado"`
+	}
+	if err := json.Unmarshal(importRR.Body.Bytes(), &importResp); err != nil {
+		t.Fatalf("decode import response: %v", err)
+	}
+	if importResp.Resultado.TablasRestauradas < 3 {
+		t.Fatalf("expected imported tables >= 3, got %+v", importResp.Resultado)
+	}
+}

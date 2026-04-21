@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	
-	"powerfulcontrolsystem/backend/db"
+
+	"github.com/you/pos-backend/db"
 )
 
 // EmpresaHorariosHandler maneja las peticiones CRUD de Horarios de Trabajadores.

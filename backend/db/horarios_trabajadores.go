@@ -24,42 +24,24 @@ type HorarioTrabajador struct {
 
 // EnsureHorariosTrabajadoresSchema crea la tabla para el calendario de turnos.
 func EnsureHorariosTrabajadoresSchema() error {
-	dbType := GetDatabaseType()
 	dbConn := GetDB()
 	if dbConn == nil {
 		return fmt.Errorf("base de datos de empresas no inicializada")
 	}
 
-	var schema string
-	if dbType == "postgres" {
-		schema = `CREATE TABLE IF NOT EXISTS empresa_horarios_trabajadores (
-			id BIGSERIAL PRIMARY KEY,
-			empresa_id BIGINT NOT NULL,
-			usuario_id BIGINT,
-			nombre_empleado TEXT NOT NULL,
-			fecha TEXT NOT NULL,
-			hora_inicio TEXT NOT NULL,
-			hora_fin TEXT NOT NULL,
-			estado TEXT DEFAULT 'agendado',
-			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
-			usuario_creador TEXT
-		);`
-	} else {
-		schema = `CREATE TABLE IF NOT EXISTS empresa_horarios_trabajadores (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			usuario_id INTEGER,
-			nombre_empleado TEXT NOT NULL,
-			fecha TEXT NOT NULL,
-			hora_inicio TEXT NOT NULL,
-			hora_fin TEXT NOT NULL,
-			estado TEXT DEFAULT 'agendado',
-			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now', 'localtime')),
-			usuario_creador TEXT
-		);`
-	}
+	schema := `CREATE TABLE IF NOT EXISTS empresa_horarios_trabajadores (
+		id BIGSERIAL PRIMARY KEY,
+		empresa_id BIGINT NOT NULL,
+		usuario_id BIGINT,
+		nombre_empleado TEXT NOT NULL,
+		fecha TEXT NOT NULL,
+		hora_inicio TEXT NOT NULL,
+		hora_fin TEXT NOT NULL,
+		estado TEXT DEFAULT 'agendado',
+		observaciones TEXT,
+		fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+		usuario_creador TEXT
+	);`
 
 	if _, err := dbConn.Exec(schema); err != nil {
 		return fmt.Errorf("error creando tabla empresa_horarios_trabajadores: %v", err)
@@ -175,13 +157,7 @@ func CreateHorarioTrabajador(h *HorarioTrabajador) error {
 		VALUES 
 			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	dbType := GetDatabaseType()
-	var fechaStr string
-	if dbType == "postgres" {
-		fechaStr = time.Now().Format("2006-01-02 15:04:05")
-	} else {
-		fechaStr = time.Now().Format("2006-01-02 15:04:05") // SQLite uses standard localized datetime
-	}
+	fechaStr := time.Now().Format("2006-01-02 15:04:05")
 
 	_, err := ExecCompat(dbConn, query,
 		h.EmpresaID,

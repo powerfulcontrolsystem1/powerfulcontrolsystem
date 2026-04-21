@@ -180,8 +180,8 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.RefreshCarritosActivosConTarifaPorDia(dbEmp, empresaID, time.Now()); err != nil {
-				log.Printf("[carritos] refresh tarifas_por_dia empresa_id=%d error: %v", empresaID, err)
+			if err := dbpkg.RefreshCarritosActivosConTarifasTiempo(dbEmp, empresaID, time.Now()); err != nil {
+				log.Printf("[carritos] refresh tarifas_tiempo empresa_id=%d error: %v", empresaID, err)
 			}
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
@@ -276,10 +276,10 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
 					return
 				}
-				tarifaPorDiaCalculo, errTarifaDia := dbpkg.RefreshCarritoTotalConTarifaPorDia(dbEmp, empresaID, id, time.Now())
-				if errTarifaDia != nil {
-					log.Printf("[carritos] refresh carrito tarifa_por_dia empresa_id=%d id=%d error: %v", empresaID, id, errTarifaDia)
-					http.Error(w, "No se pudo recalcular tarifa diaria del carrito", http.StatusInternalServerError)
+				tarifasTiempo, errTarifasTiempo := dbpkg.RefreshCarritoTotalConTarifasTiempo(dbEmp, empresaID, id, time.Now())
+				if errTarifasTiempo != nil {
+					log.Printf("[carritos] refresh carrito tarifas_tiempo empresa_id=%d id=%d error: %v", empresaID, id, errTarifasTiempo)
+					http.Error(w, "No se pudo recalcular tarifa temporal del carrito", http.StatusInternalServerError)
 					return
 				}
 				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
@@ -657,7 +657,8 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					"estado":                     "inactivo",
 					"estado_carrito":             "cerrado",
 					"estado_venta":               "venta_pagada",
-					"tarifa_por_dia":             tarifaPorDiaCalculo,
+					"tarifa_por_dia":             tarifasTiempo.TarifaPorDia,
+					"tarifa_por_minutos":         tarifasTiempo.TarifaPorMinutos,
 					"total_esperado":             totalEsperado,
 					"total_esperado_con_propina": totalEsperadoConPropina,
 					"propina": map[string]interface{}{

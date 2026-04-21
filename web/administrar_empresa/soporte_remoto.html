@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,320 +6,212 @@
   <title>Soporte remoto</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body { background: #eef3fb; }
-    .sr-shell { max-width: 1320px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
-    .sr-hero { background: linear-gradient(135deg, #0f172a 0%, #0f4c81 46%, #14b8a6 100%); color: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2); }
-    .sr-hero h1 { margin: 0 0 10px; font-size: 30px; }
-    .sr-hero p { margin: 0; max-width: 880px; color: rgba(255,255,255,0.92); }
-    .sr-layout { display: grid; gap: 16px; grid-template-columns: 1.25fr 1fr; }
-    .sr-stack { display: grid; gap: 16px; }
-    .sr-card { background: #fff; border-radius: 22px; padding: 20px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
-    .sr-card h2, .sr-card h3 { margin-top: 0; }
-    .sr-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .sr-grid-3 { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .sr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-    .sr-note { color: #526072; font-size: 14px; }
-    .sr-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; background: #e0f2fe; color: #0c4a6e; font-size: 13px; font-weight: 700; }
-    .sr-kpis { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .sr-kpi { border: 1px solid #d9e3f0; border-radius: 18px; padding: 14px; background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%); }
-    .sr-kpi span { display: block; font-size: 12px; color: #5c6b7c; text-transform: uppercase; letter-spacing: 0.04em; }
-    .sr-kpi strong { display: block; margin-top: 6px; font-size: 24px; color: #0f172a; }
-    .sr-portal-link { display: block; padding: 14px 16px; border-radius: 18px; background: #0f172a; color: #fff; text-decoration: none; word-break: break-all; }
-    .sr-portal-link:hover { color: #fff; opacity: 0.92; }
-    .sr-box { border: 1px solid #d8e4ef; border-radius: 16px; padding: 16px; background: #f8fbff; }
-    .sr-table { width: 100%; border-collapse: collapse; }
-    .sr-table th, .sr-table td { padding: 11px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
-    .sr-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #66768a; }
-    .sr-viewer { width: 100%; min-height: 520px; border-radius: 18px; border: 1px solid #d7dfeb; background: #0f172a; }
-    .sr-code { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 13px; }
-    .sr-status { min-height: 22px; }
-    @media (max-width: 1100px) {
-      .sr-layout { grid-template-columns: 1fr; }
-      .sr-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .sr-grid-3 { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 780px) {
-      .sr-shell { padding: 12px; }
-      .sr-card, .sr-hero { padding: 16px; }
-      .sr-grid, .sr-grid-3, .sr-kpis { grid-template-columns: 1fr; }
-      .sr-actions .btn { width: 100%; }
-      .sr-table { display: block; overflow-x: auto; }
-      .sr-viewer { min-height: 360px; }
-    }
+    .support-shell { max-width: 1100px; margin: 0 auto; padding: 18px; display:grid; gap:16px; }
+    .support-card { border-radius:18px; }
+    .support-grid { display:grid; gap:12px; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .support-links { display:grid; gap:12px; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .support-link-card { border:1px solid var(--content-soft-border); border-radius:14px; padding:12px; background:var(--content-soft-bg); }
+    .support-link-card h3 { margin:0 0 8px 0; }
+    .support-link-card p { margin:0 0 10px 0; font-size:.9rem; }
+    .support-status { min-height:20px; color:var(--muted); }
+    .support-note { margin:0; color:var(--muted); }
+    .support-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
+    @media (max-width:900px) { .support-grid, .support-links { grid-template-columns:1fr; } }
   </style>
 </head>
 <body class="empresa-subpage">
-  <div class="sr-shell">
-    <section class="sr-hero">
-      <span class="sr-pill">RustDesk + visor embebido</span>
-      <h1>Soporte remoto operativo por empresa</h1>
-      <p>Este módulo ahora permite publicar una página pública de acceso remoto con descargas del cliente y del servidor, además de mantener sesiones aprobadas y un visor web cuando la empresa use una URL embebible.</p>
+  <div class="support-shell">
+    <section class="card support-card">
+      <h1>Soporte remoto</h1>
+      <p class="support-note">Esta pÃ¡gina quedÃ³ simplificada. AquÃ­ solo se configura el host del VPS Hostinger, los enlaces de descarga y las instrucciones visibles para usar cliente y servidor RustDesk.</p>
     </section>
 
-    <section class="sr-card">
-      <div class="page-header" style="margin-bottom:12px;">
+    <section class="card support-card form">
+      <h2>ConfiguraciÃ³n bÃ¡sica</h2>
+      <div class="support-grid">
         <div>
-          <h2 style="margin-bottom:6px;">Resumen del módulo</h2>
-          <p class="sr-note" id="srTopMsg">Cargando configuración...</p>
+          <label class="form-label" for="cfgEnabled">MÃ³dulo habilitado</label>
+          <select id="cfgEnabled" class="form-input"><option value="1">SÃ­</option><option value="0">No</option></select>
         </div>
-        <div class="sr-actions">
-          <button id="srBtnReload" type="button" class="btn secondary">Recargar módulo</button>
-          <button id="srBtnOpenLastPortal" type="button" class="btn secondary">Abrir último portal público</button>
+        <div>
+          <label class="form-label" for="cfgPortal">Portal pÃºblico habilitado</label>
+          <select id="cfgPortal" class="form-input"><option value="1">SÃ­</option><option value="0">No</option></select>
+        </div>
+        <div>
+          <label class="form-label" for="cfgHost">Host RustDesk del VPS</label>
+          <input id="cfgHost" class="form-input" placeholder="rustdesk.tu-dominio.com:21116">
+        </div>
+        <div>
+          <label class="form-label" for="cfgKey">Clave pÃºblica del servidor</label>
+          <input id="cfgKey" class="form-input" placeholder="Clave pÃºblica o fingerprint">
+        </div>
+        <div>
+          <label class="form-label" for="cfgTransfer">Carpeta de transferencia</label>
+          <input id="cfgTransfer" class="form-input" placeholder="/srv/rustdesk/transfer">
+        </div>
+        <div>
+          <label class="form-label" for="cfgObs">Observaciones</label>
+          <input id="cfgObs" class="form-input" placeholder="Notas internas del equipo">
         </div>
       </div>
-      <div id="srKpis" class="sr-kpis"></div>
+      <div >
+        <label class="form-label" for="cfgInstructions">Instrucciones visibles</label>
+        <textarea id="cfgInstructions" class="form-textarea" rows="5" placeholder="Explica cÃ³mo descargar RustDesk, configurar host y clave, y cuÃ¡ndo usar cliente o servidor."></textarea>
+      </div>
+      <div class="form-actions" >
+        <button id="btnFillOfficial" type="button" class="btn secondary">Usar enlaces oficiales</button>
+        <button id="btnSave" type="button" class="btn">Guardar</button>
+      </div>
+      <div id="cfgStatus" class="support-status"></div>
     </section>
 
-    <section class="sr-layout">
-      <div class="sr-stack">
-        <section class="sr-card form">
-          <h2>Configuración pública y técnica</h2>
-          <div class="sr-grid">
-            <div>
-              <label class="form-label" for="srCfgHabilitado">Módulo habilitado</label>
-              <select id="srCfgHabilitado" class="form-input">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" for="srCfgPortal">Portal público habilitado</label>
-              <select id="srCfgPortal" class="form-input">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" for="srCfgAprobacion">Requiere aprobación de operador</label>
-              <select id="srCfgAprobacion" class="form-input">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" for="srCfgProveedor">Proveedor sugerido</label>
-              <select id="srCfgProveedor" class="form-input">
-                <option value="novnc">noVNC</option>
-                <option value="guacamole">Guacamole</option>
-                <option value="rustdesk_web">RustDesk Web</option>
-                <option value="rustdesk_oss">RustDesk nativo</option>
-                <option value="custom_url">URL personalizada</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" for="srCfgModo">Modo operación</label>
-              <select id="srCfgModo" class="form-input">
-                <option value="agente_web">Agente web</option>
-                <option value="agente_local">Agente local</option>
-                <option value="cliente_local">Cliente local</option>
-                <option value="hibrido">Híbrido</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" for="srCfgAutoCerrar">Auto cierre de sesión (minutos)</label>
-              <input id="srCfgAutoCerrar" class="form-input" type="number" min="5" max="480" value="30">
-            </div>
-          </div>
-          <div class="sr-grid-3" style="margin-top:12px;">
-            <div>
-              <label class="form-label" for="srCfgMaxDispositivos">Máximo dispositivos</label>
-              <input id="srCfgMaxDispositivos" class="form-input" type="number" min="0" value="0">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgMaxConexiones">Máximo sesiones/mes</label>
-              <input id="srCfgMaxConexiones" class="form-input" type="number" min="0" value="0">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgMaxMinutos">Máximo minutos/mes</label>
-              <input id="srCfgMaxMinutos" class="form-input" type="number" min="0" value="0">
-            </div>
-          </div>
-          <div class="sr-grid" style="margin-top:12px;">
-            <div>
-              <label class="form-label" for="srCfgHost">Host RustDesk</label>
-              <input id="srCfgHost" class="form-input sr-code" type="text" placeholder="rustdesk.powerfulcontrolsystem.com:21116">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgKey">Clave pública RustDesk</label>
-              <input id="srCfgKey" class="form-input sr-code" type="text" placeholder="Clave pública o fingerprint del servidor">
-            </div>
-          </div>
-          <div class="sr-grid" style="margin-top:12px;">
-            <div>
-              <label class="form-label" for="srCfgClienteWin">Descarga cliente Windows</label>
-              <input id="srCfgClienteWin" class="form-input" type="url" placeholder="https://.../rustdesk-client-win.exe">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgClienteLinux">Descarga cliente Linux</label>
-              <input id="srCfgClienteLinux" class="form-input" type="url" placeholder="https://.../rustdesk-client-linux.deb">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgServidorWin">Descarga servidor Windows</label>
-              <input id="srCfgServidorWin" class="form-input" type="url" placeholder="https://.../rustdesk-server-win.zip">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgServidorLinux">Descarga servidor Linux</label>
-              <input id="srCfgServidorLinux" class="form-input" type="url" placeholder="https://.../rustdesk-server-linux.tar.gz">
-            </div>
-          </div>
-          <div class="sr-grid" style="margin-top:12px;">
-            <div>
-              <label class="form-label" for="srCfgTransfer">Carpeta de transferencia sugerida</label>
-              <input id="srCfgTransfer" class="form-input sr-code" type="text" placeholder="/srv/rustdesk/transferencias">
-            </div>
-            <div>
-              <label class="form-label" for="srCfgObs">Observaciones internas</label>
-              <input id="srCfgObs" class="form-input" type="text" placeholder="Notas de seguridad o protocolo interno">
-            </div>
-          </div>
-          <div style="margin-top:12px;">
-            <label class="form-label" for="srCfgInstrucciones">Instrucciones públicas</label>
-            <textarea id="srCfgInstrucciones" class="form-input" rows="4" placeholder="Explica al cliente cómo descargar el cliente, cómo registrar el host y qué datos compartir a soporte."></textarea>
-          </div>
-          <div class="form-actions" style="margin-top:14px;">
-            <button id="srBtnSaveConfig" type="button" class="btn">Guardar configuración</button>
-          </div>
-          <div id="srConfigMsg" class="form-help sr-status"></div>
-        </section>
-
-        <section class="sr-card">
-          <h2>Último portal público generado</h2>
-          <p class="sr-note">Cada sesión aprobada puede abrirse también desde una página pública con instrucciones, descargas y datos del servidor.</p>
-          <a id="srPortalLink" class="sr-portal-link" href="#" target="_self">Todavía no hay un portal público generado para esta empresa.</a>
-        </section>
-
-        <section class="sr-card form">
-          <h2>Dispositivos remotos</h2>
-          <form id="srDeviceForm" class="form">
-            <input id="srDeviceId" type="hidden">
-            <div class="sr-grid">
-              <div>
-                <label class="form-label" for="srDeviceCode">Código dispositivo</label>
-                <input id="srDeviceCode" class="form-input" type="text" placeholder="Opcional, se autogenera">
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceName">Nombre equipo</label>
-                <input id="srDeviceName" class="form-input" type="text" required>
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceAlias">Alias operativo</label>
-                <input id="srDeviceAlias" class="form-input" type="text" placeholder="Recepción, caja principal, cuarto técnico">
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceUbicacion">Ubicación</label>
-                <input id="srDeviceUbicacion" class="form-input" type="text" placeholder="Sucursal norte - puesto 1">
-              </div>
-            </div>
-            <div class="sr-grid" style="margin-top:12px;">
-              <div>
-                <label class="form-label" for="srDeviceSO">Sistema operativo</label>
-                <input id="srDeviceSO" class="form-input" type="text" placeholder="Windows 11 / Ubuntu 24.04">
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceAgentVersion">Versión agente</label>
-                <input id="srDeviceAgentVersion" class="form-input" type="text" placeholder="1.0.0">
-              </div>
-              <div>
-                <label class="form-label" for="srDevicePublico">Acceso público por portal</label>
-                <select id="srDevicePublico" class="form-input">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceTransfer">Carpeta transferencia</label>
-                <input id="srDeviceTransfer" class="form-input sr-code" type="text" placeholder="/srv/rustdesk/recepcion">
-              </div>
-            </div>
-            <div class="sr-grid" style="margin-top:12px;">
-              <div>
-                <label class="form-label" for="srDeviceStreamURL">URL embebible opcional</label>
-                <input id="srDeviceStreamURL" class="form-input" type="text" placeholder="https://tu-servidor-remoto/novnc/vnc.html?path=websockify">
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceRustDeskID">ID RustDesk del equipo</label>
-                <input id="srDeviceRustDeskID" class="form-input sr-code" type="text" placeholder="123 456 789">
-              </div>
-              <div>
-                <label class="form-label" for="srDeviceRustDeskPassword">Contraseña RustDesk</label>
-                <input id="srDeviceRustDeskPassword" class="form-input sr-code" type="text" placeholder="Se conserva si lo dejas vacío al editar">
-              </div>
-              <div>
-                <label class="form-label" for="srDevicePIN">PIN del agente/plugin</label>
-                <input id="srDevicePIN" class="form-input sr-code" type="password" placeholder="PIN para heartbeat y aprobaciones">
-              </div>
-            </div>
-            <div style="margin-top:12px;">
-              <label class="form-label" for="srDeviceObs">Observaciones</label>
-              <input id="srDeviceObs" class="form-input" type="text" placeholder="Notas técnicas del dispositivo">
-            </div>
-            <div class="form-actions" style="margin-top:14px;">
-              <button id="srBtnSaveDevice" type="submit" class="btn">Guardar dispositivo</button>
-              <button id="srBtnResetDevice" type="button" class="btn secondary">Limpiar formulario</button>
-              <button id="srBtnReloadDevices" type="button" class="btn secondary">Actualizar dispositivos</button>
-            </div>
-          </form>
-          <div id="srDeviceMsg" class="form-help sr-status"></div>
-          <div id="srDeviceTableWrap" style="margin-top:14px;">Cargando dispositivos...</div>
-        </section>
+    <section class="card support-card form">
+      <h2>Enlaces de descarga</h2>
+      <div class="support-links">
+        <div class="support-link-card">
+          <h3>Cliente Windows</h3>
+          <input id="cfgClientWin" class="form-input" placeholder="https://...">
+        </div>
+        <div class="support-link-card">
+          <h3>Cliente Linux</h3>
+          <input id="cfgClientLinux" class="form-input" placeholder="https://...">
+        </div>
+        <div class="support-link-card">
+          <h3>Cliente macOS</h3>
+          <input id="cfgClientMac" class="form-input" placeholder="https://...">
+        </div>
+        <div class="support-link-card">
+          <h3>Servidor Windows</h3>
+          <input id="cfgServerWin" class="form-input" placeholder="https://...">
+        </div>
+        <div class="support-link-card">
+          <h3>Servidor Linux</h3>
+          <input id="cfgServerLinux" class="form-input" placeholder="https://...">
+        </div>
+        <div class="support-link-card">
+          <h3>Servidor macOS</h3>
+          <input id="cfgServerMac" class="form-input" placeholder="Opcional, si existe en upstream">
+        </div>
       </div>
+    </section>
 
-      <div class="sr-stack">
-        <section class="sr-card form">
-          <h2>Sesiones remotas</h2>
-          <form id="srSessionForm" class="form">
-            <div class="sr-grid">
-              <div>
-                <label class="form-label" for="srSessionDevice">Dispositivo</label>
-                <select id="srSessionDevice" class="form-input"></select>
-              </div>
-              <div>
-                <label class="form-label" for="srSessionDuracion">Duración (minutos)</label>
-                <input id="srSessionDuracion" class="form-input" type="number" min="5" max="480" value="30">
-              </div>
-              <div>
-                <label class="form-label" for="srSessionOperador">Operador local</label>
-                <input id="srSessionOperador" class="form-input" type="text" placeholder="Persona en sitio">
-              </div>
-              <div>
-                <label class="form-label" for="srSessionOperadorEmail">Correo operador</label>
-                <input id="srSessionOperadorEmail" class="form-input" type="email" placeholder="operador@empresa.com">
-              </div>
-            </div>
-            <div style="margin-top:12px;">
-              <label class="form-label" for="srSessionMotivo">Motivo</label>
-              <input id="srSessionMotivo" class="form-input" type="text" placeholder="Soporte POS, revisión de facturación, capacitación" required>
-            </div>
-            <div class="form-actions" style="margin-top:14px;">
-              <button id="srBtnCreateSession" type="submit" class="btn">Solicitar sesión</button>
-              <button id="srBtnReloadSessions" type="button" class="btn secondary">Actualizar sesiones</button>
-              <button id="srBtnExportJSON" type="button" class="btn secondary">Exportar JSON</button>
-              <button id="srBtnExportCSV" type="button" class="btn secondary">Exportar CSV</button>
-              <button id="srBtnExportTXT" type="button" class="btn secondary">Exportar TXT</button>
-              <button id="srBtnExportXLS" type="button" class="btn secondary">Exportar XLS</button>
-              <button id="srBtnExportPDF" type="button" class="btn secondary">Exportar PDF</button>
-            </div>
-          </form>
-          <div id="srSessionMsg" class="form-help sr-status"></div>
-          <div id="srSessionTableWrap" style="margin-top:14px;">Cargando sesiones...</div>
-        </section>
+    <section class="card support-card">
+      <h2>CÃ³mo usar RustDesk</h2>
+      <ol class="support-steps">
+        <li>Descarga el cliente RustDesk para el sistema operativo del equipo remoto.</li>
+        <li>Si vas a publicar un nodo propio, descarga tambiÃ©n el servidor correspondiente.</li>
+        <li>Configura el host del VPS Hostinger y la clave pÃºblica del servidor.</li>
+        <li>En el cliente remoto comparte el ID y usa la contraseÃ±a del equipo solo con soporte autorizado.</li>
+        <li>El encendido y prueba del servicio del VPS se controlan desde la pÃ¡gina de servidores del panel super.</li>
+      </ol>
+    </section>
+  </div>
 
-        <section class="sr-card">
-          <h2>Guía pública rápida</h2>
-          <div class="sr-box">
-            <p class="sr-note" style="margin-top:0;">La página pública comparte al cliente el host del servidor, las descargas del cliente y del servidor, además del ID y contraseña del equipo si la sesión fue aprobada.</p>
-            <ol class="sr-note" style="padding-left:18px; margin-bottom:0;">
-              <li>Configura el host y la clave pública de RustDesk.</li>
-              <li>Guarda URLs de descarga para cliente y servidor.</li>
-              <li>Registra el dispositivo con ID RustDesk o con URL embebible.</li>
-              <li>Crea una sesión y comparte el enlace público generado.</li>
-            </ol>
-          </div>
-        </section>
+  <script>
+    const empresaID = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    const OFFICIAL_CLIENT = 'https://github.com/rustdesk/rustdesk/releases/latest';
+    const OFFICIAL_SERVER = 'https://github.com/rustdesk/rustdesk-server/releases/latest';
 
-        <section class="sr-card">
+    function setStatus(message, isError) {
+      const node = document.getElementById('cfgStatus');
+      node.textContent = message || '';
+      node.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+    }
+
+    async function fetchJSON(url, options) {
+      const response = await fetch(url, Object.assign({ credentials: 'include' }, options || {}));
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!response.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
+      return data;
+    }
+
+    function fillOfficialLinks() {
+      document.getElementById('cfgClientWin').value = OFFICIAL_CLIENT;
+      document.getElementById('cfgClientLinux').value = OFFICIAL_CLIENT;
+      document.getElementById('cfgClientMac').value = OFFICIAL_CLIENT;
+      document.getElementById('cfgServerWin').value = OFFICIAL_SERVER;
+      document.getElementById('cfgServerLinux').value = OFFICIAL_SERVER;
+      if (!document.getElementById('cfgServerMac').value.trim()) {
+        document.getElementById('cfgServerMac').value = OFFICIAL_SERVER;
+      }
+      if (!document.getElementById('cfgInstructions').value.trim()) {
+        document.getElementById('cfgInstructions').value = 'Descarga RustDesk, configura el host del VPS Hostinger y la clave pÃºblica, luego comparte el ID del equipo con soporte. Si vas a montar un nodo propio, usa tambiÃ©n la descarga del servidor para tu sistema operativo.';
+      }
+    }
+
+    function applyConfig(config) {
+      document.getElementById('cfgEnabled').value = config.habilitado ? '1' : '0';
+      document.getElementById('cfgPortal').value = config.portal_publico_habilitado ? '1' : '0';
+      document.getElementById('cfgHost').value = config.rustdesk_server_host || '';
+      document.getElementById('cfgKey').value = config.rustdesk_server_key || '';
+      document.getElementById('cfgTransfer').value = config.carpeta_transferencia || '';
+      document.getElementById('cfgObs').value = config.observaciones || '';
+      document.getElementById('cfgInstructions').value = config.instrucciones_publicas || '';
+      document.getElementById('cfgClientWin').value = config.cliente_windows_url || '';
+      document.getElementById('cfgClientLinux').value = config.cliente_linux_url || '';
+      document.getElementById('cfgClientMac').value = config.cliente_mac_url || '';
+      document.getElementById('cfgServerWin').value = config.servidor_windows_url || '';
+      document.getElementById('cfgServerLinux').value = config.servidor_linux_url || '';
+      document.getElementById('cfgServerMac').value = config.servidor_mac_url || '';
+    }
+
+    async function loadConfig() {
+      if (!(empresaID > 0)) {
+        setStatus('Falta empresa_id en la URL.', true);
+        return;
+      }
+      try {
+        const data = await fetchJSON('/api/empresa/soporte_remoto?action=config&empresa_id=' + encodeURIComponent(String(empresaID)));
+        applyConfig(data.config || {});
+        setStatus('ConfiguraciÃ³n cargada.');
+      } catch (error) {
+        setStatus(error.message || 'No se pudo cargar la configuraciÃ³n.', true);
+      }
+    }
+
+    async function saveConfig() {
+      if (!(empresaID > 0)) {
+        setStatus('Falta empresa_id en la URL.', true);
+        return;
+      }
+      const payload = {
+        habilitado: document.getElementById('cfgEnabled').value === '1',
+        portal_publico_habilitado: document.getElementById('cfgPortal').value === '1',
+        proveedor_preferido: 'rustdesk_oss',
+        modo_operacion: 'cliente_local',
+        rustdesk_server_host: document.getElementById('cfgHost').value.trim(),
+        rustdesk_server_key: document.getElementById('cfgKey').value.trim(),
+        carpeta_transferencia: document.getElementById('cfgTransfer').value.trim(),
+        observaciones: document.getElementById('cfgObs').value.trim(),
+        instrucciones_publicas: document.getElementById('cfgInstructions').value.trim(),
+        cliente_windows_url: document.getElementById('cfgClientWin').value.trim(),
+        cliente_linux_url: document.getElementById('cfgClientLinux').value.trim(),
+        cliente_mac_url: document.getElementById('cfgClientMac').value.trim(),
+        servidor_windows_url: document.getElementById('cfgServerWin').value.trim(),
+        servidor_linux_url: document.getElementById('cfgServerLinux').value.trim(),
+        servidor_mac_url: document.getElementById('cfgServerMac').value.trim()
+      };
+      try {
+        await fetchJSON('/api/empresa/soporte_remoto?action=config&empresa_id=' + encodeURIComponent(String(empresaID)), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        setStatus('ConfiguraciÃ³n guardada.');
+      } catch (error) {
+        setStatus(error.message || 'No se pudo guardar la configuraciÃ³n.', true);
+      }
+    }
+
+    document.getElementById('btnFillOfficial').addEventListener('click', fillOfficialLinks);
+    document.getElementById('btnSave').addEventListener('click', saveConfig);
+    document.addEventListener('DOMContentLoaded', loadConfig);
+  </script>
+</body>
+</html>
           <h2>Visor remoto</h2>
-          <p id="srViewerMsg" class="form-help sr-status">Sin sesión cargada.</p>
+          <p id="srViewerMsg" class="form-help sr-status">Sin sesiÃ³n cargada.</p>
           <iframe id="srViewerFrame" class="sr-viewer" title="Visor remoto" src="about:blank"></iframe>
         </section>
       </div>
@@ -391,7 +283,7 @@
         state.lastPortalURL = String(url || '').trim();
         if (!state.lastPortalURL) {
           portalLinkEl.href = '#';
-          portalLinkEl.textContent = 'Todavía no hay un portal público generado para esta empresa.';
+          portalLinkEl.textContent = 'TodavÃ­a no hay un portal pÃºblico generado para esta empresa.';
           return;
         }
         portalLinkEl.href = state.lastPortalURL;
@@ -533,14 +425,14 @@
           sessionTableWrapEl.innerHTML = '<p class="sr-note">No hay sesiones registradas.</p>';
           return;
         }
-        var html = '<table class="sr-table"><thead><tr><th>Código</th><th>Dispositivo</th><th>Estado</th><th>Consumo</th><th>Acciones</th></tr></thead><tbody>';
+        var html = '<table class="sr-table"><thead><tr><th>CÃ³digo</th><th>Dispositivo</th><th>Estado</th><th>Consumo</th><th>Acciones</th></tr></thead><tbody>';
         state.sessions.forEach(function (row) {
           html += '<tr>' +
             '<td><strong>' + escapeHTML(row.codigo_sesion || '') + '</strong><div class="sr-note">' + escapeHTML(row.solicitada_por || '') + '</div></td>' +
             '<td>' + escapeHTML(row.dispositivo_nombre || '') + '<div class="sr-note">' + escapeHTML(row.dispositivo_codigo || '') + '</div></td>' +
             '<td>' + escapeHTML(row.estado_sesion || '') + (row.bloqueada_por_limite ? '<div class="sr-note">bloqueada por plan</div>' : '') + '</td>' +
             '<td>' + escapeHTML(String(row.duracion_min_consumida || 0)) + ' min<div class="sr-note">solicitada: ' + escapeHTML(String(row.duracion_min_solicitada || 0)) + ' min</div></td>' +
-            '<td><div class="sr-actions"><button type="button" class="btn secondary sr-session-open" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Abrir visor</button><button type="button" class="btn secondary sr-session-portal" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Portal público</button>' +
+            '<td><div class="sr-actions"><button type="button" class="btn secondary sr-session-open" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Abrir visor</button><button type="button" class="btn secondary sr-session-portal" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Portal pÃºblico</button>' +
             ((row.estado_sesion === 'pendiente') ? '<button type="button" class="btn secondary sr-session-approve" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Aprobar</button>' : '') +
             ((row.estado_sesion === 'pendiente' || row.estado_sesion === 'aprobada' || row.estado_sesion === 'activa') ? '<button type="button" class="btn secondary sr-session-close" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Finalizar</button>' : '') +
             '</div></td>' +
@@ -583,14 +475,14 @@
         setMsg(topMsgEl, 'Cargando soporte remoto...');
         try {
           await Promise.all([loadConfig(), loadDevices(), loadSessions()]);
-          setMsg(topMsgEl, 'Módulo listo. Configura host, descargas y crea sesiones cuando necesites asistencia.', 'success');
+          setMsg(topMsgEl, 'MÃ³dulo listo. Configura host, descargas y crea sesiones cuando necesites asistencia.', 'success');
         } catch (err) {
-          setMsg(topMsgEl, 'No se pudo cargar el módulo: ' + err.message, 'error');
+          setMsg(topMsgEl, 'No se pudo cargar el mÃ³dulo: ' + err.message, 'error');
         }
       }
 
       async function saveConfig() {
-        setMsg(configMsgEl, 'Guardando configuración...');
+        setMsg(configMsgEl, 'Guardando configuraciÃ³n...');
         try {
           var payload = {
             habilitado: document.getElementById('srCfgHabilitado').value === '1',
@@ -617,9 +509,9 @@
           state.uso = data.uso || state.uso;
           loadConfigIntoForm(state.config);
           renderKpis();
-          setMsg(configMsgEl, 'Configuración guardada. La próxima sesión ya podrá compartir el portal público completo.', 'success');
+          setMsg(configMsgEl, 'ConfiguraciÃ³n guardada. La prÃ³xima sesiÃ³n ya podrÃ¡ compartir el portal pÃºblico completo.', 'success');
         } catch (err) {
-          setMsg(configMsgEl, 'No se pudo guardar configuración: ' + err.message, 'error');
+          setMsg(configMsgEl, 'No se pudo guardar configuraciÃ³n: ' + err.message, 'error');
         }
       }
 
@@ -662,7 +554,7 @@
         try {
           var data = await requestJSON('GET', 'detalle_dispositivo', { id: deviceID });
           fillDeviceForm(data.dispositivo || {});
-          setMsg(deviceMsgEl, 'Dispositivo cargado para edición.', 'success');
+          setMsg(deviceMsgEl, 'Dispositivo cargado para ediciÃ³n.', 'success');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
           setMsg(deviceMsgEl, 'No se pudo cargar dispositivo: ' + err.message, 'error');
@@ -681,7 +573,7 @@
 
       async function createSession(evt) {
         evt.preventDefault();
-        setMsg(sessionMsgEl, 'Solicitando sesión remota...');
+        setMsg(sessionMsgEl, 'Solicitando sesiÃ³n remota...');
         try {
           var payload = {
             dispositivo_id: Number(document.getElementById('srSessionDevice').value || 0),
@@ -701,11 +593,11 @@
           await loadSessions();
           if (data.viewer_url) {
             viewerFrameEl.src = data.viewer_url;
-            setMsg(viewerMsgEl, 'Visor cargado. Si la sesión está pendiente, espera la aprobación.', 'success');
+            setMsg(viewerMsgEl, 'Visor cargado. Si la sesiÃ³n estÃ¡ pendiente, espera la aprobaciÃ³n.', 'success');
           }
-          setMsg(sessionMsgEl, 'Sesión creada. Puedes abrir el visor o compartir el portal público.', 'success');
+          setMsg(sessionMsgEl, 'SesiÃ³n creada. Puedes abrir el visor o compartir el portal pÃºblico.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo crear sesión: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo crear sesiÃ³n: ' + err.message, 'error');
         }
       }
 
@@ -713,9 +605,9 @@
         try {
           await requestJSON('PATCH', 'aprobar_sesion', null, { codigo_sesion: code, estado_sesion: 'aprobada' });
           await loadSessions();
-          setMsg(sessionMsgEl, 'Sesión aprobada.', 'success');
+          setMsg(sessionMsgEl, 'SesiÃ³n aprobada.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo aprobar sesión: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo aprobar sesiÃ³n: ' + err.message, 'error');
         }
       }
 
@@ -723,22 +615,22 @@
         try {
           await requestJSON('PATCH', 'finalizar_sesion', null, { codigo_sesion: code });
           await loadSessions();
-          setMsg(sessionMsgEl, 'Sesión finalizada.', 'success');
+          setMsg(sessionMsgEl, 'SesiÃ³n finalizada.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo finalizar sesión: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo finalizar sesiÃ³n: ' + err.message, 'error');
         }
       }
 
       function openSessionViewer(code) {
-        var token = state.sessionTokens[code] || window.prompt('Ingresa el token de visualización de la sesión:');
+        var token = state.sessionTokens[code] || window.prompt('Ingresa el token de visualizaciÃ³n de la sesiÃ³n:');
         if (!token) return;
         state.sessionTokens[code] = token;
         viewerFrameEl.src = '/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(String(empresaID)) + '&codigo_sesion=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(token);
-        setMsg(viewerMsgEl, 'Visor solicitado para la sesión ' + code + '.', null);
+        setMsg(viewerMsgEl, 'Visor solicitado para la sesiÃ³n ' + code + '.', null);
       }
 
       function openSessionPortal(code) {
-        var token = state.sessionTokens[code] || window.prompt('Ingresa el token del portal público de la sesión:');
+        var token = state.sessionTokens[code] || window.prompt('Ingresa el token del portal pÃºblico de la sesiÃ³n:');
         if (!token) return;
         state.sessionTokens[code] = token;
         var url = buildPortalURL(code, token);
@@ -766,7 +658,7 @@
           window.open(state.lastPortalURL, '_self');
           return;
         }
-        setMsg(topMsgEl, 'Aún no hay un portal público generado. Crea una sesión para obtenerlo.', 'error');
+        setMsg(topMsgEl, 'AÃºn no hay un portal pÃºblico generado. Crea una sesiÃ³n para obtenerlo.', 'error');
       });
       document.getElementById('srDeviceForm').addEventListener('submit', saveDevice);
       document.getElementById('srSessionForm').addEventListener('submit', createSession);

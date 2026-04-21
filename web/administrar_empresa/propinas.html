@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -16,7 +16,7 @@
       Configura reglas de propinas y tratamiento fiscal, registra ajustes manuales auditados y revisa la conciliacion por cierre de caja.
     </p>
 
-    <div class="form" style="margin-top:12px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Configuracion de propinas</h2>
       </div>
@@ -80,7 +80,7 @@
       <div id="cfgMsg" class="form-help"></div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Reporte de propinas</h2>
       </div>
@@ -133,9 +133,9 @@
       </div>
       <div id="reporteMsg" class="form-help"></div>
 
-      <div id="resumenBox" class="form-help" style="margin-top:8px;"></div>
+      <div id="resumenBox" class="form-help" ></div>
 
-      <div style="margin-top:10px;">
+      <div >
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por usuario</h3>
         <div class="table-wrap">
           <table class="table">
@@ -149,13 +149,13 @@
               </tr>
             </thead>
             <tbody id="tablaUsuariosBody">
-              <tr><td colspan="5" style="text-align:center;color:#777;">Sin datos</td></tr>
+              <tr><td colspan="5" class="text-empty" style="text-align:center;">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style="margin-top:12px;">
+      <div >
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Movimientos de propinas</h3>
         <div class="table-wrap">
           <table class="table">
@@ -178,14 +178,14 @@
               </tr>
             </thead>
             <tbody id="tablaMovimientosBody">
-              <tr><td colspan="14" style="text-align:center;color:#777;">Sin datos</td></tr>
+              <tr><td colspan="14" class="text-empty" style="text-align:center;">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Ajuste manual de propinas</h2>
       </div>
@@ -248,7 +248,7 @@
       <div id="ajusteMsg" class="form-help"></div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Conciliacion de propinas por cierre</h2>
       </div>
@@ -295,7 +295,7 @@
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = text || '';
-        el.style.color = isError ? '#b00020' : '#2a7f62';
+        el.className = isError ? 'error' : 'form-help';
       }
 
       function ensureOk(res) {
@@ -434,7 +434,7 @@
         var rows = report && Array.isArray(report.usuarios) ? report.usuarios : [];
         var body = document.getElementById('tablaUsuariosBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#777;">Sin datos para el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="5" class="text-empty" style="text-align:center;">Sin datos para el periodo seleccionado</td></tr>';
           return;
         }
 
@@ -453,7 +453,7 @@
         var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
         var body = document.getElementById('tablaMovimientosBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#777;">Sin movimientos en el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="14" class="text-empty" style="text-align:center;">Sin movimientos en el periodo seleccionado</td></tr>';
           return;
         }
 
@@ -597,3 +597,4 @@
   </script>
 </body>
 </html>
+

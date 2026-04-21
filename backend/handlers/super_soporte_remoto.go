@@ -114,6 +114,7 @@ func superSoporteRemotoEmpresasGet(w http.ResponseWriter, r *http.Request, dbEmp
 		if err != nil {
 			continue
 		}
+		applyRustDeskDownloadDefaults(&cfg)
 		uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresa.EmpresaID)
 		if err != nil {
 			continue
@@ -134,6 +135,7 @@ func superSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
 		return
 	}
+	applyRustDeskDownloadDefaults(&cfg)
 	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
@@ -168,6 +170,7 @@ func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
 	}
+	applyRustDeskDownloadDefaults(&cfg)
 	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)
@@ -273,8 +276,10 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 			"max_minutos_dia_rustdesk": cfg.MaxMinutosDiaRustDesk,
 			"cliente_windows_url": cfg.ClienteWindowsURL,
 			"cliente_linux_url": cfg.ClienteLinuxURL,
+			"cliente_mac_url": cfg.ClienteMacURL,
 			"servidor_windows_url": cfg.ServidorWindowsURL,
 			"servidor_linux_url": cfg.ServidorLinuxURL,
+			"servidor_mac_url": cfg.ServidorMacURL,
 			"carpeta_transferencia": cfg.CarpetaTransferencia,
 			"instrucciones_publicas": cfg.InstruccionesPublicas,
 			"dia_referencia": uso.DiaReferencia,
@@ -299,7 +304,7 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 		GeneratedAt: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
 		Columns: []string{
 			"empresa_id", "empresa", "nit", "proveedor", "modo_operacion", "portal_publico_habilitado",
-			"rustdesk_server_host", "max_minutos_dia_rustdesk", "cliente_windows_url", "cliente_linux_url", "servidor_windows_url", "servidor_linux_url", "carpeta_transferencia", "instrucciones_publicas",
+			"rustdesk_server_host", "max_minutos_dia_rustdesk", "cliente_windows_url", "cliente_linux_url", "cliente_mac_url", "servidor_windows_url", "servidor_linux_url", "servidor_mac_url", "carpeta_transferencia", "instrucciones_publicas",
 			"dia_referencia", "minutos_consumidos_dia_rustdesk", "minutos_disponibles_dia_rustdesk",
 			"dispositivos_activos", "dispositivos_online", "sesiones_mes", "intentos_bloqueados_mes",
 			"minutos_consumidos_mes", "max_dispositivos", "max_conexiones_mes", "max_minutos_mes", "bloqueo_motivo",

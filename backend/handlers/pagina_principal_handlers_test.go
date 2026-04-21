@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestPaginaPrincipalNormalizeConfigCompletesLandingFields(t *testing.T) {
@@ -73,6 +75,9 @@ func TestPaginaPrincipalNormalizeConfigCompletesLandingFields(t *testing.T) {
 func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_pagina_principal_landing_config.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
+	if err := dbpkg.SetConfigValue(dbSuper, "portal.whatsapp_contact_number", "573001112233", false); err != nil {
+		t.Fatalf("seed portal.whatsapp_contact_number: %v", err)
+	}
 
 	cfg := paginaPrincipalConfig{
 		Cantidad: 1,
@@ -113,6 +118,7 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 		Cantidad int                           `json:"cantidad"`
 		Tarjetas []paginaPrincipalCard         `json:"tarjetas"`
 		Estilos  paginaPrincipalVisualSettings `json:"estilos"`
+		WhatsAppContactNumber string           `json:"whatsapp_contact_number"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
@@ -136,6 +142,9 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 	}
 	if resp.Estilos.LandingTextSize != cfg.Estilos.LandingTextSize {
 		t.Fatalf("expected landing_text_size %q, got %q", cfg.Estilos.LandingTextSize, resp.Estilos.LandingTextSize)
+	}
+	if resp.WhatsAppContactNumber != "573001112233" {
+		t.Fatalf("expected whatsapp_contact_number %q, got %q", "573001112233", resp.WhatsAppContactNumber)
 	}
 	if card.Titulo != cfg.Tarjetas[0].Titulo {
 		t.Fatalf("expected titulo %q, got %q", cfg.Tarjetas[0].Titulo, card.Titulo)

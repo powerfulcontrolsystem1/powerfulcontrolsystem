@@ -13,7 +13,7 @@
       <button id="addBtn" class="btn add">Agregar</button>
     </div>
 
-    <p class="form-help" style="margin:0 0 12px 0;">
+    <p class="form-help my-0-12">
       Datos orientados a facturación electrónica en Colombia (DIAN): documento, razón social, régimen, ubicación y contacto.
     </p>
 
@@ -123,34 +123,34 @@
       <div id="msg" class="form-help"></div>
     </form>
 
-    <div class="form" style="margin-top:14px;">
-      <div class="form-row" style="margin-bottom:0;">
+    <div class="form mt-14">
+      <div class="form-row mb-0">
         <div class="form-col">
           <label class="form-label">Buscar cliente</label>
           <input id="buscar" class="form-input" placeholder="Buscar por nombre comercial, razón social o documento">
         </div>
-        <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
-          <button id="buscarBtn" class="btn secondary" type="button" style="width:100%;">Buscar</button>
+        <div class="form-col maxw-180 flex-end">
+          <button id="buscarBtn" class="btn secondary w-full" type="button">Buscar</button>
         </div>
       </div>
     </div>
 
     <div id="list">Cargando...</div>
 
-    <div class="form" style="margin-top:14px;">
-      <div class="page-header" style="margin-bottom:10px;">
-        <h2 style="margin:0;font-size:1.1rem;">Segmentación de clientes (punto 6)</h2>
+    <div class="form mt-14">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Segmentación de clientes (punto 6)</h2>
       </div>
       <div id="segmentacionList">Cargando segmentación...</div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
-      <div class="page-header" style="margin-bottom:10px;">
-        <h2 style="margin:0;font-size:1.1rem;">Exportación masiva por segmento</h2>
+    <div class="form mt-14">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Exportación masiva por segmento</h2>
       </div>
-      <p class="form-help" style="margin:0 0 10px 0;">Descarga el listado comercial de clientes segmentados para ejecutar campañas de fidelización, reactivación o upsell.</p>
-      <div class="form-row" style="margin-bottom:0;">
-        <div class="form-col" style="max-width:220px;">
+      <p class="form-help my-0-10">Descarga el listado comercial de clientes segmentados para ejecutar campañas de fidelización, reactivación o upsell.</p>
+      <div class="form-row mb-0">
+        <div class="form-col maxw-220">
           <label class="form-label">Formato</label>
           <select id="segmentExportFormat" class="form-input">
             <option value="xls">Excel (XLS)</option>
@@ -160,15 +160,15 @@
             <option value="txt">TXT</option>
           </select>
         </div>
-        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
-          <button id="segmentExportBtn" class="btn secondary" type="button" style="width:100%;">Exportar segmentos</button>
+        <div class="form-col maxw-220 flex-end">
+          <button id="segmentExportBtn" class="btn secondary w-full" type="button">Exportar segmentos</button>
         </div>
       </div>
     </div>
 
-    <div class="form" style="margin-top:14px;display:none;" id="perfilClientePanel">
-      <div class="page-header" style="margin-bottom:10px;">
-        <h2 style="margin:0;font-size:1.1rem;">Perfil e historial del cliente</h2>
+    <div class="form mt-14 is-hidden" id="perfilClientePanel">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Perfil e historial del cliente</h2>
       </div>
       <p id="perfilClienteInfo" class="form-help">Selecciona un cliente para ver su perfil comercial.</p>
       <div id="historialClienteList"></div>
@@ -193,7 +193,10 @@
     function setMessage(text, isError) {
       const el = document.getElementById('msg');
       el.textContent = text || '';
-      el.style.color = isError ? '#ef5350' : '';
+      el.classList.remove('value-negative');
+      if (isError) {
+        el.classList.add('value-negative');
+      }
     }
 
     async function ensureOk(res) {

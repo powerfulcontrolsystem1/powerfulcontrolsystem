@@ -8,38 +8,40 @@
     <script src="/menu.js"></script>
     <style>
         .vendedor-list { margin-bottom: 20px; }
-        .vendedor-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; background: white;}
-        .plan-section { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        .vendedor-card { border: 1px solid var(--border); padding: 15px; margin-bottom: 10px; border-radius: 8px; background: var(--surface); color: var(--text); }
+        .plan-section { background: var(--surface-soft); padding: 12px; border-radius: 6px; margin-top: 10px; border:1px solid var(--content-soft-border); }
         .comisiones-section { margin-top: 10px; font-size: 0.9em; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-action { background: #007bff; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
-        .btn-danger { background: #dc3545; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); }
+        .btn-action { background: var(--accent); color: #fff; border: none; padding: 8px 12px; cursor: pointer; border-radius: 6px; }
+        .btn-danger { background: var(--danger); color:#fff; border:none; }
+        .btn-success { background: var(--success); color:#fff; border:none; }
         .flex-row { display: flex; gap: 10px; align-items: center; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 90%; max-width: 600px; border-radius: 5px; max-height: 90vh; overflow-y: auto;}
+        .modal-content { background: var(--surface); margin: 5% auto; padding: 20px; width: 90%; max-width: 600px; border-radius: 8px; max-height: 90vh; overflow-y: auto; border:1px solid var(--border);} 
+        .chip { background: var(--empresa-card-chip-bg); color: var(--empresa-card-chip-text); padding: 2px 6px; border-radius: 4px; font-size:0.85em; }
     </style>
 </head>
 <body class="super-admin-body">
-    <div class="content-container" style="max-width: 1000px; margin: auto; padding: 20px;">
-        <h1 style="margin-top: 0;">Vendedores y Asesores Comerciales</h1>
-        <p style="color: #666; margin-bottom: 20px;">Gestiona los vendedores de licencias, sus planes de comisiones y audita sus ventas.</p>
+    <div class="content-container maxw-1000 mx-auto p-20">
+        <h1 class="m-0">Vendedores y Asesores Comerciales</h1>
+        <p class="muted mb-0 mt-20">Gestiona los vendedores de licencias, sus planes de comisiones y audita sus ventas.</p>
 
         <button class="btn-action btn-add-vendedor" onclick="abrirModalVendedor()">+ Nuevo Vendedor (Asesor)</button>
 
-        <div id="loading" style="display: none;">Cargando...</div>
-        <div id="vendedoresList" class="vendedor-list" style="margin-top: 20px;"></div>
+        <div id="loading" class="is-hidden">Cargando...</div>
+        <div id="vendedoresList" class="vendedor-list mt-20"></div>
     </div>
 
     <!-- Modal Editar/Crear Vendedor -->
     <div id="modalVendedor" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle" style="margin-top: 0;">Nuevo Vendedor</h2>
+            <h2 id="modalTitle" class="m-0">Nuevo Vendedor</h2>
             <form id="formVendedor" onsubmit="guardarVendedor(event)">
                 <input type="hidden" id="vendedor_id_interno" value="">
                 
-                <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px;">Datos Generales</h3>
+                <h3 class="table-header pb-5">Datos Generales</h3>
                 <div class="form-group">
                     <label>Nombre:</label>
                     <input type="text" id="vendedor_nombre" required>
@@ -60,22 +62,22 @@
                     <textarea id="vendedor_notas" rows="2"></textarea>
                 </div>
 
-                <div style="background: #fdfdfd; padding: 15px; border: 1px solid #e1e1e1; border-radius: 4px; margin-top: 20px;">
-                    <h3 style="margin-top: 0; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px;">Plan de Comisión (Asesor Comercial)</h3>
-                    <p style="font-size:0.85em;color:#777; margin-bottom: 15px;">Establece los porcentajes y condiciones para este asesor comercial. Si dejas ID vacío, se vinculará a la base automáticamente.</p>
+                <div class="panel-soft mt-20 p-15">
+                    <h3 class="section-rule-title">Plan de Comisión (Asesor Comercial)</h3>
+                    <p class="muted fs-085 mb-15">Establece los porcentajes y condiciones para este asesor comercial. Si dejas ID vacío, se vinculará a la base automáticamente.</p>
                     <input type="hidden" id="plan_id" value="">
                     
                     <div class="form-group">
                         <label>ID del Asesor (Hash/UUID para enlaces de pago):</label>
-                        <input type="text" id="plan_asesor_id" placeholder="Por defecto será generado según el ID Base" style="background:#efefef;" disabled>
+                        <input type="text" id="plan_asesor_id" placeholder="Por defecto será generado según el ID Base" class="input-muted" disabled>
                     </div>
                     
                     <div class="form-group flex-row">
-                        <div style="flex:1">
+                        <div class="flex-1">
                             <label>Comisión Venta Inicial (%):</label>
                             <input type="number" id="plan_comision_venta" step="0.01" value="0.00" min="0" max="100">
                         </div>
-                        <div style="flex:1">
+                        <div class="flex-1">
                             <label>Comisión Pago / Renovación (%):</label>
                             <input type="number" id="plan_comision_pago" step="0.01" value="0.00" min="0" max="100">
                         </div>
@@ -83,14 +85,14 @@
                     
                     <div class="form-group">
                         <label>Meses que aplica comisión en renovaciones:</label>
-                        <input type="number" id="plan_meses" value="12" min="0" style="width: 150px;">
-                        <small style="color: #666;"> (0 = Ilimitado, aplica siempre)</small>
+                        <input type="number" id="plan_meses" value="12" min="0" class="w-150">
+                        <small class="muted"> (0 = Ilimitado, aplica siempre)</small>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 20px; text-align: right;">
-                    <button type="button" class="btn-action btn-danger" style="margin-right: 10px;" onclick="cerrarModalVendedor()">Cancelar</button>
-                    <button type="submit" class="btn-action" style="padding: 10px 20px; font-weight: bold; background: #28a745;">Guardar Asesor y Plan</button>
+                <div class="form-group mt-20 text-right">
+                    <button type="button" class="btn-action btn-danger mr-10" onclick="cerrarModalVendedor()">Cancelar</button>
+                    <button type="submit" class="btn-success p-10 fw-700">Guardar Asesor y Plan</button>
                 </div>
             </form>
         </div>
@@ -98,11 +100,11 @@
 
     <!-- Modal Liquidación / Ver Comisiones -->
     <div id="modalComisiones" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
-            <h2 style="margin-top: 0;">Comisiones del Asesor</h2>
-            <p style="color: #555; margin-top: -5px;"><strong>ID de Rastreo / Asesor:</strong> <span id="vistas_comision_asesor_id"></span></p>
-            <div id="comisionesListaHtml" style="max-height:400px; overflow-y:auto; border:1px solid #ccc; padding:10px; margin-bottom:15px;"></div>
-            <div style="text-align: right;">
+        <div class="modal-content maxw-800">
+            <h2 class="m-0">Comisiones del Asesor</h2>
+            <p class="muted"><strong>ID de Rastreo / Asesor:</strong> <span id="vistas_comision_asesor_id"></span></p>
+                <div id="comisionesListaHtml" class="panel-soft maxh-400 overflow-y-auto mb-15 p-10"></div>
+            <div class="text-right">
                 <button type="button" class="btn-action" onclick="cerrarModalComisiones()">Cerrar Consulta</button>
             </div>
         </div>
@@ -127,7 +129,7 @@
 
         async function cargarVendedores() {
             const container = document.getElementById('vendedoresList');
-            container.innerHTML = '<p style="color:#666;">Cargando asesores y planes...</p>';
+            container.innerHTML = '<p class="muted">Cargando asesores y planes...</p>';
             try {
                 const asesores = await apiCall('/super/api/asesores');
                 let planes = [];
@@ -138,7 +140,7 @@
                 }
                 
                 if (!asesores || asesores.length === 0) {
-                    container.innerHTML = '<div style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 5px;"><p style="color:#777;">No hay vendedores registrados todavía.</p></div>';
+                    container.innerHTML = '<div class="inline-panel-empty"><p class="text-empty">No hay vendedores registrados todavía.</p></div>';
                     return;
                 }
 
@@ -146,33 +148,33 @@
                     const asIdStr = a.id ? a.id.toString() : ''; // string version of base asesor ID
                     const plan = planes.find(p => p.asesor_id == asIdStr || p.asesor_email === a.email) || {};
                     const planStatus = plan.id ? 
-                        `Venta Inicial: <strong style="color: green;">${plan.comision_venta_pct}%</strong> &nbsp;|&nbsp; Renovaciones: <strong style="color: green;">${plan.comision_pago_pct}%</strong> &nbsp;|&nbsp; Meses Plazo: <strong>${plan.meses_renovacion < 1 ? 'Ilimitado' : plan.meses_renovacion}</strong>
-                        <br><div style="margin-top: 8px;"><button type="button" class="btn-action" style="font-size:0.8em; padding: 4px 8px; background: #6f42c1;" onclick="verComisiones('${plan.asesor_id || a.id}')">Ver Rendimiento (Ventas y Comisiones)</button></div>` 
-                        : `<span style="color:#ca3e3e;">Sin plan de comisión registrado. El vendedor no recibe comisiones automáticas.</span>`;
+                        `Venta Inicial: <strong class="value-positive">${plan.comision_venta_pct}%</strong> &nbsp;|&nbsp; Renovaciones: <strong class="value-positive">${plan.comision_pago_pct}%</strong> &nbsp;|&nbsp; Meses Plazo: <strong>${plan.meses_renovacion < 1 ? 'Ilimitado' : plan.meses_renovacion}</strong>
+                        <br><div class="mt-8"><button type="button" class="btn secondary btn-compact" onclick="verComisiones('${plan.asesor_id || a.id}')">Ver Rendimiento (Ventas y Comisiones)</button></div>` 
+                        : `<span class="value-negative">Sin plan de comisión registrado. El vendedor no recibe comisiones automáticas.</span>`;
 
                     return `
-                    <div class="vendedor-card" style="display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div class="vendedor-card flex-col-gap-10">
+                        <div class="flex-between-start">
                             <div>
-                                <h3 style="margin: 0; color: #222;">${a.nombre} <span style="font-size:0.7em; font-weight:normal; color:#888; margin-left: 10px;">[ID Sistema: ${a.id}]</span></h3>
-                                <p style="margin: 5px 0 0 0; color: #555;"><strong>Email Login:</strong> ${a.email} &nbsp;|&nbsp; <strong>Rol:</strong> <span style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">${a.rol}</span></p>
-                                <p style="margin: 5px 0 0 0; color: #555; font-size: 0.9em;"><strong>Notas/Afiliado:</strong> ${a.notas || '<em>Ninguna</em>'}</p>
+                                <h3 class="m-0">${a.nombre} <span class="muted fs-07 fw-normal ml-10">[ID Sistema: ${a.id}]</span></h3>
+                                <p class="muted mt-6 mb-0"><strong>Email Login:</strong> ${a.email} &nbsp;|&nbsp; <strong>Rol:</strong> <span class="chip">${a.rol}</span></p>
+                                <p class="muted mt-6 mb-0 fs-09"><strong>Notas/Afiliado:</strong> ${a.notas || '<em>Ninguna</em>'}</p>
                             </div>
-                            <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                                <button class="btn-action" style="background:#17a2b8;" onclick='editarVendedor(${JSON.stringify(a)}, ${JSON.stringify(plan)})'>Editar / Ver Plan</button>
-                                <button class="btn-action btn-danger" onclick="eliminarVendedor(${a.id})">Borrar</button>
+                            <div class="flex-gap-5 flex-no-shrink">
+                                <button class="btn secondary" onclick='editarVendedor(${JSON.stringify(a)}, ${JSON.stringify(plan)})'>Editar / Ver Plan</button>
+                                <button class="btn btn-danger" onclick="eliminarVendedor(${a.id})">Borrar</button>
                             </div>
                         </div>
                         <div class="plan-section">
                             ${planStatus}
-                            <div style="margin-top: 5px; font-size: 0.8em; color: #888;">
+                            <div class="muted mt-6 fs-08">
                                 <strong>Clave de Seguimiento (URL UTM):</strong> <code>?ref=${plan.asesor_id || asIdStr}</code>
                             </div>
                         </div>
                     </div>`;
                 }).join('');
             } catch (error) {
-                container.innerHTML = `<div style="padding: 15px; border: 1px solid red; background: #ffe6e6;"><p style="color:red; margin:0;"><strong>Error de conexión al servidor:</strong> ${error}</p></div>`;
+                container.innerHTML = `<div class="alert error"><p class="m-0"><strong>Error de conexión al servidor:</strong> ${error}</p></div>`;
             }
         }
 
@@ -291,36 +293,38 @@
                 }
                 
                 const getRowStyle = (estado) => {
-                    if (estado.toLowerCase() === 'pagada') return 'background-color: #e6ffe6;';
-                    if (estado.toLowerCase() === 'cancelada' || estado === 'rechazada') return 'background-color: #ffeded; color: #cc0000; text-decoration: line-through;';
+                    if (!estado || typeof estado !== 'string') return '';
+                    const s = estado.toLowerCase();
+                    if (s === 'pagada') return ' row-paid';
+                    if (s === 'cancelada' || s === 'rechazada') return ' row-cancelled';
                     return '';
                 };
 
-                container.innerHTML = `<table style="width:100%;text-align:left;border-collapse:collapse;font-size:0.9em;">
+                container.innerHTML = `<table class="table table-compact">
                     <thead>
-                        <tr style="border-bottom:2px solid #333; background: #f4f4f4;">
-                            <th style="padding: 8px;">Fecha Facturación</th>
-                            <th style="padding: 8px;">Empresa / Cliente</th>
-                            <th style="padding: 8px;">Liquidación</th>
-                            <th style="padding: 8px;">Tasa %</th>
-                            <th style="padding: 8px;">Total Mxn/Cop</th>
-                            <th style="padding: 8px;">Estado Deuda</th>
-                            <th style="padding: 8px;">Acción Realizar</th>
+                        <tr class="table-header">
+                            <th>Fecha Facturación</th>
+                            <th>Empresa / Cliente</th>
+                            <th>Liquidación</th>
+                            <th>Tasa %</th>
+                            <th>Total Mxn/Cop</th>
+                            <th>Estado Deuda</th>
+                            <th>Acción Realizar</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${comisiones.map(c => `
-                            <tr style="border-bottom:1px solid #ddd; ${getRowStyle(c.estado || '')}">
-                                <td style="padding: 8px;">${(c.fecha_creacion||'Indefinido').split('T')[0]}</td>
-                                <td style="padding: 8px;">Empresa ID #${c.empresa_id||'??'}</td>
-                                <td style="padding: 8px; font-size: 0.85em; color: #555;">Tkt: ${c.pago_id||'--'} | Lc: ${c.licencia_id||'Base'}</td>
-                                <td style="padding: 8px;">${c.porcentaje_aplicado||'N/A'}%</td>
-                                <td style="padding: 8px; font-weight: bold; color: ${(c.estado === 'pagada') ? 'green' : '#000'};">$ ${parseFloat(c.comision_valor||0).toLocaleString()}</td>
-                                <td style="padding: 8px; text-transform: uppercase;"><strong>${c.estado||'Pendiente'}</strong></td>
-                                <td style="padding: 8px;">
+                            <tr class="table-row${getRowStyle(c.estado || '')}">
+                                <td>${(c.fecha_creacion||'Indefinido').split('T')[0]}</td>
+                                <td>Empresa ID #${c.empresa_id||'??'}</td>
+                                <td class="muted">Tkt: ${c.pago_id||'--'} | Lc: ${c.licencia_id||'Base'}</td>
+                                <td>${c.porcentaje_aplicado||'N/A'}%</td>
+                                <td class="${(c.estado === 'pagada') ? 'value-positive' : ''}">$ ${parseFloat(c.comision_valor||0).toLocaleString()}</td>
+                                <td class="uppercase"><strong>${c.estado||'Pendiente'}</strong></td>
+                                <td>
                                     ${(c.estado || '').toLowerCase() !== 'pagada' ? 
-                                        `<button onclick="liquidarComision(${c.id}, '${asesorId}')" style="font-size:0.9em;background:#28a745;color:white;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">Liquidar y Abonar</button>` : 
-                                        '<span style="color:#28a745;font-weight:bold;">✔ Completado</span>'}
+                                        `<button onclick="liquidarComision(${c.id}, '${asesorId}')" class="btn btn-success btn-sm">Liquidar y Abonar</button>` : 
+                                        '<span class="value-positive">✔ Completado</span>'}
                                 </td>
                             </tr>
                         `).join('')}
@@ -329,9 +333,9 @@
             } catch (error) {
                 // If endpoint /super/api/asesor_comisiones throws 404
                 if (error.message && error.message.includes('404')) {
-                     container.innerHTML = `<span style="color:#888;">No es posible consultar. El endpoint HTTP <code>/super/api/asesor_comisiones</code> aún no implementó la función GET o no devuelve estado 200. (Revisar handlers en backend).</span>`;
+                     container.innerHTML = `<span class="muted">No es posible consultar. El endpoint HTTP <code>/super/api/asesor_comisiones</code> aún no implementó la función GET o no devuelve estado 200. (Revisar handlers en backend).</span>`;
                 } else {
-                     container.innerHTML = `<span style="color:red">Fallo de comunicación: ${error.message}</span>`;
+                     container.innerHTML = `<span class="value-negative">Fallo de comunicación: ${error.message}</span>`;
                 }
             }
         }

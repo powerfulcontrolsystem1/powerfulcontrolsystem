@@ -13,6 +13,7 @@ func TestEnsureEmpresasComprasSchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no se pudo abrir bd: %v", err)
 	}
+	defer dbConn.Close()
 
 	if err := EnsureEmpresasComprasSchema(dbConn); err != nil {
 		t.Fatalf("Esperaba éxito asegurando esquema de compras, obtuve: %v", err)

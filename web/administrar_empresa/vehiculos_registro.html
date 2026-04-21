@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -158,7 +158,7 @@
       <div id="msg" class="form-help"></div>
     </form>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar</label>
@@ -193,7 +193,7 @@
       </div>
     </div>
 
-    <section class="form" style="margin-top:14px;">
+    <section class="form" >
       <h2 style="margin:0 0 8px 0;">Reporte de permanencia y tiempos de estancia</h2>
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col" style="max-width:220px;">
@@ -212,8 +212,8 @@
         </div>
       </div>
       <div id="reporteMsg" class="form-help"></div>
-      <div id="permanenciaResumen" class="form-help" style="margin-top:8px;">Sin reporte de permanencia cargado.</div>
-      <div id="permanenciaList" class="form-help" style="margin-top:8px;">Usa "Ver permanencia" para consultar detalles.</div>
+      <div id="permanenciaResumen" class="form-help" >Sin reporte de permanencia cargado.</div>
+      <div id="permanenciaList" class="form-help" >Usa "Ver permanencia" para consultar detalles.</div>
     </section>
 
     <div id="list">Cargando...</div>
@@ -706,7 +706,7 @@
     }
 
     async function removeItem(id) {
-      if (!confirm('¿Eliminar este registro de vehiculo?')) return;
+      if (!confirm('Â¿Eliminar este registro de vehiculo?')) return;
       try {
         const params = new URLSearchParams();
         params.set('empresa_id', String(state.empresaID));
@@ -825,3 +825,4 @@
   </script>
 </body>
 </html>
+

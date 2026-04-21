@@ -13,10 +13,33 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+func TestAdminPasswordRecoveryTemplateRendersButton(t *testing.T) {
+	subject, bodyText, bodyHTML, err := applySuperEmailTemplate(nil, superEmailTemplateKeyAdminPasswordRecovery, map[string]string{
+		"name":      "Admin Demo",
+		"token":     "",
+		"reset_url": "https://powerfulcontrolsystem.com/login.html?view=reset&email=admin%40demo.com&token_recuperacion=abc123",
+	})
+	if err != nil {
+		t.Fatalf("apply template: %v", err)
+	}
+	if !strings.Contains(subject, "Recuperacion de contraseña") {
+		t.Fatalf("expected recovery subject, got %q", subject)
+	}
+	if !strings.Contains(bodyText, "https://powerfulcontrolsystem.com/login.html?view=reset") {
+		t.Fatalf("expected reset url in text body, got %q", bodyText)
+	}
+	if !strings.Contains(bodyHTML, ">Cambiar contraseña<") {
+		t.Fatalf("expected button label in html body, got %q", bodyHTML)
+	}
+	if !strings.Contains(bodyHTML, "href=\"https://powerfulcontrolsystem.com/login.html?view=reset&email=admin%40demo.com&token_recuperacion=abc123\"") {
+		t.Fatalf("expected reset href in html body, got %q", bodyHTML)
+	}
+}
+
 func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 	t.Helper()
 
-	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS administradores (
+	stmtAdmins := `CREATE TABLE IF NOT EXISTS administradores (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE,
 		name TEXT,
@@ -39,12 +62,39 @@ func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 		password_set INTEGER DEFAULT 0,
 		password_reset_token TEXT,
 		password_reset_expira TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		stmtAdmins = `CREATE TABLE IF NOT EXISTS administradores (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT UNIQUE,
+			name TEXT,
+			role TEXT DEFAULT 'administrador',
+			photo TEXT,
+			usuario_creador TEXT,
+			fecha_creacion TEXT,
+			fecha_actualizacion TEXT,
+			estado TEXT DEFAULT 'activo',
+			acepta_contrato INTEGER DEFAULT 0,
+			telefono TEXT,
+			pais TEXT,
+			ciudad TEXT,
+			email_confirmado INTEGER DEFAULT 0,
+			email_confirm_token TEXT,
+			email_confirm_expira TEXT,
+			email_confirmado_en TEXT,
+			password_hash TEXT,
+			password_salt TEXT,
+			password_set INTEGER DEFAULT 0,
+			password_reset_token TEXT,
+			password_reset_expira TEXT
+		)`
+	}
+	_, err := dbSuper.Exec(stmtAdmins)
 	if err != nil {
 		t.Fatalf("create administradores schema: %v", err)
 	}
 
-	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS sesiones (
+	stmtSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		admin_email TEXT,
 		token TEXT,
@@ -54,7 +104,21 @@ func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 		fecha_fin TEXT,
 		fecha_creacion TEXT,
 		activo INTEGER DEFAULT 1
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		stmtSesiones = `CREATE TABLE IF NOT EXISTS sesiones (
+			id BIGSERIAL PRIMARY KEY,
+			admin_email TEXT,
+			token TEXT,
+			ip TEXT,
+			user_agent TEXT,
+			fecha_inicio TEXT,
+			fecha_fin TEXT,
+			fecha_creacion TEXT,
+			activo INTEGER DEFAULT 1
+		)`
+	}
+	_, err = dbSuper.Exec(stmtSesiones)
 	if err != nil {
 		t.Fatalf("create sesiones schema: %v", err)
 	}
@@ -420,6 +484,9 @@ func TestAdminRequestAndResetPasswordHandlersUseCapturedMailAndCreateSession(t *
 	}
 	if !strings.Contains(notifications[0].Cuerpo, "view=reset") {
 		t.Fatalf("expected reset URL with view=reset, got %q", notifications[0].Cuerpo)
+	}
+	if strings.Contains(strings.ToLower(notifications[0].Cuerpo), "token de recuperación") || strings.Contains(strings.ToLower(notifications[0].Cuerpo), "token de recuperacion") {
+		t.Fatalf("expected recovery email without visible token instructions, got %q", notifications[0].Cuerpo)
 	}
 
 	reqReset := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/restablecer_password", strings.NewReader(`{"email":"reset_admin@empresa.com","token":"`+admin.PasswordResetToken+`","password":"NuevaClave99"}`))

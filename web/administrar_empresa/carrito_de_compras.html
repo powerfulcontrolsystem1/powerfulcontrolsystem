@@ -13,7 +13,7 @@
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
 
-    <p id="moduleHelp" class="form-help" style="margin:0 0 12px 0;">
+    <p id="moduleHelp" class="form-help my-0-12">
       Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.
     </p>
 
@@ -78,53 +78,53 @@
       <div id="carritoMsg" class="form-help"></div>
     </form>
 
-    <div id="carritoSearchBlock" class="form" style="margin-top:14px;">
-      <div class="form-row" style="margin-bottom:0;">
+    <div id="carritoSearchBlock" class="form mt-14">
+      <div class="form-row mb-0">
         <div class="form-col">
           <label class="form-label">Buscar carrito</label>
           <input id="buscarCarrito" class="form-input" placeholder="Buscar por nombre, código o cliente">
         </div>
-        <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
-          <button id="buscarCarritoBtn" class="btn secondary" type="button" style="width:100%;">Buscar</button>
+        <div class="form-col maxw-180 flex-end">
+          <button id="buscarCarritoBtn" class="btn secondary w-full" type="button">Buscar</button>
         </div>
       </div>
     </div>
 
-    <div id="carritosList" style="margin-top:14px;">Cargando carritos...</div>
+    <div id="carritosList" class="mt-14">Cargando carritos...</div>
 
-    <div class="form" style="margin-top:16px;">
-      <div class="page-header" style="margin-bottom:10px;">
-        <h2 id="itemsTitle" style="margin:0;font-size:1rem;">Items del carrito</h2>
+    <div class="form mt-16">
+      <div class="page-header mb-10">
+        <h2 id="itemsTitle" class="section-heading">Items del carrito</h2>
       </div>
       <div id="carritoResumen" class="form-help"></div>
 
-      <div id="buscarProductosActions" class="form-actions" style="margin-top:10px;">
+      <div id="buscarProductosActions" class="form-actions mt-10">
         <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
       </div>
 
-      <div id="scannerPanel" class="card empresa-section" style="margin-top:12px;">
+      <div id="scannerPanel" class="card empresa-section mt-12">
         <div class="empresa-section-header">
-          <h3 style="margin:0;">Lector de código de barras</h3>
+          <h3 class="section-heading">Lector de código de barras</h3>
         </div>
         <div id="carritoClienteRow" class="form-row">
           <div class="form-col">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
             <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea y presiona Enter">
           </div>
-          <div class="form-col" style="max-width:180px;">
+          <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
             <input id="scannerCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
           </div>
-          <div class="form-col" style="max-width:240px;display:flex;align-items:flex-end;">
-            <button type="button" id="scannerAgregarBtn" class="btn" style="width:100%;">Agregar por escaneo</button>
+          <div class="form-col maxw-240 flex-end">
+            <button type="button" id="scannerAgregarBtn" class="btn w-full">Agregar por escaneo</button>
           </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
       </div>
 
-      <div id="stationCheckoutPanel" class="card empresa-section" style="display:none;margin-top:12px;">
+      <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
         <div class="empresa-section-header">
-          <h3 style="margin:0;">Cobro y estados del carrito</h3>
+          <h3 class="section-heading">Cobro y estados del carrito</h3>
         </div>
 
         <div id="stationDiscountSettings" class="form-row">
@@ -166,19 +166,19 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="applyTipCheckbox">Propina</label>
-            <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <label class="form-help inline-check">
               <input id="applyTipCheckbox" type="checkbox" checked> Aplicar propina configurada
             </label>
-            <div id="tipConfigHint" class="form-help" style="margin-top:6px;">Configuracion de propinas: cargando...</div>
+            <div id="tipConfigHint" class="form-help mt-6">Configuracion de propinas: cargando...</div>
           </div>
           <div class="form-col">
             <label class="form-label" for="commissionWorker">Lavador (comision)</label>
             <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com">
-            <div id="commissionConfigHint" class="form-help" style="margin-top:6px;">Configuracion de comisiones: cargando...</div>
+            <div id="commissionConfigHint" class="form-help mt-6">Configuracion de comisiones: cargando...</div>
           </div>
         </div>
 
-        <div id="mixedPaymentBlock" class="form-row" style="display:none;">
+        <div id="mixedPaymentBlock" class="form-row is-hidden">
           <div class="form-col">
             <label class="form-label" for="mixedMethod1">Pago mixto 1 - Método</label>
             <select id="mixedMethod1" class="form-input">
@@ -198,7 +198,7 @@
           </div>
         </div>
 
-        <div id="mixedPaymentBlock2" class="form-row" style="display:none;">
+        <div id="mixedPaymentBlock2" class="form-row is-hidden">
           <div class="form-col">
             <label class="form-label" for="mixedMethod2">Pago mixto 2 - Método</label>
             <select id="mixedMethod2" class="form-input">
@@ -218,7 +218,7 @@
           </div>
         </div>
 
-        <div id="mixedPaymentBlock3" class="form-row" style="display:none;">
+        <div id="mixedPaymentBlock3" class="form-row is-hidden">
           <div class="form-col">
             <label class="form-label" for="mixedMethod3">Pago mixto 3 - Método</label>
             <select id="mixedMethod3" class="form-input">
@@ -238,19 +238,19 @@
           </div>
         </div>
 
-        <div id="mixedPaymentHint" class="form-help" style="display:none;">En pago mixto debes registrar mínimo 2 métodos y la suma exacta del total a pagar.</div>
+        <div id="mixedPaymentHint" class="form-help is-hidden">En pago mixto debes registrar mínimo 2 métodos y la suma exacta del total a pagar.</div>
 
-        <div id="stationPaymentBreakdown" class="form-help" style="margin-top:8px;"></div>
+        <div id="stationPaymentBreakdown" class="form-help mt-8"></div>
 
-        <div class="form-actions" style="margin-top:10px;">
+        <div class="form-actions mt-10">
           <button type="button" id="btnRecalcularCobro" class="btn secondary">Recalcular</button>
-          <button type="button" id="btnActivarSesionCarrito" class="btn secondary" style="display:none;">Activar carrito</button>
+          <button type="button" id="btnActivarSesionCarrito" class="btn secondary is-hidden">Activar carrito</button>
           <button type="button" id="btnPagarCarrito" class="btn">Pagar y cerrar carrito</button>
         </div>
         <div id="stationPaymentMsg" class="form-help"></div>
       </div>
 
-      <form id="itemForm" style="margin-top:12px;">
+      <form id="itemForm" class="mt-12">
         <input type="hidden" id="itemId">
 
         <div id="itemCatalogSearchRow" class="form-row">
@@ -259,8 +259,8 @@
             <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
             <div id="itemBusquedaHint" class="form-help">Selecciona tipo de item (producto/servicio/combo) y escribe al menos 2 caracteres.</div>
           </div>
-          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
-            <button id="buscarCatalogoBtn" type="button" class="btn secondary" style="width:100%;">Buscar catálogo</button>
+          <div class="form-col maxw-220 flex-end">
+            <button id="buscarCatalogoBtn" type="button" class="btn secondary w-full">Buscar catálogo</button>
           </div>
         </div>
 
@@ -269,7 +269,7 @@
             <label class="form-label">Resultados</label>
             <select id="itemBusquedaResultados" class="form-input" size="5" disabled></select>
           </div>
-          <div class="form-col" style="max-width:220px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">
+          <div class="form-col maxw-220 flex-col-end inline-actions-gap-sm">
             <button id="aplicarCatalogoBtn" type="button" class="btn">Aplicar selección</button>
             <button id="limpiarCatalogoBtn" type="button" class="btn secondary">Quitar referencia</button>
           </div>
@@ -346,11 +346,11 @@
       </form>
       <div id="itemMsg" class="form-help"></div>
 
-      <div id="itemsList" style="margin-top:14px;">Selecciona un carrito para gestionar sus items.</div>
+      <div id="itemsList" class="mt-14">Selecciona un carrito para gestionar sus items.</div>
 
-      <div id="productsSummaryCard" class="card empresa-section" style="margin-top:12px;">
+      <div id="productsSummaryCard" class="card empresa-section mt-12">
         <div class="empresa-section-header">
-          <h3 style="margin:0;">Tabla de productos y combos del carrito</h3>
+          <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
         </div>
         <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
       </div>
@@ -422,7 +422,10 @@
     function setMessage(id, text, isError) {
       const el = document.getElementById(id);
       el.textContent = text || '';
-      el.style.color = isError ? '#ef5350' : '';
+      el.classList.remove('value-negative');
+      if (isError) {
+        el.classList.add('value-negative');
+      }
     }
 
     function toNumber(val, fallback) {
@@ -571,16 +574,16 @@
       const normalized = normalizeInitialLoadErrorMessage(err && err.message);
       const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estación ' + state.stationID) : '');
       const stationContext = state.stationMode && stationLabel
-        ? '<div class="form-help" style="margin-top:6px;">Contexto: ' + escapeHtml(stationLabel) + '</div>'
+        ? '<div class="form-help mt-6">Contexto: ' + escapeHtml(stationLabel) + '</div>'
         : '';
 
       setInitialLoadContentVisible(false);
-      box.innerHTML = '' +
-        '<div class="card empresa-section" style="margin-top:0; border:1px solid rgba(239,83,80,.35);">' +
-          '<div class="empresa-section-header"><h3 style="margin:0; color:#ef9a9a;">' + escapeHtml(normalized.title) + '</h3></div>' +
-          '<p style="margin:0 0 10px 0;">' + escapeHtml(normalized.message) + '</p>' +
+        box.innerHTML = '' +
+        '<div class="card empresa-section alert error panel-zero-top">' +
+          '<div class="empresa-section-header"><h3 class="value-negative section-heading">' + escapeHtml(normalized.title) + '</h3></div>' +
+          '<p class="body-copy-spaced">' + escapeHtml(normalized.message) + '</p>' +
           stationContext +
-          '<div class="form-actions" style="margin-top:14px;">' +
+          '<div class="form-actions mt-14">' +
             '<button type="button" id="retryInitialLoadBtn" class="btn">Reintentar carga</button>' +
             (state.stationMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Volver a estaciones</button>' : '') +
           '</div>' +

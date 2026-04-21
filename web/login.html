@@ -29,7 +29,7 @@
           <span>Iniciar sesión con Google</span>
         </a>
         <form class="form email-login" id="emailLoginForm" autocomplete="on" novalidate>
-          <h3 style="text-align:center; text-transform:lowercase;">o continúa con tu correo</h3>
+          <h3 class="text-center-lowercase">o continúa con tu correo</h3>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="adminEmail">Correo</label>
@@ -39,7 +39,14 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="adminPassword">Contraseña</label>
-              <input id="adminPassword" class="form-input" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+              <div class="password-visibility-field">
+                <input id="adminPassword" class="form-input password-visibility-input" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+                <button class="password-visibility-toggle" type="button" data-target="adminPassword" aria-label="Mostrar contrasena" aria-pressed="false" title="Mostrar contrasena">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 5C6.5 5 2.1 8.4.5 12c1.6 3.6 6 7 11.5 7s9.9-3.4 11.5-7C21.9 8.4 17.5 5 12 5Zm0 11.2A4.2 4.2 0 1 1 12 7.8a4.2 4.2 0 0 1 0 8.4Zm0-6.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" fill="currentColor"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
           <div class="remember-row">
@@ -55,9 +62,9 @@
             <a href="/registrar_nuevo_usuario_administrador.html" id="registerLink">Registrarse</a>
             <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
           </div>
-          <div id="emailLoginMessage" class="form-help auth-message" style="display:none"></div>
+          <div id="emailLoginMessage" class="form-help auth-message is-hidden"></div>
         </form>
-        <form class="form auth-alt-form" id="forgotPasswordForm" autocomplete="on" novalidate style="display:none">
+        <form class="form auth-alt-form is-hidden" id="forgotPasswordForm" autocomplete="on" novalidate>
           <h3>Recuperar contraseña</h3>
           <p class="form-help">Ingresa tu correo y te enviaremos instrucciones para restablecer el acceso.</p>
           <div class="form-row">
@@ -70,21 +77,15 @@
             <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperación</button>
             <button id="backToLoginLink" class="btn secondary" type="button">Volver al login</button>
           </div>
-          <div id="forgotPasswordMessage" class="form-help auth-message" style="display:none"></div>
+          <div id="forgotPasswordMessage" class="form-help auth-message is-hidden"></div>
         </form>
-        <form class="form auth-alt-form" id="resetPasswordForm" autocomplete="on" novalidate style="display:none">
+        <form class="form auth-alt-form is-hidden" id="resetPasswordForm" autocomplete="on" novalidate>
           <h3>Restablecer contraseña</h3>
-          <p class="form-help">Usa el token recibido por correo para definir una nueva contraseña segura.</p>
+          <p class="form-help">Abre el enlace recibido por correo y define una nueva contraseña segura.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="resetEmail">Correo</label>
               <input id="resetEmail" class="form-input" type="email" autocomplete="email" readonly>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <label class="form-label" for="resetToken">Token de recuperación</label>
-              <input id="resetToken" class="form-input" type="text" autocomplete="one-time-code" placeholder="Token enviado a tu correo" required>
             </div>
           </div>
           <div class="form-row">
@@ -103,7 +104,7 @@
             <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseña</button>
             <button id="backFromResetLink" class="btn secondary" type="button">Volver al login</button>
           </div>
-          <div id="resetPasswordMessage" class="form-help auth-message" style="display:none"></div>
+          <div id="resetPasswordMessage" class="form-help auth-message is-hidden"></div>
         </form>
         <p class="footer login-card-note">Si tienes problemas con el acceso, revisa la ayuda o contacta al soporte.</p>
       </div>

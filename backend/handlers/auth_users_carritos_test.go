@@ -77,8 +77,7 @@ func ensureEmpresaUsersSchema(t *testing.T, dbEmp *sql.DB) {
 
 func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
 	t.Helper()
-
-	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS administradores (
+	stmtAdmins := `CREATE TABLE IF NOT EXISTS administradores (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE,
 		name TEXT,
@@ -101,12 +100,39 @@ func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
 		password_set INTEGER DEFAULT 0,
 		password_reset_token TEXT,
 		password_reset_expira TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		stmtAdmins = `CREATE TABLE IF NOT EXISTS administradores (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT UNIQUE,
+			name TEXT,
+			role TEXT,
+			photo TEXT,
+			usuario_creador TEXT,
+			fecha_creacion TEXT,
+			fecha_actualizacion TEXT,
+			estado TEXT DEFAULT 'activo',
+			acepta_contrato INTEGER DEFAULT 0,
+			telefono TEXT,
+			pais TEXT,
+			ciudad TEXT,
+			email_confirmado INTEGER DEFAULT 0,
+			email_confirm_token TEXT,
+			email_confirm_expira TEXT,
+			email_confirmado_en TEXT,
+			password_hash TEXT,
+			password_salt TEXT,
+			password_set INTEGER DEFAULT 0,
+			password_reset_token TEXT,
+			password_reset_expira TEXT
+		)`
+	}
+	_, err := dbSuper.Exec(stmtAdmins)
 	if err != nil {
 		t.Fatalf("create administradores schema: %v", err)
 	}
 
-	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS sesiones (
+	stmtSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		admin_email TEXT,
 		token TEXT,
@@ -116,7 +142,21 @@ func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
 		fecha_fin TEXT,
 		fecha_creacion TEXT,
 		activo INTEGER DEFAULT 1
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		stmtSesiones = `CREATE TABLE IF NOT EXISTS sesiones (
+			id BIGSERIAL PRIMARY KEY,
+			admin_email TEXT,
+			token TEXT,
+			ip TEXT,
+			user_agent TEXT,
+			fecha_inicio TEXT,
+			fecha_fin TEXT,
+			fecha_creacion TEXT,
+			activo INTEGER DEFAULT 1
+		)`
+	}
+	_, err = dbSuper.Exec(stmtSesiones)
 	if err != nil {
 		t.Fatalf("create sesiones schema: %v", err)
 	}
@@ -2250,10 +2290,7 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 	mux.HandleFunc("/registrar_nuevo_usuario_administrador.html", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	mux.HandleFunc("/Juegos/menu_juegos.html", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	mux.HandleFunc("/Juegos/n64/index.html", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/js/login.js", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("/js/login.js", func(w http.ResponseWriter, r *http.Request) {
@@ -2271,7 +2308,7 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 
 	h := utils.AuthMiddleware(dbSuper, mux)
 
-	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/soporte_remoto_acceso.html", "/registrar_nuevo_usuario_administrador.html", "/auth/confirmar_admin", "/Juegos/menu_juegos.html", "/Juegos/n64/index.html", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
+	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/soporte_remoto_acceso.html", "/registrar_nuevo_usuario_administrador.html", "/auth/confirmar_admin", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rr := httptest.NewRecorder()
 		h.ServeHTTP(rr, req)

@@ -37,12 +37,12 @@
   var emailLoginForm = document.getElementById('emailLoginForm');
   var forgotPasswordForm = document.getElementById('forgotPasswordForm');
   var resetPasswordForm = document.getElementById('resetPasswordForm');
+  var resetLinkToken = '';
   var emailInput = document.getElementById('adminEmail');
   var passInput = document.getElementById('adminPassword');
   var rememberAdminEmailCheckbox = document.getElementById('rememberAdminEmailCheckbox');
   var forgotEmailInput = document.getElementById('forgotEmail');
   var resetEmailInput = document.getElementById('resetEmail');
-  var resetTokenInput = document.getElementById('resetToken');
   var resetPasswordInput = document.getElementById('resetPassword');
   var resetPasswordConfirmInput = document.getElementById('resetPasswordConfirm');
   var loginBtn = document.getElementById('emailLoginBtn');
@@ -54,6 +54,33 @@
   var loginMessageDiv = document.getElementById('emailLoginMessage');
   var forgotMessageDiv = document.getElementById('forgotPasswordMessage');
   var resetMessageDiv = document.getElementById('resetPasswordMessage');
+
+  function setPasswordVisibility(toggleBtn, input, isVisible) {
+    if (!toggleBtn || !input) {
+      return;
+    }
+    input.type = isVisible ? 'text' : 'password';
+    toggleBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    toggleBtn.setAttribute('title', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    toggleBtn.classList.toggle('is-visible', !!isVisible);
+  }
+
+  function initPasswordVisibilityToggles() {
+    var toggles = document.querySelectorAll('.password-visibility-toggle[data-target]');
+    Array.prototype.forEach.call(toggles, function (toggleBtn) {
+      var targetId = toggleBtn.getAttribute('data-target');
+      var input = targetId ? document.getElementById(targetId) : null;
+      setPasswordVisibility(toggleBtn, input, false);
+      toggleBtn.addEventListener('click', function () {
+        if (!input) {
+          return;
+        }
+        setPasswordVisibility(toggleBtn, input, input.type === 'password');
+        input.focus();
+      });
+    });
+  }
 
   function showMsg(target, text, isError) {
     if (!target) {
@@ -274,9 +301,7 @@
   if (backFromResetBtn) {
     backFromResetBtn.addEventListener('click', function () {
       clearRecoveryQueryState();
-      if (resetTokenInput) {
-        resetTokenInput.value = '';
-      }
+      resetLinkToken = '';
       if (resetPasswordInput) {
         resetPasswordInput.value = '';
       }
@@ -317,11 +342,15 @@
     resetPasswordForm.addEventListener('submit', async function (event) {
       event.preventDefault();
       var email = normalizeEmail(resetEmailInput && resetEmailInput.value);
-      var token = normalizeEmail(resetTokenInput && resetTokenInput.value).replace(/\s+/g, '');
+      var token = normalizeEmail(resetLinkToken).replace(/\s+/g, '');
       var password = resetPasswordInput && resetPasswordInput.value ? resetPasswordInput.value : '';
       var passwordConfirm = resetPasswordConfirmInput && resetPasswordConfirmInput.value ? resetPasswordConfirmInput.value : '';
-      if (!email || !token || !password || !passwordConfirm) {
-        showMsg(resetMessageDiv, 'Debes completar correo, token y las dos contraseñas.', true);
+      if (!email || !password || !passwordConfirm) {
+        showMsg(resetMessageDiv, 'Debes completar el correo y las dos contraseñas.', true);
+        return;
+      }
+      if (!token) {
+        showMsg(resetMessageDiv, 'El enlace de recuperación no es válido o ya no contiene el código de seguridad.', true);
         return;
       }
       if (password.length < 8) {
@@ -354,6 +383,8 @@
     });
   }
 
+  initPasswordVisibilityToggles();
+
   (function handleRecoveryFromQuery() {
     try {
       hydrateRememberedEmail();
@@ -365,9 +396,7 @@
       if (queryEmail) {
         prefillEmailFields(queryEmail);
       }
-      if (token && resetTokenInput) {
-        resetTokenInput.value = token;
-      }
+      resetLinkToken = token;
 
       if (queryEmail && token) {
         showAuthView('reset');
@@ -376,6 +405,7 @@
       }
       if (view === 'reset') {
         showAuthView('reset');
+        showMsg(resetMessageDiv, 'Abre el enlace de recuperación enviado al correo para poder definir una nueva contraseña.', true);
         return;
       }
       if (view === 'forgot' || view === 'recuperacion') {

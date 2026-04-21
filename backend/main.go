@@ -551,6 +551,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		// Registrar la conexión principal de empresas en el paquete db para wrappers
+		dbpkg.SetDefaultDB(dbEmpresas)
 		dbSuper, err = openAndPingRuntimeDB(postgresDriverName, dbSuperDSN, "superadministrador")
 		if err != nil {
 			log.Fatal(err)
@@ -1579,10 +1581,11 @@ func main() {
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler())
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler())
+	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler())
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
-	// Endpoint CRUD para empresas (guardadas en empresas.db)
+	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
 	// Endpoints para gestiÃ³n de vendedores (vendedor_de_licencia) y sus planes
 	http.HandleFunc("/super/api/asesores", handlers.AsesoresHandler(dbSuper))
@@ -1591,7 +1594,7 @@ func main() {
 	http.HandleFunc("/super/api/vendedor_de_licencia", handlers.AsesorComercialHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedor_config", handlers.VendedorConfigHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
-	// MÃ³dulo de productos por empresa (empresas.db)
+	// MÃ³dulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductosHandler(dbEmpresas)))
@@ -1616,6 +1619,7 @@ func main() {
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/emitir_orden", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/actualizar_estado", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/compras/documentos/comprobante", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentoComprobanteUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
@@ -1663,6 +1667,7 @@ func main() {
 	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/movimientos/comprobante", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))

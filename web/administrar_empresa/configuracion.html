@@ -1,23 +1,23 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración de empresa</title>
+  <title>ConfiguraciÃ³n de empresa</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Configuración</h1>
+      <h1>ConfiguraciÃ³n</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Configura reglas de productos/pedidos y administra respaldos de esta configuración.</p>
+      <p class="form-help">Configura reglas de productos/pedidos y administra respaldos de esta configuraciÃ³n.</p>
     </section>
 
     <section id="configuracionFormatoNumerico" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Productos y pedidos</h2>
-        <button id="btnGuardarConfig" type="button" class="btn">Guardar configuración</button>
+        <button id="btnGuardarConfig" type="button" class="btn">Guardar configuraciÃ³n</button>
       </div>
 
       <div class="empresa-config-grid">
@@ -26,15 +26,15 @@
             <input id="imprimirOrdenServicio" type="checkbox">
             <span>Imprimir orden de servicio al agregar un producto o pedido al carrito</span>
           </label>
-          <p class="form-help">Esta orden está pensada para el personal operativo: toma el papel, lee el detalle y lleva el pedido al destino indicado.</p>
+          <p class="form-help">Esta orden estÃ¡ pensada para el personal operativo: toma el papel, lee el detalle y lleva el pedido al destino indicado.</p>
 
-          <label class="empresa-config-check" for="habilitarDescuentos" style="margin-top:12px;">
+          <label class="empresa-config-check" for="habilitarDescuentos" >
             <input id="habilitarDescuentos" type="checkbox">
             <span>Habilitar descuentos en carrito para estaciones</span>
           </label>
-          <p class="form-help">Si está activo, permite descuentos por porcentaje, código promocional o valor fijo antes del pago.</p>
+          <p class="form-help">Si estÃ¡ activo, permite descuentos por porcentaje, cÃ³digo promocional o valor fijo antes del pago.</p>
 
-          <div class="form-row" style="margin-top:8px;">
+          <div class="form-row" >
             <div class="form-col">
               <label class="empresa-config-check" for="permitirDescuentoPorcentaje">
                 <input id="permitirDescuentoPorcentaje" type="checkbox">
@@ -44,7 +44,7 @@
             <div class="form-col">
               <label class="empresa-config-check" for="permitirDescuentoCodigo">
                 <input id="permitirDescuentoCodigo" type="checkbox">
-                <span>Permitir descuento por código</span>
+                <span>Permitir descuento por cÃ³digo</span>
               </label>
             </div>
             <div class="form-col">
@@ -55,15 +55,15 @@
             </div>
           </div>
 
-          <label class="empresa-config-check" for="habilitarLectorCodigoBarras" style="margin-top:12px;">
+          <label class="empresa-config-check" for="habilitarLectorCodigoBarras" >
             <input id="habilitarLectorCodigoBarras" type="checkbox">
-            <span>Habilitar lector de código de barras en carrito (modo supermercado)</span>
+            <span>Habilitar lector de cÃ³digo de barras en carrito (modo supermercado)</span>
           </label>
-          <label class="empresa-config-check" for="autofocoLectorCodigoBarras" style="margin-top:8px;">
+          <label class="empresa-config-check" for="autofocoLectorCodigoBarras" >
             <input id="autofocoLectorCodigoBarras" type="checkbox">
             <span>Autofoco del campo de escaneo para lectura continua</span>
           </label>
-          <label class="empresa-config-check" for="acumularLectorCodigoBarras" style="margin-top:8px;">
+          <label class="empresa-config-check" for="acumularLectorCodigoBarras" >
             <input id="acumularLectorCodigoBarras" type="checkbox">
             <span>Acumular cantidad si el producto ya existe en el carrito</span>
           </label>
@@ -72,8 +72,8 @@
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="areaDespacho">Destino o área por defecto</label>
-              <input id="areaDespacho" class="form-input" placeholder="Ej: Cocina, Barra, Habitación">
+              <label class="form-label" for="areaDespacho">Destino o Ã¡rea por defecto</label>
+              <input id="areaDespacho" class="form-input" placeholder="Ej: Cocina, Barra, HabitaciÃ³n">
             </div>
             <div class="form-col">
               <label class="form-label" for="copiasOrden">Copias de orden de servicio</label>
@@ -82,14 +82,14 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="notaOrden">Instrucción para el personal</label>
-              <textarea id="notaOrden" class="form-textarea" placeholder="Ej: Entregar en recepción y confirmar con el número de habitación."></textarea>
+              <label class="form-label" for="notaOrden">InstrucciÃ³n para el personal</label>
+              <textarea id="notaOrden" class="form-textarea" placeholder="Ej: Entregar en recepciÃ³n y confirmar con el nÃºmero de habitaciÃ³n."></textarea>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="codigosDescuento">Códigos de descuento (uno por línea)</label>
+              <label class="form-label" for="codigosDescuento">CÃ³digos de descuento (uno por lÃ­nea)</label>
               <textarea id="codigosDescuento" class="form-textarea" placeholder="Ejemplo:\nVIP10=10%\nFELIZ5000=5000"></textarea>
               <p class="form-help">Formato: CODIGO=10% para porcentaje o CODIGO=5000 para valor fijo en moneda local.</p>
             </div>
@@ -116,11 +116,11 @@
                 <input id="opMetodoEfectivo" type="checkbox" checked>
                 <span>Efectivo</span>
               </label>
-              <label class="empresa-config-check" for="opMetodoTarjetaCredito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opMetodoTarjetaCredito" >
                 <input id="opMetodoTarjetaCredito" type="checkbox" checked>
                 <span>Tarjeta credito</span>
               </label>
-              <label class="empresa-config-check" for="opMetodoTarjetaDebito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opMetodoTarjetaDebito" >
                 <input id="opMetodoTarjetaDebito" type="checkbox" checked>
                 <span>Tarjeta debito</span>
               </label>
@@ -130,11 +130,11 @@
                 <input id="opMetodoTransferencia" type="checkbox" checked>
                 <span>Transferencia bancaria</span>
               </label>
-              <label class="empresa-config-check" for="opMetodoMixto" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opMetodoMixto" >
                 <input id="opMetodoMixto" type="checkbox" checked>
                 <span>Pago mixto</span>
               </label>
-              <label class="empresa-config-check" for="opMetodoCodigoDescuento" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opMetodoCodigoDescuento" >
                 <input id="opMetodoCodigoDescuento" type="checkbox" checked>
                 <span>Codigo de descuento</span>
               </label>
@@ -144,7 +144,7 @@
                 <input id="opHabilitarPropinas" type="checkbox" checked>
                 <span>Permitir propinas</span>
               </label>
-              <label class="empresa-config-check" for="opHabilitarComisiones" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opHabilitarComisiones" >
                 <input id="opHabilitarComisiones" type="checkbox" checked>
                 <span>Permitir comisiones</span>
               </label>
@@ -167,7 +167,7 @@
                 <option value="contabilidad">contabilidad</option>
                 <option value="auditor">auditor</option>
               </select>
-              <label class="empresa-config-check" for="opRolActivo" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolActivo" >
                 <input id="opRolActivo" type="checkbox" checked>
                 <span>Regla de rol activa</span>
               </label>
@@ -180,11 +180,11 @@
                 <input id="opRolMetodoEfectivo" type="checkbox" checked>
                 <span>Efectivo</span>
               </label>
-              <label class="empresa-config-check" for="opRolMetodoTarjetaCredito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolMetodoTarjetaCredito" >
                 <input id="opRolMetodoTarjetaCredito" type="checkbox" checked>
                 <span>Tarjeta credito</span>
               </label>
-              <label class="empresa-config-check" for="opRolMetodoTarjetaDebito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolMetodoTarjetaDebito" >
                 <input id="opRolMetodoTarjetaDebito" type="checkbox" checked>
                 <span>Tarjeta debito</span>
               </label>
@@ -194,11 +194,11 @@
                 <input id="opRolMetodoTransferencia" type="checkbox" checked>
                 <span>Transferencia bancaria</span>
               </label>
-              <label class="empresa-config-check" for="opRolMetodoMixto" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolMetodoMixto" >
                 <input id="opRolMetodoMixto" type="checkbox" checked>
                 <span>Pago mixto</span>
               </label>
-              <label class="empresa-config-check" for="opRolMetodoCodigoDescuento" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolMetodoCodigoDescuento" >
                 <input id="opRolMetodoCodigoDescuento" type="checkbox" checked>
                 <span>Codigo de descuento</span>
               </label>
@@ -208,14 +208,14 @@
                 <input id="opRolHabilitarPropinas" type="checkbox" checked>
                 <span>Permitir propinas</span>
               </label>
-              <label class="empresa-config-check" for="opRolHabilitarComisiones" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opRolHabilitarComisiones" >
                 <input id="opRolHabilitarComisiones" type="checkbox" checked>
                 <span>Permitir comisiones</span>
               </label>
             </div>
           </div>
 
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnGuardarConfigOperativaRol" type="button" class="btn secondary">Guardar rol</button>
           </div>
           <div id="operativaRolMsg" class="form-help"></div>
@@ -259,15 +259,15 @@
                 <input id="opPoliticaActivo" type="checkbox" checked>
                 <span>Politica activa</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaMetodoEfectivo" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaMetodoEfectivo" >
                 <input id="opPoliticaMetodoEfectivo" type="checkbox" checked>
                 <span>Efectivo</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaCredito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaCredito" >
                 <input id="opPoliticaMetodoTarjetaCredito" type="checkbox" checked>
                 <span>Tarjeta credito</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaDebito" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaDebito" >
                 <input id="opPoliticaMetodoTarjetaDebito" type="checkbox" checked>
                 <span>Tarjeta debito</span>
               </label>
@@ -277,11 +277,11 @@
                 <input id="opPoliticaMetodoTransferencia" type="checkbox" checked>
                 <span>Transferencia bancaria</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaMetodoMixto" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaMetodoMixto" >
                 <input id="opPoliticaMetodoMixto" type="checkbox" checked>
                 <span>Pago mixto</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaMetodoCodigoDescuento" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaMetodoCodigoDescuento" >
                 <input id="opPoliticaMetodoCodigoDescuento" type="checkbox" checked>
                 <span>Codigo de descuento</span>
               </label>
@@ -291,14 +291,14 @@
                 <input id="opPoliticaHabilitarPropinas" type="checkbox" checked>
                 <span>Permitir propinas</span>
               </label>
-              <label class="empresa-config-check" for="opPoliticaHabilitarComisiones" style="margin-top:8px;">
+              <label class="empresa-config-check" for="opPoliticaHabilitarComisiones" >
                 <input id="opPoliticaHabilitarComisiones" type="checkbox" checked>
                 <span>Permitir comisiones</span>
               </label>
             </div>
           </div>
 
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnGuardarConfigOperativaPolitica" type="button" class="btn secondary">Guardar politica</button>
           </div>
           <div id="operativaPoliticaMsg" class="form-help"></div>
@@ -338,7 +338,7 @@
               <input id="opSimObservaciones" class="form-input" placeholder="Descripcion opcional para el historial">
             </div>
           </div>
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnSimularConfigOperativa" type="button" class="btn secondary">Simular</button>
             <button id="btnSimularGuardarConfigOperativa" type="button" class="btn">Simular y guardar</button>
           </div>
@@ -393,16 +393,16 @@
               <p class="form-help">Si se selecciona factura electronica y falta configuracion legal, la venta se guarda y el documento queda pendiente de emision.</p>
             </div>
             <div class="form-col">
-              <label class="form-label" for="facturaFormatoImpresion">Tamaño de hoja</label>
+              <label class="form-label" for="facturaFormatoImpresion">TamaÃ±o de hoja</label>
               <select id="facturaFormatoImpresion" class="form-input">
                 <option value="carta">Grande / carta</option>
-                <option value="pos">Pequeña POS (tirilla)</option>
+                <option value="pos">PequeÃ±a POS (tirilla)</option>
               </select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="empresa-config-check" for="facturaImprimirCopia" style="margin-top:30px;display:block;">
+              <label class="empresa-config-check" for="facturaImprimirCopia" >
                 <input id="facturaImprimirCopia" type="checkbox">
                 <span>Requiere imprimir copia</span>
               </label>
@@ -414,8 +414,8 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="facturaLogoURL">Logo de la empresa</label>
-              <input id="facturaLogoURL" class="form-input" placeholder="/img/logo_empresa.png o URL pública">
-              <label class="empresa-config-check" for="facturaMostrarLogo" style="margin-top:8px;display:block;">
+              <input id="facturaLogoURL" class="form-input" placeholder="/img/logo_empresa.png o URL pÃºblica">
+              <label class="empresa-config-check" for="facturaMostrarLogo" >
                 <input id="facturaMostrarLogo" type="checkbox" checked>
                 <span>Mostrar logo en factura</span>
               </label>
@@ -455,7 +455,7 @@
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="empresa-config-check" for="formatoUsarDecimales" style="margin-top:30px;display:block;">
+              <label class="empresa-config-check" for="formatoUsarDecimales" >
                 <input id="formatoUsarDecimales" type="checkbox" checked>
                 <span>Usar decimales en montos</span>
               </label>
@@ -525,7 +525,7 @@
                 <input id="impresoraPredeterminada" type="checkbox">
                 <span>Marcar como predeterminada</span>
               </label>
-              <label class="empresa-config-check" for="impresoraActiva" style="margin-top:8px;">
+              <label class="empresa-config-check" for="impresoraActiva" >
                 <input id="impresoraActiva" type="checkbox" checked>
                 <span>Impresora activa</span>
               </label>
@@ -535,7 +535,7 @@
               <input id="impresoraObservaciones" class="form-input" maxlength="255" placeholder="Notas internas (opcional)">
             </div>
           </div>
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnGuardarImpresora" type="button" class="btn">Guardar impresora</button>
             <button id="btnLimpiarImpresora" type="button" class="btn secondary">Limpiar formulario</button>
           </div>
@@ -581,11 +581,11 @@
               <select id="printerFuncionalidadImpresora" class="form-input"></select>
             </div>
           </div>
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnGuardarImpresoraFuncionalidad" type="button" class="btn secondary">Guardar funcionalidad</button>
           </div>
 
-          <div class="table-wrap" style="margin-top:10px;">
+          <div class="table-wrap" >
             <table class="table">
               <thead>
                 <tr>
@@ -611,11 +611,11 @@
               <select id="printerProductoImpresora" class="form-input"></select>
             </div>
           </div>
-          <div class="form-actions" style="margin-top:8px;">
+          <div class="form-actions" >
             <button id="btnGuardarImpresoraProducto" type="button" class="btn secondary">Guardar producto</button>
           </div>
 
-          <div class="table-wrap" style="margin-top:10px;">
+          <div class="table-wrap" >
             <table class="table">
               <thead>
                 <tr>
@@ -637,7 +637,7 @@
       <div class="empresa-section-header">
         <h2>Backup</h2>
       </div>
-      <p class="form-help">Exporta o restaura un respaldo JSON de esta configuración para reutilizarla rápidamente.</p>
+      <p class="form-help">Exporta o restaura un respaldo JSON de esta configuraciÃ³n para reutilizarla rÃ¡pidamente.</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -651,7 +651,7 @@
           <input id="backupFile" type="file" accept="application/json,.json" class="form-input">
         </div>
         <div class="form-col">
-          <label class="form-label">Acción</label>
+          <label class="form-label">AcciÃ³n</label>
           <button id="btnRestaurarBackup" type="button" class="btn">Restaurar backup</button>
         </div>
       </div>
@@ -664,7 +664,7 @@
         <h2>Pasarelas de pago</h2>
         <button id="btnGuardarPasarelasPago" type="button" class="btn">Guardar pasarelas</button>
       </div>
-      <p class="form-help">Cada empresa puede activar Wompi y Epayco con sus propias credenciales para la venta pública. Esta sección reutiliza la misma configuración de la tienda pública para evitar inconsistencias.</p>
+      <p class="form-help">Cada empresa puede activar Wompi y Epayco con sus propias credenciales para la venta pÃºblica. Esta secciÃ³n reutiliza la misma configuraciÃ³n de la tienda pÃºblica para evitar inconsistencias.</p>
 
       <div class="empresa-config-grid">
         <div class="form">
@@ -736,13 +736,13 @@
         </div>
       </div>
 
-      <div class="form-actions" style="margin-top:8px;">
+      <div class="form-actions" >
         <button id="btnRefrescarPasarelasPago" type="button" class="btn secondary">Refrescar</button>
-        <button id="btnAbrirVentaPublicaConfig" type="button" class="btn secondary">Abrir módulo venta pública</button>
-        <button id="btnAbrirVentaPublicaPublica" type="button" class="btn secondary">Abrir tienda pública</button>
+        <button id="btnAbrirVentaPublicaConfig" type="button" class="btn secondary">Abrir mÃ³dulo venta pÃºblica</button>
+        <button id="btnAbrirVentaPublicaPublica" type="button" class="btn secondary">Abrir tienda pÃºblica</button>
       </div>
       <div id="pasarelasPagoMsg" class="form-help"></div>
-      <div id="pasarelasPagoLinks" class="form-help">URL pública: pendiente de cargar.</div>
+      <div id="pasarelasPagoLinks" class="form-help">URL pÃºblica: pendiente de cargar.</div>
     </section>
   </div>
 
@@ -836,7 +836,7 @@
         credentials: 'same-origin'
       });
       if (!res.ok) {
-        throw new Error(await res.text() || 'No se pudo cargar la configuración general');
+        throw new Error(await res.text() || 'No se pudo cargar la configuraciÃ³n general');
       }
       const data = await res.json();
       return normalizeConfig(data.configuracion || data || {});
@@ -853,7 +853,7 @@
         body: JSON.stringify(payload)
       });
       if (!res.ok) {
-        throw new Error(await res.text() || 'No se pudo guardar la configuración general');
+        throw new Error(await res.text() || 'No se pudo guardar la configuraciÃ³n general');
       }
       const data = await res.json();
       return normalizeConfig((data && data.configuracion) || payload);
@@ -917,11 +917,11 @@
       const box = document.getElementById('pasarelasPagoLinks');
       const slug = String(cfg && cfg.empresa_slug || '').trim();
       if (!slug) {
-        box.textContent = 'URL pública: pendiente de cargar.';
+        box.textContent = 'URL pÃºblica: pendiente de cargar.';
         return;
       }
       box.innerHTML = 'URL local: <a href="/venta_publica.html?empresa_slug=' + encodeURIComponent(slug) + '" target="_top">/venta_publica.html?empresa_slug=' + slug + '</a><br>' +
-        'URL patrón: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
+        'URL patrÃ³n: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
     }
 
     function fillPasarelasForm(cfg) {
@@ -1021,7 +1021,7 @@
     function openVentaPublicaPublica() {
       const slug = String(ventaPublicaConfigCache && ventaPublicaConfigCache.empresa_slug || '').trim();
       if (!slug) {
-        setPasarelasMessage('Guarda o carga primero la configuración de venta pública para obtener el slug.', 'error');
+        setPasarelasMessage('Guarda o carga primero la configuraciÃ³n de venta pÃºblica para obtener el slug.', 'error');
         return;
       }
       window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
@@ -1203,7 +1203,7 @@
       const roleCfg = findOperativaRoleConfig(operativaConfigCache, role);
       setOperativaRoleFormData(roleCfg);
       if (roleCfg) {
-        setOperativaRoleMessage('Se cargó la configuración del rol ' + role + '.', '');
+        setOperativaRoleMessage('Se cargÃ³ la configuraciÃ³n del rol ' + role + '.', '');
       } else {
         setOperativaRoleMessage('Sin override para ' + role + '. Se usa la regla base de empresa.', '');
       }
@@ -1289,9 +1289,9 @@
       const policyCfg = findOperativaPoliticaConfig(operativaConfigCache, ctx.canal_venta, ctx.sucursal_id, ctx.turno);
       setOperativaPoliticaFormData(policyCfg);
       if (policyCfg) {
-        setOperativaPoliticaMessage('Se cargó la política contextual existente.', '');
+        setOperativaPoliticaMessage('Se cargÃ³ la polÃ­tica contextual existente.', '');
       } else {
-        setOperativaPoliticaMessage('Sin política exacta para el contexto. Se usa herencia de regla base/rol.', '');
+        setOperativaPoliticaMessage('Sin polÃ­tica exacta para el contexto. Se usa herencia de regla base/rol.', '');
       }
     }
 
@@ -1385,8 +1385,8 @@
         syncOperativaRoleFormFromCache();
         syncOperativaPoliticaFormFromCache();
         renderOperativaHistorial([]);
-        setOperativaSimOutput({ ok: false, mensaje: 'Sin simulación ejecutada.' });
-        setOperativaMessage('No se pudo cargar configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+        setOperativaSimOutput({ ok: false, mensaje: 'Sin simulaciÃ³n ejecutada.' });
+        setOperativaMessage('No se pudo cargar configuraciÃ³n operativa: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1410,9 +1410,9 @@
         syncOperativaRoleFormFromCache();
         syncOperativaPoliticaFormFromCache();
         await cargarOperativaHistorial();
-        setOperativaMessage('Configuración operativa de empresa guardada correctamente.', 'success');
+        setOperativaMessage('ConfiguraciÃ³n operativa de empresa guardada correctamente.', 'success');
       } catch (err) {
-        setOperativaMessage('No se pudo guardar la configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+        setOperativaMessage('No se pudo guardar la configuraciÃ³n operativa: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1423,7 +1423,7 @@
       }
       const role = selectedOperativaRole();
       if (!role) {
-        setOperativaRoleMessage('Selecciona un rol válido.', 'error');
+        setOperativaRoleMessage('Selecciona un rol vÃ¡lido.', 'error');
         return;
       }
 
@@ -1442,9 +1442,9 @@
         syncOperativaRoleFormFromCache();
         syncOperativaPoliticaFormFromCache();
         await cargarOperativaHistorial();
-        setOperativaRoleMessage('Configuración del rol ' + role + ' guardada correctamente.', 'success');
+        setOperativaRoleMessage('ConfiguraciÃ³n del rol ' + role + ' guardada correctamente.', 'success');
       } catch (err) {
-        setOperativaRoleMessage('No se pudo guardar la configuración del rol: ' + (err && err.message ? err.message : err), 'error');
+        setOperativaRoleMessage('No se pudo guardar la configuraciÃ³n del rol: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1468,9 +1468,9 @@
         syncOperativaRoleFormFromCache();
         syncOperativaPoliticaFormFromCache();
         await cargarOperativaHistorial();
-        setOperativaPoliticaMessage('Política contextual guardada correctamente.', 'success');
+        setOperativaPoliticaMessage('PolÃ­tica contextual guardada correctamente.', 'success');
       } catch (err) {
-        setOperativaPoliticaMessage('No se pudo guardar la política contextual: ' + (err && err.message ? err.message : err), 'error');
+        setOperativaPoliticaMessage('No se pudo guardar la polÃ­tica contextual: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1481,7 +1481,7 @@
       }
       const contexto = getOperativaSimContext();
       if (!contexto.rol) {
-        setOperativaHistorialMessage('Selecciona un rol válido para simular.', 'error');
+        setOperativaHistorialMessage('Selecciona un rol vÃ¡lido para simular.', 'error');
         return;
       }
 
@@ -1504,13 +1504,13 @@
         setOperativaSimOutput(out);
         if (guardar) {
           await cargarOperativaHistorial();
-          setOperativaHistorialMessage('Simulación guardada en historial correctamente.', 'success');
+          setOperativaHistorialMessage('SimulaciÃ³n guardada en historial correctamente.', 'success');
         } else {
-          setOperativaHistorialMessage('Simulación calculada correctamente.', 'success');
+          setOperativaHistorialMessage('SimulaciÃ³n calculada correctamente.', 'success');
         }
       } catch (err) {
         setOperativaSimOutput({ ok: false, error: err && err.message ? err.message : String(err) });
-        setOperativaHistorialMessage('No se pudo simular configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+        setOperativaHistorialMessage('No se pudo simular configuraciÃ³n operativa: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1540,13 +1540,13 @@
       }
       const historialID = parsePositiveInt(document.getElementById('opRollbackHistorialId').value, 0);
       if (!historialID) {
-        setOperativaHistorialMessage('Ingresa un historial_id válido para rollback.', 'error');
+        setOperativaHistorialMessage('Ingresa un historial_id vÃ¡lido para rollback.', 'error');
         return;
       }
       const payload = {
         empresa_id: Number(empresaId),
         historial_id: historialID,
-        observaciones: 'Rollback desde panel de configuración operativa'
+        observaciones: 'Rollback desde panel de configuraciÃ³n operativa'
       };
       try {
         const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=rollback', {
@@ -1870,7 +1870,7 @@
           setImpresorasMessage('Configuracion de impresoras actualizada.', 'success');
         }
       } catch (err) {
-        setImpresorasMessage('No se pudo cargar configuración de impresoras: ' + (err && err.message ? err.message : err), 'error');
+        setImpresorasMessage('No se pudo cargar configuraciÃ³n de impresoras: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1931,7 +1931,7 @@
         await loadImpresorasConfig(false);
         setImpresorasMessage('Asignacion por funcionalidad guardada.', 'success');
       } catch (err) {
-        setImpresorasMessage('No se pudo guardar la asignación por funcionalidad: ' + (err && err.message ? err.message : err), 'error');
+        setImpresorasMessage('No se pudo guardar la asignaciÃ³n por funcionalidad: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1962,7 +1962,7 @@
         await loadImpresorasConfig(false);
         setImpresorasMessage('Asignacion por producto guardada.', 'success');
       } catch (err) {
-        setImpresorasMessage('No se pudo guardar la asignación por producto: ' + (err && err.message ? err.message : err), 'error');
+        setImpresorasMessage('No se pudo guardar la asignaciÃ³n por producto: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2003,9 +2003,9 @@
         });
         if (!res.ok) throw new Error(await res.text());
         await loadImpresorasConfig(false);
-        setImpresorasMessage('Asignación por funcionalidad eliminada.', 'success');
+        setImpresorasMessage('AsignaciÃ³n por funcionalidad eliminada.', 'success');
       } catch (err) {
-        setImpresorasMessage('No se pudo eliminar la asignación de funcionalidad: ' + (err && err.message ? err.message : err), 'error');
+        setImpresorasMessage('No se pudo eliminar la asignaciÃ³n de funcionalidad: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2017,9 +2017,9 @@
         });
         if (!res.ok) throw new Error(await res.text());
         await loadImpresorasConfig(false);
-        setImpresorasMessage('Asignación por producto eliminada.', 'success');
+        setImpresorasMessage('AsignaciÃ³n por producto eliminada.', 'success');
       } catch (err) {
-        setImpresorasMessage('No se pudo eliminar la asignación de producto: ' + (err && err.message ? err.message : err), 'error');
+        setImpresorasMessage('No se pudo eliminar la asignaciÃ³n de producto: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2150,8 +2150,8 @@
         setFacturaFormData(cfg || {});
         setFormatoNumericoFormData(cfg || {});
       } catch (err) {
-        setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
-        setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
+        setFacturaMessage('No se pudo cargar configuraciÃ³n de facturas: ' + (err && err.message ? err.message : err), 'error');
+        setFormatoNumericoMessage('No se pudo cargar configuraciÃ³n monetaria: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2164,9 +2164,9 @@
         const payload = getFacturaFormData();
         const cfg = await upsertEmpresaConfigAvanzada(payload);
         setFacturaFormData(cfg || {});
-        setFacturaMessage('Configuración de documento de venta guardada correctamente.', 'success');
+        setFacturaMessage('ConfiguraciÃ³n de documento de venta guardada correctamente.', 'success');
       } catch (err) {
-        setFacturaMessage('No se pudo guardar configuración de documento de venta: ' + (err && err.message ? err.message : err), 'error');
+        setFacturaMessage('No se pudo guardar configuraciÃ³n de documento de venta: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2247,13 +2247,13 @@
         setConfigMessage('No se puede guardar sin empresa seleccionada.', 'error');
         return;
       }
-      setConfigMessage('Guardando configuración...', '');
+      setConfigMessage('Guardando configuraciÃ³n...', '');
       try {
         const cfg = await saveGeneralConfig(getFormData());
         setFormData(cfg);
-        setConfigMessage('Configuración guardada correctamente.', 'success');
+        setConfigMessage('ConfiguraciÃ³n guardada correctamente.', 'success');
       } catch (err) {
-        setConfigMessage('No se pudo guardar la configuración: ' + (err && err.message ? err.message : err), 'error');
+        setConfigMessage('No se pudo guardar la configuraciÃ³n: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2302,12 +2302,12 @@
     async function bootstrap() {
       loadEmpresaInfo();
       try {
-        setConfigMessage('Cargando configuración general...', '');
+        setConfigMessage('Cargando configuraciÃ³n general...', '');
         setFormData(await loadGeneralConfig());
-        setConfigMessage('Configuración general cargada.', 'success');
+        setConfigMessage('ConfiguraciÃ³n general cargada.', 'success');
       } catch (err) {
         setFormData(normalizeConfig({}));
-        setConfigMessage('No se pudo cargar la configuración general: ' + (err && err.message ? err.message : err), 'error');
+        setConfigMessage('No se pudo cargar la configuraciÃ³n general: ' + (err && err.message ? err.message : err), 'error');
       }
       setOperativaSimOutput({ ok: true, mensaje: 'Listo para simular reglas por contexto.' });
       loadFacturaConfig();
@@ -2352,3 +2352,4 @@
   </script>
 </body>
 </html>
+

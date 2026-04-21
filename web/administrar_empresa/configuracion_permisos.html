@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración — Permisos</title>
+  <title>ConfiguraciÃ³n â€” Permisos</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
@@ -18,40 +18,40 @@
       <p id="permisosEmpresaInfo" class="form-help">Empresa: cargando...</p>
       <p id="permisosResumen" class="form-help">Consultando contexto real de permisos...</p>
 
-      <div class="table-wrap" style="margin-top:12px;">
+      <div class="table-wrap" >
         <table class="table" id="permisosContextTable">
           <thead>
             <tr><th>Campo</th><th>Valor</th></tr>
           </thead>
           <tbody id="permisosContextBody">
-            <tr><td colspan="2" style="text-align:center;color:#777;">Sin datos</td></tr>
+            <tr><td colspan="2" class="text-empty" style="text-align:center;">Sin datos</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="table-wrap" style="margin-top:16px;">
+      <div class="table-wrap" >
         <table class="table" id="permisosModulesTable">
           <thead>
-            <tr><th>Módulo</th><th>Leer</th><th>Crear</th><th>Actualizar</th><th>Eliminar</th><th>Aprobar</th></tr>
+            <tr><th>MÃ³dulo</th><th>Leer</th><th>Crear</th><th>Actualizar</th><th>Eliminar</th><th>Aprobar</th></tr>
           </thead>
           <tbody id="permisosModulesBody">
-            <tr><td colspan="6" style="text-align:center;color:#777;">Sin datos</td></tr>
+            <tr><td colspan="6" class="text-empty" style="text-align:center;">Sin datos</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="table-wrap" style="margin-top:16px;">
+      <div class="table-wrap" >
         <table class="table" id="rolesTable">
           <thead>
-            <tr><th>Rol</th><th>Módulos con lectura</th><th>Acciones habilitadas</th><th>Aprobación</th></tr>
+            <tr><th>Rol</th><th>MÃ³dulos con lectura</th><th>Acciones habilitadas</th><th>AprobaciÃ³n</th></tr>
           </thead>
           <tbody id="rolesTableBody">
-            <tr><td colspan="4" style="text-align:center;color:#777;">Sin datos</td></tr>
+            <tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div id="permisosMsg" class="form-help" style="margin-top:12px;"></div>
+      <div id="permisosMsg" class="form-help" ></div>
     </section>
   </div>
 
@@ -86,7 +86,7 @@
         box.textContent = text || '';
         box.className = isError ? 'error' : 'form-help';
       }
-      function boolChip(value){ return value ? 'Sí' : 'No'; }
+      function boolChip(value){ return value ? 'SÃ­' : 'No'; }
       function fillContext(data){
         var body = document.getElementById('permisosContextBody');
         var summary = data && data.resumen ? data.resumen : {};
@@ -95,13 +95,13 @@
           '<tr><td>Rol detectado</td><td>' + escapeHtml(data.rol || '-') + '</td></tr>',
           '<tr><td>Rol efectivo</td><td>' + escapeHtml(data.rol_efectivo || '-') + '</td></tr>',
           '<tr><td>Email admin</td><td>' + escapeHtml(data.admin_email || '-') + '</td></tr>',
-          '<tr><td>Módulos lectura</td><td>' + escapeHtml(String(summary.modulos_lectura || 0)) + '</td></tr>',
-          '<tr><td>Módulos aprobación</td><td>' + escapeHtml(String(summary.modulos_aprobacion || 0)) + '</td></tr>',
+          '<tr><td>MÃ³dulos lectura</td><td>' + escapeHtml(String(summary.modulos_lectura || 0)) + '</td></tr>',
+          '<tr><td>MÃ³dulos aprobaciÃ³n</td><td>' + escapeHtml(String(summary.modulos_aprobacion || 0)) + '</td></tr>',
           '<tr><td>Acciones habilitadas</td><td>' + escapeHtml(String(summary.acciones_habilitadas || 0)) + '</td></tr>'
         ].join('');
         var resumen = document.getElementById('permisosResumen');
         if (resumen) {
-          resumen.textContent = 'Contexto real de permisos cargado desde /api/empresa/permisos_contexto. Esta vista es informativa para empresa y no realiza edición directa de roles.';
+          resumen.textContent = 'Contexto real de permisos cargado desde /api/empresa/permisos_contexto. Esta vista es informativa para empresa y no realiza ediciÃ³n directa de roles.';
         }
       }
       function fillModules(data){
@@ -109,7 +109,7 @@
         var modules = Array.isArray(data && data.modulos) ? data.modulos : [];
         if (!body) return;
         if (!modules.length) {
-          body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#777;">Sin datos</td></tr>';
+          body.innerHTML = '<tr><td colspan="6" class="text-empty" style="text-align:center;">Sin datos</td></tr>';
           return;
         }
         body.innerHTML = modules.map(function(item){
@@ -128,7 +128,7 @@
         var roles = Array.isArray(data && data.matriz_roles) ? data.matriz_roles : [];
         if (!body) return;
         if (!roles.length) {
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#777;">Sin datos</td></tr>';
+          body.innerHTML = '<tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos</td></tr>';
           return;
         }
         body.innerHTML = roles.map(function(role){
@@ -177,3 +177,4 @@
   </script>
 </body>
 </html>
+

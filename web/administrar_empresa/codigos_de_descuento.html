@@ -1,21 +1,21 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Códigos de descuento</title>
+  <title>CÃ³digos de descuento</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1 id="pageTitle">Códigos de descuento</h1>
-      <button id="addCodigoBtn" class="btn add">Nuevo código</button>
+      <h1 id="pageTitle">CÃ³digos de descuento</h1>
+      <button id="addCodigoBtn" class="btn add">Nuevo cÃ³digo</button>
     </div>
 
     <p class="form-help" style="margin:0 0 12px 0;">
       Administra promociones por empresa con vigencia, tope de usos y valor fijo o porcentaje.
-      Si dejas vacío el campo código, el sistema genera uno automáticamente.
+      Si dejas vacÃ­o el campo cÃ³digo, el sistema genera uno automÃ¡ticamente.
     </p>
 
     <form id="codigoForm" class="form" style="display:none;">
@@ -24,12 +24,12 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="codigoTexto">Código</label>
+          <label class="form-label" for="codigoTexto">CÃ³digo</label>
           <input id="codigoTexto" class="form-input" placeholder="Ej: DSCT-AB12-CD34 (opcional)">
-          <div class="form-help">Formato moderno: PREFIJO-XXXX-XXXX. Si está vacío se genera automáticamente.</div>
+          <div class="form-help">Formato moderno: PREFIJO-XXXX-XXXX. Si estÃ¡ vacÃ­o se genera automÃ¡ticamente.</div>
         </div>
         <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
-          <button type="button" id="generarCodigoBtn" class="btn secondary" style="width:100%;">Generar automático</button>
+          <button type="button" id="generarCodigoBtn" class="btn secondary" style="width:100%;">Generar automÃ¡tico</button>
         </div>
       </div>
 
@@ -57,14 +57,14 @@
           </select>
         </div>
         <div class="form-col">
-          <label class="form-label" for="montoMinimo">Monto mínimo de compra</label>
+          <label class="form-label" for="montoMinimo">Monto mÃ­nimo de compra</label>
           <input id="montoMinimo" type="number" min="0" step="0.01" class="form-input" value="0">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="usosMaximos">Usos máximos</label>
+          <label class="form-label" for="usosMaximos">Usos mÃ¡ximos</label>
           <input id="usosMaximos" type="number" min="1" step="1" class="form-input" value="1">
         </div>
         <div class="form-col">
@@ -94,7 +94,7 @@
             <option value="web">Web</option>
             <option value="kiosko">Kiosko</option>
             <option value="domicilio">Domicilio</option>
-            <option value="telefono">Teléfono</option>
+            <option value="telefono">TelÃ©fono</option>
           </select>
         </div>
       </div>
@@ -112,17 +112,17 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="diasSemanaCodigo">Días de semana (ISO)</label>
+          <label class="form-label" for="diasSemanaCodigo">DÃ­as de semana (ISO)</label>
           <input id="diasSemanaCodigo" class="form-input" placeholder="1,2,3,4,5,6,7">
-          <div class="form-help">Usa 1=Lunes ... 7=Domingo. Déjalo vacío para todos.</div>
+          <div class="form-help">Usa 1=Lunes ... 7=Domingo. DÃ©jalo vacÃ­o para todos.</div>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="maxUsosPorCliente">Máx. usos por cliente (ventana)</label>
+          <label class="form-label" for="maxUsosPorCliente">MÃ¡x. usos por cliente (ventana)</label>
           <input id="maxUsosPorCliente" type="number" min="0" step="1" class="form-input" value="0">
-          <div class="form-help">0 = sin límite antifraude por cliente.</div>
+          <div class="form-help">0 = sin lÃ­mite antifraude por cliente.</div>
         </div>
         <div class="form-col">
           <label class="form-label" for="ventanaHorasFraude">Ventana antifraude (horas)</label>
@@ -138,17 +138,17 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveCodigoBtn" type="submit" class="btn">Guardar código</button>
+        <button id="saveCodigoBtn" type="submit" class="btn">Guardar cÃ³digo</button>
         <button id="cancelCodigoBtn" type="button" class="btn secondary">Cancelar</button>
       </div>
       <div id="codigoMsg" class="form-help"></div>
     </form>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label" for="buscarCodigo">Buscar</label>
-          <input id="buscarCodigo" class="form-input" placeholder="Buscar por código u observación">
+          <input id="buscarCodigo" class="form-input" placeholder="Buscar por cÃ³digo u observaciÃ³n">
         </div>
         <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;gap:8px;">
           <button id="buscarCodigoBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
@@ -156,7 +156,7 @@
       </div>
     </div>
 
-    <div id="codigosList" style="margin-top:14px;">Cargando códigos de descuento...</div>
+    <div id="codigosList" >Cargando cÃ³digos de descuento...</div>
   </div>
 
   <script>
@@ -260,7 +260,7 @@
         parts.push('Horario: ' + (desde || '--:--') + ' a ' + (hasta || '--:--'));
       }
       if (dias) {
-        parts.push('Días: ' + dias);
+        parts.push('DÃ­as: ' + dias);
       }
       if (maxCliente > 0) {
         parts.push('Antifraude: ' + maxCliente + ' uso(s)/' + ventana + 'h');
@@ -288,7 +288,7 @@
       document.getElementById('maxUsosPorCliente').value = '0';
       document.getElementById('ventanaHorasFraude').value = '24';
       document.getElementById('observacionesCodigo').value = '';
-      document.getElementById('saveCodigoBtn').textContent = 'Guardar código';
+      document.getElementById('saveCodigoBtn').textContent = 'Guardar cÃ³digo';
       setMessage('', false);
 
       if (hide) {
@@ -324,7 +324,7 @@
       document.getElementById('maxUsosPorCliente').value = Math.max(0, toNumber(item.max_usos_por_cliente, 0));
       document.getElementById('ventanaHorasFraude').value = Math.max(1, toNumber(item.ventana_horas_fraude, 24));
       document.getElementById('observacionesCodigo').value = normalize(item.observaciones);
-      document.getElementById('saveCodigoBtn').textContent = 'Actualizar código';
+      document.getElementById('saveCodigoBtn').textContent = 'Actualizar cÃ³digo';
       setMessage('', false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -347,7 +347,7 @@
     function renderCodigos() {
       const box = document.getElementById('codigosList');
       if (!state.codigos.length) {
-        box.textContent = 'No hay códigos registrados para esta empresa.';
+        box.textContent = 'No hay cÃ³digos registrados para esta empresa.';
         return;
       }
 
@@ -355,9 +355,9 @@
       table.className = 'table';
       table.innerHTML = '<thead><tr>' +
         '<th>ID</th>' +
-        '<th>Código</th>' +
+        '<th>CÃ³digo</th>' +
         '<th>Tipo / valor</th>' +
-        '<th>Mínimo compra</th>' +
+        '<th>MÃ­nimo compra</th>' +
         '<th>Usos</th>' +
         '<th>Reglas avanzadas</th>' +
         '<th>Vence</th>' +
@@ -410,7 +410,7 @@
             });
             await ensureOk(res);
             await loadCodigos();
-            setMessage('Estado del código actualizado.', false);
+            setMessage('Estado del cÃ³digo actualizado.', false);
           } catch (err) {
             setMessage(err.message || 'No se pudo actualizar el estado', true);
           }
@@ -420,16 +420,16 @@
       document.querySelectorAll('.del').forEach(function(btn) {
         btn.onclick = async function() {
           const id = Number(btn.getAttribute('data-id'));
-          if (!confirm('¿Eliminar código de descuento #' + id + '?')) return;
+          if (!confirm('Â¿Eliminar cÃ³digo de descuento #' + id + '?')) return;
           try {
             const res = await fetch('/api/empresa/codigos_de_descuento?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), {
               method: 'DELETE'
             });
             await ensureOk(res);
             await loadCodigos();
-            setMessage('Código eliminado.', false);
+            setMessage('CÃ³digo eliminado.', false);
           } catch (err) {
-            setMessage(err.message || 'No se pudo eliminar el código', true);
+            setMessage(err.message || 'No se pudo eliminar el cÃ³digo', true);
           }
         };
       });
@@ -520,9 +520,9 @@
         await ensureOk(res);
         await loadCodigos();
         resetForm(true);
-        setMessage(id > 0 ? 'Código actualizado correctamente.' : 'Código creado correctamente.', false);
+        setMessage(id > 0 ? 'CÃ³digo actualizado correctamente.' : 'CÃ³digo creado correctamente.', false);
       } catch (err) {
-        setMessage(err.message || 'No se pudo guardar el código', true);
+        setMessage(err.message || 'No se pudo guardar el cÃ³digo', true);
       }
     };
 
@@ -541,7 +541,7 @@
         if (empresaRes.ok) {
           const empresa = await empresaRes.json();
           if (empresa && empresa.nombre) {
-            document.getElementById('pageTitle').textContent = 'Códigos de descuento - ' + empresa.nombre;
+            document.getElementById('pageTitle').textContent = 'CÃ³digos de descuento - ' + empresa.nombre;
           }
         }
       } catch (_) {}
@@ -549,10 +549,11 @@
       try {
         await loadCodigos();
       } catch (err) {
-        document.getElementById('codigosList').textContent = 'Error cargando códigos de descuento';
-        setMessage(err.message || 'Error cargando códigos de descuento', true);
+        document.getElementById('codigosList').textContent = 'Error cargando cÃ³digos de descuento';
+        setMessage(err.message || 'Error cargando cÃ³digos de descuento', true);
       }
     })();
   </script>
 </body>
 </html>
+

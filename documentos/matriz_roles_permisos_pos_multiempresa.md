@@ -1,3 +1,57 @@
+2026-04-20.3: Nota operativa para `soporte remoto` y `super` sobre activacion por defecto de RustDesk
+- `super_administrador` sigue siendo el unico rol que configura y opera RustDesk desde la vista super; el cambio solo fija que la primera lectura de configuracion llegue activa por defecto con portal publico habilitado y modo local preseleccionado.
+- No se crean permisos nuevos ni se amplian privilegios de `administrador`; se corrige un default funcional de la vista para que coincida con la operacion simplificada del modulo.
+
+2026-04-21: Nota operativa para `compras`, `finanzas` y `administrar_empresa` sobre comprobantes adjuntos
+- `administrador` y demás perfiles empresariales ya autorizados en los módulos de compras y finanzas pueden adjuntar y consultar comprobantes solo dentro del mismo `empresa_id`; el cambio no crea roles nuevos ni expone rutas públicas adicionales.
+- `POST /api/empresa/compras/documentos/comprobante` reutiliza `WithEmpresaComprasPermissions` y `POST /api/empresa/finanzas/movimientos/comprobante` reutiliza `WithEmpresaFinanzasPermissions`; por tanto el alcance efectivo queda igual que en el CRUD principal de cada módulo.
+- La visualización posterior del comprobante en listados usa una URL servida desde el mismo árbol web del sistema, pero la referencia solo se genera para registros ya permitidos por el contexto autenticado de empresa.
+
+2026-04-21: Nota operativa para `soporte remoto`, `super`, `administrar_empresa` y `portal_publico` sobre RustDesk simplificado
+- `super_administrador` mantiene el control exclusivo del servicio base RustDesk desde `web/super/servidores.html`, incluyendo acciones de encendido, apagado, reinicio y prueba. El cambio no crea un rol nuevo ni delega esas acciones al panel empresarial.
+- `administrador` de empresa sigue limitado a configurar los datos visibles del acceso remoto de su empresa en `web/administrar_empresa/soporte_remoto.html`: host, clave, instrucciones y enlaces de descarga. No obtiene permisos para operar el servicio del VPS.
+- La página pública `web/soporte_remoto_acceso.html` continúa siendo solo de consulta del acceso compartido por sesión; expone descargas y datos de conexión ya autorizados, sin ampliar privilegios a visitantes o usuarios sin sesión.
+
+2026-04-20: Nota operativa para `backups empresariales`, `administrar_empresa` y `configuracion`
+- La exportacion/importacion de configuracion por empresa reutiliza el modulo `backups empresariales` y no abre permisos nuevos: sigue limitada al acceso ya existente al enlace `Backups empresariales` del panel de empresa.
+- El flujo importa solo tablas de configuracion asociadas al `empresa_id` destino y no restaura datos transaccionales, usuarios ni historiales operativos; por eso el alcance funcional se mantiene en configuracion/aprobacion y no altera wrappers de venta, inventario o finanzas.
+
+2026-04-20: Nota operativa para `estaciones`, `carritos` y `administrar_empresa` sobre estaciones especiales reordenables
+- `Caja`, `YouTube` y `Notas` siguen siendo recursos visibles del modulo de estaciones y no crean permisos nuevos ni cambian wrappers backend; la autorizacion sigue determinada por el acceso existente a la vista empresarial de estaciones.
+- La nueva tarjeta `Notas` funciona como apoyo operativo local de la empresa con recordatorio temporizado; no altera roles, CRUD/A transaccional ni los carritos base enlazados a estaciones numeradas.
+
+2026-04-20: Nota operativa para `estaciones` sobre multiples notas y repeticion local
+- La evolucion de `Notas` a multiples recordatorios, countdown persistente y repeticion automatica no introduce endpoints nuevos ni modifica wrappers backend. Sigue dependiendo del mismo permiso de acceso a `administrar_empresa/estaciones.html`.
+- El runtime multiple queda aislado en navegador por `empresa_id`; por eso no amplifica alcance entre roles o empresas, pero tampoco constituye respaldo compartido ni evidencia multiusuario persistida en servidor.
+
+2026-04-20: Nota operativa para `autenticacion y sesiones` sobre correccion del ojito de contraseña
+- La correccion del toggle visual en el login administrativo no cambia permisos, wrappers ni alcance publico de `/login.html`; solo restaura el comportamiento del control cliente sobre el campo de contraseña.
+- El acceso sigue siendo publico para administradores y la autorizacion efectiva continua igual bajo el backend existente.
+
+2026-04-20: Nota operativa para `autenticacion y sesiones` sobre recuperacion administrativa por enlace directo
+- El restablecimiento de contraseña administrativa sigue siendo publico solo para la cuenta que recibe el correo de recuperación; el cambio no abre rutas nuevas ni amplía roles, solo elimina la necesidad de copiar un token manual al formulario.
+- La validación efectiva continúa en backend con el mismo código de recuperación y expiración existentes; la diferencia es de UX y no de privilegios.
+
+2026-04-20: Nota operativa para `portal_publico`, `autenticacion`, `super`, `administrar_empresa` y vistas embebidas sobre contraste de apariencias
+- La corrección de contraste y color para los seis temas no crea rutas nuevas ni modifica permisos por rol; solo garantiza que textos, tarjetas, estados vacíos y componentes mantengan legibilidad coherente según la apariencia elegida.
+- Los módulos afectados conservan exactamente el mismo alcance público o autenticado que ya tenían; el cambio es exclusivamente de presentación y consistencia visual.
+
+2026-04-20: Nota operativa para `super`, `portal_publico` y `pagina principal publica` sobre WhatsApp configurable
+- La nueva tarjeta de WhatsApp en configuración avanzada solo permite cambiar el número del CTA flotante público del `index.html`; no introduce rutas nuevas, permisos adicionales ni cambios de wrapper.
+- El botón flotante del portal sigue siendo público y de solo lectura/uso para todos los roles; la edición del número continúa limitada al panel super ya existente.
+
+2026-04-20: Nota operativa para `portal_publico`, `pagina principal publica` y `autenticacion y sesiones` sobre CTA superior de registro
+- El nuevo botón `Crear cuenta` en `web/index.html` reutiliza el estilo visual del header de `/descripcion_de_los_sistemas.ht`, pero mantiene el mismo alcance público del portal y solo deriva al registro administrativo ya existente en `/registrar_nuevo_usuario_administrador.html`.
+- No se crean wrappers, permisos ni rutas nuevas: el cambio solo expone mejor un flujo público ya permitido, mantiene `Iniciar sesión` con la misma función anterior y compacta el header móvil sin alterar el alcance del portal.
+
+2026-04-20: Nota operativa para `portal_publico` y `pagina principal publica` sobre simplificacion visual
+- Retirar el hero y la tarjeta de accesos rapidos de `/descripcion_de_los_sistemas.ht` no cambia permisos, wrappers ni el destino del flujo publico; solo hace que la landing llegue directo al contenido detallado.
+- La navegacion por hash y el CTA `Probar Gratis` mantienen exactamente el mismo alcance publico para todos los roles y para visitantes sin sesion.
+
+2026-04-20: Nota operativa para `portal_publico` y `pagina principal publica`
+- La renovacion visual de `/descripcion_de_los_sistemas.ht` no cambia roles, wrappers ni destinos protegidos: solo reorganiza los accesos internos como un menu profesional y sincroniza la apariencia con el tema activo del portal.
+- El CTA `Probar Gratis` y la navegacion por hash mantienen el mismo alcance publico sin ampliar privilegios para `super_administrador`, `administrador` o usuarios de empresa.
+
 2026-04-20: Nota operativa para `inventario`, `compras`, `finanzas` y `reportes`
 - La correccion PostgreSQL de tendencia, proyeccion, reposicion preventiva, tablero financiero y salida PEPS no cambia roles, wrappers ni alcance por `empresa_id`. Solo sustituye SQL no portable y corrige la transaccion de lotes para que las mismas rutas protegidas respondan correctamente en PostgreSQL real.
 - El flujo de `compras` para emitir, recepcionar y contabilizar ordenes de reposicion, asi como `finanzas/cierres_caja` y el dataset `empresarial_tablero`, mantienen exactamente el mismo modelo de permisos. La validacion runtime confirma operacion real sin ampliar privilegios para `inventario`, `compras`, `contabilidad`, `admin_empresa` o `super_administrador`.

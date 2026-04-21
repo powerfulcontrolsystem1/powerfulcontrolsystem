@@ -51,6 +51,44 @@ type paginaPrincipalConfig struct {
 	Estilos  paginaPrincipalVisualSettings `json:"estilos"`
 }
 
+func paginaPrincipalDefaultWhatsAppContactNumber() string {
+	return "573043306506"
+}
+
+func normalizePortalWhatsAppContactNumber(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	builder := strings.Builder{}
+	for idx, r := range trimmed {
+		if r >= '0' && r <= '9' {
+			builder.WriteRune(r)
+			continue
+		}
+		if r == '+' && idx == 0 {
+			continue
+		}
+	}
+	normalized := builder.String()
+	if len(normalized) < 10 || len(normalized) > 15 {
+		return ""
+	}
+	return normalized
+}
+
+func paginaPrincipalLoadWhatsAppContactNumber(dbSuper *sql.DB) string {
+	configured, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, "portal.whatsapp_contact_number")
+	if err != nil {
+		return paginaPrincipalDefaultWhatsAppContactNumber()
+	}
+	normalized := normalizePortalWhatsAppContactNumber(configured)
+	if normalized == "" {
+		return paginaPrincipalDefaultWhatsAppContactNumber()
+	}
+	return normalized
+}
+
 func paginaPrincipalDefaultVisualSettings() paginaPrincipalVisualSettings {
 	return paginaPrincipalVisualSettings{
 		IndexCardSize:   paginaPrincipalVisualSizeMedium,
@@ -497,6 +535,7 @@ func PublicPaginaPrincipalHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"cantidad":   cfg.Cantidad,
 			"tarjetas":   cfg.Tarjetas,
 			"estilos":    cfg.Estilos,
+			"whatsapp_contact_number": paginaPrincipalLoadWhatsAppContactNumber(dbSuper),
 			"updated_at": updatedAt,
 		})
 	}

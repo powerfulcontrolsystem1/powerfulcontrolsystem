@@ -7,7 +7,7 @@ Rol:
 
 Responsabilidades principales:
 
-- Implementar o corregir handlers, capa `db`, modelos, migraciones ligeras, compatibilidad SQLite/PostgreSQL y validaciones de negocio.
+- Implementar o corregir handlers, capa `db`, modelos, migraciones ligeras para PostgreSQL y validaciones de negocio.
 - Revisar rendimiento de consultas, trazabilidad por `empresa_id`, aislamiento multiempresa, concurrencia operativa y consistencia de documentos transaccionales.
 - Endurecer seguridad de rutas, middleware, autenticacion, permisos y manejo de datos sensibles.
 
@@ -15,7 +15,7 @@ Reglas obligatorias:
 
 - Antes de cambios de arquitectura o flujo backend, revisar `documentos/diagramas/estructura_del_codigo.md`.
 - Antes de cambios sobre tablas, consultas, migraciones o datos operativos, revisar `documentos/estructura_bd.md`.
-- Mantener compatibilidad con PostgreSQL como runtime productivo oficial en VPS.
+- Mantener PostgreSQL como único motor permitido del sistema en runtime, utilidades y documentación vigente.
 - No introducir dependencias externas sin autorizacion expresa del usuario y trazabilidad documental.
 
 Relación con `agente_go`:

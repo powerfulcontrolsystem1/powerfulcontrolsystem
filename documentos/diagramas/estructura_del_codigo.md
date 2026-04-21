@@ -1,3 +1,27 @@
+## Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
+
+- Backend compras/finanzas:
+  - `backend/main.go` registra `POST /api/empresa/compras/documentos/comprobante` bajo `WithEmpresaComprasPermissions` y `POST /api/empresa/finanzas/movimientos/comprobante` bajo `WithEmpresaFinanzasPermissions`.
+  - `backend/handlers/compras.go` y `backend/handlers/finanzas.go` aceptan cargas multipart, guardan el archivo físico en `web/uploads/comprobantes/empresa_<id>/<modulo>/` y actualizan la referencia persistida del comprobante.
+  - `backend/db/documentos_transaccionales.go` amplía `empresa_compras_documentos` con metadata de comprobante y `backend/db/finanzas.go` agrega helper específico para persistir la URL del soporte en movimientos financieros.
+- Frontend empresa:
+  - `web/administrar_empresa/compras.html` permite adjuntar soporte al crear el documento o desde el listado, y expone un botón directo para ver el comprobante guardado.
+  - `web/administrar_empresa/finanzas.html` añade selector de archivo en el formulario de movimientos y muestra el adjunto en el listado y en la edición del movimiento.
+- Flujo:
+  - `compras.html?empresa_id=...` -> `POST /api/empresa/compras/documentos` -> opcional `POST /api/empresa/compras/documentos/comprobante` -> persistencia de `comprobante_url` y visualización desde la tabla.
+  - `finanzas.html?empresa_id=...` -> `POST|PUT /api/empresa/finanzas/movimientos` -> opcional `POST /api/empresa/finanzas/movimientos/comprobante` -> persistencia de `comprobante_url` y visualización desde el listado.
+
+## Actualizacion 2026-04-20 (backups empresariales: exporte e importacion de configuracion por empresa)
+
+- Backend backups/configuracion:
+  - `backend/db/backups_empresariales.go` agrega el alcance `configuracion_empresa`, define el inventario canonico de tablas de configuracion y persiste snapshots/importaciones con metadata del origen.
+  - `backend/handlers/backups_empresariales.go` agrega `action=exportar_configuracion` y `action=importar_configuracion` para descargar un JSON canonico y restaurarlo sobre la empresa destino usando el mismo historial de backups.
+- Frontend empresa:
+  - `web/administrar_empresa/backups.html` incorpora la tarjeta visible de Fase 2 para exportar o importar configuracion completa desde archivo JSON, sin salir del modulo de backups.
+- Flujo:
+  - `backups.html?empresa_id=...` -> `POST /api/empresa/backups?action=exportar_configuracion` -> descarga `configuracion_empresa_<empresa>.json`.
+  - `backups.html?empresa_id=...` -> seleccionar archivo -> `POST /api/empresa/backups?action=importar_configuracion` -> persistencia del backup importado -> restauracion sobre el `empresa_id` destino.
+
 ## Actualizacion 2026-04-20 (apariencia global, login y acceso a juegos restaurados)
 
 - Frontend compartido:
@@ -12,6 +36,31 @@
 - Flujo:
   - `login.html` o `login_usuario.html` -> `POST` de autenticación -> respuesta con `redirect_url` + `apariencia` -> persistencia local inmediata del tema -> redirect al panel correspondiente -> `menu.js` reaplica tema y lo sincroniza con iframes.
   - Cualquier página pública con `menu.js` -> lectura de tema local/cookie -> aplicación visual inmediata -> si existe sesión, `GET /api/user/configuracion` refresca la preferencia guardada en backend.
+
+## Actualizacion 2026-04-20 (estaciones: especiales reordenables y nueva tarjeta Notas)
+
+- Frontend estaciones:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` amplía `estaciones_config` para administrar `Caja`, `YouTube` y `Notas` como estaciones especiales con orden independiente (`before` o `after`) respecto a las estaciones numeradas.
+  - `web/administrar_empresa/estaciones.html` deja de concatenar especiales en orden fijo y arma el grid con grupos `especiales antes -> estaciones normales -> especiales despues`.
+  - `web/administrar_empresa/estaciones.html` agrega la tarjeta especial `Notas` con textarea operativo, temporizador programable, guardado del texto base en `estaciones_config` y alerta visual/sonora al vencerse.
+  - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva los nuevos campos del JSON al guardar la configuracion global del carrito para no perder `Notas` ni el orden de las especiales.
+- Estilos compartidos:
+  - `web/estilos.css` incorpora el bloque visual de `.notas-station-card` y los estados de alerta `expired/blink`, manteniendo el mismo shell responsivo del grid de estaciones.
+- Flujo:
+  - `configuracion_de_estaciones.html?empresa_id=...` -> `PUT /api/empresa/estacion_prefs` con `clave=estaciones_config` -> persistencia del JSON ampliado.
+  - `estaciones.html?empresa_id=...` -> carga `estaciones_config` -> renderiza `Caja`, `YouTube` y `Notas` antes o despues de las estaciones normales segun su placement -> `Notas` corre el recordatorio en navegador y usa el mismo contexto `empresa_id` sin generar carrito base adicional.
+
+## Actualizacion 2026-04-20 (estaciones: Notas restaura runtime y soporta multiples alarmas)
+
+- Frontend estaciones:
+  - `web/administrar_empresa/estaciones.html` agrega un runtime local namespaced por `empresa_id` para la estacion especial `Notas`, con lista seleccionable de notas, `target_time_ms`, estado de alerta y repeticion automatica.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` agrega `notas_repeat_minutes` como default de la estacion.
+  - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva el nuevo campo al guardar la configuracion global del carrito.
+- Estilos compartidos:
+  - `web/estilos.css` amplía la tarjeta `Notas` con listado de recordatorios, estados activos/alerta y layout responsive para varias notas dentro de la misma estacion.
+- Flujo:
+  - `estaciones.html?empresa_id=...` -> carga `estaciones_config` -> restaura runtime de `Notas` desde `localStorage` aislado por empresa -> muestra varias notas con temporizador, repeticion y countdown persistente tras recarga.
+  - `Guardar nota` sigue persistiendo solo la configuracion base de la estacion en `empresa_estacion_prefs`; el runtime multiple de recordatorios queda local al navegador.
 
 # Estructura del codigo
 
@@ -993,7 +1042,7 @@ flowchart TD
 
 - Backend:
   - `backend/handlers/auth_admin_handlers.go` endurece `AdminRegisterHandler` para exigir `nombre`, `telefono` y contraseña segura, evita sobrescribir cuentas administrativas ya confirmadas y limita la recuperación de contraseña a cuentas confirmadas.
-  - `backend/handlers/auth_admin_handlers.go` cambia el enlace de recuperación para que apunte a `/login.html?view=reset&email=...&token_recuperacion=...`, alineando backend y frontend en un flujo visible de restablecimiento.
+  - `backend/handlers/auth_admin_handlers.go` envía un enlace directo de recuperación hacia `/login.html?view=reset&email=...&token_recuperacion=...`, manteniendo el token solo en la URL firmada del correo para que el usuario no deba copiarlo manualmente.
   - `backend/utils/utils.go` libera como rutas públicas `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin`, corrigiendo el bloqueo previo del enlace de confirmación administrativa.
   - `backend/handlers/auth_admin_handlers_test.go` agrega cobertura del registro administrativo, login por correo, recuperación de contraseña y creación de sesión; `backend/handlers/auth_users_carritos_test.go` amplía la prueba del middleware público con la nueva página de registro y la confirmación administrativa.
 - Frontend:
@@ -1004,7 +1053,7 @@ flowchart TD
 - Flujo:
   - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` -> `/auth/google/callback` -> `/accept.html` -> `/accept/complete`.
   - `login.html` -> `Registrarse` -> `registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> `/auth/confirmar_admin` -> `login.html`.
-  - `login.html` -> `¿Olvidó su contraseña?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con `token_recuperacion` -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesión administrativa.
+  - `login.html` -> `¿Olvidó su contraseña?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con enlace directo de recuperación -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesión administrativa.
 
 ## Actualizacion 2026-04-16 (login Google: registro obligatorio de clave local cuando falta password_set)
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -23,7 +24,6 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-
 			tipoDocumento := strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
 			estadoDocumento := strings.TrimSpace(r.URL.Query().Get("estado_documento"))
 			proveedorID, err := parseInt64QueryOptional(r, "proveedor_id")
@@ -716,6 +716,84 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+	}
+}
+
+// EmpresaComprasDocumentoComprobanteUploadHandler carga un recibo o comprobante físico para un documento de compras.
+func EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			http.Error(w, "payload multipart invalido", http.StatusBadRequest)
+			return
+		}
+
+		empresaID, err := parseInt64Form(r, "empresa_id")
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		documentoCodigo := strings.TrimSpace(r.FormValue("documento_codigo"))
+		if documentoCodigo == "" {
+			http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+			return
+		}
+		tipoDocumento := strings.TrimSpace(r.FormValue("tipo_documento"))
+		if tipoDocumento == "" {
+			tipoDocumento = "orden_compra"
+		}
+
+		file, header, err := r.FormFile("archivo")
+		if err != nil {
+			file, header, err = r.FormFile("comprobante")
+		}
+		if err != nil {
+			http.Error(w, "archivo es obligatorio", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		fileURL, fileName, absPath, err := saveEmpresaComprobanteUpload(file, header.Filename, empresaID, "compras", documentoCodigo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := dbpkg.UpdateEmpresaDocumentoCompraComprobante(dbEmp, empresaID, tipoDocumento, documentoCodigo, fileURL, fileName); err != nil {
+			_ = os.Remove(absPath)
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "documento de compras no encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "No se pudo guardar el comprobante", http.StatusInternalServerError)
+			return
+		}
+
+		item, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, empresaID, tipoDocumento, documentoCodigo)
+		if err != nil {
+			writeJSON(w, http.StatusCreated, map[string]interface{}{
+				"ok":                         true,
+				"empresa_id":                 empresaID,
+				"documento_codigo":           documentoCodigo,
+				"tipo_documento":             tipoDocumento,
+				"comprobante_url":            fileURL,
+				"comprobante_nombre_archivo": fileName,
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]interface{}{
+			"ok":                         true,
+			"empresa_id":                 empresaID,
+			"documento_codigo":           documentoCodigo,
+			"tipo_documento":             tipoDocumento,
+			"comprobante_url":            fileURL,
+			"comprobante_nombre_archivo": fileName,
+			"resultado":                  item,
+		})
 	}
 }
 

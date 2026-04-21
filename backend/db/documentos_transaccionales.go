@@ -56,6 +56,8 @@ type EmpresaDocumentoCompra struct {
 	ProveedorDocRef      string  `json:"proveedor_documento_ref,omitempty"`
 	FacturaDocRef        string  `json:"factura_documento_ref,omitempty"`
 	EntradaDocRef        string  `json:"entrada_documento_ref,omitempty"`
+	ComprobanteURL       string  `json:"comprobante_url,omitempty"`
+	ComprobanteNombre    string  `json:"comprobante_nombre_archivo,omitempty"`
 	FechaCreacion        string  `json:"fecha_creacion"`
 	FechaActualizacion   string  `json:"fecha_actualizacion"`
 	UsuarioCreador       string  `json:"usuario_creador"`
@@ -137,6 +139,8 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			proveedor_documento_ref TEXT,
 			factura_documento_ref TEXT,
 			entrada_documento_ref TEXT,
+			comprobante_url TEXT,
+			comprobante_nombre_archivo TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -279,6 +283,12 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "entrada_documento_ref", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "comprobante_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "comprobante_nombre_archivo", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -321,6 +331,12 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 	err := dbConn.QueryRow(`SELECT COALESCE(column_default, '')
 		FROM information_schema.columns
 		WHERE table_schema = current_schema() AND table_name = $1 AND column_name = 'id'`, tableName).Scan(&columnDefault)
+	if err != nil {
+		errLower := strings.ToLower(err.Error())
+		if strings.Contains(errLower, "no such table") || strings.Contains(errLower, "sqlite") {
+			return nil
+		}
+	}
 	if err == sql.ErrNoRows {
 		return nil
 	}
@@ -719,6 +735,8 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 		COALESCE(proveedor_documento_ref, ''),
 		COALESCE(factura_documento_ref, ''),
 		COALESCE(entrada_documento_ref, ''),
+		COALESCE(comprobante_url, ''),
+		COALESCE(comprobante_nombre_archivo, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -750,6 +768,8 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 		&item.ProveedorDocRef,
 		&item.FacturaDocRef,
 		&item.EntradaDocRef,
+		&item.ComprobanteURL,
+		&item.ComprobanteNombre,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -800,6 +820,8 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 	payload.ProveedorDocRef = normalizeDocumentoTransaccionalCodigo(payload.ProveedorDocRef)
 	payload.FacturaDocRef = normalizeDocumentoTransaccionalCodigo(payload.FacturaDocRef)
 	payload.EntradaDocRef = normalizeDocumentoTransaccionalCodigo(payload.EntradaDocRef)
+	payload.ComprobanteURL = strings.TrimSpace(payload.ComprobanteURL)
+	payload.ComprobanteNombre = strings.TrimSpace(payload.ComprobanteNombre)
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
 	if payload.MontoTotal < 0 {
 		payload.MontoTotal = 0
@@ -828,12 +850,14 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		proveedor_documento_ref,
 		factura_documento_ref,
 		entrada_documento_ref,
+		comprobante_url,
+		comprobante_nombre_archivo,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		proveedor_id = CASE WHEN excluded.proveedor_id > 0 THEN excluded.proveedor_id ELSE empresa_compras_documentos.proveedor_id END,
 		estado_documento = excluded.estado_documento,
@@ -863,6 +887,8 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		proveedor_documento_ref = CASE WHEN excluded.proveedor_documento_ref <> '' THEN excluded.proveedor_documento_ref ELSE empresa_compras_documentos.proveedor_documento_ref END,
 		factura_documento_ref = CASE WHEN excluded.factura_documento_ref <> '' THEN excluded.factura_documento_ref ELSE empresa_compras_documentos.factura_documento_ref END,
 		entrada_documento_ref = CASE WHEN excluded.entrada_documento_ref <> '' THEN excluded.entrada_documento_ref ELSE empresa_compras_documentos.entrada_documento_ref END,
+		comprobante_url = CASE WHEN excluded.comprobante_url <> '' THEN excluded.comprobante_url ELSE empresa_compras_documentos.comprobante_url END,
+		comprobante_nombre_archivo = CASE WHEN excluded.comprobante_nombre_archivo <> '' THEN excluded.comprobante_nombre_archivo ELSE empresa_compras_documentos.comprobante_nombre_archivo END,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_compras_documentos.usuario_creador END,
 		estado = excluded.estado,
@@ -889,6 +915,8 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		payload.ProveedorDocRef,
 		payload.FacturaDocRef,
 		payload.EntradaDocRef,
+		payload.ComprobanteURL,
+		payload.ComprobanteNombre,
 		payload.UsuarioCreador,
 		payload.Estado,
 		payload.Observaciones,
@@ -941,6 +969,8 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 		COALESCE(proveedor_documento_ref, ''),
 		COALESCE(factura_documento_ref, ''),
 		COALESCE(entrada_documento_ref, ''),
+		COALESCE(comprobante_url, ''),
+		COALESCE(comprobante_nombre_archivo, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1012,6 +1042,8 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 			&item.ProveedorDocRef,
 			&item.FacturaDocRef,
 			&item.EntradaDocRef,
+			&item.ComprobanteURL,
+			&item.ComprobanteNombre,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
 			&item.UsuarioCreador,
@@ -1048,6 +1080,46 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
 		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`, estadoNorm, empresaID, tipo, codigo)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected <= 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// UpdateEmpresaDocumentoCompraComprobante actualiza la evidencia adjunta de un documento de compras.
+func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre string) error {
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		return err
+	}
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	tipo := normalizeDocumentoTransaccionalTipo(tipoDocumento, "orden_compra")
+	codigo := normalizeDocumentoTransaccionalCodigo(documentoCodigo)
+	if codigo == "" {
+		return fmt.Errorf("documento_codigo es obligatorio")
+	}
+	comprobanteURL = strings.TrimSpace(comprobanteURL)
+	comprobanteNombre = strings.TrimSpace(comprobanteNombre)
+	if comprobanteURL == "" {
+		return fmt.Errorf("comprobante_url es obligatorio")
+	}
+
+	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
+		SET comprobante_url = ?,
+			comprobante_nombre_archivo = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`,
+		comprobanteURL,
+		comprobanteNombre,
+		empresaID,
+		tipo,
+		codigo,
+	)
 	if err != nil {
 		return err
 	}

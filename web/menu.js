@@ -280,7 +280,93 @@
     });
   }
 
+  function clearBrowserSessionStateCookie(){
+    try {
+      document.cookie = SESSION_STATE_COOKIE + '=; Path=/; Max-Age=0; SameSite=Lax';
+    } catch (error) {}
+  }
+
+  function clearFloatingMenuInjectionState(){
+    try {
+      window.__pcsFloatingMenuInjected = false;
+      window.__pcsFloatingMenuPending = false;
+      if (document.documentElement && document.documentElement.dataset) {
+        delete document.documentElement.dataset.pcsFloatingMenuInjected;
+        delete document.documentElement.dataset.pcsFloatingMenuPending;
+      }
+    } catch (error) {}
+  }
+
+  function removeFloatingMenu(){
+    try {
+      var existingMenu = document.querySelector('.floating-menu');
+      if (existingMenu && existingMenu.parentNode) {
+        existingMenu.parentNode.removeChild(existingMenu);
+      }
+      if (document.body) {
+        document.body.classList.remove('has-floating-menu');
+      }
+      if (document.documentElement) {
+        document.documentElement.classList.remove('has-floating-menu');
+      }
+    } catch (error) {}
+    clearFloatingMenuInjectionState();
+  }
+
+  function shouldSkipFloatingMenuForCurrentPath(){
+    try {
+      var path = (window.location && window.location.pathname) ? (window.location.pathname || '').toLowerCase() : '';
+      if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
+        return true;
+      }
+      if (path === '/login.html' || path.endsWith('/login.html') || path === '/login_usuario.html' || path.endsWith('/login_usuario.html')) {
+        return true;
+      }
+    } catch (error) {
+      return true;
+    }
+    return false;
+  }
+
   function injectMenu(){
+    try {
+      if (window.top !== window.self) return;
+      if (shouldSkipFloatingMenuForCurrentPath()) {
+        removeFloatingMenu();
+        return;
+      }
+      if (!hasBrowserSessionCookie()) {
+        removeFloatingMenu();
+        return;
+      }
+      if (window.__pcsFloatingMenuInjected || document.documentElement.dataset.pcsFloatingMenuInjected === '1' || window.__pcsFloatingMenuPending) {
+        return;
+      }
+      window.__pcsFloatingMenuPending = true;
+      document.documentElement.dataset.pcsFloatingMenuPending = '1';
+    } catch (e) {
+      return;
+    }
+
+    fetch('/me', { credentials: 'same-origin' })
+      .then(function(res){
+        if (!res.ok) throw new Error('no-auth');
+        return res.json().catch(function(){ return {}; });
+      })
+      .then(function(data){
+        try {
+          window.__pcsFloatingMenuPending = false;
+          delete document.documentElement.dataset.pcsFloatingMenuPending;
+        } catch (error) {}
+        mountFloatingMenu(data);
+      })
+      .catch(function(){
+        clearBrowserSessionStateCookie();
+        removeFloatingMenu();
+      });
+  }
+
+  function mountFloatingMenu(authData){
     try {
       if (window.top !== window.self) return;
       if (window.__pcsFloatingMenuInjected || document.documentElement.dataset.pcsFloatingMenuInjected === '1') return;
@@ -289,14 +375,7 @@
     }
 
     try {
-      var path = (window.location && window.location.pathname) ? (window.location.pathname || '').toLowerCase() : '';
-      if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
-        return;
-      }
-      if (path === '/login.html' || path.endsWith('/login.html') || path === '/login_usuario.html' || path.endsWith('/login_usuario.html')) {
-        return;
-      }
-      if (!hasBrowserSessionCookie()) {
+      if (shouldSkipFloatingMenuForCurrentPath() || !hasBrowserSessionCookie()) {
         return;
       }
     } catch (e) {
@@ -313,7 +392,7 @@
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html">Red social comercial</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
-        '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
+        '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Cambiar apariencia \u25BC</button>' +
           '<div id="themeSelectorPopup" class="theme-selector-popup" aria-hidden="true" role="menu">' +
@@ -437,7 +516,9 @@
 
     try {
       window.__pcsFloatingMenuInjected = true;
+      window.__pcsFloatingMenuPending = false;
       document.documentElement.dataset.pcsFloatingMenuInjected = '1';
+      delete document.documentElement.dataset.pcsFloatingMenuPending;
     } catch (e) {}
 
     themeManager.refreshFromServer();
@@ -468,8 +549,15 @@
 
       try {
         if (!hasBrowserSessionCookie()) {
-          setSessionLinkAuthenticated(false);
-          fallbackIcon();
+          clearBrowserSessionStateCookie();
+          removeFloatingMenu();
+          return;
+        }
+        if (authData && typeof authData === 'object') {
+          setSessionLinkAuthenticated(true);
+          var photo = authData.photo || authData.avatar || '';
+          var name = authData.name || authData.email || '';
+          if (photo) setAvatarUrl(photo, name); else fallbackIcon();
           return;
         }
         fetch('/me', { credentials: 'same-origin' })
@@ -484,12 +572,12 @@
             if (photo) setAvatarUrl(photo, name); else fallbackIcon();
           })
           .catch(function(){
-            setSessionLinkAuthenticated(false);
-            fallbackIcon();
+            clearBrowserSessionStateCookie();
+            removeFloatingMenu();
           });
       } catch (error) {
-        setSessionLinkAuthenticated(false);
-        fallbackIcon();
+        clearBrowserSessionStateCookie();
+        removeFloatingMenu();
       }
     })();
 

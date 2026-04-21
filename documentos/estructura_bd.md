@@ -1,17 +1,17 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-18.54.0
-Ultima actualizacion: 2026-04-18
+Version: 2026-04-21.55.0
+Ultima actualizacion: 2026-04-21
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
 - `documentos/estructura_bd.md` es la fuente canonica del esquema fisico.
-- `documentos/descripcion_de_las_bases_De_datos` es documento complementario funcional (sin duplicar detalle tabla-por-tabla).
 Bases operativas PostgreSQL en VPS:
 - `pcs_empresas`
 - `pcs_superadministrador`
 Estado de legado SQLite:
 - Retirado del runtime y depurado del repositorio tras cierre de migracion.
+- No hay archivos `.db` locales versionados como fuente operativa vigente.
 Todas las tablas operativas usan como base los campos estandar:
 - id (clave primaria)
 - fecha_creacion
@@ -19,6 +19,14 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
+- empresa_compras_documentos:
+  - agrega `comprobante_url` y `comprobante_nombre_archivo` para enlazar la evidencia física cargada por la empresa en cada documento de compra.
+- empresa_finanzas_movimientos:
+  - mantiene `comprobante_url` como referencia del soporte físico asociado a ingresos y egresos; desde esta fecha el valor puede provenir de subida local al repositorio web y no solo de URL externa manual.
+- Regla operativa de almacenamiento:
+  - los comprobantes físicos de compras y finanzas se guardan en el filesystem bajo `web/uploads/comprobantes/empresa_<empresa_id>/compras/` y `web/uploads/comprobantes/empresa_<empresa_id>/finanzas/`, manteniendo aislamiento por `empresa_id`.
 
 ## 1) Base: pcs_empresas
 

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -15,7 +15,7 @@
       Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidacion de nomina.
     </p>
 
-    <div class="form" style="margin-top:12px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Configuracion de comisiones</h2>
       </div>
@@ -55,7 +55,7 @@
       <div id="cfgMsg" class="form-help"></div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Escalas y topes por rol/servicio</h2>
       </div>
@@ -95,7 +95,7 @@
       </div>
       <div id="escalaMsg" class="form-help"></div>
 
-      <div style="margin-top:10px;overflow:auto;">
+      <div >
         <table class="crud-table">
           <thead>
             <tr>
@@ -110,13 +110,13 @@
             </tr>
           </thead>
           <tbody id="tablaEscalasBody">
-            <tr><td colspan="8" style="text-align:center;color:#777;">Sin escalas</td></tr>
+            <tr><td colspan="8" class="text-empty" style="text-align:center;">Sin escalas</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Ajuste manual de comision</h2>
       </div>
@@ -186,7 +186,7 @@
       <div id="ajusteMsg" class="form-help"></div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Reporte de comisiones</h2>
       </div>
@@ -233,7 +233,7 @@
           <input id="fLimit" class="form-input" type="number" min="10" max="2000" step="10" value="200">
         </div>
       </div>
-      <div class="form-row" style="margin-top:2px;">
+      <div class="form-row" >
         <div class="form-col" style="max-width:220px;display:flex;align-items:center;gap:8px;">
           <input id="fSoloAjustes" type="checkbox">
           <label class="form-label" for="fSoloAjustes" style="margin:0;">Solo ajustes</label>
@@ -256,9 +256,9 @@
       </div>
       <div id="reporteMsg" class="form-help"></div>
 
-      <div id="resumenBox" class="form-help" style="margin-top:8px;"></div>
+      <div id="resumenBox" class="form-help" ></div>
 
-      <div style="margin-top:10px;">
+      <div >
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por lavador</h3>
         <div style="overflow:auto;">
           <table class="crud-table">
@@ -271,13 +271,13 @@
               </tr>
             </thead>
             <tbody id="tablaLavadoresBody">
-              <tr><td colspan="4" style="text-align:center;color:#777;">Sin datos</td></tr>
-            </tbody>
+                <tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos</td></tr>
+              </tbody>
           </table>
         </div>
       </div>
 
-      <div style="margin-top:12px;">
+      <div >
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Movimientos de comisiones</h3>
         <div style="overflow:auto;">
           <table class="crud-table">
@@ -304,14 +304,14 @@
               </tr>
             </thead>
             <tbody id="tablaMovimientosBody">
-              <tr><td colspan="17" style="text-align:center;color:#777;">Sin datos</td></tr>
+              <tr><td colspan="17" class="text-empty" style="text-align:center;">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <div class="form" style="margin-top:14px;">
+    <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Resumen para liquidacion de nomina</h2>
       </div>
@@ -390,7 +390,7 @@
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = text || '';
-        el.style.color = isError ? '#b00020' : '#2a7f62';
+        el.className = isError ? 'error' : 'form-help';
       }
 
       function ensureOk(res) {
@@ -504,7 +504,7 @@
       function renderEscalas(rows) {
         var body = document.getElementById('tablaEscalasBody');
         if (!rows || !rows.length) {
-          body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#777;">Sin escalas</td></tr>';
+          body.innerHTML = '<tr><td colspan="8" class="text-empty" style="text-align:center;">Sin escalas</td></tr>';
           return;
         }
         body.innerHTML = rows.map(function (item) {
@@ -701,7 +701,7 @@
         var rows = report && Array.isArray(report.lavadores) ? report.lavadores : [];
         var body = document.getElementById('tablaLavadoresBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#777;">Sin datos para el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos para el periodo seleccionado</td></tr>';
           return;
         }
 
@@ -719,7 +719,7 @@
         var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
         var body = document.getElementById('tablaMovimientosBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="17" style="text-align:center;color:#777;">Sin movimientos en el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="17" class="text-empty" style="text-align:center;">Sin movimientos en el periodo seleccionado</td></tr>';
           return;
         }
 
@@ -897,3 +897,4 @@
   </script>
 </body>
 </html>
+

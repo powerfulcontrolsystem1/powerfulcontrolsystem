@@ -5,8 +5,11 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +35,75 @@ type empresaFinanzasPeriodoAutorizacionPayload struct {
 	Motivo                string `json:"motivo"`
 	EvidenciaAutorizacion string `json:"evidencia_autorizacion"`
 	CodigoAutorizacion    string `json:"codigo_autorizacion"`
+}
+
+var empresaComprobanteAllowedExt = map[string]bool{
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".gif":  true,
+	".webp": true,
+	".pdf":  true,
+	".txt":  true,
+	".csv":  true,
+	".doc":  true,
+	".docx": true,
+	".xls":  true,
+	".xlsx": true,
+}
+
+func sanitizeComprobanteBaseName(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "" {
+		return "archivo"
+	}
+	var b strings.Builder
+	b.Grow(len(v))
+	for _, r := range v {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	name := strings.Trim(b.String(), "_")
+	if name == "" {
+		return "archivo"
+	}
+	return name
+}
+
+func saveEmpresaComprobanteUpload(file io.Reader, originalFilename string, empresaID int64, modulo, baseName string) (string, string, string, error) {
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(originalFilename)))
+	if !empresaComprobanteAllowedExt[ext] {
+		return "", "", "", fmt.Errorf("extension de comprobante no permitida")
+	}
+
+	webRoot := resolveWebRootDir()
+	dir := filepath.Join(webRoot, "uploads", "comprobantes", fmt.Sprintf("empresa_%d", empresaID), sanitizeComprobanteBaseName(modulo))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", "", "", err
+	}
+
+	fileName := sanitizeComprobanteBaseName(baseName) + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + ext
+	absPath := filepath.Join(dir, fileName)
+	out, err := os.Create(absPath)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		return "", "", "", err
+	}
+
+	fileURL := "/uploads/comprobantes/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + sanitizeComprobanteBaseName(modulo) + "/" + fileName
+	return fileURL, fileName, absPath, nil
 }
 
 func sanitizeFinanzasPeriodoAutorizacionValue(v string) string {
@@ -686,6 +758,65 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+// EmpresaFinanzasMovimientoComprobanteUploadHandler carga un comprobante físico por empresa para un movimiento financiero.
+func EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			http.Error(w, "payload multipart invalido", http.StatusBadRequest)
+			return
+		}
+
+		empresaID, err := parseInt64Form(r, "empresa_id")
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		movimientoID, err := parseInt64Form(r, "movimiento_id")
+		if err != nil || movimientoID <= 0 {
+			http.Error(w, "movimiento_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("archivo")
+		if err != nil {
+			file, header, err = r.FormFile("comprobante")
+		}
+		if err != nil {
+			http.Error(w, "archivo es obligatorio", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		fileURL, fileName, absPath, err := saveEmpresaComprobanteUpload(file, header.Filename, empresaID, "finanzas", fmt.Sprintf("movimiento_%d", movimientoID))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := dbpkg.UpdateEmpresaFinanzasMovimientoComprobante(dbEmp, empresaID, movimientoID, fileURL); err != nil {
+			_ = os.Remove(absPath)
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "movimiento no encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "No se pudo guardar el comprobante", http.StatusInternalServerError)
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]interface{}{
+			"ok":                          true,
+			"empresa_id":                  empresaID,
+			"movimiento_id":               movimientoID,
+			"comprobante_url":             fileURL,
+			"comprobante_nombre_archivo":  fileName,
+		})
 	}
 }
 

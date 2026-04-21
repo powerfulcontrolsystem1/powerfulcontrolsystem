@@ -1,3 +1,19 @@
+- Actualizacion 2026-04-21: simplificacion operativa de RustDesk y soporte remoto
+	- web/super/servidores.html : panel super reducido a estado, acciones y prueba real del servicio RustDesk del VPS usando los componentes `rustdesk-hbbs` y `rustdesk-hbbr`.
+	- web/administrar_empresa/soporte_remoto.html : formulario empresarial simple para definir host, clave pública, instrucciones y descargas de cliente/servidor RustDesk por sistema operativo.
+	- web/super/soporte_remoto.html : mesa técnica super simplificada para elegir empresa y editar la misma configuración mínima de soporte remoto sin gestionar sesiones ni visor desde esta vista.
+	- web/soporte_remoto_acceso.html : portal público de soporte remoto enfocado en descargas Windows/Linux/macOS, datos de conexión y copia rápida de host, clave, ID y contraseña.
+	- backend/handlers/super_servidores_handlers.go : agrega el probe operativo de RustDesk y devuelve estado agregado con componentes y resultado de prueba para el panel super.
+	- backend/db/soporte_remoto.go : amplía persistencia de configuración con URLs macOS y corrige el alta de la configuración remota al insertar todas las columnas visibles en el módulo.
+
+- Actualizacion 2026-04-20: Fase 2 de configuracion por empresa sobre modulo de backups
+	- backend/db/backups_empresariales.go : agrega el alcance `configuracion_empresa`, el inventario de tablas canonicas de configuracion y la persistencia/importacion de snapshots JSON restaurables en PostgreSQL.
+	- backend/handlers/backups_empresariales.go : agrega `action=exportar_configuracion` y `action=importar_configuracion`, incluyendo remapeo del `empresa_id` destino y trazabilidad del origen importado.
+	- backend/handlers/backups_empresariales_test.go : cubre exportacion/importacion de configuracion empresarial con restauracion efectiva de configuracion general, avanzada y preferencias de estaciones.
+	- web/administrar_empresa/backups.html : incorpora la interfaz visible para exportar e importar configuracion completa por empresa desde archivo JSON.
+	- backend/.env.example : elimina la variable legacy `DB_PATH` para dejar solo configuracion PostgreSQL.
+	- backend/main.go : actualiza comentarios de rutas super/empresa para reflejar persistencia canonica en PostgreSQL.
+
 - Actualizacion 2026-04-20: soporte remoto publico RustDesk y configuracion central
 	- web/soporte_remoto_acceso.html : Portal publico por token para soporte remoto con estado de sesion, descargas cliente/servidor RustDesk, datos de conexion y visor web opcional.
 	- web/administrar_empresa/soporte_remoto.html : Consolida la configuracion del portal publico de soporte remoto, host RustDesk, descargas, dispositivos y sesiones por empresa.
@@ -2464,7 +2480,6 @@ Actualizacion 2026-04-14: Cierre de migracion a PostgreSQL-only y retiro de rast
 	- documentos/descripcion_del_proyecto
 	- documentos/diagramas/estructura_del_codigo.md
 	- documentos/estructura_bd.md
-	- documentos/descripcion_de_las_bases_De_datos
  - Archivos eliminados:
 	- backend/db/empresas.db
 	- backend/db/superadministrador.db
@@ -4939,9 +4954,9 @@ Actualizacion 2026-04-05: Normalizacion de documentos de base de datos
 - `estructura_bd.md`:
 	- Se confirma como documento canonico de estructura fisica (tablas, campos, relaciones e historial de version de esquema).
 
-- `documentos/descripcion_de_las_bases_De_datos`:
-	- Se transforma en documento complementario funcional (alcance de bases, convenciones, aislamiento y flujo de mantenimiento).
-	- Se elimina el duplicado tabla-por-tabla para evitar desalineacion documental.
+- Nota de cierre documental:
+	- El documento complementario legacy sobre bases de datos ya no existe en el repositorio vigente.
+	- La referencia historica se conserva solo en trazabilidad; la fuente activa queda centralizada en `documentos/estructura_bd.md`.
 
 Actualizacion 2026-04-05: Consolidacion de configuracion avanzada en facturacion electronica
 
@@ -7590,13 +7605,9 @@ Actualizacion 2026-04-01: Panel de empresa con carga predeterminada en Inicio
 
 Actualizacion 2026-04-01: Recuperacion operativa de login admin/super por OAuth Google
 
-- backend/db/superadministrador.db:
-	- Se restauraron claves de configuracion OAuth Google en tabla `configuraciones`:
-		- `google.client_id`
-		- `google.client_secret`
-		- `google.redirect_url`
-	- Objetivo: restablecer el login de `login.html` para administradores y super administradores sin afectar `login_usuario.html`.
-	- Nota de seguridad: se guardo `google.client_secret` en texto plano por ausencia de `CONFIG_ENC_KEY` en el entorno local durante la recuperacion urgente.
+- Nota historica:
+	- La recuperacion operativa de OAuth admin/super se hizo sobre una base local legacy ya retirada del repositorio.
+	- El estado vigente del sistema ya no usa ni conserva ese archivo como artefacto versionado.
 
 Actualizacion 2026-04-01: Recuperacion de login admin/super con fallback OAuth desde DB
 

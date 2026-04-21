@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración del carrito unificado</title>
+  <title>ConfiguraciÃ³n del carrito unificado</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
@@ -17,26 +17,26 @@
         <button id="btnGuardarConfigCarrito" type="button" class="btn">Guardar configuracion</button>
       </div>
 
-      <div class="form" style="margin-top:12px;">
-        <p class="form-help" style="margin-top:0;">El sistema usará una sola página de carrito para todas las estaciones. Aquí defines qué bloques estarán activos por defecto para toda la empresa; luego puedes sobrescribirlos por estación desde Configuración de estaciones.</p>
+      <div class="form" >
+        <p class="form-help" >El sistema usarÃ¡ una sola pÃ¡gina de carrito para todas las estaciones. AquÃ­ defines quÃ© bloques estarÃ¡n activos por defecto para toda la empresa; luego puedes sobrescribirlos por estaciÃ³n desde ConfiguraciÃ³n de estaciones.</p>
 
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBuscarProductos" type="checkbox" checked>
-              Mostrar botón de buscar productos
+              Mostrar botÃ³n de buscar productos
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
-              Mostrar búsqueda inteligente de catálogo
+              Mostrar bÃºsqueda inteligente de catÃ¡logo
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgCodigoManual" type="checkbox" checked>
-              Mostrar código y referencia manual del item
+              Mostrar cÃ³digo y referencia manual del item
             </label>
           </div>
         </div>
@@ -66,7 +66,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgLector" type="checkbox" checked>
-              Mostrar lector de código de barras
+              Mostrar lector de cÃ³digo de barras
             </label>
           </div>
           <div class="form-col">
@@ -93,7 +93,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgComision" type="checkbox" checked>
-              Mostrar comisión por servicio
+              Mostrar comisiÃ³n por servicio
             </label>
           </div>
         </div>
@@ -119,7 +119,7 @@
           </div>
         </div>
 
-        <p class="form-help">Las estaciones individuales pueden heredar esta configuración o sobrescribirla desde la pantalla de configuración de estaciones.</p>
+        <p class="form-help">Las estaciones individuales pueden heredar esta configuraciÃ³n o sobrescribirla desde la pantalla de configuraciÃ³n de estaciones.</p>
       </div>
 
       <div id="configCarritoMsg" class="form-help"></div>
@@ -222,13 +222,34 @@
     function normalizeStationConfig(raw) {
       const src = raw && typeof raw === 'object' ? raw : {};
       const estaciones = Array.isArray(src.estaciones) ? src.estaciones : [];
+      const normalizePlacement = function(value) {
+        const rawValue = String(value == null ? '' : value).trim().toLowerCase();
+        return rawValue === 'after' ? 'after' : 'before';
+      };
+      const normalizeMinutes = function(value) {
+        let parsed = Number(String(value == null ? '' : value).trim());
+        if (!Number.isFinite(parsed)) return 5;
+        parsed = Math.trunc(parsed);
+        if (parsed < 1) return 1;
+        if (parsed > 1440) return 1440;
+        return parsed;
+      };
       return {
         cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
         estaciones: estaciones,
         card_size: String(src.card_size || 'medium').trim().toLowerCase() || 'medium',
         caja_enabled: !!src.caja_enabled,
+        caja_placement: normalizePlacement(src.caja_placement || src.cajaPlacement),
         youtube_enabled: !!src.youtube_enabled,
+        youtube_placement: normalizePlacement(src.youtube_placement || src.youtubePlacement),
         youtube_query: String(src.youtube_query || 'YouTube').trim() || 'YouTube',
+        notas_enabled: !!(src.notas_enabled || src.notasEnabled),
+        notas_placement: normalizePlacement(src.notas_placement || src.notasPlacement),
+        notas_text: String(src.notas_text || src.notasText || '').trim(),
+        notas_default_minutes: normalizeMinutes(src.notas_default_minutes || src.notasDefaultMinutes),
+        notas_repeat_minutes: normalizeMinutes(src.notas_repeat_minutes || src.notasRepeatMinutes),
+        notas_beep_enabled: src.notas_beep_enabled === undefined && src.notasBeepEnabled === undefined ? true : !!(src.notas_beep_enabled !== undefined ? src.notas_beep_enabled : src.notasBeepEnabled),
+        notas_blink_enabled: src.notas_blink_enabled === undefined && src.notasBlinkEnabled === undefined ? true : !!(src.notas_blink_enabled !== undefined ? src.notas_blink_enabled : src.notasBlinkEnabled),
         carrito_ui_global: normalizeUnifiedCartConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
       };
     }
@@ -260,7 +281,7 @@
         credentials: 'same-origin'
       });
       if (!currentRes.ok) {
-        throw new Error(await currentRes.text() || 'No se pudo cargar la configuración actual de estaciones.');
+        throw new Error(await currentRes.text() || 'No se pudo cargar la configuraciÃ³n actual de estaciones.');
       }
       const currentData = await currentRes.json();
       const prefs = currentData && Array.isArray(currentData.prefs) ? currentData.prefs : [];

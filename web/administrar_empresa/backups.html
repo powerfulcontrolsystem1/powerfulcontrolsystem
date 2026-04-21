@@ -16,6 +16,23 @@
 
     <section class="form creditos-section creditos-section-first">
       <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Configuracion por empresa</h2>
+      </div>
+      <p class="form-help">Fase 2: exporta o importa la configuracion operativa de la empresa en JSON canonico. Incluye integraciones, apariencia, parametros operativos, impresoras, venta publica, soporte remoto y preferencias empresariales.</p>
+      <div class="backups-toolbar-grid">
+        <input id="bkConfigNombre" class="form-input" type="text" placeholder="Nombre del backup de configuracion (opcional)">
+        <input id="bkConfigDescripcion" class="form-input" type="text" placeholder="Descripcion operativa (opcional)">
+        <input id="bkConfigFile" class="form-input" type="file" accept="application/json,.json">
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnExportarConfiguracionEmpresa" type="button" class="btn">Exportar configuracion</button>
+        <button id="btnImportarConfiguracionEmpresa" type="button" class="btn secondary">Importar configuracion</button>
+      </div>
+      <div id="configBackupMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section creditos-section-first">
+      <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Crear snapshot</h2>
       </div>
       <div class="backups-toolbar-grid">
@@ -111,6 +128,7 @@
 
       var contextoEl = document.getElementById('backupsContexto');
       var crearMsgEl = document.getElementById('crearBackupMsg');
+      var configMsgEl = document.getElementById('configBackupMsg');
       var purgaMsgEl = document.getElementById('purgaBackupMsg');
       var listaMsgEl = document.getElementById('listaBackupMsg');
       var tablaBody = document.getElementById('tablaBackupsBody');
@@ -234,6 +252,67 @@
         }
         var blob = await resp.blob();
         saveBlob(blob, getDownloadFilename(resp, fallbackName));
+      }
+
+      async function exportarConfiguracionEmpresa() {
+        var payload = {
+          empresa_id: empresaId,
+          nombre: document.getElementById('bkConfigNombre').value || '',
+          descripcion: document.getElementById('bkConfigDescripcion').value || ''
+        };
+
+        var url = buildBaseURL('exportar_configuracion');
+        var resp = await fetch(url.toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+          var raw = await resp.text().catch(function () { return ''; });
+          throw new Error(raw || ('HTTP ' + resp.status));
+        }
+
+        var blob = await resp.blob();
+        var fallbackName = 'configuracion_empresa_' + empresaId + '.json';
+        saveBlob(blob, getDownloadFilename(resp, fallbackName));
+        setMsg(configMsgEl, 'Configuracion exportada correctamente.', 'success');
+        await cargarBackups();
+      }
+
+      async function importarConfiguracionEmpresa() {
+        var fileInput = document.getElementById('bkConfigFile');
+        var file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        if (!file) {
+          throw new Error('Selecciona un archivo JSON de configuracion.');
+        }
+
+        var raw = await file.text();
+        var parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (_) {
+          throw new Error('El archivo no contiene un JSON valido.');
+        }
+
+        var ok = window.confirm('Se reemplazara la configuracion actual de esta empresa por la del archivo importado. Deseas continuar?');
+        if (!ok) return;
+
+        var data = await requestJSON('POST', 'importar_configuracion', null, {
+          empresa_id: empresaId,
+          nombre: document.getElementById('bkConfigNombre').value || '',
+          descripcion: document.getElementById('bkConfigDescripcion').value || '',
+          payload: parsed
+        });
+        var resultado = data.resultado || {};
+        var msg = 'Configuracion importada. Tablas restauradas: ' + Number(resultado.tablas_restauradas || 0) +
+          ' | Registros restaurados: ' + Number(resultado.registros_restaurados || 0);
+        if (Number(data.source_empresa_id || 0) > 0) {
+          msg += ' | Empresa origen: ' + Number(data.source_empresa_id);
+        }
+        setMsg(configMsgEl, msg, 'success');
+        fileInput.value = '';
+        await cargarBackups();
       }
 
       function renderRows(rows) {
@@ -512,6 +591,24 @@
 
           } catch (err) {
             setMsg(crearMsgEl, 'Error: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('btnExportarConfiguracionEmpresa').addEventListener('click', async function () {
+          try {
+            setMsg(configMsgEl, '', '');
+            await exportarConfiguracionEmpresa();
+          } catch (err) {
+            setMsg(configMsgEl, 'Error al exportar configuracion: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('btnImportarConfiguracionEmpresa').addEventListener('click', async function () {
+          try {
+            setMsg(configMsgEl, '', '');
+            await importarConfiguracionEmpresa();
+          } catch (err) {
+            setMsg(configMsgEl, 'Error al importar configuracion: ' + (err && err.message ? err.message : err), 'error');
           }
         });
 

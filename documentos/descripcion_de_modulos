@@ -1,3 +1,59 @@
+2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
+- Modulos afectados: `soporte remoto`, `super`
+- Cambio funcional: la configuracion inicial consultada desde `backend/db/soporte_remoto.go` para una empresa sin registro previo ahora nace alineada al flujo simplificado de RustDesk, con `habilitado = true`, `portal_publico_habilitado = true`, `proveedor_preferido = rustdesk_oss` y `modo_operacion = cliente_local`. `web/super/servidores.html` preserva ese estado por defecto en la primera carga para evitar falsos inactivos cuando todavia no existe configuracion persistida.
+- Impacto operativo: el panel super ya no sugiere que RustDesk esta apagado a nivel de configuracion por simple ausencia de registro; la empresa queda lista para completar host y clave sin un paso adicional de activacion.
+
+2026-04-21: Compras y finanzas agregan comprobantes adjuntos por empresa
+- Modulos afectados: `compras`, `finanzas`, `administrar_empresa`
+- Cambio funcional: `backend/handlers/compras.go` y `backend/handlers/finanzas.go` agregan endpoints protegidos para subir fotos, PDFs y documentos de soporte por `empresa_id`, guardándolos en carpetas físicas separadas por empresa y módulo. `backend/db/documentos_transaccionales.go` amplía `empresa_compras_documentos` con `comprobante_url` y `comprobante_nombre_archivo`, mientras `empresa_finanzas_movimientos` reutiliza `comprobante_url` con carga física real. `web/administrar_empresa/compras.html` y `web/administrar_empresa/finanzas.html` incorporan adjunto y enlace `Ver comprobante` dentro del flujo operativo y de los listados.
+- Impacto operativo: la empresa puede adjuntar y luego consultar recibos o soportes de compras, egresos e ingresos sin salir del panel, manteniendo aislamiento por `empresa_id` y sin crear roles o wrappers nuevos fuera de los ya existentes para compras y finanzas.
+
+2026-04-21: Soporte remoto y servidores super simplifican la operación RustDesk
+- Modulos afectados: `soporte remoto`, `super`, `administrar_empresa`, `portal_publico`
+- Cambio funcional: `web/super/servidores.html` deja de ser una tarjeta genérica y pasa a controlar de forma directa el servicio RustDesk del VPS con estado agregado, acciones `start/stop/restart` y prueba operativa del backend. `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` se recortan a una configuración mínima por empresa: host del VPS, clave pública, carpeta de transferencia, observaciones, instrucciones y descargas oficiales de cliente/servidor para Windows, Linux y macOS. `web/soporte_remoto_acceso.html` también se simplifica para exponer solo las descargas y los datos de conexión realmente necesarios al cliente final.
+- Impacto operativo: la empresa conserva una pantalla clara para publicar el acceso remoto de su operación, mientras el encendido y la salud del servicio RustDesk quedan centralizados en super. No se promete estado real del VPS cuando el backend corre en Windows local; la comprobación efectiva se materializa cuando este mismo backend se ejecuta en Linux o directamente en el VPS.
+
+2026-04-20: Backups empresariales agrega exportar/importar configuracion por empresa
+- Modulos afectados: `backups empresariales`, `administrar_empresa`, `configuracion`, `integraciones`
+- Cambio funcional: `backend/db/backups_empresariales.go` incorpora un alcance canonico `configuracion_empresa` para snapshots portables de tablas de configuracion (general, avanzada, operativa, estacion_prefs, impresoras, venta publica, soporte remoto, DIAN y preferencias empresariales relacionadas). `backend/handlers/backups_empresariales.go` agrega `action=exportar_configuracion` y `action=importar_configuracion`, permitiendo exportar un JSON canonico y restaurarlo sobre la empresa destino con remapeo de `empresa_id` y trazabilidad como backup restaurable. `web/administrar_empresa/backups.html` agrega la interfaz visible para descargar e importar la configuracion desde archivo.
+- Impacto operativo: la empresa puede clonar o recuperar su configuracion completa desde el panel sin tocar tablas transaccionales ni depender de artefactos SQLite. Cada importacion queda registrada en el historial de backups y se aplica sobre PostgreSQL con restauracion controlada.
+
+2026-04-20: Estaciones agrega la estacion especial Notas y orden configurable para especiales
+- Modulos afectados: `estaciones`, `carritos`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/configuracion_de_estaciones.html` ahora permite habilitar `Caja`, `YouTube` y la nueva estacion especial `Notas`, indicando para cada una si carga antes o despues de las estaciones normales. `Notas` incorpora texto inicial, minutos por defecto y switches para pitido y parpadeo. `web/administrar_empresa/estaciones.html` renderiza las especiales segun ese orden y agrega una tarjeta operativa `Notas` con textarea, temporizador programable, guardado del texto base y alerta visual/sonora al vencerse.
+- Impacto operativo: la empresa puede usar estaciones especiales auxiliares sin mezclarlas con carritos base numerados. `Caja`, `YouTube` y `Notas` quedan reordenables alrededor del grid principal y `Notas` sirve como recordatorio operativo temporizado dentro del panel de estaciones.
+
+2026-04-20: Estaciones amplía `Notas` con multiples recordatorios persistentes y repeticion automatica
+- Modulos afectados: `estaciones`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/estaciones.html` reemplaza la logica de una sola nota por una lista de notas dentro de la misma estacion especial `Notas`, con seleccion activa, temporizadores independientes, cuenta regresiva restaurable tras recargar y repeticion automatica configurable por minutos hasta detener manualmente la alerta.
+- Cambio de configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` agrega `notas_repeat_minutes` como valor por defecto y `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva ese campo dentro de `estaciones_config`.
+- Impacto operativo: la estacion `Notas` puede gestionar varios recordatorios locales por `empresa_id` sin crear endpoints ni carritos adicionales. La configuracion base sigue compartida por backend, pero el runtime multiple queda aislado en el navegador de la empresa.
+
+2026-04-20: Login administrativo corrige la activacion del ojito de contraseña
+- Modulos afectados: `autenticacion y sesiones`
+- Cambio funcional: `web/js/login.js` mueve la inicializacion de `initPasswordVisibilityToggles()` al flujo principal de carga del script. El boton de visibilidad del campo `adminPassword` en `web/login.html` vuelve a alternar entre texto visible y password sin depender de llamadas indirectas desde `showMsg`.
+- Impacto operativo: el login administrativo recupera el comportamiento esperado de mostrar y ocultar la contraseña escrita, sin cambios en permisos, sesiones ni endpoints.
+
+2026-04-20: Configuracion avanzada agrega WhatsApp del boton flotante del portal publico
+- Modulos afectados: `super`, `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/super/configuracion_avanzada.html` incorpora una tarjeta dedicada para administrar el número de WhatsApp del botón flotante del `index.html`. El backend persiste el valor en `portal.whatsapp_contact_number`, lo expone desde `/api/public/pagina_principal` y `web/index.html` deja de usar un `wa.me` fijo para construir el enlace público desde configuración.
+- Impacto operativo: super puede cambiar el número comercial del botón flotante sin editar archivos estáticos. El portal público conserva el mismo CTA visual, pero el destino de WhatsApp pasa a ser configurable desde panel.
+
+2026-04-20: Portal publico alinea el header del home con la landing descriptiva
+- Modulos afectados: `portal_publico`, `pagina principal publica`, `autenticacion y sesiones`
+- Cambio funcional: `web/index.html` deja de usar el botón visual propio `portal-header-btn` en la cabecera y reutiliza el mismo lenguaje visual compartido del header de `web/descripcion_de_los_sistemas.ht` mediante `btn dark`. En la misma fila del acceso `Iniciar sesión` se agrega `Crear cuenta`, apuntando al registro público de administradores en `/registrar_nuevo_usuario_administrador.html`, y el responsive móvil del header ajusta ambos botones con ancho y alto consistentes.
+- Impacto operativo: la portada mantiene su condición pública y no cambia permisos ni rutas protegidas; solo hace más visible el alta pública administrativa, corrige la rotulación del acceso a sesión y unifica el estilo comercial entre el home y la landing descriptiva también en móvil.
+
+2026-04-20: Portal publico simplifica la landing descriptiva y elimina los bloques superiores
+- Modulos afectados: `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/descripcion_de_los_sistemas.ht` deja de renderizar el hero inicial y la tarjeta completa de accesos rapidos. La pagina abre directamente en las tarjetas descriptivas y mantiene el soporte de hash hacia cada seccion. El script sigue tolerando la ausencia del menu rapido sin romper la carga del contenido.
+- Impacto operativo: sin cambios en rutas, permisos o CTA; el ajuste solo reduce el contenido superior para que la descripcion detallada aparezca de inmediato al entrar a la landing.
+
+2026-04-20: Portal publico mejora la landing descriptiva con menu profesional y apariencia sincronizada
+- Modulos afectados: `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/descripcion_de_los_sistemas.ht` deja la grilla simple de accesos rapidos y la convierte en un menu interno mas ejecutivo, con numeracion, subtitulo por solucion y estado activo segun la seccion enfocada. `web/estilos.css` reemplaza colores fijos oscuros por variables del sistema de apariencia para que la landing responda realmente al modo claro u oscuro que ya maneja `menu.js`.
+- Impacto operativo: la landing publica mantiene rutas, permisos y CTA existentes, pero ahora se percibe coherente con la apariencia global del portal y facilita saltar entre soluciones sin perder contexto visual.
+
 2026-04-20: Inventario avanzado, compras preventivas y tablero financiero quedan validados en PostgreSQL sobre runtime real de Motel Calipso
 - Modulos afectados: `inventario`, `compras`, `finanzas`, `reportes`
 - Cambio funcional: `backend/db/productos.go` deja portables para PostgreSQL las consultas de tendencia, proyeccion de quiebre, plan de reposicion y resumen por proveedor. La salida de inventario con politica PEPS deja de fallar al consumir lotes con wrappers SQL compatibles y cerrar el cursor antes de actualizar existencias/lotes en la misma transaccion. `backend/db/finanzas.go` deja de construir el tablero y su exporte con consultas sensibles a SQLite y pasa a usar lectura compatible para el resumen financiero, contable y operativo.
@@ -688,6 +744,12 @@ Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por cor
 - `web/login.html` vuelve a exponer el checkbox y `web/js/login.js` persiste el correo en `localStorage` bajo una clave dedicada, sin tocar la sesion real, el flujo Google ni el login de usuarios de empresa.
 - Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance; el ajuste es exclusivamente de conveniencia en la UX del acceso administrativo por correo.
 
+Actualizacion 2026-04-20 (apariencia global: contraste unificado en los seis temas):
+- Se refuerzan los modulos `portal publico`, `autenticacion y sesiones`, `seleccion de empresa`, `estaciones`, `super` y vistas operativas embebidas para que los seis modos de apariencia (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`) mantengan contraste legible de textos, tarjetas, tablas, estados vacíos y paneles auxiliares.
+- `web/estilos.css` deja de depender de varios colores fijos pensados para un solo fondo y migra bloques compartidos a variables semánticas de tema para paneles, tarjetas empresariales, estaciones especiales (`YouTube`, `Notas`), módulos de soporte remoto y estados de mensajes.
+- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/publicar_red_social.html`, `web/red_social_comercial.html` y `web/pantalla_publica.html` alinean sus estilos embebidos con la apariencia activa para no quedar visualmente desconectados del resto del sistema.
+- Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance funcional; el ajuste es visual y de legibilidad transversal en frontend.
+
 Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
 - El modulo `licencias y pasarelas de pago` incorpora una pagina publica estable en `/epayco/respuesta.html` para pegarla directamente en el panel de Epayco como URL de respuesta.
 - `backend/handlers/payments_handlers.go` genera esa ruta como `response` del checkout y conserva `/epayco/webhook` como `confirmation`, de modo que el flujo externo y el flujo interno del sistema apunten a los mismos endpoints canonicos.
@@ -714,6 +776,7 @@ Actualizacion 2026-04-16 (checkout publico y seleccion de empresa: ajustes visua
 Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
 - Se refuerza el modulo `autenticacion y sesiones` para separar el alta administrativa del formulario principal de login y dejar el acceso por correo como una superficie exclusivamente de autenticacion.
 - `web/login.html` conserva Google y correo/clave para acceso, elimina el campo de registro incrustado y agrega vistas visibles para solicitar y restablecer contraseña sin usar `prompt()` del navegador.
+- La vista de restablecimiento administrativo ya no exige que el usuario escriba un token recibido por correo: el enlace de recuperación abre directamente el formulario de nueva contraseña y el código de seguridad se consume internamente desde la URL.
 - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva página pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
 - `backend/handlers/auth_admin_handlers.go` exige datos mínimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperación para que vuelva a la propia `login.html` en modo `reset`.
 - `backend/utils/utils.go` deja públicas la nueva página de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmación y experiencia de usuario.

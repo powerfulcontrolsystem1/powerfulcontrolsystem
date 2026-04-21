@@ -1,12 +1,14 @@
 {
-  "status": "running",
+  "status": "stopped",
   "hostname": "NITRO",
-  "process_id": 10148,
+  "process_id": 22060,
   "listen_addr": ":8080",
-  "last_start_at": "2026-04-20 10:52:03",
+  "last_start_at": "2026-04-20 15:54:39",
   "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=23540 previo_inicio=2026-04-20 10:39:33 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: inicio_script_iniciar_servidor. Ultimo indicio en server.err: 2026/04/20 10:52:03 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
+  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=11992 previo_inicio=2026-04-20 14:22:52 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: inicio_script_iniciar_servidor. Ultimo indicio en server.err: 2026/04/20 15:54:39 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
+  "last_stop_at": "2026-04-20 17:13:58",
+  "last_stop_reason": "signal_terminated",
   "last_unexpected_restart": true,
-  "last_known_server_err": "2026/04/20 10:52:03 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
-  "last_event_id": 8709
+  "last_known_server_err": "2026/04/20 15:54:39 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
+  "last_event_id": 8714
 }

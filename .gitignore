@@ -7,7 +7,6 @@ backend/logs/vps_security/
 backend/*.exe~
 backend/bin/vps_security_scan_linux_amd64
 backend/pos.db
-*.sqlite
 *.db
 logs/test_runs/*.log
 scripts/logs/*.log

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
@@ -17,7 +18,7 @@ import (
 
 func ensureEmpresasCoreSchemaForSuper(t *testing.T, dbEmp *sql.DB) {
 	t.Helper()
-	_, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS empresas (
+	stmt := `CREATE TABLE IF NOT EXISTS empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		nombre TEXT,
@@ -29,7 +30,23 @@ func ensureEmpresasCoreSchemaForSuper(t *testing.T, dbEmp *sql.DB) {
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		stmt = `CREATE TABLE IF NOT EXISTS empresas (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT,
+			nombre TEXT,
+			nit TEXT,
+			tipo_id BIGINT,
+			tipo_nombre TEXT,
+			fecha_creacion TEXT,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`
+	}
+	_, err := dbEmp.Exec(stmt)
 	if err != nil {
 		t.Fatalf("create empresas schema: %v", err)
 	}
@@ -70,19 +87,30 @@ func ensureEmpresasImpactSchemaForSuper(t *testing.T, dbEmp *sql.DB) {
 
 func ensureSuperConfigSchemaForSuper(t *testing.T, dbSuper *sql.DB) {
 	t.Helper()
-	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS configuraciones (
+	configStmt := `CREATE TABLE IF NOT EXISTS configuraciones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		config_key TEXT UNIQUE,
 		value TEXT,
 		encrypted INTEGER DEFAULT 0,
 		fecha_creacion TEXT,
 		fecha_actualizacion TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		configStmt = `CREATE TABLE IF NOT EXISTS configuraciones (
+			id BIGSERIAL PRIMARY KEY,
+			config_key TEXT UNIQUE,
+			value TEXT,
+			encrypted INTEGER DEFAULT 0,
+			fecha_creacion TEXT,
+			fecha_actualizacion TEXT
+		)`
+	}
+	_, err := dbSuper.Exec(configStmt)
 	if err != nil {
 		t.Fatalf("create configuraciones schema: %v", err)
 	}
 
-	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS licencias (
+	licStmt := `CREATE TABLE IF NOT EXISTS licencias (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		tipo_id INTEGER,
@@ -96,12 +124,30 @@ func ensureSuperConfigSchemaForSuper(t *testing.T, dbSuper *sql.DB) {
 		activo INTEGER DEFAULT 1,
 		fecha_fin TEXT,
 		fecha_creacion TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		licStmt = `CREATE TABLE IF NOT EXISTS licencias (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT,
+			tipo_id BIGINT,
+			nombre TEXT,
+			descripcion TEXT,
+			valor DOUBLE PRECISION,
+			duracion_dias INTEGER,
+			modulos_habilitados TEXT,
+			super_rol_habilitado INTEGER DEFAULT 0,
+			fecha_inicio TEXT,
+			activo INTEGER DEFAULT 1,
+			fecha_fin TEXT,
+			fecha_creacion TEXT
+		)`
+	}
+	_, err = dbSuper.Exec(licStmt)
 	if err != nil {
 		t.Fatalf("create licencias schema: %v", err)
 	}
 
-	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+	tiposStmt := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT,
 		observaciones TEXT,
@@ -109,7 +155,19 @@ func ensureSuperConfigSchemaForSuper(t *testing.T, dbSuper *sql.DB) {
 		fecha_creacion TEXT,
 		fecha_actualizacion TEXT,
 		usuario_creador TEXT
-	);`)
+	);`
+	if dbpkg.IsPostgresDialect() {
+		tiposStmt = `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+			id BIGSERIAL PRIMARY KEY,
+			nombre TEXT,
+			observaciones TEXT,
+			estado TEXT DEFAULT 'activo',
+			fecha_creacion TEXT,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT
+		)`
+	}
+	_, err = dbSuper.Exec(tiposStmt)
 	if err != nil {
 		t.Fatalf("create tipos_de_empresas schema: %v", err)
 	}
@@ -117,10 +175,11 @@ func ensureSuperConfigSchemaForSuper(t *testing.T, dbSuper *sql.DB) {
 
 func seedEmpresaEstadoForSuper(t *testing.T, dbEmp *sql.DB, id int64, nombre, estado string) {
 	t.Helper()
-	_, err := dbEmp.Exec(`
+	nowValue := time.Now().Format("2006-01-02 15:04:05")
+	_, err := dbpkg.ExecCompat(dbEmp, `
 		INSERT INTO empresas (id, empresa_id, nombre, estado, fecha_creacion, fecha_actualizacion)
-		VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
-	`, id, id, nombre, estado)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, id, id, nombre, estado, nowValue, nowValue)
 	if err != nil {
 		t.Fatalf("insert empresa seed: %v", err)
 	}
@@ -865,6 +924,52 @@ func TestGmailConfigHandlerSaveRestartAlertTo(t *testing.T) {
 	}
 }
 
+func TestGmailConfigHandlerSaveWhatsAppContactNumber(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_whatsapp_contact_number.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := GmailConfigHandler(dbSuper)
+	body := `{"whatsapp_contact_number":"+57 300 111 2233"}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/gmail", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on whatsapp save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "portal.whatsapp_contact_number")
+	if err != nil {
+		t.Fatalf("read portal.whatsapp_contact_number: %v", err)
+	}
+	if strings.TrimSpace(stored) != "573001112233" {
+		t.Fatalf("expected portal.whatsapp_contact_number %q, got %q", "573001112233", stored)
+	}
+	if encrypted {
+		t.Fatal("expected portal.whatsapp_contact_number to be non-encrypted")
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/gmail", nil)
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode gmail get response: %v body=%s", err, getRR.Body.String())
+	}
+	if got := strings.TrimSpace(fmt.Sprint(getBody["whatsapp_contact_number"])); got != "573001112233" {
+		t.Fatalf("expected whatsapp_contact_number in response %q, got %q", "573001112233", got)
+	}
+	if setFlag, _ := getBody["whatsapp_contact_number_set"].(bool); !setFlag {
+		t.Fatalf("expected whatsapp_contact_number_set=true, got %v", getBody["whatsapp_contact_number_set"])
+	}
+}
+
 func TestGmailConfigHandlerSaveRestartAlertToggle(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_gmail_restart_alert_toggle.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
@@ -1261,8 +1366,8 @@ func TestWompiTermsHandlerRejectsWhenDisabled(t *testing.T) {
 }
 
 func TestSuperEndpointsPermisosPorRol(t *testing.T) {
-	dbEmp := openTestSQLite(t, "empresas_super_roles.db")
-	dbSuper := openTestSQLite(t, "super_super_roles.db")
+	dbEmp := openTestPostgres(t, "DB_EMPRESAS_DSN", "empresas_super_roles")
+	dbSuper := openTestPostgres(t, "DB_SUPERADMIN_DSN", "super_super_roles")
 	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
 	ensureSuperSchema(t, dbSuper)
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
@@ -1362,17 +1467,25 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 }
 
 func TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida(t *testing.T) {
-	dbEmp := openTestSQLite(t, "empresas_super_admin_manage.db")
-	dbSuper := openTestSQLite(t, "super_super_admin_manage.db")
+	dbEmp := openTestPostgres(t, "DB_EMPRESAS_DSN", "empresas_super_admin_manage")
+	dbSuper := openTestPostgres(t, "DB_SUPERADMIN_DSN", "super_super_admin_manage")
 	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
 	ensureSuperSchema(t, dbSuper)
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
 
-	if _, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+	clientesStmt := `CREATE TABLE IF NOT EXISTS clientes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		nombre TEXT
-	)`); err != nil {
+	)`
+	if dbpkg.IsPostgresDialect() {
+		clientesStmt = `CREATE TABLE IF NOT EXISTS clientes (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT,
+			nombre TEXT
+		)`
+	}
+	if _, err := dbEmp.Exec(clientesStmt); err != nil {
 		t.Fatalf("create clientes schema: %v", err)
 	}
 
@@ -1383,10 +1496,11 @@ func TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida(t *test
 		t.Fatalf("create session admin: %v", err)
 	}
 
-	if _, err := dbEmp.Exec(`
+	nowValue := time.Now().Format("2006-01-02 15:04:05")
+	if _, err := dbpkg.ExecCompat(dbEmp, `
 		INSERT INTO empresas (id, empresa_id, nombre, nit, tipo_id, tipo_nombre, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
-		VALUES (41, 41, 'Empresa Editable', '90041', 2, 'Hotel', 'admin_scope@empresa.com', 'activo', 'descripcion original', datetime('now','localtime'), datetime('now','localtime'))
-	`); err != nil {
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, 41, 41, "Empresa Editable", "90041", 2, "Hotel", "admin_scope@empresa.com", "activo", "descripcion original", nowValue, nowValue); err != nil {
 		t.Fatalf("insert empresa editable: %v", err)
 	}
 	if _, err := dbEmp.Exec(`INSERT INTO clientes (empresa_id, nombre) VALUES (41, 'Cliente Interno')`); err != nil {
@@ -1450,8 +1564,8 @@ func TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida(t *test
 }
 
 func TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida(t *testing.T) {
-	dbEmp := openTestSQLite(t, "empresas_nuevo_admin_create.db")
-	dbSuper := openTestSQLite(t, "super_nuevo_admin_create.db")
+	dbEmp := openTestPostgres(t, "DB_EMPRESAS_DSN", "empresas_nuevo_admin_create")
+	dbSuper := openTestPostgres(t, "DB_SUPERADMIN_DSN", "super_nuevo_admin_create")
 	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
 	ensureAdminAuthTestSchema(t, dbSuper)
 
@@ -1464,7 +1578,7 @@ func TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida(t *
 		t.Fatalf("expected status %d on register, got %d body=%s", http.StatusOK, registerRR.Code, registerRR.Body.String())
 	}
 
-	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1 WHERE lower(email) = lower(?)`, "nuevo_flujo@empresa.com"); err != nil {
+	if _, err := dbpkg.ExecCompat(dbSuper, `UPDATE administradores SET email_confirmado = 1 WHERE lower(email) = lower(?)`, "nuevo_flujo@empresa.com"); err != nil {
 		t.Fatalf("confirm new admin: %v", err)
 	}
 

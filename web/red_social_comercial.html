@@ -28,7 +28,7 @@
   </div>
   
   <div class="feed" id="feedContenedor">
-    <p style="text-align: center;">Cargando publicaciones...</p>
+    <p class="text-center">Cargando publicaciones...</p>
   </div>
 
   <script>
@@ -41,14 +41,14 @@
         feed.innerHTML = '';
         
         if (data.length === 0) {
-          feed.innerHTML = '<p style="text-align: center; color: var(--muted);">Aún no hay publicaciones disponibles.</p>';
+          feed.innerHTML = '<p class="muted text-center">Aún no hay publicaciones disponibles.</p>';
           return;
         }
 
         data.forEach(p => {
           const imgStyle = p.foto_url 
-            ? `style="background-image: url('${p.foto_url}');"`
-            : `style="background-color: var(--input-bg-soft); display: flex; align-items:center; justify-content:center; color: var(--muted);"`;
+            ? `class="bg-cover" data-bg-url="${p.foto_url}"`
+            : `class="bg-placeholder"`;
           
           const fallBackText = p.foto_url ? '' : '<span>Sin imagen</span>';
 
@@ -67,8 +67,12 @@
         });
       } catch (err) {
         console.error(err);
-        document.getElementById('feedContenedor').innerHTML = '<p style="text-align: center; color: #d9534f;">Error al cargar las publicaciones</p>';
+        document.getElementById('feedContenedor').innerHTML = '<p class="text-danger text-center">Error al cargar las publicaciones</p>';
       }
+      // Aplicar backgrounds a elementos con data-bg-url (uso de background-image desde atributo data)
+      document.querySelectorAll('.bg-cover[data-bg-url]').forEach(function(el){
+        try { el.style.backgroundImage = 'url(' + el.dataset.bgUrl + ')'; } catch(e) {}
+      });
     }
     cargarPublico();
   </script>

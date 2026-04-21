@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -245,6 +249,76 @@ func TestEmpresaFinanzasEmiteEventosContables(t *testing.T) {
 	}
 	if !strings.Contains(periodoCerradoEvt.PayloadJSON, `"autorizado_por":"director.finanzas@test.com"`) {
 		t.Fatalf("expected autorizado_por in payload, got %s", periodoCerradoEvt.PayloadJSON)
+	}
+}
+
+func TestEmpresaFinanzasMovimientoComprobanteUploadHandler(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_eventos_finanzas_comprobante_handler.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+
+	const empresaID int64 = 78
+	cleanupComprasComprobantesArtifacts(t, empresaID)
+
+	movID, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, dbpkg.EmpresaFinanzasMovimiento{
+		EmpresaID:       empresaID,
+		TipoMovimiento:  "egreso",
+		Concepto:        "Pago proveedor soporte",
+		Categoria:       "compras",
+		MetodoPago:      "efectivo",
+		Moneda:          "COP",
+		Monto:           180000,
+		Total:           180000,
+		TipoComprobante: "factura",
+		UsuarioCreador:  "finanzas@test.com",
+	})
+	if err != nil {
+		t.Fatalf("create movimiento: %v", err)
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("empresa_id", strconv.FormatInt(empresaID, 10)); err != nil {
+		t.Fatalf("write empresa_id field: %v", err)
+	}
+	if err := writer.WriteField("movimiento_id", strconv.FormatInt(movID, 10)); err != nil {
+		t.Fatalf("write movimiento_id field: %v", err)
+	}
+	part, err := writer.CreateFormFile("archivo", "egreso.png")
+	if err != nil {
+		t.Fatalf("create multipart file: %v", err)
+	}
+	if _, err := part.Write([]byte("png simulado")); err != nil {
+		t.Fatalf("write multipart file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart: %v", err)
+	}
+
+	hUpload := EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmp)
+	reqUpload := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/movimientos/comprobante", &body)
+	reqUpload.Header.Set("Content-Type", writer.FormDataContentType())
+	reqUpload = reqUpload.WithContext(context.WithValue(reqUpload.Context(), "adminEmail", "finanzas@test.com"))
+	rrUpload := httptest.NewRecorder()
+	hUpload.ServeHTTP(rrUpload, reqUpload)
+	if rrUpload.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d body=%s", rrUpload.Code, rrUpload.Body.String())
+	}
+
+	movs, err := dbpkg.ListEmpresaFinanzasMovimientos(dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{IncludeInactive: true, Limit: 10})
+	if err != nil {
+		t.Fatalf("list movimientos: %v", err)
+	}
+	if len(movs) != 1 {
+		t.Fatalf("expected 1 movimiento, got %d", len(movs))
+	}
+	if strings.TrimSpace(movs[0].ComprobanteURL) == "" {
+		t.Fatalf("expected comprobante_url persisted")
+	}
+	absPath := filepath.Join(resolveWebRootDir(), filepath.FromSlash(strings.TrimPrefix(movs[0].ComprobanteURL, "/")))
+	if _, err := os.Stat(absPath); err != nil {
+		t.Fatalf("expected uploaded comprobante file: %v", err)
 	}
 }
 

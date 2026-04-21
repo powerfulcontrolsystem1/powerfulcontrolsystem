@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -144,7 +144,7 @@
               '</div>' +
               '<div><strong>' + escapeHTML(item.titulo || 'Contrato sin titulo') + '</strong></div>' +
               '<div class="contract-history-meta">' + escapeHTML(item.usuario_creador || 'sistema') + '</div>' +
-              '<p class="form-help" style="margin-top:8px">' + escapeHTML(item.resumen_cambio || 'Sin resumen de cambio') + '</p>' +
+              '<p class="form-help" >' + escapeHTML(item.resumen_cambio || 'Sin resumen de cambio') + '</p>' +
               '<div class="contract-history-actions">' +
                 '<button type="button" class="btn secondary" data-action="use" data-version="' + escapeHTML(item.version) + '">Usar como base</button>' +
                 '<button type="button" class="btn" data-action="preview" data-version="' + escapeHTML(item.version) + '">Ver publico</button>' +

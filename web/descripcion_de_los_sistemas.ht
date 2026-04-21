@@ -18,25 +18,7 @@
       </nav>
     </header>
 
-    <main class="portal-main container systems-main">
-      <section class="systems-hero">
-        <span class="systems-eyebrow">Catalogo unificado</span>
-        <h1>Descripcion completa de nuestras soluciones</h1>
-        <p>
-          Esta pagina concentra la descripcion ampliada de cada tarjeta del portal principal. Si llegaste desde un boton
-          Explorar oferta, el sistema te lleva directamente a la seccion correcta para que revises el alcance funcional y,
-          desde ahi, puedas continuar con Probar Gratis.
-        </p>
-      </section>
-
-      <section class="systems-nav-panel">
-        <div>
-          <h2>Accesos rapidos</h2>
-          <p>Selecciona una solucion y salta a su descripcion detallada dentro de la misma pagina.</p>
-        </div>
-        <div id="systemsQuickNav" class="systems-quick-nav" aria-label="Navegacion rapida por sistemas"></div>
-      </section>
-
+    <main class="portal-main container systems-main systems-main-compact">
       <p id="systemsStatus" class="form-help systems-status" role="status"></p>
 
       <section id="systemsSections" class="systems-sections" aria-live="polite"></section>
@@ -51,6 +33,7 @@
       var sectionsEl = document.getElementById('systemsSections');
       var statusEl = document.getElementById('systemsStatus');
       var systemsMainEl = document.querySelector('.systems-main');
+      var sectionObserver = null;
 
       var fallbackCards = [
         {
@@ -247,9 +230,81 @@
       }
 
       function renderQuickNav(cards) {
-        quickNavEl.innerHTML = cards.map(function (card) {
-          return '<a class="systems-nav-link" href="#' + escapeHTML(card.detalle_id) + '">' + escapeHTML(card.titulo) + '</a>';
+        if (!quickNavEl) {
+          return;
+        }
+        quickNavEl.innerHTML = cards.map(function (card, idx) {
+          return '' +
+            '<a class="systems-nav-link systems-nav-item" data-target-id="' + escapeHTML(card.detalle_id) + '" href="#' + escapeHTML(card.detalle_id) + '">' +
+            '  <span class="systems-nav-item-index">' + String(idx + 1).padStart(2, '0') + '</span>' +
+            '  <span class="systems-nav-item-copy">' +
+            '    <span class="systems-nav-item-title">' + escapeHTML(card.titulo) + '</span>' +
+            '    <span class="systems-nav-item-desc">' + escapeHTML(card.detalle_etiqueta || card.descripcion) + '</span>' +
+            '  </span>' +
+            '  <span class="systems-nav-item-arrow" aria-hidden="true">›</span>' +
+            '</a>';
         }).join('');
+        setActiveQuickNavFromHash();
+      }
+
+      function setActiveQuickNav(targetId) {
+        if (!quickNavEl) {
+          return;
+        }
+        var navItems = quickNavEl ? quickNavEl.querySelectorAll('.systems-nav-item') : [];
+        for (var i = 0; i < navItems.length; i += 1) {
+          var isActive = navItems[i].getAttribute('data-target-id') === targetId;
+          navItems[i].classList.toggle('is-active', isActive);
+          navItems[i].setAttribute('aria-current', isActive ? 'true' : 'false');
+        }
+      }
+
+      function setActiveQuickNavFromHash() {
+        if (!quickNavEl) {
+          return;
+        }
+        var firstItem = quickNavEl.querySelector('.systems-nav-item');
+        var targetId = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : '';
+        if (!targetId && firstItem) {
+          targetId = firstItem.getAttribute('data-target-id') || '';
+        }
+        if (targetId) {
+          setActiveQuickNav(targetId);
+        }
+      }
+
+      function bindSectionObserver() {
+        if (!quickNavEl) {
+          return;
+        }
+        if (sectionObserver && typeof sectionObserver.disconnect === 'function') {
+          sectionObserver.disconnect();
+        }
+        if (!('IntersectionObserver' in window)) {
+          setActiveQuickNavFromHash();
+          return;
+        }
+        var sections = sectionsEl ? sectionsEl.querySelectorAll('.system-detail-card') : [];
+        sectionObserver = new IntersectionObserver(function (entries) {
+          var topEntry = null;
+          for (var i = 0; i < entries.length; i += 1) {
+            if (!entries[i].isIntersecting) {
+              continue;
+            }
+            if (!topEntry || entries[i].intersectionRatio > topEntry.intersectionRatio) {
+              topEntry = entries[i];
+            }
+          }
+          if (topEntry && topEntry.target && topEntry.target.id) {
+            setActiveQuickNav(topEntry.target.id);
+          }
+        }, {
+          rootMargin: '-18% 0px -48% 0px',
+          threshold: [0.2, 0.35, 0.55]
+        });
+        for (var i = 0; i < sections.length; i += 1) {
+          sectionObserver.observe(sections[i]);
+        }
       }
 
       function renderSections(cards) {
@@ -287,13 +342,16 @@
 
       function scrollToHashIfNeeded() {
         if (!window.location.hash) {
+          setActiveQuickNavFromHash();
           return;
         }
         var sectionId = decodeURIComponent(window.location.hash.slice(1));
         var target = document.getElementById(sectionId);
         if (!target) {
+          setActiveQuickNavFromHash();
           return;
         }
+        setActiveQuickNav(sectionId);
         window.requestAnimationFrame(function () {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           if (typeof target.focus === 'function') {
@@ -323,6 +381,7 @@
           var cards = normalizeCards(payload && payload.tarjetas);
           renderQuickNav(cards);
           renderSections(cards);
+          bindSectionObserver();
           statusEl.textContent = '';
           scrollToHashIfNeeded();
         } catch (err) {
@@ -330,6 +389,7 @@
           var fallback = normalizeCards(fallbackCards);
           renderQuickNav(fallback);
           renderSections(fallback);
+          bindSectionObserver();
           statusEl.textContent = 'Se mostraron descripciones predeterminadas por un problema temporal de conexion.';
           scrollToHashIfNeeded();
         }

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -12,12 +12,12 @@
       <div class="empresa-section-header">
         <h1 style="margin:0;">Finanzas empresariales</h1>
         <div class="empresa-inline-actions">
-          <button id="btnGuardarConfig" class="btn secondary" type="button">Guardar configuración</button>
+          <button id="btnGuardarConfig" class="btn secondary" type="button">Guardar configuraciÃ³n</button>
         </div>
       </div>
-      <p class="form-help">Módulo unificado de ingresos y egresos por empresa, con comprobantes, impresión y trazabilidad operativa.</p>
+      <p class="form-help">MÃ³dulo unificado de ingresos y egresos por empresa, con comprobantes, impresiÃ³n y trazabilidad operativa.</p>
 
-      <div class="form" style="margin-top:10px;">
+      <div class="form" >
         <div class="form-row">
           <div class="form-col">
             <label class="empresa-config-check" for="habilitarIngresos">
@@ -34,7 +34,7 @@
           <div class="form-col">
             <label class="empresa-config-check" for="requiereAprobacion">
               <input id="requiereAprobacion" type="checkbox">
-              <span>Requiere aprobación interna</span>
+              <span>Requiere aprobaciÃ³n interna</span>
             </label>
           </div>
         </div>
@@ -52,7 +52,7 @@
             <input id="prefijoEgreso" class="form-input" value="EGR" maxlength="8">
           </div>
           <div class="form-col">
-            <label class="form-label" for="formatoImpresion">Formato impresión</label>
+            <label class="form-label" for="formatoImpresion">Formato impresiÃ³n</label>
             <select id="formatoImpresion" class="form-input">
               <option value="carta">Carta</option>
               <option value="pos">POS</option>
@@ -61,11 +61,11 @@
         </div>
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="categoriasIngreso">Categorías de ingreso (una por línea)</label>
+            <label class="form-label" for="categoriasIngreso">CategorÃ­as de ingreso (una por lÃ­nea)</label>
             <textarea id="categoriasIngreso" class="form-textarea" style="min-height:90px;"></textarea>
           </div>
           <div class="form-col">
-            <label class="form-label" for="categoriasEgreso">Categorías de egreso (una por línea)</label>
+            <label class="form-label" for="categoriasEgreso">CategorÃ­as de egreso (una por lÃ­nea)</label>
             <textarea id="categoriasEgreso" class="form-textarea" style="min-height:90px;"></textarea>
           </div>
         </div>
@@ -73,7 +73,7 @@
           <div class="form-col">
             <label class="form-label" for="integracionDestino">Destino contable externo</label>
             <select id="integracionDestino" class="form-input">
-              <option value="generico">Genérico</option>
+              <option value="generico">GenÃ©rico</option>
               <option value="siigo">SIIGO</option>
               <option value="world_office">World Office</option>
               <option value="alegra">Alegra</option>
@@ -112,19 +112,19 @@
         </div>
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="cuentasIngresoMap">Cuentas por categoría ingreso</label>
+            <label class="form-label" for="cuentasIngresoMap">Cuentas por categorÃ­a ingreso</label>
             <textarea id="cuentasIngresoMap" class="form-textarea" style="min-height:90px;" placeholder="ventas=413595\nservicios=417595"></textarea>
-            <div class="form-help">Formato: categoria=cuenta (una por línea).</div>
+            <div class="form-help">Formato: categoria=cuenta (una por lÃ­nea).</div>
           </div>
           <div class="form-col">
-            <label class="form-label" for="cuentasEgresoMap">Cuentas por categoría egreso</label>
+            <label class="form-label" for="cuentasEgresoMap">Cuentas por categorÃ­a egreso</label>
             <textarea id="cuentasEgresoMap" class="form-textarea" style="min-height:90px;" placeholder="compras=613595\nnomina=510506"></textarea>
-            <div class="form-help">Formato: categoria=cuenta (una por línea).</div>
+            <div class="form-help">Formato: categoria=cuenta (una por lÃ­nea).</div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="configObservaciones">Observaciones configuración</label>
+            <label class="form-label" for="configObservaciones">Observaciones configuraciÃ³n</label>
             <textarea id="configObservaciones" class="form-textarea" style="min-height:70px;"></textarea>
           </div>
         </div>
@@ -132,14 +132,14 @@
       </div>
     </section>
 
-    <section class="card empresa-section" style="margin-top:12px;">
+    <section class="card empresa-section" >
       <div class="empresa-section-header">
         <h2 style="margin:0;">Registrar movimiento</h2>
         <div class="empresa-inline-actions">
           <button id="btnNuevo" class="btn secondary" type="button">Nuevo</button>
         </div>
       </div>
-      <form id="movForm" class="form" style="margin-top:10px;">
+      <form id="movForm" class="form" >
         <input id="movId" type="hidden">
 
         <div class="form-row">
@@ -155,11 +155,11 @@
             <input id="fechaMovimiento" class="form-input" type="datetime-local" required>
           </div>
           <div class="form-col">
-            <label class="form-label" for="categoriaMovimiento">Categoría</label>
+            <label class="form-label" for="categoriaMovimiento">CategorÃ­a</label>
             <select id="categoriaMovimiento" class="form-input"></select>
           </div>
           <div class="form-col">
-            <label class="form-label" for="metodoPago">Método de pago</label>
+            <label class="form-label" for="metodoPago">MÃ©todo de pago</label>
             <select id="metodoPago" class="form-input">
               <option value="efectivo">Efectivo</option>
               <option value="transferencia_bancaria">Transferencia bancaria</option>
@@ -176,7 +176,7 @@
             <input id="concepto" class="form-input" required placeholder="Ej: Pago de servicios, ingreso por caja, etc.">
           </div>
           <div class="form-col">
-            <label class="form-label" for="subcategoria">Subcategoría</label>
+            <label class="form-label" for="subcategoria">SubcategorÃ­a</label>
             <input id="subcategoria" class="form-input" placeholder="Opcional">
           </div>
           <div class="form-col">
@@ -210,15 +210,15 @@
 
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="retencionFuente">Retención fuente</label>
+            <label class="form-label" for="retencionFuente">RetenciÃ³n fuente</label>
             <input id="retencionFuente" class="form-input" type="number" min="0" step="0.01" value="0">
           </div>
           <div class="form-col">
-            <label class="form-label" for="retencionICA">Retención ICA</label>
+            <label class="form-label" for="retencionICA">RetenciÃ³n ICA</label>
             <input id="retencionICA" class="form-input" type="number" min="0" step="0.01" value="0">
           </div>
           <div class="form-col">
-            <label class="form-label" for="retencionIVA">Retención IVA</label>
+            <label class="form-label" for="retencionIVA">RetenciÃ³n IVA</label>
             <input id="retencionIVA" class="form-input" type="number" min="0" step="0.01" value="0">
           </div>
           <div class="form-col">
@@ -246,8 +246,8 @@
             </select>
           </div>
           <div class="form-col">
-            <label class="form-label" for="numeroComprobante">Número de comprobante</label>
-            <input id="numeroComprobante" class="form-input" placeholder="Si queda vacío se autogenera">
+            <label class="form-label" for="numeroComprobante">NÃºmero de comprobante</label>
+            <input id="numeroComprobante" class="form-input" placeholder="Si queda vacÃ­o se autogenera">
           </div>
           <div class="form-col">
             <label class="form-label" for="comprobanteURL">URL comprobante</label>
@@ -261,7 +261,19 @@
 
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="descripcion">Descripción</label>
+            <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
+            <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
+            <div class="form-help">El archivo se guardará en la carpeta de comprobantes de esta empresa.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Comprobante actual</label>
+            <div id="comprobanteActualInfo" class="form-help">Sin adjunto cargado.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="descripcion">DescripciÃ³n</label>
             <textarea id="descripcion" class="form-textarea" style="min-height:80px;"></textarea>
           </div>
           <div class="form-col">
@@ -278,7 +290,7 @@
       </form>
     </section>
 
-    <section class="card empresa-section" style="margin-top:12px;">
+    <section class="card empresa-section" >
       <div class="empresa-section-header">
         <h2 style="margin:0;">Cierres de caja por sucursal</h2>
         <div class="empresa-inline-actions">
@@ -287,7 +299,7 @@
       </div>
       <p class="form-help">Controla apertura, arqueo, cierre y aprobacion de caja por sucursal y turno.</p>
 
-      <form id="cierreCajaForm" class="form" style="margin-top:10px;">
+      <form id="cierreCajaForm" class="form" >
         <input id="cierreCajaId" type="hidden">
         <input id="cierreCajaEstado" type="hidden" value="abierto">
         <input id="cierreCajaRegistroEstado" type="hidden" value="activo">
@@ -374,7 +386,7 @@
         </div>
       </form>
 
-      <div class="form" style="margin-top:10px;">
+      <div class="form" >
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="filtroCierreSucursal">Filtro sucursal ID</label>
@@ -403,7 +415,7 @@
             <input id="filtroCierreHasta" class="form-input" type="date">
           </div>
         </div>
-        <div class="form-row" style="margin-top:8px;">
+        <div class="form-row" >
           <div class="form-col">
             <label class="empresa-config-check" for="filtroCierreInactivos">
               <input id="filtroCierreInactivos" type="checkbox">
@@ -413,7 +425,7 @@
         </div>
       </div>
 
-      <div class="kpi-grid" style="margin-top:10px;">
+      <div class="kpi-grid" >
         <div class="kpi-box">
           <span class="kpi-label">Cajas abiertas</span>
           <strong id="kpiCierresAbiertos">0</strong>
@@ -428,7 +440,7 @@
         </div>
       </div>
 
-      <div class="table-wrap" style="margin-top:10px;">
+      <div class="table-wrap" >
         <table class="table" id="tablaCierresCaja">
           <thead>
             <tr>
@@ -451,7 +463,7 @@
       <div id="cierresMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section" style="margin-top:12px;">
+    <section class="card empresa-section" >
       <div class="empresa-section-header">
         <h2 style="margin:0;">Movimientos registrados</h2>
         <div class="empresa-inline-actions">
@@ -470,7 +482,7 @@
         </div>
       </div>
 
-      <div class="form" style="margin-top:10px;">
+      <div class="form" >
         <div class="form-row" style="margin-bottom:0;">
           <div class="form-col">
             <label class="form-label" for="filtroDesde">Desde</label>
@@ -482,14 +494,14 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="filtroQ">Buscar</label>
-            <input id="filtroQ" class="form-input" placeholder="Código, concepto, comprobante, tercero">
+            <input id="filtroQ" class="form-input" placeholder="CÃ³digo, concepto, comprobante, tercero">
           </div>
           <div class="form-col">
             <label class="form-label" for="filtroPeriodo">Periodo contable (YYYY-MM)</label>
             <input id="filtroPeriodo" class="form-input" placeholder="2026-04">
           </div>
         </div>
-        <div class="form-row" style="margin-top:8px;">
+        <div class="form-row" >
           <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
             <button id="btnCerrarPeriodo" class="btn danger" type="button" style="width:100%;">Cerrar periodo</button>
           </div>
@@ -503,14 +515,14 @@
         <div id="periodoMsg" class="form-help"></div>
       </div>
 
-      <div class="empresa-inline-actions" style="margin-top:12px;">
-        <button id="tabTodos" class="btn secondary" type="button">Pestaña Todos</button>
-        <button id="tabIngresos" class="btn" type="button">Pestaña Ingresos</button>
-        <button id="tabEgresos" class="btn secondary" type="button">Pestaña Egresos</button>
+      <div class="empresa-inline-actions" >
+        <button id="tabTodos" class="btn secondary" type="button">PestaÃ±a Todos</button>
+        <button id="tabIngresos" class="btn" type="button">PestaÃ±a Ingresos</button>
+        <button id="tabEgresos" class="btn secondary" type="button">PestaÃ±a Egresos</button>
       </div>
-      <div id="tabResumen" class="form-help" style="margin-top:6px;"></div>
+      <div id="tabResumen" class="form-help" ></div>
 
-      <div class="kpi-grid" style="margin-top:12px;">
+      <div class="kpi-grid" >
         <div class="kpi-box">
           <span class="kpi-label">Ingresos</span>
           <strong id="kpiIngresos">$0</strong>
@@ -525,14 +537,14 @@
         </div>
       </div>
 
-      <div class="table-wrap" style="margin-top:10px;">
+      <div class="table-wrap" >
         <table class="table" id="tablaMovimientos">
           <thead>
             <tr>
               <th>Fecha</th>
-              <th>Código</th>
+              <th>CÃ³digo</th>
               <th>Tipo</th>
-              <th>Categoría</th>
+              <th>CategorÃ­a</th>
               <th>Concepto</th>
               <th>Total</th>
               <th>Neto</th>
@@ -547,7 +559,7 @@
       <div id="listMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section" style="margin-top:12px;">
+    <section class="card empresa-section" >
       <div class="empresa-section-header">
         <h2 style="margin:0;">Conciliacion contable por periodo</h2>
         <div class="empresa-inline-actions">
@@ -556,7 +568,7 @@
       </div>
       <p class="form-help">Compara eventos contables vs asientos canonicos para detectar pendientes, errores y descuadres por periodo.</p>
 
-      <div class="form" style="margin-top:10px;">
+      <div class="form" >
         <div class="form-row" style="margin-bottom:0;">
           <div class="form-col">
             <label class="form-label" for="concDesde">Desde</label>
@@ -577,7 +589,7 @@
         </div>
       </div>
 
-      <div class="kpi-grid" style="margin-top:10px;">
+      <div class="kpi-grid" >
         <div class="kpi-box">
           <span class="kpi-label">Periodos listados</span>
           <strong id="kpiConcTotal">0</strong>
@@ -596,7 +608,7 @@
         </div>
       </div>
 
-      <div class="table-wrap" style="margin-top:10px;">
+      <div class="table-wrap" >
         <table class="table" id="tablaConciliacionContable">
           <thead>
             <tr>
@@ -858,6 +870,8 @@
       document.getElementById('tipoComprobante').value = 'recibo_interno';
       document.getElementById('numeroComprobante').value = '';
       document.getElementById('comprobanteURL').value = '';
+      document.getElementById('comprobanteArchivo').value = '';
+      document.getElementById('comprobanteActualInfo').innerHTML = 'Sin adjunto cargado.';
       document.getElementById('referenciaExterna').value = '';
       document.getElementById('aprobadoPor').value = '';
       document.getElementById('descripcion').value = '';
@@ -865,6 +879,16 @@
       document.getElementById('btnGuardarMovimiento').textContent = 'Guardar movimiento';
       setMsg('movMsg', '', false);
       syncTotalesContables();
+    }
+
+    function renderComprobanteActualInfo(url) {
+      var raw = normalize(url);
+      var target = document.getElementById('comprobanteActualInfo');
+      if (!raw) {
+        target.innerHTML = 'Sin adjunto cargado.';
+        return;
+      }
+      target.innerHTML = '<a class="btn secondary" href="' + sanitize(raw) + '" target="_blank" rel="noopener">Ver comprobante actual</a>';
     }
 
     function fillConfigForm(cfg) {
@@ -1126,7 +1150,7 @@
         }
         cajaFisica = String(parsed);
       } else {
-        if (!confirm('¿Confirmas la accion "' + action + '" para la caja ' + normalize(item.caja_codigo) + '?')) return;
+        if (!confirm('Â¿Confirmas la accion "' + action + '" para la caja ' + normalize(item.caja_codigo) + '?')) return;
       }
 
       const observaciones = normalize(document.getElementById('observacionesCierre').value);
@@ -1169,7 +1193,7 @@
 
     async function eliminarCierreCaja(item) {
       if (!item || !item.id) return;
-      if (!confirm('¿Eliminar este cierre de caja? Esta accion no se puede deshacer.')) return;
+      if (!confirm('Â¿Eliminar este cierre de caja? Esta accion no se puede deshacer.')) return;
       try {
         const res = await fetch('/api/empresa/finanzas/cierres_caja?empresa_id=' + state.empresaID + '&id=' + item.id, { method: 'DELETE' });
         await ensureOk(res);
@@ -1291,7 +1315,7 @@
         return;
       }
       const titulo = action === 'cerrar' ? 'cerrar' : 'reabrir';
-      if (!confirm('¿Confirmas ' + titulo + ' el periodo ' + periodo + '?')) return;
+      if (!confirm('Â¿Confirmas ' + titulo + ' el periodo ' + periodo + '?')) return;
       const url = '/api/empresa/finanzas/periodos?action=' + action + '&empresa_id=' + state.empresaID + '&periodo=' + encodeURIComponent(periodo);
       const res = await fetch(url, { method: 'PUT' });
       await ensureOk(res);
@@ -1309,7 +1333,7 @@
       });
       await ensureOk(res);
       await loadConfig();
-      setMsg('configMsg', 'Configuración guardada correctamente.', false);
+      setMsg('configMsg', 'ConfiguraciÃ³n guardada correctamente.', false);
     }
 
     function movimientoPayload() {
@@ -1352,6 +1376,31 @@
       return payload;
     }
 
+    async function uploadMovimientoComprobante(movimientoID, file) {
+      if (!movimientoID || !file) {
+        return null;
+      }
+      const formData = new FormData();
+      formData.append('empresa_id', String(state.empresaID));
+      formData.append('movimiento_id', String(movimientoID));
+      formData.append('archivo', file, file.name || 'comprobante');
+      const res = await fetch('/api/empresa/finanzas/movimientos/comprobante', {
+        method: 'POST',
+        body: formData
+      });
+      await ensureOk(res);
+      return res.json();
+    }
+
+    function renderComprobanteListado(item) {
+      const comp = sanitize(normalize(item.numero_comprobante || item.codigo) || '-');
+      const url = normalize(item.comprobante_url);
+      if (!url) {
+        return comp;
+      }
+      return comp + '<br><a class="btn secondary" href="' + sanitize(url) + '" target="_blank" rel="noopener">Ver adjunto</a>';
+    }
+
     function setMovForm(item) {
       document.getElementById('movId').value = String(item.id || '');
       const tipo = normalize(item.tipo_movimiento).toLowerCase() || 'egreso';
@@ -1374,6 +1423,8 @@
       document.getElementById('tipoComprobante').value = normalize(item.tipo_comprobante) || 'recibo_interno';
       document.getElementById('numeroComprobante').value = normalize(item.numero_comprobante);
       document.getElementById('comprobanteURL').value = normalize(item.comprobante_url);
+      document.getElementById('comprobanteArchivo').value = '';
+      renderComprobanteActualInfo(item.comprobante_url);
       document.getElementById('referenciaExterna').value = normalize(item.referencia_externa);
       document.getElementById('aprobadoPor').value = normalize(item.aprobado_por);
       document.getElementById('descripcion').value = normalize(item.descripcion);
@@ -1564,7 +1615,7 @@
       const html = buildPrintHTML(item, printerResolution);
       const w = window.open('', '_blank', 'width=900,height=700');
       if (!w) {
-        setMsg('listMsg', 'El navegador bloqueó la ventana de impresión.', true);
+        setMsg('listMsg', 'El navegador bloqueÃ³ la ventana de impresiÃ³n.', true);
         return;
       }
       w.document.open();
@@ -1576,13 +1627,12 @@
       const tbody = document.querySelector('#tablaMovimientos tbody');
       const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="10">No hay registros en la pestaña ' + sanitize(currentTabLabel()) + ' para el filtro actual.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10">No hay registros en la pestaÃ±a ' + sanitize(currentTabLabel()) + ' para el filtro actual.</td></tr>';
         return;
       }
 
       tbody.innerHTML = rows.map(item => {
         const tipo = normalize(item.tipo_movimiento);
-        const comp = normalize(item.numero_comprobante || item.codigo);
         const estado = normalize(item.estado || 'activo');
         return '<tr>' +
           '<td>' + sanitize(formatDateTime(item.fecha_movimiento)) + '</td>' +
@@ -1592,7 +1642,7 @@
           '<td>' + sanitize(item.concepto || '') + '</td>' +
           '<td>' + sanitize(fmtMoney(item.total)) + '</td>' +
           '<td>' + sanitize(fmtMoney(toNumber(item.total_neto, toNumber(item.total, 0) - toNumber(item.total_retenciones, 0)))) + '</td>' +
-          '<td>' + sanitize(comp) + '</td>' +
+          '<td>' + renderComprobanteListado(item) + '</td>' +
           '<td>' + sanitize(estado) + '</td>' +
           '<td class="actions">' +
             '<button class="btn secondary edit" data-id="' + item.id + '">Editar</button> ' +
@@ -1639,7 +1689,7 @@
 
       document.querySelectorAll('.del').forEach(btn => {
         btn.onclick = async function() {
-          if (!confirm('¿Eliminar movimiento? Esta acción no se puede deshacer.')) return;
+          if (!confirm('Â¿Eliminar movimiento? Esta acciÃ³n no se puede deshacer.')) return;
           const id = Number(btn.getAttribute('data-id'));
           try {
             const res = await fetch('/api/empresa/finanzas/movimientos?empresa_id=' + state.empresaID + '&id=' + id, { method: 'DELETE' });
@@ -1709,7 +1759,7 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      setMsg('listMsg', 'Exportación Excel (CSV) generada correctamente.', false);
+      setMsg('listMsg', 'ExportaciÃ³n Excel (CSV) generada correctamente.', false);
     }
 
     function exportarPDF() {
@@ -1740,14 +1790,14 @@
       '</style></head><body>' +
         '<h1>Libro financiero - ' + sanitize(currentTabLabel()) + '</h1>' +
         '<p><strong>Empresa:</strong> ' + sanitize(state.empresaNombre || ('ID ' + state.empresaID)) + '</p>' +
-        '<p><strong>Rango:</strong> ' + sanitize(desde) + ' a ' + sanitize(hasta) + ' | <strong>Búsqueda:</strong> ' + sanitize(q) + '</p>' +
+        '<p><strong>Rango:</strong> ' + sanitize(desde) + ' a ' + sanitize(hasta) + ' | <strong>BÃºsqueda:</strong> ' + sanitize(q) + '</p>' +
         '<p><strong>Registros:</strong> ' + sanitize(rows.length) + '</p>' +
-        '<table><thead><tr><th>Fecha</th><th>Código</th><th>Categoría</th><th>Concepto</th><th>Total</th><th>Comprobante</th><th>Estado</th></tr></thead><tbody>' + tableRows + '</tbody></table>' +
+        '<table><thead><tr><th>Fecha</th><th>CÃ³digo</th><th>CategorÃ­a</th><th>Concepto</th><th>Total</th><th>Comprobante</th><th>Estado</th></tr></thead><tbody>' + tableRows + '</tbody></table>' +
       '</body></html>';
 
       const w = window.open('', '_blank', 'width=1100,height=800');
       if (!w) {
-        setMsg('listMsg', 'El navegador bloqueó la ventana de exportación PDF.', true);
+        setMsg('listMsg', 'El navegador bloqueÃ³ la ventana de exportaciÃ³n PDF.', true);
         return;
       }
       w.document.open();
@@ -1757,7 +1807,7 @@
         w.focus();
         w.print();
       }, 300);
-      setMsg('listMsg', 'Vista de impresión PDF abierta correctamente.', false);
+      setMsg('listMsg', 'Vista de impresiÃ³n PDF abierta correctamente.', false);
     }
 
     function buildAsientoRecomendado(item, accountingProfile) {
@@ -2472,15 +2522,16 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      setMsg('listMsg', 'Exportación JSON contable generada correctamente.', false);
+      setMsg('listMsg', 'ExportaciÃ³n JSON contable generada correctamente.', false);
     }
 
     async function saveMovimiento(ev) {
       ev.preventDefault();
       try {
         const payload = movimientoPayload();
+        const comprobanteFile = document.getElementById('comprobanteArchivo').files[0];
         if (isPeriodoCerradoLocal(payload.periodo_contable)) {
-          setMsg('movMsg', 'El periodo contable ' + payload.periodo_contable + ' está cerrado. Reabre el periodo para editar movimientos.', true);
+          setMsg('movMsg', 'El periodo contable ' + payload.periodo_contable + ' estÃ¡ cerrado. Reabre el periodo para editar movimientos.', true);
           return;
         }
         const method = payload.id > 0 ? 'PUT' : 'POST';
@@ -2490,6 +2541,18 @@
           body: JSON.stringify(payload)
         });
         await ensureOk(res);
+        const body = await res.json();
+        const movimientoID = payload.id > 0 ? payload.id : Number(body && body.id || 0);
+        if (movimientoID > 0 && comprobanteFile) {
+          try {
+            const uploadResp = await uploadMovimientoComprobante(movimientoID, comprobanteFile);
+            if (uploadResp && uploadResp.comprobante_url) {
+              document.getElementById('comprobanteURL').value = normalize(uploadResp.comprobante_url);
+            }
+          } catch (err) {
+            throw new Error('Movimiento guardado, pero no se pudo adjuntar el comprobante: ' + (err.message || 'error desconocido'));
+          }
+        }
         await loadMovimientos();
         resetMovForm();
         setMsg('movMsg', 'Movimiento guardado correctamente.', false);
@@ -2505,7 +2568,7 @@
         { tipo_movimiento: 'ingreso', categoria: 'ventas', concepto: 'Venta mostrador demo', monto: 245000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'recibo_interno', numero_comprobante: '', tercero_nombre: 'Cliente mostrador' },
         { tipo_movimiento: 'ingreso', categoria: 'servicios', concepto: 'Ingreso por servicio especial', monto: 98000, impuesto: 0, metodo_pago: 'transferencia_bancaria', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Cliente corporativo' },
         { tipo_movimiento: 'egreso', categoria: 'compras', concepto: 'Compra de insumos inventario', monto: 123500, impuesto: 0, metodo_pago: 'transferencia_bancaria', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Proveedor Local Medellin' },
-        { tipo_movimiento: 'egreso', categoria: 'servicios', concepto: 'Pago de servicios públicos', monto: 76000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'soporte_externo', numero_comprobante: '', tercero_nombre: 'Empresa de servicios' }
+        { tipo_movimiento: 'egreso', categoria: 'servicios', concepto: 'Pago de servicios pÃºblicos', monto: 76000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'soporte_externo', numero_comprobante: '', tercero_nombre: 'Empresa de servicios' }
       ].map(r => {
         const retFuente = 0;
         const retICA = 0;
@@ -2519,7 +2582,7 @@
           categoria: r.categoria,
           subcategoria: '',
           concepto: r.concepto,
-          descripcion: 'Registro de prueba para validación funcional del módulo financiero.',
+          descripcion: 'Registro de prueba para validaciÃ³n funcional del mÃ³dulo financiero.',
           metodo_pago: r.metodo_pago,
           moneda: normalize(document.getElementById('moneda').value) || 'COP',
           monto: r.monto,
@@ -2543,7 +2606,7 @@
     }
 
     async function cargarDemo() {
-      if (!confirm('¿Cargar datos demo de ingresos y egresos para esta empresa?')) return;
+      if (!confirm('Â¿Cargar datos demo de ingresos y egresos para esta empresa?')) return;
       try {
         const rows = demoRows();
         for (const row of rows) {
@@ -2562,7 +2625,7 @@
     }
 
     async function procesarEventosContablesPendientes() {
-      if (!confirm('¿Procesar eventos contables pendientes y generar asientos canónicos?')) return;
+      if (!confirm('Â¿Procesar eventos contables pendientes y generar asientos canÃ³nicos?')) return;
       try {
         const res = await fetch('/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=' + state.empresaID + '&limit=300', {
           method: 'PUT'
@@ -2596,7 +2659,7 @@
         try {
           await saveConfig();
         } catch (err) {
-          setMsg('configMsg', err.message || 'No se pudo guardar configuración.', true);
+          setMsg('configMsg', err.message || 'No se pudo guardar configuraciÃ³n.', true);
         }
       });
 
@@ -2744,8 +2807,9 @@
     }
 
     init().catch(function(err) {
-      setMsg('listMsg', err.message || 'No se pudo iniciar el módulo financiero.', true);
+      setMsg('listMsg', err.message || 'No se pudo iniciar el mÃ³dulo financiero.', true);
     });
   </script>
 </body>
 </html>
+

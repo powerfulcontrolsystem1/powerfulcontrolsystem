@@ -17,6 +17,19 @@
   </div>
 
   <script>
+    const notesAlertState = {
+      blinkId: null,
+      audioContext: null,
+      audioUnlocked: false,
+      blinking: false
+    };
+    const notesRuntimeState = {
+      tickId: null,
+      notes: [],
+      selectedNoteId: '',
+      restored: false
+    };
+
     function parsePositiveInt(raw) {
       const n = Number(String(raw || '').trim());
       if (!Number.isFinite(n)) return 0;
@@ -158,6 +171,8 @@
         out.push({
           id: i + 1,
           nombre: nombre || ('Estación ' + (i + 1)),
+          mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
+          mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
         });
@@ -171,15 +186,254 @@
       const youtube_enabled = toBool(youtubeEnabledRaw);
       let youtube_query = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || 'YouTube').trim();
       if (!youtube_query) youtube_query = 'YouTube';
+      const notasEnabledRaw = (cfg && (cfg.notas_enabled !== undefined ? cfg.notas_enabled : cfg.notasEnabled)) || false;
+      const notas_enabled = toBool(notasEnabledRaw);
+      const caja_placement = normalizeSpecialPlacement(cfg && (cfg.caja_placement !== undefined ? cfg.caja_placement : cfg.cajaPlacement));
+      const youtube_placement = normalizeSpecialPlacement(cfg && (cfg.youtube_placement !== undefined ? cfg.youtube_placement : cfg.youtubePlacement));
+      const notas_placement = normalizeSpecialPlacement(cfg && (cfg.notas_placement !== undefined ? cfg.notas_placement : cfg.notasPlacement));
+      const notas_text = String((cfg && (cfg.notas_text !== undefined ? cfg.notas_text : cfg.notasText)) || '').trim();
+      const notas_default_minutes = normalizeNotesDefaultMinutes(cfg && (cfg.notas_default_minutes !== undefined ? cfg.notas_default_minutes : cfg.notasDefaultMinutes));
+      const notas_repeat_minutes = normalizeNotesRepeatMinutes(cfg && (cfg.notas_repeat_minutes !== undefined ? cfg.notas_repeat_minutes : cfg.notasRepeatMinutes));
+      const notas_beep_enabled = cfg && (cfg.notas_beep_enabled !== undefined ? cfg.notas_beep_enabled : cfg.notasBeepEnabled);
+      const notas_blink_enabled = cfg && (cfg.notas_blink_enabled !== undefined ? cfg.notas_blink_enabled : cfg.notasBlinkEnabled);
       return {
         cantidad,
         estaciones: out,
         card_size,
         caja_enabled,
+        caja_placement,
         youtube_enabled,
+        youtube_placement,
         youtube_query,
+        notas_enabled,
+        notas_placement,
+        notas_text,
+        notas_default_minutes,
+        notas_repeat_minutes,
+        notas_beep_enabled: notas_beep_enabled === undefined ? true : toBool(notas_beep_enabled),
+        notas_blink_enabled: notas_blink_enabled === undefined ? true : toBool(notas_blink_enabled),
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
       };
+    }
+
+    function normalizeSpecialPlacement(raw) {
+      const value = String(raw == null ? '' : raw).trim().toLowerCase();
+      return value === 'after' ? 'after' : 'before';
+    }
+
+    function normalizeNotesDefaultMinutes(raw) {
+      let value = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(value)) return 5;
+      value = Math.trunc(value);
+      if (value < 1) return 1;
+      if (value > 1440) return 1440;
+      return value;
+    }
+
+    function normalizeNotesRepeatMinutes(raw) {
+      let value = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(value)) return 0;
+      value = Math.trunc(value);
+      if (value < 0) return 0;
+      if (value > 1440) return 1440;
+      return value;
+    }
+
+    function notesRuntimeStorageKey() {
+      return 'pcs_estaciones_notas_runtime_' + String(empresaId || 0);
+    }
+
+    function createRuntimeNote(cfg, seed) {
+      const src = seed && typeof seed === 'object' ? seed : {};
+      const id = String(src.id || ('note-' + Date.now() + '-' + Math.floor(Math.random() * 100000)));
+      return {
+        id,
+        text: String(src.text == null ? '' : src.text).trim(),
+        duration_minutes: normalizeNotesDefaultMinutes(src.duration_minutes == null ? (cfg && cfg.notas_default_minutes) : src.duration_minutes),
+        repeat_minutes: normalizeNotesRepeatMinutes(src.repeat_minutes == null ? (cfg && cfg.notas_repeat_minutes) : src.repeat_minutes),
+        status: String(src.status || 'idle').trim().toLowerCase() === 'running' ? 'running' : (String(src.status || 'idle').trim().toLowerCase() === 'expired' ? 'expired' : 'idle'),
+        target_time_ms: src.target_time_ms ? Number(src.target_time_ms) : 0,
+        alert_active: !!src.alert_active,
+        last_alert_at: src.last_alert_at ? Number(src.last_alert_at) : 0
+      };
+    }
+
+    function saveNotesRuntimeState() {
+      if (!empresaId) return;
+      try {
+        window.localStorage.setItem(notesRuntimeStorageKey(), JSON.stringify({
+          notes: notesRuntimeState.notes,
+          selected_note_id: notesRuntimeState.selectedNoteId
+        }));
+      } catch (err) {
+        console.warn('No se pudo persistir runtime de notas', err);
+      }
+    }
+
+    function loadNotesRuntimeState(cfg) {
+      if (notesRuntimeState.restored) return;
+      notesRuntimeState.restored = true;
+      let parsed = null;
+      try {
+        const raw = window.localStorage.getItem(notesRuntimeStorageKey());
+        parsed = raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        parsed = null;
+      }
+      const list = parsed && Array.isArray(parsed.notes) ? parsed.notes : [];
+      notesRuntimeState.notes = list.map(note => createRuntimeNote(cfg, note));
+      if (!notesRuntimeState.notes.length) {
+        notesRuntimeState.notes = [createRuntimeNote(cfg, {
+          text: cfg && cfg.notas_text ? cfg.notas_text : '',
+          duration_minutes: cfg && cfg.notas_default_minutes,
+          repeat_minutes: cfg && cfg.notas_repeat_minutes
+        })];
+      }
+      notesRuntimeState.selectedNoteId = String((parsed && parsed.selected_note_id) || notesRuntimeState.notes[0].id || '');
+      saveNotesRuntimeState();
+    }
+
+    function getSelectedRuntimeNote() {
+      if (!notesRuntimeState.notes.length) return null;
+      let found = notesRuntimeState.notes.find(note => note.id === notesRuntimeState.selectedNoteId) || null;
+      if (!found) {
+        found = notesRuntimeState.notes[0];
+        notesRuntimeState.selectedNoteId = found ? found.id : '';
+      }
+      return found;
+    }
+
+    function anyNotesAlertActive() {
+      return notesRuntimeState.notes.some(note => !!note.alert_active);
+    }
+
+    function stopNotesTick() {
+      if (notesRuntimeState.tickId) {
+        window.clearInterval(notesRuntimeState.tickId);
+        notesRuntimeState.tickId = null;
+      }
+    }
+
+    function clearNoteAlert(note) {
+      if (!note) return;
+      note.alert_active = false;
+      note.last_alert_at = 0;
+    }
+
+    function updateNotesCardAlertVisual(cfg) {
+      const card = document.getElementById('notasStationCard');
+      if (!card) return;
+      const active = anyNotesAlertActive();
+      card.classList.toggle('notas-station-expired', active);
+      if (active && cfg && cfg.notas_blink_enabled) {
+        startNotasBlink();
+      } else {
+        stopNotasBlink();
+      }
+    }
+
+    function renderNotesCardState(cfg) {
+      loadNotesRuntimeState(cfg || stationConfig || {});
+      const listEl = document.getElementById('notasStationList');
+      const textEl = document.getElementById('notasStationTextarea');
+      const minutesEl = document.getElementById('notasStationMinutesInput');
+      const repeatEl = document.getElementById('notasStationRepeatInput');
+      const selected = getSelectedRuntimeNote();
+      if (!selected) return;
+
+      if (listEl) {
+        const now = Date.now();
+        listEl.innerHTML = notesRuntimeState.notes.map((note, index) => {
+          let statusLabel = 'Lista';
+          if (note.alert_active) {
+            statusLabel = 'Alerta';
+          } else if (note.status === 'running' && note.target_time_ms) {
+            const remaining = Math.max(0, Math.ceil((note.target_time_ms - now) / 1000));
+            statusLabel = 'Corre ' + formatCountdown(remaining);
+          } else if (note.status === 'expired') {
+            statusLabel = 'Vencida';
+          }
+          const title = sanitize((note.text || '').split('\n')[0] || ('Nota ' + (index + 1)));
+          return '<button type="button" class="notas-station-list-item' + (note.id === selected.id ? ' is-active' : '') + (note.alert_active ? ' has-alert' : '') + '" data-note-id="' + sanitize(note.id) + '">' +
+            '<span class="notas-station-list-title">' + title + '</span>' +
+            '<span class="notas-station-list-status">' + sanitize(statusLabel) + '</span>' +
+          '</button>';
+        }).join('');
+      }
+
+      if (textEl && document.activeElement !== textEl) {
+        textEl.value = selected.text || '';
+      }
+      if (minutesEl && document.activeElement !== minutesEl) {
+        minutesEl.value = String(normalizeNotesDefaultMinutes(selected.duration_minutes));
+      }
+      if (repeatEl && document.activeElement !== repeatEl) {
+        repeatEl.value = String(normalizeNotesRepeatMinutes(selected.repeat_minutes));
+      }
+
+      if (selected.alert_active) {
+        const repeatMinutes = normalizeNotesRepeatMinutes(selected.repeat_minutes);
+        if (selected.status === 'running' && selected.target_time_ms && repeatMinutes > 0) {
+          const nextSeconds = Math.max(0, Math.ceil((selected.target_time_ms - Date.now()) / 1000));
+          updateNotasCountdownLabel('Alerta activa. Próxima repetición en ' + formatCountdown(nextSeconds), true);
+        } else {
+          updateNotasCountdownLabel('Alerta activa. Detén la nota para silenciarla.', true);
+        }
+      } else if (selected.status === 'running' && selected.target_time_ms) {
+        const remainingSeconds = Math.max(0, Math.ceil((selected.target_time_ms - Date.now()) / 1000));
+        updateNotasCountdownLabel('Recordatorio en ' + formatCountdown(remainingSeconds), false);
+      } else if (selected.status === 'expired') {
+        updateNotasCountdownLabel('Recordatorio vencido', true);
+      } else {
+        updateNotasCountdownLabel('Listo para programar', false);
+      }
+
+      updateNotesCardAlertVisual(cfg || stationConfig || {});
+    }
+
+    function processNotesRuntimeTick(cfg) {
+      const now = Date.now();
+      let changed = false;
+      let triggeredAlert = false;
+      notesRuntimeState.notes.forEach(note => {
+        if (note.status !== 'running' || !note.target_time_ms) {
+          return;
+        }
+        if (now < note.target_time_ms) {
+          return;
+        }
+        if (!note.alert_active) {
+          note.alert_active = true;
+          note.last_alert_at = now;
+          triggeredAlert = true;
+        }
+        const repeatMinutes = normalizeNotesRepeatMinutes(note.repeat_minutes);
+        if (repeatMinutes > 0) {
+          note.target_time_ms = now + (repeatMinutes * 60 * 1000);
+          note.status = 'running';
+        } else {
+          note.status = 'expired';
+          note.target_time_ms = 0;
+        }
+        changed = true;
+      });
+      if (changed) {
+        saveNotesRuntimeState();
+      }
+      if (anyNotesAlertActive() && cfg && cfg.notas_blink_enabled) {
+        startNotasBlink();
+      }
+      if (triggeredAlert && cfg && cfg.notas_beep_enabled) {
+        playNotesBeep();
+      }
+      renderNotesCardState(cfg);
+    }
+
+    function ensureNotesTick(cfg) {
+      if (notesRuntimeState.tickId) return;
+      notesRuntimeState.tickId = window.setInterval(() => {
+        processNotesRuntimeTick(cfg || stationConfig || {});
+      }, 250);
     }
 
     function parseStationConfigValue(raw) {
@@ -354,12 +608,48 @@
           if (!code) return;
           state.carritosPorCodigo[code] = {
             activo: isCarritoOperativoActivo(item),
-            activadoEn: String((item && item.activado_en) || '')
+      activadoEn: String((item && item.activado_en) || ''),
+      total: Number(item && item.total ? item.total : 0),
+      tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null
           };
         });
       } catch (err) {
         console.warn('No se pudo cargar estado de carritos por estación:', err);
       }
+    }
+
+    function buildStationRuntimeMeta(info, stationCfg) {
+    const cfg = stationCfg && typeof stationCfg === 'object' ? stationCfg : {};
+    const data = info && typeof info === 'object' ? info : null;
+    const activo = !!(data && data.activo);
+    const inicio = activo && cfg.mostrar_fecha_hora_inicio !== false ? formatStationEntryDateTime(data && data.activadoEn) : '';
+    const fin = activo && cfg.mostrar_fecha_hora_fin_tarifa !== false ? formatStationEntryDateTime(data && data.tarifaPorMinutos && data.tarifaPorMinutos.fecha_fin_tarifa_actual) : '';
+    const total = activo && cfg.mostrar_total !== false ? formatMoney(data && typeof data.total !== 'undefined' ? data.total : 0) : '';
+    return { activo, inicio, fin, total };
+    }
+
+    function refreshStationCardSummaries() {
+    const grid = document.getElementById('estacionesGrid');
+    if (!grid || !stationConfig || !Array.isArray(stationConfig.estaciones)) return;
+    grid.querySelectorAll('.station-launch-card[data-estacion-id]').forEach(card => {
+    const stationID = Number(card.getAttribute('data-estacion-id') || 0);
+    if (!stationID) return;
+    const stationCfg = stationConfig.estaciones.find(function (est) {
+      return Number(est && est.id) === stationID;
+    }) || null;
+    const info = state.carritosPorCodigo[normalizeCode(getCarritoCodeForStation(stationID))] || null;
+    const meta = buildStationRuntimeMeta(info, stationCfg || {});
+    card.classList.toggle('station-card-active', meta.activo);
+    card.classList.toggle('station-card-inactive', !meta.activo);
+    card.style.setProperty('--station-state-bg', meta.activo ? state.colores.activo : state.colores.inactivo);
+
+    const startEl = card.querySelector('.station-meta-start');
+    if (startEl) startEl.textContent = meta.inicio ? ('Entrada: ' + meta.inicio) : '';
+    const endEl = card.querySelector('.station-meta-end');
+    if (endEl) endEl.textContent = meta.fin ? ('Fin tarifa: ' + meta.fin) : '';
+    const totalEl = card.querySelector('.station-meta-total');
+    if (totalEl) totalEl.textContent = meta.total ? ('Total: ' + meta.total) : '';
+    });
     }
 
     // readConfig replaced by server-backed getConfigFromServer
@@ -403,7 +693,7 @@
 
     function generateCajaCardHtml() {
       return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
-        '<div class="station-sensor-indicator" style="background-color:#000000"></div>' +
+        '<div class="station-sensor-indicator"></div>' +
         '<h3 class="caja-title">Caja</h3>' +
         '<div class="caja-totals">' +
           '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
@@ -439,6 +729,243 @@
           '<div id="youtubeStationInlineMessage" class="form-help youtube-station-inline-message"></div>' +
         '</div>' +
       '</article>';
+    }
+
+    function formatCountdown(totalSeconds) {
+      const seconds = Math.max(0, Number(totalSeconds || 0));
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    }
+
+    function generateNotasCardHtml(cfg) {
+      return '<article class="portal-card station-card-inactive notas-station-card" id="notasStationCard" data-special-station="notas" aria-label="Estación Notas">' +
+        '<div class="notas-station-head">' +
+          '<h3>Notas</h3>' +
+          '<p>Gestiona varias notas y programa recordatorios con repetición automática hasta detenerlos.</p>' +
+        '</div>' +
+        '<div id="notasStationList" class="notas-station-list"></div>' +
+        '<textarea id="notasStationTextarea" class="form-input notas-station-textarea" rows="4" placeholder="Escribe aquí la nota operativa o recordatorio."></textarea>' +
+        '<div class="notas-station-timer-row">' +
+          '<label class="form-label notas-station-label" for="notasStationMinutesInput">Temporizador (minutos)</label>' +
+          '<input id="notasStationMinutesInput" class="form-input notas-station-minutes" type="number" min="1" max="1440" value="5">' +
+        '</div>' +
+        '<div class="notas-station-timer-row notas-station-repeat-row">' +
+          '<label class="form-label notas-station-label" for="notasStationRepeatInput">Repetir alarma cada (minutos)</label>' +
+          '<input id="notasStationRepeatInput" class="form-input notas-station-minutes" type="number" min="0" max="1440" value="0" placeholder="0">' +
+        '</div>' +
+        '<div class="notas-station-countdown" id="notasStationCountdown">Listo para programar</div>' +
+        '<div class="notas-station-actions">' +
+          '<button type="button" class="btn secondary" id="notasStationAddBtn">Nueva nota</button>' +
+          '<button type="button" class="btn secondary" id="notasStationStartBtn">Iniciar</button>' +
+          '<button type="button" class="btn secondary" id="notasStationStopBtn">Detener</button>' +
+          '<button type="button" class="btn secondary" id="notasStationSaveBtn">Guardar nota</button>' +
+          '<button type="button" class="btn secondary" id="notasStationDeleteBtn">Eliminar nota</button>' +
+        '</div>' +
+        '<div id="notasStationInlineMessage" class="form-help notas-station-inline-message"></div>' +
+      '</article>';
+    }
+
+    function setNotasInlineMessage(text, type) {
+      const box = document.getElementById('notasStationInlineMessage');
+      if (!box) return;
+      box.textContent = String(text || '').trim();
+      box.className = type === 'error'
+        ? 'error notas-station-inline-message'
+        : (type === 'success' ? 'success notas-station-inline-message' : 'form-help notas-station-inline-message');
+    }
+
+    function updateNotasCountdownLabel(text, isExpired) {
+      const countdown = document.getElementById('notasStationCountdown');
+      const card = document.getElementById('notasStationCard');
+      if (countdown) {
+        countdown.textContent = text;
+      }
+      if (card) {
+        card.classList.toggle('notas-station-expired', !!isExpired);
+      }
+    }
+
+    function stopNotasBlink() {
+      if (notesAlertState.blinkId) {
+        window.clearInterval(notesAlertState.blinkId);
+        notesAlertState.blinkId = null;
+      }
+      notesAlertState.blinking = false;
+      const card = document.getElementById('notasStationCard');
+      if (card) {
+        card.classList.remove('notas-station-blink');
+      }
+    }
+
+    function startNotasBlink() {
+      if (notesAlertState.blinkId) return;
+      const card = document.getElementById('notasStationCard');
+      if (!card) return;
+      notesAlertState.blinking = true;
+      let visible = false;
+      notesAlertState.blinkId = window.setInterval(() => {
+        visible = !visible;
+        card.classList.toggle('notas-station-blink', visible);
+      }, 450);
+    }
+
+    function unlockNotesAudio() {
+      if (notesAlertState.audioUnlocked) return true;
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return false;
+        if (!notesAlertState.audioContext) {
+          notesAlertState.audioContext = new Ctx();
+        }
+        if (notesAlertState.audioContext.state === 'suspended') {
+          notesAlertState.audioContext.resume();
+        }
+        notesAlertState.audioUnlocked = true;
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function playNotesBeep() {
+      try {
+        if (!unlockNotesAudio() || !notesAlertState.audioContext) {
+          return false;
+        }
+        const ctx = notesAlertState.audioContext;
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.36);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function stopNotasTimer(message) {
+      const selected = getSelectedRuntimeNote();
+      if (selected) {
+        selected.status = 'idle';
+        selected.target_time_ms = 0;
+        clearNoteAlert(selected);
+        saveNotesRuntimeState();
+      }
+      updateNotasCountdownLabel(message || 'Temporizador detenido', false);
+      renderNotesCardState(stationConfig || {});
+    }
+
+    function startNotasTimer(cfg) {
+      loadNotesRuntimeState(cfg || stationConfig || {});
+      const minutesInput = document.getElementById('notasStationMinutesInput');
+      const repeatInput = document.getElementById('notasStationRepeatInput');
+      const noteField = document.getElementById('notasStationTextarea');
+      const selected = getSelectedRuntimeNote();
+      const minutes = normalizeNotesDefaultMinutes(minutesInput ? minutesInput.value : 5);
+      const repeatMinutes = normalizeNotesRepeatMinutes(repeatInput ? repeatInput.value : 0);
+      if (!selected || !noteField || !String(noteField.value || '').trim()) {
+        setNotasInlineMessage('Escribe una nota antes de iniciar el temporizador.', 'error');
+        return;
+      }
+      if (minutesInput) {
+        minutesInput.value = String(minutes);
+      }
+      if (repeatInput) {
+        repeatInput.value = String(repeatMinutes);
+      }
+      selected.text = String(noteField.value || '').trim();
+      selected.duration_minutes = minutes;
+      selected.repeat_minutes = repeatMinutes;
+      selected.status = 'running';
+      selected.target_time_ms = Date.now() + (minutes * 60 * 1000);
+      clearNoteAlert(selected);
+      saveNotesRuntimeState();
+      stopNotasBlink();
+      updateNotasCountdownLabel('Recordatorio en ' + formatCountdown(minutes * 60), false);
+      setNotasInlineMessage(repeatMinutes > 0 ? 'Temporizador activo con repetición automática.' : 'Temporizador activo para la nota.', 'success');
+      ensureNotesTick(cfg || stationConfig || {});
+      renderNotesCardState(cfg || stationConfig || {});
+    }
+
+    async function saveNotasConfigFromCard() {
+      loadNotesRuntimeState(stationConfig || {});
+      const noteField = document.getElementById('notasStationTextarea');
+      const minutesInput = document.getElementById('notasStationMinutesInput');
+      const repeatInput = document.getElementById('notasStationRepeatInput');
+      const selected = getSelectedRuntimeNote();
+      if (!empresaId) {
+        setNotasInlineMessage('No se encontró empresa activa para guardar la nota.', 'error');
+        return;
+      }
+      try {
+        const current = await getConfigFromServer();
+        const nextConfig = current || normalizeConfig({ cantidad: 1, estaciones: [] });
+        nextConfig.notas_enabled = true;
+        nextConfig.notas_text = String(noteField && noteField.value ? noteField.value : '').trim();
+        nextConfig.notas_default_minutes = normalizeNotesDefaultMinutes(minutesInput ? minutesInput.value : 5);
+        nextConfig.notas_repeat_minutes = normalizeNotesRepeatMinutes(repeatInput ? repeatInput.value : 0);
+        if (selected) {
+          selected.text = nextConfig.notas_text;
+          selected.duration_minutes = nextConfig.notas_default_minutes;
+          selected.repeat_minutes = nextConfig.notas_repeat_minutes;
+          saveNotesRuntimeState();
+        }
+        await saveConfigToServer(nextConfig);
+        stationConfig = normalizeConfig(nextConfig);
+        setNotasInlineMessage('Nota guardada en la configuración de estaciones.', 'success');
+        renderNotesCardState(stationConfig);
+      } catch (err) {
+        console.error('No se pudo guardar la nota desde la tarjeta', err);
+        setNotasInlineMessage('No se pudo guardar la nota.', 'error');
+      }
+    }
+
+    function selectRuntimeNote(noteId) {
+      notesRuntimeState.selectedNoteId = String(noteId || '');
+      saveNotesRuntimeState();
+      renderNotesCardState(stationConfig || {});
+    }
+
+    function addRuntimeNote(cfg) {
+      loadNotesRuntimeState(cfg || stationConfig || {});
+      const note = createRuntimeNote(cfg || stationConfig || {}, {
+        text: '',
+        duration_minutes: cfg && cfg.notas_default_minutes,
+        repeat_minutes: cfg && cfg.notas_repeat_minutes
+      });
+      notesRuntimeState.notes.push(note);
+      notesRuntimeState.selectedNoteId = note.id;
+      saveNotesRuntimeState();
+      renderNotesCardState(cfg || stationConfig || {});
+      setNotasInlineMessage('Nueva nota creada.', 'success');
+    }
+
+    function deleteSelectedRuntimeNote(cfg) {
+      loadNotesRuntimeState(cfg || stationConfig || {});
+      const selected = getSelectedRuntimeNote();
+      if (!selected) return;
+      if (notesRuntimeState.notes.length === 1) {
+        selected.text = '';
+        selected.status = 'idle';
+        selected.target_time_ms = 0;
+        selected.duration_minutes = normalizeNotesDefaultMinutes(cfg && cfg.notas_default_minutes);
+        selected.repeat_minutes = normalizeNotesRepeatMinutes(cfg && cfg.notas_repeat_minutes);
+        clearNoteAlert(selected);
+      } else {
+        notesRuntimeState.notes = notesRuntimeState.notes.filter(note => note.id !== selected.id);
+        notesRuntimeState.selectedNoteId = notesRuntimeState.notes[0] ? notesRuntimeState.notes[0].id : '';
+      }
+      saveNotesRuntimeState();
+      renderNotesCardState(cfg || stationConfig || {});
+      setNotasInlineMessage('Nota eliminada.', 'success');
     }
 
     function setYouTubeInlineMessage(text, type) {
@@ -543,32 +1070,48 @@
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled)) {
+        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled)) {
           grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
           return;
         }
       }
       let html = '';
-      if (cfg && cfg.caja_enabled) {
-        html += generateCajaCardHtml();
+      const beforeSpecial = [];
+      const afterSpecial = [];
+
+      function pushSpecial(target, enabled, renderer) {
+        if (!enabled) return;
+        target.push(renderer());
       }
-      if (cfg && cfg.youtube_enabled) {
-        html += generateYouTubeCardHtml(cfg);
-      }
+
+      pushSpecial(cfg && cfg.caja_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.caja_enabled, () => generateCajaCardHtml());
+      pushSpecial(cfg && cfg.youtube_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.youtube_enabled, () => generateYouTubeCardHtml(cfg));
+      pushSpecial(cfg && cfg.notas_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.notas_enabled, () => generateNotasCardHtml(cfg));
+
+      html += beforeSpecial.join('');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
+        html += afterSpecial.join('');
         grid.innerHTML = html;
         wireSpecialStationCards(cfg);
         return;
       }
       html += cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
+        const useMostrarInicio = est.mostrar_fecha_hora_inicio === undefined ? true : !!est.mostrar_fecha_hora_inicio;
+        const useMostrarFinTarifa = est.mostrar_fecha_hora_fin_tarifa === undefined ? true : !!est.mostrar_fecha_hora_fin_tarifa;
         const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
         const carritoCode = getCarritoCodeForStation(stationID);
         const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
-        const carritoActivo = !!(info && info.activo);
-        const entradaLabel = carritoActivo ? formatStationEntryDateTime(info && info.activadoEn) : '';
-        const entradaHtml = carritoActivo && entradaLabel
-          ? '<p class="station-entry-time">Entrada: ' + sanitize(entradaLabel) + '</p>'
+        const meta = buildStationRuntimeMeta(info, est);
+        const carritoActivo = meta.activo;
+        const entradaHtml = useMostrarInicio
+          ? '<p class="station-entry-time station-meta-start">' + sanitize(meta.inicio ? ('Entrada: ' + meta.inicio) : '') + '</p>'
+          : '';
+        const finHtml = useMostrarFinTarifa
+          ? '<p class="station-entry-time station-meta-end">' + sanitize(meta.fin ? ('Fin tarifa: ' + meta.fin) : '') + '</p>'
+          : '';
+        const totalHtml = useMostrarTotal
+          ? '<p class="station-entry-time station-meta-total">' + sanitize(meta.total ? ('Total: ' + meta.total) : '') + '</p>'
           : '';
         const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
         const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
@@ -580,12 +1123,12 @@
           const lastStateNormalized = normalizeText(sensor.last_state || '');
           const activeStates = ['1', 'true', 'si', 'sí', 'on', 'active', 'open', 'abierto', 'encendido', 'activo'];
           const isActive = activeStates.indexOf(lastStateNormalized) !== -1;
-          sensorColor = isActive ? '#00c853' : '#000000';
+          sensorColor = isActive ? '#00c853' : 'var(--station-sensor-default)';
           if (sensor.last_seen) {
             try {
               const parsed = new Date((sensor.last_seen || '').replace(' ', 'T'));
-              if (!isNaN(parsed.getTime()) && (Date.now() - parsed.getTime()) > 120000) {
-                sensorColor = '#000000';
+                if (!isNaN(parsed.getTime()) && (Date.now() - parsed.getTime()) > 120000) {
+                sensorColor = 'var(--station-sensor-default)';
               }
             } catch (err) {
               // ignore parse errors
@@ -594,12 +1137,19 @@
         }
 
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
-            '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
+            '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
             entradaHtml +
+            finHtml +
+            totalHtml +
             '</article>';
       }).join('');
+          html += afterSpecial.join('');
       grid.innerHTML = html;
+      // Aplicar color de sensor desde data-attribute para cada indicador (soporta var(--station-sensor-default))
+      grid.querySelectorAll('.station-sensor-indicator[data-sensor-color]').forEach(function(el){
+        try { el.style.backgroundColor = el.getAttribute('data-sensor-color'); } catch (e) {}
+      });
 
       grid.querySelectorAll('.station-launch-card').forEach(card => {
         card.style.cursor = 'pointer';
@@ -618,6 +1168,7 @@
       });
 
       wireSpecialStationCards(cfg);
+      refreshStationCardSummaries();
 
       // Si Caja está habilitada, adjuntar manejadores y cargar totales
       if (cfg && cfg.caja_enabled) {
@@ -653,6 +1204,107 @@
     }
 
     function wireSpecialStationCards(cfg) {
+      loadNotesRuntimeState(cfg || stationConfig || {});
+
+      const notasField = document.getElementById('notasStationTextarea');
+      if (notasField) {
+        notasField.addEventListener('click', ev => {
+          ev.stopPropagation();
+          unlockNotesAudio();
+        });
+        notasField.addEventListener('input', () => {
+          setNotasInlineMessage('', 'help');
+        });
+      }
+
+      const notasMinutes = document.getElementById('notasStationMinutesInput');
+      if (notasMinutes) {
+        notasMinutes.addEventListener('click', ev => {
+          ev.stopPropagation();
+          unlockNotesAudio();
+        });
+      }
+
+      const notasRepeat = document.getElementById('notasStationRepeatInput');
+      if (notasRepeat) {
+        notasRepeat.addEventListener('click', ev => {
+          ev.stopPropagation();
+          unlockNotesAudio();
+        });
+      }
+
+      const notasList = document.getElementById('notasStationList');
+      if (notasList) {
+        notasList.addEventListener('click', ev => {
+          const button = ev.target && ev.target.closest ? ev.target.closest('[data-note-id]') : null;
+          if (!button) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          selectRuntimeNote(button.getAttribute('data-note-id'));
+        });
+      }
+
+      const notasAddBtn = document.getElementById('notasStationAddBtn');
+      if (notasAddBtn) {
+        notasAddBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          addRuntimeNote(cfg || stationConfig || {});
+        });
+      }
+
+      const notasStartBtn = document.getElementById('notasStationStartBtn');
+      if (notasStartBtn) {
+        notasStartBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          unlockNotesAudio();
+          startNotasTimer(cfg || stationConfig || {});
+        });
+      }
+
+      const notasStopBtn = document.getElementById('notasStationStopBtn');
+      if (notasStopBtn) {
+        notasStopBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          stopNotasTimer('Temporizador detenido');
+          setNotasInlineMessage('Alerta detenida.', 'success');
+        });
+      }
+
+      const notasSaveBtn = document.getElementById('notasStationSaveBtn');
+      if (notasSaveBtn) {
+        notasSaveBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          saveNotasConfigFromCard();
+        });
+      }
+
+      const notasDeleteBtn = document.getElementById('notasStationDeleteBtn');
+      if (notasDeleteBtn) {
+        notasDeleteBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          deleteSelectedRuntimeNote(cfg || stationConfig || {});
+        });
+      }
+
+      const notasCard = document.getElementById('notasStationCard');
+      if (notasCard) {
+        notasCard.addEventListener('click', ev => {
+          const interactive = ev.target && ev.target.closest ? ev.target.closest('button, a, input, textarea, select, label') : null;
+          if (interactive) {
+            ev.stopPropagation();
+            unlockNotesAudio();
+          }
+        });
+      }
+
+      renderNotesCardState(cfg || stationConfig || {});
+      ensureNotesTick(cfg || stationConfig || {});
+
       const sourceInput = document.getElementById('youtubeStationSourceInput');
       if (sourceInput) {
         syncYouTubeOpenLinkFromValue(sourceInput.value);
@@ -826,6 +1478,14 @@
           loadSensorStates()
         ]);
         renderEstaciones(stationConfig);
+    window.setInterval(async function () {
+      try {
+      await loadEstadoCarritosEstacion();
+      refreshStationCardSummaries();
+      } catch (err) {
+      console.warn('No se pudo refrescar la tarifa de estaciones en segundo plano:', err);
+      }
+    }, 30000);
         setStatus('');
       } catch (err) {
         console.error('Error cargando estaciones', err);

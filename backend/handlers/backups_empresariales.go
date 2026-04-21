@@ -42,6 +42,14 @@ type empresaBackupPurgePayload struct {
 	NombreBackupPrevio string   `json:"nombre_backup_previo"`
 }
 
+type empresaBackupImportPayload struct {
+	EmpresaID      int64                     `json:"empresa_id"`
+	Nombre         string                    `json:"nombre"`
+	Descripcion    string                    `json:"descripcion"`
+	UsuarioCreador string                    `json:"usuario_creador"`
+	Payload        *dbpkg.EmpresaBackupPayload `json:"payload"`
+}
+
 func empresaBackupsNormalizeAction(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "listar", "list":
@@ -54,6 +62,10 @@ func empresaBackupsNormalizeAction(raw string) string {
 		return "export"
 	case "restaurar", "restore":
 		return "restaurar"
+	case "exportar_configuracion", "export_config", "descargar_configuracion":
+		return "exportar_configuracion"
+	case "importar_configuracion", "import_config", "restaurar_configuracion":
+		return "importar_configuracion"
 	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
 		return "depurar_fecha"
 	case "activar":
@@ -163,6 +175,9 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "export":
 				empresaBackupsHandleExport(w, r, dbEmp)
 				return
+			case "exportar_configuracion":
+				empresaBackupsHandleExportConfig(w, r, dbEmp)
+				return
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 				return
@@ -174,6 +189,12 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "restaurar":
 				empresaBackupsHandleRestore(w, r, dbEmp)
+				return
+			case "exportar_configuracion":
+				empresaBackupsHandleExportConfig(w, r, dbEmp)
+				return
+			case "importar_configuracion":
+				empresaBackupsHandleImportConfig(w, r, dbEmp)
 				return
 			case "depurar_fecha":
 				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
@@ -409,6 +430,190 @@ func empresaBackupsHandleExport(w http.ResponseWriter, r *http.Request, dbEmp *s
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func empresaBackupsConfigDefaultName(prefix string, empresaID int64) string {
+	base := strings.TrimSpace(prefix)
+	if base == "" {
+		base = "Configuracion empresa"
+	}
+	return fmt.Sprintf("%s %d %s", base, empresaID, time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
+}
+
+func empresaBackupsHandleExportConfig(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var payload empresaBackupCreatePayload
+	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID > 0 && payload.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+
+	usuario := empresaBackupsUsuarioFromRequest(r, payload.UsuarioCreador)
+	nombre := strings.TrimSpace(payload.Nombre)
+	if nombre == "" {
+		nombre = empresaBackupsConfigDefaultName("Configuracion empresa", empresaID)
+	}
+	descripcion := strings.TrimSpace(payload.Descripcion)
+	if descripcion == "" {
+		descripcion = "exportacion de configuracion por empresa"
+	}
+
+	backupID, err := dbpkg.CreateEmpresaConfigBackupSnapshot(dbEmp, empresaID, nombre, descripcion, usuario)
+	if err != nil {
+		http.Error(w, "No se pudo exportar configuracion empresarial", http.StatusInternalServerError)
+		return
+	}
+
+	backupMeta, exportPayload, err := dbpkg.GetEmpresaBackupPayloadByID(dbEmp, empresaID, backupID)
+	if err != nil {
+		http.Error(w, "configuracion exportada pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
+
+	fileName := fmt.Sprintf("configuracion_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+	w.Header().Set("X-Backup-Id", strconv.FormatInt(backupID, 10))
+	w.Header().Set("X-Backup-Code", strings.TrimSpace(backupMeta.Codigo))
+	writeJSON(w, http.StatusOK, exportPayload)
+}
+
+func empresaBackupsDecodeImportedPayload(r *http.Request) (*empresaBackupImportPayload, *dbpkg.EmpresaBackupPayload, error) {
+	if r == nil || r.Body == nil {
+		return nil, nil, io.EOF
+	}
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return nil, nil, io.EOF
+	}
+
+	var wrapped empresaBackupImportPayload
+	if err := json.Unmarshal(raw, &wrapped); err == nil && wrapped.Payload != nil {
+		return &wrapped, wrapped.Payload, nil
+	}
+
+	var payload dbpkg.EmpresaBackupPayload
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, nil, err
+	}
+	return &empresaBackupImportPayload{}, &payload, nil
+}
+
+func empresaBackupsSanitizeConfigPayload(targetEmpresaID int64, payload *dbpkg.EmpresaBackupPayload, usuario string) (*dbpkg.EmpresaBackupPayload, int64, error) {
+	if payload == nil {
+		return nil, 0, fmt.Errorf("payload de configuracion invalido")
+	}
+	allowed := map[string]struct{}{}
+	for _, table := range dbpkg.EmpresaConfigBackupDefaultTables() {
+		allowed[table] = struct{}{}
+	}
+
+	sourceEmpresaID := payload.EmpresaID
+	tables := make([]dbpkg.EmpresaBackupTablePayload, 0, len(payload.Tables))
+	totalRows := int64(0)
+	for _, table := range payload.Tables {
+		name := strings.ToLower(strings.TrimSpace(table.Table))
+		if _, ok := allowed[name]; !ok {
+			continue
+		}
+		table.Table = name
+		tables = append(tables, table)
+		totalRows += int64(len(table.Rows))
+	}
+	if len(tables) == 0 {
+		return nil, sourceEmpresaID, fmt.Errorf("el archivo no contiene tablas de configuracion compatibles")
+	}
+
+	createdAt := strings.TrimSpace(payload.CreatedAt)
+	if createdAt == "" {
+		createdAt = time.Now().In(time.Local).Format(time.RFC3339)
+	}
+	createdBy := strings.TrimSpace(payload.CreatedBy)
+	if createdBy == "" {
+		createdBy = strings.TrimSpace(usuario)
+	}
+
+	return &dbpkg.EmpresaBackupPayload{
+		Version:     "empresa-backup.v1",
+		Scope:       "configuracion_empresa",
+		EmpresaID:   targetEmpresaID,
+		CreatedAt:   createdAt,
+		CreatedBy:   createdBy,
+		TotalTables: len(tables),
+		TotalRows:   totalRows,
+		Tables:      tables,
+	}, sourceEmpresaID, nil
+}
+
+func empresaBackupsHandleImportConfig(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	wrapped, payload, err := empresaBackupsDecodeImportedPayload(r)
+	if err != nil {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if wrapped != nil && wrapped.EmpresaID > 0 && wrapped.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+
+	usuarioFallback := ""
+	if wrapped != nil {
+		usuarioFallback = wrapped.UsuarioCreador
+	}
+	usuario := empresaBackupsUsuarioFromRequest(r, usuarioFallback)
+	sanitized, sourceEmpresaID, err := empresaBackupsSanitizeConfigPayload(empresaID, payload, usuario)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	nombre := strings.TrimSpace(wrapped.Nombre)
+	if nombre == "" {
+		nombre = empresaBackupsConfigDefaultName("Importacion configuracion", empresaID)
+	}
+	descripcion := strings.TrimSpace(wrapped.Descripcion)
+	if descripcion == "" {
+		descripcion = "importacion de configuracion por empresa"
+	}
+
+	backupID, err := dbpkg.CreateEmpresaConfigBackupSnapshotFromPayload(dbEmp, empresaID, nombre, descripcion, usuario, sanitized, sourceEmpresaID)
+	if err != nil {
+		http.Error(w, "No se pudo registrar la importacion de configuracion", http.StatusInternalServerError)
+		return
+	}
+
+	result, err := dbpkg.RestoreEmpresaBackupByID(dbEmp, empresaID, backupID, usuario, "restauracion de configuracion importada")
+	if err != nil {
+		http.Error(w, "No se pudo aplicar la configuracion importada", http.StatusInternalServerError)
+		return
+	}
+
+	updated, _ := dbpkg.GetEmpresaBackupByID(dbEmp, empresaID, backupID, false)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":               true,
+		"empresa_id":       empresaID,
+		"source_empresa_id": sourceEmpresaID,
+		"resultado":        result,
+		"backup":           updated,
+	})
 }
 
 func empresaBackupsHandleRestore(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {

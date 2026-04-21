@@ -421,30 +421,49 @@ func currentSQLDialect() string {
 			return "postgres"
 		}
 		if strings.Contains(v, "sqlite") {
-			return "sqlite"
+			continue
 		}
 	}
-	return "sqlite"
+	return "postgres"
 }
 
 func isPostgresDialect() bool {
 	return currentSQLDialect() == "postgres"
 }
 
-func isSQLiteRuntimeConnection(dbConn *sql.DB) bool {
+func shouldUsePostgresCompat(dbConn *sql.DB) bool {
+	if dbConn == nil || !isPostgresDialect() {
+		return false
+	}
+	return isPostgresConnection(dbConn)
+}
+
+func isPostgresConnection(dbConn *sql.DB) bool {
 	if dbConn == nil {
 		return false
 	}
-	var version string
-	err := dbConn.QueryRow(`SELECT sqlite_version()`).Scan(&version)
-	return err == nil && strings.TrimSpace(version) != ""
-}
-
-func shouldUsePostgresCompat(dbConn *sql.DB) bool {
-	if !isPostgresDialect() {
+	conn, err := dbConn.Conn(context.Background())
+	if err != nil {
 		return false
 	}
-	return !isSQLiteRuntimeConnection(dbConn)
+	defer conn.Close()
+
+	isPostgres := false
+	err = conn.Raw(func(driverConn interface{}) error {
+		typeName := strings.ToLower(fmt.Sprintf("%T", driverConn))
+		if strings.Contains(typeName, "sqlite") {
+			isPostgres = false
+			return nil
+		}
+		if strings.Contains(typeName, "pgx") || strings.Contains(typeName, "postgres") || strings.Contains(typeName, "stdlib") {
+			isPostgres = true
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return isPostgres
 }
 
 // IsPostgresDialect expone el dialecto actual para capas fuera del paquete db.
@@ -521,6 +540,9 @@ func isMissingTableError(err error) bool {
 }
 
 func execSQLCompat(dbConn *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
 	return dbConn.Exec(rebindCompatQuery(query), args...)
 }
 
@@ -529,6 +551,9 @@ func execTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (sql.Result,
 }
 
 func querySQLCompat(dbConn *sql.DB, query string, args ...interface{}) (*sql.Rows, error) {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
 	return dbConn.Query(rebindCompatQuery(query), args...)
 }
 
@@ -537,6 +562,9 @@ func queryTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (*sql.Rows,
 }
 
 func queryRowSQLCompat(dbConn *sql.DB, query string, args ...interface{}) *sql.Row {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
 	return dbConn.QueryRow(rebindCompatQuery(query), args...)
 }
 

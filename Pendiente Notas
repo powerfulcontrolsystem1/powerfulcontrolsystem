@@ -1,96 +1,112 @@
-apikey deepseek
-sk-c75bc2c9e04f4c5ea21f4714320e1489
+Pendiente Notas depurado
+Fecha de corte: 2026-04-20
 
-https://firmaautenticaciondigital.and.gov.co/
+Regla de este archivo
+- No guardar aqui credenciales, tokens, contraseÃ±as, claves privadas ni datos sensibles.
+- Este archivo queda solo como backlog vigente y plan de trabajo.
 
-clave de firma digital en la Dian Azz19861986#
+Quitado del pendiente por ya estar implementado
+- Base de datos relacional y migracion operativa a PostgreSQL en VPS.
+- Pagina de mantenimiento.
+- Subdominios por empresa para venta publica.
+- Agenda de citas con calendario grande dentro de chat y tareas.
+- Tarjetas del index configurables desde super con almacenamiento en base super y CTA Explorar oferta.
+- Modulo de horarios de trabajadores.
+- Responsive general y ajustes moviles principales del portal y paneles.
+- Login por correo y Google con obligacion de crear contraseÃ±a local despues del flujo Google.
+- Modulo de creditos y cartera para prestamista.
+- Soporte remoto tipo AnyDesk/TeamViewer simplificado, evolucionado a portal RustDesk por empresa y mesa tecnica super.
+- Pagina de cuenta de usuario para editar perfil y contraseÃ±a.
+- Red social comercial operativa.
+- Base DIAN con checklist, diagnostico, set de pruebas y herramientas base ya documentadas.
 
-contraseña root hostiger Azz19861986#
-ssh root@2.24.197.58
-usuario: root
-clave: Azz19861986#
+Pendiente vigente
 
-añadir la herramienta de  word a pdf la pagina para la ayuda de la DIAN
+1. Prioridad alta
+- Depurar postmigracion PostgreSQL. Estado: completado el 2026-04-20.
+	- Resultado: se elimino el artefacto SQLite legacy restante del repositorio y se ajusto la documentacion activa para dejar PostgreSQL como unica base operativa canonica.
+	- Inventario final: SQLite queda solo como referencia historica de migracion o para pruebas puntuales fuera del repositorio activo.
 
-IP VPS : ssh root@2.24.197.58
-usuario
+- Exportar e importar configuracion completa por empresa.
+	- Alcance minimo: datos de configuracion, modulos, permisos, integraciones, apariencia y parametros operativos por empresa.
+	- Entregable: flujo real desde panel empresa con exporte y carga validada.
+	- Primer desglose: inventario de configuraciones persistidas, formato canonico de exportacion, endpoint de exporte, endpoint de importacion con validacion/vista previa y prueba dirigida desde panel.
 
-vnc clave: G1H9dv45QyP3
+- Control de consumo y proteccion por empresa sobre la API y la base de datos.
+	- Alcance minimo: rate limit por empresa, metricas de consultas por minuto, alertas por abuso y trazabilidad de bloqueos.
+	- Entregable: middleware o capa de control con panel basico de observabilidad.
+	- Primer desglose: clave de limite por `empresa_id`, cuota por ventana, bitacora de excesos, metricas operativas y panel basico super.
 
-la base de datos dede ser una base de datos relacional. empresas
+- Prueba real de facturacion DIAN con la firma ya registrada.
+	- Alcance minimo: ejecutar flujo real o semirreal controlado, capturar respuesta oficial y documentar resultado exacto.
+	- Entregable: evidencia tecnica y runbook actualizado con el estado real alcanzado.
 
-ver si facturar por un proveedor tecnologico es una opcion.
+2. Prioridad media
+- Integracion opcional con proveedor tecnologico adicional para facturacion electronica.
+	- Primera fase: analisis comparativo funcional, tecnico y legal frente al flujo DIAN actual.
+	- Decidir si el segundo metodo sera por proveedor tecnologico externo o por fortalecimiento del flujo propio.
 
-migrar a PostgreSQL
+- Pagina super vps_hostinger para estado del servidor via API oficial, si Hostinger lo permite.
+	- Primera fase: investigacion de API disponible, autenticacion, limites y datos expuestos.
+	- Si no existe API suficiente, definir alternativa con telemetria propia desde VPS.
 
-Crea un plan de trabajo para migrar las dos base de datos: superadministrador y empresas de mysqlite a PostgreSQL, se hara paso a paso probando cada base de datos. y de ahora en adelante la base de datos no etara en local sino en el servidor virtual o vps. agrega esa regla al agente_go. por medio de ssh instala PostgreSQL en el vps.
+- Backup con destinos seleccionables por el usuario.
+	- Alcance objetivo: descarga local directa y opcion futura de subir a carpeta cloud del administrador.
+	- Primera fase: separar claramente backup local ya existente de integracion pendiente con nube del usuario.
 
-hacer un sistema que detecto o que evites demasiadas consultas de una empresa a la base de datoas , para evitar que la base de datos colapse, o para evitar ataques como de hacker.
+- Reservas publicas por empresa sin registro previo.
+	- Alcance minimo: disponibilidad publica, creacion de reserva y validaciones basicas sin comprometer seguridad.
+	- Dependencia: revisar acople con venta publica, pagos y permisos.
 
-el vnc quedo en puerto 5901
+- Subida de fotos o soportes para facturas de compra, gastos y egresos.
+	- Alcance minimo: adjuntar archivos a compras/egresos con almacenamiento, consulta y trazabilidad por empresa.
 
-la firma electronica o certificado esta en la raiz del proyecto: certificado.crt
+3. Prioridad media-baja y de arquitectura
+- Configuracion total por empresa y por rol a nivel fino.
+	- Objetivo: cada modulo, pagina, accion y componente visible debe poder activarse o desactivarse por empresa y por rol cuando tenga sentido operativo.
+	- Nota: esto debe ejecutarse por etapas, no como cambio gigante unico.
 
-crear una pagina de modo mantenimiento.
+- Modulo universal de historial para cliente, vehiculo u otro activo trazable.
+	- Objetivo: hoja de vida operativa con eventos, servicios, alertas y reportes recurrentes.
+	- Primera fase recomendada: definir modelo canonico antes de construir UI.
 
-despues de migrar a postgre, hacer la limpieza de archivos y documentacion.
+- Integracion SSH con raspberry o sensores para asignacion y sincronizacion de identificadores unicos desde el sistema.
+	- Primera fase: definir contrato del dispositivo, seguridad, provisioning y trazabilidad.
 
-En el backup se debepoder elegir entre guardar en local o pc o celular, en la nube propia de google de cada usuario administrador en una carpeta que ya esta establecida.
+- Herramienta auxiliar Word a PDF orientada a ayudas o documentos DIAN, solo si sigue siendo necesaria.
+	- Primera fase: confirmar si el caso de uso real es convertir plantillas internas o exportes descargables.
 
-Para tu proyecto multiempresa:
-Subdominios por Empresa:
-empresa1.powerfulcontrolsystem.com
-empresa2.powerfulcontrolsystem.com
-este subdominio lo quiero usar para la pagina de venta publica automatizada por empresa.
+- Regla comercial de prueba gratis por 15 dias.
+	- Primera fase: definir si aplica a licencia, registro de empresa, venta publica o flujo comercial del portal.
 
-- al modulo de chat y tareas agregale un agenta de citas caon calendario grande, que se puedan programar citas y que halla notificaciones antes para que le recuerde.
+Plan sugerido de ejecucion
+- Fase 1: limpieza postmigracion PostgreSQL.
+- Fase 2: exportar/importar configuracion por empresa.
+- Fase 3: rate limiting y observabilidad por empresa.
+- Fase 4: prueba real DIAN con evidencia y resultado documentado.
+- Fase 5: decision sobre proveedor tecnologico adicional y/o Hostinger API.
+- Fase 6: reservas publicas y adjuntos de compras/gastos.
+- Fase 7: arquitectura de configuracion fina y modulo universal de historial.
 
-- nose si hostiguer tiene apis para hacer en el super_administrador una pagina para el estado del servidor, con todo lo que permita la api. a esta pagina nueva le llamaremos. vps_hostinger
+Criterio de cierre de cada punto
+- Codigo implementado o decision descartada con justificacion.
+- Prueba dirigida ejecutada.
+- Documentacion actualizada.
+- Entrada registrada en historial de cambios.
 
-- compactar verticalmente las tarjetas en la pagina index.
-se configura un titulo, una descripcion por cada tarjeta. cambia el estilo de las tarjetas por unos mas coloridos, cada tarjeta representa un producto que vendo. y debajo debe haber un boton dentro de cada tajeta que diga: Explorar oferta. todo esto se debe almacenar en la pasede datos superusuario
 
-- toda la configuracion de una empresa se debe poder exportar, y tambien debe estar la opcion de cargar configuracion.
+- configura una tarifa de 2 horas por 80000  y uahora extra 50000 por cada hora adicional. esta tarifa la configuras para la estacion uno y dos
+- quitar venta digital de super administrador, dejarlo para las empresas, que la empresa puedra crear la pagina con su nombre ejemplo motelcalips8.powerfulcontrolsystem.com/panareria_juana. y que pueda publicar en esa pagina. 
 
-- Todo absolutamente todo debeser configurable por empresa, cada campo, cada boton, cada pagina etc. todo con unn check en la configuracion de cada empresa. lo mismo para cuando se crea un rrol debe poder activar o desactivar todo en su configuracion. y esto permitiraque el sistema de adapte o configure a cada empresa.
+para github pro 39
+https://github.com/github-copilot/pro-plus/signup?utm_source=vscode
 
-- Pruebalo gratis por 15 dis.
+- aÃ±adir administradores
+- firma electronica requisitos camara de comercio mia
+-escanear documentos de 
+que cada empresa tenga una cantidad de espacio disponible, para su base de datos, imagenes etc, con su modulo de mantenimiento y que muetre una barra o una especie de equipo con la informcion del discp duro
 
-- crea un modulo de horarios, el cual debe tener un calendario grafico en donde en casa fecha o cuadro de fecha s puede mostrar los turnos de los trabajadores, y que todos en el sistema lo puedan ver. este modulo de horarios por ahora loso lo puede editar el administrador de la empresa-
+- modulo para enviar mensajes a todo los correosdelos administradores.
 
-- hacer un modulo de consumo de datos por empresa, modulo de deteccion de consultas por minuto o algo asi. preguntale a chat gtp
 
-- Nuevo modulo de historial de un cliente, un modulo que permita llevar todo el historial de los servicios o productos que se le venden a un cliente, parecido a una historia clinica, para volverlo universal , que no solo este enfocado a clientes, sino por ejemplo a automoviles, para llevar una hoja de viade los cambios de los mantenimientos, que este modulo permita tener reportes de alerta de servicios que se hacen frecuentemente en las empresas.
 
-segundo metodo para facturar electronicamente por provedores tecnologicos      
-
-- que el sistema acceda por ssh al raspberry o sensor y leasigne un numero unico que lo saca de aca del mismo sistema.
-
-- paginas adaptadas al celular tambien.
-- roles y se le aplican a las licncias. el rol es la manera de configurar una empres con infinidad de checj
-- que el titulo de la pagina web se amolde a pantallas de celular. bueno eso debe ser en todo el proyecto, que todo se adapte automaticamente a moviles y a pc. ademas coloca esta regla al agente_go
-
-el login tambien debe ser por correo y clave, y tambien por cuenta de google, pero si el usuario no ha creado una contraseña e intenta hacer login por medio de la cuenta fe google, le debe pedir le debe salir una pagina para que cree su contraseña.
-
-en login tambien debe ser por corrao y el qentra por google la prmera vez despues de aceptar el contrado le debe exigir crear una contraseña. esta para cuando entre no por google sino por correo y clave-
-
-crear un modulo para prestamista hacer que chat gtp te haga el pron, esto con todos los modulos nuevos
-
-- la pagina de rervas de cada empresa debe ser publica, que no sea necesario registrarse.
-
-- crear red social y un chat para todas las empresas.
-
-## modulo
-Desarrolla un módulo de acceso remoto tipo AnyDesk/TeamViewer para integrarlo en un sistema POS multiempresa ya existente.
-(Ver especificaciones en historial)
-
-- la pagina cuenta de usuario en donde el usuario pueda editar sus datos como contrasea, cambiar correo celular nombre etc,
-
-- la base ded atos debe ser relacioal
-
-- ya registre mi firma electronica en la Dian ahora has las pruebas de emitir una factura electronica haber que responde la Dian
-
-que el sistema permita subir fotos de las facturas de compras o comprobantes de gastos o egresos
-
-contraseña de aplicacion de correo de power...
-sysc xyxc okot ivvv

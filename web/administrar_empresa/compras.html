@@ -111,7 +111,11 @@
             <label class="form-label" for="entradaDocRef">Documento entrada</label>
             <input id="entradaDocRef" class="form-input" placeholder="ENT-2026-0001">
           </div>
-          <div class="form-col"></div>
+          <div class="form-col">
+            <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
+            <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
+            <div class="form-help">Se guarda en la carpeta de comprobantes de esta empresa.</div>
+          </div>
         </div>
 
         <div class="form-row">
@@ -160,6 +164,7 @@
               <th>Estado documento</th>
               <th>Monto</th>
               <th>Periodo</th>
+              <th>Comprobante</th>
               <th>Estado</th>
               <th>Actualización</th>
               <th>Acciones</th>
@@ -219,23 +224,25 @@
     var filtroEstado = document.getElementById("filtroEstado");
     var filtroBusqueda = document.getElementById("filtroBusqueda");
     var filtroInactivos = document.getElementById("filtroInactivos");
+    var compraComprobanteUploadInput = document.getElementById("comprobanteArchivo");
 
     var state = {
       proveedores: [],
-      documentos: []
+	  documentos: [],
+	  pendingUploadDocumento: null
     };
 
     function showMessage(text, type) {
       messageBox.textContent = text || "";
+      messageBox.classList.remove("value-negative", "value-positive");
       if (type === "error") {
-        messageBox.style.color = "#ff7f7f";
+        messageBox.classList.add("value-negative");
         return;
       }
       if (type === "ok") {
-        messageBox.style.color = "#7de09e";
+        messageBox.classList.add("value-positive");
         return;
       }
-      messageBox.style.color = "";
     }
 
     async function apiRequest(path, options) {
@@ -270,6 +277,30 @@
       return '<span class="badge high">' + escapeHtml(estado || "borrador") + "</span>";
     }
 
+    function comprobanteDocumentoCell(doc) {
+      var url = String(doc.comprobante_url || '').trim();
+      if (!url) {
+        return '<span>Sin adjunto</span>';
+      }
+      var nombre = String(doc.comprobante_nombre_archivo || '').trim() || 'Ver comprobante';
+      return '<a class="btn secondary" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(nombre) + '</a>';
+    }
+
+    async function uploadDocumentoComprobante(documentoCodigo, tipoDocumento, file) {
+      if (!file) {
+        return null;
+      }
+      var formData = new FormData();
+      formData.append('empresa_id', String(empresaID));
+      formData.append('documento_codigo', String(documentoCodigo || '').trim());
+      formData.append('tipo_documento', String(tipoDocumento || 'orden_compra').trim());
+      formData.append('archivo', file, file.name || 'comprobante');
+      return apiRequest('/api/empresa/compras/documentos/comprobante', {
+        method: 'POST',
+        body: formData
+      });
+    }
+
     function accionesDocumento(doc) {
       var acciones = [];
       var estadoDoc = String(doc.estado_documento || "").toLowerCase();
@@ -295,6 +326,7 @@
           acciones.push('<button type="button" class="btn secondary" data-action="contabilizar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Contabilizar</button>');
           acciones.push('<button type="button" class="btn secondary" data-action="validar_documentos" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Validar docs</button>');
         }
+        acciones.push('<button type="button" class="btn secondary" data-action="adjuntar_comprobante" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Adjuntar soporte</button>');
         acciones.push('<button type="button" class="btn secondary" data-action="desactivar" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Desactivar</button>');
       } else {
         acciones.push('<button type="button" class="btn secondary" data-action="activar" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Activar</button>');
@@ -329,7 +361,7 @@
 
     function renderDocumentos() {
       if (!state.documentos.length) {
-        docsTableBody.innerHTML = '<tr><td colspan="8">No hay documentos de compras para los filtros seleccionados.</td></tr>';
+		docsTableBody.innerHTML = '<tr><td colspan="9">No hay documentos de compras para los filtros seleccionados.</td></tr>';
         renderKPIs();
         return;
       }
@@ -341,6 +373,7 @@
           '<td>' + estadoBadge(doc.estado_documento) + '</td>' +
           '<td>' + escapeHtml(formatMoney(doc.monto_total, doc.moneda || "COP")) + '</td>' +
           '<td>' + escapeHtml(doc.periodo_contable || "") + '</td>' +
+          '<td>' + comprobanteDocumentoCell(doc) + '</td>' +
           '<td>' + escapeHtml(doc.estado || "activo") + '</td>' +
           '<td>' + escapeHtml(doc.fecha_actualizacion || doc.fecha_creacion || "") + '</td>' +
           '<td>' + accionesDocumento(doc) + '</td>' +
@@ -397,6 +430,15 @@
         documento_codigo: codigoDocumento,
         tipo_documento: tipoDocumento || 'orden_compra'
       };
+
+      if (accion === 'adjuntar_comprobante') {
+        state.pendingUploadDocumento = {
+          documento_codigo: codigoDocumento,
+          tipo_documento: tipoDocumento || 'orden_compra'
+        };
+        compraComprobanteUploadInput.click();
+        return;
+      }
 
       if (accion === 'desactivar' || accion === 'activar') {
         payload.accion = 'activar';
@@ -510,9 +552,18 @@
       });
 
       var resultado = (resp && resp.resultado) || {};
-      showMessage('Documento guardado: ' + (resultado.documento_codigo || payload.documento_codigo || 'sin codigo') + '.', 'ok');
+      var documentoCodigo = String(resultado.documento_codigo || payload.documento_codigo || '').trim();
+      if (compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0] && documentoCodigo) {
+        try {
+          await uploadDocumentoComprobante(documentoCodigo, resultado.tipo_documento || 'orden_compra', compraComprobanteUploadInput.files[0]);
+        } catch (err) {
+          throw new Error('Documento guardado, pero no se pudo adjuntar el comprobante: ' + (err.message || 'error desconocido'));
+        }
+      }
+      showMessage('Documento guardado: ' + (documentoCodigo || 'sin codigo') + '.', 'ok');
       document.getElementById('documentoCodigo').value = '';
       document.getElementById('observaciones').value = '';
+      compraComprobanteUploadInput.value = '';
       await loadDocumentos();
     }
 
@@ -551,6 +602,8 @@
       document.getElementById('entradaDocRef').value = '';
       document.getElementById('observaciones').value = '';
       document.getElementById('accionCreate').value = 'crear';
+      compraComprobanteUploadInput.value = '';
+      state.pendingUploadDocumento = null;
       showMessage('Formulario limpio.');
     });
 
@@ -574,6 +627,26 @@
       ejecutarAccion(codigo, tipo, accion).catch(function (err) {
         showMessage(err.message || 'No se pudo ejecutar acción del documento.', 'error');
       });
+    });
+
+    compraComprobanteUploadInput.addEventListener('change', function () {
+      var pending = state.pendingUploadDocumento;
+      var file = compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0];
+      if (!pending || !file) {
+        return;
+      }
+      uploadDocumentoComprobante(pending.documento_codigo, pending.tipo_documento, file)
+        .then(function () {
+          state.pendingUploadDocumento = null;
+          compraComprobanteUploadInput.value = '';
+          showMessage('Comprobante adjuntado correctamente.', 'ok');
+          return loadDocumentos();
+        })
+        .catch(function (err) {
+          state.pendingUploadDocumento = null;
+          compraComprobanteUploadInput.value = '';
+          showMessage(err.message || 'No se pudo adjuntar el comprobante.', 'error');
+        });
     });
 
     init();

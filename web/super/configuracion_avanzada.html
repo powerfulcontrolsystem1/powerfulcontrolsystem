@@ -1,44 +1,44 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración avanzada</title>
+  <title>ConfiguraciÃ³n avanzada</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Configuración avanzada</h1>
+      <h1>ConfiguraciÃ³n avanzada</h1>
       <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco, Wompi, Gmail y capacidades IA para los portales de clientes.</p>
     </div>
 
     <div class="global-save-bar">
-      <p id="globalConfigMsgTop">Usa este botón para guardar toda la configuración editada independientemente del bloque.</p>
-      <button id="saveAllConfigTopBtn" type="button" class="btn" style="background: linear-gradient(180deg, #1f5080, #153759); color: white; border: 1px solid rgba(152, 197, 234, 0.4);">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios rápidos
+      <p id="globalConfigMsgTop">Usa este botÃ³n para guardar toda la configuraciÃ³n editada independientemente del bloque.</p>
+      <button id="saveAllConfigTopBtn" type="button" class="btn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios rÃ¡pidos
       </button>
     </div>
 
     <section class="card form advanced-card" data-brand="store" id="ventaDigitalConfigShortcut">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        Configuración de venta digital
+        ConfiguraciÃ³n de venta digital
       </h2>
-      <p class="form-help">Administra catálogo de licencias/software, visualiza órdenes de compra y ajusta formatos de email.</p>
-      <div class="form-actions" style="margin-top: 10px; padding-top: 10px; border-top: none;">
+      <p class="form-help">Administra catÃ¡logo de licencias/software, visualiza Ã³rdenes de compra y ajusta formatos de email.</p>
+      <div class="form-actions" >
         <a class="btn" href="/super/venta_digital.html">Abrir panel de venta</a>
-        <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pública</a>
+        <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pÃºblica</a>
         <a class="btn secondary" href="/super/formato_para_emviar_email.html">Editar email templates</a>
         <button id="testVentaDigitalBtn" class="btn secondary" type="button">Probar salud del panel</button>
       </div>
-      <div id="ventaDigitalTestMsg" class="form-help" style="margin-top: 12px; margin-bottom: 0;"></div>
+      <div id="ventaDigitalTestMsg" class="form-help" ></div>
     </section>
 
     <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
-        Epayco — Credenciales y activación
+        Epayco â€” Credenciales y activaciÃ³n
       </h2>
       <p class="form-help">Integra operaciones de recaudo digital usando el proveedor de pagos Epayco (Tarjetas, PSE).</p>
 
@@ -50,7 +50,7 @@
             <input id="epaycoEnabledToggle" type="checkbox" role="switch" aria-label="Activar Epayco">
             <span class="mode-label">On</span>
           </label>
-          <div id="epaycoEnabledHelp" class="form-help">Si está desactivado, la pasarela Epayco no aparecerá como opción de pago.</div>
+          <div id="epaycoEnabledHelp" class="form-help">Si estÃ¡ desactivado, la pasarela Epayco no aparecerÃ¡ como opciÃ³n de pago.</div>
         </div>
       </div>
 
@@ -89,12 +89,12 @@
       <div id="epaycoTestResult" class="form-help"></div>
     </section>
 
-    <!-- Sección de parámetros avanzados eliminada por ahora -->
+    <!-- SecciÃ³n de parÃ¡metros avanzados eliminada por ahora -->
 
     <section class="card form advanced-card" data-brand="wompi" id="wompiConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        Nequi (Wompi) — Credenciales
+        Nequi (Wompi) â€” Credenciales
       </h2>
       <p class="form-help">Integra operaciones de recaudo digital usando el proveedor de pagos Wompi (Nequi).</p>
 
@@ -106,7 +106,7 @@
             <input id="wompiModeToggle" type="checkbox" role="switch" aria-label="Cambiar entre sandbox y real">
             <span class="mode-label">Real</span>
           </label>
-          <div id="wompiModeHint" class="form-help">Modo sandbox: usa 3991111111 para aprobación de prueba.</div>
+          <div id="wompiModeHint" class="form-help">Modo sandbox: usa 3991111111 para aprobaciÃ³n de prueba.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Estado actual</label>
@@ -123,7 +123,7 @@
             <input id="wompiEnabledToggle" type="checkbox" role="switch" aria-label="Activar Wompi">
             <span class="mode-label">On</span>
           </label>
-          <div id="wompiEnabledHelp" class="form-help">Si está desactivado, la pasarela Wompi no estará disponible en el portal de pago.</div>
+          <div id="wompiEnabledHelp" class="form-help">Si estÃ¡ desactivado, la pasarela Wompi no estarÃ¡ disponible en el portal de pago.</div>
         </div>
       </div>
 
@@ -149,7 +149,7 @@
         <div class="form-col">
           <label class="form-label">Opciones</label>
           <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
-          <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pégalas cuando te las entregue Wompi.</div>
+          <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pÃ©galas cuando te las entregue Wompi.</div>
         </div>
       </div>
 
@@ -168,7 +168,7 @@
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
         Correo SMTP (Gmail)
       </h2>
-      <p class="form-help">Configura la notificación automatizada y envíos críticos (usuarios nuevos, alertas de servidor).</p>
+      <p class="form-help">Configura la notificaciÃ³n automatizada y envÃ­os crÃ­ticos (usuarios nuevos, alertas de servidor).</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -177,7 +177,7 @@
           <div id="gmailStatusEmail" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Contraseña de aplicación (secreta)</label>
+          <label class="form-label">ContraseÃ±a de aplicaciÃ³n (secreta)</label>
           <input id="gmailSMTPAppPass" class="form-input" type="password" placeholder="16 caracteres de App Password">
           <div id="gmailStatusPass" class="form-help">Cargando estado...</div>
         </div>
@@ -200,7 +200,7 @@
           <input id="gmailPort" class="form-input" type="text" placeholder="587">
         </div>
         <div class="form-col">
-          <label class="form-label">URL base para confirmación (opcional)</label>
+          <label class="form-label">URL base para confirmaciÃ³n (opcional)</label>
           <input id="gmailBaseURL" class="form-input" type="text" placeholder="https://tu-dominio.com">
         </div>
       </div>
@@ -212,21 +212,21 @@
           <div id="gmailStatusRestartAlert" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Activar alertas automáticas</label>
+          <label class="form-label">Activar alertas automÃ¡ticas</label>
           <label class="mode-switch-row" for="gmailRestartAlertEnabled">
             <span class="mode-label">Off</span>
             <input id="gmailRestartAlertEnabled" type="checkbox" role="switch" aria-label="Activar alertas de reinicio del servidor">
             <span class="mode-label">On</span>
           </label>
           <div id="gmailRestartAlertEnabledStatus" class="form-help">Cargando estado...</div>
-          <div id="gmailRestartAlertEnabledHelp" class="form-help">Si está activado, el correo destino recibirá la notificación de arranque o reinicio inesperado.</div>
+          <div id="gmailRestartAlertEnabledHelp" class="form-help">Si estÃ¡ activado, el correo destino recibirÃ¡ la notificaciÃ³n de arranque o reinicio inesperado.</div>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help">La contraseña de aplicación se guarda cifrada obligatoriamente.</div>
+          <div class="form-help">La contraseÃ±a de aplicaciÃ³n se guarda cifrada obligatoriamente.</div>
         </div>
       </div>
 
@@ -240,10 +240,36 @@
       <div id="gmailTestResult" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="portalWhatsAppConfig">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4A8.5 8.5 0 1 1 21 11.5Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
+        WhatsApp del botÃ³n flotante del portal
+      </h2>
+      <p class="form-help">Configura el nÃºmero que abrirÃ¡ el botÃ³n flotante de WhatsApp en la portada pÃºblica.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="portalWhatsAppNumber">NÃºmero de WhatsApp</label>
+          <input id="portalWhatsAppNumber" class="form-input" type="text" inputmode="tel" placeholder="573001112233">
+          <div id="portalWhatsAppStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Vista previa</label>
+          <div id="portalWhatsAppPreview" class="form-help">https://wa.me/573043306506</div>
+          <div class="form-help">Usa formato internacional con dÃ­gitos solamente. Ejemplo Colombia: 573001112233.</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="savePortalWhatsAppBtn" class="btn" style="display:none;">Guardar WhatsApp del portal</button>
+        <button id="editPortalWhatsAppBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelPortalWhatsAppBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="portalWhatsAppMsg" class="form-help"></div>
+    </section>
+
     <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
-        Inteligencia Artificial — Google Gemini
+        Inteligencia Artificial â€” Google Gemini
       </h2>
       <p class="form-help" style="margin-bottom:8px">Conecta servicios de GenAI (100% integrados y unificados) para la asistente del portal corporativo y super-admin.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
@@ -269,12 +295,12 @@
             <span class="mode-label">On</span>
           </label>
           <div id="aiEnabledStatus" class="form-help">Cargando estado...</div>
-          <div id="aiEnabledHelp" class="form-help">Si está desactivado, el chat empresarial y el chat global super rechazarán nuevas consultas para liberar el servidor.</div>
+          <div id="aiEnabledHelp" class="form-help">Si estÃ¡ desactivado, el chat empresarial y el chat global super rechazarÃ¡n nuevas consultas para liberar el servidor.</div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar configuración IA</button>
+        <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar configuraciÃ³n IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Google Gemini</button>
@@ -289,7 +315,7 @@
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01"></path></svg>
           Modo Mantenimiento
         </h2>
-        <p class="form-help">Bloquea temporalmente el tráfico a empresas para mantenimiento.</p>
+        <p class="form-help">Bloquea temporalmente el trÃ¡fico a empresas para mantenimiento.</p>
         <div class="form-group mb-12">
           <label>Activo
             <input id="mantenimientoToggle" type="checkbox" role="switch" aria-label="Activar modo mantenimiento">
@@ -306,9 +332,9 @@
     <section class="card form advanced-card" data-brand="system" id="backupConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" y2="3"></line></svg>
-        Respaldo y restauración de configuración
+        Respaldo y restauraciÃ³n de configuraciÃ³n
       </h2>
-      <p class="form-help">Genera o restaura toda la configuración de pasarelas y tokens con encriptado nativo.</p>
+      <p class="form-help">Genera o restaura toda la configuraciÃ³n de pasarelas y tokens con encriptado nativo.</p>
       <div class="form-row">
         <div class="form-col">
           <button id="downloadConfigBackupBtn" class="btn" type="button">Descargar respaldo JSON</button>
@@ -320,7 +346,7 @@
       </div>
       <div class="form-actions">
         <button id="restoreConfigBtn" class="btn secondary" type="button">Restaurar respaldo</button>
-        <button id="testBackupBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar respaldo</button>
+        <button id="testBackupBtn" class="btn secondary" type="button">Probar respaldo</button>
       </div>
       <div id="backupConfigMsg" class="form-help"></div>
       <div id="backupTestResult" class="form-help"></div>
@@ -328,7 +354,7 @@
 
     <div class="global-save-bar bottom">
       <p id="globalConfigMsgBottom">Guarda todos los ajustes pendientes.</p>
-      <button id="saveAllConfigBottomBtn" type="button" class="btn" style="background: linear-gradient(180deg, #1f5080, #153759); color: white; border: 1px solid rgba(152, 197, 234, 0.4);">
+      <button id="saveAllConfigBottomBtn" type="button" class="btn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios
       </button>
     </div>
@@ -368,7 +394,8 @@
             if (typeof wompi.encryption_available !== 'undefined' && !wompi.encryption_available) {
               document.getElementById('wompiMsg').innerText = 'ERROR: cifrado obligatorio no disponible en el servidor (CONFIG_ENC_KEY no definido).';
             }
-
+                    await loadGmailConfig();
+                    await loadPortalWhatsAppConfig();
             const modeToggle = document.getElementById('wompiModeToggle');
             const modeInfo = document.getElementById('wompiModeInfo');
             const modeSource = document.getElementById('wompiModeSource');
@@ -380,7 +407,7 @@
             refreshWompiModeHint();
 
             if (wompi.public_key_set) {
-              const ts = wompi.public_key_updated ? (' — Última actualización: ' + wompi.public_key_updated) : '';
+              const ts = wompi.public_key_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + wompi.public_key_updated) : '';
               document.getElementById('wompiPublicSet').innerText = 'Public key guardada (' + (wompi.public_key_masked || '') + ')' + ts;
               document.getElementById('wompiPublicKey').disabled = true;
             } else {
@@ -389,7 +416,7 @@
             }
 
             if (wompi.private_key_set) {
-              const ts2 = wompi.private_key_updated ? (' — Última actualización: ' + wompi.private_key_updated) : '';
+              const ts2 = wompi.private_key_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + wompi.private_key_updated) : '';
               document.getElementById('wompiPrivateSet').innerText = 'Private key guardada (' + (wompi.private_key_masked || '****') + ')' + ts2;
               document.getElementById('wompiPrivateKey').disabled = true;
             } else {
@@ -398,7 +425,7 @@
             }
 
             if (wompi.integrity_key_set) {
-              const ts3 = wompi.integrity_key_updated ? (' — Última actualización: ' + wompi.integrity_key_updated) : '';
+              const ts3 = wompi.integrity_key_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + wompi.integrity_key_updated) : '';
               document.getElementById('wompiIntegritySet').innerText = 'Integrity key guardada (' + (wompi.integrity_key_masked || '****') + ')' + ts3;
               document.getElementById('wompiIntegrityKey').disabled = true;
             } else {
@@ -428,9 +455,9 @@
               document.getElementById('saveWompiBtn').disabled = false;
             }
           } else {
-            document.getElementById('wompiPublicSet').innerText = 'Error al leer configuración';
-            document.getElementById('wompiPrivateSet').innerText = 'Error al leer configuración';
-            document.getElementById('wompiIntegritySet').innerText = 'Error al leer configuración';
+            document.getElementById('wompiPublicSet').innerText = 'Error al leer configuraciÃ³n';
+            document.getElementById('wompiPrivateSet').innerText = 'Error al leer configuraciÃ³n';
+            document.getElementById('wompiIntegritySet').innerText = 'Error al leer configuraciÃ³n';
             document.getElementById('wompiModeInfo').innerText = 'Modo: --';
             document.getElementById('wompiModeSource').innerText = 'Origen: --';
           }
@@ -457,7 +484,7 @@
         if (!modeToggle || !modeHint) return;
         const isRealMode = !!modeToggle.checked;
         modeHint.innerText = isRealMode
-          ? 'Modo real activo: se usarán cobros reales con credenciales productivas.'
+          ? 'Modo real activo: se usarÃ¡n cobros reales con credenciales productivas.'
           : 'Modo sandbox activo: usa 3991111111 para aprobar y 3992222222 para rechazar.';
       }
 
@@ -467,7 +494,7 @@
         if (!enabledEl || !helpEl) return;
         helpEl.innerText = enabledEl.checked
           ? 'Wompi activado: disponible en el portal de pago de licencias cuando tenga credenciales completas.'
-          : 'Wompi desactivado: no se mostrará como opción de pago en el portal público.';
+          : 'Wompi desactivado: no se mostrarÃ¡ como opciÃ³n de pago en el portal pÃºblico.';
       }
 
       function refreshEpaycoEnabledHint(){
@@ -476,7 +503,7 @@
         if (!enabledEl || !helpEl) return;
         helpEl.innerText = enabledEl.checked
           ? 'Epayco activado: disponible en el portal de pago cuando tenga al menos la Public Key configurada.'
-          : 'Epayco desactivado: no se mostrará como opción de pago en el portal público.';
+          : 'Epayco desactivado: no se mostrarÃ¡ como opciÃ³n de pago en el portal pÃºblico.';
       }
 
       function refreshGmailRestartAlertHint(){
@@ -484,8 +511,20 @@
         const helpEl = document.getElementById('gmailRestartAlertEnabledHelp');
         if (!enabledEl || !helpEl) return;
         helpEl.innerText = enabledEl.checked
-          ? 'Alerta activada: se enviará correo cuando el servidor inicie o detecte reinicio inesperado, siempre que exista correo destino válido.'
-          : 'Alerta desactivada: el sistema seguirá registrando bitácora y log local, pero no enviará correo.';
+          ? 'Alerta activada: se enviarÃ¡ correo cuando el servidor inicie o detecte reinicio inesperado, siempre que exista correo destino vÃ¡lido.'
+          : 'Alerta desactivada: el sistema seguirÃ¡ registrando bitÃ¡cora y log local, pero no enviarÃ¡ correo.';
+      }
+
+      function normalizePortalWhatsAppNumber(value){
+        return String(value || '').replace(/[^\d]/g, '').trim();
+      }
+
+      function refreshPortalWhatsAppPreview(){
+        const previewEl = document.getElementById('portalWhatsAppPreview');
+        const inputEl = document.getElementById('portalWhatsAppNumber');
+        if (!previewEl || !inputEl) return;
+        const normalized = normalizePortalWhatsAppNumber(inputEl.value);
+        previewEl.innerText = normalized ? ('https://wa.me/' + normalized) : 'https://wa.me/573043306506';
       }
 
       async function loadGmailConfig(){
@@ -500,10 +539,10 @@
         try {
           const rg = await fetch('/super/api/config/gmail');
           if (!rg.ok) {
-            statusEmail.innerText = 'Error al leer configuración Gmail';
-            statusPass.innerText = 'Error al leer configuración Gmail';
-            statusRestart.innerText = 'Error al leer configuración Gmail';
-            statusRestartEnabled.innerText = 'Error al leer configuración Gmail';
+            statusEmail.innerText = 'Error al leer configuraciÃ³n Gmail';
+            statusPass.innerText = 'Error al leer configuraciÃ³n Gmail';
+            statusRestart.innerText = 'Error al leer configuraciÃ³n Gmail';
+            statusRestartEnabled.innerText = 'Error al leer configuraciÃ³n Gmail';
             return;
           }
           const cfg = await rg.json();
@@ -514,7 +553,7 @@
             saveBtn.disabled = true;
             msg.innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido). Configure la variable de entorno en el servidor.';
           } else if (!msg.innerText || msg.innerText.indexOf('ERROR:') === -1) {
-            msg.innerText = 'Puede editar y guardar directamente la configuración Gmail de confirmación.';
+            msg.innerText = 'Puede editar y guardar directamente la configuraciÃ³n Gmail de confirmaciÃ³n.';
           }
 
           document.getElementById('gmailSMTPEmail').value = cfg.smtp_email || '';
@@ -527,31 +566,31 @@
           refreshGmailRestartAlertHint();
 
           if (cfg.smtp_email_set) {
-            const ts = cfg.smtp_email_updated ? (' — Última actualización: ' + cfg.smtp_email_updated) : '';
+            const ts = cfg.smtp_email_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.smtp_email_updated) : '';
             statusEmail.innerText = 'Correo remitente configurado' + ts;
           } else {
             statusEmail.innerText = 'No configurado';
           }
 
           if (cfg.smtp_app_password_set) {
-            const ts2 = cfg.smtp_app_password_updated ? (' — Última actualización: ' + cfg.smtp_app_password_updated) : '';
-            statusPass.innerText = 'Contraseña de aplicación guardada (' + (cfg.smtp_app_password_masked || '****') + ')' + ts2;
+            const ts2 = cfg.smtp_app_password_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.smtp_app_password_updated) : '';
+            statusPass.innerText = 'ContraseÃ±a de aplicaciÃ³n guardada (' + (cfg.smtp_app_password_masked || '****') + ')' + ts2;
           } else {
             statusPass.innerText = 'No configurada';
           }
 
           if (cfg.restart_alert_to_set) {
-            const ts3 = cfg.restart_alert_to_updated ? (' — Última actualización: ' + cfg.restart_alert_to_updated) : '';
+            const ts3 = cfg.restart_alert_to_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.restart_alert_to_updated) : '';
             statusRestart.innerText = 'Correo de alertas configurado' + ts3;
           } else {
             statusRestart.innerText = 'No configurado';
           }
 
           if (cfg.restart_alert_enabled) {
-            const ts4 = cfg.restart_alert_enabled_updated ? (' — Última actualización: ' + cfg.restart_alert_enabled_updated) : '';
+            const ts4 = cfg.restart_alert_enabled_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.restart_alert_enabled_updated) : '';
             statusRestartEnabled.innerText = (cfg.restart_alert_enabled_set ? 'Alerta habilitada' : 'Alerta habilitada (valor por defecto)') + ts4;
           } else {
-            const ts5 = cfg.restart_alert_enabled_updated ? (' — Última actualización: ' + cfg.restart_alert_enabled_updated) : '';
+            const ts5 = cfg.restart_alert_enabled_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.restart_alert_enabled_updated) : '';
             statusRestartEnabled.innerText = 'Alerta desactivada' + ts5;
           }
 
@@ -568,10 +607,46 @@
           editBtn.style.display = 'none';
           cancelBtn.style.display = 'none';
         } catch (err) {
-          statusEmail.innerText = 'Error cargando configuración Gmail';
-          statusPass.innerText = 'Error cargando configuración Gmail';
-          statusRestart.innerText = 'Error cargando configuración Gmail';
-          statusRestartEnabled.innerText = 'Error cargando configuración Gmail';
+          statusEmail.innerText = 'Error cargando configuraciÃ³n Gmail';
+          statusPass.innerText = 'Error cargando configuraciÃ³n Gmail';
+          statusRestart.innerText = 'Error cargando configuraciÃ³n Gmail';
+          statusRestartEnabled.innerText = 'Error cargando configuraciÃ³n Gmail';
+        }
+      }
+
+      async function loadPortalWhatsAppConfig(){
+        const statusEl = document.getElementById('portalWhatsAppStatus');
+        const msgEl = document.getElementById('portalWhatsAppMsg');
+        const inputEl = document.getElementById('portalWhatsAppNumber');
+        const saveBtn = document.getElementById('savePortalWhatsAppBtn');
+        const editBtn = document.getElementById('editPortalWhatsAppBtn');
+        const cancelBtn = document.getElementById('cancelPortalWhatsAppBtn');
+        try {
+          const res = await fetch('/super/api/config/gmail');
+          if (!res.ok) {
+            statusEl.innerText = 'Error al leer el nÃºmero de WhatsApp';
+            return;
+          }
+          const cfg = await res.json();
+          inputEl.value = cfg.whatsapp_contact_number || '';
+          inputEl.disabled = true;
+          refreshPortalWhatsAppPreview();
+          if (cfg.whatsapp_contact_number_set) {
+            const ts = cfg.whatsapp_contact_number_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.whatsapp_contact_number_updated) : '';
+            statusEl.innerText = 'NÃºmero configurado' + ts;
+            editBtn.style.display = '';
+          } else {
+            statusEl.innerText = 'No configurado';
+            editBtn.style.display = 'none';
+          }
+          saveBtn.style.display = 'none';
+          saveBtn.disabled = false;
+          cancelBtn.style.display = 'none';
+          if (!msgEl.innerText || msgEl.innerText.indexOf('Error') === -1) {
+            msgEl.innerText = 'Este nÃºmero se usarÃ¡ en el botÃ³n flotante de WhatsApp del index.';
+          }
+        } catch (err) {
+          statusEl.innerText = 'Error cargando WhatsApp del portal';
         }
       }
 
@@ -584,7 +659,7 @@
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
-            msg.innerText = 'Error al leer configuración IA.';
+            msg.innerText = 'Error al leer configuraciÃ³n IA.';
             accountEl.innerText = 'Cuenta Google logueada: no disponible';
             aiCredentialBindings.forEach(function(binding){
               const statusEl = document.getElementById(binding.statusId);
@@ -620,7 +695,7 @@
               statusEl.innerText = 'Desactivado por interruptor.';
             } else if (item.configured) {
               hasAIConfig = true;
-              const ts = item.updated_at ? (' — Última actualización: ' + item.updated_at) : '';
+              const ts = item.updated_at ? (' â€” Ãšltima actualizaciÃ³n: ' + item.updated_at) : '';
               statusEl.innerText = 'Credencial configurada' + ts;
             } else {
               statusEl.innerText = 'No configurada';
@@ -640,11 +715,11 @@
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
             msg.innerText = hasAIConfig
-			  ? 'Google Gemini quedó disponible para el chat empresarial y el chat global super. Usa Editar si necesitas actualizar la API key.'
-			  : 'Aún no hay API key de Google Gemini guardada.';
+			  ? 'Google Gemini quedÃ³ disponible para el chat empresarial y el chat global super. Usa Editar si necesitas actualizar la API key.'
+			  : 'AÃºn no hay API key de Google Gemini guardada.';
           }
         } catch (err) {
-          msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
+          msg.innerText = 'Error cargando configuraciÃ³n IA: ' + (err.message || err);
           accountEl.innerText = 'Cuenta Google logueada: no disponible';
         }
       }
@@ -694,7 +769,7 @@
       msg.innerText = 'Error guardando credencial Gemini: ' + (err.message || err);
         } finally {
 		  btn.disabled = false;
-      btn.innerText = 'Guardar configuración IA';
+      btn.innerText = 'Guardar configuraciÃ³n IA';
         }
       }
 
@@ -740,6 +815,7 @@
           smtp_host: document.getElementById('gmailHost').value.trim(),
           smtp_port: document.getElementById('gmailPort').value.trim(),
           confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
+          whatsapp_contact_number: normalizePortalWhatsAppNumber(document.getElementById('portalWhatsAppNumber').value.trim()),
           restart_alert_to: document.getElementById('gmailRestartAlertTo').value.trim(),
           restart_alert_enabled: !!document.getElementById('gmailRestartAlertEnabled').checked,
           encrypt: true
@@ -784,16 +860,16 @@
 
       async function saveAllConfigurations(){
         setGlobalSaveState(true);
-        setGlobalSaveMessage('Guardando toda la configuración editada...', '');
+        setGlobalSaveMessage('Guardando toda la configuraciÃ³n editada...', '');
         try {
           await persistWompiConfig();
           await persistEpaycoConfig();
           await persistGmailConfig();
           await persistAIConfig();
           await load();
-          setGlobalSaveMessage('Toda la configuración se guardó correctamente.', 'success');
+          setGlobalSaveMessage('Toda la configuraciÃ³n se guardÃ³ correctamente.', 'success');
         } catch (err) {
-          setGlobalSaveMessage(err.message || 'No se pudo guardar toda la configuración.', 'error');
+          setGlobalSaveMessage(err.message || 'No se pudo guardar toda la configuraciÃ³n.', 'error');
         } finally {
           setGlobalSaveState(false);
         }
@@ -809,12 +885,12 @@
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
-		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva API key de Google Gemini.';
+		document.getElementById('aiConfigMsg').innerText = 'Modo ediciÃ³n activo: ajusta el interruptor global y/o ingresa la nueva API key de Google Gemini.';
       }
 
       function cancelEditAIConfig(){
         loadAIConfig();
-	  	document.getElementById('aiConfigMsg').innerText = 'Edición de Google Gemini cancelada.';
+	  	document.getElementById('aiConfigMsg').innerText = 'EdiciÃ³n de Google Gemini cancelada.';
       }
 
       function refreshAIEnabledHint(){
@@ -822,8 +898,8 @@
 		const helpEl = document.getElementById('aiEnabledHelp');
 		if (!enabledEl || !helpEl) return;
 		helpEl.innerText = enabledEl.checked
-      ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar Google Gemini cuando el proveedor esté disponible.'
-		  : 'IA desactivada: los chats empresariales y el chat global super quedarán bloqueados hasta volver a activarla, liberando carga del servidor.';
+      ? 'IA habilitada: el chat empresarial y el chat global super podrÃ¡n consultar Google Gemini cuando el proveedor estÃ© disponible.'
+		  : 'IA desactivada: los chats empresariales y el chat global super quedarÃ¡n bloqueados hasta volver a activarla, liberando carga del servidor.';
       }
 
       async function saveGmail(e){
@@ -836,6 +912,7 @@
           smtp_host: document.getElementById('gmailHost').value.trim(),
           smtp_port: document.getElementById('gmailPort').value.trim(),
           confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
+          whatsapp_contact_number: normalizePortalWhatsAppNumber(document.getElementById('portalWhatsAppNumber').value.trim()),
           restart_alert_to: document.getElementById('gmailRestartAlertTo').value.trim(),
           restart_alert_enabled: !!document.getElementById('gmailRestartAlertEnabled').checked,
           encrypt: true
@@ -863,7 +940,7 @@
           }
 
           document.getElementById('gmailSMTPAppPass').value = '';
-          msg.innerText = 'Configuración Gmail SMTP guardada correctamente.';
+          msg.innerText = 'ConfiguraciÃ³n Gmail SMTP guardada correctamente.';
           await loadGmailConfig();
         } catch (err) {
           msg.innerText = 'Error: ' + (err.message || err);
@@ -884,12 +961,58 @@
         document.getElementById('saveGmailBtn').disabled = false;
         document.getElementById('editGmailBtn').style.display = 'none';
         document.getElementById('cancelGmailBtn').style.display = '';
-        document.getElementById('gmailMsg').innerText = 'Modo edición activo para Gmail SMTP.';
+        document.getElementById('gmailMsg').innerText = 'Modo ediciÃ³n activo para Gmail SMTP.';
       }
 
       function cancelEditGmail(){
         loadGmailConfig();
-        document.getElementById('gmailMsg').innerText = 'Edición cancelada.';
+        document.getElementById('gmailMsg').innerText = 'EdiciÃ³n cancelada.';
+      }
+
+      async function savePortalWhatsApp(e){
+        if (e && e.preventDefault) e.preventDefault();
+        const btn = document.getElementById('savePortalWhatsAppBtn');
+        const msg = document.getElementById('portalWhatsAppMsg');
+        const normalized = normalizePortalWhatsAppNumber(document.getElementById('portalWhatsAppNumber').value);
+        if (!normalized) {
+          msg.innerText = 'Ingresa un nÃºmero de WhatsApp vÃ¡lido en formato internacional.';
+          return;
+        }
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+        try {
+          const res = await fetch('/super/api/config/gmail', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whatsapp_contact_number: normalized, encrypt: true })
+          });
+          const raw = await res.text();
+          if (!res.ok) {
+            msg.innerText = 'Error guardando WhatsApp del portal: ' + raw;
+            return;
+          }
+          msg.innerText = 'NÃºmero de WhatsApp guardado correctamente.';
+          await loadPortalWhatsAppConfig();
+        } catch (err) {
+          msg.innerText = 'Error guardando WhatsApp del portal: ' + (err.message || err);
+        } finally {
+          btn.disabled = false;
+          btn.innerText = 'Guardar WhatsApp del portal';
+        }
+      }
+
+      function enableEditPortalWhatsApp(){
+        document.getElementById('portalWhatsAppNumber').disabled = false;
+        document.getElementById('savePortalWhatsAppBtn').style.display = '';
+        document.getElementById('savePortalWhatsAppBtn').disabled = false;
+        document.getElementById('editPortalWhatsAppBtn').style.display = 'none';
+        document.getElementById('cancelPortalWhatsAppBtn').style.display = '';
+        document.getElementById('portalWhatsAppMsg').innerText = 'Modo ediciÃ³n activo para el WhatsApp del portal.';
+      }
+
+      function cancelEditPortalWhatsApp(){
+        loadPortalWhatsAppConfig();
+        document.getElementById('portalWhatsAppMsg').innerText = 'EdiciÃ³n cancelada.';
       }
 
       async function saveWompi(e){
@@ -902,7 +1025,7 @@
         const enabled = !!document.getElementById('wompiEnabledToggle').checked;
 
         if (!pub && !prv && !integrity) {
-          if (!confirm('No ingresaste llaves nuevas. ¿Deseas guardar solo el estado de activación y/o el modo de Wompi?')) return;
+          if (!confirm('No ingresaste llaves nuevas. Â¿Deseas guardar solo el estado de activaciÃ³n y/o el modo de Wompi?')) return;
         }
 
         const payload = { encrypt, mode, enabled };
@@ -920,7 +1043,7 @@
           if (res.ok) {
             const modeTxt = mode === 'production' ? 'real' : 'sandbox';
             const enabledTxt = enabled ? 'activado' : 'desactivado';
-            document.getElementById('wompiMsg').innerText = 'Configuración Wompi guardada correctamente. Estado: ' + enabledTxt + '. Modo activo: ' + modeTxt + '.';
+            document.getElementById('wompiMsg').innerText = 'ConfiguraciÃ³n Wompi guardada correctamente. Estado: ' + enabledTxt + '. Modo activo: ' + modeTxt + '.';
             document.getElementById('wompiPublicKey').value = '';
             document.getElementById('wompiPrivateKey').value = '';
             document.getElementById('wompiIntegrityKey').value = '';
@@ -942,12 +1065,12 @@
         document.getElementById('saveWompiBtn').disabled = false;
         document.getElementById('editWompiBtn').style.display = 'none';
         document.getElementById('cancelWompiBtn').style.display = '';
-        document.getElementById('wompiMsg').innerText = 'Modo edición: ajusta sandbox/real, el estado de activación y actualiza credenciales si aplica.';
+        document.getElementById('wompiMsg').innerText = 'Modo ediciÃ³n: ajusta sandbox/real, el estado de activaciÃ³n y actualiza credenciales si aplica.';
       }
 
       function cancelEditWompi(){
         load();
-        document.getElementById('wompiMsg').innerText = 'Edición cancelada.';
+        document.getElementById('wompiMsg').innerText = 'EdiciÃ³n cancelada.';
       }
 
       async function loadEpaycoConfig(){
@@ -958,9 +1081,9 @@
         try {
           const res = await fetch('/super/api/config/epayco');
           if (!res.ok) {
-            statusPublic.innerText = 'Error al leer configuración Epayco';
-            statusPrivate.innerText = 'Error al leer configuración Epayco';
-            statusCustomerId.innerText = 'Error al leer configuración Epayco';
+            statusPublic.innerText = 'Error al leer configuraciÃ³n Epayco';
+            statusPrivate.innerText = 'Error al leer configuraciÃ³n Epayco';
+            statusCustomerId.innerText = 'Error al leer configuraciÃ³n Epayco';
             return;
           }
           const cfg = await res.json();
@@ -969,7 +1092,7 @@
           refreshEpaycoEnabledHint();
 
         if (cfg.public_key_set) {
-          const tsPublic = cfg.public_key_updated ? (' — Última actualización: ' + cfg.public_key_updated) : '';
+          const tsPublic = cfg.public_key_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.public_key_updated) : '';
           statusPublic.innerText = 'Public Key guardada (' + (cfg.public_key_masked || '') + ')' + tsPublic;
           document.getElementById('epaycoPublicKey').disabled = true;
         } else {
@@ -978,7 +1101,7 @@
         }
 
         if (cfg.customer_id_set) {
-          const tsCustomer = cfg.customer_id_updated ? (' — Última actualización: ' + cfg.customer_id_updated) : '';
+          const tsCustomer = cfg.customer_id_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.customer_id_updated) : '';
           statusCustomerId.innerText = 'Customer ID guardado (' + (cfg.customer_id_masked || '') + ')' + tsCustomer;
           document.getElementById('epaycoCustomerId').disabled = true;
         } else {
@@ -987,7 +1110,7 @@
         }
 
         if (cfg.private_key_set) {
-          const tsPrivate = cfg.private_key_updated ? (' — Última actualización: ' + cfg.private_key_updated) : '';
+          const tsPrivate = cfg.private_key_updated ? (' â€” Ãšltima actualizaciÃ³n: ' + cfg.private_key_updated) : '';
           statusPrivate.innerText = 'Private Key guardada (' + (cfg.private_key_masked || '****') + ')' + tsPrivate;
           document.getElementById('epaycoPrivateKey').disabled = true;
         } else {
@@ -1017,7 +1140,7 @@
         const enabled = !!document.getElementById('epaycoEnabledToggle').checked;
 
 	      if (!publicKey && !customerId && !privateKey) {
-          if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
+          if (!confirm('No ingresaste llaves. Â¿Deseas actualizar solo el estado de activaciÃ³n?')) return;
         }
 
         const payload = { encrypt: true, enabled: enabled };
@@ -1052,12 +1175,12 @@
         document.getElementById('saveEpaycoBtn').disabled = false;
         document.getElementById('editEpaycoBtn').style.display = 'none';
         document.getElementById('cancelEpaycoBtn').style.display = '';
-        document.getElementById('epaycoMsg').innerText = 'Modo edición activo: ingresa las nuevas credenciales y guarda.';
+        document.getElementById('epaycoMsg').innerText = 'Modo ediciÃ³n activo: ingresa las nuevas credenciales y guarda.';
       }
 
       function cancelEditEpayco(){
         loadEpaycoConfig();
-        document.getElementById('epaycoMsg').innerText = 'Edición Epayco cancelada.';
+        document.getElementById('epaycoMsg').innerText = 'EdiciÃ³n Epayco cancelada.';
       }
 
       async function downloadConfigBackup(){
@@ -1099,7 +1222,7 @@
           const raw = await files[0].text();
           payload = raw ? JSON.parse(raw) : null;
         } catch (err) {
-          msg.innerText = 'El archivo seleccionado no es un JSON válido.';
+          msg.innerText = 'El archivo seleccionado no es un JSON vÃ¡lido.';
           return;
         }
 
@@ -1108,13 +1231,13 @@
           return;
         }
 
-        const confirmed = window.confirm('Se restaurarán configuraciones críticas de super. ¿Deseas continuar?');
+        const confirmed = window.confirm('Se restaurarÃ¡n configuraciones crÃ­ticas de super. Â¿Deseas continuar?');
         if (!confirmed) {
-          msg.innerText = 'Restauración cancelada por el usuario.';
+          msg.innerText = 'RestauraciÃ³n cancelada por el usuario.';
           return;
         }
 
-        msg.innerText = 'Restaurando configuración crítica...';
+        msg.innerText = 'Restaurando configuraciÃ³n crÃ­tica...';
         try {
           const res = await fetch('/super/api/config/backup', {
             method: 'PUT',
@@ -1157,7 +1280,7 @@
         if (out) out.innerText = 'Probando Epayco...';
         try {
           const res = await fetch('/super/api/config/epayco', { method: 'GET', credentials: 'same-origin' });
-          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Epayco: ' + res.status; return; }
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuraciÃ³n Epayco: ' + res.status; return; }
           const cfg = await res.json();
           const issues = [];
 	      if (!cfg.public_key_set) issues.push('Falta la Public Key');
@@ -1177,7 +1300,7 @@
         if (out) out.innerText = 'Probando Nequi/Wompi...';
         try {
           const res = await fetch('/super/api/config/wompi', { method: 'GET', credentials: 'same-origin' });
-          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Wompi: ' + res.status; return; }
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuraciÃ³n Wompi: ' + res.status; return; }
           const cfg = await res.json();
           const issues = [];
           if (!(cfg.public_key_set || cfg.private_key_set || cfg.integrity_key_set)) issues.push('No hay llaves configuradas');
@@ -1258,6 +1381,10 @@
         refreshGmailRestartAlertHint();
         document.getElementById('saveGmailBtn').disabled = false;
       });
+      document.getElementById('portalWhatsAppNumber').addEventListener('input', function(){
+        refreshPortalWhatsAppPreview();
+        document.getElementById('savePortalWhatsAppBtn').disabled = false;
+      });
       document.getElementById('aiEnabledToggle').addEventListener('change', function(){
 		refreshAIEnabledHint();
 		document.getElementById('saveAiConfigBtn').disabled = false;
@@ -1268,6 +1395,9 @@
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);
+      document.getElementById('savePortalWhatsAppBtn').addEventListener('click', savePortalWhatsApp);
+      document.getElementById('editPortalWhatsAppBtn').addEventListener('click', enableEditPortalWhatsApp);
+      document.getElementById('cancelPortalWhatsAppBtn').addEventListener('click', cancelEditPortalWhatsApp);
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);
@@ -1287,3 +1417,4 @@
   </script>
 </body>
 </html>
+

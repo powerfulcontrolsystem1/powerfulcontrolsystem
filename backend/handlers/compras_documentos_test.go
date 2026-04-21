@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,6 +40,20 @@ func decodeBodyMap(t *testing.T, rr *httptest.ResponseRecorder) map[string]inter
 		t.Fatalf("decode body: %v body=%s", err, rr.Body.String())
 	}
 	return payload
+}
+
+func cleanupComprasComprobantesArtifacts(t *testing.T, empresaID int64) {
+	t.Helper()
+	suffix := "empresa_" + strconv.FormatInt(empresaID, 10)
+	bases := []string{
+		filepath.Join("web", "uploads", "comprobantes", suffix),
+		filepath.Join("..", "web", "uploads", "comprobantes", suffix),
+	}
+	t.Cleanup(func() {
+		for _, base := range bases {
+			_ = os.RemoveAll(base)
+		}
+	})
 }
 
 func TestEmpresaComprasDocumentosCicloCompleto(t *testing.T) {
@@ -353,5 +371,76 @@ func TestEmpresaComprasDocumentosRecepcionParcialYValidacionDocumental(t *testin
 	resultadoRecepcionarCompleta := respRecepcionarCompleta["resultado"].(map[string]interface{})
 	if resultadoRecepcionarCompleta["estado_documento"].(string) != "recepcionada" {
 		t.Fatalf("expected estado_documento recepcionada, got %v", resultadoRecepcionarCompleta["estado_documento"])
+	}
+}
+
+func TestEmpresaComprasDocumentoComprobanteUploadHandler(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_compras_documentos_comprobante_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	const empresaID int64 = 66
+	cleanupComprasComprobantesArtifacts(t, empresaID)
+	proveedorID := seedProveedorComprasTest(t, dbEmp, empresaID, "PRV-COMP-04")
+
+	hDocs := EmpresaComprasDocumentosHandler(dbEmp)
+	reqCreate := httptest.NewRequest(http.MethodPost, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":66,"proveedor_id":`+strconv.FormatInt(proveedorID, 10)+`,"documento_codigo":"OC-6601","accion":"crear","monto_total":430000,"moneda":"COP"}`))
+	reqCreate = reqCreate.WithContext(context.WithValue(reqCreate.Context(), "adminEmail", "compras@test.com"))
+	reqCreate.Header.Set("Content-Type", "application/json")
+	rrCreate := httptest.NewRecorder()
+	hDocs.ServeHTTP(rrCreate, reqCreate)
+	if rrCreate.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrCreate.Code, rrCreate.Body.String())
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("empresa_id", strconv.FormatInt(empresaID, 10)); err != nil {
+		t.Fatalf("write empresa_id field: %v", err)
+	}
+	if err := writer.WriteField("documento_codigo", "OC-6601"); err != nil {
+		t.Fatalf("write documento_codigo field: %v", err)
+	}
+	if err := writer.WriteField("tipo_documento", "orden_compra"); err != nil {
+		t.Fatalf("write tipo_documento field: %v", err)
+	}
+	part, err := writer.CreateFormFile("archivo", "soporte.pdf")
+	if err != nil {
+		t.Fatalf("create multipart file: %v", err)
+	}
+	if _, err := part.Write([]byte("pdf simulado")); err != nil {
+		t.Fatalf("write multipart file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart: %v", err)
+	}
+
+	hUpload := EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp)
+	reqUpload := httptest.NewRequest(http.MethodPost, "/api/empresa/compras/documentos/comprobante", &body)
+	reqUpload.Header.Set("Content-Type", writer.FormDataContentType())
+	reqUpload = reqUpload.WithContext(context.WithValue(reqUpload.Context(), "adminEmail", "compras@test.com"))
+	rrUpload := httptest.NewRecorder()
+	hUpload.ServeHTTP(rrUpload, reqUpload)
+	if rrUpload.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d body=%s", rrUpload.Code, rrUpload.Body.String())
+	}
+
+	doc, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, empresaID, "orden_compra", "OC-6601")
+	if err != nil {
+		t.Fatalf("get documento compra: %v", err)
+	}
+	if strings.TrimSpace(doc.ComprobanteURL) == "" {
+		t.Fatalf("expected comprobante_url persisted")
+	}
+	if !strings.HasSuffix(strings.ToLower(doc.ComprobanteNombre), ".pdf") {
+		t.Fatalf("expected comprobante nombre .pdf, got %q", doc.ComprobanteNombre)
+	}
+	absPath := filepath.Join(resolveWebRootDir(), filepath.FromSlash(strings.TrimPrefix(doc.ComprobanteURL, "/")))
+	if _, err := os.Stat(absPath); err != nil {
+		t.Fatalf("expected uploaded comprobante file: %v", err)
 	}
 }

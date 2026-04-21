@@ -125,7 +125,7 @@
       if (banner) {
         banner.hidden = false;
         banner.textContent = text;
-        banner.style.color = "#ffd1d1";
+        banner.classList.add("value-negative");
       }
       document.getElementById("promptInput").disabled = true;
       document.getElementById("sendBtn").disabled = true;
@@ -136,6 +136,7 @@
     function clearAIDisabledState() {
       state.aiDisabled = false;
       const banner = document.getElementById("aiDisabledBanner");
+      if (banner) banner.classList.remove("value-negative");
       const modelSelect = document.getElementById("modelSelect");
       if (banner) {
         banner.hidden = true;

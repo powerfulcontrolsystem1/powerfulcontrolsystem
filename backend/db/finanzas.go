@@ -1010,6 +1010,36 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 	return nil
 }
 
+// UpdateEmpresaFinanzasMovimientoComprobante actualiza la URL del comprobante adjunto de un movimiento.
+func UpdateEmpresaFinanzasMovimientoComprobante(dbConn *sql.DB, empresaID, id int64, comprobanteURL string) error {
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		return err
+	}
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	if id <= 0 {
+		return fmt.Errorf("id es obligatorio")
+	}
+	comprobanteURL = strings.TrimSpace(comprobanteURL)
+	if comprobanteURL == "" {
+		return fmt.Errorf("comprobante_url es obligatorio")
+	}
+
+	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos
+		SET comprobante_url = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND id = ?`, comprobanteURL, empresaID, id)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // SetEmpresaFinanzasMovimientoEstado activa/desactiva/anula un movimiento financiero.
 func SetEmpresaFinanzasMovimientoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = normalizeEstadoMovimiento(estado)

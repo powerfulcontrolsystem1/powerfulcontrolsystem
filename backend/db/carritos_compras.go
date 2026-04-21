@@ -12,36 +12,37 @@ import (
 
 // CarritoCompra representa un carrito de compra por empresa.
 type CarritoCompra struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	Codigo             string  `json:"codigo"`
-	Nombre             string  `json:"nombre"`
-	CanalVenta         string  `json:"canal_venta,omitempty"`
-	ClienteID          int64   `json:"cliente_id,omitempty"`
-	ClienteNombre      string  `json:"cliente_nombre,omitempty"`
-	EstadoCarrito      string  `json:"estado_carrito,omitempty"`
-	EstadoVenta        string  `json:"estado_venta,omitempty"`
-	Moneda             string  `json:"moneda,omitempty"`
-	ReferenciaExterna  string  `json:"referencia_externa,omitempty"`
-	Subtotal           float64 `json:"subtotal"`
-	DescuentoTotal     float64 `json:"descuento_total"`
-	ImpuestoTotal      float64 `json:"impuesto_total"`
-	Total              float64 `json:"total"`
-	ActivadoEn         string  `json:"activado_en,omitempty"`
-	PagadoEn           string  `json:"pagado_en,omitempty"`
-	DescuentoTipo      string  `json:"descuento_tipo,omitempty"`
-	DescuentoCodigo    string  `json:"descuento_codigo,omitempty"`
-	DescuentoValor     float64 `json:"descuento_valor"`
-	DevolucionTotal    float64 `json:"devolucion_total"`
-	TotalPagado        float64 `json:"total_pagado"`
-	MetodoPago         string  `json:"metodo_pago,omitempty"`
-	ReferenciaPago     string  `json:"referencia_pago,omitempty"`
-	ItemCount          int64   `json:"item_count"`
-	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
-	Estado             string  `json:"estado,omitempty"`
-	Observaciones      string  `json:"observaciones,omitempty"`
+	ID                 int64                           `json:"id"`
+	EmpresaID          int64                           `json:"empresa_id"`
+	Codigo             string                          `json:"codigo"`
+	Nombre             string                          `json:"nombre"`
+	CanalVenta         string                          `json:"canal_venta,omitempty"`
+	ClienteID          int64                           `json:"cliente_id,omitempty"`
+	ClienteNombre      string                          `json:"cliente_nombre,omitempty"`
+	EstadoCarrito      string                          `json:"estado_carrito,omitempty"`
+	EstadoVenta        string                          `json:"estado_venta,omitempty"`
+	Moneda             string                          `json:"moneda,omitempty"`
+	ReferenciaExterna  string                          `json:"referencia_externa,omitempty"`
+	Subtotal           float64                         `json:"subtotal"`
+	DescuentoTotal     float64                         `json:"descuento_total"`
+	ImpuestoTotal      float64                         `json:"impuesto_total"`
+	Total              float64                         `json:"total"`
+	ActivadoEn         string                          `json:"activado_en,omitempty"`
+	PagadoEn           string                          `json:"pagado_en,omitempty"`
+	DescuentoTipo      string                          `json:"descuento_tipo,omitempty"`
+	DescuentoCodigo    string                          `json:"descuento_codigo,omitempty"`
+	DescuentoValor     float64                         `json:"descuento_valor"`
+	DevolucionTotal    float64                         `json:"devolucion_total"`
+	TotalPagado        float64                         `json:"total_pagado"`
+	MetodoPago         string                          `json:"metodo_pago,omitempty"`
+	ReferenciaPago     string                          `json:"referencia_pago,omitempty"`
+	ItemCount          int64                           `json:"item_count"`
+	FechaCreacion      string                          `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string                          `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string                          `json:"usuario_creador,omitempty"`
+	Estado             string                          `json:"estado,omitempty"`
+	Observaciones      string                          `json:"observaciones,omitempty"`
+	TarifaPorMinutos   *CarritoTarifaPorMinutosResumen `json:"tarifa_por_minutos,omitempty"`
 }
 
 // CarritoCompraItem representa un item dentro de un carrito de compra.
@@ -1891,7 +1892,7 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 
 // RecalculateCarritoCompraTotals recalcula totales del carrito basado en items activos.
 func RecalculateCarritoCompraTotals(dbConn *sql.DB, empresaID, carritoID int64) error {
-	_, err := RefreshCarritoTotalConTarifaPorDia(dbConn, empresaID, carritoID, time.Now())
+	_, err := RefreshCarritoTotalConTarifasTiempo(dbConn, empresaID, carritoID, time.Now())
 	return err
 }
 

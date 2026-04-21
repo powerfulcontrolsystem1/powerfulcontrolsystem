@@ -191,8 +191,10 @@ func TestPublicSoporteRemotoResolverAccesoExponeDescargasRustDesk(t *testing.T) 
 		RustDeskServerKey:       "PUB-KEY-778",
 		ClienteWindowsURL:       "https://downloads.example/rustdesk-client-win.exe",
 		ClienteLinuxURL:         "https://downloads.example/rustdesk-client-linux.deb",
+		ClienteMacURL:           "https://downloads.example/rustdesk-client-mac.dmg",
 		ServidorWindowsURL:      "https://downloads.example/rustdesk-server-win.zip",
 		ServidorLinuxURL:        "https://downloads.example/rustdesk-server-linux.tar.gz",
+		ServidorMacURL:          "https://downloads.example/rustdesk-server-mac.pkg",
 		CarpetaTransferencia:    "/transferencias/empresa-778",
 		InstruccionesPublicas:   "Descarga el cliente, agrega el host y comparte el ID visible con soporte.",
 		UsuarioCreador:          "admin778@test.local",
@@ -239,11 +241,42 @@ func TestPublicSoporteRemotoResolverAccesoExponeDescargasRustDesk(t *testing.T) 
 	if strings.TrimSpace(stringValue(access["cliente_windows_url"])) == "" || strings.TrimSpace(stringValue(access["servidor_linux_url"])) == "" {
 		t.Fatalf("expected download urls in access bundle, got %#v", access)
 	}
+	if strings.TrimSpace(stringValue(access["cliente_mac_url"])) != "https://downloads.example/rustdesk-client-mac.dmg" {
+		t.Fatalf("expected cliente_mac_url in access bundle, got %#v", access)
+	}
+	if strings.TrimSpace(stringValue(access["servidor_mac_url"])) != "https://downloads.example/rustdesk-server-mac.pkg" {
+		t.Fatalf("expected servidor_mac_url in access bundle, got %#v", access)
+	}
 	if strings.TrimSpace(stringValue(access["rustdesk_device_id"])) != "778-DEVICE" {
 		t.Fatalf("expected rustdesk_device_id, got %#v", access)
 	}
 	if strings.TrimSpace(stringValue(access["portal_publico_url"])) == "" {
 		t.Fatalf("expected portal_publico_url, got %#v", access)
+	}
+}
+
+func TestSuperServidoresProbeHandlerReturnsRustDeskStatus(t *testing.T) {
+	h := SuperServidoresProbeHandler()
+	req := httptest.NewRequest(http.MethodGet, "/super/api/servidores/probar?id=rustdesk", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 probe response, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	body := decodeSoporteRemotoBody(t, rr)
+	service, ok := body["servicio"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected servicio object, got %#v", body)
+	}
+	if strings.TrimSpace(stringValue(service["id"])) != "rustdesk" {
+		t.Fatalf("expected rustdesk service, got %#v", service)
+	}
+	prueba, ok := service["prueba"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected prueba payload, got %#v", service)
+	}
+	if strings.TrimSpace(stringValue(prueba["resumen"])) == "" {
+		t.Fatalf("expected probe summary, got %#v", prueba)
 	}
 }
 

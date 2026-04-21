@@ -56,10 +56,8 @@ Definir la arquitectura tecnica objetivo del ERP multiempresa, su modelo de dato
 
 ## 4.2 Bases legado
 
-- `backend/db/superadministrador.db`
-- `backend/db/empresas.db`
-
-Uso legado permitido solo para migracion, respaldo tecnico o contingencia controlada.
+- No hay archivos `.db` legacy versionados en el repositorio vigente.
+- El legado SQLite queda solo como referencia historica de migracion o como respaldo tecnico externo y no como artefacto operativo local.
 
 ## 4.3 Patrone de modelado
 

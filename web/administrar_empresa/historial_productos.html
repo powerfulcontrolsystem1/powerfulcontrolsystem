@@ -133,7 +133,7 @@
             changesHTML += `<div><span class="amount-label">Impuesto:</span> <span class="amount-old">${h.impuesto_anterior}%</span> → <span class="amount-new">${h.impuesto_nuevo}%</span></div>`;
         }
         if (!changesHTML) {
-            changesHTML = `<div style="color:var(--secondary-text);font-style:italic">Registro inicial o sin cambios directos</div>`;
+            changesHTML = `<div class="muted" style="font-style:italic">Registro inicial o sin cambios directos</div>`;
         }
 
         const dateStr = h.fecha_cambio ? new Date(h.fecha_cambio).toLocaleString() : 'Fecha desc.';

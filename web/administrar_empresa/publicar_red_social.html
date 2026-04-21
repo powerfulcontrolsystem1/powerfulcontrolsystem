@@ -6,15 +6,16 @@
   <title>Publicar en Red Social Comercial</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body { font-family: sans-serif; background: var(--bg-color, #f4f4f4); color: var(--text-color, #333); padding: 20px; }
-    .panel { background: var(--panel-bg, #fff); padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+    .panel { background: linear-gradient(180deg, var(--surface-soft), var(--surface)); color: var(--text); padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto; box-shadow: 0 18px 34px color-mix(in srgb, var(--bg) 72%, transparent); border: 1px solid var(--border); }
     .grupo { margin-bottom: 15px; }
-    .grupo label { display: block; font-weight: bold; margin-bottom: 5px; }
-    .grupo input[type="text"], .grupo textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    .btn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background: #0056b3; }
+    .grupo label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--text); }
+    .grupo input[type="text"], .grupo textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; background: var(--input-bg); color: var(--text); }
+    .btn { padding: 10px 15px; border-radius: 8px; }
     .listado { margin-top: 30px; }
-    .pub-item { background: #fafafa; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .pub-item { background: var(--content-soft-bg); border: 1px solid var(--content-soft-border); padding: 10px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .pub-item small { color: var(--muted); }
+    .pub-delete-btn { background: var(--danger); color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -60,7 +61,7 @@
                 <strong>${p.nombre}</strong><br>
                 <small>${p.descripcion}</small>
               </div>
-              <button onclick="eliminarPublicacion(${p.id})" style="background: red; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Eliminar</button>
+              <button onclick="eliminarPublicacion(${p.id})" class="pub-delete-btn">Eliminar</button>
             </div>
           `;
         });

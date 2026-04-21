@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,96 +6,55 @@
   <title>Acceso de soporte remoto</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body { margin: 0; background: radial-gradient(circle at top, #113a5c 0%, #091321 48%, #050b13 100%); color: #ecf6ff; }
-    .sr-public { max-width: 1220px; margin: 0 auto; padding: 24px 16px 32px; display: grid; gap: 16px; }
-    .sr-hero { border-radius: 28px; padding: 26px; background: linear-gradient(135deg, rgba(20,184,166,0.22), rgba(9,19,33,0.92)); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 60px rgba(0,0,0,0.28); }
-    .sr-hero h1 { margin: 0 0 10px; font-size: 32px; }
-    .sr-hero p { margin: 0; max-width: 860px; color: rgba(236,246,255,0.88); }
-    .sr-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 12px; border-radius: 999px; background: rgba(20,184,166,0.16); color: #8ff6ea; font-weight: 700; font-size: 13px; }
-    .sr-grid { display: grid; gap: 16px; grid-template-columns: 1.1fr .9fr; }
-    .sr-stack { display: grid; gap: 16px; }
-    .sr-card { background: rgba(9, 19, 33, 0.78); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; box-shadow: 0 22px 50px rgba(0,0,0,0.24); }
-    .sr-card h2, .sr-card h3 { margin-top: 0; }
-    .sr-status { display: grid; gap: 10px; }
-    .sr-status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
-    .sr-status-pill.ok { background: rgba(34,197,94,0.16); color: #9ff1b8; }
-    .sr-status-pill.wait { background: rgba(251,191,36,0.16); color: #fde68a; }
-    .sr-status-pill.blocked { background: rgba(248,113,113,0.16); color: #fecaca; }
-    .sr-downloads { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .sr-download { border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px; background: rgba(255,255,255,0.04); }
-    .sr-download h3 { margin-bottom: 6px; }
-    .sr-download p { margin: 0 0 12px; color: rgba(236,246,255,0.78); font-size: 14px; }
-    .sr-download .btn, .sr-actions .btn { width: 100%; }
-    .sr-fields { display: grid; gap: 10px; }
-    .sr-field { border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 12px 14px; background: rgba(255,255,255,0.04); }
-    .sr-field span { display: block; font-size: 12px; color: rgba(236,246,255,0.66); text-transform: uppercase; letter-spacing: 0.04em; }
-    .sr-field strong { display: block; margin-top: 6px; word-break: break-all; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 14px; }
-    .sr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-    .sr-note { color: rgba(236,246,255,0.78); font-size: 14px; }
-    .sr-steps { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: rgba(236,246,255,0.84); }
-    .sr-viewer { width: 100%; min-height: 480px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.12); background: #02060c; }
-    .sr-viewer-hidden { display: none; }
-    .sr-empty { padding: 16px; border-radius: 18px; background: rgba(248,113,113,0.12); color: #fecaca; }
-    .sr-success { padding: 14px; border-radius: 18px; background: rgba(34,197,94,0.12); color: #bbf7d0; }
-    @media (max-width: 980px) {
-      .sr-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 720px) {
-      .sr-public { padding: 14px 12px 28px; }
-      .sr-hero, .sr-card { padding: 16px; border-radius: 20px; }
-      .sr-downloads { grid-template-columns: 1fr; }
-      .sr-actions .btn { width: 100%; }
-      .sr-viewer { min-height: 320px; }
-    }
+    .public-shell { max-width: 1120px; margin: 0 auto; padding: 18px; display:grid; gap:16px; }
+    .public-grid { display:grid; gap:16px; grid-template-columns:1.1fr .9fr; }
+    .public-downloads { display:grid; gap:12px; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .public-card { background: rgba(9, 19, 33, 0.82); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:16px; color:#ecf6ff; }
+    .public-download { border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; background:rgba(255,255,255,0.04); }
+    .public-fields { display:grid; gap:10px; }
+    .public-field { border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; background:rgba(255,255,255,0.04); }
+    .public-field span { display:block; font-size:.75rem; color:rgba(236,246,255,0.7); text-transform:uppercase; }
+    .public-field strong { display:block; margin-top:6px; word-break:break-all; font-family:Consolas, monospace; }
+    .public-note { color:rgba(236,246,255,0.82); }
+    .public-empty { padding:12px; border-radius:14px; background:rgba(248,113,113,0.14); color:#fecaca; }
+    .public-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    @media (max-width:900px) { .public-grid, .public-downloads { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
-  <div class="sr-public">
-    <section class="sr-hero">
-      <div class="sr-badge">Soporte remoto público</div>
-      <h1>Conéctate con el equipo técnico</h1>
-      <p id="srHeroText">Validando tu sesión de soporte remoto y preparando descargas, datos del servidor y acceso guiado para esta empresa.</p>
+  <div class="public-shell">
+    <section class="public-card">
+      <h1>Soporte remoto</h1>
+      <p id="heroText" class="public-note">Validando la sesiÃ³n de soporte remoto y cargando los enlaces de descarga.</p>
     </section>
 
-    <section class="sr-grid">
-      <div class="sr-stack">
-        <article class="sr-card">
-          <h2>Estado de la sesión</h2>
-          <div id="srStatusBox" class="sr-status"></div>
+    <section class="public-grid">
+      <div style="display:grid; gap:16px;">
+        <article class="public-card">
+          <h2>Descargas</h2>
+          <div id="downloadsBox" class="public-downloads"></div>
         </article>
-
-        <article class="sr-card">
-          <h2>Descargas disponibles</h2>
-          <div id="srDownloads" class="sr-downloads"></div>
-        </article>
-
-        <article class="sr-card">
-          <h2>Cómo usar este acceso</h2>
-          <ol class="sr-steps">
-            <li>Descarga el cliente RustDesk si tu equipo aún no lo tiene instalado.</li>
-            <li>Configura el host del servidor y la clave pública que aparecen en esta pantalla.</li>
-            <li>Comparte con soporte el ID mostrado o espera que el técnico use el visor web si está disponible.</li>
-            <li>Usa la carpeta de transferencia indicada para mover archivos cuando el soporte lo solicite.</li>
+        <article class="public-card">
+          <h2>Instrucciones</h2>
+          <div id="instructionsBox" class="public-note">Esperando datos...</div>
+          <ol class="public-note" style="padding-left:18px; margin-top:12px; display:grid; gap:8px;">
+            <li>Descarga el cliente para tu sistema operativo.</li>
+            <li>Configura el host del VPS Hostinger y la clave pÃºblica.</li>
+            <li>Si vas a montar tu propio nodo, usa tambiÃ©n la descarga del servidor.</li>
+            <li>Comparte con soporte el ID del dispositivo y la contraseÃ±a solo cuando lo soliciten.</li>
           </ol>
         </article>
       </div>
 
-      <div class="sr-stack">
-        <article class="sr-card">
-          <h2>Datos de conexión</h2>
-          <div id="srConnectionFields" class="sr-fields"></div>
-          <div id="srActions" class="sr-actions" style="margin-top:14px;"></div>
+      <div style="display:grid; gap:16px;">
+        <article class="public-card">
+          <h2>Datos de conexiÃ³n</h2>
+          <div id="fieldsBox" class="public-fields"></div>
+          <div id="actionsBox" class="public-actions" ></div>
         </article>
-
-        <article class="sr-card">
-          <h2>Instrucciones visibles para el usuario</h2>
-          <div id="srInstructions" class="sr-note">Esperando configuración pública...</div>
-        </article>
-
-        <article class="sr-card">
-          <h2>Visor web</h2>
-          <p id="srViewerMsg" class="sr-note">Si esta empresa tiene una URL embebible, podrás abrir el visor aquí mismo.</p>
-          <iframe id="srViewer" class="sr-viewer sr-viewer-hidden" title="Visor de soporte remoto"></iframe>
+        <article class="public-card">
+          <h2>Estado</h2>
+          <div id="statusBox" class="public-note">Sin validar todavÃ­a.</div>
         </article>
       </div>
     </section>
@@ -107,15 +66,13 @@
       var empresaID = Number(params.get('empresa_id') || 0);
       var codigoSesion = String(params.get('codigo_sesion') || '').trim();
       var token = String(params.get('token') || '').trim();
-+
-      var statusBox = document.getElementById('srStatusBox');
-      var downloadsBox = document.getElementById('srDownloads');
-      var fieldsBox = document.getElementById('srConnectionFields');
-      var actionsBox = document.getElementById('srActions');
-      var instructionsBox = document.getElementById('srInstructions');
-      var viewer = document.getElementById('srViewer');
-      var viewerMsg = document.getElementById('srViewerMsg');
-      var heroText = document.getElementById('srHeroText');
+
+      var heroText = document.getElementById('heroText');
+      var downloadsBox = document.getElementById('downloadsBox');
+      var instructionsBox = document.getElementById('instructionsBox');
+      var fieldsBox = document.getElementById('fieldsBox');
+      var actionsBox = document.getElementById('actionsBox');
+      var statusBox = document.getElementById('statusBox');
 
       function escapeHTML(value) {
         return String(value == null ? '' : value)
@@ -126,113 +83,68 @@
           .replace(/'/g, '&#39;');
       }
 
-      function copyText(value) {
-        if (!value) return Promise.reject(new Error('No hay valor para copiar.'));
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          return navigator.clipboard.writeText(value);
+      function createDownload(title, description, url) {
+        if (!String(url || '').trim()) {
+          return '<div class="public-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><div class="public-empty">No configurado.</div></div>';
         }
-        return Promise.reject(new Error('El navegador no soporta copia directa.'));
+        return '<div class="public-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><a class="btn" href="' + escapeHTML(url) + '" target="_self" rel="noopener">Descargar</a></div>';
       }
 
       function createField(label, value) {
         if (!String(value || '').trim()) return '';
-        return '<div class="sr-field"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(value) + '</strong></div>';
+        return '<div class="public-field"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(value) + '</strong></div>';
       }
 
-      function createDownloadCard(title, description, url) {
-        if (!String(url || '').trim()) {
-          return '<div class="sr-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><div class="sr-empty">Descarga no configurada.</div></div>';
-        }
-        return '<div class="sr-download"><h3>' + escapeHTML(title) + '</h3><p>' + escapeHTML(description) + '</p><a class="btn" href="' + escapeHTML(url) + '" target="_self" rel="noopener">Descargar</a></div>';
+      function copyValue(value, label) {
+        if (!navigator.clipboard || !String(value || '').trim()) return;
+        navigator.clipboard.writeText(value).then(function () {
+          statusBox.textContent = label + ' copiado al portapapeles.';
+        }).catch(function () {
+          statusBox.textContent = 'No se pudo copiar ' + label + '.';
+        });
       }
 
-      function setStatus(accessAllowed, motivoBloqueo, session) {
-        var estado = String((session && session.estado_sesion) || '').trim();
-        if (accessAllowed) {
-          statusBox.innerHTML = '<div class="sr-status-pill ok">Acceso habilitado</div><div class="sr-success">La sesión ' + escapeHTML(session.codigo_sesion || '') + ' está lista. Puedes usar el cliente RustDesk o el visor web si la empresa lo tiene configurado.</div>';
-          return;
-        }
-        var css = estado === 'pendiente' ? 'wait' : 'blocked';
-        var title = estado === 'pendiente' ? 'Esperando aprobación' : 'Acceso restringido';
-        statusBox.innerHTML = '<div class="sr-status-pill ' + css + '">' + escapeHTML(title) + '</div><div class="sr-empty">' + escapeHTML(motivoBloqueo || 'La sesión aún no permite conexión.') + '</div>';
-      }
-
-      function renderAccess(data) {
+      function render(data) {
         var access = data.access || {};
         var session = data.session || {};
         heroText.textContent = data.acceso_permitido
-          ? 'La sesión ya está habilitada. Descarga el cliente o usa el visor web según el modo configurado por la empresa.'
-          : 'El enlace es válido, pero la sesión todavía no permite acceso. Puedes preparar descargas y datos del servidor mientras el equipo autoriza la conexión.';
-        setStatus(!!data.acceso_permitido, data.motivo_bloqueo, session);
-
+          ? 'La sesiÃ³n fue validada. Usa el cliente RustDesk o descarga tambiÃ©n el servidor si vas a publicar tu propio nodo.'
+          : 'La sesiÃ³n aÃºn no estÃ¡ habilitada, pero puedes preparar la descarga y la configuraciÃ³n del host.';
+        statusBox.textContent = data.acceso_permitido
+          ? 'SesiÃ³n ' + (session.codigo_sesion || '') + ' habilitada.'
+          : (data.motivo_bloqueo || 'SesiÃ³n pendiente o restringida.');
+        instructionsBox.textContent = String(access.instrucciones_publicas || 'Descarga RustDesk, configura el host del VPS Hostinger y la clave pÃºblica, luego comparte el ID con soporte.').trim();
         downloadsBox.innerHTML = [
-          createDownloadCard('Cliente Windows', 'Instalador del cliente para estaciones Windows.', access.cliente_windows_url),
-          createDownloadCard('Cliente Linux', 'Paquete del cliente para equipos Linux.', access.cliente_linux_url),
-          createDownloadCard('Servidor Windows', 'Binario o paquete del servidor RustDesk para Windows.', access.servidor_windows_url),
-          createDownloadCard('Servidor Linux', 'Paquete del servidor o relay RustDesk para Linux.', access.servidor_linux_url)
+          createDownload('Cliente Windows', 'Cliente oficial para Windows.', access.cliente_windows_url),
+          createDownload('Cliente Linux', 'Cliente oficial para Linux.', access.cliente_linux_url),
+          createDownload('Cliente macOS', 'Cliente oficial para macOS.', access.cliente_mac_url),
+          createDownload('Servidor Windows', 'Servidor o relay para Windows.', access.servidor_windows_url),
+          createDownload('Servidor Linux', 'Servidor o relay para Linux.', access.servidor_linux_url),
+          createDownload('Servidor macOS', 'Servidor para macOS, si fue configurado.', access.servidor_mac_url)
         ].join('');
-
         fieldsBox.innerHTML = [
           createField('Host RustDesk', access.rustdesk_server_host),
-          createField('Clave pública', access.rustdesk_server_key),
+          createField('Clave pÃºblica', access.rustdesk_server_key),
           createField('ID del dispositivo', access.rustdesk_device_id),
-          createField('Contraseña del dispositivo', access.rustdesk_password),
+          createField('ContraseÃ±a del dispositivo', access.rustdesk_password),
           createField('Carpeta de transferencia', access.carpeta_transferencia),
-          createField('Código de sesión', session.codigo_sesion)
-        ].join('') || '<div class="sr-empty">Esta sesión no expone datos de conexión públicos.</div>';
-
-        instructionsBox.textContent = String(access.instrucciones_publicas || 'El administrador aún no publicó instrucciones personalizadas. Usa el cliente RustDesk, configura el host y comparte el ID con el soporte.').trim();
-
+          createField('CÃ³digo de sesiÃ³n', session.codigo_sesion)
+        ].join('') || '<div class="public-empty">No hay datos de conexiÃ³n visibles.</div>';
         actionsBox.innerHTML = '';
-        [
-          ['Copiar host', access.rustdesk_server_host],
-          ['Copiar clave', access.rustdesk_server_key],
-          ['Copiar ID', access.rustdesk_device_id],
-          ['Copiar contraseña', access.rustdesk_password]
-        ].forEach(function (item) {
+        [['Copiar host', access.rustdesk_server_host], ['Copiar clave', access.rustdesk_server_key], ['Copiar ID', access.rustdesk_device_id], ['Copiar contraseÃ±a', access.rustdesk_password]].forEach(function (item) {
           if (!String(item[1] || '').trim()) return;
           var button = document.createElement('button');
           button.type = 'button';
           button.className = 'btn secondary';
           button.textContent = item[0];
-          button.addEventListener('click', function () {
-            copyText(item[1]).then(function () {
-              viewerMsg.textContent = item[0] + ' copiado al portapapeles.';
-            }).catch(function (err) {
-              viewerMsg.textContent = err.message || 'No se pudo copiar el valor.';
-            });
-          });
+          button.addEventListener('click', function () { copyValue(item[1], item[0]); });
           actionsBox.appendChild(button);
         });
-
-        if (data.acceso_permitido && String(access.embed_url || '').trim()) {
-          var openButton = document.createElement('button');
-          openButton.type = 'button';
-          openButton.className = 'btn';
-          openButton.textContent = 'Abrir visor web';
-          openButton.addEventListener('click', function () {
-            viewer.src = access.embed_url;
-            viewer.classList.remove('sr-viewer-hidden');
-            viewerMsg.textContent = 'Visor web cargado.';
-          });
-          actionsBox.appendChild(openButton);
-        }
-
-        if (!data.acceso_permitido || !String(access.embed_url || '').trim()) {
-          viewer.classList.add('sr-viewer-hidden');
-          viewer.src = 'about:blank';
-          viewerMsg.textContent = String(access.embed_url || '').trim()
-            ? 'El visor web quedará disponible cuando la sesión sea aprobada.'
-            : 'Esta empresa está operando en modo cliente local RustDesk. Usa las descargas y los datos de conexión.';
-        }
       }
 
       async function loadAccess() {
         if (!(empresaID > 0) || !codigoSesion || !token) {
-          statusBox.innerHTML = '<div class="sr-empty">El enlace es inválido. Verifica empresa_id, codigo_sesion y token.</div>';
-          downloadsBox.innerHTML = '';
-          fieldsBox.innerHTML = '';
-          instructionsBox.textContent = 'Solicita un nuevo enlace público de soporte remoto al administrador de la empresa.';
+          statusBox.innerHTML = '<div class="public-empty">Enlace invÃ¡lido.</div>';
           return;
         }
         try {
@@ -244,20 +156,18 @@
           var response = await fetch(url.toString(), { credentials: 'same-origin' });
           var text = await response.text();
           var data = text ? JSON.parse(text) : {};
-          if (!response.ok) {
-            throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
-          }
-          renderAccess(data);
-        } catch (err) {
-          statusBox.innerHTML = '<div class="sr-empty">' + escapeHTML(err.message || 'No se pudo resolver el acceso remoto.') + '</div>';
-          downloadsBox.innerHTML = '';
-          fieldsBox.innerHTML = '';
-          instructionsBox.textContent = 'No fue posible cargar la configuración pública de esta sesión.';
-          viewer.classList.add('sr-viewer-hidden');
-          viewer.src = 'about:blank';
-          viewerMsg.textContent = 'Visor no disponible.';
+          if (!response.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
+          render(data);
+        } catch (error) {
+          statusBox.innerHTML = '<div class="public-empty">' + escapeHTML(error.message || 'No se pudo cargar el acceso remoto.') + '</div>';
         }
       }
+
+      loadAccess();
+    })();
+  </script>
+</body>
+</html>
 
       loadAccess();
     })();

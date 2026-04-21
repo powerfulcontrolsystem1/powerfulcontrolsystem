@@ -77,7 +77,10 @@
     function setMessage(text, isError) {
       const el = document.getElementById('msg');
       el.textContent = text || '';
-      el.style.color = isError ? '#ef5350' : '';
+      el.classList.remove('value-negative');
+      if (isError) {
+        el.classList.add('value-negative');
+      }
     }
 
     async function ensureOk(res) {

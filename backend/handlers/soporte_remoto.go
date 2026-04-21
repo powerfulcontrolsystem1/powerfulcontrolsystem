@@ -29,8 +29,10 @@ type empresaSoporteRemotoConfigPayload struct {
 	RustDeskServerKey          *string `json:"rustdesk_server_key"`
 	ClienteWindowsURL          *string `json:"cliente_windows_url"`
 	ClienteLinuxURL            *string `json:"cliente_linux_url"`
+	ClienteMacURL              *string `json:"cliente_mac_url"`
 	ServidorWindowsURL         *string `json:"servidor_windows_url"`
 	ServidorLinuxURL           *string `json:"servidor_linux_url"`
+	ServidorMacURL             *string `json:"servidor_mac_url"`
 	CarpetaTransferencia       *string `json:"carpeta_transferencia"`
 	InstruccionesPublicas      *string `json:"instrucciones_publicas"`
 	Observaciones              *string `json:"observaciones"`
@@ -77,10 +79,41 @@ type empresaSoporteRemotoAccessBundle struct {
 	RustDeskPassword     string `json:"rustdesk_password,omitempty"`
 	ClienteWindowsURL    string `json:"cliente_windows_url,omitempty"`
 	ClienteLinuxURL      string `json:"cliente_linux_url,omitempty"`
+	ClienteMacURL        string `json:"cliente_mac_url,omitempty"`
 	ServidorWindowsURL   string `json:"servidor_windows_url,omitempty"`
 	ServidorLinuxURL     string `json:"servidor_linux_url,omitempty"`
+	ServidorMacURL       string `json:"servidor_mac_url,omitempty"`
 	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
 	InstruccionesPublicas string `json:"instrucciones_publicas,omitempty"`
+}
+
+const (
+	rustDeskClientDownloadsURL = "https://github.com/rustdesk/rustdesk/releases/latest"
+	rustDeskServerDownloadsURL = "https://github.com/rustdesk/rustdesk-server/releases/latest"
+)
+
+func applyRustDeskDownloadDefaults(cfg *dbpkg.EmpresaSoporteRemotoConfig) {
+	if cfg == nil {
+		return
+	}
+	if strings.TrimSpace(cfg.ClienteWindowsURL) == "" {
+		cfg.ClienteWindowsURL = rustDeskClientDownloadsURL
+	}
+	if strings.TrimSpace(cfg.ClienteLinuxURL) == "" {
+		cfg.ClienteLinuxURL = rustDeskClientDownloadsURL
+	}
+	if strings.TrimSpace(cfg.ClienteMacURL) == "" {
+		cfg.ClienteMacURL = rustDeskClientDownloadsURL
+	}
+	if strings.TrimSpace(cfg.ServidorWindowsURL) == "" {
+		cfg.ServidorWindowsURL = rustDeskServerDownloadsURL
+	}
+	if strings.TrimSpace(cfg.ServidorLinuxURL) == "" {
+		cfg.ServidorLinuxURL = rustDeskServerDownloadsURL
+	}
+	if strings.TrimSpace(cfg.ServidorMacURL) == "" {
+		cfg.ServidorMacURL = rustDeskServerDownloadsURL
+	}
 }
 
 type empresaSoporteRemotoHeartbeatPayload struct {
@@ -188,8 +221,10 @@ func empresaSoporteRemotoBuildAccessBundle(r *http.Request, cfg dbpkg.EmpresaSop
 		RustDeskDeviceID:     strings.TrimSpace(device.RustDeskDeviceID),
 		ClienteWindowsURL:    strings.TrimSpace(cfg.ClienteWindowsURL),
 		ClienteLinuxURL:      strings.TrimSpace(cfg.ClienteLinuxURL),
+		ClienteMacURL:        strings.TrimSpace(cfg.ClienteMacURL),
 		ServidorWindowsURL:   strings.TrimSpace(cfg.ServidorWindowsURL),
 		ServidorLinuxURL:     strings.TrimSpace(cfg.ServidorLinuxURL),
+		ServidorMacURL:       strings.TrimSpace(cfg.ServidorMacURL),
 		CarpetaTransferencia: strings.TrimSpace(device.CarpetaTransferencia),
 		InstruccionesPublicas: strings.TrimSpace(cfg.InstruccionesPublicas),
 	}
@@ -254,11 +289,17 @@ func empresaSoporteRemotoApplyConfigPayload(current *dbpkg.EmpresaSoporteRemotoC
 	if payload.ClienteLinuxURL != nil {
 		current.ClienteLinuxURL = strings.TrimSpace(*payload.ClienteLinuxURL)
 	}
+	if payload.ClienteMacURL != nil {
+		current.ClienteMacURL = strings.TrimSpace(*payload.ClienteMacURL)
+	}
 	if payload.ServidorWindowsURL != nil {
 		current.ServidorWindowsURL = strings.TrimSpace(*payload.ServidorWindowsURL)
 	}
 	if payload.ServidorLinuxURL != nil {
 		current.ServidorLinuxURL = strings.TrimSpace(*payload.ServidorLinuxURL)
+	}
+	if payload.ServidorMacURL != nil {
+		current.ServidorMacURL = strings.TrimSpace(*payload.ServidorMacURL)
 	}
 	if payload.CarpetaTransferencia != nil {
 		current.CarpetaTransferencia = strings.TrimSpace(*payload.CarpetaTransferencia)
@@ -456,6 +497,7 @@ func empresaSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
 		return
 	}
+	applyRustDeskDownloadDefaults(&cfg)
 	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
@@ -490,6 +532,7 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
 	}
+	applyRustDeskDownloadDefaults(&cfg)
 	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)

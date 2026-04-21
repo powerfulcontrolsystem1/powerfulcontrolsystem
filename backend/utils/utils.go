@@ -459,13 +459,15 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		// Verificación de Modo Mantenimiento
-		if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
+		if dbSuper != nil {
+			if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
 			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
 			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
 			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js"
 			if !isMntAllowed && !isStatic {
 				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
 				return
+			}
 			}
 		}
 
@@ -523,7 +525,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/Juegos/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {

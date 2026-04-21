@@ -21,6 +21,15 @@ func TestSoporteRemotoDBFlow(t *testing.T) {
 	if !cfg.Habilitado {
 		t.Fatalf("expected default config habilitado=true")
 	}
+	if !cfg.PortalPublicoHabilitado {
+		t.Fatalf("expected default config portal_publico_habilitado=true")
+	}
+	if cfg.ProveedorPreferido != "rustdesk_oss" {
+		t.Fatalf("expected default proveedor_preferido rustdesk_oss, got %q", cfg.ProveedorPreferido)
+	}
+	if cfg.ModoOperacion != "cliente_local" {
+		t.Fatalf("expected default modo_operacion cliente_local, got %q", cfg.ModoOperacion)
+	}
 	if cfg.AutoCerrarMinutos <= 0 {
 		t.Fatalf("expected default auto_cerrar_minutos > 0")
 	}

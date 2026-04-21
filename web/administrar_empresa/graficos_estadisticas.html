@@ -493,7 +493,7 @@
         const label = sanitize(item.label || item.key || "-");
         legendRows.push('' +
           '<li class="graficos-legend-item">' +
-          '<span class="graficos-legend-dot" style="background:' + color + '"></span>' +
+          '<span class="graficos-legend-dot" data-legend-color="' + color + '"></span>' +
           '<span class="graficos-legend-label">' + label + '</span>' +
           '<strong>' + fmtNumber(value) + ' (' + pct.toFixed(1) + '%)</strong>' +
           '</li>');
@@ -502,6 +502,10 @@
       donut.style.background = "conic-gradient(" + gradientParts.join(",") + ")";
       donut.textContent = fmtNumber(total);
       legend.innerHTML = legendRows.join('');
+      // Apply legend dot colors from data attributes (keeps color tokens in CSS variables when possible)
+      legend.querySelectorAll('.graficos-legend-dot[data-legend-color]').forEach(function(el){
+        el.style.setProperty('--legend-color', el.dataset.legendColor);
+      });
     }
 
     function renderTopProductos(rows) {

@@ -34,8 +34,10 @@ type EmpresaSoporteRemotoConfig struct {
 	RustDeskServerKey          string `json:"rustdesk_server_key,omitempty"`
 	ClienteWindowsURL          string `json:"cliente_windows_url,omitempty"`
 	ClienteLinuxURL            string `json:"cliente_linux_url,omitempty"`
+	ClienteMacURL              string `json:"cliente_mac_url,omitempty"`
 	ServidorWindowsURL         string `json:"servidor_windows_url,omitempty"`
 	ServidorLinuxURL           string `json:"servidor_linux_url,omitempty"`
+	ServidorMacURL             string `json:"servidor_mac_url,omitempty"`
 	CarpetaTransferencia       string `json:"carpeta_transferencia,omitempty"`
 	InstruccionesPublicas      string `json:"instrucciones_publicas,omitempty"`
 	FechaCreacion              string `json:"fecha_creacion,omitempty"`
@@ -405,8 +407,10 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			rustdesk_server_key TEXT,
 			cliente_windows_url TEXT,
 			cliente_linux_url TEXT,
+			cliente_mac_url TEXT,
 			servidor_windows_url TEXT,
 			servidor_linux_url TEXT,
+			servidor_mac_url TEXT,
 			carpeta_transferencia TEXT,
 			instrucciones_publicas TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -513,10 +517,16 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "cliente_linux_url", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "cliente_mac_url", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "servidor_windows_url", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "servidor_linux_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "servidor_mac_url", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "carpeta_transferencia", "TEXT"); err != nil {
@@ -589,8 +599,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 		COALESCE(rustdesk_server_key, ''),
 		COALESCE(cliente_windows_url, ''),
 		COALESCE(cliente_linux_url, ''),
+		COALESCE(cliente_mac_url, ''),
 		COALESCE(servidor_windows_url, ''),
 		COALESCE(servidor_linux_url, ''),
+		COALESCE(servidor_mac_url, ''),
 		COALESCE(carpeta_transferencia, ''),
 		COALESCE(instrucciones_publicas, ''),
 		COALESCE(fecha_creacion, ''),
@@ -617,8 +629,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 		&out.RustDeskServerKey,
 		&out.ClienteWindowsURL,
 		&out.ClienteLinuxURL,
+		&out.ClienteMacURL,
 		&out.ServidorWindowsURL,
 		&out.ServidorLinuxURL,
+		&out.ServidorMacURL,
 		&out.CarpetaTransferencia,
 		&out.InstruccionesPublicas,
 		&out.FechaCreacion,
@@ -632,8 +646,8 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 			return EmpresaSoporteRemotoConfig{
 				EmpresaID:                  empresaID,
 				Habilitado:                 true,
-				ProveedorPreferido:         "novnc",
-				ModoOperacion:              "agente_web",
+				ProveedorPreferido:         "rustdesk_oss",
+				ModoOperacion:              "cliente_local",
 				RequiereAprobacionOperador: true,
 				AutoCerrarMinutos:          30,
 				MaxConexionesMes:           0,
@@ -661,8 +675,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 	out.RustDeskServerKey = strings.TrimSpace(out.RustDeskServerKey)
 	out.ClienteWindowsURL = soporteRemotoNormalizeURL(out.ClienteWindowsURL)
 	out.ClienteLinuxURL = soporteRemotoNormalizeURL(out.ClienteLinuxURL)
+	out.ClienteMacURL = soporteRemotoNormalizeURL(out.ClienteMacURL)
 	out.ServidorWindowsURL = soporteRemotoNormalizeURL(out.ServidorWindowsURL)
 	out.ServidorLinuxURL = soporteRemotoNormalizeURL(out.ServidorLinuxURL)
+	out.ServidorMacURL = soporteRemotoNormalizeURL(out.ServidorMacURL)
 	out.CarpetaTransferencia = strings.TrimSpace(out.CarpetaTransferencia)
 	out.InstruccionesPublicas = strings.TrimSpace(out.InstruccionesPublicas)
 	out.Estado = soporteRemotoNormalizeEstado(out.Estado)
@@ -689,8 +705,10 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 	cfg.RustDeskServerKey = strings.TrimSpace(cfg.RustDeskServerKey)
 	cfg.ClienteWindowsURL = soporteRemotoNormalizeURL(cfg.ClienteWindowsURL)
 	cfg.ClienteLinuxURL = soporteRemotoNormalizeURL(cfg.ClienteLinuxURL)
+	cfg.ClienteMacURL = soporteRemotoNormalizeURL(cfg.ClienteMacURL)
 	cfg.ServidorWindowsURL = soporteRemotoNormalizeURL(cfg.ServidorWindowsURL)
 	cfg.ServidorLinuxURL = soporteRemotoNormalizeURL(cfg.ServidorLinuxURL)
+	cfg.ServidorMacURL = soporteRemotoNormalizeURL(cfg.ServidorMacURL)
 	cfg.CarpetaTransferencia = strings.TrimSpace(cfg.CarpetaTransferencia)
 	cfg.InstruccionesPublicas = strings.TrimSpace(cfg.InstruccionesPublicas)
 	cfg.Estado = soporteRemotoNormalizeEstado(cfg.Estado)
@@ -720,8 +738,10 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 				rustdesk_server_key = ?,
 				cliente_windows_url = ?,
 				cliente_linux_url = ?,
+				cliente_mac_url = ?,
 				servidor_windows_url = ?,
 				servidor_linux_url = ?,
+				servidor_mac_url = ?,
 				carpeta_transferencia = ?,
 				instrucciones_publicas = ?,
 				usuario_creador = ?,
@@ -743,8 +763,10 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 			cfg.RustDeskServerKey,
 			cfg.ClienteWindowsURL,
 			cfg.ClienteLinuxURL,
+			cfg.ClienteMacURL,
 			cfg.ServidorWindowsURL,
 			cfg.ServidorLinuxURL,
+			cfg.ServidorMacURL,
 			cfg.CarpetaTransferencia,
 			cfg.InstruccionesPublicas,
 			strings.TrimSpace(cfg.UsuarioCreador),
@@ -774,14 +796,16 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		rustdesk_server_key,
 		cliente_windows_url,
 		cliente_linux_url,
+		cliente_mac_url,
 		servidor_windows_url,
 		servidor_linux_url,
+		servidor_mac_url,
 		carpeta_transferencia,
 		instrucciones_publicas,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
 		cfg.EmpresaID,
 		soporteRemotoBoolToInt(cfg.Habilitado),
 		cfg.ProveedorPreferido,
@@ -797,8 +821,10 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		cfg.RustDeskServerKey,
 		cfg.ClienteWindowsURL,
 		cfg.ClienteLinuxURL,
+		cfg.ClienteMacURL,
 		cfg.ServidorWindowsURL,
 		cfg.ServidorLinuxURL,
+		cfg.ServidorMacURL,
 		cfg.CarpetaTransferencia,
 		cfg.InstruccionesPublicas,
 		strings.TrimSpace(cfg.UsuarioCreador),

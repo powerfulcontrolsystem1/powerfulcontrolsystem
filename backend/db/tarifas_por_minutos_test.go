@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestEmpresaTarifasPorMinutosCRUDYResolucionPorDia(t *testing.T) {
@@ -369,5 +370,78 @@ func TestRegisterTarifaPorMinutosCalculoContable(t *testing.T) {
 	}
 	if !rows[0].Procesado {
 		t.Fatalf("expected evento procesado=true")
+	}
+}
+
+func TestRefreshCarritoTotalConTarifaPorMinutos(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if err := EnsureEmpresaTarifasPorMinutosSchema(dbConn); err != nil {
+		t.Fatalf("ensure tarifas por minutos schema: %v", err)
+	}
+
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         77,
+		Codigo:            "EST-77-1",
+		Nombre:            "Habitacion 1",
+		CanalVenta:        "estacion",
+		Moneda:            "COP",
+		ReferenciaExterna: "ESTACION_1",
+		UsuarioCreador:    "qa@empresa.com",
+		Estado:            "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito: %v", err)
+	}
+	if _, err := dbConn.Exec(`UPDATE carritos_compras SET estado='activo', estado_carrito='abierto', activado_en=?, pagado_en='' WHERE empresa_id=? AND id=?`, time.Now().Add(-150*time.Minute).Format("2006-01-02 15:04:05"), 77, carritoID); err != nil {
+		t.Fatalf("seed carrito activo: %v", err)
+	}
+	if _, err := CreateEmpresaTarifaPorMinutos(dbConn, EmpresaTarifaPorMinutos{
+		EmpresaID:      77,
+		EstacionID:     1,
+		EstacionCodigo: "EST-77-1",
+		EstacionNombre: "Habitacion 1",
+		DiaSemanaDesde: 1,
+		DiaSemanaHasta: 7,
+		MinutosBase:    120,
+		ValorBase:      55000,
+		MinutosExtra:   60,
+		ValorExtra:     30000,
+		Moneda:         "COP",
+		Prioridad:      1,
+		UsuarioCreador: "qa@empresa.com",
+		Estado:         "activo",
+	}); err != nil {
+		t.Fatalf("create tarifa por minutos: %v", err)
+	}
+
+	calc, err := RefreshCarritoTotalConTarifaPorMinutos(dbConn, 77, carritoID, time.Now())
+	if err != nil {
+		t.Fatalf("refresh carrito tarifa por minutos: %v", err)
+	}
+	if calc == nil || calc.TarifaID <= 0 {
+		t.Fatalf("expected tarifa por minutos applied, got %#v", calc)
+	}
+	if calc.BloquesExtra != 1 {
+		t.Fatalf("expected 1 bloque extra, got %d", calc.BloquesExtra)
+	}
+	if math.Abs(calc.MontoTarifa-85000) > 0.001 {
+		t.Fatalf("expected monto_tarifa 85000, got %.2f", calc.MontoTarifa)
+	}
+	carrito, err := GetCarritoCompraByID(dbConn, 77, carritoID)
+	if err != nil {
+		t.Fatalf("get carrito after refresh: %v", err)
+	}
+	if math.Abs(carrito.Total-85000) > 0.001 {
+		t.Fatalf("expected carrito total 85000, got %.2f", carrito.Total)
+	}
+	resumen, err := ResolveCarritoTarifaPorMinutosResumen(dbConn, *carrito, time.Now())
+	if err != nil {
+		t.Fatalf("resolve resumen tarifa por minutos: %v", err)
+	}
+	if resumen == nil || strings.TrimSpace(resumen.FechaFinTarifaActual) == "" {
+		t.Fatalf("expected fecha_fin_tarifa_actual in resumen, got %#v", resumen)
 	}
 }

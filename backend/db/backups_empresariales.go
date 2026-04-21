@@ -13,6 +13,26 @@ import (
 )
 
 const empresaBackupsSchemaVersion = "empresa-backup.v1"
+const empresaBackupsConfigScope = "configuracion_empresa"
+
+var empresaConfigBackupDefaultTables = []string{
+	"empresa_asistencia_configuracion",
+	"empresa_calculadora_configuracion",
+	"empresa_comisiones_servicio_configuracion",
+	"empresa_configuracion_avanzada",
+	"empresa_configuracion_general",
+	"empresa_configuracion_operativa",
+	"empresa_configuracion_operativa_politicas",
+	"empresa_configuracion_operativa_roles",
+	"empresa_dian_configuracion",
+	"empresa_estacion_prefs",
+	"empresa_impresoras",
+	"empresa_impresoras_funcionalidades",
+	"empresa_impresoras_productos",
+	"empresa_propinas_configuracion",
+	"empresa_soporte_remoto_configuracion",
+	"empresa_venta_publica_configuracion",
+}
 
 // EmpresaBackup representa un snapshot empresarial persistido para restauracion.
 type EmpresaBackup struct {
@@ -239,6 +259,33 @@ func empresaBackupResolveDateColumn(columns []string) string {
 	return ""
 }
 
+func EmpresaConfigBackupDefaultTables() []string {
+	out := make([]string, 0, len(empresaConfigBackupDefaultTables))
+	out = append(out, empresaConfigBackupDefaultTables...)
+	return out
+}
+
+func normalizeEmpresaConfigBackupTables(values []string) []string {
+	allowed := map[string]struct{}{}
+	for _, table := range empresaConfigBackupDefaultTables {
+		allowed[table] = struct{}{}
+	}
+	normalized := empresaBackupNormalizeTables(values)
+	if len(normalized) == 0 {
+		return EmpresaConfigBackupDefaultTables()
+	}
+	out := make([]string, 0, len(normalized))
+	for _, table := range normalized {
+		if _, ok := allowed[table]; ok {
+			out = append(out, table)
+		}
+	}
+	if len(out) == 0 {
+		return EmpresaConfigBackupDefaultTables()
+	}
+	return out
+}
+
 type empresaBackupQueryer interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 }
@@ -248,17 +295,14 @@ func empresaBackupGetTableColumns(q empresaBackupQueryer, table string) ([]strin
 		return nil, fmt.Errorf("tabla invalida: %s", table)
 	}
 
-	if isPostgresDialect() {
-		rows, err := q.Query(`
-			SELECT column_name
-			FROM information_schema.columns
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_name = $1
-			ORDER BY ordinal_position
-		`, table)
-		if err != nil {
-			return nil, err
-		}
+	rows, err := q.Query(`
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_name = $1
+		ORDER BY ordinal_position
+	`, table)
+	if err == nil {
 		defer rows.Close()
 
 		cols := make([]string, 0)
@@ -276,10 +320,12 @@ func empresaBackupGetTableColumns(q empresaBackupQueryer, table string) ([]strin
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		return cols, nil
+		if len(cols) > 0 {
+			return cols, nil
+		}
 	}
 
-	rows, err := q.Query("PRAGMA table_info(" + table + ")")
+	rows, err = q.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
 		return nil, err
 	}
@@ -335,18 +381,16 @@ func empresaBackupListCandidateTables(dbConn *sql.DB, includeTables, excludeTabl
 		excludeSet[item] = true
 	}
 
-	tablesQuery := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
-	if isPostgresDialect() {
-		tablesQuery = `
-			SELECT table_name AS name
-			FROM information_schema.tables
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_type = 'BASE TABLE'
-			ORDER BY table_name
-		`
+	rows, err := querySQLCompat(dbConn, `
+		SELECT table_name AS name
+		FROM information_schema.tables
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_type = 'BASE TABLE'
+		ORDER BY table_name
+	`)
+	if err != nil {
+		rows, err = querySQLCompat(dbConn, `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
 	}
-
-	rows, err := dbConn.Query(tablesQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +461,7 @@ func empresaBackupFetchTableSnapshot(dbConn *sql.DB, table string, empresaID int
 	if empresaBackupHasColumn(columns, "id") {
 		query += " ORDER BY id ASC"
 	}
-	rows, err := dbConn.Query(query, empresaID)
+	rows, err := querySQLCompat(dbConn, query, empresaID)
 	if err != nil {
 		return EmpresaBackupTablePayload{}, err
 	}
@@ -581,22 +625,36 @@ func BuildEmpresaBackupPayload(dbConn *sql.DB, empresaID int64, options EmpresaB
 	return payload, nil
 }
 
-// CreateEmpresaBackupSnapshot genera y persiste un backup empresarial completo.
-func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descripcion, usuario string, options EmpresaBackupBuildOptions) (int64, error) {
+func BuildEmpresaConfigBackupPayload(dbConn *sql.DB, empresaID int64, createdBy string) (*EmpresaBackupPayload, []string, error) {
+	includeTables := EmpresaConfigBackupDefaultTables()
+	payload, err := BuildEmpresaBackupPayload(dbConn, empresaID, EmpresaBackupBuildOptions{
+		IncludeTables: includeTables,
+		CreatedBy:     strings.TrimSpace(createdBy),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	payload.Scope = empresaBackupsConfigScope
+	return payload, includeTables, nil
+}
+
+func createEmpresaBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nombre, descripcion, usuario, alcance, tipoBackup string, includeTables, excludeTables []string, payload *EmpresaBackupPayload, metadata map[string]string) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
 	if empresaID <= 0 {
 		return 0, errors.New("empresa_id invalido")
 	}
+	if payload == nil {
+		return 0, errors.New("payload de backup invalido")
+	}
 
-	payload, err := BuildEmpresaBackupPayload(dbConn, empresaID, EmpresaBackupBuildOptions{
-		IncludeTables: options.IncludeTables,
-		ExcludeTables: options.ExcludeTables,
-		CreatedBy:     firstNonBlankString(strings.TrimSpace(options.CreatedBy), strings.TrimSpace(usuario)),
-	})
-	if err != nil {
-		return 0, err
+	payload.EmpresaID = empresaID
+	if strings.TrimSpace(payload.Version) == "" {
+		payload.Version = empresaBackupsSchemaVersion
+	}
+	if strings.TrimSpace(payload.Scope) == "" {
+		payload.Scope = strings.TrimSpace(firstNonBlankString(alcance, "empresa"))
 	}
 
 	rawSnapshot, err := json.Marshal(payload)
@@ -608,18 +666,20 @@ func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descri
 	if cleanName == "" {
 		cleanName = fmt.Sprintf("Backup empresa %d %s", empresaID, time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
 	}
-	codigo := empresaBackupGenerateCode(empresaID)
-	includeTables := empresaBackupNormalizeTables(options.IncludeTables)
-	excludeTables := empresaBackupNormalizeTables(options.ExcludeTables)
-	metadata := map[string]string{
-		"scope":   "empresa",
-		"version": empresaBackupsSchemaVersion,
+	cleanScope := strings.TrimSpace(firstNonBlankString(alcance, payload.Scope, "empresa"))
+	cleanType := strings.TrimSpace(firstNonBlankString(tipoBackup, "full"))
+	includeTables = empresaBackupNormalizeTables(includeTables)
+	excludeTables = empresaBackupNormalizeTables(excludeTables)
+	if metadata == nil {
+		metadata = map[string]string{}
 	}
-	if creator := strings.TrimSpace(payload.CreatedBy); creator != "" {
+	metadata["scope"] = cleanScope
+	metadata["version"] = strings.TrimSpace(payload.Version)
+	if creator := strings.TrimSpace(firstNonBlankString(payload.CreatedBy, usuario)); creator != "" {
 		metadata["created_by"] = creator
 	}
 
-	_, err = dbConn.Exec(`
+	id, err := insertSQLCompat(dbConn, `
 		INSERT INTO empresa_backups (
 			empresa_id,
 			codigo,
@@ -639,13 +699,15 @@ func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descri
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, 'empresa', 'full', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
 	`,
 		empresaID,
-		codigo,
+		empresaBackupGenerateCode(empresaID),
 		cleanName,
 		strings.TrimSpace(descripcion),
-		empresaBackupsSchemaVersion,
+		strings.TrimSpace(payload.Version),
+		cleanScope,
+		cleanType,
 		empresaBackupEncodeTablesJSON(includeTables),
 		empresaBackupEncodeTablesJSON(excludeTables),
 		payload.TotalTables,
@@ -660,13 +722,80 @@ func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descri
 	if err != nil {
 		return 0, err
 	}
-
-	row := dbConn.QueryRow(`SELECT id FROM empresa_backups WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, codigo)
-	var id int64
-	if scanErr := row.Scan(&id); scanErr != nil {
-		return 0, scanErr
-	}
 	return id, nil
+}
+
+// CreateEmpresaBackupSnapshot genera y persiste un backup empresarial completo.
+func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descripcion, usuario string, options EmpresaBackupBuildOptions) (int64, error) {
+	if dbConn == nil {
+		return 0, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return 0, errors.New("empresa_id invalido")
+	}
+
+	payload, err := BuildEmpresaBackupPayload(dbConn, empresaID, EmpresaBackupBuildOptions{
+		IncludeTables: options.IncludeTables,
+		ExcludeTables: options.ExcludeTables,
+		CreatedBy:     firstNonBlankString(strings.TrimSpace(options.CreatedBy), strings.TrimSpace(usuario)),
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	includeTables := empresaBackupNormalizeTables(options.IncludeTables)
+	excludeTables := empresaBackupNormalizeTables(options.ExcludeTables)
+	metadata := map[string]string{
+		"scope":   "empresa",
+		"version": empresaBackupsSchemaVersion,
+	}
+	if creator := strings.TrimSpace(payload.CreatedBy); creator != "" {
+		metadata["created_by"] = creator
+	}
+	return createEmpresaBackupSnapshotFromPayload(dbConn, empresaID, nombre, descripcion, usuario, "empresa", "full", includeTables, excludeTables, payload, metadata)
+}
+
+func CreateEmpresaConfigBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descripcion, usuario string) (int64, error) {
+	payload, includeTables, err := BuildEmpresaConfigBackupPayload(dbConn, empresaID, usuario)
+	if err != nil {
+		return 0, err
+	}
+	metadata := map[string]string{
+		"scope":        empresaBackupsConfigScope,
+		"version":      empresaBackupsSchemaVersion,
+		"config_backup": "1",
+	}
+	return createEmpresaBackupSnapshotFromPayload(dbConn, empresaID, nombre, descripcion, usuario, empresaBackupsConfigScope, "config", includeTables, nil, payload, metadata)
+}
+
+func CreateEmpresaConfigBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nombre, descripcion, usuario string, payload *EmpresaBackupPayload, sourceEmpresaID int64) (int64, error) {
+	includeTables := EmpresaConfigBackupDefaultTables()
+	metadata := map[string]string{
+		"scope":         empresaBackupsConfigScope,
+		"version":       empresaBackupsSchemaVersion,
+		"config_backup": "1",
+	}
+	if sourceEmpresaID > 0 {
+		metadata["source_empresa_id"] = fmt.Sprintf("%d", sourceEmpresaID)
+	}
+	if payload != nil {
+		includeTables = normalizeEmpresaConfigBackupTables(extractEmpresaBackupTables(payload))
+		payload.Scope = empresaBackupsConfigScope
+	}
+	return createEmpresaBackupSnapshotFromPayload(dbConn, empresaID, nombre, descripcion, usuario, empresaBackupsConfigScope, "config_import", includeTables, nil, payload, metadata)
+}
+
+func extractEmpresaBackupTables(payload *EmpresaBackupPayload) []string {
+	if payload == nil || len(payload.Tables) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(payload.Tables))
+	for _, table := range payload.Tables {
+		if clean := strings.TrimSpace(table.Table); clean != "" {
+			out = append(out, clean)
+		}
+	}
+	return out
 }
 
 func scanEmpresaBackupRow(scanner interface {
@@ -779,7 +908,7 @@ func ListEmpresaBackups(dbConn *sql.DB, empresaID int64, filter EmpresaBackupFil
 
 	countQuery := "SELECT COUNT(1) FROM empresa_backups" + where
 	var total int64
-	if err := dbConn.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	if err := queryRowSQLCompat(dbConn, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -809,7 +938,7 @@ func ListEmpresaBackups(dbConn *sql.DB, empresaID int64, filter EmpresaBackupFil
 	FROM empresa_backups` + where + ` ORDER BY id DESC LIMIT ? OFFSET ?`
 
 	args = append(args, limit, offset)
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -871,7 +1000,7 @@ func GetEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, includeSnap
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`
 
-	row := dbConn.QueryRow(query, empresaID, backupID)
+	row := queryRowSQLCompat(dbConn, query, empresaID, backupID)
 	result, err := scanEmpresaBackupRow(row, includeSnapshot)
 	if err != nil {
 		return nil, err
@@ -1025,7 +1154,7 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 			continue
 		}
 
-		if _, delErr := tx.Exec("DELETE FROM "+table+" WHERE empresa_id = ?", empresaID); delErr != nil {
+		if _, delErr := execTxSQLCompat(tx, "DELETE FROM "+table+" WHERE empresa_id = ?", empresaID); delErr != nil {
 			return nil, delErr
 		}
 
@@ -1060,7 +1189,7 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 		"registros_restaurados": fmt.Sprintf("%d", restoredRows),
 	})
 
-	_, err = tx.Exec(`
+	_, err = execTxSQLCompat(tx, `
 		INSERT INTO empresa_backups_restauraciones (
 			empresa_id,
 			backup_id,
@@ -1089,7 +1218,7 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 		return nil, err
 	}
 
-	_, err = tx.Exec(`
+	_, err = execTxSQLCompat(tx, `
 		UPDATE empresa_backups
 		SET restaurado_en = ?,
 			restaurado_por = ?,
