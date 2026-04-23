@@ -324,36 +324,10 @@ func empresaBackupGetTableColumns(q empresaBackupQueryer, table string) ([]strin
 			return cols, nil
 		}
 	}
-
-	rows, err = q.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	cols := make([]string, 0)
-	for rows.Next() {
-		var (
-			cid      int
-			name     string
-			colType  string
-			notNull  int
-			defaultV sql.NullString
-			pk       int
-		)
-		if err := rows.Scan(&cid, &name, &colType, &notNull, &defaultV, &pk); err != nil {
-			return nil, err
-		}
-		clean := strings.TrimSpace(strings.ToLower(name))
-		if clean == "" || !isSafeSQLIdentifier(clean) {
-			continue
-		}
-		cols = append(cols, clean)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return cols, nil
+	return nil, fmt.Errorf("no se pudieron resolver columnas para tabla %q", table)
 }
 
 func empresaBackupHasColumn(columns []string, column string) bool {
@@ -388,9 +362,6 @@ func empresaBackupListCandidateTables(dbConn *sql.DB, includeTables, excludeTabl
 		  AND table_type = 'BASE TABLE'
 		ORDER BY table_name
 	`)
-	if err != nil {
-		rows, err = querySQLCompat(dbConn, `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
-	}
 	if err != nil {
 		return nil, err
 	}

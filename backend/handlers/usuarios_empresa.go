@@ -395,7 +395,9 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				// leer optional mensaje_invitacion desde el body
-				var resendPayload struct{ MensajeInvitacion string `json:"mensaje_invitacion"` }
+				var resendPayload struct {
+					MensajeInvitacion string `json:"mensaje_invitacion"`
+				}
 				if err := json.NewDecoder(r.Body).Decode(&resendPayload); err != nil && err != io.EOF {
 					// ignore decode errors for empty body, but log others
 					log.Printf("[usuarios_empresa] warning decoding resend payload: %v", err)
@@ -492,14 +494,14 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"updated":                     true,
 				"email_reconfirmation_needed": resetConfirm,
 			}
-				if resetConfirm {
-					confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken, strings.TrimSpace(payload.MensajeInvitacion))
-					resp["email_sent"] = mailErr == nil
-					if mailErr != nil {
-						resp["email_error"] = mailErr.Error()
-						resp["confirm_url_preview"] = confirmURL
-					}
+			if resetConfirm {
+				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken, strings.TrimSpace(payload.MensajeInvitacion))
+				resp["email_sent"] = mailErr == nil
+				if mailErr != nil {
+					resp["email_error"] = mailErr.Error()
+					resp["confirm_url_preview"] = confirmURL
 				}
+			}
 			json.NewEncoder(w).Encode(resp)
 			return
 
@@ -541,6 +543,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			Email          string `json:"email"`
 			Password       string `json:"password"`
 			AcceptContract bool   `json:"accept_contract"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -560,6 +563,10 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
 				payload.EmpresaID = qEmpresaID
 			}
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
 		}
 
 		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
@@ -676,6 +683,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			Password           string `json:"password"`
 			PasswordConfirm    string `json:"password_confirm"`
 			AcceptContract     bool   `json:"accept_contract"`
+			RecaptchaToken     string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -703,6 +711,10 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if payload.PasswordConfirm != "" && payload.Password != payload.PasswordConfirm {
 			http.Error(w, "la confirmación de contraseña no coincide", http.StatusBadRequest)
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 
@@ -782,8 +794,9 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 		}
 
 		var payload struct {
-			EmpresaID int64  `json:"empresa_id"`
-			Email     string `json:"email"`
+			EmpresaID      int64  `json:"empresa_id"`
+			Email          string `json:"email"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -803,6 +816,10 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
 				payload.EmpresaID = qEmpresaID
 			}
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
 		}
 
 		respondAccepted := func(delivery string) {
@@ -865,6 +882,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			Password        string `json:"password"`
 			PasswordConfirm string `json:"password_confirm"`
 			AcceptContract  bool   `json:"accept_contract"`
+			RecaptchaToken  string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -892,6 +910,10 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 		}
 		if payload.PasswordConfirm != "" && payload.PasswordConfirm != payload.Password {
 			http.Error(w, "la confirmación de contraseña no coincide", http.StatusBadRequest)
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 
@@ -1173,30 +1195,30 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"smtp_email_set":                strings.TrimSpace(smtpEmail) != "",
-				"smtp_email":                    smtpEmail,
-				"smtp_email_updated":            smtpEmailUpdated,
-				"smtp_app_password_set":         strings.TrimSpace(appPass) != "",
-				"smtp_app_password_masked":      masked,
-				"smtp_app_password_updated":     appPassUpdated,
-				"smtp_from_name":                fromName,
-				"smtp_from_name_updated":        fromNameUpdated,
-				"smtp_host":                     host,
-				"smtp_host_updated":             hostUpdated,
-				"smtp_port":                     port,
-				"smtp_port_updated":             portUpdated,
-				"confirm_base_url":              baseURL,
-				"confirm_base_url_updated":      baseURLUpdated,
-				"whatsapp_contact_number":       whatsAppNumber,
-				"whatsapp_contact_number_set":   strings.TrimSpace(whatsAppNumber) != "",
+				"smtp_email_set":                  strings.TrimSpace(smtpEmail) != "",
+				"smtp_email":                      smtpEmail,
+				"smtp_email_updated":              smtpEmailUpdated,
+				"smtp_app_password_set":           strings.TrimSpace(appPass) != "",
+				"smtp_app_password_masked":        masked,
+				"smtp_app_password_updated":       appPassUpdated,
+				"smtp_from_name":                  fromName,
+				"smtp_from_name_updated":          fromNameUpdated,
+				"smtp_host":                       host,
+				"smtp_host_updated":               hostUpdated,
+				"smtp_port":                       port,
+				"smtp_port_updated":               portUpdated,
+				"confirm_base_url":                baseURL,
+				"confirm_base_url_updated":        baseURLUpdated,
+				"whatsapp_contact_number":         whatsAppNumber,
+				"whatsapp_contact_number_set":     strings.TrimSpace(whatsAppNumber) != "",
 				"whatsapp_contact_number_updated": whatsAppNumberUpdated,
-				"restart_alert_to_set":          strings.TrimSpace(restartAlertTo) != "",
-				"restart_alert_to":              restartAlertTo,
-				"restart_alert_to_updated":      restartAlertUpdated,
-				"restart_alert_enabled":         restartAlertEnabled,
-				"restart_alert_enabled_set":     strings.TrimSpace(restartAlertEnabledRaw) != "",
-				"restart_alert_enabled_updated": restartAlertEnabledUpdated,
-				"encryption_available":          utils.EncryptionAvailable(),
+				"restart_alert_to_set":            strings.TrimSpace(restartAlertTo) != "",
+				"restart_alert_to":                restartAlertTo,
+				"restart_alert_to_updated":        restartAlertUpdated,
+				"restart_alert_enabled":           restartAlertEnabled,
+				"restart_alert_enabled_set":       strings.TrimSpace(restartAlertEnabledRaw) != "",
+				"restart_alert_enabled_updated":   restartAlertEnabledUpdated,
+				"encryption_available":            utils.EncryptionAvailable(),
 			})
 			return
 
@@ -1227,16 +1249,16 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			var payload struct {
-				SMTPEmail           string `json:"smtp_email"`
-				SMTPAppPass         string `json:"smtp_app_password"`
-				SMTPFromName        string `json:"smtp_from_name"`
-				SMTPHost            string `json:"smtp_host"`
-				SMTPPort            string `json:"smtp_port"`
-				ConfirmBaseURL      string `json:"confirm_base_url"`
+				SMTPEmail             string `json:"smtp_email"`
+				SMTPAppPass           string `json:"smtp_app_password"`
+				SMTPFromName          string `json:"smtp_from_name"`
+				SMTPHost              string `json:"smtp_host"`
+				SMTPPort              string `json:"smtp_port"`
+				ConfirmBaseURL        string `json:"confirm_base_url"`
 				WhatsAppContactNumber string `json:"whatsapp_contact_number"`
-				RestartAlertTo      string `json:"restart_alert_to"`
-				RestartAlertEnabled *bool  `json:"restart_alert_enabled"`
-				Encrypt             bool   `json:"encrypt"`
+				RestartAlertTo        string `json:"restart_alert_to"`
+				RestartAlertEnabled   *bool  `json:"restart_alert_enabled"`
+				Encrypt               bool   `json:"encrypt"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -2098,5 +2120,3 @@ func parseEmpresaUsuarioDateTime(raw string) (time.Time, bool) {
 	}
 	return time.Time{}, false
 }
-
-

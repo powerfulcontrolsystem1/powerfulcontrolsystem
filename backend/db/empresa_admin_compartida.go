@@ -138,7 +138,7 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 	}
 	for _, stmt := range statements {
 		if _, err := dbConn.Exec(stmt); err != nil {
-			return fmt.Errorf("ensure admin empresa compartida sqlite schema: %w; stmt=%s", err, stmt)
+			return fmt.Errorf("ensure admin empresa compartida schema: %w; stmt=%s", err, stmt)
 		}
 	}
 	return nil

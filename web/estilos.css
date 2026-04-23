@@ -783,16 +783,19 @@ ul{padding-left:18px}
 @media (max-width:640px){
   .table{
     display:block;
-    width:100%;
+    width:max-content;
+    min-width:100%;
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
   }
   .table th,
   .table td{
-    white-space:normal;
-    word-break:break-word;
+    white-space:nowrap;
+    word-break:normal;
+    overflow-wrap:normal;
+    writing-mode:horizontal-tb;
     width:auto;
-    min-width:120px;
+    min-width:max-content;
     vertical-align:top;
   }
   .actions button{margin-bottom:6px}
@@ -820,6 +823,29 @@ ul{padding-left:18px}
   .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed{padding-bottom:10px}
 }
 
+@media (max-width:640px){
+  .empresa-subpage .table,
+  .empresa-module .table,
+  .table-wrap .table{
+    width:max-content;
+    min-width:100%;
+  }
+
+  .empresa-subpage .table th,
+  .empresa-subpage .table td,
+  .empresa-module .table th,
+  .empresa-module .table td,
+  .table-wrap .table th,
+  .table-wrap .table td{
+    white-space:nowrap !important;
+    word-break:normal !important;
+    overflow-wrap:normal !important;
+    writing-mode:horizontal-tb !important;
+    text-orientation:mixed;
+    hyphens:none;
+  }
+}
+
 /* Sidebar: mostrar el nombre de la empresa debajo del título y alinear a la izquierda */
 .admin-sidebar #empresaTitleMenu{display:block;white-space:normal;text-align:left;padding-right:8px}
 .admin-sidebar .empresa-name-menu{display:block;text-align:left;color:var(--muted);font-weight:600;font-size:0.95rem;margin-top:4px}
@@ -843,6 +869,27 @@ ul{padding-left:18px}
 .login-inline-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
 .login-inline-links a{color:var(--accent);font-weight:700;text-decoration:none}
 .login-inline-links a:hover{text-decoration:underline}
+.login-page #adminLoginRecaptcha,
+.login-page #adminForgotRecaptcha,
+.login-page #adminResetRecaptcha,
+.login-usuario-page #empresaLoginRecaptcha,
+.login-usuario-page #empresaSetupRecaptcha,
+.login-usuario-page #empresaRecoveryRecaptcha,
+.login-usuario-page #empresaResetRecaptcha,
+.login-usuario-page #empresaChangeRecaptcha{
+  min-height:78px;
+  margin-top:10px;
+}
+.login-page #adminLoginRecaptcha > div,
+.login-page #adminForgotRecaptcha > div,
+.login-page #adminResetRecaptcha > div,
+.login-usuario-page #empresaLoginRecaptcha > div,
+.login-usuario-page #empresaSetupRecaptcha > div,
+.login-usuario-page #empresaRecoveryRecaptcha > div,
+.login-usuario-page #empresaResetRecaptcha > div,
+.login-usuario-page #empresaChangeRecaptcha > div{
+  margin:0 auto;
+}
 .auth-alt-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .auth-message{margin-top:12px;font-size:1.08rem;font-weight:700;line-height:1.5}
 .login-page .auth-alt-form .form-help{font-size:1rem;line-height:1.5}
@@ -2584,8 +2631,17 @@ body.has-floating-menu .header .form-actions{
   color:var(--empresa-card-title);
   letter-spacing:.01em;
 }
-.empresas-grid{justify-content:flex-start; margin: 0; padding: 0; width: 100%; justify-items: start;align-items:stretch}
-.empresas-grid .card-link{display:flex;height:100%}
+.empresas-grid{
+  grid-template-columns:repeat(auto-fill, minmax(320px, 320px));
+  justify-content:flex-start;
+  justify-items:stretch;
+  align-items:stretch;
+  align-content:start;
+  margin:0;
+  padding:0;
+  width:100%;
+}
+.empresas-grid .card-link{display:flex;height:100%;min-height:430px;width:100%}
 .empresas-grid .portal-card.warm{width:100%;height:100%;}
 .empresas-grid .portal-card.empresa-card{
   justify-content:flex-start;
@@ -4269,16 +4325,18 @@ body.has-floating-menu .header .form-actions{
   max-width:none;
 }
 .empresa-module-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(320px,0.95fr);
+  align-items:start;
   gap:16px;
 }
+.empresa-module-header > div:first-child{min-width:0}
 .empresa-module-header h1{margin-bottom:6px}
 .empresa-module-kpis{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:8px;
+  width:100%;
 }
 .kpi-grid{
   display:grid;
@@ -4286,15 +4344,38 @@ body.has-floating-menu .header .form-actions{
   gap:10px;
 }
 .kpi-box{
-  min-width:110px;
+  min-width:0;
+  min-height:74px;
   padding:10px 12px;
   border-radius:10px;
   background:rgba(255,255,255,0.03);
   border:1px solid rgba(255,255,255,0.06);
-  text-align:right;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:6px;
 }
-.kpi-label{display:block;color:var(--muted);font-size:.86rem}
-.kpi-box strong{font-size:1.2rem;color:var(--text)}
+.kpi-label{display:block;color:var(--muted);font-size:.82rem;line-height:1.2;text-wrap:balance}
+.kpi-box strong{font-size:1.12rem;color:var(--text);line-height:1.1}
+
+@media (max-width:1100px){
+  .empresa-module-header{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:640px){
+  .empresa-module-kpis,
+  .kpi-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .kpi-box{
+    min-height:68px;
+    padding:9px 10px;
+  }
+}
 
 .empresa-section{margin-top:16px}
 .inicio-links-grid{
@@ -6849,6 +6930,16 @@ body.has-floating-menu .header .form-actions{
 
 .empresas-grid .portal-card.empresa-card .empresa-card-share-feedback.is-error{
   color:#b42318;
+}
+
+@media (max-width:760px){
+  .empresas-grid{
+    grid-template-columns:1fr;
+  }
+
+  .empresas-grid .card-link{
+    min-height:0;
+  }
 }
 
 .empresas-grid .portal-card.empresa-card .empresa-card-cta{

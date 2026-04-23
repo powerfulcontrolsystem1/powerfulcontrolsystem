@@ -1,3 +1,109 @@
+- 2026-04-23: Se elimina el experimento de correo temporal y se mejora el mensaje operativo de reCAPTCHA en login.
+    - Archivos modificados/agregados/eliminados:
+        - backend/main.go
+        - backend/handlers/recaptcha.go
+        - backend/.env.example
+        - web/menu.js
+        - web/js/recaptcha_helper.js
+        - web/js/login.js
+        - web/js/login_usuario.js
+        - scripts/sync_to_vps.ps1
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - backend/handlers/temp_email.go (eliminado)
+        - backend/db/temp_email.go (eliminado)
+        - web/generador_de_email_temporal.html (eliminado)
+        - web/js/generador_de_email_temporal.js (eliminado)
+        - scripts/tempmail/install-ubuntu-tempmail.sh (eliminado)
+        - scripts/tempmail/pcs-tempmail-inbound.sh (eliminado)
+        - scripts/tempmail/vps_setup_tempmail_mail_subdomain.sh (eliminado)
+    - Descripción: se retira por completo la funcionalidad de `tempmail` del repositorio, incluyendo página pública, scripts de despliegue, rutas HTTP, bootstrap en `config.js`, variable de entorno de ejemplo y enlace en el menú flotante. Además, el helper de reCAPTCHA ahora desplaza el widget a la vista y muestra un mensaje más claro cuando falta resolver el desafío, y se corrige el `reset()` del widget en los flujos de restablecimiento de contraseña.
+    - Verificación:
+        - `go test ./...`
+        - `ReadLints` sin errores en los archivos editados
+
+- 2026-04-23: Se corrige la visibilidad del widget reCAPTCHA al abrir formularios de autenticación.
+    - Archivos modificados:
+        - web/js/recaptcha_helper.js
+        - web/js/login.js
+        - web/js/login_usuario.js
+        - web/estilos.css
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+    - Descripción: se fuerza la visibilidad del contenedor (`display:block` y altura mínima), se limpia el contenedor antes de renderizar para evitar estados inconsistentes, se valida que el iframe se haya montado y se muestran errores explícitos de inicialización en cuanto abre el formulario (sin esperar al submit). También se agrega estilo dedicado para reservar espacio visual del widget en login admin y portal de usuarios.
+    - Verificación:
+        - `ReadLints` sin errores en `web/js/recaptcha_helper.js`, `web/js/login.js`, `web/js/login_usuario.js`, `web/estilos.css`
+
+- 2026-04-23: Se repara la administración de RustDesk para que funcione contra el VPS también desde Windows.
+    - Archivos modificados:
+        - backend/handlers/super_servidores_handlers.go
+        - documentos/manual_de_instalacion.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+    - Descripción: el panel super de RustDesk ya no reporta `inactive` ni `prueba no disponible` por diseño cuando el backend corre en Windows. Ahora reutiliza la configuración SSH existente (`DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_KEY_PATH`) para ejecutar `systemctl` y revisar los puertos 21114-21119 directamente en el VPS mediante `plink.exe` o `ssh.exe`, permitiendo que los botones de iniciar/detener/reiniciar y el botón `Probar funcionamiento` trabajen sobre el servidor real.
+    - Verificación:
+        - `go test ./...`
+        - prueba SSH directa desde Windows al VPS para `systemctl is-active rustdesk-hbbs` y `rustdesk-hbbr`
+
+- 2026-04-23: Se crea una capa nativa de agentes para Cursor en paralelo al sistema de GitHub Copilot.
+    - Archivos modificados/agregados:
+        - .cursor/AGENTS.md
+        - .cursor/README.md
+        - .cursor/rules/pcs-core-governance.mdc
+        - .cursor/rules/pcs-agent-orchestration.mdc
+        - .cursor/rules/pcs-docs-siempre-actualizadas.mdc
+        - .cursor/skills/pcs-agente-go/SKILL.md
+        - .cursor/skills/pcs-agente-backend-db/SKILL.md
+        - .cursor/skills/pcs-agente-frontend-ux/SKILL.md
+        - .cursor/skills/pcs-agente-qa-operacion/SKILL.md
+        - .cursor/skills/pcs-protocolo-por-modulo/SKILL.md
+        - documentos/descripcion_de_archivos
+        - documentos/descripcion_del_proyecto
+        - documentos/historial_de_cambios
+    - Descripción: se replica la gobernanza del equipo documental de Copilot (`copilot-instructions.md` y `.github/agents/`) hacia una capa propia de Cursor basada en `rules` y `skills`, manteniendo intacto el sistema original. Cursor queda configurado con una regla global de stack/gobernanza, una regla de orquestación y skills separados para coordinación (`agente_go`), backend DB, frontend UX, QA Operación y protocolo por módulo.
+    - Verificación:
+        - revisión manual de consistencia entre `.github/agents/` y `.cursor/`
+
+- 2026-04-23: Se endurece reCAPTCHA en autenticación pública y se neutraliza el flujo legacy duplicado del portal de usuarios.
+    - Archivos modificados:
+        - backend/handlers/usuarios_empresa.go
+        - web/js/login.js
+        - web/login_usuario.html
+        - web/js/login_usuario.js
+        - web/accept.html
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+    - Descripción: se corrige el reset del widget de reCAPTCHA en los flujos de restablecimiento admin y usuario empresa, se añade reCAPTCHA también al formulario público de cambio autogestionado de contraseña para usuarios empresa, y se deja inactivo el bootstrap legacy duplicado de `login_usuario.js` que seguía registrando listeners paralelos sin `recaptcha_token`. Además, `accept.html` ahora muestra el mensaje real de error cuando la validación server-side de reCAPTCHA falla.
+    - Verificación:
+        - `go test ./...`
+        - `ReadLints` sin errores en `web/js/login.js`, `web/js/login_usuario.js`, `web/accept.html`
+
+- 2026-04-21: Se reintegra Google reCAPTCHA con activación desde configuración avanzada super y validación reusable en backend.
+    - Archivos modificados:
+        - backend/handlers/recaptcha.go
+        - backend/handlers/recaptcha_test.go
+        - backend/handlers/auth_admin_handlers.go
+        - backend/handlers/usuarios_empresa.go
+        - backend/handlers/accept_handlers.go
+        - backend/main.go
+        - web/js/recaptcha_helper.js
+        - web/js/login.js
+        - web/js/login_usuario.js
+        - web/js/registrar_nuevo_usuario_administrador.js
+        - web/login.html
+        - web/login_usuario.html
+        - web/registrar_nuevo_usuario_administrador.html
+        - web/accept.html
+        - web/super/configuracion_avanzada.html
+        - documentos/historial_de_cambios
+        - documentos/descripcion_de_archivos
+        - documentos/diagramas/estructura_del_codigo.md
+    - Descripción: se agrega un servicio reusable de validación Google reCAPTCHA v2 con librerías estándar de Go, expuesto en `/config.js` para los formularios públicos y administrado desde `/super/api/config/recaptcha`. El panel super puede activar o desactivar el control global, mientras login admin, registro admin, recuperación/reset admin, login usuario empresa, primer ingreso, recuperación/reset usuario y aceptación de contrato consumen el token `recaptcha_token` cuando el servicio está habilitado y hay llaves de entorno disponibles.
+    - Verificación:
+        - `go test ./handlers -run '^TestRecaptchaConfigHandlerPersistsToggleAndPublicBootstrap$' -count=1`
+        - `go test . ./handlers -run '^$'`
+        - `GET /config.js -> window.RECAPTCHA_ENABLED / window.RECAPTCHA_CONFIGURED publicados`
+
 - 2026-04-21: El selector de empresas agrega el acceso directo para compartir desde cada tarjeta.
     - Archivos modificados:
         - web/js/seleccionar_empresa.js

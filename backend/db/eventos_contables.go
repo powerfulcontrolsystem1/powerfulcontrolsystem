@@ -1679,14 +1679,6 @@ func buildAsientoIdempotenciaHash(evento EmpresaEventoContable) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func isSQLiteUniqueConstraint(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "unique constraint failed")
-}
-
 func isUniqueConstraintError(err error) bool {
 	if err == nil {
 		return false

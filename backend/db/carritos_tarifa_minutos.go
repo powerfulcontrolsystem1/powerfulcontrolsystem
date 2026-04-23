@@ -61,28 +61,19 @@ type CarritoTarifasTiempoCalculo struct {
 }
 
 func empresaTarifaPorMinutosTableExistsTx(tx *sql.Tx) (bool, error) {
-	if isPostgresDialect() {
-		var exists bool
-		err := queryRowTxSQLCompat(tx, `
-			SELECT EXISTS (
-				SELECT 1
-				FROM information_schema.tables
-				WHERE table_schema = ANY (current_schemas(false))
-				  AND table_name = ?
-			)
-		`, "empresa_tarifas_por_minutos").Scan(&exists)
-		if err != nil {
-			return false, err
-		}
-		return exists, nil
-	}
-
-	var count int64
-	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, "empresa_tarifas_por_minutos").Scan(&count)
+	var exists bool
+	err := queryRowTxSQLCompat(tx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.tables
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = ?
+		)
+	`, "empresa_tarifas_por_minutos").Scan(&exists)
 	if err != nil {
 		return false, err
 	}
-	return count > 0, nil
+	return exists, nil
 }
 
 func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int64, diaSemana int) (*EmpresaTarifaPorMinutos, error) {

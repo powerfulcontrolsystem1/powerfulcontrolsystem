@@ -59,15 +59,12 @@ func superListTables(dbConn *sql.DB) ([]string, error) {
 	if dbConn == nil {
 		return nil, nil
 	}
-	query := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
-	if dbpkg.IsPostgresDialect() {
-		query = `
-			SELECT table_name
-			FROM information_schema.tables
-			WHERE table_schema = ANY(current_schemas(false))
-			  AND table_type = 'BASE TABLE'
-			ORDER BY table_name`
-	}
+	query := `
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = ANY(current_schemas(false))
+		  AND table_type = 'BASE TABLE'
+		ORDER BY table_name`
 	rows, err := dbConn.Query(superSQLCompat(query))
 	if err != nil {
 		return nil, err
@@ -97,46 +94,22 @@ func superListColumns(dbConn *sql.DB, table string) ([]string, error) {
 		return nil, nil
 	}
 	columns := make([]string, 0)
-	if dbpkg.IsPostgresDialect() {
-		rows, err := dbConn.Query(superSQLCompat(`
-			SELECT column_name
-			FROM information_schema.columns
-			WHERE table_schema = ANY(current_schemas(false))
-			  AND table_name = ?
-			ORDER BY ordinal_position`), strings.TrimSpace(table))
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var column string
-			if err := rows.Scan(&column); err != nil {
-				return nil, err
-			}
-			columns = append(columns, strings.TrimSpace(column))
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return columns, nil
-	}
-
-	rows, err := dbConn.Query("PRAGMA table_info(" + superQuoteIdentifier(table) + ")")
+	rows, err := dbConn.Query(superSQLCompat(`
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = ANY(current_schemas(false))
+		  AND table_name = ?
+		ORDER BY ordinal_position`), strings.TrimSpace(table))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var cid int
-		var name string
-		var columnType sql.NullString
-		var notNull sql.NullInt64
-		var defaultValue sql.NullString
-		var primaryKey sql.NullInt64
-		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+		var column string
+		if err := rows.Scan(&column); err != nil {
 			return nil, err
 		}
-		columns = append(columns, strings.TrimSpace(name))
+		columns = append(columns, strings.TrimSpace(column))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

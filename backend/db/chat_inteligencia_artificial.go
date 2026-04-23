@@ -1441,43 +1441,23 @@ func aiAvailableColumns(dbConn *sql.DB, tableName string, candidates []string) (
 	available := make([]string, 0, len(candidates))
 	found := map[string]struct{}{}
 
-	if isPostgresDialect() {
-		rows, err := querySQLCompat(dbConn, `
-			SELECT column_name
-			FROM information_schema.columns
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_name = ?
-		`, tableName)
-		if err != nil {
+	rows, err := querySQLCompat(dbConn, `
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_name = ?
+	`, tableName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var columnName string
+		if err := rows.Scan(&columnName); err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var columnName string
-			if err := rows.Scan(&columnName); err != nil {
-				return nil, err
-			}
-			found[strings.ToLower(strings.TrimSpace(columnName))] = struct{}{}
-		}
-	} else {
-		rows, err := querySQLCompat(dbConn, fmt.Sprintf("PRAGMA table_info(%s)", tableName))
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var cid int
-			var name, ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				return nil, err
-			}
-			found[strings.ToLower(strings.TrimSpace(name))] = struct{}{}
-		}
+		found[strings.ToLower(strings.TrimSpace(columnName))] = struct{}{}
 	}
 
 	for _, candidate := range candidates {

@@ -333,7 +333,7 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 		WHERE table_schema = current_schema() AND table_name = $1 AND column_name = 'id'`, tableName).Scan(&columnDefault)
 	if err != nil {
 		errLower := strings.ToLower(err.Error())
-		if strings.Contains(errLower, "no such table") || strings.Contains(errLower, "sqlite") {
+		if strings.Contains(errLower, "no such table") || (strings.Contains(errLower, "relation") && strings.Contains(errLower, "does not exist")) {
 			return nil
 		}
 	}
@@ -779,7 +779,7 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 	if err != nil {
 		return nil, err
 	}
-	item.RequiereAprobacion = requiresAprobacionFromSQLite(requiereAprobacionRaw)
+	item.RequiereAprobacion = int64ToBool(requiereAprobacionRaw)
 	item.NivelesAprobacion = normalizeComprasNivelesAprobacion(int(nivelesAprobacionRaw), 1)
 	item.NivelAprobacion = normalizeComprasNivelActual(int(nivelAprobacionRaw), item.NivelesAprobacion)
 	item.ValidacionEstado = normalizeComprasValidacionEstado(item.ValidacionEstado)
@@ -810,7 +810,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 	if payload.Estado == "" {
 		payload.Estado = "activo"
 	}
-	payload.RequiereAprobacion = requiresAprobacionFromSQLite(boolToSQLiteInt(payload.RequiereAprobacion))
+	payload.RequiereAprobacion = int64ToBool(boolToInt64(payload.RequiereAprobacion))
 	payload.NivelesAprobacion = normalizeComprasNivelesAprobacion(payload.NivelesAprobacion, 1)
 	payload.NivelAprobacion = normalizeComprasNivelActual(payload.NivelAprobacion, payload.NivelesAprobacion)
 	payload.AprobadoresJSON = strings.TrimSpace(payload.AprobadoresJSON)
@@ -905,7 +905,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		payload.Moneda,
 		payload.FechaDocumento,
 		payload.EntidadRelacionadaID,
-		boolToSQLiteInt(payload.RequiereAprobacion),
+		boolToInt64(payload.RequiereAprobacion),
 		payload.NivelesAprobacion,
 		payload.NivelAprobacion,
 		payload.AprobadoresJSON,
@@ -1052,7 +1052,7 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 		); err != nil {
 			return nil, err
 		}
-		item.RequiereAprobacion = requiresAprobacionFromSQLite(requiereAprobacionRaw)
+		item.RequiereAprobacion = int64ToBool(requiereAprobacionRaw)
 		item.NivelesAprobacion = normalizeComprasNivelesAprobacion(int(nivelesAprobacionRaw), 1)
 		item.NivelAprobacion = normalizeComprasNivelActual(int(nivelAprobacionRaw), item.NivelesAprobacion)
 		item.ValidacionEstado = normalizeComprasValidacionEstado(item.ValidacionEstado)
@@ -1130,16 +1130,14 @@ func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, ti
 	return nil
 }
 
-func boolToSQLiteInt(v bool) int64 {
+func boolToInt64(v bool) int64 {
 	if v {
 		return 1
 	}
 	return 0
 }
 
-func requiresAprobacionFromSQLite(v int64) bool {
-	return v > 0
-}
+func int64ToBool(v int64) bool { return v > 0 }
 
 func normalizeComprasNivelesAprobacion(v int, fallback int) int {
 	if fallback <= 0 {

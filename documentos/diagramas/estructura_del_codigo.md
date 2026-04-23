@@ -1,3 +1,17 @@
+## Actualizacion 2026-04-21 (autenticacion publica: Google reCAPTCHA reactivado y gobernado desde super)
+
+- Backend autenticacion:
+  - `backend/handlers/recaptcha.go` centraliza el estado del servicio, publica `/config.js`, persiste `security.recaptcha.enabled` en configuración super y valida tokens contra Google usando únicamente librerías estándar de Go.
+  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go` y `backend/handlers/accept_handlers.go` pasan a exigir `recaptcha_token` en formularios públicos sensibles cuando el servicio está activo.
+  - `backend/main.go` registra `/super/api/config/recaptcha` y delega `/config.js` al nuevo bootstrap público real.
+- Frontend autenticacion y panel super:
+  - `web/js/recaptcha_helper.js` actúa como adaptador común para login admin, registro admin, portal de usuarios empresa y aceptación de contrato.
+  - `web/login.html`, `web/login_usuario.html`, `web/registrar_nuevo_usuario_administrador.html` y `web/accept.html` cargan `/config.js` y renderizan el widget solo si el backend informa que el servicio está habilitado y configurado.
+  - `web/super/configuracion_avanzada.html` agrega la tarjeta de activación/desactivación global del servicio y reporta si faltan `GOOGLE_RECAPTCHA_SITE_KEY` o `GOOGLE_RECAPTCHA_SECRET_KEY`.
+- Flujo:
+  - `configuracion_avanzada.html` -> `GET/PUT /super/api/config/recaptcha` -> persistencia del toggle global en DB super.
+  - `login.html`, `registrar_nuevo_usuario_administrador.html`, `login_usuario.html`, `accept.html` -> carga `config.js` -> render condicional del widget -> envío de `recaptcha_token` al backend -> validación remota en Google antes de crear sesión o emitir tokens de recuperación.
+
 ## Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 
 - Backend compras/finanzas:

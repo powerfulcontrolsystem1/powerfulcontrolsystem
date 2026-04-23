@@ -447,17 +447,6 @@ func buildAuditoriaSearchClause(dbConn *sql.DB, empresaID int64, rawSearch strin
 		return "", nil
 	}
 
-	if auditoriaFTSEnabled(dbConn) {
-		if ftsQuery := buildAuditoriaFTSQuery(search); ftsQuery != "" {
-			return ` AND id IN (
-				SELECT rowid
-				FROM empresa_auditoria_eventos_fts
-				WHERE empresa_auditoria_eventos_fts MATCH ?
-					AND empresa_id = ?
-			)`, []interface{}{ftsQuery, empresaID}
-		}
-	}
-
 	if searchLike := normalizeAuditoriaContains(search, 180); searchLike != "" {
 		return ` AND (
 			LOWER(COALESCE(modulo, '')) LIKE ? ESCAPE '!'
@@ -475,195 +464,16 @@ func buildAuditoriaSearchClause(dbConn *sql.DB, empresaID int64, rawSearch strin
 	return "", nil
 }
 
-func buildAuditoriaFTSQuery(raw string) string {
-	tokens := tokenizeAuditoriaSearch(raw)
-	if len(tokens) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(tokens))
-	for _, token := range tokens {
-		parts = append(parts, token+"*")
-	}
-	return strings.Join(parts, " AND ")
-}
-
-func tokenizeAuditoriaSearch(raw string) []string {
-	parts := strings.Fields(strings.ToLower(strings.TrimSpace(raw)))
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		token := sanitizeAuditoriaFTSToken(part)
-		if token == "" {
-			continue
-		}
-		out = append(out, token)
-	}
-	return out
-}
-
-func sanitizeAuditoriaFTSToken(raw string) string {
-	var builder strings.Builder
-	for _, r := range raw {
-		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
-		case r == '_' || r == '-' || r == '.' || r == '@':
-			builder.WriteRune(r)
-		}
-	}
-	v := strings.Trim(builder.String(), "._-@")
-	if len(v) > 64 {
-		v = v[:64]
-	}
-	return v
-}
-
 func auditoriaFTSEnabled(dbConn *sql.DB) bool {
 	if dbConn == nil {
 		return false
 	}
-	if isPostgresDialect() {
-		return false
-	}
-	var count int
-	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'empresa_auditoria_eventos_fts'`).Scan(&count); err != nil {
-		return false
-	}
-	return count > 0
+	return false
 }
 
 func ensureEmpresaAuditoriaFTSSchema(dbConn *sql.DB) error {
-	if dbConn == nil {
-		return nil
-	}
-	if isPostgresDialect() {
-		return nil
-	}
-	if _, err := dbConn.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS empresa_auditoria_eventos_fts USING fts5(
-		empresa_id UNINDEXED,
-		modulo,
-		accion,
-		recurso,
-		endpoint,
-		usuario_creador,
-		request_id,
-		ip_origen,
-		observaciones,
-		metadata_json,
-		tokenize = 'unicode61 remove_diacritics 2'
-	)`); err != nil {
-		if isAuditoriaFTSUnsupported(err) {
-			return nil
-		}
-		return err
-	}
-
-	triggers := []string{
-		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_ai AFTER INSERT ON empresa_auditoria_eventos BEGIN
-			INSERT INTO empresa_auditoria_eventos_fts(
-				rowid,
-				empresa_id,
-				modulo,
-				accion,
-				recurso,
-				endpoint,
-				usuario_creador,
-				request_id,
-				ip_origen,
-				observaciones,
-				metadata_json
-			) VALUES (
-				new.id,
-				new.empresa_id,
-				COALESCE(new.modulo, ''),
-				COALESCE(new.accion, ''),
-				COALESCE(new.recurso, ''),
-				COALESCE(new.endpoint, ''),
-				COALESCE(new.usuario_creador, ''),
-				COALESCE(new.request_id, ''),
-				COALESCE(new.ip_origen, ''),
-				COALESCE(new.observaciones, ''),
-				COALESCE(new.metadata_json, '{}')
-			);
-		END;`,
-		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_ad AFTER DELETE ON empresa_auditoria_eventos BEGIN
-			DELETE FROM empresa_auditoria_eventos_fts WHERE rowid = old.id;
-		END;`,
-		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_au AFTER UPDATE ON empresa_auditoria_eventos BEGIN
-			DELETE FROM empresa_auditoria_eventos_fts WHERE rowid = old.id;
-			INSERT INTO empresa_auditoria_eventos_fts(
-				rowid,
-				empresa_id,
-				modulo,
-				accion,
-				recurso,
-				endpoint,
-				usuario_creador,
-				request_id,
-				ip_origen,
-				observaciones,
-				metadata_json
-			) VALUES (
-				new.id,
-				new.empresa_id,
-				COALESCE(new.modulo, ''),
-				COALESCE(new.accion, ''),
-				COALESCE(new.recurso, ''),
-				COALESCE(new.endpoint, ''),
-				COALESCE(new.usuario_creador, ''),
-				COALESCE(new.request_id, ''),
-				COALESCE(new.ip_origen, ''),
-				COALESCE(new.observaciones, ''),
-				COALESCE(new.metadata_json, '{}')
-			);
-		END;`,
-	}
-	for _, stmt := range triggers {
-		if _, err := dbConn.Exec(stmt); err != nil {
-			return err
-		}
-	}
-
-	if _, err := dbConn.Exec(`INSERT INTO empresa_auditoria_eventos_fts(
-		rowid,
-		empresa_id,
-		modulo,
-		accion,
-		recurso,
-		endpoint,
-		usuario_creador,
-		request_id,
-		ip_origen,
-		observaciones,
-		metadata_json
-	)
-	SELECT
-		e.id,
-		e.empresa_id,
-		COALESCE(e.modulo, ''),
-		COALESCE(e.accion, ''),
-		COALESCE(e.recurso, ''),
-		COALESCE(e.endpoint, ''),
-		COALESCE(e.usuario_creador, ''),
-		COALESCE(e.request_id, ''),
-		COALESCE(e.ip_origen, ''),
-		COALESCE(e.observaciones, ''),
-		COALESCE(e.metadata_json, '{}')
-	FROM empresa_auditoria_eventos e
-	WHERE e.id NOT IN (SELECT rowid FROM empresa_auditoria_eventos_fts)`); err != nil {
-		return err
-	}
-
+	// PostgreSQL-only: no usamos tablas virtuales FTS.
 	return nil
-}
-
-func isAuditoriaFTSUnsupported(err error) bool {
-	if err == nil {
-		return false
-	}
-	v := strings.ToLower(err.Error())
-	return strings.Contains(v, "no such module: fts5")
 }
 
 // PurgeEmpresaAuditoriaEventos elimina eventos que superan la politica de retencion.

@@ -54,6 +54,18 @@
       transition: all 0.3s ease;
     }
     .home-offer-card:hover .home-offer-btn { background: var(--accent); color: #fff; }
+    .portal-cards-heading {
+      margin: 10px auto 26px auto;
+      text-align: center;
+      color: #f4f7fb;
+      font-family: 'Montserrat', 'Segoe UI', sans-serif;
+      font-size: clamp(1.65rem, 3.1vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      text-wrap: balance;
+      text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    }
     .portal-footer { text-align: center; padding: 40px; margin-top: auto; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); }
   </style>
 </head>
@@ -73,6 +85,7 @@
 
     <main class="portal-main container">
       <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
+      <h1 class="portal-cards-heading">Sistema de Facturación Electrónica</h1>
       <section id="portalCardsGrid" class="portal-grid" aria-live="polite" ></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
 

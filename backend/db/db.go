@@ -8,91 +8,31 @@ import (
 )
 
 // EnsureAdministradoresAuthSchema regulariza las columnas operativas y de seguridad
-// usadas por el flujo administrativo tanto en SQLite como en PostgreSQL.
+// usadas por el flujo administrativo en PostgreSQL.
 func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil
 	}
 
-	if isPostgresDialect() {
-		statements := []string{
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS photo TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS acepta_contrato INTEGER DEFAULT 0`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS telefono TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS pais TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS ciudad TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_token TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_expira TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado INTEGER DEFAULT 0`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado_en TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_hash TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_salt TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
-			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
-		}
-		for _, stmt := range statements {
-			if _, err := dbConn.Exec(stmt); err != nil {
-				return err
-			}
-		}
-		return nil
+	statements := []string{
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS photo TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS acepta_contrato INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS telefono TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS pais TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS ciudad TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_token TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_expira TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado_en TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_salt TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
 	}
-
-	rows, err := dbConn.Query("PRAGMA table_info(administradores);")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	existing := map[string]bool{}
-	for rows.Next() {
-		var cid int
-		var name string
-		var ctype string
-		var notnull int
-		var dflt sql.NullString
-		var pk int
-		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-			return err
-		}
-		existing[name] = true
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	addIfMissing := func(colDef string, name string) error {
-		if existing[name] {
-			return nil
-		}
-		_, err := dbConn.Exec(fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef))
-		return err
-	}
-
-	definitions := []struct {
-		name string
-		def  string
-	}{
-		{name: "photo", def: "photo TEXT"},
-		{name: "usuario_creador", def: "usuario_creador TEXT"},
-		{name: "acepta_contrato", def: "acepta_contrato INTEGER DEFAULT 0"},
-		{name: "telefono", def: "telefono TEXT"},
-		{name: "pais", def: "pais TEXT"},
-		{name: "ciudad", def: "ciudad TEXT"},
-		{name: "email_confirm_token", def: "email_confirm_token TEXT"},
-		{name: "email_confirm_expira", def: "email_confirm_expira TEXT"},
-		{name: "email_confirmado", def: "email_confirmado INTEGER DEFAULT 0"},
-		{name: "email_confirmado_en", def: "email_confirmado_en TEXT"},
-		{name: "password_hash", def: "password_hash TEXT"},
-		{name: "password_salt", def: "password_salt TEXT"},
-		{name: "password_set", def: "password_set INTEGER DEFAULT 0"},
-		{name: "password_reset_token", def: "password_reset_token TEXT"},
-		{name: "password_reset_expira", def: "password_reset_expira TEXT"},
-	}
-	for _, item := range definitions {
-		if err := addIfMissing(item.def, item.name); err != nil {
+	for _, stmt := range statements {
+		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
 		}
 	}
@@ -100,7 +40,6 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 }
 
 // EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
-// El runtime SQLite mantiene su propio bootstrap legado en main.go.
 func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
@@ -166,134 +105,54 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 	return nil
 }
 
-// EnsureLicenciasSchema regulariza la tabla licencias para SQLite y PostgreSQL.
+// EnsureLicenciasSchema regulariza la tabla licencias (PostgreSQL-only).
 func EnsureLicenciasSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil
 	}
 
-	if isPostgresDialect() {
-		statements := []string{
-			`CREATE TABLE IF NOT EXISTS licencias (
-				id BIGSERIAL PRIMARY KEY,
-				empresa_id BIGINT,
-				tipo_id BIGINT,
-				nombre TEXT,
-				descripcion TEXT,
-				valor DOUBLE PRECISION DEFAULT 0,
-				duracion_dias INTEGER DEFAULT 0,
-				modulos_habilitados TEXT,
-				super_rol_habilitado INTEGER DEFAULT 0,
-				fecha_inicio TEXT,
-				fecha_fin TEXT,
-				activo INTEGER DEFAULT 1,
-				fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
-				fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
-				usuario_creador TEXT,
-				estado TEXT DEFAULT 'activo',
-				observaciones TEXT
-			)`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS empresa_id BIGINT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS tipo_id BIGINT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS nombre TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS descripcion TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS super_rol_habilitado INTEGER DEFAULT 0`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_inicio TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_fin TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activo INTEGER DEFAULT 1`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
-			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
-		}
-		for _, stmt := range statements {
-			if _, err := dbConn.Exec(stmt); err != nil {
-				return err
-			}
-		}
-		return nil
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS licencias (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT,
+			tipo_id BIGINT,
+			nombre TEXT,
+			descripcion TEXT,
+			valor DOUBLE PRECISION DEFAULT 0,
+			duracion_dias INTEGER DEFAULT 0,
+			modulos_habilitados TEXT,
+			super_rol_habilitado INTEGER DEFAULT 0,
+			fecha_inicio TEXT,
+			fecha_fin TEXT,
+			activo INTEGER DEFAULT 1,
+			fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS empresa_id BIGINT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS tipo_id BIGINT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS nombre TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS descripcion TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS super_rol_habilitado INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_inicio TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_fin TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activo INTEGER DEFAULT 1`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
 	}
-
-	rows, err := dbConn.Query("PRAGMA table_info(licencias);")
-	if err != nil {
-		if isMissingTableError(err) {
-			_, createErr := dbConn.Exec(`CREATE TABLE IF NOT EXISTS licencias (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				empresa_id INTEGER,
-				tipo_id INTEGER,
-				nombre TEXT,
-				descripcion TEXT,
-				valor REAL DEFAULT 0,
-				duracion_dias INTEGER DEFAULT 0,
-				modulos_habilitados TEXT,
-				super_rol_habilitado INTEGER DEFAULT 0,
-				fecha_inicio TEXT,
-				fecha_fin TEXT,
-				activo INTEGER DEFAULT 1,
-				fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-				fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
-				usuario_creador TEXT,
-				estado TEXT DEFAULT 'activo',
-				observaciones TEXT
-			);`)
-			return createErr
-		}
-		return err
-	}
-	defer rows.Close()
-
-	existing := map[string]bool{}
-	for rows.Next() {
-		var cid int
-		var name string
-		var ctype string
-		var notnull int
-		var dflt sql.NullString
-		var pk int
-		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-			return err
-		}
-		existing[name] = true
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	definitions := []struct {
-		name string
-		def  string
-	}{
-		{name: "empresa_id", def: "empresa_id INTEGER"},
-		{name: "tipo_id", def: "tipo_id INTEGER"},
-		{name: "nombre", def: "nombre TEXT"},
-		{name: "descripcion", def: "descripcion TEXT"},
-		{name: "valor", def: "valor REAL DEFAULT 0"},
-		{name: "duracion_dias", def: "duracion_dias INTEGER DEFAULT 0"},
-		{name: "modulos_habilitados", def: "modulos_habilitados TEXT"},
-		{name: "super_rol_habilitado", def: "super_rol_habilitado INTEGER DEFAULT 0"},
-		{name: "fecha_inicio", def: "fecha_inicio TEXT"},
-		{name: "fecha_fin", def: "fecha_fin TEXT"},
-		{name: "activo", def: "activo INTEGER DEFAULT 1"},
-		{name: "fecha_creacion", def: "fecha_creacion TEXT DEFAULT (datetime('now','localtime'))"},
-		{name: "fecha_actualizacion", def: "fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))"},
-		{name: "usuario_creador", def: "usuario_creador TEXT"},
-		{name: "estado", def: "estado TEXT DEFAULT 'activo'"},
-		{name: "observaciones", def: "observaciones TEXT"},
-	}
-
-	for _, item := range definitions {
-		if existing[item.name] {
-			continue
-		}
-		if _, err := dbConn.Exec(fmt.Sprintf("ALTER TABLE licencias ADD COLUMN %s;", item.def)); err != nil {
+	for _, stmt := range statements {
+		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 

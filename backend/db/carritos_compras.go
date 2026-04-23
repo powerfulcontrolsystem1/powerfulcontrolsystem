@@ -405,12 +405,6 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if !isPostgresDialect() {
-		if _, err := dbConn.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -418,22 +412,8 @@ func ensureIndexIfMissing(dbConn *sql.DB, indexName, createStmt string) error {
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
-	if shouldUsePostgresCompat(dbConn) {
-		_, err := execSQLCompat(dbConn, createStmt)
-		return err
-	}
-
-	var existingName string
-	err := queryRowSQLCompat(dbConn, `SELECT name FROM sqlite_master WHERE type = 'index' AND name = ? LIMIT 1`, indexName).Scan(&existingName)
-	if err == nil {
-		return nil
-	}
-	if err != sql.ErrNoRows {
-		return err
-	}
-
-	stmt := strings.Replace(createStmt, " IF NOT EXISTS", "", 1)
-	_, err = execSQLCompat(dbConn, stmt)
+	// PostgreSQL soporta IF NOT EXISTS en CREATE INDEX.
+	_, err := execSQLCompat(dbConn, createStmt)
 	return err
 }
 
@@ -680,12 +660,15 @@ const (
 	carritoTxRetryBaseDelay   = 20 * time.Millisecond
 )
 
-func isSQLiteBusyOrLockedError(err error) bool {
+func isTransientTxRetryError(err error) bool {
 	if err == nil {
 		return false
 	}
 	lower := strings.ToLower(strings.TrimSpace(err.Error()))
-	return strings.Contains(lower, "database is locked") || strings.Contains(lower, "database is busy")
+	// Reintentar en errores transitorios típicos de Postgres (serialización/deadlock).
+	return strings.Contains(lower, "deadlock detected") ||
+		strings.Contains(lower, "could not serialize access") ||
+		strings.Contains(lower, "serialization failure")
 }
 
 func withCarritoTxRetry(dbConn *sql.DB, run func(tx *sql.Tx) error) error {
@@ -693,7 +676,7 @@ func withCarritoTxRetry(dbConn *sql.DB, run func(tx *sql.Tx) error) error {
 	for attempt := 0; attempt < carritoTxRetryMaxAttempts; attempt++ {
 		tx, err := dbConn.Begin()
 		if err != nil {
-			if isSQLiteBusyOrLockedError(err) {
+			if isTransientTxRetryError(err) {
 				lastRetryErr = err
 				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
 				continue
@@ -704,7 +687,7 @@ func withCarritoTxRetry(dbConn *sql.DB, run func(tx *sql.Tx) error) error {
 		err = run(tx)
 		if err != nil {
 			_ = tx.Rollback()
-			if isSQLiteBusyOrLockedError(err) && attempt+1 < carritoTxRetryMaxAttempts {
+			if isTransientTxRetryError(err) && attempt+1 < carritoTxRetryMaxAttempts {
 				lastRetryErr = err
 				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
 				continue
@@ -714,7 +697,7 @@ func withCarritoTxRetry(dbConn *sql.DB, run func(tx *sql.Tx) error) error {
 
 		if err := tx.Commit(); err != nil {
 			_ = tx.Rollback()
-			if isSQLiteBusyOrLockedError(err) && attempt+1 < carritoTxRetryMaxAttempts {
+			if isTransientTxRetryError(err) && attempt+1 < carritoTxRetryMaxAttempts {
 				lastRetryErr = err
 				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
 				continue

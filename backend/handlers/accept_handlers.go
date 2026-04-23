@@ -17,8 +17,9 @@ import (
 func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
-			Payload string `json:"payload"`
-			Token   string `json:"token"`
+			Payload        string `json:"payload"`
+			Token          string `json:"token"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -65,9 +66,14 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// La validación reCAPTCHA se ha eliminado por decisión del producto.
-		// Se omite cualquier token y se considera la verificación como satisfactoria.
-		// Nota: el campo `token` del payload se ignora para mantener compatibilidad.
+		captchaToken := strings.TrimSpace(in.RecaptchaToken)
+		if captchaToken == "" {
+			captchaToken = strings.TrimSpace(in.Token)
+		}
+		if err := validateRecaptchaToken(dbSuper, r, captchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
 
 		// Persistir aceptación y crear sesión
 		if err := dbpkg.SetAdministradorContratoAceptado(dbSuper, data.Email, currentContract.Version); err != nil {

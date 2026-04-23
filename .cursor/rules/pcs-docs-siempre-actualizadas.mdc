@@ -1,0 +1,31 @@
+---
+description: Siempre mantener la documentación sincronizada con los cambios del sistema
+alwaysApply: true
+---
+
+# Documentación siempre sincronizada
+
+Regla obligatoria: **cada cambio del sistema debe reflejarse en la documentación vigente** en la misma iteración (o dejar explícito el hueco y el siguiente paso).
+
+## Qué se considera “cambio del sistema”
+
+- flujos (login, registro, recuperación, aceptación de contrato, pagos, etc.)
+- endpoints / rutas / payloads
+- permisos / roles / wrappers / middleware
+- base de datos (tablas, claves de configuración, comportamiento)
+- UI/UX (pantallas públicas y paneles administrativos)
+- scripts de arranque/deploy/túneles y runbooks operativos
+
+## Qué documentos actualizar (según aplique)
+
+- `documentos/historial_de_cambios` (trazabilidad del cambio)
+- `documentos/descripcion_de_archivos` (si se crean archivos nuevos o cambia su rol)
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/*` (si cambia arquitectura/flujo)
+- `documentos/descripcion_de_modulos` (si toca un módulo funcional)
+- `documentos/matriz_roles_permisos_pos_multiempresa.md` (si toca permisos/acciones/pantallas)
+- `documentos/estructura_bd.md` y/o `documentos/descripcion_de_las_bases_De_datos` (si toca DB)
+
+## Regla de no-cierre
+
+No dar por “terminado” un cambio si la documentación quedó desalineada con el código.
+

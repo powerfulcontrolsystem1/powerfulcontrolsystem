@@ -43,6 +43,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Toda tarea con impacto transversal debe ser coordinada por `agente_go`, que integra resultados tecnicos, validaciones y trazabilidad documental.
 - Los agentes especialistas no deben cerrar cambios transversales por su cuenta; deben devolver hallazgos y ejecucion a `agente_go`.
 - El protocolo de delegacion del equipo vive en `.github/agents/protocolo_delegacion.md` y la plantilla comun de ejecucion por modulo vive en `.github/agents/plantilla_trabajo_por_modulo.md`.
+- Para Cursor existe una capa paralela en `.cursor/rules/` y `.cursor/skills/` que replica esta gobernanza sin reemplazar los archivos de GitHub Copilot.
 - Los modulos `pagos`, `licencias`, `venta_publica`, `estaciones`, `ventas_simple`, `carritos`, `facturacion electronica`, `reportes`, `autenticacion` y `paneles administrativos` deben activar especialistas segun esa matriz.
 - El protocolo ya incluye una tabla rapida por modulo, ejemplos reales de delegacion y reglas de participacion obligatoria para modulos criticos coordinados por `agente_go`.
 - El protocolo incluye ademas un semaforo ejecutivo por modulo y reglas para rechazar cierres sin evidencia minima de backend, frontend o QA segun el frente activado.

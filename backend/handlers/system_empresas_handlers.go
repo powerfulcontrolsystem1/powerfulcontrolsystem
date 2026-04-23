@@ -36,18 +36,13 @@ func superTableExists(dbConn *sql.DB, tableName string) bool {
 	if dbConn == nil {
 		return false
 	}
-	if dbpkg.IsPostgresDialect() {
-		var total int
-		err := dbConn.QueryRow(`
-			SELECT COUNT(1)
-			FROM information_schema.tables
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_name = ?
-		`, strings.TrimSpace(tableName)).Scan(&total)
-		return err == nil && total > 0
-	}
 	var total int
-	err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, strings.TrimSpace(tableName)).Scan(&total)
+	err := dbConn.QueryRow(`
+		SELECT COUNT(1)
+		FROM information_schema.tables
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_name = ?
+	`, strings.TrimSpace(tableName)).Scan(&total)
 	return err == nil && total > 0
 }
 

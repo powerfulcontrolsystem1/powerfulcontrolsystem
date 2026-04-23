@@ -131,7 +131,7 @@ func ListRolPermisosModuloByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoModu
 
 	rows, err := dbConn.Query(q, rolID)
 	if err != nil {
-		if isSQLiteMissingTableErr(err) {
+		if isMissingTableError(err) {
 			return []RolPermisoModulo{}, nil
 		}
 		return nil, err
@@ -169,7 +169,7 @@ func ListRolPermisosPaginaByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoPagi
 
 	rows, err := dbConn.Query(q, rolID)
 	if err != nil {
-		if isSQLiteMissingTableErr(err) {
+		if isMissingTableError(err) {
 			return []RolPermisoPagina{}, nil
 		}
 		return nil, err
@@ -272,7 +272,7 @@ func LookupRolPermisoModuloByRolID(dbConn *sql.DB, rolID int64, modulo, accion s
 	var permitidoInt int64
 	err := dbConn.QueryRow(q, rolID, modulo, accion).Scan(&permitidoInt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || isSQLiteMissingTableErr(err) {
+		if errors.Is(err, sql.ErrNoRows) || isMissingTableError(err) {
 			return false, false, nil
 		}
 		return false, false, err
@@ -305,7 +305,7 @@ func LookupRolPermisoPaginaByRolID(dbConn *sql.DB, rolID int64, paginaClave stri
 	var permitidoInt int64
 	err := dbConn.QueryRow(q, rolID, paginaClave).Scan(&permitidoInt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || isSQLiteMissingTableErr(err) {
+		if errors.Is(err, sql.ErrNoRows) || isMissingTableError(err) {
 			return false, false, nil
 		}
 		return false, false, err
@@ -371,10 +371,4 @@ func isValidPermisoAccion(accion string) bool {
 	}
 }
 
-func isSQLiteMissingTableErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(strings.TrimSpace(err.Error()))
-	return strings.Contains(msg, "no such table")
-}
+// Postgres-only: isMissingTableError() vive en sql_compat.go

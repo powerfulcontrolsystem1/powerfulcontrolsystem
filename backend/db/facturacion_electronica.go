@@ -1091,9 +1091,7 @@ func normalizeFacturacionRetryItem(payload *FacturacionElectronicaRetryItem) {
 	}
 }
 
-func sqliteInt64ToBool(v int64) bool {
-	return v > 0
-}
+func int64ToBoolFE(v int64) bool { return v > 0 }
 
 // GetFacturacionElectronicaRetryByDocumento consulta el estado de integracion fiscal por documento FE.
 func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
@@ -1166,7 +1164,7 @@ func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, 
 	if err != nil {
 		return nil, err
 	}
-	item.ContingenciaActiva = sqliteInt64ToBool(contingenciaActivaRaw)
+	item.ContingenciaActiva = int64ToBoolFE(contingenciaActivaRaw)
 	normalizeFacturacionRetryItem(&item)
 	return &item, nil
 }
@@ -1246,7 +1244,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		payload.FechaUltimoIntento,
 		payload.UltimoError,
 		payload.RespuestaProveedor,
-		boolToSQLiteInt(payload.ContingenciaActiva),
+		boolToInt64(payload.ContingenciaActiva),
 		payload.FechaContingencia,
 		payload.ReferenciaExterna,
 		payload.NumeroLegal,
@@ -1390,7 +1388,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		); err != nil {
 			return nil, err
 		}
-		it.ContingenciaActiva = sqliteInt64ToBool(contingenciaRaw)
+		it.ContingenciaActiva = int64ToBoolFE(contingenciaRaw)
 		normalizeFacturacionRetryItem(&it)
 		items = append(items, it)
 	}

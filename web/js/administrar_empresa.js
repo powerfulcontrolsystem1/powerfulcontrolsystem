@@ -109,7 +109,6 @@ try {
   }
   var links = [
     document.getElementById("linkEstaciones"),
-    document.getElementById("linkVentas"),
     document.getElementById("linkVentaPublica"),
     document.getElementById("linkProductos"),
     document.getElementById("linkConfiguracion"),
@@ -145,7 +144,6 @@ try {
   var permModuleSeguridad = "seguridad";
 
   var menuPermissionCatalog = {
-    linkVentas: { module: permModuleVentas, action: permActionRead },
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },

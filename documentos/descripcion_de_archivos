@@ -1,3 +1,52 @@
+- Actualizacion 2026-04-23: retiro de tempmail y ajuste operativo de reCAPTCHA en login
+	- backend/main.go : elimina el registro de rutas públicas e inbound del experimento `temp_mail` y deja solo los endpoints activos del sistema.
+	- backend/handlers/recaptcha.go : deja de publicar `window.TEMP_MAIL_DOMAIN` en `/config.js` y conserva únicamente el bootstrap público de reCAPTCHA.
+	- backend/.env.example : retira las variables de entorno de `TEMP_MAIL_*` que ya no forman parte del stack soportado.
+	- web/menu.js : elimina el acceso del menú flotante a la página de correo temporal descartada.
+	- web/js/recaptcha_helper.js : hace más visible el desafío de Google reCAPTCHA cuando falta resolverlo y devuelve un mensaje más claro para el usuario final.
+	- web/js/login.js : corrige el `reset()` del widget en el restablecimiento administrativo y mejora el manejo de errores al cargar/validar reCAPTCHA.
+	- web/js/login_usuario.js : corrige el `reset()` del widget en el restablecimiento del portal de usuarios empresa y mejora el manejo de errores al cargar/validar reCAPTCHA.
+	- scripts/sync_to_vps.ps1 : elimina los parámetros y el bloque de despliegue remoto asociados a `tempmail`.
+	- backend/handlers/temp_email.go, backend/db/temp_email.go, web/generador_de_email_temporal.html, web/js/generador_de_email_temporal.js, scripts/tempmail/*.sh : retirados del repositorio junto con la funcionalidad experimental de correo temporal.
+	- web/js/recaptcha_helper.js : fuerza render visible del widget reCAPTCHA (display/altura mínima), limpia el contenedor antes de pintar y reporta error explícito cuando no logra montar el iframe.
+	- web/js/login.js : muestra de inmediato los errores de inicialización de reCAPTCHA al abrir cada vista del login administrativo.
+	- web/js/login_usuario.js : muestra de inmediato los errores de inicialización de reCAPTCHA al abrir cada vista del portal de usuarios empresa.
+	- web/estilos.css : reserva espacio visual para contenedores reCAPTCHA en formularios de login, recuperación y reset.
+
+- Actualizacion 2026-04-23: capa nativa de agentes para Cursor y endurecimiento de reCAPTCHA publico
+	- .cursor/AGENTS.md : documento operativo de Cursor que declara `pcs-agente-go` como coordinador principal por defecto y enlaza el protocolo canonico del repo.
+	- .cursor/README.md : explica la convivencia entre la capa nativa de Cursor y el sistema existente de GitHub Copilot sin sobrescribir `.github/agents/`.
+	- .cursor/rules/pcs-core-governance.mdc : regla global de Cursor con gobernanza base del repositorio, PostgreSQL canonico, autorizacion previa de dependencias y trazabilidad documental.
+	- .cursor/rules/pcs-agent-orchestration.mdc : regla global de Cursor que replica la orquestacion del equipo (`agente_go` + especialistas) y fuerza el uso del protocolo por modulo.
+	- .cursor/rules/pcs-docs-siempre-actualizadas.mdc : regla global de Cursor que obliga a mantener la documentación sincronizada con cada cambio del sistema antes de cerrar.
+	- .cursor/skills/pcs-agente-go/SKILL.md : skill coordinador para Cursor que clasifica modulos, activa especialistas y consolida cierres transversales.
+	- .cursor/skills/pcs-agente-backend-db/SKILL.md : skill especialista para backend Go/PostgreSQL, seguridad, handlers y reglas de negocio por `empresa_id`.
+	- .cursor/skills/pcs-agente-frontend-ux/SKILL.md : skill especialista para HTML/CSS/JS, formularios publicos, responsive y consistencia visual de paneles y portales.
+	- .cursor/skills/pcs-agente-qa-operacion/SKILL.md : skill especialista para pruebas, runtime, arranque, deploy y validaciones operativas con evidencia.
+	- .cursor/skills/pcs-protocolo-por-modulo/SKILL.md : skill de apoyo que aplica el protocolo de delegacion y la plantilla comun por modulo dentro de Cursor.
+	- backend/handlers/usuarios_empresa.go : extiende `EmpresaUsuarioChangePasswordHandler` para exigir `recaptcha_token` en el cambio autogestionado de contraseña del portal de usuarios empresa.
+	- web/login_usuario.html : agrega el contenedor visual de reCAPTCHA para el formulario publico de cambio de contraseña de usuarios empresa.
+	- web/js/login_usuario.js : incorpora reCAPTCHA en el cambio de contraseña, corrige el reset del widget y desactiva el bootstrap legacy duplicado que registraba listeners paralelos sin `recaptcha_token`.
+	- web/js/login.js : corrige el reset del manager de reCAPTCHA en el formulario de restablecimiento administrativo.
+	- web/accept.html : mejora la lectura del error server-side de reCAPTCHA para mostrar al usuario el mensaje real devuelto por backend.
+	- documentos/descripcion_del_proyecto : documenta la coexistencia del sistema de agentes de Cursor con el sistema de GitHub Copilot.
+- Actualizacion 2026-04-21: Google reCAPTCHA reactivado con control super
+	- backend/handlers/recaptcha.go : centraliza el estado operativo de reCAPTCHA, expone el bootstrap público de `/config.js`, persiste el interruptor global `security.recaptcha.enabled` y valida tokens contra Google con `net/http` estándar.
+	- backend/handlers/recaptcha_test.go : cubre la persistencia del toggle super y la salida pública del bootstrap JS de reCAPTCHA.
+	- backend/handlers/auth_admin_handlers.go : exige `recaptcha_token` en registro, login, solicitud de recuperación y restablecimiento de contraseña administrativa cuando el servicio está activo.
+	- backend/handlers/usuarios_empresa.go : exige `recaptcha_token` en login, primer ingreso, recuperación y restablecimiento de usuarios de empresa cuando el servicio está activo.
+	- backend/handlers/accept_handlers.go : vuelve a verificar aceptación de contrato con `recaptcha_token` antes de crear sesión administrativa.
+	- backend/main.go : reemplaza el `config.js` legado por el bootstrap público real de reCAPTCHA y registra `/super/api/config/recaptcha` dentro de la configuración avanzada super.
+	- web/js/recaptcha_helper.js : helper reusable vanilla para cargar el script oficial de Google solo cuando está habilitado, renderizar widgets explícitos y extraer/resetear tokens.
+	- web/js/login.js : integra el helper en login, recuperación y restablecimiento administrativo, adjuntando `recaptcha_token` a los `fetch` existentes.
+	- web/js/login_usuario.js : integra el helper en login, primer ingreso, recuperación y restablecimiento del portal de usuarios empresa.
+	- web/js/registrar_nuevo_usuario_administrador.js : integra el helper en el registro administrativo público.
+	- web/login.html : agrega contenedores del widget para login, recuperación y reset administrativo, y carga `/config.js` junto al helper reusable.
+	- web/login_usuario.html : agrega contenedores del widget en formularios públicos del portal de usuarios empresa y carga `/config.js` junto al helper reusable.
+	- web/registrar_nuevo_usuario_administrador.html : agrega el contenedor del widget del registro admin y carga `/config.js` junto al helper reusable.
+	- web/accept.html : incorpora el widget de verificación antes de aceptar contrato y envía `recaptcha_token` al backend.
+	- web/super/configuracion_avanzada.html : añade la tarjeta de activación/desactivación de Google reCAPTCHA y la integra al guardado global del panel super.
+
 - Actualizacion 2026-04-21: compartir empresa directo desde el selector
 	- web/js/seleccionar_empresa.js : agrega el icono de compartir en cada tarjeta del selector, despliega un formulario compacto por empresa para invitar por correo a otro administrador y reutiliza el endpoint existente `/super/api/empresas/compartidos` sin obligar a entrar primero a `editar_empresa.html`.
 	- web/estilos.css : añade el botón iconográfico y el popover responsivo del formulario de compartir dentro de las tarjetas empresariales del selector.
@@ -27,7 +76,7 @@
 	- web/administrar_empresa/soporte_remoto.html : formulario empresarial simple para definir host, clave pública, instrucciones y descargas de cliente/servidor RustDesk por sistema operativo.
 	- web/super/soporte_remoto.html : mesa técnica super simplificada para elegir empresa y editar la misma configuración mínima de soporte remoto sin gestionar sesiones ni visor desde esta vista.
 	- web/soporte_remoto_acceso.html : portal público de soporte remoto enfocado en descargas Windows/Linux/macOS, datos de conexión y copia rápida de host, clave, ID y contraseña.
-	- backend/handlers/super_servidores_handlers.go : agrega el probe operativo de RustDesk y devuelve estado agregado con componentes y resultado de prueba para el panel super.
+	- backend/handlers/super_servidores_handlers.go : agrega el probe operativo de RustDesk y devuelve estado agregado con componentes y resultado de prueba para el panel super; en Windows ejecuta `systemctl` y la comprobación de puertos en el VPS por SSH/Plink usando `DB_VPS_SSH_*`.
 	- backend/db/soporte_remoto.go : amplía persistencia de configuración con URLs macOS y corrige el alta de la configuración remota al insertar todas las columnas visibles en el módulo.
 
 - Actualizacion 2026-04-20: Fase 2 de configuracion por empresa sobre modulo de backups

@@ -39,29 +39,17 @@ func EnsureEmpresasScopeReferences(dbConn *sql.DB) error {
 }
 
 func tableExists(dbConn *sql.DB, tableName string) (bool, error) {
-	if isPostgresDialect() {
-		var exists bool
-		err := queryRowSQLCompat(dbConn, `
-			SELECT EXISTS (
-				SELECT 1
-				FROM information_schema.tables
-				WHERE table_schema = ANY (current_schemas(false))
-				  AND table_name = ?
-			)
-		`, tableName).Scan(&exists)
-		if err != nil {
-			return false, err
-		}
-		return exists, nil
-	}
-
-	var exists int
-	err := queryRowSQLCompat(dbConn, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1", tableName).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.tables
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = ?
+		)
+	`, tableName).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+	return exists, nil
 }

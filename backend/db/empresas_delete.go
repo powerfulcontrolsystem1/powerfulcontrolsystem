@@ -25,16 +25,13 @@ func empresaDeleteListCandidateTables(dbConn *sql.DB, excludeTables map[string]b
 		return nil, nil
 	}
 
-	tablesQuery := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
-	if isPostgresDialect() {
-		tablesQuery = `
-			SELECT table_name AS name
-			FROM information_schema.tables
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_type = 'BASE TABLE'
-			ORDER BY table_name
-		`
-	}
+	tablesQuery := `
+		SELECT table_name AS name
+		FROM information_schema.tables
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_type = 'BASE TABLE'
+		ORDER BY table_name
+	`
 
 	rows, err := dbConn.Query(tablesQuery)
 	if err != nil {

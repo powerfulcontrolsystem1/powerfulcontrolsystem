@@ -54,6 +54,11 @@
   var loginMessageDiv = document.getElementById('emailLoginMessage');
   var forgotMessageDiv = document.getElementById('forgotPasswordMessage');
   var resetMessageDiv = document.getElementById('resetPasswordMessage');
+  var recaptchaManagers = {
+    login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminLoginRecaptcha' }) : null,
+    forgot: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminForgotRecaptcha' }) : null,
+    reset: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminResetRecaptcha' }) : null
+  };
 
   function setPasswordVisibility(toggleBtn, input, isVisible) {
     if (!toggleBtn || !input) {
@@ -188,6 +193,31 @@
     if (view === 'reset' && resetPasswordInput) {
       resetPasswordInput.focus();
     }
+    if (recaptchaManagers[view]) {
+      recaptchaManagers[view].init().catch(function (error) {
+        var target = view === 'login' ? loginMessageDiv : (view === 'forgot' ? forgotMessageDiv : resetMessageDiv);
+        showMsg(target, error && error.message ? error.message : 'No se pudo cargar la verificación de seguridad.', true);
+      });
+    }
+  }
+
+  async function ensureRecaptcha(view, target) {
+    var manager = recaptchaManagers[view];
+    if (!manager) {
+      return '';
+    }
+    var result;
+    try {
+      result = await manager.ensureToken();
+    } catch (error) {
+      showMsg(target, error && error.message ? error.message : 'No se pudo cargar la verificación de seguridad.', true);
+      return null;
+    }
+    if (!result.ok) {
+      showMsg(target, result.message || 'Completa el reCAPTCHA que aparece debajo del formulario para continuar.', true);
+      return null;
+    }
+    return result.token || '';
   }
 
   function getResponseMessage(response, fallback) {
@@ -273,7 +303,11 @@
       setButtonBusy(loginBtn, 'Ingresando...', true);
       showMsg(loginMessageDiv, '', false);
       try {
-        var response = await postJson('/super/api/administradores/login', {email: email, password: password});
+        var loginToken = await ensureRecaptcha('login', loginMessageDiv);
+        if (loginToken === null) {
+          return;
+        }
+        var response = await postJson('/super/api/administradores/login', {email: email, password: password, recaptcha_token: loginToken});
         if (response.ok && response.json && response.json.redirect_url) {
           persistThemePreference(response.json.apariencia);
           var sharedInvitationToken = getSharedInvitationTokenFromQuery();
@@ -296,6 +330,9 @@
       } catch (error) {
         showMsg(loginMessageDiv, error && error.message ? error.message : 'No se pudo iniciar sesión por correo.', true);
       } finally {
+        if (recaptchaManagers.login) {
+          recaptchaManagers.login.reset();
+        }
         setButtonBusy(loginBtn, 'Ingresando...', false);
       }
     });
@@ -337,7 +374,11 @@
       setButtonBusy(forgotBtn, 'Enviando...', true);
       showMsg(forgotMessageDiv, '', false);
       try {
-        var response = await postJson('/super/api/administradores/solicitar_recuperacion', {email: email});
+        var forgotToken = await ensureRecaptcha('forgot', forgotMessageDiv);
+        if (forgotToken === null) {
+          return;
+        }
+        var response = await postJson('/super/api/administradores/solicitar_recuperacion', {email: email, recaptcha_token: forgotToken});
         if (!response.ok) {
           showMsg(forgotMessageDiv, getResponseMessage(response, 'No se pudo iniciar la recuperación de contraseña.'), true);
           return;
@@ -347,6 +388,9 @@
       } catch (error) {
         showMsg(forgotMessageDiv, error && error.message ? error.message : 'No se pudo solicitar la recuperación de contraseña.', true);
       } finally {
+        if (recaptchaManagers.forgot) {
+          recaptchaManagers.forgot.reset();
+        }
         setButtonBusy(forgotBtn, 'Enviando...', false);
       }
     });
@@ -379,10 +423,15 @@
       setButtonBusy(resetBtn, 'Restableciendo...', true);
       showMsg(resetMessageDiv, '', false);
       try {
+        var resetTokenValue = await ensureRecaptcha('reset', resetMessageDiv);
+        if (resetTokenValue === null) {
+          return;
+        }
         var response = await postJson('/super/api/administradores/restablecer_password', {
           email: email,
           token: token,
-          password: password
+          password: password,
+          recaptcha_token: resetTokenValue
         });
         if (response.ok && response.json && response.json.redirect_url) {
           window.location.href = response.json.redirect_url;
@@ -392,6 +441,9 @@
       } catch (error) {
         showMsg(resetMessageDiv, error && error.message ? error.message : 'No se pudo restablecer la contraseña.', true);
       } finally {
+        if (recaptchaManagers.reset) {
+          recaptchaManagers.reset.reset();
+        }
         setButtonBusy(resetBtn, 'Restableciendo...', false);
       }
     });

@@ -90,12 +90,13 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		var payload struct {
-			Email    string `json:"email"`
-			Name     string `json:"name"`
-			Telefono string `json:"telefono"`
-			Pais     string `json:"pais"`
-			Ciudad   string `json:"ciudad"`
-			Password string `json:"password"`
+			Email          string `json:"email"`
+			Name           string `json:"name"`
+			Telefono       string `json:"telefono"`
+			Pais           string `json:"pais"`
+			Ciudad         string `json:"ciudad"`
+			Password       string `json:"password"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de registro es inválido.")
@@ -125,6 +126,10 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if len(payload.Password) < minAdminPasswordLength {
 			writeAdminAuthError(w, http.StatusBadRequest, "La contraseña debe tener mínimo 8 caracteres.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 
@@ -233,8 +238,9 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		var payload struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
+			Email          string `json:"email"`
+			Password       string `json:"password"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
@@ -244,6 +250,10 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		payload.Password = strings.TrimSpace(payload.Password)
 		if payload.Email == "" || payload.Password == "" {
 			writeAdminAuthError(w, http.StatusBadRequest, "Debes ingresar correo y contraseña.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
@@ -317,7 +327,8 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		var payload struct {
-			Email string `json:"email"`
+			Email          string `json:"email"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud de recuperación es inválida.")
@@ -326,6 +337,10 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		payload.Email = strings.TrimSpace(payload.Email)
 		if payload.Email == "" {
 			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar el correo de la cuenta.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
@@ -371,9 +386,10 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		var payload struct {
-			Email    string `json:"email"`
-			Token    string `json:"token"`
-			Password string `json:"password"`
+			Email          string `json:"email"`
+			Token          string `json:"token"`
+			Password       string `json:"password"`
+			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud para restablecer la contraseña es inválida.")
@@ -388,6 +404,10 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if len(payload.Password) < minAdminPasswordLength {
 			writeAdminAuthError(w, http.StatusBadRequest, "La nueva contraseña debe tener mínimo 8 caracteres.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)

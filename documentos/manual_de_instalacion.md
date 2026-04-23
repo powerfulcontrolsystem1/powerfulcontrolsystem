@@ -425,9 +425,11 @@ El sistema de soporte remoto nativo funciona integrando un servidor propio de Ru
    *(Deben responder 'active')*
 
 ### 10.2 Administracion desde el Panel Super
-Una vez instalados los servicios en el VPS, el panel Super Administrador en la seccion **Servidores** (`/super/servidores.html`) leerá su estado usando comandos `systemctl` nativos sobre el sistema anfitrion, mostrando *Active* o *Inactive*.
+Una vez instalados los servicios en el VPS, el panel Super Administrador en la seccion **Configuracion avanzada** (`/super/configuracion_avanzada.html`) leerá su estado usando comandos `systemctl` sobre el host donde corre RustDesk.
 
-Se proveen botones para detener o reiniciar el servicio de forma visual. Para que los botones del panel funcionen en produccion (Linux VPS), el usuario interno que ejecuta el backend (`server_linux_amd64`) debera tener permisos sudo sin contrasena *exclusivamente para los servicios rustdesk*:
+Si el backend se ejecuta directamente en Linux dentro del VPS, la comprobacion es local. Si el backend se ejecuta en Windows durante desarrollo, el panel usa la configuracion SSH existente (`DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_KEY_PATH`) para consultar y probar RustDesk remotamente en el VPS mediante `plink.exe` (o `ssh.exe` cuando la llave no sea `.ppk`).
+
+Se proveen botones para iniciar, detener, reiniciar y probar el servicio de forma visual. Para que los botones del panel funcionen en produccion (Linux VPS), el usuario interno que ejecuta el backend (`server_linux_amd64`) o el usuario SSH usado desde Windows debera tener permisos sudo sin contrasena *exclusivamente para los servicios rustdesk*:
 
 \\\ash
 # Ejecutar en el servidor VPS con root

@@ -13,6 +13,7 @@
   var passwordConfirmInput = document.getElementById('registerPasswordConfirm');
   var submitButton = document.getElementById('adminRegisterBtn');
   var messageBox = document.getElementById('adminRegisterMessage');
+  var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminRegisterRecaptcha' }) : null;
 
   var countries = [
     { code: 'AR', name: 'Argentina' },
@@ -198,6 +199,22 @@
     }
   }
 
+  async function ensureRecaptcha() {
+    if (!recaptchaManager) {
+      return '';
+    }
+    var result = await recaptchaManager.ensureToken();
+    if (!result.ok) {
+      showMessage(result.message || 'Completa la verificación de seguridad para continuar.', true);
+      return null;
+    }
+    return result.token || '';
+  }
+
+  if (recaptchaManager) {
+    recaptchaManager.init().catch(function () {});
+  }
+
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -225,13 +242,18 @@
     setBusy(true);
     showMessage('', false);
     try {
+      var registerToken = await ensureRecaptcha();
+      if (registerToken === null) {
+        return;
+      }
       var response = await postJson('/super/api/administradores/register', {
         email: email,
         name: name,
         telefono: telefono,
         pais: pais,
         ciudad: ciudad,
-        password: password
+		password: password,
+		recaptcha_token: registerToken
       });
       if (!response.ok) {
         showMessage(getResponseMessage(response, 'No se pudo completar el registro.'), true);
@@ -244,6 +266,9 @@
     } catch (error) {
       showMessage(error && error.message ? error.message : 'No se pudo completar el registro.', true);
     } finally {
+      if (recaptchaManager) {
+        recaptchaManager.reset();
+      }
       setBusy(false);
     }
   });

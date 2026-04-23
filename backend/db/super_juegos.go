@@ -33,7 +33,7 @@ func EnsureSuperJuegosSchema(db *sql.DB) error {
 		observaciones TEXT
 	);`
 
-	// En PostgreSQL CURRENT_TIMESTAMP es estándar, al igual que en SQLite.
+	// En PostgreSQL CURRENT_TIMESTAMP es estándar.
 	// Haremos el switch genérico para la tabla y secuencias si PostgreSQL lo requiere (AUTOINCREMENT -> SERIAL)
 	isPostgres := false
 	if err := db.QueryRow("SELECT 1 FROM pg_class LIMIT 1").Scan(new(int)); err == nil {
@@ -61,36 +61,14 @@ func EnsureSuperJuegosSchema(db *sql.DB) error {
 		return fmt.Errorf("failed to create super_juegos_records table: %w", err)
 	}
 
-	// Helpers para evolución de esquema (en caso de campos futuros, usando SQLite/Postgres handlers)
+	// Helpers para evolución de esquema (campos futuros).
 	addIfMissing := func(colDef string, name string) {
 		var exists bool
-		if isPostgres {
-			q := "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='super_juegos_records' AND column_name=$1);"
-			_ = db.QueryRow(q, name).Scan(&exists)
-		} else {
-			rows, err := db.Query("PRAGMA table_info(super_juegos_records);")
-			if err == nil {
-				defer rows.Close()
-				for rows.Next() {
-					var cid int
-					var cname, ctype string
-					var notnull int
-					var dflt sql.NullString
-					var pk int
-					if rows.Scan(&cid, &cname, &ctype, &notnull, &dflt, &pk) == nil && cname == name {
-						exists = true
-						break
-					}
-				}
-			}
-		}
+		q := "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name='super_juegos_records' AND column_name=$1);"
+		_ = db.QueryRow(q, name).Scan(&exists)
 
 		if !exists {
-			// En postgres IF NOT EXISTS es seguro para agregar columnas
 			q := fmt.Sprintf("ALTER TABLE super_juegos_records ADD COLUMN IF NOT EXISTS %s;", colDef)
-			if !isPostgres {
-				q = fmt.Sprintf("ALTER TABLE super_juegos_records ADD COLUMN %s;", colDef)
-			}
 			if _, err := db.Exec(q); err != nil {
 				if !strings.Contains(err.Error(), "already exists") && !strings.Contains(err.Error(), "duplicate column") {
 					log.Printf("failed to add column %s to super_juegos_records: %v", name, err)

@@ -11,7 +11,7 @@ import (
 )
 
 // EnsureVentaPublicaSchema crea las tablas necesarias para el módulo de venta pública.
-// Debe ser idempotente y segura para SQLite y Postgres (usa IF NOT EXISTS cuando es soportado).
+// Debe ser idempotente y segura (usa IF NOT EXISTS cuando es soportado).
 func EnsureVentaPublicaSchema(db *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS paginas_publicas (

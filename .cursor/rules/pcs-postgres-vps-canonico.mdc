@@ -1,0 +1,16 @@
+---
+description: PostgreSQL en VPS como fuente canonica (no SQLite)
+alwaysApply: true
+---
+
+# PostgreSQL en VPS (canonico)
+
+- La base de datos operativa del sistema debe ejecutarse en el **VPS**.
+- PostgreSQL es el motor obligatorio para operación productiva.
+- SQLite **no está permitido** en runtime, utilidades, pruebas operativas ni documentación vigente (salvo referencias históricas mínimas ya cerradas).
+
+## Migración por etapas (cuando aplique)
+
+- migrar por etapas: `superadministrador` y luego `empresas`
+- validar consistencia por base antes de continuar
+

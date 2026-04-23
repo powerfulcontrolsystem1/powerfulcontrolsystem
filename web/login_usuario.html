@@ -97,6 +97,7 @@
             <div class="form-actions login-form-actions">
               <button id="btnIngresar" type="submit" class="btn login-email-submit">Ingresar</button>
             </div>
+            <div id="empresaLoginRecaptcha" class="form-help" style="display:none"></div>
             <div class="login-inline-links">
               <a href="#" id="linkGoSetup">Completar registro</a>
               <a href="#" id="linkGoRecovery">Olvide mi contrasena</a>
@@ -144,6 +145,7 @@
               <button id="btnCrearPassword" type="submit" class="btn">Crear contrasena y entrar</button>
               <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
             </div>
+            <div id="empresaSetupRecaptcha" class="form-help" style="display:none"></div>
             <div id="setupMsg" class="form-help auth-message"></div>
           </form>
 
@@ -166,6 +168,7 @@
               <button id="btnIrAReset" type="button" class="btn secondary">Ya tengo token</button>
               <button id="btnVolverDesdeRecuperacion" type="button" class="btn secondary">Volver</button>
             </div>
+            <div id="empresaRecoveryRecaptcha" class="form-help" style="display:none"></div>
             <div id="recoveryMsg" class="form-help auth-message"></div>
           </form>
 
@@ -208,6 +211,7 @@
               <button id="btnRestablecerPassword" type="submit" class="btn">Restablecer y entrar</button>
               <button id="btnVolverDesdeReset" type="button" class="btn secondary">Volver</button>
             </div>
+            <div id="empresaResetRecaptcha" class="form-help" style="display:none"></div>
             <div id="resetMsg" class="form-help auth-message"></div>
           </form>
 
@@ -257,6 +261,8 @@
     </section>
   </main>
 
+  <script src="/config.js"></script>
+  <script src="/js/recaptcha_helper.js"></script>
   <script src="/js/login_usuario.js"></script>
 </body>
 </html>

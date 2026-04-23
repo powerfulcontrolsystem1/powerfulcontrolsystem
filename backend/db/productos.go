@@ -1127,34 +1127,8 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 }
 
 func ensureColumnIfMissing(dbConn *sql.DB, table, column, columnDef string) error {
-	lowerColumn := strings.ToLower(column)
-	if shouldUsePostgresCompat(dbConn) {
-		columnDef = normalizeColumnDefForDialect(columnDef)
-		_, err := execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s", table, column+" "+columnDef))
-		return err
-	}
-
-	rows, err := querySQLCompat(dbConn, fmt.Sprintf("PRAGMA table_info(%s);", table))
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var cid int
-		var name string
-		var ctype string
-		var notnull int
-		var dflt sql.NullString
-		var pk int
-		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-			return err
-		}
-		if strings.ToLower(name) == lowerColumn {
-			return nil
-		}
-	}
-	_, err = execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s", table, column+" "+columnDef))
+	columnDef = normalizeColumnDefForDialect(columnDef)
+	_, err := execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s", table, column+" "+columnDef))
 	return err
 }
 

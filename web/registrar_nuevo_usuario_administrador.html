@@ -65,6 +65,7 @@
             <button id="adminRegisterBtn" class="btn" type="submit">Registrar cuenta</button>
             <a class="btn secondary" href="/login.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Volver al login</a>
           </div>
+          <div id="adminRegisterRecaptcha" class="form-help" style="display:none"></div>
           <div id="adminRegisterMessage" class="form-help auth-message" style="display:none"></div>
         </form>
         <p class="footer login-card-note">Despues de confirmar tu correo podras iniciar por Google o con tu correo y contrasena, y continuar a seleccionar empresa.</p>
@@ -72,6 +73,8 @@
     </div>
   </div>
 
+  <script src="/config.js"></script>
+  <script src="/js/recaptcha_helper.js"></script>
   <script src="/js/registrar_nuevo_usuario_administrador.js"></script>
 </body>
 </html>

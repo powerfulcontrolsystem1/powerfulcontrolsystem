@@ -1,0 +1,24 @@
+---
+description: Regla DIAN SaaS multiempresa (software compartido, credenciales por empresa)
+alwaysApply: true
+---
+
+# DIAN SaaS multiempresa (Colombia)
+
+- Modelo recomendado: **un solo software DIAN** para toda la plataforma (Software ID/PIN compartido).
+- Cuando aplique ese modelo, las empresas deben operar con `usar_software_compartido=1`.
+
+## Identidad tributaria por empresa (obligatoria)
+
+Cada empresa mantiene y debe aportar:
+
+- `nit`
+- `token_emisor_ref`
+- `certificado_clave_ref`
+
+## Trazabilidad y seguridad por `empresa_id`
+
+- Cada envío/documento real debe mantener trazabilidad por `empresa_id` y NIT.
+- **No reutilizar token ni firma entre empresas.**
+- Referencias permitidas deben ser seguras: `env:`, `file:`, `base64:`.
+

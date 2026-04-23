@@ -32,16 +32,20 @@
         <a href="/login.html" class="btn secondary">Cancelar</a>
       </div>
 
+      <div id="acceptRecaptcha" class="accept-help" style="display:none"></div>
+
       <p id="statusEl" class="accept-help min-h-20 mt-12"></p>
     </div>
   </main>
 
+  <script src="/js/recaptcha_helper.js"></script>
   <script>
   (function(){
     var acceptBtn = document.getElementById('acceptBtn');
     var checkbox = document.getElementById('acceptCheckbox');
     var statusEl = document.getElementById('statusEl');
     var contractLink = document.getElementById('contractLink');
+    var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'acceptRecaptcha' }) : null;
 
     function qs(name){
       var params = new URLSearchParams(window.location.search);
@@ -84,15 +88,24 @@
       acceptBtn.disabled = true;
       statusEl.textContent = 'Procesando...';
 
-      fetch('/accept/complete', {
+      Promise.resolve(recaptchaManager ? recaptchaManager.ensureToken() : { ok: true, token: '' }).then(function(result){
+		if (!result.ok) {
+			acceptBtn.disabled = false;
+			statusEl.textContent = result.message || 'Completa la verificación de seguridad.';
+			return null;
+		}
+		return fetch('/accept/complete', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         credentials: 'same-origin',
-        body: JSON.stringify({ payload: payload })
-      }).then(function(resp){
+		body: JSON.stringify({ payload: payload, recaptcha_token: result.token })
+		});
+	  }).then(function(resp){
+		if (!resp) return null;
         if (!resp.ok) throw resp;
         return resp.json();
       }).then(function(js){
+		if (!js) return;
         if (js && js.redirect) {
           window.location.href = js.redirect;
           return;
@@ -101,11 +114,13 @@
       }).catch(function(err){
         acceptBtn.disabled = false;
         statusEl.textContent = 'No se pudo completar la aceptación.';
+        if (recaptchaManager) recaptchaManager.reset();
         console.error(err);
       });
     });
 
 	loadContractMeta();
+    if (recaptchaManager) recaptchaManager.init().catch(function(){});
     updateState();
   })();
   </script>

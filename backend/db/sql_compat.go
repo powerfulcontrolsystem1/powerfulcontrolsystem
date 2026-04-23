@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,7 +26,7 @@ func PostgresCompatDriverName() string {
 }
 
 // EnsurePostgresRuntimeCompat crea funciones auxiliares SQL en PostgreSQL para
-// mantener compatibilidad con expresiones SQLite usadas por modulos legacy.
+// mantener compatibilidad con expresiones legacy usadas por modulos antiguos.
 func EnsurePostgresRuntimeCompat(dbConn *sql.DB) error {
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
@@ -133,8 +132,7 @@ $$;`,
 }
 
 // EnsurePostgresPrimaryKeySequences repara tablas legacy de PostgreSQL cuyo
-// campo id primario quedo sin secuencia/default autogenerado tras migraciones
-// antiguas derivadas del modelo SQLite.
+// campo id primario quedo sin secuencia/default autogenerado tras migraciones antiguas.
 func EnsurePostgresPrimaryKeySequences(dbConn *sql.DB) error {
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
@@ -407,23 +405,8 @@ func rebindQuestionPlaceholders(query string) string {
 }
 
 func currentSQLDialect() string {
-	candidates := []string{
-		strings.TrimSpace(os.Getenv("DB_DIALECT")),
-		strings.TrimSpace(os.Getenv("DB_ENGINE")),
-		strings.TrimSpace(os.Getenv("PCS_DB_DIALECT")),
-	}
-	for _, raw := range candidates {
-		v := strings.ToLower(raw)
-		if v == "" {
-			continue
-		}
-		if strings.Contains(v, "postgres") {
-			return "postgres"
-		}
-		if strings.Contains(v, "sqlite") {
-			continue
-		}
-	}
+	// El proyecto es PostgreSQL-only. Se conserva la función para compatibilidad
+	// de API interna, pero ya no soporta dialectos alternos.
 	return "postgres"
 }
 
@@ -451,10 +434,6 @@ func isPostgresConnection(dbConn *sql.DB) bool {
 	isPostgres := false
 	err = conn.Raw(func(driverConn interface{}) error {
 		typeName := strings.ToLower(fmt.Sprintf("%T", driverConn))
-		if strings.Contains(typeName, "sqlite") {
-			isPostgres = false
-			return nil
-		}
 		if strings.Contains(typeName, "pgx") || strings.Contains(typeName, "postgres") || strings.Contains(typeName, "stdlib") {
 			isPostgres = true
 		}
@@ -472,36 +451,24 @@ func IsPostgresDialect() bool {
 }
 
 func sqlNowExpr() string {
-	if isPostgresDialect() {
-		return "CURRENT_TIMESTAMP"
-	}
-	return "datetime('now','localtime')"
+	return "CURRENT_TIMESTAMP"
 }
 
 func sqlPlusHoursExpr(hours int) string {
-	if isPostgresDialect() {
-		return "(CURRENT_TIMESTAMP + interval '" + strconv.Itoa(hours) + " hour')"
-	}
-	return "datetime('now','+" + strconv.Itoa(hours) + " hours','localtime')"
+	return "(CURRENT_TIMESTAMP + interval '" + strconv.Itoa(hours) + " hour')"
 }
 
 func sessionNotExpiredCondition(columnName string) string {
-	if isPostgresDialect() {
-		return "(COALESCE(CAST(" + columnName + " AS TEXT), '') = '' OR CAST(" + columnName + " AS TIMESTAMP) > CURRENT_TIMESTAMP)"
-	}
-	return "(COALESCE(" + columnName + ", '') = '' OR datetime(" + columnName + ") > datetime('now','localtime'))"
+	return "(COALESCE(CAST(" + columnName + " AS TEXT), '') = '' OR CAST(" + columnName + " AS TIMESTAMP) > CURRENT_TIMESTAMP)"
 }
 
 func rebindCompatQuery(query string) string {
-	if !isPostgresDialect() {
-		return query
-	}
 	return rebindQuestionPlaceholders(query)
 }
 
 func normalizeColumnDefForDialect(columnDef string) string {
 	def := strings.TrimSpace(columnDef)
-	if !isPostgresDialect() || def == "" {
+	if def == "" {
 		return def
 	}
 
@@ -573,48 +540,24 @@ func queryRowTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) *sql.Row
 }
 
 func insertSQLCompat(dbConn *sql.DB, query string, args ...interface{}) (int64, error) {
-	if isPostgresDialect() {
-		insertQuery := strings.TrimSpace(query)
-		if !strings.Contains(strings.ToLower(insertQuery), "returning") {
-			insertQuery += " RETURNING id"
-		}
-		var id int64
-		if err := queryRowSQLCompat(dbConn, insertQuery, args...).Scan(&id); err != nil {
-			return 0, err
-		}
-		return id, nil
+	insertQuery := strings.TrimSpace(query)
+	if !strings.Contains(strings.ToLower(insertQuery), "returning") {
+		insertQuery += " RETURNING id"
 	}
-
-	res, err := execSQLCompat(dbConn, query, args...)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
+	var id int64
+	if err := queryRowSQLCompat(dbConn, insertQuery, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
 func insertTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (int64, error) {
-	if isPostgresDialect() {
-		insertQuery := strings.TrimSpace(query)
-		if !strings.Contains(strings.ToLower(insertQuery), "returning") {
-			insertQuery += " RETURNING id"
-		}
-		var id int64
-		if err := queryRowTxSQLCompat(tx, insertQuery, args...).Scan(&id); err != nil {
-			return 0, err
-		}
-		return id, nil
+	insertQuery := strings.TrimSpace(query)
+	if !strings.Contains(strings.ToLower(insertQuery), "returning") {
+		insertQuery += " RETURNING id"
 	}
-
-	res, err := execTxSQLCompat(tx, query, args...)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
+	var id int64
+	if err := queryRowTxSQLCompat(tx, insertQuery, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil

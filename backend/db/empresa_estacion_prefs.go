@@ -148,7 +148,7 @@ func GetEmpresaEstacionPref(dbConn *sql.DB, empresaID int64, estacionID int64, c
 	return &p, nil
 }
 
-// UpsertEmpresaEstacionPref crea o actualiza una preferencia por clave (usa ON CONFLICT para SQLite).
+// UpsertEmpresaEstacionPref crea o actualiza una preferencia por clave (usa ON CONFLICT).
 func UpsertEmpresaEstacionPref(dbConn *sql.DB, p EmpresaEstacionPref) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")

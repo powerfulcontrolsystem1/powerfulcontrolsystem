@@ -33,6 +33,12 @@
   var contractNote = document.getElementById("contractNote");
   var contractStatus = document.getElementById("contractStatus");
   var contractLink = document.getElementById("contractLink");
+  var recaptchaManagers = {
+    login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha" }) : null,
+    setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha" }) : null,
+    recovery: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaRecoveryRecaptcha" }) : null,
+    reset: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaResetRecaptcha" }) : null
+  };
 
   function parsePositiveInt(raw) {
     var value = Number(String(raw || "").trim());
@@ -196,6 +202,28 @@
     if (options.message) {
       setMessage(selected, options.message, false);
     }
+    if (recaptchaManagers[selected]) {
+      recaptchaManagers[selected].init().catch(function (error) {
+        setMessage(selected, error && error.message ? error.message : 'No se pudo cargar la verificación de seguridad.', true);
+      });
+    }
+  }
+
+  function ensureRecaptcha(formKey) {
+    var manager = recaptchaManagers[formKey];
+    if (!manager) {
+      return Promise.resolve('');
+    }
+    return manager.ensureToken().then(function (result) {
+      if (!result.ok) {
+        setMessage(formKey, result.message || 'Completa el reCAPTCHA que aparece debajo del formulario para continuar.', true);
+        return null;
+      }
+      return result.token || '';
+    }).catch(function (error) {
+      setMessage(formKey, error && error.message ? error.message : 'No se pudo cargar la verificación de seguridad.', true);
+      return null;
+    });
   }
 
   function prefillEmail(email) {
@@ -338,15 +366,22 @@
     event.preventDefault();
     if (!requireEmpresaIDIfNeeded("login")) return;
 
-    submitJSON("/api/empresa/usuarios/login", withBasePayload({
-      email: document.getElementById("email").value,
-      password: document.getElementById("password").value
-    }))
+    ensureRecaptcha("login").then(function (token) {
+      if (token === null) return;
+      return submitJSON("/api/empresa/usuarios/login", withBasePayload({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        recaptcha_token: token
+      }));
+    })
       .then(function (payload) {
+		if (!payload) return;
         handleAuthResult(payload, "login");
       })
       .catch(function (error) {
         setMessage("login", error.message || "No fue posible iniciar sesion.", true);
+      }).finally(function () {
+		if (recaptchaManagers.login) recaptchaManagers.login.reset();
       });
   }
 
@@ -354,17 +389,24 @@
     event.preventDefault();
     if (!requireEmpresaIDIfNeeded("setup")) return;
 
-    submitJSON("/api/empresa/usuarios/establecer_password", withBasePayload({
-      email: document.getElementById("setupEmail").value,
-      documento_identidad: document.getElementById("setupDocumento").value,
-      password: document.getElementById("setupPassword").value,
-      password_confirm: document.getElementById("setupPasswordConfirm").value
-    }))
+    ensureRecaptcha("setup").then(function (token) {
+      if (token === null) return;
+      return submitJSON("/api/empresa/usuarios/establecer_password", withBasePayload({
+        email: document.getElementById("setupEmail").value,
+        documento_identidad: document.getElementById("setupDocumento").value,
+        password: document.getElementById("setupPassword").value,
+        password_confirm: document.getElementById("setupPasswordConfirm").value,
+        recaptcha_token: token
+      }));
+    })
       .then(function (payload) {
+		if (!payload) return;
         handleAuthResult(payload, "setup");
       })
       .catch(function (error) {
         setMessage("setup", error.message || "No fue posible crear la contrasena.", true);
+      }).finally(function () {
+		if (recaptchaManagers.setup) recaptchaManagers.setup.reset();
       });
   }
 
@@ -372,15 +414,22 @@
     event.preventDefault();
     if (!requireEmpresaIDIfNeeded("recovery")) return;
 
-    submitJSON("/api/empresa/usuarios/solicitar_recuperacion_password", withBasePayload({
-      email: document.getElementById("recoveryEmail").value
-    }))
+    ensureRecaptcha("recovery").then(function (token) {
+      if (token === null) return;
+      return submitJSON("/api/empresa/usuarios/solicitar_recuperacion_password", withBasePayload({
+        email: document.getElementById("recoveryEmail").value,
+        recaptcha_token: token
+      }));
+    })
       .then(function (payload) {
+		if (!payload) return;
         prefillEmail(document.getElementById("recoveryEmail").value);
         setMessage("recovery", normalizeErrorMessage(payload, "Si el correo existe, enviaremos instrucciones para recuperar la contrasena."), false);
       })
       .catch(function (error) {
         setMessage("recovery", error.message || "No fue posible iniciar la recuperacion.", true);
+      }).finally(function () {
+		if (recaptchaManagers.recovery) recaptchaManagers.recovery.reset();
       });
   }
 
@@ -388,17 +437,24 @@
     event.preventDefault();
     if (!requireEmpresaIDIfNeeded("reset")) return;
 
-    submitJSON("/api/empresa/usuarios/restablecer_password", withBasePayload({
-      email: document.getElementById("resetEmail").value,
-      token: document.getElementById("resetToken").value,
-      password: document.getElementById("resetPassword").value,
-      password_confirm: document.getElementById("resetPasswordConfirm").value
-    }))
+    ensureRecaptcha("reset").then(function (token) {
+      if (token === null) return;
+      return submitJSON("/api/empresa/usuarios/restablecer_password", withBasePayload({
+        email: document.getElementById("resetEmail").value,
+        token: document.getElementById("resetToken").value,
+        password: document.getElementById("resetPassword").value,
+        password_confirm: document.getElementById("resetPasswordConfirm").value,
+        recaptcha_token: token
+      }));
+    })
       .then(function (payload) {
+		if (!payload) return;
         handleAuthResult(payload, "reset");
       })
       .catch(function (error) {
         setMessage("reset", error.message || "No fue posible restablecer la contrasena.", true);
+      }).finally(function () {
+		if (recaptchaManagers.reset) recaptchaManagers.reset.reset();
       });
   }
 

@@ -368,6 +368,58 @@
       <div id="portalWhatsAppMsg" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="recaptchaConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.5 7.8-8 9-4.5-1.2-8-4-8-9V7l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
+        Google reCAPTCHA
+      </h2>
+      <p class="form-help">Activa o desactiva la verificación humana en formularios públicos de login, registro, recuperación y aceptación de contrato.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar reCAPTCHA</label>
+          <label class="mode-switch-row" for="recaptchaEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="recaptchaEnabledToggle" type="checkbox" role="switch" aria-label="Activar Google reCAPTCHA">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="recaptchaEnabledHelp" class="form-help">Si está desactivado, los formularios públicos operarán sin desafío humano.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado del servicio</label>
+          <div id="recaptchaConfigStatus" class="form-help">Cargando estado...</div>
+          <div id="recaptchaEnvStatus" class="form-help">Validando variables de entorno...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Site Key pública</label>
+          <input id="recaptchaSiteKey" class="form-input" type="text" placeholder="6Lf... clave pública del sitio">
+          <div class="form-help">Esta clave sí se publica a los navegadores mediante /config.js.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Secret Key</label>
+          <input id="recaptchaSecretKey" class="form-input" type="password" placeholder="Pega aquí la clave secreta de Google reCAPTCHA">
+          <div id="recaptchaSecretStatus" class="form-help">La clave secreta se guarda cifrada en configuración super y no vuelve a mostrarse en pantalla.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveRecaptchaBtn" class="btn" type="button">Guardar reCAPTCHA</button>
+        <button id="recaptchaTestBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar reCAPTCHA</button>
+      </div>
+      <div id="recaptchaConfigMsg" class="form-help"></div>
+      <div id="recaptchaTestArea" style="margin-top:8px">
+        <div id="recaptchaTestContainer" style="display:none; margin-top:8px;"></div>
+        <div id="recaptchaTestResult" class="form-help" style="margin-top:8px;">Prueba pendiente.</div>
+        <div style="margin-top:6px;">
+          <button id="recaptchaGetTokenBtn" class="btn secondary" type="button" style="display:none;">Obtener token</button>
+          <button id="recaptchaResetBtn" class="btn secondary" type="button" style="display:none; margin-left:8px;">Reset widget</button>
+        </div>
+      </div>
+    </section>
+
     <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
@@ -567,9 +619,87 @@
         });
       }
 
+      async function loadMantenimientoConfig(){
+        const toggleEl = document.getElementById('mantenimientoToggle');
+        const msgEl = document.getElementById('mantenimientoMsg');
+        const saveBtn = document.getElementById('saveMantenimientoBtn');
+        const editBtn = document.getElementById('editMantenimientoBtn');
+        const cancelBtn = document.getElementById('cancelMantenimientoBtn');
+        if (!toggleEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
+        try {
+          const res = await fetch('/super/api/config/mantenimiento', { credentials: 'same-origin' });
+          if (!res.ok) {
+            msgEl.innerText = res.status === 401
+              ? 'Sesión expirada para leer mantenimiento. Inicia sesión nuevamente.'
+              : 'No se pudo cargar modo mantenimiento.';
+            return;
+          }
+          const data = await res.json();
+          toggleEl.checked = !!data.mantenimiento_activo;
+          toggleEl.disabled = true;
+          saveBtn.style.display = 'none';
+          cancelBtn.style.display = 'none';
+          editBtn.style.display = '';
+          msgEl.innerText = toggleEl.checked
+            ? 'Modo mantenimiento activo.'
+            : 'Modo mantenimiento inactivo.';
+        } catch (err) {
+          msgEl.innerText = 'Error cargando mantenimiento: ' + (err.message || err);
+        }
+      }
+
+      function enableEditMantenimiento(){
+        const toggleEl = document.getElementById('mantenimientoToggle');
+        const msgEl = document.getElementById('mantenimientoMsg');
+        const saveBtn = document.getElementById('saveMantenimientoBtn');
+        const editBtn = document.getElementById('editMantenimientoBtn');
+        const cancelBtn = document.getElementById('cancelMantenimientoBtn');
+        if (!toggleEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
+        toggleEl.disabled = false;
+        saveBtn.style.display = '';
+        cancelBtn.style.display = '';
+        editBtn.style.display = 'none';
+        msgEl.innerText = 'Modo edición activo para mantenimiento.';
+      }
+
+      function cancelEditMantenimiento(){
+        loadMantenimientoConfig();
+      }
+
+      async function saveMantenimientoConfig(){
+        const toggleEl = document.getElementById('mantenimientoToggle');
+        const msgEl = document.getElementById('mantenimientoMsg');
+        const saveBtn = document.getElementById('saveMantenimientoBtn');
+        if (!toggleEl || !msgEl || !saveBtn) return;
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Guardando...';
+        try {
+          const res = await fetch('/super/api/config/mantenimiento', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ mantenimiento_activo: !!toggleEl.checked })
+          });
+          const raw = await res.text();
+          if (!res.ok) {
+            msgEl.innerText = res.status === 401
+              ? 'Sesión expirada para guardar mantenimiento. Inicia sesión nuevamente.'
+              : ('Error guardando mantenimiento: ' + (raw || res.status));
+            return;
+          }
+          msgEl.innerText = 'Modo mantenimiento guardado correctamente.';
+          await loadMantenimientoConfig();
+        } catch (err) {
+          msgEl.innerText = 'Error guardando mantenimiento: ' + (err.message || err);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerText = 'Guardar Mantenimiento';
+        }
+      }
+
       async function load(){
         await loadRustDeskCard();
-        loadMantenimientoConfig();
+        await loadMantenimientoConfig();
         // cargar estado Wompi
         try {
           const rw = await fetch('/super/api/config/wompi');
@@ -578,8 +708,6 @@
             if (typeof wompi.encryption_available !== 'undefined' && !wompi.encryption_available) {
               document.getElementById('wompiMsg').innerText = 'ERROR: cifrado obligatorio no disponible en el servidor (CONFIG_ENC_KEY no definido).';
             }
-                    await loadGmailConfig();
-                    await loadPortalWhatsAppConfig();
             const modeToggle = document.getElementById('wompiModeToggle');
             const modeInfo = document.getElementById('wompiModeInfo');
             const modeSource = document.getElementById('wompiModeSource');
@@ -656,6 +784,8 @@
 
 		// cargar estado Gmail SMTP
 		await loadGmailConfig();
+    await loadPortalWhatsAppConfig();
+    await loadRecaptchaConfig();
     		// cargar estado Epayco
     		await loadEpaycoConfig();
     // cargar estado credenciales IA
@@ -833,6 +963,145 @@
           statusEl.innerText = 'Error cargando WhatsApp del portal';
         }
       }
+
+      function refreshRecaptchaEnabledHint(){
+    const enabledEl = document.getElementById('recaptchaEnabledToggle');
+    const helpEl = document.getElementById('recaptchaEnabledHelp');
+    const siteKeyEl = document.getElementById('recaptchaSiteKey');
+    const secretKeyEl = document.getElementById('recaptchaSecretKey');
+    if (!enabledEl || !helpEl) return;
+    helpEl.innerText = enabledEl.checked
+      ? 'reCAPTCHA activado: el backend exigirá verificación humana en formularios públicos protegidos cuando exista una site key y una secret key válidas.'
+      : 'reCAPTCHA desactivado: los formularios públicos no pedirán verificación humana.';
+    if (siteKeyEl) siteKeyEl.disabled = false;
+    if (secretKeyEl) secretKeyEl.disabled = false;
+    }
+
+      async function loadRecaptchaConfig(){
+    const statusEl = document.getElementById('recaptchaConfigStatus');
+    const envEl = document.getElementById('recaptchaEnvStatus');
+    const msgEl = document.getElementById('recaptchaConfigMsg');
+    const secretStatusEl = document.getElementById('recaptchaSecretStatus');
+    const toggleEl = document.getElementById('recaptchaEnabledToggle');
+    const siteKeyEl = document.getElementById('recaptchaSiteKey');
+    const secretKeyEl = document.getElementById('recaptchaSecretKey');
+    const saveBtn = document.getElementById('saveRecaptchaBtn');
+    try {
+      const res = await fetch('/super/api/config/recaptcha');
+      if (!res.ok) {
+      const raw = await res.text();
+      if (res.status === 401) {
+        statusEl.innerText = 'Sesión expirada o sin permisos para leer reCAPTCHA.';
+        envEl.innerText = 'Inicia sesión nuevamente como super administrador.';
+      } else {
+        statusEl.innerText = 'No se pudo consultar el estado de reCAPTCHA.';
+        envEl.innerText = (raw && String(raw).trim()) ? String(raw).trim() : 'Error al leer variables de entorno.';
+      }
+      return;
+      }
+      const data = await res.json();
+      const service = data.service || {};
+      toggleEl.checked = !!service.requested_enabled;
+      siteKeyEl.value = service.stored_site_key || service.site_key || '';
+      secretKeyEl.value = '';
+      refreshRecaptchaEnabledHint();
+      if (service.enabled) {
+      statusEl.innerText = 'reCAPTCHA operativo y publicado en /config.js.';
+      } else if (service.requested_enabled) {
+      statusEl.innerText = 'reCAPTCHA solicitado, pero no operativo todavía.';
+      } else {
+      statusEl.innerText = 'reCAPTCHA desactivado desde configuración avanzada.';
+      }
+      envEl.innerText = 'Site key: ' + (service.site_key_present ? 'presente' : 'ausente') + ' | Secret key: ' + (service.secret_key_present ? 'presente' : 'ausente') + (service.dev_bypass ? ' | Bypass DEV activo' : '');
+      secretStatusEl.innerText = service.stored_secret_key || service.secret_key_present
+        ? 'La secret key ya está registrada. Si pegas otra aquí, reemplazas la actual.'
+        : 'Aún no hay secret key guardada.';
+      msgEl.innerText = service.message || '';
+      saveBtn.disabled = false;
+    } catch (err) {
+      statusEl.innerText = 'Error cargando reCAPTCHA.';
+      envEl.innerText = err.message || 'No se pudo validar el servicio.';
+    }
+    }
+
+      async function persistRecaptchaConfig(){
+    const payload = {
+      enabled: !!document.getElementById('recaptchaEnabledToggle').checked,
+      site_key: document.getElementById('recaptchaSiteKey').value,
+      secret_key: document.getElementById('recaptchaSecretKey').value
+    };
+    const res = await fetch('/super/api/config/recaptcha', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const raw = await res.text();
+    if (!res.ok) {
+      if (res.status === 401) throw new Error('reCAPTCHA: sesión expirada o sin permisos. Inicia sesión como super administrador.');
+      throw new Error('reCAPTCHA: ' + (raw || res.status));
+    }
+    }
+
+      async function saveRecaptchaConfig(){
+    const btn = document.getElementById('saveRecaptchaBtn');
+    const msgEl = document.getElementById('recaptchaConfigMsg');
+    btn.disabled = true;
+    btn.innerText = 'Guardando...';
+    try {
+      await persistRecaptchaConfig();
+      await loadRecaptchaConfig();
+      msgEl.innerText = 'Configuración de reCAPTCHA guardada correctamente.';
+    } catch (err) {
+      msgEl.innerText = err.message || 'No se pudo guardar reCAPTCHA.';
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Guardar reCAPTCHA';
+    }
+    }
+
+      async function testRecaptchaService(){
+    const btn = document.getElementById('recaptchaTestBtn');
+    const resultEl = document.getElementById('recaptchaTestResult');
+    const container = document.getElementById('recaptchaTestContainer');
+    const getTokenBtn = document.getElementById('recaptchaGetTokenBtn');
+    const resetBtn = document.getElementById('recaptchaResetBtn');
+    if (btn) { btn.disabled = true; btn.innerText = 'Probando...'; }
+    if (resultEl) resultEl.innerText = 'Iniciando prueba de reCAPTCHA...';
+    try {
+      if (!window.PCSRecaptcha) {
+        throw new Error('PCSRecaptcha no disponible. Asegúrate de cargar /js/recaptcha_helper.js y /config.js.');
+      }
+      if (container) container.style.display = '';
+      const manager = window.PCSRecaptcha.createManager({ containerId: 'recaptchaTestContainer', theme: 'light' });
+      await manager.init();
+      if (resultEl) resultEl.innerText = 'Widget renderizado. Si es un checkbox, marca la casilla en el widget y pulsa "Obtener token".';
+      if (getTokenBtn) getTokenBtn.style.display = '';
+      if (resetBtn) resetBtn.style.display = '';
+      if (getTokenBtn) getTokenBtn.onclick = async function(){
+        if (resultEl) resultEl.innerText = 'Obteniendo token...';
+        const res = await manager.ensureToken();
+        if (res && res.ok) {
+          const token = String(res.token || '');
+          if (token.length) {
+            resultEl.innerText = 'Token obtenido correctamente (longitud ' + token.length + ').';
+          } else {
+            resultEl.innerText = 'No se obtuvo token. Completa la verificación en el widget si es necesario.';
+          }
+        } else {
+          resultEl.innerText = (res && res.message) ? res.message : 'No se pudo obtener token.';
+        }
+      };
+      if (resetBtn) resetBtn.onclick = function(){
+        manager.reset();
+        if (resultEl) resultEl.innerText = 'Widget reiniciado. Marca la casilla para obtener token nuevamente.';
+      };
+    } catch (err) {
+      if (resultEl) resultEl.innerText = 'Error en la prueba reCAPTCHA: ' + (err.message || err);
+      if (container) container.style.display = 'none';
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerText = 'Probar reCAPTCHA'; }
+    }
+  }
 
       async function loadAIConfig(){
         const msg = document.getElementById('aiConfigMsg');
@@ -1049,6 +1318,7 @@
           await persistWompiConfig();
           await persistEpaycoConfig();
           await persistGmailConfig();
+		  await persistRecaptchaConfig();
           await persistAIConfig();
           await load();
           setGlobalSaveMessage('Toda la configuración se guardó correctamente.', 'success');
@@ -1573,6 +1843,16 @@
         refreshPortalWhatsAppPreview();
         document.getElementById('savePortalWhatsAppBtn').disabled = false;
       });
+      document.getElementById('recaptchaEnabledToggle').addEventListener('change', function(){
+		refreshRecaptchaEnabledHint();
+		document.getElementById('saveRecaptchaBtn').disabled = false;
+	  });
+      document.getElementById('recaptchaSiteKey').addEventListener('input', function(){
+  		document.getElementById('saveRecaptchaBtn').disabled = false;
+      });
+      document.getElementById('recaptchaSecretKey').addEventListener('input', function(){
+  		document.getElementById('saveRecaptchaBtn').disabled = false;
+      });
       document.getElementById('aiEnabledToggle').addEventListener('change', function(){
 		refreshAIEnabledHint();
 		document.getElementById('saveAiConfigBtn').disabled = false;
@@ -1586,6 +1866,8 @@
       document.getElementById('savePortalWhatsAppBtn').addEventListener('click', savePortalWhatsApp);
       document.getElementById('editPortalWhatsAppBtn').addEventListener('click', enableEditPortalWhatsApp);
       document.getElementById('cancelPortalWhatsAppBtn').addEventListener('click', cancelEditPortalWhatsApp);
+      document.getElementById('saveRecaptchaBtn').addEventListener('click', saveRecaptchaConfig);
+      document.getElementById('recaptchaTestBtn').addEventListener('click', testRecaptchaService);
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);
@@ -1597,6 +1879,9 @@
       document.getElementById('testBackupBtn').addEventListener('click', testBackup);
       document.getElementById('downloadConfigBackupBtn').addEventListener('click', downloadConfigBackup);
       document.getElementById('restoreConfigBtn').addEventListener('click', restoreConfigBackup);
+      document.getElementById('saveMantenimientoBtn').addEventListener('click', saveMantenimientoConfig);
+      document.getElementById('editMantenimientoBtn').addEventListener('click', enableEditMantenimiento);
+      document.getElementById('cancelMantenimientoBtn').addEventListener('click', cancelEditMantenimiento);
       globalSaveButtons.forEach(function(btn){
         if (btn) btn.addEventListener('click', saveAllConfigurations);
       });

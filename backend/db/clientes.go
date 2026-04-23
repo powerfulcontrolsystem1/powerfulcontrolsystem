@@ -889,7 +889,7 @@ func getClienteComprasMetricas(dbConn *sql.DB, empresaID, clienteID int64) (clie
 	if m.NumeroCompras > 0 {
 		m.TicketPromedio = m.MontoCompras / float64(m.NumeroCompras)
 	}
-	if last, ok := parseSQLiteDate(m.UltimaCompra); ok {
+	if last, ok := parseLegacyDateTime(m.UltimaCompra); ok {
 		delta := int(time.Since(last).Hours() / 24)
 		if delta < 0 {
 			delta = 0
@@ -915,7 +915,7 @@ func resolveClienteSegmento(numeroCompras int64, montoCompras float64, diasSinCo
 	}
 }
 
-func parseSQLiteDate(raw string) (time.Time, bool) {
+func parseLegacyDateTime(raw string) (time.Time, bool) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
 		return time.Time{}, false

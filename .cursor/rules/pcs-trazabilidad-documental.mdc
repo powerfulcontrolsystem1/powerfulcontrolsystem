@@ -1,0 +1,46 @@
+---
+description: Reglas de trazabilidad documental (historial, descripcion_de_archivos, diagramas, modulos)
+alwaysApply: true
+---
+
+# Trazabilidad documental
+
+## Al crear archivos
+
+- Cuando se cree un archivo nuevo en el repo, agregarlo y describirlo en `documentos/descripcion_de_archivos` inmediatamente.
+
+## Al cerrar tareas (equivalente a "task_complete")
+
+- Cuando se declare una tarea como completada en el chat, añadir una entrada en `documentos/historial_de_cambios` con:
+  - fecha
+  - archivos afectados
+  - descripción breve del cambio
+
+## Cambios de BD / datos
+
+- Antes de cambios de esquema/migraciones/manipulaciones masivas, revisar y cuando corresponda actualizar `documentos/descripcion_de_las_bases_De_datos`.
+- Registrar la operación en `documentos/historial_de_cambios`.
+- Pedir confirmación del usuario si hay riesgo de pérdida de datos.
+
+## Diagramas y estructura
+
+- Antes de cambios estructurales, revisar `documentos/diagramas/estructura_del_codigo.md`.
+- Usar `documentos/diagramas/` como carpeta oficial de diagramas técnicos.
+- Si cambian arquitectura/flujos/integraciones, actualizar diagramas y registrar en `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
+
+## Gobernanza modular (obligatoria)
+
+Si se crea o modifica un módulo, actualizar en la misma iteración:
+
+- `documentos/descripcion_de_modulos`
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`
+- documentación técnica relacionada (p.ej. `documentos/estructura_bd.md`, `documentos/diagramas/*`, etc.)
+
+## Higiene documental
+
+- Depurar documentos obsoletos o duplicados solo si no son requeridos por scripts/checklists/manuales vigentes.
+- Toda eliminación debe quedar registrada en:
+  - `documentos/descripcion_de_archivos`
+  - `documentos/historial_de_cambios`
+  - `CHANGELOG.md`
+

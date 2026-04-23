@@ -1501,6 +1501,44 @@ function Resolve-IdentityContext {
   return [pscustomobject]$context
 }
 
+function Invoke-RemoteCommandSimple {
+  param(
+    [Parameter(Mandatory=$true)][string]$RemoteUser,
+    [Parameter(Mandatory=$true)][string]$RemoteHost,
+    [Parameter(Mandatory=$true)][int]$Port,
+    [Parameter(Mandatory=$true)][pscustomobject]$IdentityContext,
+    [Parameter(Mandatory=$true)][string]$Command
+  )
+
+  if ($IdentityContext.Mode -eq "plink") {
+    $plinkExe = Resolve-Plink
+    if (-not $plinkExe) {
+      throw "No se encontró plink.exe para ejecutar comandos remotos."
+    }
+    if ([string]::IsNullOrWhiteSpace($IdentityContext.PlinkKeyWin)) {
+      throw "Falta PlinkKeyWin (clave .ppk) para ejecutar comando remoto."
+    }
+    & $plinkExe -batch -P $Port -i $IdentityContext.PlinkKeyWin "$RemoteUser@$RemoteHost" $Command
+    if ($LASTEXITCODE -ne 0) {
+      throw "Fallo comando remoto via plink (exit=$LASTEXITCODE)"
+    }
+    return
+  }
+
+  $sshExe = Resolve-SshExe
+  if (-not $sshExe) {
+    throw "No se encontró ssh.exe para ejecutar comandos remotos."
+  }
+  $keyPath = $IdentityContext.IdentityPath
+  if ([string]::IsNullOrWhiteSpace($keyPath)) {
+    throw "Falta IdentityPath para ejecutar comando remoto."
+  }
+  & $sshExe -o StrictHostKeyChecking=accept-new -p $Port -i $keyPath "$RemoteUser@$RemoteHost" $Command
+  if ($LASTEXITCODE -ne 0) {
+    throw "Fallo comando remoto via ssh (exit=$LASTEXITCODE)"
+  }
+}
+
 try {
   $scriptPath = Join-Path $PSScriptRoot "sync_to_vps.sh"
   if (-not (Test-Path $scriptPath)) {
@@ -1639,6 +1677,7 @@ try {
 
   if (-not (Test-WslReady)) {
     Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+
     if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
       $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
       Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)

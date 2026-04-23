@@ -61,6 +61,7 @@
           <div class="form-actions login-form-actions">
             <button id="emailLoginBtn" class="btn login-email-submit" type="submit">Iniciar por correo</button>
           </div>
+          <div id="adminLoginRecaptcha" class="form-help" style="display:none"></div>
           <div class="login-inline-links">
             <a href="/registrar_nuevo_usuario_administrador.html" id="registerLink">Registrarse</a>
             <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
@@ -80,6 +81,7 @@
             <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperación</button>
             <button id="backToLoginLink" class="btn secondary" type="button">Volver al login</button>
           </div>
+          <div id="adminForgotRecaptcha" class="form-help" style="display:none"></div>
           <div id="forgotPasswordMessage" class="form-help auth-message is-hidden"></div>
         </form>
         <form class="form auth-alt-form is-hidden" id="resetPasswordForm" autocomplete="on" novalidate>
@@ -107,6 +109,7 @@
             <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseña</button>
             <button id="backFromResetLink" class="btn secondary" type="button">Volver al login</button>
           </div>
+          <div id="adminResetRecaptcha" class="form-help" style="display:none"></div>
           <div id="resetPasswordMessage" class="form-help auth-message is-hidden"></div>
         </form>
         <p class="footer login-card-note">Si tienes problemas con el acceso, revisa la ayuda o contacta al soporte.</p>
@@ -115,6 +118,8 @@
     </div>
 
   
+  <script src="/config.js"></script>
+  <script src="/js/recaptcha_helper.js"></script>
   <script src="/js/login.js"></script>
 
   </body>
