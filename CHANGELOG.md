@@ -19,6 +19,11 @@
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
+## 2026-04-23
+- Documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de respaldo bajo `backup/`.
+	- Archivos modificados: `documentos/manual_de_instalacion.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `documentos/CHANGELOG.md`, `CHANGELOG.md`, `backup/.gitkeep`, `backup/empresas/.gitkeep`, `backup/super_administrador/.gitkeep`.
+	- Descripcion: el manual ahora documenta la configuracion super, el provider y los mensajes tipicos de dominio en Google, y describe el almacenamiento best-effort de copias JSON en `backup/super_administrador` y `backup/empresas/<empresa_id>`.
+
 ## 2026-04-20
 - Soporte remoto y RustDesk: activacion por defecto en configuracion super.
 	- Archivos modificados: `backend/db/soporte_remoto.go`, `backend/handlers/soporte_remoto.go`, `backend/db/soporte_remoto_test.go`, `backend/handlers/super_soporte_remoto_test.go`, `web/super/servidores.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.

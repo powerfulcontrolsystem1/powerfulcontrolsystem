@@ -1,3 +1,23 @@
+- 2026-04-23: Login atascado en "Ingresando...": se prioriza el API `execute`/`ready` (v3/Enterprise) al cargar el script, timeout en `ready`+`execute`, reintentos tras `onload` del script y `fetch` con abort 45s en `login.js` y `login_usuario.js`.
+    - Archivos modificados: `web/js/recaptcha_helper.js`, `web/js/login.js`, `web/js/login_usuario.js`, `documentos/historial_de_cambios`.
+
+- 2026-04-23: Corrección login de empresa (`login_usuario.js`): se eliminan listeners duplicados del formulario que enviaban login sin `recaptcha_token` y dejaban el botón en "Ingresando...". Se unifica el flujo en la IIFE con estado de botón y reCAPTCHA.
+    - Archivos modificados: `web/js/login_usuario.js`, `documentos/historial_de_cambios`.
+
+- 2026-04-23: Se añade al manual de instalación la URL oficial de la consola de Google reCAPTCHA ([admin](https://www.google.com/recaptcha/admin)) donde se crean claves y dominios.
+    - Archivos modificados: `documentos/manual_de_instalacion.md`, `documentos/historial_de_cambios`.
+
+- 2026-04-23: Se documenta reCAPTCHA moderno (v2/v3/Enterprise) y se versiona el almacenamiento de copias bajo `backup/`.
+    - Archivos modificados:
+        - documentos/manual_de_instalacion.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+        - documentos/CHANGELOG.md
+        - `backup/.gitkeep`, `backup/empresas/.gitkeep`, `backup/super_administrador/.gitkeep`
+    - Descripcion: se actualiza el manual con la configuración operativa de reCAPTCHA (claves, provider, orígenes permitidos, bypass dev y errores frecuentes) y con la política de copias JSON en `backup/super_administrador` y `backup/empresas/<id>`, alineada con el comportamiento best-effort del backend.
+    - Verificacion: `go test ./...` (cuando aplica) y revisión cruzada de `documentos/manual_de_instalacion.md`.
+
 - 2026-04-23: Se elimina el experimento de correo temporal y se mejora el mensaje operativo de reCAPTCHA en login.
     - Archivos modificados/agregados/eliminados:
         - backend/main.go

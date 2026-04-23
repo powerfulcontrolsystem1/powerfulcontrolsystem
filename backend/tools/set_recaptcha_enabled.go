@@ -98,12 +98,14 @@ func main() {
     var dsnFlag string
     var enabled string
     var actor string
+	var provider string
     var siteKey string
     var secretKey string
 
     flag.StringVar(&dsnFlag, "dsn", "", "Postgres DSN for superadmin DB (overrides DB_SUPERADMIN_DSN env)")
     flag.StringVar(&enabled, "enabled", "1", "0 or 1")
     flag.StringVar(&actor, "actor", "cli-recaptcha", "actor name to write in updated_by config")
+	flag.StringVar(&provider, "provider", "", "recaptcha provider: google-recaptcha-v2 or google-recaptcha-enterprise")
     flag.StringVar(&siteKey, "site-key", "", "Google reCAPTCHA site key to persist in super config")
     flag.StringVar(&secretKey, "secret-key", "", "Google reCAPTCHA secret key to persist encrypted in super config")
     flag.Parse()
@@ -133,6 +135,16 @@ func main() {
         log.Fatalf("SetConfigValue security.recaptcha.enabled.updated_by: %v", err)
     }
 
+	trimmedProvider := strings.TrimSpace(provider)
+	if trimmedProvider != "" {
+		if err := dbpkg.SetConfigValue(db, "security.recaptcha.provider", trimmedProvider, false); err != nil {
+			log.Fatalf("SetConfigValue security.recaptcha.provider: %v", err)
+		}
+		if err := dbpkg.SetConfigValue(db, "security.recaptcha.provider.updated_by", actor, false); err != nil {
+			log.Fatalf("SetConfigValue security.recaptcha.provider.updated_by: %v", err)
+		}
+	}
+
     trimmedSiteKey := strings.TrimSpace(siteKey)
     if trimmedSiteKey != "" {
         if err := dbpkg.SetConfigValue(db, "security.recaptcha.site_key", trimmedSiteKey, false); err != nil {
@@ -157,5 +169,5 @@ func main() {
         }
     }
 
-    fmt.Printf("OK: set security.recaptcha.enabled=%s site_key=%t secret_key=%t (actor=%s)\n", enabled, trimmedSiteKey != "", trimmedSecretKey != "", actor)
+	fmt.Printf("OK: set security.recaptcha.enabled=%s provider=%t site_key=%t secret_key=%t (actor=%s)\n", enabled, trimmedProvider != "", trimmedSiteKey != "", trimmedSecretKey != "", actor)
 }

@@ -1,3 +1,16 @@
+- Actualizacion 2026-04-23: documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de backup en `backup/`
+	- `documentos/manual_de_instalacion.md` : añade la sección de Google reCAPTCHA (claves, provider, `RECAPTCHA_DEV_BYPASS`, errores de dominio en localhost) y explica dónde se guardan copias JSON bajo `backup/`.
+	- `backend/handlers/recaptcha.go` : expone `window.RECAPTCHA_PROVIDER` con soporte a `google-recaptcha-v3` e incluye timestamps de `fecha_actualizacion` por clave para el panel super.
+	- `web/js/recaptcha_helper.js` : soporta reCAPTCHA v3/Enterprise (execute) y mantiene v2checkbox (render) según el provider publicado en `/config.js`.
+	- `web/js/login.js`, `web/js/login_usuario.js`, `web/js/registrar_nuevo_usuario_administrador.js` : fija acciones v3 distintas por flujo.
+	- `web/super/configuracion_avanzada.html` : carga `config.js` + el helper, permite elegir el tipo reCAPTCHA y mejora la prueba; muestra trazas de fechas.
+	- `backend/handlers/backup_paths.go` (nuevo) : resuelve `backup/` en el root del repo y persiste copias JSON best-effort.
+	- `backend/handlers/super_config_backup_handlers.go` : al exportar el backup crítico super (`GET /super/api/config/backup`) guarda copia en `backup/super_administrador/`.
+	- `backend/handlers/backups_empresariales.go` : al exportar snapshot/config en JSON, guarda copia en `backup/empresas/<empresa_id>/`.
+	- `backend/handlers/system_empresas_handlers.go` : crea la carpeta `backup/empresas/<id>/` al registrar empresa.
+	- `backend/.env.example` : documenta `RECAPTCHA_PROVIDER` como pista de despliegue.
+	- `backup/.gitkeep`, `backup/empresas/.gitkeep`, `backup/super_administrador/.gitkeep` : asegura que el árbol `backup/` exista versionado aunque el servidor vaya creando subcarpetas bajo demanda.
+
 - Actualizacion 2026-04-23: retiro de tempmail y ajuste operativo de reCAPTCHA en login
 	- backend/main.go : elimina el registro de rutas públicas e inbound del experimento `temp_mail` y deja solo los endpoints activos del sistema.
 	- backend/handlers/recaptcha.go : deja de publicar `window.TEMP_MAIL_DOMAIN` en `/config.js` y conserva únicamente el bootstrap público de reCAPTCHA.

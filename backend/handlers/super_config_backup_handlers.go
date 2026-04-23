@@ -206,6 +206,22 @@ func SuperConfigBackupHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			// Persistir copia en disco (backup/super_administrador) como trazabilidad.
+			// Esto no reemplaza el download; es best-effort.
+			func() {
+				defer func() { _ = recover() }()
+				stamp := backupTimestampForFile()
+				actor := strings.TrimSpace(adminEmailFromRequest(r))
+				actorSafe := strings.ReplaceAll(strings.ReplaceAll(actor, "@", "_"), ".", "_")
+				if actorSafe == "" {
+					actorSafe = "sistema"
+				}
+				fileName := fmt.Sprintf("super_config_%s_%s_%s.json", stamp, runtimeOSLabel(), actorSafe)
+				if _, err := writeJSONBackupFile(superAdminBackupDir(), fileName, payload); err != nil {
+					log.Printf("warning: persist super config backup file error: %v", err)
+				}
+			}()
+
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Disposition", "attachment; filename=super_config_backup.json")
 			if err := json.NewEncoder(w).Encode(payload); err != nil {

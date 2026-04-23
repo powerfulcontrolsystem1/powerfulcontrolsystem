@@ -20,6 +20,7 @@ const (
 	superRecaptchaEnabledConfigKey   = "security.recaptcha.enabled"
 	superRecaptchaSiteKeyConfigKey   = "security.recaptcha.site_key"
 	superRecaptchaSecretKeyConfigKey = "security.recaptcha.secret_key"
+	superRecaptchaProviderConfigKey  = "security.recaptcha.provider"
 )
 
 type recaptchaValidationError struct {
@@ -87,6 +88,31 @@ func recaptchaSecretKey(dbSuper *sql.DB) string {
 	return recaptchaEnvValue("GOOGLE_RECAPTCHA_SECRET_KEY", "RECAPTCHA_SECRET_KEY")
 }
 
+func normalizeRecaptchaProvider(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "v3", "google-recaptcha-v3", "google_recaptcha_v3", "recaptcha-v3", "recaptcha_v3":
+		return "google-recaptcha-v3"
+	case "enterprise", "google-recaptcha-enterprise", "google_recaptcha_enterprise", "recaptcha-enterprise", "recaptcha_enterprise":
+		return "google-recaptcha-enterprise"
+	case "", "v2", "google-recaptcha-v2", "google_recaptcha_v2", "recaptcha-v2", "recaptcha_v2":
+		return "google-recaptcha-v2"
+	default:
+		// Mantener compatibilidad: ante valores desconocidos, caer a v2.
+		return "google-recaptcha-v2"
+	}
+}
+
+func recaptchaProvider(dbSuper *sql.DB) string {
+	if value := recaptchaConfigValue(dbSuper, superRecaptchaProviderConfigKey); value != "" {
+		return normalizeRecaptchaProvider(value)
+	}
+	if value := recaptchaEnvValue("RECAPTCHA_PROVIDER", "GOOGLE_RECAPTCHA_PROVIDER"); value != "" {
+		return normalizeRecaptchaProvider(value)
+	}
+	return "google-recaptcha-v2"
+}
+
 func recaptchaDevBypassEnabled() bool {
 	return parseTruthyConfigValue(recaptchaEnvValue("RECAPTCHA_DEV_BYPASS"), false)
 }
@@ -126,6 +152,24 @@ func publicRecaptchaConfig(dbSuper *sql.DB) map[string]interface{} {
 	siteKey := recaptchaSiteKey(dbSuper)
 	secretKey := recaptchaSecretKey(dbSuper)
 	enabled := requestedEnabled && configured
+	provider := recaptchaProvider(dbSuper)
+
+	// Timestamps (si existen) para trazabilidad en configuración avanzada.
+	siteUpdatedAt := ""
+	secretUpdatedAt := ""
+	providerUpdatedAt := ""
+	if dbSuper != nil {
+		if _, _, _, fa, err := dbpkg.GetConfigEntry(dbSuper, superRecaptchaSiteKeyConfigKey); err == nil {
+			siteUpdatedAt = strings.TrimSpace(fa)
+		}
+		if _, _, _, fa, err := dbpkg.GetConfigEntry(dbSuper, superRecaptchaSecretKeyConfigKey); err == nil {
+			secretUpdatedAt = strings.TrimSpace(fa)
+		}
+		if _, _, _, fa, err := dbpkg.GetConfigEntry(dbSuper, superRecaptchaProviderConfigKey); err == nil {
+			providerUpdatedAt = strings.TrimSpace(fa)
+		}
+	}
+
 	message := "reCAPTCHA desactivado desde configuracion avanzada."
 	if requestedEnabled && !configured {
 		message = "reCAPTCHA esta activado, pero faltan credenciales validas (site key o secret key)."
@@ -133,11 +177,15 @@ func publicRecaptchaConfig(dbSuper *sql.DB) map[string]interface{} {
 		message = "reCAPTCHA activo para formularios publicos protegidos."
 	}
 	return map[string]interface{}{
-		"provider":           "google-recaptcha-v2",
+		"provider":           provider,
 		"enabled":            enabled,
 		"requested_enabled":  requestedEnabled,
 		"configured":         configured,
 		"site_key":           siteKey,
+		"site_key_updated_at":   siteUpdatedAt,
+		"secret_key_updated_at": secretUpdatedAt,
+		"provider_updated_at":   providerUpdatedAt,
+		"provider_present":   strings.TrimSpace(recaptchaConfigValue(dbSuper, superRecaptchaProviderConfigKey)) != "" || strings.TrimSpace(recaptchaEnvValue("RECAPTCHA_PROVIDER", "GOOGLE_RECAPTCHA_PROVIDER")) != "",
 		"stored_site_key":    recaptchaConfigValue(dbSuper, superRecaptchaSiteKeyConfigKey),
 		"site_key_present":   siteKey != "",
 		"secret_key_present": secretKey != "",
@@ -189,6 +237,7 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			var payload struct {
 				Enabled   *bool   `json:"enabled"`
+				Provider  *string `json:"provider"`
 				SiteKey   *string `json:"site_key"`
 				SecretKey *string `json:"secret_key"`
 			}
@@ -196,8 +245,8 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
 				return
 			}
-			if payload.Enabled == nil && payload.SiteKey == nil && payload.SecretKey == nil {
-				http.Error(w, "debe enviar enabled, site_key o secret_key", http.StatusBadRequest)
+			if payload.Enabled == nil && payload.Provider == nil && payload.SiteKey == nil && payload.SecretKey == nil {
+				http.Error(w, "debe enviar enabled, provider, site_key o secret_key", http.StatusBadRequest)
 				return
 			}
 
@@ -218,6 +267,13 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
+			if payload.Provider != nil {
+				provider := normalizeRecaptchaProvider(strings.TrimSpace(*payload.Provider))
+				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaProviderConfigKey, provider, false); err != nil {
+					http.Error(w, "failed to save "+superRecaptchaProviderConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
 			if payload.SecretKey != nil {
 				secretKey := strings.TrimSpace(*payload.SecretKey)
 				if secretKey != "" {
@@ -232,7 +288,7 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 			}
-			for _, key := range []string{superRecaptchaEnabledConfigKey, superRecaptchaSiteKeyConfigKey, superRecaptchaSecretKeyConfigKey} {
+			for _, key := range []string{superRecaptchaEnabledConfigKey, superRecaptchaProviderConfigKey, superRecaptchaSiteKeyConfigKey, superRecaptchaSecretKeyConfigKey} {
 				if err := dbpkg.SetConfigValue(dbSuper, key+".updated_by", adminEmail, false); err != nil {
 					http.Error(w, "failed to save updated_by for "+key+": "+err.Error(), http.StatusInternalServerError)
 					return

@@ -146,11 +146,13 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 			correoEnviado = true
 		}
 	} else {
-		if sendErr := sendServerStartupEmail(dbSuper, correoDestino, asunto, cuerpo); sendErr != nil {
-			correoError = sendErr.Error()
-		} else {
-			correoEnviado = true
-		}
+		// No bloquear el arranque del servidor por fallas o timeouts de SMTP.
+		// El envío se intenta en background (best-effort) para evitar que ListenAndServe nunca se ejecute.
+		correoError = "envio_async_best_effort"
+		go func(to, subject, body string) {
+			defer func() { _ = recover() }()
+			_ = sendServerStartupEmail(dbSuper, to, subject, body)
+		}(correoDestino, asunto, cuerpo)
 	}
 
 	metadataRaw, _ := json.Marshal(map[string]interface{}{

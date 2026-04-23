@@ -13,7 +13,7 @@
   var passwordConfirmInput = document.getElementById('registerPasswordConfirm');
   var submitButton = document.getElementById('adminRegisterBtn');
   var messageBox = document.getElementById('adminRegisterMessage');
-  var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminRegisterRecaptcha' }) : null;
+  var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminRegisterRecaptcha', action: 'admin_register' }) : null;
 
   var countries = [
     { code: 'AR', name: 'Argentina' },

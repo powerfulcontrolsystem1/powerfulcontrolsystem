@@ -18,6 +18,8 @@
   </style>
 </head>
 <body class="super-page form-bg-dark">
+  <script src="/config.js"></script>
+  <script src="/js/recaptcha_helper.js?v=20260423-login-fix"></script>
   <div class="container">
     <div class="page-header">
       <h1>Configuración avanzada</h1>
@@ -402,6 +404,18 @@
           <label class="form-label">Secret Key</label>
           <input id="recaptchaSecretKey" class="form-input" type="password" placeholder="Pega aquí la clave secreta de Google reCAPTCHA">
           <div id="recaptchaSecretStatus" class="form-help">La clave secreta se guarda cifrada en configuración super y no vuelve a mostrarse en pantalla.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="recaptchaProvider">Tipo de reCAPTCHA</label>
+          <select id="recaptchaProvider" class="form-input">
+            <option value="google-recaptcha-v2">v2 (Checkbox visible)</option>
+            <option value="google-recaptcha-v3">v3 (Invisible / token por acción)</option>
+            <option value="google-recaptcha-enterprise">Enterprise (según tus llaves)</option>
+          </select>
+          <div class="form-help">Debe coincidir con el tipo de llave creada en Google. Si no coincide, Google mostrará “El tipo de clave no es válido”.</div>
         </div>
       </div>
 
@@ -985,6 +999,7 @@
     const toggleEl = document.getElementById('recaptchaEnabledToggle');
     const siteKeyEl = document.getElementById('recaptchaSiteKey');
     const secretKeyEl = document.getElementById('recaptchaSecretKey');
+    const providerEl = document.getElementById('recaptchaProvider');
     const saveBtn = document.getElementById('saveRecaptchaBtn');
     try {
       const res = await fetch('/super/api/config/recaptcha');
@@ -1003,6 +1018,9 @@
       const service = data.service || {};
       toggleEl.checked = !!service.requested_enabled;
       siteKeyEl.value = service.stored_site_key || service.site_key || '';
+      if (providerEl) {
+        providerEl.value = service.provider || 'google-recaptcha-v2';
+      }
       secretKeyEl.value = '';
       refreshRecaptchaEnabledHint();
       if (service.enabled) {
@@ -1012,7 +1030,10 @@
       } else {
       statusEl.innerText = 'reCAPTCHA desactivado desde configuración avanzada.';
       }
-      envEl.innerText = 'Site key: ' + (service.site_key_present ? 'presente' : 'ausente') + ' | Secret key: ' + (service.secret_key_present ? 'presente' : 'ausente') + (service.dev_bypass ? ' | Bypass DEV activo' : '');
+      const siteTS = service.site_key_updated_at ? (' | Site key actualizada: ' + service.site_key_updated_at) : '';
+      const secretTS = service.secret_key_updated_at ? (' | Secret key actualizada: ' + service.secret_key_updated_at) : '';
+      const providerTS = service.provider_updated_at ? (' | Tipo actualizado: ' + service.provider_updated_at) : '';
+      envEl.innerText = 'Tipo: ' + (service.provider || 'google-recaptcha-v2') + providerTS + ' | Site key: ' + (service.site_key_present ? 'presente' : 'ausente') + siteTS + ' | Secret key: ' + (service.secret_key_present ? 'presente' : 'ausente') + secretTS + (service.dev_bypass ? ' | Bypass DEV activo' : '');
       secretStatusEl.innerText = service.stored_secret_key || service.secret_key_present
         ? 'La secret key ya está registrada. Si pegas otra aquí, reemplazas la actual.'
         : 'Aún no hay secret key guardada.';
@@ -1027,6 +1048,7 @@
       async function persistRecaptchaConfig(){
     const payload = {
       enabled: !!document.getElementById('recaptchaEnabledToggle').checked,
+      provider: (document.getElementById('recaptchaProvider') ? document.getElementById('recaptchaProvider').value : 'google-recaptcha-v2'),
       site_key: document.getElementById('recaptchaSiteKey').value,
       secret_key: document.getElementById('recaptchaSecretKey').value
     };
@@ -1069,14 +1091,20 @@
     if (resultEl) resultEl.innerText = 'Iniciando prueba de reCAPTCHA...';
     try {
       if (!window.PCSRecaptcha) {
-        throw new Error('PCSRecaptcha no disponible. Asegúrate de cargar /js/recaptcha_helper.js y /config.js.');
+        throw new Error('PCSRecaptcha no disponible. Asegúrate de cargar /js/recaptcha_helper.js?v=20260423-login-fix y /config.js.');
       }
-      if (container) container.style.display = '';
-      const manager = window.PCSRecaptcha.createManager({ containerId: 'recaptchaTestContainer', theme: 'light' });
+      const provider = String(window.RECAPTCHA_PROVIDER || '').trim().toLowerCase();
+      const isV3 = provider.indexOf('v3') >= 0 || provider.indexOf('enterprise') >= 0;
+      if (container) container.style.display = isV3 ? 'none' : '';
+      const manager = window.PCSRecaptcha.createManager({ containerId: 'recaptchaTestContainer', theme: 'light', action: 'super_config_test' });
       await manager.init();
-      if (resultEl) resultEl.innerText = 'Widget renderizado. Si es un checkbox, marca la casilla en el widget y pulsa "Obtener token".';
+      if (isV3) {
+        if (resultEl) resultEl.innerText = 'reCAPTCHA v3 listo. Pulsa "Obtener token" para ejecutar grecaptcha.execute().';
+      } else {
+        if (resultEl) resultEl.innerText = 'Widget renderizado. Marca la casilla en el widget y pulsa "Obtener token".';
+      }
       if (getTokenBtn) getTokenBtn.style.display = '';
-      if (resetBtn) resetBtn.style.display = '';
+      if (resetBtn) resetBtn.style.display = isV3 ? 'none' : '';
       if (getTokenBtn) getTokenBtn.onclick = async function(){
         if (resultEl) resultEl.innerText = 'Obteniendo token...';
         const res = await manager.ensureToken();
@@ -1085,7 +1113,9 @@
           if (token.length) {
             resultEl.innerText = 'Token obtenido correctamente (longitud ' + token.length + ').';
           } else {
-            resultEl.innerText = 'No se obtuvo token. Completa la verificación en el widget si es necesario.';
+            resultEl.innerText = isV3
+              ? 'No se obtuvo token. Verifica que la site key sea v3 y que el dominio coincida en Google reCAPTCHA.'
+              : 'No se obtuvo token. Completa la verificación en el widget si es necesario.';
           }
         } else {
           resultEl.innerText = (res && res.message) ? res.message : 'No se pudo obtener token.';
@@ -1890,4 +1920,5 @@
   </script>
 </body>
 </html>
+
 

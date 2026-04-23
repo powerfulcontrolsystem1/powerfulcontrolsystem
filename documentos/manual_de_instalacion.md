@@ -59,6 +59,41 @@ En la incidencia revisada el backend ya estaba emitiendo correctamente:
 
 Por tanto, si el sitio publico muestra `Error 400: invalid_request` o `redirect_uri_mismatch`, el ajuste prioritario es registrar en Google Cloud Console la URL publica exacta anterior.
 
+## 1.5) Google reCAPTCHA (v2, v3 y Enterprise)
+
+En Google, el alta de claves, el tipo (v2/v3/Score/Enterprise) y los **dominios permitidos** se configuran en la consola de administración: [https://www.google.com/recaptcha/admin](https://www.google.com/recaptcha/admin).
+
+Dentro del sistema, reCAPTCHA se completa **desde el panel super** en `web/super/configuracion_avanzada.html` (API `GET/PUT /super/api/config/recaptcha`) y se publica al navegador con `/config.js` (campos `window.RECAPTCHA_*`).
+
+Claves almacenadas en la base `pcs_superadministrador` (tabla `configuraciones`):
+
+- `security.recaptcha.enabled` (0/1)
+- `security.recaptcha.provider` (por ejemplo: `google-recaptcha-v2`, `google-recaptcha-v3`, `google-recaptcha-enterprise`)
+- `security.recaptcha.site_key` (llave pública; también puede venir de variables de entorno)
+- `security.recaptcha.secret_key` (llave privada, guardada cifrada)
+
+Variables de entorno de respaldo/override (se usan si no hay equivalente en DB):
+
+- `GOOGLE_RECAPTCHA_SITE_KEY` o `RECAPTCHA_SITE_KEY`
+- `GOOGLE_RECAPTCHA_SECRET_KEY` o `RECAPTCHA_SECRET_KEY`
+- `RECAPTCHA_PROVIDER` (recomendado alinear con el tipo de llave: v2 / v3 / enterprise)
+
+Comportamiento en frontend (archivo `web/js/recaptcha_helper.js`):
+
+- **v2 (checkbox)**: carga el script con render explícito y muestra el widget.
+- **v3 / Enterprise (sin checkbox)**: carga con `?render=<SITE_KEY>` y genera el token con `grecaptcha.execute()` usando una acción por formulario (por ejemplo, login).
+
+Errores típicos (Google) y su causa:
+
+- **"Localhost no está en la lista de dominios compatibles"**: en la consola de reCAPTCHA, agrega `localhost` y/o `127.0.0.1` a los dominios permitidos de la **misma** site key, o crea otra clave de prueba separada con esos orígenes.
+- **"El tipo de clave no es válido"**: el `provider` (y el script) no coincide con el **tipo** de clave creada en Google (típica confusión v2 vs v3 vs Enterprise). Alinea el tipo y vuelve a guardar.
+- `RECAPTCHA_DEV_BYPASS=1` (solo entornos de desarrollo) puede saltar la exigencia de token. No uses esto en producción.
+
+Carpeta local de respaldos (best-effort, copias JSON al exportar o al descargar backups):
+
+- `backup/super_administrador/` (backup crítico super al usar `GET /super/api/config/backup`)
+- `backup/empresas/<empresa_id>/` (exportaciones de backups / configuración empresarial). La carpeta de empresa también se crea al registrar una empresa por `POST /super/api/empresas`.
+
 ## 2) Variables de entorno locales
 
 El script `scripts/iniciar_servidor.ps1` carga credenciales desde variables de entorno del proceso o desde `backend/.env.local` y `backend/.env`.

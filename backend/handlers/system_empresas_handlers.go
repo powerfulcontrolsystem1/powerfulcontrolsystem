@@ -551,6 +551,10 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to create empresa: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// Crear carpeta de backup en disco para esta empresa (best-effort).
+			if id > 0 {
+				_ = ensureDir(empresaBackupDir(id))
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
 			return

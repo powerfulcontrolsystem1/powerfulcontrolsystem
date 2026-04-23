@@ -55,9 +55,9 @@
   var forgotMessageDiv = document.getElementById('forgotPasswordMessage');
   var resetMessageDiv = document.getElementById('resetPasswordMessage');
   var recaptchaManagers = {
-    login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminLoginRecaptcha' }) : null,
-    forgot: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminForgotRecaptcha' }) : null,
-    reset: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminResetRecaptcha' }) : null
+    login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminLoginRecaptcha', action: 'admin_login' }) : null,
+    forgot: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminForgotRecaptcha', action: 'admin_forgot_password' }) : null,
+    reset: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminResetRecaptcha', action: 'admin_reset_password' }) : null
   };
 
   function setPasswordVisibility(toggleBtn, input, isVisible) {
@@ -236,12 +236,27 @@
   }
 
   async function postJson(url, body) {
-    var res = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-      credentials: 'same-origin'
-    });
+    var controller = new AbortController();
+    var tid = setTimeout(function () {
+      controller.abort();
+    }, 45000);
+    var res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+        credentials: 'same-origin',
+        signal: controller.signal
+      });
+    } catch (e) {
+      clearTimeout(tid);
+      if (e && (e.name === 'AbortError' || (String(e.message || '').toLowerCase().indexOf('abort') >= 0))) {
+        return { ok: false, status: 0, text: 'Tiempo de espera agotado al contactar el servidor.', json: null };
+      }
+      throw e;
+    }
+    clearTimeout(tid);
     var txt = await res.text();
     try {
       return {ok: res.ok, status: res.status, json: JSON.parse(txt)};

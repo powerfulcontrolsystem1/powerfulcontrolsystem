@@ -272,6 +272,13 @@ func empresaBackupsHandleCreate(w http.ResponseWriter, r *http.Request, dbEmp *s
 		return
 	}
 
+	// Asegurar carpeta de backup en disco (best-effort) para esta empresa.
+	if empresaID > 0 {
+		if err := ensureDir(empresaBackupDir(empresaID)); err != nil {
+			// no bloquear: es una facilidad operativa
+		}
+	}
+
 	var payload empresaBackupCreatePayload
 	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
 		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
@@ -383,6 +390,13 @@ func empresaBackupsHandleExport(w http.ResponseWriter, r *http.Request, dbEmp *s
 	}
 	if format == "json" {
 		fileName := fmt.Sprintf("backup_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
+		// Persistir copia en disco (backup/empresas/<id>/...) como trazabilidad (best-effort).
+		func() {
+			defer func() { _ = recover() }()
+			stamp := backupTimestampForFile()
+			diskName := fmt.Sprintf("backup_empresa_%d_%s_%s.json", empresaID, stamp, strings.TrimSpace(backupMeta.Codigo))
+			_, _ = writeJSONBackupFile(empresaBackupDir(empresaID), diskName, payload)
+		}()
 		w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
 		writeJSON(w, http.StatusOK, payload)
 		return
@@ -480,6 +494,13 @@ func empresaBackupsHandleExportConfig(w http.ResponseWriter, r *http.Request, db
 	}
 
 	fileName := fmt.Sprintf("configuracion_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
+	// Persistir copia en disco (backup/empresas/<id>/...) como trazabilidad (best-effort).
+	func() {
+		defer func() { _ = recover() }()
+		stamp := backupTimestampForFile()
+		diskName := fmt.Sprintf("configuracion_empresa_%d_%s_%s.json", empresaID, stamp, strings.TrimSpace(backupMeta.Codigo))
+		_, _ = writeJSONBackupFile(empresaBackupDir(empresaID), diskName, exportPayload)
+	}()
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
 	w.Header().Set("X-Backup-Id", strconv.FormatInt(backupID, 10))
 	w.Header().Set("X-Backup-Code", strings.TrimSpace(backupMeta.Codigo))
