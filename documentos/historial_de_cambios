@@ -14240,3 +14240,8 @@ Archivos modificados:
 - backend/handlers/chat_con_inteligencia_artificial_controller.go
 - backend/handlers/empresa_compartida_handlers.go
 - web/js/editar_empresa.js
+
+2026-04-24: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/chat_con_inteligencia_artificial_controller.go

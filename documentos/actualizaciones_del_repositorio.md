@@ -609,3 +609,7 @@ Archivos modificados:
 - backend/handlers/chat_con_inteligencia_artificial_controller.go
 - backend/handlers/empresa_compartida_handlers.go
 - web/js/editar_empresa.js
+
+2026-04-24 13:45:23 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: c63d914; PushStatus: OK
+Archivos modificados:
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
