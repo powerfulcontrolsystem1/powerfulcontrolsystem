@@ -602,3 +602,10 @@ Archivos modificados:
 - web/img/advanced-red-dot.svg
 - web/super/configuracion_avanzada.html
 - web/super_administrador.html
+
+2026-04-24 13:37:15 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 70abee9; PushStatus: OK
+Archivos modificados:
+- backend/handlers/ai_config_handlers.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/empresa_compartida_handlers.go
+- web/js/editar_empresa.js
