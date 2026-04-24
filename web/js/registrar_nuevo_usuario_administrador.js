@@ -44,7 +44,7 @@
     { code: 'GB', name: 'Reino Unido' },
     { code: 'IT', name: 'Italia' },
     { code: 'PT', name: 'Portugal' },
-    { code: 'NL', name: 'Paises Bajos' },
+    { code: 'NL', name: 'Países Bajos' },
     { code: 'JP', name: 'Japon' },
     { code: 'AU', name: 'Australia' }
   ];
@@ -153,9 +153,11 @@
     if (!messageBox) {
       return;
     }
-    messageBox.style.display = text ? 'block' : 'none';
+    messageBox.classList.toggle('is-hidden', !text);
+    messageBox.classList.toggle('is-visible', !!text);
     messageBox.textContent = text || '';
-    messageBox.style.color = isError ? 'crimson' : 'green';
+    messageBox.classList.toggle('error', !!text && !!isError);
+    messageBox.classList.toggle('success', !!text && !isError);
   }
 
   function setBusy(isBusy) {

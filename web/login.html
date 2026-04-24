@@ -12,16 +12,16 @@
   <div class="login-page">
     <div class="login-header">
       <h1 class="login-title">Login para Administradores</h1>
-      <div><a class="login-help-link" href="/ayuda/login_administradores.html">Saber mÃ¡s</a></div>
+      <div><a class="login-help-link" href="/ayuda/login_administradores.html">Saber más</a></div>
     </div>
     <div class="container">
       <div class="card">
-        <h2>Iniciar sesiÃ³n</h2>
-        <div class="form-actions auth-alt-actions" style="margin-bottom:14px;">
-          <a class="btn secondary" href="/index.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Ir al inicio</a>
+        <h2>Iniciar sesión</h2>
+        <div class="form-actions auth-alt-actions auth-actions-top">
+          <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
         </div>
         
-        <a class="google-btn" href="/auth/google/login" aria-label="Iniciar sesiÃ³n con Google">
+        <a class="google-btn" href="/auth/google/login" aria-label="Iniciar sesión con Google">
           <!-- Google G logo (inline SVG) -->
           <svg viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path fill="#4285F4" d="M533.5 278.4c0-17.4-1.6-34.1-4.7-50.4H272v95.4h146.9c-6.3 34.2-25 63.2-53.4 82.7v68.8h86.4c50.6-46.7 81.6-115.4 81.6-196.5z"/>
@@ -29,10 +29,10 @@
             <path fill="#FBBC05" d="M119.9 324.2c-10.9-32.6-10.9-67.6 0-100.2V153.8H33.2c-38.7 76.9-38.7 168.5 0 245.4l86.7-74.9z"/>
             <path fill="#EA4335" d="M272 107.4c39.5 0 75 13.6 102.9 40.4l77.1-77.1C405.5 24.6 344.5 0 272 0 169.6 0 77.6 56.6 33.2 153.8l86.7 70.2C141.4 155.1 201.3 107.4 272 107.4z"/>
           </svg>
-          <span>Iniciar sesiÃ³n con Google</span>
+          <span>Iniciar sesión con Google</span>
         </a>
         <form class="form email-login" id="emailLoginForm" autocomplete="on" novalidate>
-          <h3 class="text-center-lowercase">o continÃºa con tu correo</h3>
+          <h3 class="text-center-lowercase">o continúa con tu correo</h3>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="adminEmail">Correo</label>
@@ -41,10 +41,10 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="adminPassword">ContraseÃ±a</label>
+              <label class="form-label" for="adminPassword">Contraseña</label>
               <div class="password-visibility-field">
-                <input id="adminPassword" class="form-input password-visibility-input" type="password" autocomplete="current-password" placeholder="ContraseÃ±a" required>
-                <button class="password-visibility-toggle" type="button" data-target="adminPassword" aria-label="Mostrar contrasena" aria-pressed="false" title="Mostrar contrasena">
+                <input id="adminPassword" class="form-input password-visibility-input" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+                <button class="password-visibility-toggle" type="button" data-target="adminPassword" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M12 5C6.5 5 2.1 8.4.5 12c1.6 3.6 6 7 11.5 7s9.9-3.4 11.5-7C21.9 8.4 17.5 5 12 5Zm0 11.2A4.2 4.2 0 1 1 12 7.8a4.2 4.2 0 0 1 0 8.4Zm0-6.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" fill="currentColor"></path>
                   </svg>
@@ -64,12 +64,12 @@
           <div id="adminLoginRecaptcha" class="form-help" style="display:none"></div>
           <div class="login-inline-links">
             <a href="/registrar_nuevo_usuario_administrador.html" id="registerLink">Registrarse</a>
-            <a href="#" id="forgotLink">Â¿OlvidÃ³ su contraseÃ±a?</a>
+            <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
           </div>
           <div id="emailLoginMessage" class="form-help auth-message is-hidden"></div>
         </form>
         <form class="form auth-alt-form is-hidden" id="forgotPasswordForm" autocomplete="on" novalidate>
-          <h3>Recuperar contraseÃ±a</h3>
+          <h3>Recuperar contraseña</h3>
           <p class="form-help">Ingresa tu correo y te enviaremos instrucciones para restablecer el acceso.</p>
           <div class="form-row">
             <div class="form-col">
@@ -78,15 +78,15 @@
             </div>
           </div>
           <div class="form-actions auth-alt-actions">
-            <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperaciÃ³n</button>
+            <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperación</button>
             <button id="backToLoginLink" class="btn secondary" type="button">Volver al login</button>
           </div>
           <div id="adminForgotRecaptcha" class="form-help" style="display:none"></div>
           <div id="forgotPasswordMessage" class="form-help auth-message is-hidden"></div>
         </form>
         <form class="form auth-alt-form is-hidden" id="resetPasswordForm" autocomplete="on" novalidate>
-          <h3>Restablecer contraseÃ±a</h3>
-          <p class="form-help">Abre el enlace recibido por correo y define una nueva contraseÃ±a segura.</p>
+          <h3>Restablecer contraseña</h3>
+          <p class="form-help">Abre el enlace recibido por correo y define una nueva contraseña segura.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="resetEmail">Correo</label>
@@ -95,18 +95,18 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="resetPassword">Nueva contraseÃ±a</label>
-              <input id="resetPassword" class="form-input" type="password" autocomplete="new-password" placeholder="MÃ­nimo 8 caracteres" required>
+              <label class="form-label" for="resetPassword">Nueva contraseña</label>
+              <input id="resetPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="resetPasswordConfirm">Confirmar contraseÃ±a</label>
-              <input id="resetPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu nueva contraseÃ±a" required>
+              <label class="form-label" for="resetPasswordConfirm">Confirmar contraseña</label>
+              <input id="resetPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu nueva contraseña" required>
             </div>
           </div>
           <div class="form-actions auth-alt-actions">
-            <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseÃ±a</button>
+            <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseña</button>
             <button id="backFromResetLink" class="btn secondary" type="button">Volver al login</button>
           </div>
           <div id="adminResetRecaptcha" class="form-help" style="display:none"></div>

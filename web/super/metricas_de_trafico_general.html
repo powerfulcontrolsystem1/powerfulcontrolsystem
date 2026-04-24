@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Métricas de tráfico general</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .metrics-grid{display:flex;gap:1rem;flex-wrap:wrap;margin:0 0 1rem 0}
-    .metric-card{flex:1 1 200px;background:var(--card);padding:1rem;border-radius:8px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);color:var(--text)}
-    .metric-value{font-size:1.6rem;font-weight:700;color:var(--text)}
-    .charts{display:grid;grid-template-columns:1fr;gap:1rem}
-    @media(min-width:900px){.charts{grid-template-columns:1fr 1fr}}
-  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="super-page form-bg-dark">
@@ -35,7 +28,7 @@
       </div>
     </section>
 
-    <section class="charts">
+    <section class="metrics-charts">
       <div class="metric-card">
         <canvas id="cpuChart" height="120"></canvas>
       </div>

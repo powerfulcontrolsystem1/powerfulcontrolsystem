@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Facturas electronicas y comprobantes</title>
+  <title>Facturas electrónicas y comprobantes</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-module-header">
       <div>
-        <h1 id="pageTitle">Facturas electronicas y comprobantes</h1>
+        <h1 id="pageTitle">Facturas electrónicas y comprobantes</h1>
         <p id="empresaInfo">Empresa: cargando...</p>
       </div>
       <div class="empresa-module-kpis">
@@ -37,7 +37,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Filtros de busqueda</h2>
+        <h2>Filtros de búsqueda</h2>
       </div>
       <form id="filtrosForm" class="form">
         <div class="form-row">
@@ -45,9 +45,9 @@
             <label class="form-label" for="tipoDocumento">Tipo documento</label>
             <select id="tipoDocumento" class="form-input">
               <option value="">Todos</option>
-              <option value="factura_electronica">Factura electronica</option>
+              <option value="factura_electronica">Factura electrónica</option>
               <option value="comprobante_pago">Comprobante de pago</option>
-              <option value="nota_credito">Nota credito</option>
+              <option value="nota_credito">Nota crédito</option>
             </select>
           </div>
           <div class="form-col">
@@ -69,7 +69,7 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="documentoFiltro">Documento</label>
-            <input id="documentoFiltro" class="form-input" placeholder="Codigo, numero legal o validacion">
+            <input id="documentoFiltro" class="form-input" placeholder="Código, número legal o validación">
           </div>
           <div class="form-col">
             <label class="form-label" for="fechaDesde">Fecha desde</label>
@@ -83,12 +83,12 @@
 
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="busquedaGlobal">Busqueda libre</label>
-            <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, codigo...">
+            <label class="form-label" for="busquedaGlobal">Búsqueda libre</label>
+            <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, código...">
           </div>
           <div class="form-col">
             <label class="form-label">Opciones</label>
-            <label class="empresa-config-check" for="includeInactive" style="display:inline-flex;align-items:center;gap:8px;">
+            <label class="empresa-config-check inline-check" for="includeInactive">
               <input id="includeInactive" type="checkbox">
               <span>Incluir inactivos</span>
             </label>
@@ -112,11 +112,11 @@
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Codigo</th>
-              <th>Numero legal</th>
+              <th>Código</th>
+              <th>Número legal</th>
               <th>Cliente</th>
               <th>Total</th>
-              <th>Estado doc</th>
+              <th>Estado doc.</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -135,7 +135,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Vista previa de impresion</h2>
+        <h2>Vista previa de impresión</h2>
       </div>
       <div id="printPreview" class="factura-print-preview-empty">Selecciona un documento para ver cómo saldrá impreso.</div>
     </section>
@@ -273,8 +273,8 @@
         detalleFactura.innerHTML =
           '<div class="form-row">' +
             '<div class="form-col"><strong>Tipo:</strong> ' + escapeHtml(item.tipo_documento || "") + '</div>' +
-            '<div class="form-col"><strong>Codigo:</strong> ' + escapeHtml(item.documento_codigo || "") + '</div>' +
-            '<div class="form-col"><strong>Numero legal:</strong> ' + escapeHtml(item.numero_legal || "") + '</div>' +
+            '<div class="form-col"><strong>Código:</strong> ' + escapeHtml(item.documento_codigo || "") + '</div>' +
+            '<div class="form-col"><strong>Número legal:</strong> ' + escapeHtml(item.numero_legal || "") + '</div>' +
           '</div>' +
           '<div class="form-row">' +
             '<div class="form-col"><strong>Cliente:</strong> ' + escapeHtml(cliente) + '</div>' +
@@ -287,7 +287,7 @@
             '<div class="form-col"><strong>Estado:</strong> ' + statusBadge(item.estado_documento) + '</div>' +
           '</div>' +
           '<div class="form-row">' +
-            '<div class="form-col"><strong>Codigo validacion:</strong> ' + escapeHtml(item.codigo_validacion || "") + '</div>' +
+            '<div class="form-col"><strong>Código validación:</strong> ' + escapeHtml(item.codigo_validacion || "") + '</div>' +
             '<div class="form-col"><strong>Pais:</strong> ' + escapeHtml(item.pais_codigo || "") + '</div>' +
             '<div class="form-col"><strong>Ambiente:</strong> ' + escapeHtml(item.ambiente_fe || "") + '</div>' +
           '</div>' +
@@ -311,7 +311,7 @@
         }
         if (tipo === "nota_credito") {
           return {
-            title: "Nota credito",
+            title: "Nota crédito",
             subtitle: "Documento de ajuste del ciclo de facturacion",
             accentClass: "nota-credito",
             validationText: normalize(item && item.codigo_validacion) || "Pendiente",
@@ -319,8 +319,8 @@
           };
         }
         return {
-          title: "Factura electronica",
-          subtitle: "Documento fiscal con trazabilidad de facturacion electronica",
+          title: "Factura electrónica",
+          subtitle: "Documento fiscal con trazabilidad de facturación electrónica",
           accentClass: "factura",
           validationText: normalize(item && item.codigo_validacion) || "Pendiente",
           ambienteText: normalize(item && item.ambiente_fe) || "Pendiente"
@@ -350,8 +350,8 @@
               '</div>' +
             '</header>' +
             '<section class="factura-print-strip">' +
-              '<div><span>Codigo</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' +
-              '<div><span>Numero legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' +
+              '<div><span>Código</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' +
+              '<div><span>Número legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' +
               '<div><span>Fecha</span><strong>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</strong></div>' +
               '<div><span>Estado</span><strong>' + escapeHtml(item.estado_documento || "borrador") + '</strong></div>' +
             '</section>' +
@@ -377,7 +377,7 @@
               '<h4>Control documental</h4>' +
               '<dl class="factura-print-doc-meta">' +
                 '<div><dt>Tipo</dt><dd>' + escapeHtml(item.tipo_documento || "") + '</dd></div>' +
-                '<div><dt>Codigo validacion</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' +
+                '<div><dt>Código validación</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' +
                 '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' +
                 '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' +
               '</dl>' +
@@ -514,7 +514,7 @@
       function printInvoice(item) {
         var win = window.open("", "_blank", "noopener,noreferrer,width=980,height=760");
         if (!win) {
-          showMessage("No se pudo abrir la ventana de impresion. Revisa el bloqueador de popups.", "error");
+          showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
           return;
         }
 
@@ -582,7 +582,7 @@
           .then(function (empresa) {
             if (empresa && empresa.nombre) {
               state.empresaNombre = empresa.nombre;
-              pageTitle.textContent = "Facturas electronicas y comprobantes - " + empresa.nombre;
+              pageTitle.textContent = "Facturas electrónicas y comprobantes - " + empresa.nombre;
               empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
             }
           })

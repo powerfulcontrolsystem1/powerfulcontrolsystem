@@ -14,25 +14,25 @@
         <p id="carritoContext" class="form-help" style="margin:0;">Cargando contexto del carrito...</p>
       </div>
       <div class="form-actions" style="margin:0;">
-        <button type="button" id="btnAplicarSeleccion" class="btn">Agregar selecciÃ³n al carrito</button>
+        <button type="button" id="btnAplicarSeleccion" class="btn">Agregar selección al carrito</button>
         <button type="button" id="btnSalir" class="btn secondary">Salir al carrito</button>
       </div>
     </div>
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">CatÃ¡logo de productos por botones</h2>
+        <h2 style="margin:0;">Catálogo de productos por botones</h2>
         <span id="catalogoTotal" class="form-help">Productos: 0</span>
       </div>
 
       <div class="form-row" style="margin-bottom:10px;">
         <div class="form-col">
           <label class="form-label" for="filtroProductoInput">Buscar en botones</label>
-          <input id="filtroProductoInput" class="form-input" placeholder="Filtra por nombre, SKU o cÃ³digo de barras">
+          <input id="filtroProductoInput" class="form-input" placeholder="Filtra por nombre, SKU o código de barras">
         </div>
       </div>
 
-      <p class="form-help" style="margin:0 0 10px 0;">Cada clic suma 1 unidad. Si necesitas cantidad 2, presiona el botÃ³n dos veces.</p>
+      <p class="form-help" style="margin:0 0 10px 0;">Cada clic suma 1 unidad. Si necesitas cantidad 2, presiona el botón dos veces.</p>
       <div id="productosButtonsGrid" class="product-buttons-grid">Cargando productos...</div>
     </section>
 
@@ -163,7 +163,7 @@
         '<th>Precio</th>' +
         '<th>Cantidad</th>' +
         '<th>Subtotal</th>' +
-        '<th>AcciÃ³n</th>' +
+        '<th>Acción</th>' +
         '</tr></thead>';
 
       const tbody = document.createElement('tbody');
@@ -179,7 +179,7 @@
       });
 
       const trTotal = document.createElement('tr');
-      trTotal.innerHTML = '<td colspan="3"><strong>Total selecciÃ³n</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td><td></td>';
+      trTotal.innerHTML = '<td colspan="3"><strong>Total selección</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td><td></td>';
       tbody.appendChild(trTotal);
 
       table.appendChild(tbody);
@@ -247,7 +247,7 @@
           state.seleccion.set(id, current + 1);
           renderProductsButtons();
           renderSelectionTable();
-          setMessage('Producto agregado a selecciÃ³n. Puedes seguir presionando para aumentar cantidad.', false);
+          setMessage('Producto agregado a selección. Puedes seguir presionando para aumentar cantidad.', false);
         });
       });
     }
@@ -275,7 +275,7 @@
       }) : null;
 
       if (!match) {
-        throw new Error('No se encontrÃ³ el carrito solicitado.');
+        throw new Error('No se encontró el carrito solicitado.');
       }
 
       state.carrito = match;
@@ -380,7 +380,7 @@
         renderSelectionTable();
         setMessage('Se agregaron ' + totalUnidades + ' unidades al carrito correctamente.', false);
       } catch (err) {
-        setMessage(err.message || 'No se pudo agregar la selecciÃ³n al carrito.', true);
+        setMessage(err.message || 'No se pudo agregar la selección al carrito.', true);
       } finally {
         btn.disabled = false;
         btn.textContent = prevText;
@@ -389,7 +389,7 @@
 
     function exitToCarrito() {
       if (getSelectedRows().length > 0) {
-        const ok = confirm('Tienes productos seleccionados sin agregar al carrito. Â¿Deseas salir de todos modos?');
+        const ok = confirm('Tienes productos seleccionados sin agregar al carrito. ¿Deseas salir de todos modos?');
         if (!ok) return;
       }
       window.location.href = state.returnURL || buildDefaultReturnURL();
@@ -404,7 +404,7 @@
       document.getElementById('carritoContext').textContent =
         'Empresa ID: ' + state.empresaID +
         ' | Carrito: ' + (carritoName || ('#' + state.carritoID)) +
-        ' | CÃ³digo: ' + (carritoCode || '-') +
+        ' | Código: ' + (carritoCode || '-') +
         ' | Moneda: ' + (moneda || 'COP');
     }
 
@@ -446,7 +446,7 @@
         renderProductsButtons();
         renderSelectionTable();
       } catch (err) {
-        document.getElementById('productosButtonsGrid').textContent = 'No se pudo cargar el catÃ¡logo de productos.';
+        document.getElementById('productosButtonsGrid').textContent = 'No se pudo cargar el catálogo de productos.';
         setMessage(err.message || 'Error cargando contexto de carrito/productos.', true);
         document.getElementById('btnAplicarSeleccion').disabled = true;
       }

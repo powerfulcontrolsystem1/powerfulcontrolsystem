@@ -1,3 +1,9 @@
+- 2026-04-23: Retiro completo del modulo **Tipos de usuario**: sin ruta `/super/api/tipos_de_usuario`, sin `TiposDeUsuarioHandler`, sin CRUD en `roles_tipos_usuario.go`; al arranque `DropTiposDeUsuarioTable` (`DROP TABLE IF EXISTS tipos_de_usuario`); eliminado `web/super/tipos_de_usuario.htm`; menu super sin entrada; `documentos/estructura_bd.md` y `documentos/descripcion_de_archivos` actualizados.
+    - Archivos modificados/eliminados: `backend/main.go`, `backend/handlers/roles_tipos_usuario.go`, `backend/db/roles_tipos_usuario.go`, `web/super_administrador.html`, `web/js/super_administrador.js`, `web/super/tipos_de_usuario.htm` (eliminado), `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
+
+- 2026-04-23: Script `actualizar_repositorio.ps1`: se suprime en consola el ruido de Git por finales de línea (LF/CRLF) manteniendo otros mensajes y errores.
+    - Archivos modificados: `scripts/actualizar_repositorio.ps1`, `documentos/historial_de_cambios`.
+
 - 2026-04-23: Login atascado en "Ingresando...": se prioriza el API `execute`/`ready` (v3/Enterprise) al cargar el script, timeout en `ready`+`execute`, reintentos tras `onload` del script y `fetch` con abort 45s en `login.js` y `login_usuario.js`.
     - Archivos modificados: `web/js/recaptcha_helper.js`, `web/js/login.js`, `web/js/login_usuario.js`, `documentos/historial_de_cambios`.
 
@@ -11600,7 +11606,6 @@ Archivos modificados:
 - web/estilos.css
 - web/pagar_licencia.html
 - web/super/roles_de_usuario.html
-- web/super/tipos_de_usuario.htm
 - web/super_administrador.html
 
 
@@ -13883,3 +13888,100 @@ Archivos modificados:
 - web/login_usuario.html
 - web/registrar_nuevo_usuario_administrador.html
 - web/super/configuracion_avanzada.html
+
+2026-04-23: Ajuste visual y textual en accesos, licencias y reportes
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/reportes.html
+- web/administrar_empresa/reportes_finanzas.html
+- web/elegir_licencia.html
+- web/estilos.css
+- web/login_usuario.html
+- web/pagar_licencia.html
+- web/registrar_nuevo_usuario_administrador.html
+Descripcion:
+- Se unificaron clases reutilizables para encabezados, filtros inline, KPIs y botones-enlace en pantallas administrativas y de acceso.
+- Se corrigieron textos visibles en login de usuarios, registro de administradores y flujo de licencias para dejar acentos, mensajes y placeholders consistentes.
+- Se ajustaron bloques de checkout y reportes para mejorar contraste, lectura y comportamiento coherente en temas claro y oscuro.
+
+2026-04-23: Ajuste visual en paginas publicas auxiliares y vistas operativas
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/ultimos_movimientos_de_caja.html
+- web/epayco/pago_exitoso.html
+- web/estilos.css
+- web/soporte_remoto_acceso.html
+- web/super/licencias.html
+- web/venta_publica.html
+Descripcion:
+- Se migraron estilos inline y bloques locales hacia clases globales para paginas publicas de soporte, confirmacion de pago y tienda publica.
+- Se corrigieron mensajes visibles y textos operativos en venta publica y ultimos movimientos de caja para mejorar legibilidad y consistencia.
+- Se dejaron listas las vistas auxiliares para responder mejor a cambios de tema sin depender de estilos aislados por pagina.
+
+2026-04-23: Ajuste final en autenticacion publica, selector y retorno de pagos
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/accept.html
+- web/epayco/respuesta.html
+- web/estilos.css
+- web/js/login.js
+- web/js/registrar_contrasena_usuario_de_google.js
+- web/js/seleccionar_empresa.js
+- web/login.html
+- web/registrar_contrasena_usuario_de_google.html
+- web/seleccionar_empresa.html
+Descripcion:
+- Se consolidaron estilos comunes para login, aceptacion de contrato, selector de empresas y respuesta de Epayco, reduciendo excepciones inline.
+- Se normalizaron textos y atributos visibles relacionados con contrasenas, sesiones y mensajes de confirmacion para mantener espanol consistente.
+- Se ajusto el manejo visual de estados ocultos y mensajes en JS para que las pantallas publicas dependan menos de estilos directos por elemento.
+
+2026-04-23: Ajuste visual en finanzas, facturacion electronica, chat y plantillas de email
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/finanzas.html
+- web/estilos.css
+- web/super/formato_para_emviar_email.html
+Descripcion:
+- Se movieron a `web/estilos.css` clases reutilizables para textareas, acciones inferiores, deteccion de pais y la interfaz de plantillas de email.
+- Se eliminaron estilos locales o inline en `finanzas`, `facturacion_electronica` y `formato_para_emviar_email` para mejorar consistencia entre temas.
+- Se corrigieron textos visibles y mensajes operativos en `chat_y_tareas` y `finanzas` para mantener acentos y lectura uniforme.
+
+2026-04-23: Ajuste visual en contrato, metricas y documentos empresariales
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/historial_productos.html
+- web/estilos.css
+- web/super/contrato.html
+- web/super/metricas_de_trafico_general.html
+Descripcion:
+- Se trasladaron a `web/estilos.css` los estilos locales de metricas, contrato e historial de productos para reducir islas visuales fuera del sistema tematico comun.
+- Se corrigieron titulos, placeholders y mensajes visibles en `facturas_electronicas` y `contrato` para dejar textos con acentos y terminologia consistente.
+- Se mejoro la compatibilidad visual de vistas administrativas secundarias sin introducir cambios funcionales en sus flujos.
+
+2026-04-23: Remate final de textos y estados visuales en accesos y shells administrativos
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/js/login_usuario.js
+- web/js/registrar_nuevo_usuario_administrador.js
+- web/registrar_nuevo_usuario_administrador.html
+- web/super_administrador.html
+Descripcion:
+- Se normalizaron textos dinamicos del portal de usuarios por empresa para que contratos, recuperacion y cambio de password usen acentos y mensajes consistentes.
+- Se reemplazo el manejo directo de color/display en mensajes del login de usuarios y registro admin por clases reutilizables ya presentes en la base visual.
+- Se ajustaron labels visibles de navegacion en `administrar_empresa.html` y `super_administrador.html` para cerrar la auditoria textual de shells principales.
+
+2026-04-23: Reparacion tarjeta RustDesk en VPS (configuracion avanzada)
+Archivos modificados:
+- backend/handlers/super_servidores_handlers.go
+- backend/handlers/super_rustdesk_config.go
+- backend/main.go
+- documentos/historial_de_cambios
+- web/super/configuracion_avanzada.html
+Descripcion:
+- Se agrego configuracion persistida de control SSH hacia el VPS para gestionar RustDesk desde el panel super.
+- Se corrigio el error cuando el backend corre en Windows sin acceso local a systemctl, mostrando estado "unavailable" y habilitando control remoto via SSH.
+- Se agrego un switch de activar/desactivar (start/stop) hbbs/hbbr y un bloque para guardar host/usuario/llave SSH desde la tarjeta.

@@ -33,6 +33,35 @@ function Write-ErrMsg {
     Write-Host "[ERROR] $Text" -ForegroundColor Red
 }
 
+function Invoke-GitAddQuietLineEndingAdvice {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Paths
+    )
+
+    $raw = @(& git add @Paths 2>&1 | ForEach-Object { $_.ToString() })
+    if ($LASTEXITCODE -ne 0) {
+        if ($raw.Count -gt 0) {
+            $raw | ForEach-Object { Write-Host $_ }
+        }
+        return $false
+    }
+
+    foreach ($line in $raw) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        if ($line -match 'LF will be replaced by CRLF') {
+            continue
+        }
+        if ($line -match 'CRLF will be replaced by LF') {
+            continue
+        }
+        Write-Host $line
+    }
+    return $true
+}
+
 function Close-TranscriptSafe {
     if ($script:TranscriptStarted) {
         try {
@@ -198,14 +227,20 @@ if (-not (Test-Path $gitignorePath)) {
         "bin/"
         "obj/"
     ) | Out-File -FilePath $gitignorePath -Encoding UTF8
-    git add .gitignore | Out-Null
+    if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths @('.gitignore'))) {
+        Write-ErrMsg "git add .gitignore fallo."
+        Exit-WithCode 1
+    }
     Write-Ok ".gitignore basico creado y agregado al staging."
 } else {
     Write-Info ".gitignore ya existe."
 }
 
 Write-Step "4/8 Preparando cambios para commit"
-git add -A
+if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths @('-A'))) {
+    Write-ErrMsg "git add -A fallo."
+    Exit-WithCode 1
+}
 $statusLines = @(git status --porcelain)
 if ($statusLines.Count -eq 0) {
     Write-WarnMsg "No hay cambios para commitear. No se realizo push."
@@ -300,7 +335,10 @@ if (-not $SkipChangeLog) {
     Write-Info "Se actualizo documentos/actualizaciones_del_repositorio.md"
 
     if ($filesToAdd.Count -gt 0) {
-        git add @filesToAdd | Out-Null
+        if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths $filesToAdd)) {
+            Write-ErrMsg "git add (bitacoras) fallo."
+            Exit-WithCode 1
+        }
         $docsStatus = @(git status --porcelain)
         if ($docsStatus.Count -gt 0) {
             $docsCommitOutput = & git commit -m "Actualizar registros automaticos de repositorio" 2>&1

@@ -11,8 +11,12 @@
       position: relative;
       overflow: hidden;
       background:
-        radial-gradient(circle at right top, rgba(31, 142, 241, 0.22), rgba(31, 142, 241, 0) 50%),
-        linear-gradient(180deg, rgba(26, 49, 77, 0.9), rgba(17, 32, 52, 0.9));
+        radial-gradient(circle at right top, color-mix(in srgb, var(--accent) 22%, transparent 78%), transparent 50%),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--surface-soft) 84%, var(--surface) 16%),
+          color-mix(in srgb, var(--surface) 88%, var(--bg) 12%)
+        );
     }
     .hero-card .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .hero-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
@@ -26,9 +30,9 @@
       font-size: 0.86rem;
       border: 1px solid transparent;
     }
-    .status-healthy { background: rgba(41, 179, 107, 0.2); color: #7ff2b6; border-color: rgba(41, 179, 107, 0.45); }
-    .status-warning { background: rgba(255, 206, 86, 0.16); color: #ffd88f; border-color: rgba(255, 206, 86, 0.45); }
-    .status-critical { background: rgba(228, 88, 88, 0.2); color: #ffb7b7; border-color: rgba(228, 88, 88, 0.45); }
+    .status-healthy { background: color-mix(in srgb, var(--success) 16%, transparent 84%); color: color-mix(in srgb, var(--success) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--success) 44%, transparent 56%); }
+    .status-warning { background: color-mix(in srgb, var(--accent-yellow) 18%, transparent 82%); color: color-mix(in srgb, var(--accent-yellow) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--accent-yellow) 44%, transparent 56%); }
+    .status-critical { background: color-mix(in srgb, var(--danger) 16%, transparent 84%); color: color-mix(in srgb, var(--danger) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--danger) 44%, transparent 56%); }
     .meta-pill {
       display: inline-flex;
       align-items: center;
@@ -37,7 +41,7 @@
       font-size: 0.82rem;
       color: var(--text);
       border: 1px solid var(--border);
-      background: rgba(19, 34, 56, 0.45);
+      background: var(--content-soft-bg);
     }
     .kpi-grid {
       display: grid;
@@ -45,11 +49,11 @@
       gap: 10px;
     }
     .kpi-card {
-      background: linear-gradient(180deg, rgba(25, 46, 73, 0.75), rgba(15, 28, 47, 0.75));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 78%, transparent 22%), color-mix(in srgb, var(--surface) 86%, transparent 14%));
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent 94%);
     }
     .kpi-label { color: var(--muted); font-size: 0.82rem; font-weight: 700; }
     .kpi-value { font-size: 1.28rem; font-weight: 800; margin-top: 4px; }
@@ -65,9 +69,9 @@
     .table td code {
       font-family: Consolas, "Courier New", monospace;
       font-size: 0.78rem;
-      color: #b4d7ff;
-      background: rgba(15, 34, 56, 0.45);
-      border: 1px solid rgba(152, 176, 206, 0.22);
+      color: color-mix(in srgb, var(--accent) 70%, var(--text) 30%);
+      background: var(--content-soft-bg);
+      border: 1px solid var(--content-soft-border);
       border-radius: 6px;
       padding: 3px 6px;
       display: inline-block;
@@ -90,7 +94,7 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px;
-      background: rgba(18, 34, 55, 0.45);
+      background: var(--content-soft-bg);
     }
     .rec-tag {
       font-size: 0.72rem;
@@ -100,14 +104,14 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-    .rec-critical { background: rgba(228, 88, 88, 0.25); color: #ffc4c4; border: 1px solid rgba(228, 88, 88, 0.45); }
-    .rec-warning { background: rgba(255, 206, 86, 0.18); color: #ffe2a6; border: 1px solid rgba(255, 206, 86, 0.45); }
-    .rec-info { background: rgba(31, 142, 241, 0.18); color: #b8dcff; border: 1px solid rgba(31, 142, 241, 0.45); }
+    .rec-critical { background: color-mix(in srgb, var(--danger) 16%, transparent 84%); color: color-mix(in srgb, var(--danger) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent 58%); }
+    .rec-warning { background: color-mix(in srgb, var(--accent-yellow) 16%, transparent 84%); color: color-mix(in srgb, var(--accent-yellow) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--accent-yellow) 42%, transparent 58%); }
+    .rec-info { background: color-mix(in srgb, var(--accent) 14%, transparent 86%); color: color-mix(in srgb, var(--accent) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent 58%); }
     .error-banner {
       display: none;
-      border: 1px solid rgba(228, 88, 88, 0.45);
-      background: rgba(87, 27, 27, 0.4);
-      color: #ffd9d9;
+      border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent 58%);
+      background: color-mix(in srgb, var(--danger) 14%, var(--surface) 86%);
+      color: color-mix(in srgb, var(--danger) 32%, var(--text) 68%);
       font-weight: 700;
     }
     .error-banner.show { display: block; }
@@ -245,7 +249,7 @@
       <div class="page-header">
         <div>
           <h2>Espacio consumido por empresa</h2>
-          <p class="muted">Carga una estimacion del espacio usado por cada empresa dentro de la base operativa compartida y ordÃ©nala de mayor a menor.</p>
+          <p class="muted">Carga una estimación del espacio usado por cada empresa dentro de la base operativa compartida y ordénala de mayor a menor.</p>
         </div>
         <div class="toolbar">
           <button id="loadEmpresasStorageBtn" class="btn add">Cargar Empresas</button>

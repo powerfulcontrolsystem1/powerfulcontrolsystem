@@ -870,8 +870,6 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
   - nombre
 - roles_de_usuario:
   - tipo_empresa_id, nombre, descripcion
-- tipos_de_usuario:
-  - tipo_empresa_id, rol_id, nombre, descripcion
 - roles_de_usuario_permisos:
   - rol_id, modulo, accion, permitido
   - indice unico: (rol_id, modulo, accion)
@@ -1055,8 +1053,7 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
 - chat_tareas_mensajes.id -> chat_tareas_adjuntos.mensaje_id
 - empresa_gps_dispositivos.id -> empresa_gps_recorridos.dispositivo_id
-- tipos_de_empresas.id -> roles_de_usuario.tipo_empresa_id / tipos_de_usuario.tipo_empresa_id
-- roles_de_usuario.id -> tipos_de_usuario.rol_id
+- tipos_de_empresas.id -> roles_de_usuario.tipo_empresa_id
 - roles_de_usuario.id -> roles_de_usuario_permisos.rol_id
 - roles_de_usuario.id -> roles_de_usuario_paginas_permisos.rol_id
 - empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)

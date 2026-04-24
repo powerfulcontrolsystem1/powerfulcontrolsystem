@@ -711,7 +711,7 @@
       }
 
       async function deleteEmployee(id) {
-        if (!confirm('Â¿Eliminar empleado de nomina?')) return;
+        if (!confirm('¿Eliminar empleado de nomina?')) return;
         await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=empleado&id=' + encodeURIComponent(id), {
           method: 'DELETE'
         });
@@ -815,7 +815,7 @@
       }
 
       async function deleteFestivo(id) {
-        if (!confirm('Â¿Eliminar dia festivo?')) return;
+        if (!confirm('¿Eliminar dia festivo?')) return;
         await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=festivo&id=' + encodeURIComponent(id), {
           method: 'DELETE'
         });

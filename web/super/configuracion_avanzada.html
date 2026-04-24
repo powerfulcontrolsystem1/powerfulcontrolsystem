@@ -55,6 +55,47 @@
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar / desactivar</label>
+          <label class="mode-switch-row" for="rustdeskActiveToggle">
+            <span class="mode-label">Off</span>
+            <input id="rustdeskActiveToggle" type="checkbox" role="switch" aria-label="Activar RustDesk">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Este switch enciende/apaga hbbs y hbbr. Si el backend está en Windows, primero configura el control por SSH al VPS.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Control por SSH (VPS)</label>
+          <label class="mode-switch-row" for="rustdeskSshEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="rustdeskSshEnabledToggle" type="checkbox" role="switch" aria-label="Usar SSH para gestionar RustDesk en el VPS">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="rustdeskSshHelp" class="form-help">Cargando configuración SSH...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Host SSH</label>
+          <input id="rustdeskSshHost" class="form-input" type="text" placeholder="IP o dominio del VPS">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Usuario SSH</label>
+          <input id="rustdeskSshUser" class="form-input" type="text" placeholder="root o usuario con sudo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Ruta llave privada</label>
+          <input id="rustdeskSshKeyPath" class="form-input" type="text" placeholder="C:\ruta\llave.ppk o /home/user/.ssh/id_rsa">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="rustdeskSaveSshBtn" type="button" class="btn secondary">Guardar SSH</button>
+      </div>
+      <div id="rustdeskSshMsg" class="form-help"></div>
+
       <div class="form-actions">
         <button id="rustdeskStartBtn" type="button" class="btn">Iniciar</button>
         <button id="rustdeskRestartBtn" type="button" class="btn secondary">Reiniciar</button>
@@ -534,6 +575,7 @@
   		{ model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
       ];
       const globalSaveButtons = [document.getElementById('saveAllConfigTopBtn'), document.getElementById('saveAllConfigBottomBtn')];
+      let rustdeskActiveToggleBusy = false;
 
       function normalizeRustDeskStatus(value){
         const status = String(value || '').trim().toLowerCase();
@@ -555,6 +597,15 @@
         applyRustDeskBadge('rustdesk-status-badge', service.estado);
         applyRustDeskBadge('rustdesk-hbbs-badge', componentes['rustdesk-hbbs']);
         applyRustDeskBadge('rustdesk-hbbr-badge', componentes['rustdesk-hbbr']);
+
+        const toggle = document.getElementById('rustdeskActiveToggle');
+        if (toggle) {
+          const estado = normalizeRustDeskStatus(service.estado);
+          rustdeskActiveToggleBusy = true;
+          toggle.checked = (estado === 'active' || estado === 'activo' || estado === 'degraded');
+          toggle.disabled = (estado === 'unavailable');
+          setTimeout(function(){ rustdeskActiveToggleBusy = false; }, 0);
+        }
       }
 
       async function fetchRustDeskJSON(url, options){
@@ -563,6 +614,70 @@
         const data = text ? JSON.parse(text) : {};
         if (!response.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
         return data;
+      }
+
+      async function loadRustDeskSshConfig(){
+        const helpEl = document.getElementById('rustdeskSshHelp');
+        const msgEl = document.getElementById('rustdeskSshMsg');
+        const enabledToggle = document.getElementById('rustdeskSshEnabledToggle');
+        const hostEl = document.getElementById('rustdeskSshHost');
+        const userEl = document.getElementById('rustdeskSshUser');
+        const keyEl = document.getElementById('rustdeskSshKeyPath');
+        if (!enabledToggle || !hostEl || !userEl || !keyEl) return;
+
+        try {
+          const res = await fetch('/super/api/config/rustdesk', { credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          const data = raw ? JSON.parse(raw) : {};
+          enabledToggle.checked = !!data.enabled;
+          hostEl.value = data.host || '';
+          userEl.value = data.user || '';
+          keyEl.value = data.key_path || '';
+          if (helpEl) helpEl.innerText = data.enabled ? 'Control por SSH activo.' : 'Control por SSH apagado.';
+          if (msgEl) msgEl.innerText = '';
+        } catch (err) {
+          if (helpEl) helpEl.innerText = 'No se pudo cargar la configuración SSH.';
+          if (msgEl) msgEl.innerText = err.message || 'Error cargando configuración SSH.';
+        }
+      }
+
+      async function saveRustDeskSshConfig(){
+        const msgEl = document.getElementById('rustdeskSshMsg');
+        const enabledToggle = document.getElementById('rustdeskSshEnabledToggle');
+        const hostEl = document.getElementById('rustdeskSshHost');
+        const userEl = document.getElementById('rustdeskSshUser');
+        const keyEl = document.getElementById('rustdeskSshKeyPath');
+        const btn = document.getElementById('rustdeskSaveSshBtn');
+        if (!enabledToggle || !hostEl || !userEl || !keyEl || !btn) return;
+
+        btn.disabled = true;
+        const prevText = btn.innerText;
+        btn.innerText = 'Guardando...';
+        if (msgEl) msgEl.innerText = 'Guardando configuración SSH...';
+        try {
+          const payload = {
+            enabled: !!enabledToggle.checked,
+            host: String(hostEl.value || '').trim(),
+            user: String(userEl.value || '').trim(),
+            key_path: String(keyEl.value || '').trim()
+          };
+          const res = await fetch('/super/api/config/rustdesk', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          if (msgEl) msgEl.innerText = 'Configuración SSH guardada.';
+          await loadRustDeskCard('Configuración SSH actualizada. Consultando estado...');
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar la configuración SSH.';
+        } finally {
+          btn.disabled = false;
+          btn.innerText = prevText;
+        }
       }
 
       async function loadRustDeskCard(message){
@@ -712,6 +827,7 @@
       }
 
       async function load(){
+        await loadRustDeskSshConfig();
         await loadRustDeskCard();
         await loadMantenimientoConfig();
         // cargar estado Wompi
@@ -1851,6 +1967,11 @@
       document.getElementById('rustdeskRestartBtn').addEventListener('click', function(){ toggleRustDeskService('restart'); });
       document.getElementById('rustdeskStopBtn').addEventListener('click', function(){ toggleRustDeskService('stop'); });
       document.getElementById('rustdeskProbeBtn').addEventListener('click', probeRustDeskCard);
+      document.getElementById('rustdeskSaveSshBtn').addEventListener('click', saveRustDeskSshConfig);
+      document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
+        if (rustdeskActiveToggleBusy) return;
+        toggleRustDeskService(this.checked ? 'start' : 'stop');
+      });
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
       document.getElementById('saveEpaycoBtn').addEventListener('click', saveEpayco);

@@ -6,8 +6,8 @@
   <title>Publicar en Red Social Comercial</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-    .panel { background: linear-gradient(180deg, var(--surface-soft), var(--surface)); color: var(--text); padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto; box-shadow: 0 18px 34px color-mix(in srgb, var(--bg) 72%, transparent); border: 1px solid var(--border); }
+    body { font-family: sans-serif; background: linear-gradient(180deg, var(--bg-alt), var(--bg)); color: var(--text); padding: 20px; min-height: 100vh; }
+    .panel { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 86%, var(--surface) 14%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%)); color: var(--text); padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto; box-shadow: 0 18px 34px color-mix(in srgb, var(--bg) 72%, transparent); border: 1px solid var(--border); }
     .grupo { margin-bottom: 15px; }
     .grupo label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--text); }
     .grupo input[type="text"], .grupo textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; background: var(--input-bg); color: var(--text); }
@@ -16,6 +16,12 @@
     .pub-item { background: var(--content-soft-bg); border: 1px solid var(--content-soft-border); padding: 10px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .pub-item small { color: var(--muted); }
     .pub-delete-btn { background: var(--danger); color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+    .pub-delete-btn:hover { filter: brightness(1.05); }
+    @media (max-width: 640px) {
+      body { padding: 16px; }
+      .panel { padding: 18px; }
+      .pub-item { flex-direction: column; align-items: flex-start; }
+    }
   </style>
 </head>
 <body>
@@ -77,7 +83,7 @@
       const foto = document.getElementById('pubFoto').value;
       
       if (!nombre || !desc) {
-        alert('Nombre y descripciÃ³n son obligatorios');
+        alert('Nombre y descripción son obligatorios');
         return;
       }
       
@@ -95,19 +101,19 @@
           document.getElementById('pubNombre').value = '';
           document.getElementById('pubDesc').value = '';
           document.getElementById('pubFoto').value = '';
-          alert('Publicado con Ã©xito!');
+          alert('Publicado con éxito!');
           cargarPublicaciones();
         } else {
           alert('Error al publicar');
         }
       } catch (e) {
         console.error(e);
-        alert('Error de conexiÃ³n');
+        alert('Error de conexión');
       }
     }
 
     async function eliminarPublicacion(id) {
-      if (!confirm('Â¿Seguro que deseas eliminar esta publicaciÃ³n?')) return;
+      if (!confirm('¿Seguro que deseas eliminar esta publicación?')) return;
       try {
         const res = await fetch('/api/empresa/publicaciones/' + id, {
           method: 'DELETE',

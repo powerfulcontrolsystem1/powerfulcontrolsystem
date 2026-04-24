@@ -97,8 +97,8 @@
     }
     if (help) {
       help.textContent = state.selectionMode === 'single'
-        ? 'Elige una empresa puntual para ver su consolidado y sus datasets sin mezclarla con las demÃ¡s.'
-        : 'Marca una o varias empresas y luego aplica filtros. Puedes usar Todas o Activas para armar el bloque rÃ¡pido.';
+        ? 'Elige una empresa puntual para ver su consolidado y sus datasets sin mezclarla con las demás.'
+        : 'Marca una o varias empresas y luego aplica filtros. Puedes usar Todas o Activas para armar el bloque rápido.';
     }
   }
 
@@ -300,10 +300,10 @@
       topEl.textContent = 'Sin datos';
       topMetaEl.textContent = 'Selecciona empresas para ver la lectura ejecutiva.';
       riskEl.textContent = 'Sin datos';
-      riskMetaEl.textContent = 'No hay presiÃ³n operativa que analizar.';
+      riskMetaEl.textContent = 'No hay presión operativa que analizar.';
       concentrationEl.textContent = '0%';
-      concentrationMetaEl.textContent = 'No hay participaciÃ³n acumulada.';
-      narrativeEl.innerHTML = '<li>No hay informaciÃ³n suficiente para construir el reporte ejecutivo.</li>';
+      concentrationMetaEl.textContent = 'No hay participación acumulada.';
+      narrativeEl.innerHTML = '<li>No hay información suficiente para construir el reporte ejecutivo.</li>';
       return;
     }
 
@@ -318,13 +318,13 @@
     var topShare = pct(topIngresos, totalIngresos);
 
     topEl.textContent = ((topItem || {}).empresa || {}).nombre || 'Sin datos';
-    topMetaEl.textContent = 'Ingresos ' + fmtMoney(topIngresos) + ' | Balance ' + fmtMoney((((topItem || {}).tablero || {}).financiero || {}).balance || 0) + ' | ParticipaciÃ³n ' + topShare + '%';
+    topMetaEl.textContent = 'Ingresos ' + fmtMoney(topIngresos) + ' | Balance ' + fmtMoney((((topItem || {}).tablero || {}).financiero || {}).balance || 0) + ' | Participación ' + topShare + '%';
 
     riskEl.textContent = ((riskItem || {}).empresa || {}).nombre || 'Sin datos';
     riskMetaEl.textContent = 'Balance ' + fmtMoney((((riskItem || {}).tablero || {}).financiero || {}).balance || 0) + ' | Egresos ' + fmtMoney((((riskItem || {}).tablero || {}).financiero || {}).egresos || 0) + ' | Ventas ' + String((((riskItem || {}).tablero || {}).operativo || {}).ventas_cerradas || 0);
 
     concentrationEl.textContent = topShare + '%';
-    concentrationMetaEl.textContent = 'La empresa lÃ­der concentra ' + topShare + '% de los ingresos del bloque seleccionado.';
+    concentrationMetaEl.textContent = 'La empresa líder concentra ' + topShare + '% de los ingresos del bloque seleccionado.';
 
     var activas = toNumber(totales.empresas_activas);
     var seleccionadas = toNumber(totales.empresas_seleccionadas);
@@ -333,7 +333,7 @@
       'Se analizan ' + seleccionadas + ' empresas, con ' + activas + ' activas dentro del grupo filtrado.',
       'El ingreso consolidado es ' + fmtMoney(totalIngresos) + ' y la utilidad operacional representa ' + margen + '% del ingreso total.',
       (((riskItem || {}).empresa || {}).nombre ? ('La empresa a vigilar es ' + ((riskItem || {}).empresa || {}).nombre + ', con balance de ' + fmtMoney((((riskItem || {}).tablero || {}).financiero || {}).balance || 0) + '.') : 'No se detectaron riesgos relevantes.'),
-      (((topItem || {}).empresa || {}).nombre ? ('La empresa lÃ­der es ' + ((topItem || {}).empresa || {}).nombre + ', con ' + String((((topItem || {}).tablero || {}).operativo || {}).ventas_cerradas || 0) + ' ventas cerradas en el perÃ­odo.') : 'No hay lÃ­der destacado por ahora.')
+      (((topItem || {}).empresa || {}).nombre ? ('La empresa líder es ' + ((topItem || {}).empresa || {}).nombre + ', con ' + String((((topItem || {}).tablero || {}).operativo || {}).ventas_cerradas || 0) + ' ventas cerradas en el período.') : 'No hay líder destacado por ahora.')
     ];
     narrativeEl.innerHTML = narrativas.map(function (text) {
       return '<li>' + escapeHtml(text) + '</li>';
@@ -452,7 +452,7 @@
     if (!combinado || !Array.isArray(combinado.columns)) {
       thead.innerHTML = '';
       tbody.innerHTML = '<tr><td>No hay dataset cargado.</td></tr>';
-      meta.textContent = 'Seleccione un dataset y empresas para cargar la informaciÃ³n.';
+      meta.textContent = 'Seleccione un dataset y empresas para cargar la información.';
       resumen.textContent = '';
       return;
     }
@@ -715,7 +715,7 @@
       byId('rgExportar').addEventListener('click', async function () {
         try {
           await exportDataset();
-          setMsg('ExportaciÃ³n generada correctamente.', false);
+          setMsg('Exportación generada correctamente.', false);
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el dataset.', true);
         }

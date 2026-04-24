@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -11,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 type ServicioEstado struct {
@@ -18,6 +21,7 @@ type ServicioEstado struct {
 	Nombre      string            `json:"nombre"`
 	Estado      string            `json:"estado"`
 	Detalle     string            `json:"detalle"`
+	Habilitado  bool              `json:"habilitado,omitempty"`
 	Componentes map[string]string `json:"componentes,omitempty"`
 	Prueba      *ServicioPrueba   `json:"prueba,omitempty"`
 }
@@ -41,11 +45,38 @@ type rustDeskRemoteConfig struct {
 var rustDeskHBBSCandidates = []string{"rustdesk-hbbs", "hbbs"}
 var rustDeskHBBRCandidates = []string{"rustdesk-hbbr", "hbbr"}
 
-func buildRustDeskServiceState(includeProbe bool) ServicioEstado {
-	hbbsService := resolveRustDeskServiceName(rustDeskHBBSCandidates)
-	hbbrService := resolveRustDeskServiceName(rustDeskHBBRCandidates)
-	hbbsStatus := checkSystemctlStatus(hbbsService)
-	hbbrStatus := checkSystemctlStatus(hbbrService)
+type rustDeskPanelConfig struct {
+	Enabled bool   `json:"enabled"`
+	Host    string `json:"host"`
+	User    string `json:"user"`
+	KeyPath string `json:"key_path"`
+}
+
+func loadRustDeskPanelConfig(dbSuper *sql.DB) rustDeskPanelConfig {
+	cfg := rustDeskPanelConfig{}
+	if dbSuper == nil {
+		return cfg
+	}
+	enabled, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_enabled")
+	switch strings.ToLower(strings.TrimSpace(enabled)) {
+	case "1", "true", "on", "activo", "enabled":
+		cfg.Enabled = true
+	}
+	host, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_host")
+	user, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_user")
+	keyPath, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_key_path")
+	cfg.Host = strings.TrimSpace(host)
+	cfg.User = strings.TrimSpace(user)
+	cfg.KeyPath = strings.TrimSpace(keyPath)
+	return cfg
+}
+
+func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstado {
+	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	hbbsService := resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates)
+	hbbrService := resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates)
+	hbbsStatus := checkSystemctlStatus(dbSuper, hbbsService)
+	hbbrStatus := checkSystemctlStatus(dbSuper, hbbrService)
 	overall := "inactive"
 	switch {
 	case hbbsStatus == "active" && hbbrStatus == "active":
@@ -55,32 +86,43 @@ func buildRustDeskServiceState(includeProbe bool) ServicioEstado {
 	case hbbsStatus == "active" || hbbrStatus == "active":
 		overall = "degraded"
 	}
+
+	if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
+		overall = "unavailable"
+	}
+
+	detalle := "Servidor ID/Relay para soporte remoto de clientes a traves de VPS."
+	if overall == "unavailable" {
+		detalle = "Este backend corre en Windows. Para gestionar RustDesk en el VPS, activa 'Control por SSH' y configura host/usuario/llave en esta misma pantalla."
+	}
+
 	state := ServicioEstado{
 		ID:      "rustdesk",
 		Nombre:  "RustDesk (Soporte Remoto)",
 		Estado:  overall,
-		Detalle: "Servidor ID/Relay para soporte remoto de clientes a traves de VPS.",
+		Detalle: detalle,
+		Habilitado: panelCfg.Enabled,
 		Componentes: map[string]string{
 			"rustdesk-hbbs": hbbsStatus,
 			"rustdesk-hbbr": hbbrStatus,
 		},
 	}
 	if includeProbe {
-		probe := probeRustDeskService()
+		probe := probeRustDeskService(dbSuper)
 		state.Prueba = &probe
 	}
 	return state
 }
 
-func SuperServidoresListHandler() http.HandlerFunc {
+func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servicios := []ServicioEstado{buildRustDeskServiceState(false)}
+		servicios := []ServicioEstado{buildRustDeskServiceState(dbSuper, false)}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
 	}
 }
 
-func SuperServidoresToggleHandler() http.HandlerFunc {
+func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload struct {
 			ID     string `json:"id"`
@@ -92,9 +134,21 @@ func SuperServidoresToggleHandler() http.HandlerFunc {
 		}
 
 		if payload.ID == "rustdesk" {
-			if payload.Accion == "start" || payload.Accion == "stop" || payload.Accion == "restart" {
-				err1 := runSystemctl(payload.Accion, resolveRustDeskServiceName(rustDeskHBBSCandidates))
-				err2 := runSystemctl(payload.Accion, resolveRustDeskServiceName(rustDeskHBBRCandidates))
+			action := strings.ToLower(strings.TrimSpace(payload.Accion))
+			if action == "enable" || action == "disable" {
+				if err := setRustDeskPanelEnabled(dbSuper, action == "enable"); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if action == "start" || action == "stop" || action == "restart" {
+				if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
+					http.Error(w, "Control local no disponible en Windows. Activa 'Control por SSH' y configura la conexión al VPS.", http.StatusBadRequest)
+					return
+				}
+				err1 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
+				err2 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
 				if err1 != nil {
 					http.Error(w, err1.Error(), http.StatusInternalServerError)
 					return
@@ -107,11 +161,11 @@ func SuperServidoresToggleHandler() http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(false)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
 	}
 }
 
-func SuperServidoresProbeHandler() http.HandlerFunc {
+func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := strings.TrimSpace(r.URL.Query().Get("id"))
 		if service == "" {
@@ -121,18 +175,18 @@ func SuperServidoresProbeHandler() http.HandlerFunc {
 			http.Error(w, "servicio no soportado", http.StatusBadRequest)
 			return
 		}
-		state := buildRustDeskServiceState(true)
+		state := buildRustDeskServiceState(dbSuper, true)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": state})
 	}
 }
 
-func checkSystemctlStatus(service string) string {
+func checkSystemctlStatus(dbSuper *sql.DB, service string) string {
 	if strings.TrimSpace(service) == "" {
 		return "missing"
 	}
-	if shouldUseRustDeskRemoteExec() {
-		out, err := runRustDeskRemoteShell(fmt.Sprintf("systemctl is-active %s 2>/dev/null || true", shellEscapeForPOSIX(service)))
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		out, err := runRustDeskRemoteShell(dbSuper, fmt.Sprintf("systemctl is-active %s 2>/dev/null || true", shellEscapeForPOSIX(service)))
 		if err != nil && strings.TrimSpace(out) == "" {
 			return "error"
 		}
@@ -163,12 +217,12 @@ func checkSystemctlStatus(service string) string {
 	return "inactive"
 }
 
-func runSystemctl(accion string, service string) error {
+func runSystemctl(dbSuper *sql.DB, accion string, service string) error {
 	if strings.TrimSpace(service) == "" {
 		return fmt.Errorf("no se encontro ninguna unidad systemd compatible con RustDesk en el VPS")
 	}
-	if shouldUseRustDeskRemoteExec() {
-		_, err := runRustDeskRemoteShell(fmt.Sprintf("sudo -n systemctl %s %s", shellEscapeForPOSIX(accion), shellEscapeForPOSIX(service)))
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		_, err := runRustDeskRemoteShell(dbSuper, fmt.Sprintf("sudo -n systemctl %s %s", shellEscapeForPOSIX(accion), shellEscapeForPOSIX(service)))
 		return err
 	}
 	if runtime.GOOS == "windows" {
@@ -179,19 +233,19 @@ func runSystemctl(accion string, service string) error {
 	return err
 }
 
-func probeRustDeskService() ServicioPrueba {
+func probeRustDeskService(dbSuper *sql.DB) ServicioPrueba {
 	probe := ServicioPrueba{
 		OK:       false,
 		Resumen:  "Comprobacion no disponible en este entorno.",
 		Revisado: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
 		Puertos:  map[string]string{},
 		Servicios: map[string]string{
-			"rustdesk-hbbs": checkSystemctlStatus(resolveRustDeskServiceName(rustDeskHBBSCandidates)),
-			"rustdesk-hbbr": checkSystemctlStatus(resolveRustDeskServiceName(rustDeskHBBRCandidates)),
+			"rustdesk-hbbs": checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates)),
+			"rustdesk-hbbr": checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates)),
 		},
 	}
 	if runtime.GOOS == "windows" {
-		if !shouldUseRustDeskRemoteExec() {
+		if !shouldUseRustDeskRemoteExec(dbSuper) {
 			probe.Resumen = "Entorno local Windows: configura DB_VPS_SSH_HOST/USER/KEY_PATH para ejecutar la prueba real en el VPS Linux."
 			return probe
 		}
@@ -199,8 +253,8 @@ func probeRustDeskService() ServicioPrueba {
 
 	ports := []int{21114, 21115, 21116, 21117, 21118, 21119}
 	openPorts := 0
-	if shouldUseRustDeskRemoteExec() {
-		ssOutput, err := runRustDeskRemoteShell("ss -ltn 2>/dev/null || true")
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		ssOutput, err := runRustDeskRemoteShell(dbSuper, "ss -ltn 2>/dev/null || true")
 		if err != nil && strings.TrimSpace(ssOutput) == "" {
 			probe.Resumen = "No se pudo ejecutar la prueba remota de RustDesk en el VPS."
 			return probe
@@ -229,14 +283,14 @@ func probeRustDeskService() ServicioPrueba {
 	}
 	if probe.Servicios["rustdesk-hbbs"] == "active" && probe.Servicios["rustdesk-hbbr"] == "active" && openPorts > 0 {
 		probe.OK = true
-		if shouldUseRustDeskRemoteExec() {
+		if shouldUseRustDeskRemoteExec(dbSuper) {
 			probe.Resumen = fmt.Sprintf("RustDesk responde en el VPS: hbbs/hbbr activos y %d puerto(s) abiertos.", openPorts)
 		} else {
 			probe.Resumen = fmt.Sprintf("RustDesk responde: hbbs/hbbr activos y %d puerto(s) locales abiertos.", openPorts)
 		}
 		return probe
 	}
-	if shouldUseRustDeskRemoteExec() {
+	if shouldUseRustDeskRemoteExec(dbSuper) {
 		probe.Resumen = fmt.Sprintf("RustDesk en el VPS con alertas: hbbs=%s, hbbr=%s, puertos abiertos=%d.", probe.Servicios["rustdesk-hbbs"], probe.Servicios["rustdesk-hbbr"], openPorts)
 	} else {
 		probe.Resumen = fmt.Sprintf("RustDesk con alertas: hbbs=%s, hbbr=%s, puertos abiertos=%d.", probe.Servicios["rustdesk-hbbs"], probe.Servicios["rustdesk-hbbr"], openPorts)
@@ -244,22 +298,22 @@ func probeRustDeskService() ServicioPrueba {
 	return probe
 }
 
-func resolveRustDeskServiceName(candidates []string) string {
+func resolveRustDeskServiceName(dbSuper *sql.DB, candidates []string) string {
 	for _, candidate := range candidates {
-		if rustDeskServiceExists(candidate) {
+		if rustDeskServiceExists(dbSuper, candidate) {
 			return candidate
 		}
 	}
 	return ""
 }
 
-func rustDeskServiceExists(service string) bool {
+func rustDeskServiceExists(dbSuper *sql.DB, service string) bool {
 	if strings.TrimSpace(service) == "" {
 		return false
 	}
 	command := fmt.Sprintf("systemctl cat %s >/dev/null 2>&1", shellEscapeForPOSIX(service))
-	if shouldUseRustDeskRemoteExec() {
-		_, err := runRustDeskRemoteShell(command)
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		_, err := runRustDeskRemoteShell(dbSuper, command)
 		return err == nil
 	}
 	if runtime.GOOS == "windows" {
@@ -269,15 +323,16 @@ func rustDeskServiceExists(service string) bool {
 	return cmd.Run() == nil
 }
 
-func shouldUseRustDeskRemoteExec() bool {
-	if runtime.GOOS != "windows" {
-		return false
+func shouldUseRustDeskRemoteExec(dbSuper *sql.DB) bool {
+	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	if panelCfg.Enabled && panelCfg.Host != "" && panelCfg.User != "" {
+		return true
 	}
 	return strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST")) != "" && strings.TrimSpace(os.Getenv("DB_VPS_SSH_USER")) != ""
 }
 
-func runRustDeskRemoteShell(script string) (string, error) {
-	cfg, err := resolveRustDeskRemoteConfig()
+func runRustDeskRemoteShell(dbSuper *sql.DB, script string) (string, error) {
+	cfg, err := resolveRustDeskRemoteConfig(dbSuper)
 	if err != nil {
 		return "", err
 	}
@@ -299,10 +354,20 @@ func runRustDeskRemoteShell(script string) (string, error) {
 	return output, nil
 }
 
-func resolveRustDeskRemoteConfig() (rustDeskRemoteConfig, error) {
-	host := strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST"))
-	user := strings.TrimSpace(os.Getenv("DB_VPS_SSH_USER"))
-	keyPath := strings.TrimSpace(os.Getenv("DB_VPS_SSH_KEY_PATH"))
+func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) {
+	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	host := strings.TrimSpace(panelCfg.Host)
+	user := strings.TrimSpace(panelCfg.User)
+	keyPath := strings.TrimSpace(panelCfg.KeyPath)
+	if host == "" {
+		host = strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST"))
+	}
+	if user == "" {
+		user = strings.TrimSpace(os.Getenv("DB_VPS_SSH_USER"))
+	}
+	if keyPath == "" {
+		keyPath = strings.TrimSpace(os.Getenv("DB_VPS_SSH_KEY_PATH"))
+	}
 	if host == "" || user == "" {
 		return rustDeskRemoteConfig{}, fmt.Errorf("faltan DB_VPS_SSH_HOST o DB_VPS_SSH_USER para gestionar RustDesk en el VPS")
 	}
@@ -338,6 +403,17 @@ func resolveRustDeskRemoteConfig() (rustDeskRemoteConfig, error) {
 		ExecPath: execPath,
 		UsePlink: usePlink,
 	}, nil
+}
+
+func setRustDeskPanelEnabled(dbSuper *sql.DB, enabled bool) error {
+	if dbSuper == nil {
+		return fmt.Errorf("configuracion no disponible (dbSuper nil)")
+	}
+	val := "0"
+	if enabled {
+		val = "1"
+	}
+	return dbpkg.SetConfigValue(dbSuper, "rustdesk.vps_ssh_enabled", val, false)
 }
 
 func resolvePlinkPath() string {

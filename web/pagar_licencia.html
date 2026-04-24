@@ -268,13 +268,13 @@
           const unavailableMessages = [];
           if (epaycoProvider && !epaycoProvider.available) {
             unavailableMessages.push(epaycoProvider.enabled
-              ? 'Epayco esta activado, pero Smart Checkout requiere al menos Public Key y Private Key en configuracion avanzada.'
-              : 'Epayco esta desactivado en configuracion avanzada.');
+              ? 'Epayco está activado, pero Smart Checkout requiere al menos Public Key y Private Key en configuración avanzada.'
+              : 'Epayco está desactivado en configuración avanzada.');
           }
           if (wompiProvider && !wompiProvider.available) {
             unavailableMessages.push(wompiProvider.enabled
-              ? 'Wompi esta activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
-              : 'Wompi esta desactivado en configuracion avanzada.');
+              ? 'Wompi está activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
+              : 'Wompi está desactivado en configuración avanzada.');
           }
 
           const paymentCards = [];
@@ -325,34 +325,34 @@
                   '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
                   '<div class="home-offer-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
                   '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
-                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activacion al confirmar la transaccion.')+'</p>'+
+                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacción.')+'</p>'+
                   '<div class="checkout-meta-list">'+
                     (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
                     (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
-                    (licenciaDuracion ? '<span class="checkout-meta-pill">Duracion: ' + escapeHtml(licenciaDuracion) + ' dias</span>' : '')+
+                    (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
                   '</div>'+
                   '<div class="card-actions checkout-card-actions-inline">'+
                     '<span class="checkout-price-chip">'+escapeHtml(formatCurrency(licenciaValor))+'</span>'+
                   '</div>'+
                 '</article>'+
                 '<article class="portal-card home-offer-card checkout-home-card checkout-discount-card">'+
-                  '<div class="checkout-card-kicker">Codigos y referencias</div>'+
+                  '<div class="checkout-card-kicker">Códigos y referencias</div>'+
                   '<div class="home-offer-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
-                  '<h3>Codigos de descuento</h3>'+
+                  '<h3>Códigos de descuento</h3>'+
                   '<p>Usa este espacio para aplicar promociones o asociar la venta a un vendedor antes de abrir el checkout.</p>'+
                   '<div class="form-row checkout-discount-row">'+
                     '<div class="form-col">'+
-                      '<label class="form-label" for="discountCode">Codigo de descuento</label>'+
-                      '<input id="discountCode" class="form-input" type="text" placeholder="Codigo promocional">'+
+                      '<label class="form-label" for="discountCode">Código de descuento</label>'+
+                      '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional">'+
                     '</div>'+
                     '<div class="form-col">'+
-                      '<label class="form-label" for="asesorId">Codigo vendedor</label>'+
-                      '<input id="asesorId" class="form-input" type="text" placeholder="Codigo del vendedor">'+
+                      '<label class="form-label" for="asesorId">Código vendedor</label>'+
+                      '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
                     '</div>'+
                   '</div>'+
                   '<div class="checkout-mini-pills">'+
                     '<span class="checkout-mini-pill">Opcional</span>'+
-                    '<span class="checkout-mini-pill">Se valida al crear la transaccion</span>'+
+                    '<span class="checkout-mini-pill">Se valida al crear la transacción</span>'+
                   '</div>'+
                   '<div id="discountCodeStatus" class="form-help checkout-discount-status"></div>'+
                 '</article>'+
@@ -390,13 +390,13 @@
                     '<p class="checkout-eyebrow">Pago</p>'+
                     '<h3 class="payment-method-title">Formas de pago disponibles</h3>'+
                   '</div>'+
-                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma pagina y el estado del pago se retoma automaticamente al volver.</p>'+
+                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma página y el estado del pago se retoma automáticamente al volver.</p>'+
                 '</div>'+
                 (paymentCards.length > 1
                   ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
                   : '')+
                 (paymentCards.length === 1
-                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar mas rapido.</div>'
+                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar más rápido.</div>'
                   : '')+
                 (paymentCards.length === 0
                   ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
@@ -409,7 +409,7 @@
                   '<span class="payment-method-panel-logo-shell"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"></span>'+
                   '<span class="payment-method-panel-title">Epayco</span>'+
                 '</div>'+
-                '<div class="small payment-method-hint payment-method-brand-copy">Abre el checkout seguro de Epayco desde esta tarjeta y vuelve aqui para que el sistema confirme el pago.</div>'+
+                '<div class="small payment-method-hint payment-method-brand-copy">Abre el checkout seguro de Epayco desde esta tarjeta y vuelve aquí para que el sistema confirme el pago.</div>'+
                 '<label class="small payment-method-check"><input id="epaycoTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
                 '<button id="payEpaycoBtn" class="btn secondary payment-btn-epayco" type="button">Pagar con Epayco</button>'+
                 '<div id="epaycoStatus" class="small payment-method-status"></div>'+
@@ -934,9 +934,9 @@
               }
               if (checkoutUrl) {
                 setProviderBusy('epayco', 'Redirigiendo...');
-                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta pagina retomara la verificacion automatica con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
                 if (ui.epaycoStatus) {
-                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automaticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
+                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automáticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
                 }
                 window.setTimeout(function(){
                   window.location.assign(checkoutUrl);
@@ -944,7 +944,7 @@
                 return;
               }
 
-              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibio una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
+              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibió una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
               syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
               startPolling('epayco', context, 30);
             } catch (err) {

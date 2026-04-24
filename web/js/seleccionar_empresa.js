@@ -58,10 +58,15 @@
 
   function setShareNotice(text, isError) {
     if (!shareNoticeEl) return;
-    shareNoticeEl.style.display = text ? "block" : "none";
+    shareNoticeEl.classList.toggle("is-hidden", !text);
     shareNoticeEl.textContent = text || "";
     shareNoticeEl.classList.toggle("error", !!isError);
     shareNoticeEl.classList.toggle("success", !isError && !!text);
+  }
+
+  function setHidden(element, hidden) {
+    if (!element) return;
+    element.classList.toggle("is-hidden", !!hidden);
   }
 
   function getQueryParam(name) {
@@ -260,8 +265,8 @@
       window.location.href = normalized;
       return;
     }
-    empresasPanel.style.display = "none";
-    contentFrame.style.display = "";
+    setHidden(empresasPanel, true);
+    setHidden(contentFrame, false);
     contentFrame.setAttribute("src", normalized);
     persistView({ mode: "frame", href: normalized });
     setActiveNav(link);
@@ -813,20 +818,20 @@
   }
 
   function showForm() {
-    if (empresasPanel) empresasPanel.style.display = "";
+    setHidden(empresasPanel, false);
     if (contentFrame) {
-      contentFrame.style.display = "none";
+      setHidden(contentFrame, true);
       contentFrame.setAttribute("src", "about:blank");
     }
-    document.getElementById("form").style.display = "";
-    document.getElementById("addBtn").style.display = "none";
+    setHidden(document.getElementById("form"), false);
+    setHidden(document.getElementById("addBtn"), true);
     persistView({ mode: "form" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function hideForm() {
-    document.getElementById("form").style.display = "none";
-    document.getElementById("addBtn").style.display = "";
+    setHidden(document.getElementById("form"), true);
+    setHidden(document.getElementById("addBtn"), false);
     document.getElementById("itemId").value = "";
     document.getElementById("nombre").value = "";
     document.getElementById("nit").value = "";
@@ -835,9 +840,9 @@
   }
 
   function showEmpresasPanel() {
-    if (empresasPanel) empresasPanel.style.display = "";
+    setHidden(empresasPanel, false);
     if (contentFrame) {
-      contentFrame.style.display = "none";
+      setHidden(contentFrame, true);
       contentFrame.setAttribute("src", "about:blank");
     }
     hideForm();

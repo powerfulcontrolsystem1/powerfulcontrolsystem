@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ãšltimos movimientos de caja</title>
+  <title>Últimos movimientos de caja</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="container">
     <section class="card">
       <div class="header">
-        <h1>Ãšltimos movimientos de caja</h1>
+        <h1>Últimos movimientos de caja</h1>
         <div>
           <button id="reloadBtn" class="btn secondary">Actualizar</button>
         </div>
       </div>
 
       <div id="productosSection">
-        <h2>Ãšltimos productos vendidos</h2>
+        <h2>Últimos productos vendidos</h2>
         <div id="productosLoading" class="form-help">Cargando...</div>
-        <table id="productosTable" class="table" style="display:none; width:100%;">
+        <table id="productosTable" class="table table-full is-hidden">
           <thead>
             <tr>
               <th>Fecha</th>
@@ -35,14 +35,14 @@
       </div>
 
       <div id="facturasSection" >
-        <h2>Ãšltimas facturas</h2>
+        <h2>Últimas facturas</h2>
         <div id="facturasLoading" class="form-help">Cargando...</div>
-        <table id="facturasTable" class="table" style="display:none; width:100%;">
+        <table id="facturasTable" class="table table-full is-hidden">
           <thead>
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>CÃ³digo</th>
+              <th>Código</th>
               <th>Cliente</th>
               <th>Total</th>
               <th>Estado</th>
@@ -141,10 +141,10 @@
     const table = document.getElementById('productosTable');
     const tbody = table.querySelector('tbody');
     loading.textContent = 'Cargando...';
-    table.style.display = 'none';
+      table.classList.add('is-hidden');
     tbody.innerHTML = '';
     if (!empresaId) {
-      loading.textContent = 'empresa_id no encontrado.';
+      loading.textContent = 'No se encontró la empresa para cargar los movimientos.';
       return;
     }
     try {
@@ -179,7 +179,7 @@
         tbody.appendChild(tr);
       });
       loading.textContent = '';
-      table.style.display = '';
+      table.classList.remove('is-hidden');
     } catch (err) {
       loading.textContent = 'Error al cargar movimientos: ' + (err && err.message ? err.message : String(err));
     }
@@ -190,10 +190,10 @@
     const table = document.getElementById('facturasTable');
     const tbody = table.querySelector('tbody');
     loading.textContent = 'Cargando...';
-    table.style.display = 'none';
+    table.classList.add('is-hidden');
     tbody.innerHTML = '';
     if (!empresaId) {
-      loading.textContent = 'empresa_id no encontrado.';
+      loading.textContent = 'No se encontró la empresa para cargar las facturas.';
       return;
     }
     try {
@@ -208,7 +208,7 @@
       items.forEach(it => {
         const tr = document.createElement('tr');
         const fecha = it.fecha_documento || it.fecha_creacion || '';
-        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' Â· ' + it.cliente_documento) : '');
+        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' · ' + it.cliente_documento) : '');
         tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
                        '<td>' + sanitize(it.tipo_documento || '') + '</td>' +
                        '<td>' + sanitize(it.documento_codigo || '') + '</td>' +
@@ -218,7 +218,7 @@
         tbody.appendChild(tr);
       });
       loading.textContent = '';
-      table.style.display = '';
+      table.classList.remove('is-hidden');
     } catch (err) {
       loading.textContent = 'Error al cargar facturas: ' + (err && err.message ? err.message : String(err));
     }

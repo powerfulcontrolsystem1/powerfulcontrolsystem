@@ -3,22 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Registrar contrasena de usuario Google</title>
+  <title>Registrar contraseña de usuario Google</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
 <body>
   <div class="login-page">
     <div class="login-header">
-      <h1 class="login-title">Registrar contrasena</h1>
+      <h1 class="login-title">Registrar contraseña</h1>
       <div><a class="login-help-link" href="/ayuda/login_administradores.html">Saber más</a></div>
     </div>
     <div class="container">
       <div class="card">
         <h2>Crear clave para acceso por correo</h2>
-        <p class="login-subtitle">Ya ingresaste con Google. Define ahora una contrasena para que tambien puedas entrar con correo y clave cuando lo necesites.</p>
+        <p class="login-subtitle">Ya ingresaste con Google. Define ahora una contraseña para que también puedas entrar con correo y clave cuando lo necesites.</p>
         <div id="googlePasswordSetupIntro" class="form-help">Validando tu cuenta...</div>
-        <form class="form" id="googlePasswordSetupForm" autocomplete="on" novalidate style="display:none">
+        <form class="form is-hidden" id="googlePasswordSetupForm" autocomplete="on" novalidate>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="googleAccountEmail">Correo</label>
@@ -27,10 +27,10 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="googlePassword">Nueva contrasena</label>
+              <label class="form-label" for="googlePassword">Nueva contraseña</label>
               <div class="password-visibility-field">
-                <input id="googlePassword" class="form-input password-visibility-input" type="password" autocomplete="new-password" placeholder="Minimo 8 caracteres" required>
-                <button class="password-visibility-toggle" type="button" data-target="googlePassword" aria-label="Mostrar contrasena" aria-pressed="false" title="Mostrar contrasena">
+                <input id="googlePassword" class="form-input password-visibility-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+                <button class="password-visibility-toggle" type="button" data-target="googlePassword" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M12 5C6.5 5 2.1 8.4.5 12c1.6 3.6 6 7 11.5 7s9.9-3.4 11.5-7C21.9 8.4 17.5 5 12 5Zm0 11.2A4.2 4.2 0 1 1 12 7.8a4.2 4.2 0 0 1 0 8.4Zm0-6.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" fill="currentColor"></path>
                   </svg>
@@ -40,10 +40,10 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="googlePasswordConfirm">Confirmar contrasena</label>
+              <label class="form-label" for="googlePasswordConfirm">Confirmar contraseña</label>
               <div class="password-visibility-field">
-                <input id="googlePasswordConfirm" class="form-input password-visibility-input" type="password" autocomplete="new-password" placeholder="Repite la contrasena" required>
-                <button class="password-visibility-toggle" type="button" data-target="googlePasswordConfirm" aria-label="Mostrar contrasena" aria-pressed="false" title="Mostrar contrasena">
+                <input id="googlePasswordConfirm" class="form-input password-visibility-input" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
+                <button class="password-visibility-toggle" type="button" data-target="googlePasswordConfirm" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M12 5C6.5 5 2.1 8.4.5 12c1.6 3.6 6 7 11.5 7s9.9-3.4 11.5-7C21.9 8.4 17.5 5 12 5Zm0 11.2A4.2 4.2 0 1 1 12 7.8a4.2 4.2 0 0 1 0 8.4Zm0-6.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" fill="currentColor"></path>
                   </svg>
@@ -51,10 +51,10 @@
               </div>
             </div>
           </div>
-          <div class="form-actions auth-alt-actions" style="justify-content:center;">
-            <button id="googlePasswordSetupBtn" class="btn" type="submit">Guardar contrasena</button>
+          <div class="form-actions auth-alt-actions is-centered">
+            <button id="googlePasswordSetupBtn" class="btn" type="submit">Guardar contraseña</button>
           </div>
-          <div id="googlePasswordSetupMessage" class="form-help auth-message" style="display:none"></div>
+          <div id="googlePasswordSetupMessage" class="form-help auth-message is-hidden"></div>
         </form>
       </div>
     </div>

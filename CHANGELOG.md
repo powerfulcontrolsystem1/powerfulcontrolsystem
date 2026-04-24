@@ -20,6 +20,9 @@
 # CHANGELOG
 
 ## 2026-04-23
+- Retiro del modulo Tipos de usuario en panel super: API, handlers, pagina web y tabla `tipos_de_usuario` (DROP al arranque); solo permanecen roles y permisos por rol.
+	- Archivos modificados/eliminados: `backend/main.go`, `backend/handlers/roles_tipos_usuario.go`, `backend/db/roles_tipos_usuario.go`, `web/super_administrador.html`, `web/js/super_administrador.js`, `web/super/tipos_de_usuario.htm` (eliminado), `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+
 - Documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de respaldo bajo `backup/`.
 	- Archivos modificados: `documentos/manual_de_instalacion.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `documentos/CHANGELOG.md`, `CHANGELOG.md`, `backup/.gitkeep`, `backup/empresas/.gitkeep`, `backup/super_administrador/.gitkeep`.
 	- Descripcion: el manual ahora documenta la configuracion super, el provider y los mensajes tipicos de dominio en Google, y describe el almacenamiento best-effort de copias JSON en `backup/super_administrador` y `backup/empresas/<empresa_id>`.

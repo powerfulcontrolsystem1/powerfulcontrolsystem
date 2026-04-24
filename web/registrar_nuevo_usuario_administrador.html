@@ -10,14 +10,14 @@
   <div class="login-page register-admin-page">
     <div class="login-header">
       <h1 class="login-title">Registrar nuevo usuario administrador</h1>
-      <div><a class="login-help-link" href="/ayuda/login_administradores.html">Saber mÃ¡s</a></div>
+      <div><a class="login-help-link" href="/ayuda/login_administradores.html">Saber más</a></div>
     </div>
     <div class="container">
       <div class="card">
         <h2>Crear cuenta administrativa</h2>
-        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso y luego podras continuar a seleccionar empresa.</p>
-        <div class="form-actions auth-alt-actions" style="margin-bottom:14px;">
-          <a class="btn secondary" href="/index.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Ir al inicio</a>
+        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso y luego podrás continuar a seleccionar empresa.</p>
+        <div class="form-actions auth-alt-actions auth-actions-top">
+          <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
         </div>
         <form class="form auth-alt-form" id="adminRegisterForm" autocomplete="on" novalidate>
           <div class="form-row">
@@ -35,14 +35,14 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="registerPhone">Celular</label>
-              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Numero de contacto" required>
+              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Número de contacto" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="registerCountry">Pais</label>
+              <label class="form-label" for="registerCountry">País</label>
               <select id="registerCountry" class="form-input" autocomplete="country-name" required></select>
-              <div class="form-help">Se detecta automaticamente segun tu navegador y zona horaria, pero puedes cambiarlo manualmente.</div>
+              <div class="form-help">Se detecta automáticamente según tu navegador y zona horaria, pero puedes cambiarlo manualmente.</div>
             </div>
             <div class="form-col">
               <label class="form-label" for="registerCity">Ciudad</label>
@@ -51,24 +51,24 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="registerPassword">ContraseÃ±a</label>
-              <input id="registerPassword" class="form-input" type="password" autocomplete="new-password" placeholder="MÃ­nimo 8 caracteres" required>
+              <label class="form-label" for="registerPassword">Contraseña</label>
+              <input id="registerPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="registerPasswordConfirm">Confirmar contraseÃ±a</label>
-              <input id="registerPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu contraseÃ±a" required>
+              <label class="form-label" for="registerPasswordConfirm">Confirmar contraseña</label>
+              <input id="registerPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" required>
             </div>
           </div>
           <div class="form-actions auth-alt-actions">
             <button id="adminRegisterBtn" class="btn" type="submit">Registrar cuenta</button>
-            <a class="btn secondary" href="/login.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Volver al login</a>
+            <a class="btn secondary admin-link-btn" href="/login.html">Volver al login</a>
           </div>
           <div id="adminRegisterRecaptcha" class="form-help" style="display:none"></div>
-          <div id="adminRegisterMessage" class="form-help auth-message" style="display:none"></div>
+          <div id="adminRegisterMessage" class="form-help auth-message is-hidden"></div>
         </form>
-        <p class="footer login-card-note">Despues de confirmar tu correo podras iniciar por Google o con tu correo y contrasena, y continuar a seleccionar empresa.</p>
+        <p class="footer login-card-note">Después de confirmar tu correo podrás iniciar por Google o con tu correo y contraseña, y continuar a seleccionar empresa.</p>
       </div>
     </div>
   </div>

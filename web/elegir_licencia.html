@@ -54,7 +54,7 @@
         <div class="page-header">
           <h1 id="pageTitle">Elegir Licencia</h1>
         </div>
-        <p class="form-help" id="licenciasHelp">Explora las licencias disponibles y elige la opcion que mejor encaje con la operacion de la empresa.</p>
+        <p class="form-help" id="licenciasHelp">Explora las licencias disponibles y elige la opción que mejor encaje con la operación de la empresa.</p>
         <div id="licencias" class="portal-grid portal-home-grid">Cargando licencias...</div>
       </div>
     </main>
@@ -105,9 +105,9 @@
           '    <img src="' + escapeHtml(icono) + '" alt="Icono licencia ' + escapeHtml(String(licencia.nombre || licencia.Nombre || '')) + '" class="card-logo">' +
           '  </div>' +
           '  <h3>' + escapeHtml(String(licencia.nombre || licencia.Nombre || '--')) + '</h3>' +
-          '  <p>' + escapeHtml(descripcion || ('Licencia con duracion de ' + String(duracion || '--') + ' dias y activacion para la empresa seleccionada.')) + '</p>' +
+          '  <p>' + escapeHtml(descripcion || ('Licencia con duración de ' + String(duracion || '--') + ' días y activación para la empresa seleccionada.')) + '</p>' +
           '  <p><strong>Valor:</strong> ' + escapeHtml(formatMoney(valor)) + '</p>' +
-          '  <p><strong>Duracion:</strong> ' + escapeHtml(String(duracion)) + ' dias</p>' +
+          '  <p><strong>Duración:</strong> ' + escapeHtml(String(duracion)) + ' días</p>' +
           '  <div class="card-actions">' +
           '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
           '  </div>' +
@@ -153,7 +153,7 @@
 
           const container = document.getElementById('licencias'); container.innerHTML = '';
           if (!filtered || filtered.length === 0){
-            container.innerHTML = '<article class="portal-card home-offer-card"><div class="home-offer-media"><img src="/img/punto_venta.png" alt="Sin licencias" class="card-logo"></div><h3>Sin licencias disponibles</h3><p>No se encontraron licencias para este tipo de empresa.</p><p>Contacta al administrador para revisar disponibilidad o configuracion comercial.</p><div class="card-actions"><a class="home-offer-btn" href="/seleccionar_empresa.html">Volver a empresas</a></div></article>';
+            container.innerHTML = '<article class="portal-card home-offer-card"><div class="home-offer-media"><img src="/img/punto_venta.png" alt="Sin licencias" class="card-logo"></div><h3>Sin licencias disponibles</h3><p>No se encontraron licencias para este tipo de empresa.</p><p>Contacta al administrador para revisar disponibilidad o configuración comercial.</p><div class="card-actions"><a class="home-offer-btn" href="/seleccionar_empresa.html">Volver a empresas</a></div></article>';
             return;
           }
 

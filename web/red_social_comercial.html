@@ -7,11 +7,21 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
-    body { font-family: "Segoe UI Variable","Segoe UI",Tahoma,sans-serif; margin: 0; padding: 20px; text-align: center; color: var(--text); }
+    body {
+      font-family: "Segoe UI Variable","Segoe UI",Tahoma,sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top center, color-mix(in srgb, var(--accent) 12%, transparent 88%), transparent 34%),
+        linear-gradient(180deg, var(--bg-alt), var(--bg));
+    }
     .social-hero { margin-top: 60px; }
     .social-hero p { color: var(--muted); max-width: 720px; margin: 0.75rem auto 0; }
     .feed { max-width: 880px; margin: 2rem auto; text-align: left; }
-    .card { background: linear-gradient(180deg, var(--surface), var(--surface-soft)); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); margin-bottom: 2rem; overflow: hidden; display: flex; flex-direction: column; }
+    .card { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 86%, var(--surface) 14%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%)); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); margin-bottom: 2rem; overflow: hidden; display: flex; flex-direction: column; }
     .card-img { width: 100%; height: 300px; background-color: var(--input-bg-soft); background-size: cover; background-position: center; }
     .card-body { padding: 20px; }
     .card-title { font-size: 1.5rem; margin: 0 0 10px 0; color: var(--text); }

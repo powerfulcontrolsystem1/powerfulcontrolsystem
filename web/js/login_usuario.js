@@ -105,9 +105,9 @@
     }
     if (!empresaContextHint) return;
     if (state.empresaID > 0) {
-      empresaContextHint.textContent = "Empresa activa: " + state.empresaID + ". Este dato se enviara en todos los formularios del portal.";
+      empresaContextHint.textContent = "Empresa activa: " + state.empresaID + ". Este dato se enviará en todos los formularios del portal.";
     } else {
-      empresaContextHint.textContent = "Todavia no hay empresa seleccionada. Ingresa el ID o abre este portal desde el boton publico de administrar empresa.";
+      empresaContextHint.textContent = "Todavía no hay empresa seleccionada. Ingresa el ID o abre este portal desde el botón público de administrar empresa.";
     }
   }
 
@@ -132,13 +132,16 @@
     var target = messageTargets[key];
     if (!target) return;
     target.textContent = text || "";
-    target.style.color = isError ? "#ef5350" : "";
+    target.classList.toggle("is-hidden", !text);
+    target.classList.toggle("is-visible", !!text);
+    target.classList.toggle("error", !!text && !!isError);
+    target.classList.toggle("success", !!text && !isError);
   }
 
   function setContractStatus(text, isWarning) {
     if (!contractStatus) return;
     contractStatus.textContent = text || "";
-    contractStatus.style.color = isWarning ? "#f7cd7c" : "";
+    contractStatus.classList.toggle("text-warning", !!text && !!isWarning);
   }
 
   function setContractPanelAttention(required) {
@@ -150,19 +153,19 @@
     state.contract = contract || null;
     if (!contract) {
       contractTitle.textContent = "Contrato no disponible";
-      contractVersion.textContent = "Version --";
-      contractSummary.textContent = "No fue posible cargar el contrato vigente. Intenta recargar esta pagina.";
+      contractVersion.textContent = "Versión --";
+      contractSummary.textContent = "No fue posible cargar el contrato vigente. Intenta recargar esta página.";
       contractNote.textContent = "";
       setContractStatus("Si el problema persiste, informa al administrador.", true);
       return;
     }
 
     contractTitle.textContent = contract.titulo || "Contrato vigente";
-    contractVersion.textContent = "Version " + String(contract.version || "--");
+    contractVersion.textContent = "Versión " + String(contract.version || "--");
     contractSummary.textContent = contract.resumen || "Lee el contrato antes de continuar con el acceso.";
     contractNote.textContent = contract.nota_aceptacion || "";
     contractLink.href = "/contrato.html" + (contract.version ? "?version=" + encodeURIComponent(contract.version) : "");
-    setContractStatus("La aceptacion se registrara cuando completes el flujo de acceso.", false);
+    setContractStatus("La aceptación se registrará cuando completes el flujo de acceso.", false);
   }
 
   function loadContract() {
@@ -186,7 +189,7 @@
     var selected = name || "login";
     Object.keys(forms).forEach(function (key) {
       if (!forms[key]) return;
-      forms[key].style.display = key === selected ? "" : "none";
+      forms[key].classList.toggle("is-hidden", key !== selected);
     });
     state.activeForm = selected;
     clearMessages();
@@ -321,7 +324,7 @@
     if (payload && payload.password_setup_required) {
       showForm("setup", {
         email: payload.email,
-        message: payload.message || "Completa tu contrasena inicial para continuar."
+        message: payload.message || "Completa tu contraseña inicial para continuar."
       });
       return;
     }
@@ -329,7 +332,7 @@
     if (payload && payload.password_rotation_required) {
       showForm("change", {
         email: payload.email,
-        message: payload.message || "Debes cambiar tu contrasena antes de continuar."
+        message: payload.message || "Debes cambiar tu contraseña antes de continuar."
       });
       return;
     }
@@ -401,7 +404,7 @@
         handleAuthResult(payload, "login");
       })
       .catch(function (error) {
-        setMessage("login", error.message || "No fue posible iniciar sesion.", true);
+        setMessage("login", error.message || "No fue posible iniciar sesión.", true);
       })
       .finally(function () {
         setLoginBusy(false);
@@ -438,7 +441,7 @@
         handleAuthResult(payload, "setup");
       })
       .catch(function (error) {
-        setMessage("setup", error.message || "No fue posible crear la contrasena.", true);
+        setMessage("setup", error.message || "No fue posible crear la contraseña.", true);
       })
       .finally(function () {
         setSetupBusy(false);
@@ -470,10 +473,10 @@
       .then(function (payload) {
         if (!payload) return;
         prefillEmail(document.getElementById("recoveryEmail").value);
-        setMessage("recovery", normalizeErrorMessage(payload, "Si el correo existe, enviaremos instrucciones para recuperar la contrasena."), false);
+        setMessage("recovery", normalizeErrorMessage(payload, "Si el correo existe, enviaremos instrucciones para recuperar la contraseña."), false);
       })
       .catch(function (error) {
-        setMessage("recovery", error.message || "No fue posible iniciar la recuperacion.", true);
+        setMessage("recovery", error.message || "No fue posible iniciar la recuperación.", true);
       })
       .finally(function () {
         setRecoveryBusy(false);
@@ -510,7 +513,7 @@
         handleAuthResult(payload, "reset");
       })
       .catch(function (error) {
-        setMessage("reset", error.message || "No fue posible restablecer la contrasena.", true);
+        setMessage("reset", error.message || "No fue posible restablecer la contraseña.", true);
       })
       .finally(function () {
         setResetBusy(false);
@@ -542,7 +545,7 @@
         handleAuthResult(payload, "change");
       })
       .catch(function (error) {
-        setMessage("change", error.message || "No fue posible cambiar la contrasena.", true);
+        setMessage("change", error.message || "No fue posible cambiar la contraseña.", true);
       })
       .finally(function () {
         setChangeBusy(false);
@@ -577,7 +580,7 @@
     contractCheckbox.addEventListener("change", function () {
       if (contractCheckbox.checked) {
         setContractPanelAttention(false);
-        setContractStatus("La aceptacion se registrara cuando completes el flujo de acceso.", false);
+        setContractStatus("La aceptación se registrará cuando completes el flujo de acceso.", false);
       }
     });
   }
@@ -626,7 +629,7 @@
     showForm("reset", {
       email: urlEmail,
       token: urlToken,
-      message: "Token detectado en la URL. Define tu nueva contrasena para continuar."
+      message: "Token detectado en la URL. Define tu nueva contraseña para continuar."
     });
   } else {
     showForm("login", { email: urlEmail });

@@ -7,25 +7,25 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
-      --sec-ink: #ecf4ff;
-      --sec-brass: #f0ba67;
-      --sec-sand: #0c1524;
-      --sec-card: rgba(12, 22, 36, 0.94);
-      --sec-card-strong: rgba(8, 15, 26, 0.98);
-      --sec-border: rgba(138, 170, 208, 0.18);
-      --sec-soft: rgba(21, 37, 58, 0.92);
-      --sec-danger: #ff8675;
+      --sec-ink: var(--text);
+      --sec-brass: var(--accent-yellow);
+      --sec-sand: var(--bg);
+      --sec-card: color-mix(in srgb, var(--surface-soft) 82%, var(--surface) 18%);
+      --sec-card-strong: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+      --sec-border: color-mix(in srgb, var(--border) 88%, transparent 12%);
+      --sec-soft: color-mix(in srgb, var(--content-soft-bg) 88%, var(--surface-soft) 12%);
+      --sec-danger: var(--danger);
       --sec-warning: #f4c15d;
-      --sec-success: #56c9a0;
-      --sec-info: #7bb8ff;
-      --sec-muted: rgba(220, 233, 249, 0.72);
-      --sec-muted-strong: rgba(236, 244, 255, 0.86);
+      --sec-success: var(--success);
+      --sec-info: var(--accent);
+      --sec-muted: var(--muted);
+      --sec-muted-strong: color-mix(in srgb, var(--text) 82%, var(--muted) 18%);
     }
     body.super-page {
       background:
-        radial-gradient(circle at top left, rgba(240, 186, 103, 0.16), transparent 22%),
-        radial-gradient(circle at top right, rgba(53, 107, 174, 0.18), transparent 28%),
-        linear-gradient(180deg, #08101c 0%, #0d1726 46%, #091220 100%);
+        radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent 82%), transparent 22%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 18%, transparent 82%), transparent 28%),
+        linear-gradient(180deg, var(--bg-alt) 0%, color-mix(in srgb, var(--bg-alt) 60%, var(--bg) 40%) 46%, var(--bg) 100%);
       color: var(--sec-ink);
     }
     .security-hero {
@@ -71,7 +71,7 @@
       padding: 20px;
     }
     .security-card.muted {
-      background: rgba(16, 29, 46, 0.9);
+      background: color-mix(in srgb, var(--sec-soft) 70%, var(--sec-card) 30%);
     }
     .card-head {
       display: flex;
@@ -100,21 +100,21 @@
     .state-pill.neutral,
     .severity-pill.info,
     .tool-pill.neutral {
-      background: rgba(123, 184, 255, 0.14);
+      background: color-mix(in srgb, var(--sec-info) 16%, transparent 84%);
       color: var(--sec-info);
     }
     .state-pill.running {
-      background: rgba(244, 193, 93, 0.14);
+      background: color-mix(in srgb, var(--sec-warning) 16%, transparent 84%);
       color: #ffd988;
     }
     .state-pill.completed,
     .severity-pill.bajo {
-      background: rgba(86, 201, 160, 0.14);
+      background: color-mix(in srgb, var(--sec-success) 16%, transparent 84%);
       color: var(--sec-success);
     }
     .state-pill.failed,
     .severity-pill.critico {
-      background: rgba(255, 134, 117, 0.14);
+      background: color-mix(in srgb, var(--sec-danger) 16%, transparent 84%);
       color: var(--sec-danger);
     }
     .severity-pill.alto {
@@ -136,7 +136,7 @@
       padding: 14px;
       border-radius: 18px;
       background: var(--sec-soft);
-      border: 1px solid rgba(138, 170, 208, 0.14);
+      border: 1px solid var(--sec-border);
     }
     .summary-tile strong,
     .tool-tile strong {
@@ -192,15 +192,15 @@
     .field-block textarea {
       width: 100%;
       border-radius: 14px;
-      border: 1px solid rgba(138, 170, 208, 0.18);
-      background: rgba(7, 14, 24, 0.96);
+      border: 1px solid var(--sec-border);
+      background: var(--input-bg);
       color: var(--sec-ink);
       padding: 11px 12px;
       font: inherit;
     }
     .field-block input::placeholder,
     .field-block textarea::placeholder {
-      color: rgba(220, 233, 249, 0.38);
+      color: color-mix(in srgb, var(--sec-muted) 60%, transparent 40%);
     }
     .field-switch {
       flex-direction: row;
@@ -215,7 +215,7 @@
     }
     .section-separator {
       margin: 16px 0;
-      border-top: 1px dashed rgba(138, 170, 208, 0.16);
+      border-top: 1px dashed var(--sec-border);
     }
     .findings-list {
       display: flex;
@@ -226,7 +226,7 @@
       padding-right: 4px;
     }
     .finding-card {
-      border: 1px solid rgba(138, 170, 208, 0.14);
+      border: 1px solid var(--sec-border);
       border-left: 6px solid var(--sec-info);
       border-radius: 16px;
       padding: 14px 16px;

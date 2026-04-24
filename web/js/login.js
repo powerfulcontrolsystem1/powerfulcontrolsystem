@@ -66,8 +66,8 @@
     }
     input.type = isVisible ? 'text' : 'password';
     toggleBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
-    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
-    toggleBtn.setAttribute('title', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    toggleBtn.setAttribute('title', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
     toggleBtn.classList.toggle('is-visible', !!isVisible);
   }
 
@@ -91,9 +91,11 @@
     if (!target) {
       return;
     }
-    target.style.display = text ? 'block' : 'none';
+    target.classList.toggle('is-hidden', !text);
+    target.classList.toggle('is-visible', !!text);
     target.textContent = text || '';
-    target.style.color = isError ? 'crimson' : 'green';
+    target.classList.toggle('error', !!text && !!isError);
+    target.classList.toggle('success', !!text && !isError);
   }
 
   function clearMsgs() {

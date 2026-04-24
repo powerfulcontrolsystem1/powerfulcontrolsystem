@@ -10,7 +10,7 @@
   <div class="container">
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h1 style="margin:0;">Reportes operativos y financieros</h1>
+        <h1 class="empresa-section-title">Reportes operativos y financieros</h1>
         <div class="empresa-inline-actions">
           <input id="fechaDesde" type="date" class="form-input">
           <input id="fechaHasta" type="date" class="form-input">
@@ -20,11 +20,11 @@
           <button id="btnExportarTableroJSON" class="btn secondary" type="button">Exportar tablero JSON</button>
         </div>
       </div>
-      <p class="form-help">Resumen mÃ­nimo de operaciÃ³n, finanzas y contabilidad por empresa con filtro de fechas.</p>
+      <p class="form-help">Resumen mínimo de operación, finanzas y contabilidad por empresa con filtro de fechas.</p>
       <div id="reportesMsg" class="form-help"></div>
       <div class="empresa-inline-actions" >
-        <select id="datasetSelect" class="form-input" style="min-width:260px;"></select>
-        <select id="datasetFormato" class="form-input" style="min-width:140px;">
+        <select id="datasetSelect" class="form-input reportes-filter-wide"></select>
+        <select id="datasetFormato" class="form-input reportes-filter-tight">
           <option value="json">JSON</option>
           <option value="csv">CSV</option>
           <option value="txt">TXT</option>
@@ -36,17 +36,17 @@
         <button id="btnExportarSuite" class="btn secondary" type="button">Exportar suite JSON</button>
       </div>
       <div class="empresa-inline-actions" >
-        <input id="filtroUsuarioTurno" type="text" class="form-input" style="min-width:180px;" placeholder="Usuario turno (opcional)">
-        <input id="filtroCajaTurno" type="text" class="form-input" style="min-width:160px;" placeholder="Caja (ej: CAJA-01)">
-        <input id="filtroTurnoCaja" type="text" class="form-input" style="min-width:150px;" placeholder="Turno (ej: manana)">
-        <input id="filtroCierreID" type="number" class="form-input" style="max-width:140px;" min="1" step="1" placeholder="Cierre ID">
+        <input id="filtroUsuarioTurno" type="text" class="form-input reportes-filter-mid" placeholder="Usuario turno (opcional)">
+        <input id="filtroCajaTurno" type="text" class="form-input reportes-filter-compact" placeholder="Caja (ej: CAJA-01)">
+        <input id="filtroTurnoCaja" type="text" class="form-input reportes-filter-compact" placeholder="Turno (ej: mañana)">
+        <input id="filtroCierreID" type="number" class="form-input reportes-filter-tight" min="1" step="1" placeholder="Cierre ID">
       </div>
       <div class="empresa-inline-actions" >
-        <input id="filtroCategoriaContable" type="text" class="form-input" style="min-width:190px;" placeholder="CategorÃ­a contable (opcional)">
-        <input id="filtroMetodoPagoContable" type="text" class="form-input" style="min-width:190px;" placeholder="MÃ©todo pago (ej: efectivo)">
+        <input id="filtroCategoriaContable" type="text" class="form-input reportes-filter-mid" placeholder="Categoría contable (opcional)">
+        <input id="filtroMetodoPagoContable" type="text" class="form-input reportes-filter-mid" placeholder="Método pago (ej: efectivo)">
       </div>
       <p class="form-help">Filtros de turno aplican al dataset <strong>Reporte de Turno</strong> y sus exportaciones.</p>
-      <p class="form-help">Filtros de categorÃ­a y mÃ©todo de pago aplican al dataset <strong>Flujo de Caja Diario</strong>.</p>
+      <p class="form-help">Filtros de categoría y método de pago aplican al dataset <strong>Flujo de Caja Diario</strong>.</p>
       <p id="datasetMeta" class="form-help"></p>
 
       <div class="kpi-grid" >
@@ -75,7 +75,7 @@
           <strong id="kpiProductosActivos">0</strong>
         </div>
         <div class="kpi-box">
-          <span class="kpi-label">Productos bajo mÃ­nimo</span>
+          <span class="kpi-label">Productos bajo mínimo</span>
           <strong id="kpiProductosBajoMinimo">0</strong>
         </div>
         <div class="kpi-box">
@@ -126,7 +126,7 @@
           <strong id="kpiContEventosProcesados">0</strong>
         </div>
         <div class="kpi-box">
-          <span class="kpi-label">Docs facturaciÃ³n</span>
+          <span class="kpi-label">Docs facturación</span>
           <strong id="kpiContDocsFacturacion">0</strong>
         </div>
         <div class="kpi-box">
@@ -170,11 +170,11 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Vista profesional por dataset</h2>
+        <h2 class="empresa-section-title">Vista profesional por dataset</h2>
       </div>
       <p id="datasetResumen" class="form-help"></p>
       <div class="table-wrap">
-        <table class="table" id="tablaDatasetProfesional">
+        <table class="table reportes-prof-table" id="tablaDatasetProfesional">
           <thead></thead>
           <tbody></tbody>
         </table>
@@ -183,7 +183,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Ventas cerradas recientes</h2>
+        <h2 class="empresa-section-title">Ventas cerradas recientes</h2>
       </div>
       <div class="table-wrap">
         <table class="table" id="tablaVentasCerradas">
@@ -204,7 +204,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Top productos vendidos</h2>
+        <h2 class="empresa-section-title">Top productos vendidos</h2>
       </div>
       <div class="table-wrap">
         <table class="table" id="tablaTopProductos">
@@ -223,7 +223,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Top clientes por ingresos</h2>
+        <h2 class="empresa-section-title">Top clientes por ingresos</h2>
       </div>
       <div class="table-wrap">
         <table class="table" id="tablaTopClientes">
@@ -241,7 +241,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Reporte de productos (rango de fechas)</h2>
+        <h2 class="empresa-section-title">Reporte de productos (rango de fechas)</h2>
       </div>
       <div class="table-wrap">
         <table class="table" id="tablaReporteProductos">
@@ -254,7 +254,7 @@
               <th>Vendidos</th>
               <th>Ingresos</th>
               <th>Comprados</th>
-              <th>Ãšltimo movimiento</th>
+              <th>Último movimiento</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -264,7 +264,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Reporte de inventario actual por bodega</h2>
+        <h2 class="empresa-section-title">Reporte de inventario actual por bodega</h2>
       </div>
       <div class="table-wrap">
         <table class="table" id="tablaInventarioActual">
@@ -273,8 +273,8 @@
               <th>Producto</th>
               <th>Bodega</th>
               <th>Existencia</th>
-              <th>Stock mÃ­nimo</th>
-              <th>Stock mÃ¡ximo</th>
+              <th>Stock mínimo</th>
+              <th>Stock máximo</th>
               <th>Estado stock</th>
             </tr>
           </thead>
@@ -285,7 +285,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Reporte de compra de productos (por fecha)</h2>
+        <h2 class="empresa-section-title">Reporte de compra de productos (por fecha)</h2>
       </div>
       <p id="comprasResumen" class="form-help"></p>
       <div class="table-wrap">
@@ -308,13 +308,13 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">ImpresiÃ³n y formatos</h2>
+        <h2 class="empresa-section-title">Impresión y formatos</h2>
         <div class="empresa-inline-actions">
           <button id="btnPreviewPOS" class="btn secondary" type="button">Vista previa POS</button>
           <button id="btnPreviewCarta" class="btn" type="button">Vista previa carta</button>
         </div>
       </div>
-      <p class="form-help" id="impresionResumen">Cargando configuraciÃ³n de impresiÃ³n...</p>
+      <p class="form-help" id="impresionResumen">Cargando configuración de impresión...</p>
       <p class="form-help" id="impresionMsg"></p>
     </section>
   </div>
@@ -622,7 +622,7 @@
 
     function formatDatasetValue(column, value) {
       if (value == null) return '-';
-      if (typeof value === 'boolean') return value ? 'SÃ­' : 'No';
+      if (typeof value === 'boolean') return value ? 'Sí' : 'No';
       if (typeof value === 'number') {
         const col = normalize(column).toLowerCase();
         if (col.includes('monto') || col.includes('total') || col.includes('ingres') || col.includes('egres') || col.includes('costo') || col.includes('balance') || col.includes('utilidad') || col.includes('activos') || col.includes('pasivos') || col.includes('patrimonio') || col.includes('ticket') || col.includes('precio')) {
@@ -644,7 +644,7 @@
       if (!ds || !Array.isArray(ds.columns) || !Array.isArray(ds.rows)) {
         thead.innerHTML = '';
         tbody.innerHTML = '<tr><td>No hay dataset cargado.</td></tr>';
-        if (metaEl) metaEl.textContent = 'Seleccione un dataset para visualizar informaciÃ³n empresarial, operativa o contable.';
+        if (metaEl) metaEl.textContent = 'Seleccione un dataset para visualizar información empresarial, operativa o contable.';
         if (resumenEl) resumenEl.textContent = '';
         return;
       }
@@ -889,7 +889,7 @@
           const key = normalize(it.codigo_item) || normalize(it.descripcion) || ('item-' + it.id);
           if (!agg.has(key)) {
             agg.set(key, {
-              nombre: normalize(it.descripcion) || 'Sin descripciÃ³n',
+              nombre: normalize(it.descripcion) || 'Sin descripción',
               cantidad: 0,
               total: 0,
               ventas: new Set()
@@ -908,7 +908,7 @@
         .slice(0, 15);
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="4">AÃºn no hay detalle de productos vendidos para el rango seleccionado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Aún no hay detalle de productos vendidos para el rango seleccionado.</td></tr>';
         return;
       }
 
@@ -1036,7 +1036,7 @@
         if (stockActual <= 0) {
           estado = 'sin stock';
         } else if (min > 0 && stockActual <= min) {
-          estado = 'bajo mÃ­nimo';
+          estado = 'bajo mínimo';
         } else if (max > 0 && stockActual >= max) {
           estado = 'sobre stock';
         }
@@ -1051,7 +1051,7 @@
         };
       }).sort(function(a, b) {
         if (a.estado !== b.estado) {
-          const order = { 'sin stock': 0, 'bajo mÃ­nimo': 1, 'ok': 2, 'sobre stock': 3 };
+          const order = { 'sin stock': 0, 'bajo mínimo': 1, 'ok': 2, 'sobre stock': 3 };
           return (order[a.estado] || 9) - (order[b.estado] || 9);
         }
         if (a.producto !== b.producto) return a.producto.localeCompare(b.producto);
@@ -1107,8 +1107,8 @@
     function renderImpresionConfig() {
       const cfg = state.config || {};
       const formato = normalize(cfg.formato_impresion) || 'carta';
-      const copia = cfg.imprimir_copia_factura === true ? 'SÃ­' : 'No';
-      const logo = cfg.mostrar_logo !== false ? 'SÃ­' : 'No';
+      const copia = cfg.imprimir_copia_factura === true ? 'Sí' : 'No';
+      const logo = cfg.mostrar_logo !== false ? 'Sí' : 'No';
       const pie = normalize(cfg.pie_factura) || 'Sin pie configurado';
       document.getElementById('impresionResumen').textContent =
         'Formato: ' + formato.toUpperCase() + ' | Imprimir copia: ' + copia + ' | Mostrar logo: ' + logo + ' | Pie: ' + pie;
@@ -1161,7 +1161,7 @@
           '<table><tbody>' + itemsHtml + '</tbody></table>' +
           '<p><strong>Total: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
             '<small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small><br>' +
-          '<small>Formato configurado: ' + sanitize(normalize(cfg.formato_impresion) || 'carta') + ' | Copia: ' + (cfg.imprimir_copia_factura === true ? 'SÃ­' : 'No') + '</small>' +
+          '<small>Formato configurado: ' + sanitize(normalize(cfg.formato_impresion) || 'carta') + ' | Copia: ' + (cfg.imprimir_copia_factura === true ? 'Sí' : 'No') + '</small>' +
           (normalize(cfg.pie_factura) ? ('<p><small>' + sanitize(cfg.pie_factura) + '</small></p>') : '') +
           '</body></html>';
       }
@@ -1173,7 +1173,7 @@
         '<h1>Factura (vista carta)</h1>' +
         '<p><strong>' + sanitize(empresa) + '</strong><br>Fecha pago: ' + sanitize(formatDate(getFechaPago(venta))) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
         '<p><small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small></p>' +
-        '<table><thead><tr><th>DescripciÃ³n</th><th>Cant</th><th>Vlr unitario</th><th>Total</th></tr></thead><tbody>' + rowsCarta + '</tbody></table>' +
+        '<table><thead><tr><th>Descripción</th><th>Cant</th><th>Vlr unitario</th><th>Total</th></tr></thead><tbody>' + rowsCarta + '</tbody></table>' +
         '<p><strong>Total pagado: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
         (normalize(cfg.notas_legales) ? ('<p><small>' + sanitize(cfg.notas_legales) + '</small></p>') : '') +
         '</body></html>';
@@ -1183,12 +1183,12 @@
       const printerResolution = await resolvePrinterForReportes(format);
       const html = buildPreviewHtml(format, printerResolution);
       if (!html) {
-        setImpresionMsg('No hay ventas cerradas para generar vista previa de impresiÃ³n.', 'error');
+        setImpresionMsg('No hay ventas cerradas para generar vista previa de impresión.', 'error');
         return;
       }
       const win = window.open('', '_blank', 'width=900,height=700');
       if (!win) {
-        setImpresionMsg('El navegador bloqueÃ³ la ventana de vista previa.', 'error');
+        setImpresionMsg('El navegador bloqueó la ventana de vista previa.', 'error');
         return;
       }
       win.document.open();
@@ -1272,7 +1272,7 @@
       document.getElementById('btnExportarTableroCSV').addEventListener('click', async () => {
         try {
           await exportarTableroUnificado('csv');
-          setMsg('ExportaciÃ³n CSV del tablero generada correctamente.', 'success');
+          setMsg('Exportación CSV del tablero generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el tablero en CSV.', 'error');
         }
@@ -1281,7 +1281,7 @@
       document.getElementById('btnExportarTableroJSON').addEventListener('click', async () => {
         try {
           await exportarTableroUnificado('json');
-          setMsg('ExportaciÃ³n JSON del tablero generada correctamente.', 'success');
+          setMsg('Exportación JSON del tablero generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el tablero en JSON.', 'error');
         }
@@ -1310,7 +1310,7 @@
       document.getElementById('btnExportarDataset').addEventListener('click', async () => {
         try {
           await exportarDatasetProfesional();
-          setMsg('ExportaciÃ³n del dataset generada correctamente.', 'success');
+          setMsg('Exportación del dataset generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el dataset.', 'error');
         }
@@ -1319,7 +1319,7 @@
       document.getElementById('btnExportarSuite').addEventListener('click', async () => {
         try {
           await exportarSuiteReportesJSON();
-          setMsg('ExportaciÃ³n de suite JSON generada correctamente.', 'success');
+          setMsg('Exportación de suite JSON generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar la suite de reportes.', 'error');
         }
@@ -1332,7 +1332,7 @@
     async function init() {
       const rawEmpresaID = Number(getQueryParam('id') || getQueryParam('empresa_id') || 0);
       if (!rawEmpresaID) {
-        setMsg('No se encontrÃ³ id de empresa en la URL.', 'error');
+        setMsg('No se encontró id de empresa en la URL.', 'error');
         return;
       }
       state.empresaID = rawEmpresaID;
@@ -1343,7 +1343,7 @@
       try {
         await loadAllData();
       } catch (err) {
-        setMsg(err.message || 'No se pudo cargar el mÃ³dulo de reportes.', 'error');
+        setMsg(err.message || 'No se pudo cargar el módulo de reportes.', 'error');
       }
     }
 

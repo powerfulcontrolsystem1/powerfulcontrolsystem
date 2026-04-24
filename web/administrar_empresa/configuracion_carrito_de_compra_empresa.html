@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ConfiguraciÃ³n del carrito unificado</title>
+  <title>Configuración del carrito unificado</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
@@ -18,25 +18,25 @@
       </div>
 
       <div class="form" >
-        <p class="form-help" >El sistema usarÃ¡ una sola pÃ¡gina de carrito para todas las estaciones. AquÃ­ defines quÃ© bloques estarÃ¡n activos por defecto para toda la empresa; luego puedes sobrescribirlos por estaciÃ³n desde ConfiguraciÃ³n de estaciones.</p>
+        <p class="form-help" >El sistema usará una sola página de carrito para todas las estaciones. Aquí defines qué bloques estarán activos por defecto para toda la empresa; luego puedes sobrescribirlos por estación desde Configuración de estaciones.</p>
 
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBuscarProductos" type="checkbox" checked>
-              Mostrar botÃ³n de buscar productos
+              Mostrar botón de buscar productos
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
-              Mostrar bÃºsqueda inteligente de catÃ¡logo
+              Mostrar búsqueda inteligente de catálogo
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgCodigoManual" type="checkbox" checked>
-              Mostrar cÃ³digo y referencia manual del item
+              Mostrar código y referencia manual del item
             </label>
           </div>
         </div>
@@ -66,7 +66,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgLector" type="checkbox" checked>
-              Mostrar lector de cÃ³digo de barras
+              Mostrar lector de código de barras
             </label>
           </div>
           <div class="form-col">
@@ -93,7 +93,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgComision" type="checkbox" checked>
-              Mostrar comisiÃ³n por servicio
+              Mostrar comisión por servicio
             </label>
           </div>
         </div>
@@ -119,7 +119,7 @@
           </div>
         </div>
 
-        <p class="form-help">Las estaciones individuales pueden heredar esta configuraciÃ³n o sobrescribirla desde la pantalla de configuraciÃ³n de estaciones.</p>
+        <p class="form-help">Las estaciones individuales pueden heredar esta configuración o sobrescribirla desde la pantalla de configuración de estaciones.</p>
       </div>
 
       <div id="configCarritoMsg" class="form-help"></div>
@@ -281,7 +281,7 @@
         credentials: 'same-origin'
       });
       if (!currentRes.ok) {
-        throw new Error(await currentRes.text() || 'No se pudo cargar la configuraciÃ³n actual de estaciones.');
+        throw new Error(await currentRes.text() || 'No se pudo cargar la configuración actual de estaciones.');
       }
       const currentData = await currentRes.json();
       const prefs = currentData && Array.isArray(currentData.prefs) ? currentData.prefs : [];

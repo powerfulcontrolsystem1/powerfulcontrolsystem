@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ConfiguraciÃ³n â€” Integraciones</title>
+  <title>Configuración - Integraciones</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
@@ -17,7 +17,7 @@
         </div>
       </div>
       <p id="integracionesEmpresaInfo" class="form-help">Empresa: cargando...</p>
-      <p class="form-help">Esta vista guarda la configuraciÃ³n real de pasarelas empresariales reutilizando `/api/empresa/venta_publica?action=config`. Gmail y claves IA siguen centralizadas en configuraciÃ³n avanzada.</p>
+      <p class="form-help">Esta vista guarda la configuración real de pasarelas empresariales reutilizando `/api/empresa/venta_publica?action=config`. Gmail y claves IA siguen centralizadas en configuración avanzada.</p>
 
       <div class="form" >
         <div class="form-row">
@@ -27,7 +27,7 @@
               <input id="wompiActivo" type="checkbox">
               <span>Activar Wompi</span>
             </label>
-            <select id="wompiMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">ProducciÃ³n</option></select>
+            <select id="wompiMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">Producción</option></select>
             <input id="wompiPublicKey" class="form-input"  placeholder="Public key">
             <input id="wompiPrivateRef" class="form-input"  placeholder="Private key ref (env:...)">
             <input id="wompiIntegrityRef" class="form-input"  placeholder="Integrity key ref (env:...)">
@@ -39,7 +39,7 @@
               <input id="epaycoActivo" type="checkbox">
               <span>Activar Epayco</span>
             </label>
-            <select id="epaycoMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">ProducciÃ³n</option></select>
+            <select id="epaycoMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">Producción</option></select>
             <input id="epaycoPublicKey" class="form-input"  placeholder="Public key">
             <input id="epaycoPrivateRef" class="form-input"  placeholder="Private key ref (env:...)">
             <input id="epaycoCustomerId" class="form-input"  placeholder="Customer ID opcional">
@@ -49,7 +49,7 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label">Gmail (notificaciones)</label>
-            <div class="form-help">La configuraciÃ³n de Gmail y correos tÃ©cnicos sigue gestionada en `Super â†’ ConfiguraciÃ³n avanzada`.</div>
+            <div class="form-help">La configuración de Gmail y correos técnicos sigue gestionada en `Super -> Configuración avanzada`.</div>
           </div>
           <div class="form-col">
             <label class="form-label">DeepSeek / IA</label>
@@ -59,17 +59,17 @@
 
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label">Slug tienda pÃºblica</label>
+            <label class="form-label">Slug tienda pública</label>
             <input class="form-input" id="empresaSlug" placeholder="tienda-mi-empresa">
           </div>
           <div class="form-col">
             <label class="form-label">Nombre tienda</label>
-            <input class="form-input" id="nombreTienda" placeholder="Mi tienda pÃºblica">
+            <input class="form-input" id="nombreTienda" placeholder="Mi tienda pública">
           </div>
         </div>
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label">Dominio pÃºblico</label>
+            <label class="form-label">Dominio público</label>
             <input class="form-input" id="dominioPublico" placeholder="empresa.midominio.com">
           </div>
           <div class="form-col">
@@ -81,17 +81,17 @@
           <div class="form-col">
             <label class="empresa-config-check" for="mostrarStock" style="display:block;margin-top:6px;">
               <input id="mostrarStock" type="checkbox">
-              <span>Mostrar stock en tienda pÃºblica</span>
+              <span>Mostrar stock en tienda pública</span>
             </label>
           </div>
         </div>
       </div>
 
       <div class="form-actions" >
-        <button id="btnOpenVentaPublica" class="btn secondary" type="button">Abrir mÃ³dulo venta pÃºblica</button>
-        <button id="btnOpenTiendaPublica" class="btn secondary" type="button">Abrir tienda pÃºblica</button>
+        <button id="btnOpenVentaPublica" class="btn secondary" type="button">Abrir módulo venta pública</button>
+        <button id="btnOpenTiendaPublica" class="btn secondary" type="button">Abrir tienda pública</button>
       </div>
-      <div id="integracionesLinks" class="form-help" >URL pÃºblica: pendiente de cargar.</div>
+      <div id="integracionesLinks" class="form-help" >URL pública: pendiente de cargar.</div>
       <div id="integracionesMsg" class="form-help" ></div>
     </section>
   </div>
@@ -132,9 +132,9 @@
         var box = document.getElementById('integracionesLinks');
         var slug = String(cfg && cfg.empresa_slug || '').trim();
         if (!box) return;
-        if (!slug) { box.textContent = 'URL pÃºblica: pendiente de cargar.'; return; }
+        if (!slug) { box.textContent = 'URL pública: pendiente de cargar.'; return; }
         box.innerHTML = 'URL local: <a href="/venta_publica.html?empresa_slug=' + encodeURIComponent(slug) + '" target="_top">/venta_publica.html?empresa_slug=' + slug + '</a><br>' +
-          'URL patrÃ³n: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
+          'URL patrón: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
       }
       function fillForm(cfg){
         currentConfig = cfg && typeof cfg === 'object' ? cfg : {};
@@ -226,7 +226,7 @@
         }
       }
       function openVentaPublica(){ if (!empresaId) return; window.location.href = '/administrar_empresa/venta_publica.html?empresa_id=' + encodeURIComponent(String(empresaId)); }
-      function openTienda(){ var slug = String(currentConfig && currentConfig.empresa_slug || document.getElementById('empresaSlug').value || '').trim(); if (!slug) { setMessage('Guarda primero un slug para abrir la tienda pÃºblica.', true); return; } window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug); }
+      function openTienda(){ var slug = String(currentConfig && currentConfig.empresa_slug || document.getElementById('empresaSlug').value || '').trim(); if (!slug) { setMessage('Guarda primero un slug para abrir la tienda pública.', true); return; } window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug); }
       document.getElementById('btnReloadIntegrations')?.addEventListener('click', loadConfig);
       document.getElementById('btnSaveIntegrations')?.addEventListener('click', saveConfig);
       document.getElementById('btnOpenVentaPublica')?.addEventListener('click', openVentaPublica);

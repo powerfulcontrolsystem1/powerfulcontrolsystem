@@ -115,7 +115,7 @@
         state.lastPortalURL = String(url || '').trim();
         if (!state.lastPortalURL) {
           portalLinkEl.href = '#';
-          portalLinkEl.textContent = 'TodavÃ­a no hay un portal pÃºblico generado para esta empresa.';
+          portalLinkEl.textContent = 'Todavía no hay un portal público generado para esta empresa.';
           return;
         }
         portalLinkEl.href = state.lastPortalURL;
@@ -257,14 +257,14 @@
           sessionTableWrapEl.innerHTML = '<p class="sr-note">No hay sesiones registradas.</p>';
           return;
         }
-        var html = '<table class="sr-table"><thead><tr><th>CÃ³digo</th><th>Dispositivo</th><th>Estado</th><th>Consumo</th><th>Acciones</th></tr></thead><tbody>';
+        var html = '<table class="sr-table"><thead><tr><th>Código</th><th>Dispositivo</th><th>Estado</th><th>Consumo</th><th>Acciones</th></tr></thead><tbody>';
         state.sessions.forEach(function (row) {
           html += '<tr>' +
             '<td><strong>' + escapeHTML(row.codigo_sesion || '') + '</strong><div class="sr-note">' + escapeHTML(row.solicitada_por || '') + '</div></td>' +
             '<td>' + escapeHTML(row.dispositivo_nombre || '') + '<div class="sr-note">' + escapeHTML(row.dispositivo_codigo || '') + '</div></td>' +
             '<td>' + escapeHTML(row.estado_sesion || '') + (row.bloqueada_por_limite ? '<div class="sr-note">bloqueada por plan</div>' : '') + '</td>' +
             '<td>' + escapeHTML(String(row.duracion_min_consumida || 0)) + ' min<div class="sr-note">solicitada: ' + escapeHTML(String(row.duracion_min_solicitada || 0)) + ' min</div></td>' +
-            '<td><div class="sr-actions"><button type="button" class="btn secondary sr-session-open" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Abrir visor</button><button type="button" class="btn secondary sr-session-portal" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Portal pÃºblico</button>' +
+            '<td><div class="sr-actions"><button type="button" class="btn secondary sr-session-open" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Abrir visor</button><button type="button" class="btn secondary sr-session-portal" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Portal público</button>' +
             ((row.estado_sesion === 'pendiente') ? '<button type="button" class="btn secondary sr-session-approve" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Aprobar</button>' : '') +
             ((row.estado_sesion === 'pendiente' || row.estado_sesion === 'aprobada' || row.estado_sesion === 'activa') ? '<button type="button" class="btn secondary sr-session-close" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Finalizar</button>' : '') +
             '</div></td>' +
@@ -307,14 +307,14 @@
         setMsg(topMsgEl, 'Cargando soporte remoto...');
         try {
           await Promise.all([loadConfig(), loadDevices(), loadSessions()]);
-          setMsg(topMsgEl, 'MÃ³dulo listo. Configura host, descargas y crea sesiones cuando necesites asistencia.', 'success');
+          setMsg(topMsgEl, 'Módulo listo. Configura host, descargas y crea sesiones cuando necesites asistencia.', 'success');
         } catch (err) {
-          setMsg(topMsgEl, 'No se pudo cargar el mÃ³dulo: ' + err.message, 'error');
+          setMsg(topMsgEl, 'No se pudo cargar el módulo: ' + err.message, 'error');
         }
       }
 
       async function saveConfig() {
-        setMsg(configMsgEl, 'Guardando configuraciÃ³n...');
+        setMsg(configMsgEl, 'Guardando configuración...');
         try {
           var payload = {
             habilitado: document.getElementById('srCfgHabilitado').value === '1',
@@ -341,9 +341,9 @@
           state.uso = data.uso || state.uso;
           loadConfigIntoForm(state.config);
           renderKpis();
-          setMsg(configMsgEl, 'ConfiguraciÃ³n guardada. La prÃ³xima sesiÃ³n ya podrÃ¡ compartir el portal pÃºblico completo.', 'success');
+          setMsg(configMsgEl, 'Configuración guardada. La próxima sesión ya podrá compartir el portal público completo.', 'success');
         } catch (err) {
-          setMsg(configMsgEl, 'No se pudo guardar configuraciÃ³n: ' + err.message, 'error');
+          setMsg(configMsgEl, 'No se pudo guardar configuración: ' + err.message, 'error');
         }
       }
 
@@ -386,7 +386,7 @@
         try {
           var data = await requestJSON('GET', 'detalle_dispositivo', { id: deviceID });
           fillDeviceForm(data.dispositivo || {});
-          setMsg(deviceMsgEl, 'Dispositivo cargado para ediciÃ³n.', 'success');
+          setMsg(deviceMsgEl, 'Dispositivo cargado para edición.', 'success');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
           setMsg(deviceMsgEl, 'No se pudo cargar dispositivo: ' + err.message, 'error');
@@ -405,7 +405,7 @@
 
       async function createSession(evt) {
         evt.preventDefault();
-        setMsg(sessionMsgEl, 'Solicitando sesiÃ³n remota...');
+        setMsg(sessionMsgEl, 'Solicitando sesión remota...');
         try {
           var payload = {
             dispositivo_id: Number(document.getElementById('srSessionDevice').value || 0),
@@ -425,11 +425,11 @@
           await loadSessions();
           if (data.viewer_url) {
             viewerFrameEl.src = data.viewer_url;
-            setMsg(viewerMsgEl, 'Visor cargado. Si la sesiÃ³n estÃ¡ pendiente, espera la aprobaciÃ³n.', 'success');
+            setMsg(viewerMsgEl, 'Visor cargado. Si la sesión está pendiente, espera la aprobación.', 'success');
           }
-          setMsg(sessionMsgEl, 'SesiÃ³n creada. Puedes abrir el visor o compartir el portal pÃºblico.', 'success');
+          setMsg(sessionMsgEl, 'Sesión creada. Puedes abrir el visor o compartir el portal público.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo crear sesiÃ³n: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo crear sesión: ' + err.message, 'error');
         }
       }
 
@@ -437,9 +437,9 @@
         try {
           await requestJSON('PATCH', 'aprobar_sesion', null, { codigo_sesion: code, estado_sesion: 'aprobada' });
           await loadSessions();
-          setMsg(sessionMsgEl, 'SesiÃ³n aprobada.', 'success');
+          setMsg(sessionMsgEl, 'Sesión aprobada.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo aprobar sesiÃ³n: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo aprobar sesión: ' + err.message, 'error');
         }
       }
 
@@ -447,22 +447,22 @@
         try {
           await requestJSON('PATCH', 'finalizar_sesion', null, { codigo_sesion: code });
           await loadSessions();
-          setMsg(sessionMsgEl, 'SesiÃ³n finalizada.', 'success');
+          setMsg(sessionMsgEl, 'Sesión finalizada.', 'success');
         } catch (err) {
-          setMsg(sessionMsgEl, 'No se pudo finalizar sesiÃ³n: ' + err.message, 'error');
+          setMsg(sessionMsgEl, 'No se pudo finalizar sesión: ' + err.message, 'error');
         }
       }
 
       function openSessionViewer(code) {
-        var token = state.sessionTokens[code] || window.prompt('Ingresa el token de visualizaciÃ³n de la sesiÃ³n:');
+        var token = state.sessionTokens[code] || window.prompt('Ingresa el token de visualización de la sesión:');
         if (!token) return;
         state.sessionTokens[code] = token;
         viewerFrameEl.src = '/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(String(empresaID)) + '&codigo_sesion=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(token);
-        setMsg(viewerMsgEl, 'Visor solicitado para la sesiÃ³n ' + code + '.', null);
+        setMsg(viewerMsgEl, 'Visor solicitado para la sesión ' + code + '.', null);
       }
 
       function openSessionPortal(code) {
-        var token = state.sessionTokens[code] || window.prompt('Ingresa el token del portal pÃºblico de la sesiÃ³n:');
+        var token = state.sessionTokens[code] || window.prompt('Ingresa el token del portal público de la sesión:');
         if (!token) return;
         state.sessionTokens[code] = token;
         var url = buildPortalURL(code, token);
@@ -490,7 +490,7 @@
           window.open(state.lastPortalURL, '_self');
           return;
         }
-        setMsg(topMsgEl, 'AÃºn no hay un portal pÃºblico generado. Crea una sesiÃ³n para obtenerlo.', 'error');
+        setMsg(topMsgEl, 'Aún no hay un portal público generado. Crea una sesión para obtenerlo.', 'error');
       });
       document.getElementById('srDeviceForm').addEventListener('submit', saveDevice);
       document.getElementById('srSessionForm').addEventListener('submit', createSession);

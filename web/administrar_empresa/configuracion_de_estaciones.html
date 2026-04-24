@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ConfiguraciÃ³n de estaciones y sensores</title>
+  <title>Configuración de estaciones y sensores</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>ConfiguraciÃ³n de sensores por estaciÃ³n</h2>
+        <h2>Configuración de sensores por estación</h2>
       </div>
 
       <div class="form">
@@ -20,12 +20,12 @@
             <input id="deviceId" class="form-input" placeholder="ej: RPI-ABC-1234">
           </div>
           <div class="form-col">
-            <label class="form-label">EstaciÃ³n asociada (ID)</label>
-            <input id="estacionId" class="form-input" type="number" placeholder="NÃºmero de estaciÃ³n (ej. 1)">
+            <label class="form-label">Estación asociada (ID)</label>
+            <input id="estacionId" class="form-input" type="number" placeholder="Número de estación (ej. 1)">
           </div>
           <div class="form-col">
             <label class="form-label">Token del dispositivo (opcional)</label>
-            <input id="deviceToken" class="form-input" placeholder="Token para autenticaciÃ³n">
+            <input id="deviceToken" class="form-input" placeholder="Token para autenticación">
             <div class="form-actions">
               <button id="generateToken" class="btn secondary" type="button">Generar</button>
             </div>
@@ -34,7 +34,7 @@
         <div class="form-actions">
           <button class="btn add" id="saveBtn" type="button">Guardar</button>
         </div>
-        <p class="form-help">Registra el identificador Ãºnico de cada Raspberry Pi y asÃ³cialo a la estaciÃ³n correspondiente.</p>
+        <p class="form-help">Registra el identificador único de cada Raspberry Pi y asócialo a la estación correspondiente.</p>
       </div>
 
       <div id="devicesList" class="form">
@@ -44,42 +44,42 @@
     </section>
 
     <section class="card empresa-section">
-      <h1>ConfiguraciÃ³n de estaciones</h1>
+      <h1>Configuración de estaciones</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Define cuÃ¡ntas estaciones deseas, su nombre y cÃ³mo se personaliza el carrito unificado en cada una.</p>
+      <p class="form-help">Define cuántas estaciones deseas, su nombre y cómo se personaliza el carrito unificado en cada una.</p>
       <div class="form" >
         <div class="form-row">
           <div class="form-col">
             <label class="form-label">Mostrar Caja</label>
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
-              <input type="checkbox" id="cajaToggle"> Habilitar tarjeta Caja (se mostrarÃ¡ primero en Estaciones)
+              <input type="checkbox" id="cajaToggle"> Habilitar tarjeta Caja (se mostrará primero en Estaciones)
             </label>
             <label class="form-label" for="cajaPlacementSelect">Orden de carga de Caja</label>
             <select id="cajaPlacementSelect" class="form-input">
               <option value="before">Antes de las estaciones</option>
-              <option value="after">DespuÃ©s de las estaciones</option>
+              <option value="after">Después de las estaciones</option>
             </select>
           </div>
           <div class="form-col">
             <label class="form-label">Mostrar YouTube</label>
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
-              <input type="checkbox" id="youtubeToggle"> Habilitar estaciÃ³n especial YouTube con vista embebida y botÃ³n de maximizar
+              <input type="checkbox" id="youtubeToggle"> Habilitar estación especial YouTube con vista embebida y botón de maximizar
             </label>
             <label class="form-label" for="youtubePlacementSelect">Orden de carga de YouTube</label>
             <select id="youtubePlacementSelect" class="form-input">
               <option value="before">Antes de las estaciones</option>
-              <option value="after">DespuÃ©s de las estaciones</option>
+              <option value="after">Después de las estaciones</option>
             </select>
           </div>
           <div class="form-col">
             <label class="form-label">Mostrar Notas</label>
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
-              <input type="checkbox" id="notasToggle"> Habilitar estaciÃ³n especial Notas con recordatorio programable
+              <input type="checkbox" id="notasToggle"> Habilitar estación especial Notas con recordatorio programable
             </label>
             <label class="form-label" for="notasPlacementSelect">Orden de carga de Notas</label>
             <select id="notasPlacementSelect" class="form-input">
               <option value="before">Antes de las estaciones</option>
-              <option value="after">DespuÃ©s de las estaciones</option>
+              <option value="after">Después de las estaciones</option>
             </select>
           </div>
         </div>
@@ -87,12 +87,12 @@
           <div class="form-col">
             <label class="form-label" for="youtubeReferenceInput">Video o playlist de YouTube</label>
             <input id="youtubeReferenceInput" class="form-input" placeholder="Pega una URL o ID de video/playlist de YouTube">
-            <p class="form-help">La estaciÃ³n reproduce solo videos o playlists embebibles vÃ¡lidos. Si escribes texto libre, la bÃºsqueda se abrirÃ¡ fuera del sistema en YouTube.</p>
+            <p class="form-help">La estación reproduce solo videos o playlists embebibles válidos. Si escribes texto libre, la búsqueda se abrirá fuera del sistema en YouTube.</p>
           </div>
           <div class="form-col">
             <label class="form-label" for="notasDefaultTextInput">Nota inicial</label>
             <textarea id="notasDefaultTextInput" class="form-input" rows="4" placeholder="Escribe una nota operativa o recordatorio."></textarea>
-            <p class="form-help">La estaciÃ³n Notas cargarÃ¡ este texto por defecto y permitirÃ¡ programar una alarma temporal con pitido y parpadeo al vencerse.</p>
+            <p class="form-help">La estación Notas cargará este texto por defecto y permitirá programar una alarma temporal con pitido y parpadeo al vencerse.</p>
           </div>
         </div>
         <div class="form-row">
@@ -101,9 +101,9 @@
             <input id="notasDefaultMinutesInput" class="form-input" type="number" min="1" max="1440" value="5" placeholder="5">
           </div>
           <div class="form-col">
-            <label class="form-label" for="notasRepeatMinutesInput">RepeticiÃ³n automÃ¡tica (minutos)</label>
+            <label class="form-label" for="notasRepeatMinutesInput">Repetición automática (minutos)</label>
             <input id="notasRepeatMinutesInput" class="form-input" type="number" min="0" max="1440" value="0" placeholder="0">
-            <p class="form-help">Usa `0` para no repetir. Si defines un valor mayor, la alarma volverÃ¡ a sonar en ese intervalo hasta detenerla manualmente.</p>
+            <p class="form-help">Usa `0` para no repetir. Si defines un valor mayor, la alarma volverá a sonar en ese intervalo hasta detenerla manualmente.</p>
           </div>
           <div class="form-col">
             <label class="form-label">Alertas de Notas</label>
@@ -117,7 +117,7 @@
         </div>
         <div class="form-actions">
           <button id="saveYoutubeReferenceBtn" class="btn secondary" type="button">Guardar referencia YouTube</button>
-          <button id="saveNotasConfigBtn" class="btn secondary" type="button">Guardar configuraciÃ³n Notas</button>
+          <button id="saveNotasConfigBtn" class="btn secondary" type="button">Guardar configuración Notas</button>
         </div>
       </div>
     </section>
@@ -127,9 +127,9 @@
       <div class="form">
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label">TamaÃ±o de las tarjetas</label>
+            <label class="form-label">Tamaño de las tarjetas</label>
             <select id="cardSizeSelect" class="form-input">
-              <option value="small">PequeÃ±o</option>
+              <option value="small">Pequeño</option>
               <option value="medium" selected>Medio</option>
               <option value="large">Grande</option>
             </select>
@@ -146,15 +146,15 @@
         <h2>Estados visuales de estaciones</h2>
         <button id="btnGuardarEstadoCarrito" type="button" class="btn">Guardar colores</button>
       </div>
-      <p class="form-help">Personaliza el color de las tarjetas segÃºn el estado operativo del carrito de cada estaciÃ³n.</p>
+      <p class="form-help">Personaliza el color de las tarjetas según el estado operativo del carrito de cada estación.</p>
       <div class="form">
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="carritoColorActivo">Color cuando el carrito estÃ¡ activo</label>
+            <label class="form-label" for="carritoColorActivo">Color cuando el carrito está activo</label>
             <input id="carritoColorActivo" type="color" class="form-input" value="#d9fbe8">
           </div>
           <div class="form-col">
-            <label class="form-label" for="carritoColorInactivo">Color cuando el carrito estÃ¡ inactivo</label>
+            <label class="form-label" for="carritoColorInactivo">Color cuando el carrito está inactivo</label>
             <input id="carritoColorInactivo" type="color" class="form-input" value="#fff9ef">
           </div>
         </div>
@@ -191,11 +191,11 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Nombre de estaciÃ³n</th>
+              <th>Nombre de estación</th>
               <th>
                 Usa config global
                 <br>
-                <label><input id="masterCarritoGlobal" type="checkbox" title="Marcar/desmarcar uso de configuraciÃ³n global para todas"></label>
+                <label><input id="masterCarritoGlobal" type="checkbox" title="Marcar/desmarcar uso de configuración global para todas"></label>
               </th>
               <th>
                 Mostrar inicio
@@ -222,13 +222,13 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>ConfiguraciÃ³n del carrito unificado</h2>
+        <h2>Configuración del carrito unificado</h2>
         <div class="form-actions">
-          <button id="btnGuardarCarritoConfig" class="btn secondary" type="button">Guardar configuraciÃ³n seleccionada</button>
+          <button id="btnGuardarCarritoConfig" class="btn secondary" type="button">Guardar configuración seleccionada</button>
           <button id="btnAplicarCarritoGlobal" class="btn secondary" type="button">Aplicar global a todas</button>
         </div>
       </div>
-      <p class="form-help">Todas las estaciones usarÃ¡n la misma pÃ¡gina de carrito. Desde aquÃ­ decides quÃ© bloques se ven en todas o en una estaciÃ³n especÃ­fica.</p>
+      <p class="form-help">Todas las estaciones usarán la misma página de carrito. Desde aquí decides qué bloques se ven en todas o en una estación específica.</p>
 
       <div class="form" >
         <div class="form-row">
@@ -240,7 +240,7 @@
             <label class="form-label" for="carritoConfigUseGlobal">Herencia</label>
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoConfigUseGlobal" type="checkbox" checked>
-              Usar la configuraciÃ³n global de la empresa en esta estaciÃ³n
+              Usar la configuración global de la empresa en esta estación
             </label>
           </div>
         </div>
@@ -249,19 +249,19 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBuscarProductos" type="checkbox" checked>
-              Mostrar botÃ³n de buscar productos
+              Mostrar botón de buscar productos
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
-              Mostrar bÃºsqueda inteligente de catÃ¡logo
+              Mostrar búsqueda inteligente de catálogo
             </label>
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgCodigoManual" type="checkbox" checked>
-              Mostrar cÃ³digo y referencia manual del item
+              Mostrar código y referencia manual del item
             </label>
           </div>
         </div>
@@ -291,7 +291,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgLector" type="checkbox" checked>
-              Mostrar lector de cÃ³digo de barras
+              Mostrar lector de código de barras
             </label>
           </div>
           <div class="form-col">
@@ -318,7 +318,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgComision" type="checkbox" checked>
-              Mostrar comisiÃ³n por servicio
+              Mostrar comisión por servicio
             </label>
           </div>
         </div>
@@ -413,7 +413,7 @@
       if (typeof v === 'boolean') return v;
       if (typeof v === 'number') return v === 1;
       var raw = String(v == null ? '' : v).trim().toLowerCase();
-      return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sÃ­';
+      return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sí';
     }
 
     function normalizeText(v) {
@@ -621,7 +621,7 @@
 
         container.innerHTML = '<div class="table-wrap">' +
           '<table class="table">' +
-          '<thead><tr><th>Dispositivo</th><th>EstaciÃ³n</th><th>Estado</th><th>Ãšltima seÃ±al</th></tr></thead>' +
+          '<thead><tr><th>Dispositivo</th><th>Estación</th><th>Estado</th><th>Última señal</th></tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
           '</table>' +
           '</div>';
@@ -640,7 +640,7 @@
         return;
       }
       if (!estacionId || estacionId < 1) {
-        showMessage('Ingresa una estaciÃ³n vÃ¡lida (mayor a 0).', 'error');
+        showMessage('Ingresa una estación válida (mayor a 0).', 'error');
         return;
       }
       if (!empresaId) {
@@ -650,7 +650,7 @@
 
       var cfg = await getConfigFromServer();
       if (cfg && Number(cfg.cantidad || 0) > 0 && estacionId > Number(cfg.cantidad || 0)) {
-        showMessage('La estaciÃ³n indicada no existe en la configuraciÃ³n actual. Ajusta primero la cantidad de estaciones.', 'error');
+        showMessage('La estación indicada no existe en la configuración actual. Ajusta primero la cantidad de estaciones.', 'error');
         return;
       }
 
@@ -683,7 +683,7 @@
         var nombre = String(current.nombre || '').trim();
         out.push({
           id: i + 1,
-          nombre: nombre || ('EstaciÃ³n ' + (i + 1)),
+          nombre: nombre || ('Estación ' + (i + 1)),
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
@@ -801,8 +801,8 @@
       var select = document.getElementById('carritoConfigTarget');
       if (!select) return;
       var stations = cfg && Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
-      select.innerHTML = '<option value="0">ConfiguraciÃ³n global para todas las estaciones</option>' + stations.map(function(est) {
-        return '<option value="' + Number(est.id || 0) + '">' + sanitize(est.nombre || ('EstaciÃ³n ' + est.id)) + '</option>';
+      select.innerHTML = '<option value="0">Configuración global para todas las estaciones</option>' + stations.map(function(est) {
+        return '<option value="' + Number(est.id || 0) + '">' + sanitize(est.nombre || ('Estación ' + est.id)) + '</option>';
       }).join('');
     }
 
@@ -886,7 +886,7 @@
         current.carrito_ui_global = nextConfig;
       } else {
         var station = getStationByID(current, targetID);
-        if (!station) throw new Error('No se encontrÃ³ la estaciÃ³n seleccionada para configurar el carrito.');
+        if (!station) throw new Error('No se encontró la estación seleccionada para configurar el carrito.');
         station.carrito = normalizeStationCarritoConfig({
           usar_configuracion_global: document.getElementById('carritoConfigUseGlobal').checked,
           configuracion: nextConfig
@@ -897,7 +897,7 @@
       fillCarritoConfigTargetOptions(current);
       setCarritoConfigForm(current, targetID);
       renderRows(current);
-      setCarritoConfigMessage('ConfiguraciÃ³n del carrito guardada correctamente.', 'success');
+      setCarritoConfigMessage('Configuración del carrito guardada correctamente.', 'success');
     }
 
     async function applyGlobalCarritoToAllStations() {
@@ -910,7 +910,7 @@
       fillCarritoConfigTargetOptions(current);
       setCarritoConfigForm(current, 0);
       renderRows(current);
-      setCarritoConfigMessage('Todas las estaciones heredarÃ¡n la configuraciÃ³n global del carrito.', 'success');
+      setCarritoConfigMessage('Todas las estaciones heredarán la configuración global del carrito.', 'success');
     }
 
     function updateMasterCheckboxes() {
@@ -1046,7 +1046,7 @@
           var stationID = Number(btn.getAttribute('data-config-station') || 0);
           document.getElementById('carritoConfigTarget').value = String(stationID);
           setCarritoConfigForm(cfg, stationID);
-          setCarritoConfigMessage('Editando configuraciÃ³n del carrito para la estaciÃ³n seleccionada.', 'help');
+          setCarritoConfigMessage('Editando configuración del carrito para la estación seleccionada.', 'help');
           document.getElementById('carritoConfigTarget').scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
       });
@@ -1069,7 +1069,7 @@
         var nombre = input ? String(input.value || '').trim() : '';
         return {
           id: est.id,
-          nombre: nombre || ('EstaciÃ³n ' + est.id),
+          nombre: nombre || ('Estación ' + est.id),
           mostrar_fecha_hora_inicio: inicioInput ? !!inicioInput.checked : (est.mostrar_fecha_hora_inicio !== false),
           mostrar_fecha_hora_fin_tarifa: finInput ? !!finInput.checked : (est.mostrar_fecha_hora_fin_tarifa !== false),
           mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false),
@@ -1184,7 +1184,7 @@
         var stationID = Number(station.id || 0);
         if (!stationID) continue;
 
-        var stationName = String(station.nombre || '').trim() || ('EstaciÃ³n ' + stationID);
+        var stationName = String(station.nombre || '').trim() || ('Estación ' + stationID);
         var code = getCarritoCodeForStation(stationID);
         var ref = 'ESTACION_' + stationID;
 
@@ -1204,7 +1204,7 @@
                   estado_carrito: 'cerrado',
                   moneda: 'COP',
                   referencia_externa: ref,
-                  observaciones: 'Carrito generado automÃ¡ticamente para estaciÃ³n #' + stationID
+                  observaciones: 'Carrito generado automáticamente para estación #' + stationID
                 })
               });
 
@@ -1239,7 +1239,7 @@
               if (!duplicate) throw createErr;
 
               // En escenarios legacy/concurrentes puede existir un carrito previo con el mismo nombre o referencia.
-              // Recargamos Ã­ndices y resolvemos por cÃ³digo/referencia/nombre para continuar.
+              // Recargamos índices y resolvemos por código/referencia/nombre para continuar.
               rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
               existing = Array.isArray(rows) ? rows : [];
               byCode.clear();
@@ -1253,7 +1253,7 @@
 
           var currentID = Number(current && current.id ? current.id : 0);
           if (!currentID) {
-            throw new Error('No se pudo resolver el carrito asociado a la estaciÃ³n ' + stationID);
+            throw new Error('No se pudo resolver el carrito asociado a la estación ' + stationID);
           }
 
           var requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
@@ -1289,7 +1289,7 @@
           counters.ignored += transition.ignored;
         } catch (err) {
           counters.errors += 1;
-          console.error('No se pudo sincronizar carrito para estaciÃ³n', stationID, err);
+          console.error('No se pudo sincronizar carrito para estación', stationID, err);
         }
       }
 
@@ -1298,11 +1298,11 @@
 
     async function inactivarTodosLosCarritosEstacion() {
       if (!empresaId) {
-        showMessage('No se encontrÃ³ empresa_id para inactivar carritos.', 'error');
+        showMessage('No se encontró empresa_id para inactivar carritos.', 'error');
         return;
       }
 
-      if (!confirm('Se inactivarÃ¡n y cerrarÃ¡n todos los carritos de estaciones de esta empresa. Â¿Deseas continuar?')) {
+      if (!confirm('Se inactivarán y cerrarán todos los carritos de estaciones de esta empresa. ¿Deseas continuar?')) {
         return;
       }
 
@@ -1333,7 +1333,7 @@
           ignorados += result.ignored;
         } catch (err) {
           errores += 1;
-          console.error('No se pudo inactivar carrito de estaciÃ³n', carritoID, err);
+          console.error('No se pudo inactivar carrito de estación', carritoID, err);
         }
       }
 
@@ -1360,7 +1360,7 @@
       renderRows(cfg);
 
       var sync = await syncCarritosFromStations(cfg);
-      var msg = 'ConfiguraciÃ³n guardada. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored;
+      var msg = 'Configuración guardada. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored;
       if (sync.errors > 0) {
         showMessage(msg + ' | Errores: ' + sync.errors + '.', 'error');
         return;
@@ -1428,13 +1428,13 @@
       document.getElementById('btnGuardarNombres').addEventListener('click', function (ev) {
         ev.preventDefault();
         guardarNombres().catch(function (err) {
-          showMessage(err.message || 'No se pudo guardar la configuraciÃ³n.', 'error');
+          showMessage(err.message || 'No se pudo guardar la configuración.', 'error');
         });
       });
 
       document.getElementById('btnInactivarCarritos').addEventListener('click', function () {
         inactivarTodosLosCarritosEstacion().catch(function (err) {
-          showMessage(err.message || 'No se pudo completar la inactivaciÃ³n de carritos.', 'error');
+          showMessage(err.message || 'No se pudo completar la inactivación de carritos.', 'error');
         });
       });
 
@@ -1482,7 +1482,7 @@
             setCarritoConfigForm(cfg, Number(carritoConfigTarget.value || 0));
             setCarritoConfigMessage('', 'help');
           }).catch(function(err) {
-            setCarritoConfigMessage(err.message || 'No se pudo cargar la configuraciÃ³n del carrito.', 'error');
+            setCarritoConfigMessage(err.message || 'No se pudo cargar la configuración del carrito.', 'error');
           });
         });
       }
@@ -1498,7 +1498,7 @@
       if (btnGuardarCarritoConfig) {
         btnGuardarCarritoConfig.addEventListener('click', function() {
           saveSelectedCarritoConfig().catch(function(err) {
-            setCarritoConfigMessage(err.message || 'No se pudo guardar la configuraciÃ³n del carrito.', 'error');
+            setCarritoConfigMessage(err.message || 'No se pudo guardar la configuración del carrito.', 'error');
           });
         });
       }
@@ -1507,7 +1507,7 @@
       if (btnAplicarCarritoGlobal) {
         btnAplicarCarritoGlobal.addEventListener('click', function() {
           applyGlobalCarritoToAllStations().catch(function(err) {
-            setCarritoConfigMessage(err.message || 'No se pudo aplicar la configuraciÃ³n global a todas las estaciones.', 'error');
+            setCarritoConfigMessage(err.message || 'No se pudo aplicar la configuración global a todas las estaciones.', 'error');
           });
         });
       }
@@ -1599,10 +1599,10 @@
             current.notas_beep_enabled = !!(document.getElementById('notasBeepToggle') && document.getElementById('notasBeepToggle').checked);
             current.notas_blink_enabled = !!(document.getElementById('notasBlinkToggle') && document.getElementById('notasBlinkToggle').checked);
             await saveConfigToServer(current);
-            showMessage('ConfiguraciÃ³n de Notas guardada.', 'success');
+            showMessage('Configuración de Notas guardada.', 'success');
           } catch (err) {
-            console.error('No se pudo guardar configuraciÃ³n de Notas', err);
-            showMessage('No se pudo guardar la configuraciÃ³n de Notas.', 'error');
+            console.error('No se pudo guardar configuración de Notas', err);
+            showMessage('No se pudo guardar la configuración de Notas.', 'error');
           }
         });
       }
@@ -1645,7 +1645,7 @@
 
     async function bootstrap() {
       if (!empresaId) {
-        showMessage('No se encontrÃ³ empresa_id en la URL.', 'error');
+        showMessage('No se encontró empresa_id en la URL.', 'error');
         setEstadoCarritoMessage('No se puede editar colores sin empresa seleccionada.', 'error');
       }
 
@@ -1721,7 +1721,7 @@
 
     bootstrap().catch(function (err) {
       console.error('bootstrap error', err);
-      showMessage('No se pudo inicializar la configuraciÃ³n de estaciones.', 'error');
+      showMessage('No se pudo inicializar la configuración de estaciones.', 'error');
     });
   </script>
 </body>

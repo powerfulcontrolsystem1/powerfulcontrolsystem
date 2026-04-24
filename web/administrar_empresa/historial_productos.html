@@ -5,68 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Historial de Productos</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .historial-item {
-      display: grid;
-      grid-template-columns: 100px 1fr 150px 1fr;
-      gap: 1rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--border-color);
-      align-items: center;
-    }
-    .historial-item:last-child {
-      border-bottom: none;
-    }
-    .historial-date {
-      font-size: 0.85rem;
-      color: var(--secondary-text);
-      white-space: pre-wrap;
-    }
-    .historial-product-name {
-      font-weight: 600;
-      color: var(--text-color);
-      margin-bottom: 0.25rem;
-    }
-    .historial-reason {
-      font-size: 0.85rem;
-      background: var(--light-bg);
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--border-radius);
-      display: inline-block;
-      color: var(--secondary-text);
-    }
-    .historial-changes {
-      font-family: monospace;
-      background: #f8f9fa;
-      padding: 0.5rem;
-      border-radius: var(--border-radius);
-      border: 1px solid var(--border-color);
-    }
-    .historial-changes div {
-      margin-bottom: 0.25rem;
-    }
-    .historial-changes div:last-child {
-      margin-bottom: 0;
-    }
-    .amount-old {
-      color: #721c24;
-      text-decoration: line-through;
-      margin-right: 0.5rem;
-    }
-    .amount-new {
-      color: #155724;
-      font-weight: bold;
-    }
-    .amount-label {
-      color: #6c757d;
-      display: inline-block;
-      width: 70px;
-    }
-    .user-info {
-        font-size: 0.8rem;
-        color: var(--secondary-text);
-    }
-  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -133,7 +71,7 @@
             changesHTML += `<div><span class="amount-label">Impuesto:</span> <span class="amount-old">${h.impuesto_anterior}%</span> → <span class="amount-new">${h.impuesto_nuevo}%</span></div>`;
         }
         if (!changesHTML) {
-            changesHTML = `<div class="muted" style="font-style:italic">Registro inicial o sin cambios directos</div>`;
+            changesHTML = `<div class="muted empty-note-italic">Registro inicial o sin cambios directos</div>`;
         }
 
         const dateStr = h.fecha_cambio ? new Date(h.fecha_cambio).toLocaleString() : 'Fecha desc.';

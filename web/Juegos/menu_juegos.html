@@ -7,12 +7,19 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
-    body { margin: 0; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top center, color-mix(in srgb, var(--accent) 12%, transparent 88%), transparent 40%),
+        linear-gradient(180deg, var(--bg-alt), var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+    }
     .games-shell { max-width: 980px; margin: 0 auto; padding: 96px 20px 40px; }
     .games-hero { text-align: center; margin-bottom: 28px; }
     .games-hero p { color: var(--muted); max-width: 720px; margin: 0.75rem auto 0; }
     .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .games-card { background: linear-gradient(180deg, var(--surface), var(--surface-soft)); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+    .games-card { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 86%, var(--surface) 14%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%)); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
     .games-card h2 { margin-top: 0; }
     .games-card p { color: var(--muted); line-height: 1.6; }
     .games-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }

@@ -6,24 +6,18 @@
   <title>Aceptar contrato</title>
   <link rel="stylesheet" href="/estilos.css" />
   <script src="/config.js"></script>
-  <style>
-    .accept-card { text-align:center; padding:22px; border-radius:12px; }
-    .accept-actions { display:flex; gap:12px; justify-content:center; margin-top:18px; }
-    .accept-help { color:var(--muted); margin-top:8px; }
-    .accept-link { color:var(--accent); font-weight:800; text-decoration:underline; }
-  </style>
 </head>
 <body class="login-page">
-  <!-- TÃ­tulo eliminado por peticiÃ³n del producto -->
+  <!-- Título eliminado por petición del producto -->
   <main class="container">
     <div class="card accept-card">
       <h2>Antes de continuar</h2>
-      <p class="accept-help">Por favor, confirma tu aceptaciÃ³n del contrato para completar el registro</p>
+      <p class="accept-help">Por favor, confirma tu aceptación del contrato para completar el registro</p>
       <p><a id="contractLink" href="/contrato.html" target="_blank" class="accept-link">Ver contrato completo</a></p>
 
       <div class="mt-14 mb-12">
         <label class="remember-label inline-flex-center-gap-10">
-          <input id="acceptCheckbox" type="checkbox" /> <span>He leÃ­do y acepto el contrato</span>
+          <input id="acceptCheckbox" type="checkbox" /> <span>He leído y acepto el contrato</span>
         </label>
       </div>
 
@@ -82,7 +76,7 @@
         return;
       }
       if (!payload) {
-        alert('Falta informaciÃ³n de sesiÃ³n. Vuelva a iniciar el proceso.');
+        alert('Falta información de sesión. Vuelva a iniciar el proceso.');
         return;
       }
       acceptBtn.disabled = true;
@@ -91,7 +85,7 @@
       Promise.resolve(recaptchaManager ? recaptchaManager.ensureToken() : { ok: true, token: '' }).then(function(result){
 		if (!result.ok) {
 			acceptBtn.disabled = false;
-			statusEl.textContent = result.message || 'Completa la verificaciÃ³n de seguridad.';
+			statusEl.textContent = result.message || 'Completa la verificación de seguridad.';
 			return null;
 		}
 		return fetch('/accept/complete', {
@@ -113,7 +107,7 @@
         statusEl.textContent = 'Aceptado. Redirigiendo...';
       }).catch(function(err){
         acceptBtn.disabled = false;
-        statusEl.textContent = 'No se pudo completar la aceptaciÃ³n.';
+        statusEl.textContent = 'No se pudo completar la aceptación.';
         if (recaptchaManager) recaptchaManager.reset();
         console.error(err);
       });

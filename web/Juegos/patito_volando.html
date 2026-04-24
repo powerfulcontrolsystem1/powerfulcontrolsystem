@@ -85,7 +85,7 @@
     </div>
 
     <div id="gameOverScreen">
-      <h1>Â¡Chocaste!</h1>
+      <h1>¡Chocaste!</h1>
       <p>Puntuaci&oacute;n: <span id="finalScore">0</span></p>
       <button class="btn-start" onclick="resetGame()">Intentar de nuevo</button>
     </div>
@@ -109,7 +109,7 @@
     let obstaculos = [];
     let frameCount = 0;
     
-    // Altura dinÃ¡mica basada en el contenedor
+    // Altura dinámica basada en el contenedor
     let areaH = gameArea.clientHeight;
     let areaW = gameArea.clientWidth;
 
@@ -183,28 +183,28 @@
       velocity += gravity;
       patoY += velocity;
       
-      // RotaciÃ³n basada en la velocidad de caÃ­da
+      // Rotación basada en la velocidad de caída
       if(velocity > 3) pato.style.transform = 'rotate(20deg)';
 
-      // Actualizar posiciÃ³n (convertir % a px aprox o dejar en % y usar math. Pero lo cambiamos a px en la lÃ³gica)
-      // Como inicialmente el pato estÃ¡ en % (left 10%), calculamos top en px absolutos
+      // Actualizar posición (convertir % a px aprox o dejar en % y usar math. Pero lo cambiamos a px en la lógica)
+      // Como inicialmente el pato está en % (left 10%), calculamos top en px absolutos
       pato.style.top = patoY + 'px';
 
-      // Chocar lÃ­mites
+      // Chocar límites
       if (patoY <= 0 || patoY + 30 >= areaH) {
         gameOver();
       }
 
-      // Crear obstÃ¡culos nuevos cada cierto frame
+      // Crear obstáculos nuevos cada cierto frame
       if (frameCount % 100 === 0) {
         createObstacle();
       }
 
-      // Mover obstÃ¡culos y detectar colisiones
+      // Mover obstáculos y detectar colisiones
       const patoRect = pato.getBoundingClientRect();
       const areaRect = gameArea.getBoundingClientRect();
       
-      // Rect absolute a relativo al Ã¡rea
+      // Rect absolute a relativo al área
       const patoRel = {
          left: patoRect.left - areaRect.left,
          right: patoRect.right - areaRect.left,
@@ -227,14 +227,14 @@
           continue;
         }
 
-        // PuntuaciÃ³n
+        // Puntuación
         if (!obs.passed && obs.x < patoRel.left) {
           score++;
           scoreBoard.innerText = score;
           obs.passed = true;
         }
 
-        // ColisiÃ³n (anchos 50px de obstaculo)
+        // Colisión (anchos 50px de obstaculo)
         const obsLeft = obs.x;
         const obsRight = obs.x + 50;
         const topBottom = parseFloat(obs.top.style.height);
@@ -254,12 +254,12 @@
       finalScoreLabel.innerText = score;
       gameOverScreen.style.display = 'flex';
       
-      // Opcional: pequeÃ±o efecto visual de caÃ­da final
+      // Opcional: pequeño efecto visual de caída final
       pato.style.transform = 'rotate(90deg) translateY(20px)';
     }
 
     function resetGame() {
-      // Limpiar obstÃ¡culos de la UI
+      // Limpiar obstáculos de la UI
       obstaculos.forEach(obs => {
         obs.top.remove();
         obs.bottom.remove();

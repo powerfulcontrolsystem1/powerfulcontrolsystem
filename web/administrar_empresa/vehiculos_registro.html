@@ -706,7 +706,7 @@
     }
 
     async function removeItem(id) {
-      if (!confirm('Â¿Eliminar este registro de vehiculo?')) return;
+      if (!confirm('¿Eliminar este registro de vehiculo?')) return;
       try {
         const params = new URLSearchParams();
         params.set('empresa_id', String(state.empresaID));

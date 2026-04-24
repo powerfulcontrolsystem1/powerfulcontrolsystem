@@ -613,6 +613,9 @@ func main() {
 		if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
+		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
+			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
+		}
 		log.Println("INFO: runtime DB dialect=postgres (VPS)")
 	} else {
 		log.Fatalf("Runtime DB no soportada: configure DB_DIALECT=postgres y DSN de PostgreSQL")
@@ -687,12 +690,11 @@ func main() {
 
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
-	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler())
-	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler())
-	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler())
+	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler(dbSuper))
+	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
+	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
-	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/empresas/compartidos", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper))
@@ -833,6 +835,8 @@ func main() {
 	http.HandleFunc("/super/api/venta_digital", handlers.SuperVentaDigitalHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
+	// Endpoint para configurar gestion RustDesk en el VPS (GET/PUT)
+	http.HandleFunc("/super/api/config/rustdesk", handlers.RustDeskConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)

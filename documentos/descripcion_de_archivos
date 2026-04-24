@@ -90,6 +90,7 @@
 	- web/super/soporte_remoto.html : mesa técnica super simplificada para elegir empresa y editar la misma configuración mínima de soporte remoto sin gestionar sesiones ni visor desde esta vista.
 	- web/soporte_remoto_acceso.html : portal público de soporte remoto enfocado en descargas Windows/Linux/macOS, datos de conexión y copia rápida de host, clave, ID y contraseña.
 	- backend/handlers/super_servidores_handlers.go : agrega el probe operativo de RustDesk y devuelve estado agregado con componentes y resultado de prueba para el panel super; en Windows ejecuta `systemctl` y la comprobación de puertos en el VPS por SSH/Plink usando `DB_VPS_SSH_*`.
+	- backend/handlers/super_rustdesk_config.go : endpoint /super/api/config/rustdesk (GET/PUT) para guardar y leer configuracion de control SSH al VPS (host/usuario/ruta llave) usada por la tarjeta RustDesk en `web/super/configuracion_avanzada.html`.
 	- backend/db/soporte_remoto.go : amplía persistencia de configuración con URLs macOS y corrige el alta de la configuración remota al insertar todas las columnas visibles en el módulo.
 
 - Actualizacion 2026-04-20: Fase 2 de configuracion por empresa sobre modulo de backups
@@ -7283,7 +7284,7 @@ Actualizacion 2026-04-02: Reestructuracion del paquete de herramientas backend/t
 	- Herramienta aislada para agregar columna/valor de `role` en `administradores`.
 
 - backend/tools/inspect_tipos/main.go:
-	- Herramienta aislada para inspeccion de `tipos_de_usuario` y `roles_de_usuario`.
+	- (Referencia historica; la herramienta ya no existe en el arbol actual.)
 
 - backend/tools/migrate_and_list/main.go:
 	- Herramienta aislada para asegurar indices y listar administradores/usuarios.
@@ -8077,37 +8078,20 @@ Actualización 2026-04-01: Submódulo de usuarios por empresa con confirmación 
 
 Actualización 2026-04-01: Módulo de roles y tipos de usuario en panel super
 
-- backend/db/roles_tipos_usuario.go: nuevo archivo de acceso a datos para `superadministrador.db`.
-	- Modelos: `RolDeUsuario`, `TipoDeUsuario`.
-	- CRUD completo para `roles_de_usuario` y `tipos_de_usuario`.
-	- Validación de integridad para que `rol_id` pertenezca al mismo `tipo_empresa_id`.
+- backend/db/roles_tipos_usuario.go: acceso a datos para `superadministrador.db`.
+	- Modelo: `RolDeUsuario` (CRUD `roles_de_usuario`).
+	- 2026-04-23: se retira el módulo **Tipos de usuario** (`tipos_de_usuario`); al arranque el backend ejecuta `DROP TABLE IF EXISTS tipos_de_usuario`.
 
-- backend/handlers/roles_tipos_usuario.go: nuevo archivo de handlers HTTP.
-	- Endpoints:
-		- `GET/POST/PUT/DELETE /super/api/roles_de_usuario`
-		- `GET/POST/PUT/DELETE /super/api/tipos_de_usuario`
+- backend/handlers/roles_tipos_usuario.go: handlers HTTP para roles y permisos por rol.
+	- `GET/POST/PUT/DELETE /super/api/roles_de_usuario`
+	- `GET/POST/... /super/api/roles_de_usuario/permisos`
 	- Soporta activar/desactivar por `PUT?action=activar&activo=0|1`.
 
-- backend/main.go: se añadieron tablas y rutas nuevas del módulo en `superadministrador.db`.
-	- Tablas nuevas:
-		- `roles_de_usuario`
-		- `tipos_de_usuario`
-	- Rutas nuevas:
-		- `/super/api/roles_de_usuario`
-		- `/super/api/tipos_de_usuario`
+- backend/main.go: rutas `/super/api/roles_de_usuario` y permisos; sin `/super/api/tipos_de_usuario`.
 
-- web/super/roles_de_usuario.html: nueva subpágina del panel super para gestionar roles por tipo de empresa.
-	- Formulario con: tipo de empresa, nombre y descripción.
-	- Listado con acciones: editar, eliminar, activar/desactivar.
+- web/super/roles_de_usuario.html: subpágina del panel super para gestionar roles por tipo de empresa.
 
-- web/super/tipos_de_usuario.htm: nueva subpágina del panel super para gestionar tipos de usuario.
-	- Formulario con: tipo de empresa, rol previamente configurado, nombre y descripción.
-	- El selector de rol se filtra por tipo de empresa.
-	- Listado con acciones: editar, eliminar, activar/desactivar.
-
-- web/super_administrador.html: menú lateral actualizado con enlaces a:
-	- `Roles de usuario`.
-	- `Tipos de usuario`.
+- web/super_administrador.html: menú lateral con `Roles de usuario` y `Permisos por rol` (sin Tipos de usuario).
 
 Actualización 2026-04-01: Submódulo de estaciones (configuración + vista en tarjetas)
 

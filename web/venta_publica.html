@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Venta publica</title>
+  <title>Venta pública</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
@@ -11,9 +11,9 @@
   <main class="venta-publica-shell">
     <section class="venta-publica-hero card">
       <div class="venta-publica-hero-copy">
-        <p class="venta-publica-kicker">Venta publica</p>
+        <p class="venta-publica-kicker">Venta pública</p>
         <h1 id="ventaPublicaTitle">Cargando tienda...</h1>
-        <p id="ventaPublicaDescription" class="venta-publica-description">Estamos consultando la configuracion publica de la empresa.</p>
+        <p id="ventaPublicaDescription" class="venta-publica-description">Estamos consultando la configuración pública de la empresa.</p>
         <div id="ventaPublicaMeta" class="venta-publica-meta"></div>
       </div>
       <div class="venta-publica-hero-actions">
@@ -21,15 +21,15 @@
       </div>
     </section>
 
-    <section id="ventaPublicaStatus" class="card venta-publica-status" style="display:none"></section>
+    <section id="ventaPublicaStatus" class="card venta-publica-status is-hidden"></section>
 
     <section class="venta-publica-grid">
       <article class="card venta-publica-section">
         <div class="venta-publica-section-head">
-          <h2>Catalogo disponible</h2>
+          <h2>Catálogo disponible</h2>
           <span id="ventaPublicaItemsCount" class="form-help">0 items</span>
         </div>
-        <div id="ventaPublicaItems" class="venta-publica-items muted">Cargando catalogo...</div>
+        <div id="ventaPublicaItems" class="venta-publica-items muted">Cargando catálogo...</div>
       </article>
 
       <article class="card venta-publica-section">
@@ -106,8 +106,8 @@
       function renderCatalog(payload) {
         var tienda = payload && payload.tienda ? payload.tienda : {};
         var items = Array.isArray(payload && payload.items) ? payload.items : [];
-        document.getElementById('ventaPublicaTitle').textContent = tienda.nombre_tienda || 'Tienda publica';
-        document.getElementById('ventaPublicaDescription').textContent = tienda.descripcion_tienda || 'Catalogo publico disponible para esta empresa.';
+        document.getElementById('ventaPublicaTitle').textContent = tienda.nombre_tienda || 'Tienda pública';
+        document.getElementById('ventaPublicaDescription').textContent = tienda.descripcion_tienda || 'Catálogo público disponible para esta empresa.';
         document.getElementById('ventaPublicaItemsCount').textContent = items.length + (items.length === 1 ? ' item' : ' items');
         document.getElementById('ventaPublicaLocalLink').href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(String(payload && payload.empresa_slug || ''));
 
@@ -125,10 +125,10 @@
         target.innerHTML = items.map(function (item) {
           return '<article class="venta-publica-item">'
             + '<div class="venta-publica-item-copy">'
-            + '<h3>' + escapeHtml(item.nombre || 'Item publico') + '</h3>'
-            + '<p>' + escapeHtml(item.descripcion || 'Sin descripcion publica.') + '</p>'
+            + '<h3>' + escapeHtml(item.nombre || 'Item público') + '</h3>'
+            + '<p>' + escapeHtml(item.descripcion || 'Sin descripción pública.') + '</p>'
             + '<div class="venta-publica-item-meta">'
-            + '<span>' + escapeHtml(item.codigo_publico || 'Sin codigo') + '</span>'
+            + '<span>' + escapeHtml(item.codigo_publico || 'Sin código') + '</span>'
             + '<span>' + formatCurrency(item.precio, item.moneda || tienda.moneda || 'COP') + '</span>'
             + '</div>'
             + '</div>'
@@ -142,7 +142,7 @@
 
       function renderPublicaciones(rows) {
         var items = Array.isArray(rows) ? rows : [];
-        document.getElementById('ventaPublicaPublicacionesCount').textContent = items.length + (items.length === 1 ? ' publicacion' : ' publicaciones');
+        document.getElementById('ventaPublicaPublicacionesCount').textContent = items.length + (items.length === 1 ? ' publicación' : ' publicaciones');
         var target = document.getElementById('ventaPublicaPublicaciones');
         if (!items.length) {
           target.innerHTML = '<p class="muted">No hay publicaciones comerciales activas en este momento.</p>';
@@ -150,8 +150,8 @@
         }
         target.innerHTML = items.map(function (item) {
           return '<article class="venta-publica-post">'
-            + '<h3>' + escapeHtml(item.nombre || 'Publicacion') + '</h3>'
-            + '<p>' + escapeHtml(item.descripcion || 'Sin descripcion.') + '</p>'
+            + '<h3>' + escapeHtml(item.nombre || 'Publicación') + '</h3>'
+            + '<p>' + escapeHtml(item.descripcion || 'Sin descripción.') + '</p>'
             + '<div class="venta-publica-item-meta"><span>Estado: ' + escapeHtml(item.estado || 'activo') + '</span></div>'
             + '</article>';
         }).join('');
@@ -163,7 +163,7 @@
         }
         var order = payload.order;
         var target = document.getElementById('ventaPublicaStatus');
-        target.style.display = '';
+        target.classList.remove('is-hidden');
         var statusLocal = String(payload.status_local || order.estado_pago || 'pendiente').trim();
         target.innerHTML = '<h2>Estado del pago</h2>'
           + '<p><strong>Orden:</strong> ' + escapeHtml(order.codigo_orden || '') + '</p>'
@@ -175,9 +175,9 @@
       async function run() {
         var slug = getSlugFromLocation();
         if (!slug) {
-          document.getElementById('ventaPublicaTitle').textContent = 'Tienda publica no disponible';
-          document.getElementById('ventaPublicaDescription').textContent = 'No se encontro un slug de empresa para cargar la tienda publica.';
-          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">Falta el parametro empresa_slug.</p>';
+          document.getElementById('ventaPublicaTitle').textContent = 'Tienda pública no disponible';
+          document.getElementById('ventaPublicaDescription').textContent = 'No se encontró un slug de empresa para cargar la tienda pública.';
+          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">Falta el parámetro empresa_slug.</p>';
           document.getElementById('ventaPublicaPublicaciones').innerHTML = '<p class="muted">No se pudo cargar publicaciones sin empresa seleccionada.</p>';
           return;
         }
@@ -200,8 +200,8 @@
           }
         } catch (err) {
           document.getElementById('ventaPublicaTitle').textContent = 'No se pudo cargar la tienda';
-          document.getElementById('ventaPublicaDescription').textContent = err && err.message ? err.message : 'Ocurrio un error cargando la experiencia publica.';
-          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">' + escapeHtml(err && err.message ? err.message : 'Error cargando catalogo') + '</p>';
+          document.getElementById('ventaPublicaDescription').textContent = err && err.message ? err.message : 'Ocurrió un error cargando la experiencia pública.';
+          document.getElementById('ventaPublicaItems').innerHTML = '<p class="error">' + escapeHtml(err && err.message ? err.message : 'Error cargando catálogo') + '</p>';
           document.getElementById('ventaPublicaPublicaciones').innerHTML = '<p class="muted">No se pudieron cargar publicaciones comerciales.</p>';
         }
       }

@@ -86,10 +86,10 @@
           <div class="chat-calendar-weekdays">
             <span>Lun</span>
             <span>Mar</span>
-            <span>Mie</span>
+            <span>Mié</span>
             <span>Jue</span>
             <span>Vie</span>
-            <span>Sab</span>
+            <span>Sáb</span>
             <span>Dom</span>
           </div>
           <div id="calendarGrid" class="chat-calendar-grid">Cargando calendario...</div>
@@ -98,20 +98,20 @@
         <aside class="chat-calendar-side">
           <form id="appointmentForm" class="chat-mini-form">
             <input id="appointmentId" type="hidden">
-            <label class="form-label" for="appointmentTitle">Titulo de la cita</label>
-            <input id="appointmentTitle" class="form-input" required placeholder="Ej: Reunion de seguimiento">
+            <label class="form-label" for="appointmentTitle">Título de la cita</label>
+            <input id="appointmentTitle" class="form-input" required placeholder="Ej: Reunión de seguimiento">
 
-            <label class="form-label" for="appointmentDescription">Descripcion</label>
+            <label class="form-label" for="appointmentDescription">Descripción</label>
             <textarea id="appointmentDescription" class="form-textarea" placeholder="Objetivo o contexto"></textarea>
 
             <div class="form-row compact-row">
               <div class="form-col">
                 <label class="form-label" for="appointmentType">Tipo</label>
                 <select id="appointmentType" class="form-input">
-                  <option value="reunion">Reunion</option>
+                  <option value="reunion">Reunión</option>
                   <option value="llamada">Llamada</option>
                   <option value="seguimiento">Seguimiento</option>
-                  <option value="capacitacion">Capacitacion</option>
+                  <option value="capacitacion">Capacitación</option>
                   <option value="otro">Otro</option>
                 </select>
               </div>
@@ -142,14 +142,14 @@
                 <input id="appointmentReminder" class="form-input" type="number" min="1" max="10080" value="30">
               </div>
               <div class="form-col">
-                <label class="form-label" for="appointmentConversation">Conversacion (opcional)</label>
+                <label class="form-label" for="appointmentConversation">Conversación (opcional)</label>
                 <select id="appointmentConversation" class="form-input">
-                  <option value="0">Sin conversacion asociada</option>
+                  <option value="0">Sin conversación asociada</option>
                 </select>
               </div>
             </div>
 
-            <label class="form-label" for="appointmentLocation">Ubicacion</label>
+            <label class="form-label" for="appointmentLocation">Ubicación</label>
             <input id="appointmentLocation" class="form-input" placeholder="Sala, enlace o referencia">
 
             <div class="form-actions">
@@ -306,7 +306,7 @@
             <button id="stopTaskVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
             <button id="clearTaskVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
           </div>
-          <audio id="taskVoicePreview" controls preload="none" style="display:none"></audio>
+          <audio id="taskVoicePreview" class="is-hidden" controls preload="none"></audio>
           <div id="taskVoiceStatus" class="form-help"></div>
         </form>
 
@@ -1001,7 +1001,7 @@
       state.conversaciones.forEach(function (c) {
         const id = Number(c.id || 0);
         if (!id) return;
-        const title = normalize(c.titulo || ("Conversacion " + id));
+        const title = normalize(c.titulo || ("Conversación " + id));
         html += '<option value="' + id + '">' + escapeHtml(title) + '</option>';
       });
       select.innerHTML = html;
@@ -1532,7 +1532,7 @@
         html += '<div class="task-meta">Inicio: ' + escapeHtml(formatDate(cita.fecha_inicio)) + ' | Fin: ' + escapeHtml(formatDate(cita.fecha_fin)) + '</div>';
         html += '<div class="task-meta">Recordatorio: ' + Number(cita.notificar_minutos_antes || 30) + ' min antes</div>';
         if (normalize(cita.ubicacion)) {
-          html += '<div class="task-meta">Ubicacion: ' + escapeHtml(cita.ubicacion) + '</div>';
+          html += '<div class="task-meta">Ubicación: ' + escapeHtml(cita.ubicacion) + '</div>';
         }
         if (normalize(cita.descripcion)) {
           html += '<div class="task-desc">' + escapeHtml(cita.descripcion) + '</div>';

@@ -9,20 +9,24 @@
     .errors-shell { display:grid; gap:14px; }
     .errors-hero {
       background:
-        radial-gradient(circle at top right, rgba(220, 38, 38, .18), transparent 46%),
-        linear-gradient(180deg, rgba(26, 49, 77, .92), rgba(15, 28, 47, .95));
+        radial-gradient(circle at top right, color-mix(in srgb, var(--danger) 18%, transparent 82%), transparent 46%),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--surface-soft) 84%, var(--surface) 16%),
+          color-mix(in srgb, var(--surface) 90%, var(--bg) 10%)
+        );
     }
     .errors-toolbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .filters-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
     .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
-    .stat-card { border:1px solid var(--border); border-radius:14px; padding:14px; background:rgba(18,34,55,.5); }
+    .stat-card { border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--content-soft-bg); }
     .stat-label { color:var(--muted); font-size:.82rem; font-weight:700; }
     .stat-value { font-size:1.35rem; font-weight:800; margin-top:4px; }
     .error-level-badge { display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; font-size:.8rem; font-weight:800; border:1px solid transparent; }
-    .level-info { background:rgba(37,99,235,.14); color:#bfd7ff; border-color:rgba(37,99,235,.38); }
-    .level-warning { background:rgba(245,158,11,.16); color:#ffe1a6; border-color:rgba(245,158,11,.38); }
-    .level-error { background:rgba(239,68,68,.16); color:#ffc3c3; border-color:rgba(239,68,68,.4); }
-    .level-critical { background:rgba(127,29,29,.42); color:#ffd1d1; border-color:rgba(248,113,113,.45); }
+    .level-info { background:color-mix(in srgb, var(--accent) 14%, transparent 86%); color:color-mix(in srgb, var(--accent) 70%, var(--text) 30%); border-color:color-mix(in srgb, var(--accent) 38%, transparent 62%); }
+    .level-warning { background:color-mix(in srgb, var(--accent-yellow) 16%, transparent 84%); color:color-mix(in srgb, var(--accent-yellow) 72%, var(--text) 28%); border-color:color-mix(in srgb, var(--accent-yellow) 38%, transparent 62%); }
+    .level-error { background:color-mix(in srgb, var(--danger) 14%, transparent 86%); color:color-mix(in srgb, var(--danger) 70%, var(--text) 30%); border-color:color-mix(in srgb, var(--danger) 38%, transparent 62%); }
+    .level-critical { background:color-mix(in srgb, var(--danger) 18%, var(--surface) 82%); color:color-mix(in srgb, var(--danger) 52%, var(--text) 48%); border-color:color-mix(in srgb, var(--danger) 44%, transparent 56%); }
     .table-wrap { overflow:auto; }
     .error-table { min-width:1160px; }
     .error-table td { vertical-align:top; }
@@ -32,19 +36,19 @@
       padding:14px;
       border-radius:12px;
       border:1px solid var(--border);
-      background:rgba(12,24,39,.72);
+      background:color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
       white-space:pre-wrap;
       word-break:break-word;
       max-height:360px;
       overflow:auto;
-      color:#dbeafe;
+      color:var(--text);
     }
     .details-grid { display:grid; gap:10px; }
     .details-meta { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
-    .details-meta .meta-box { border:1px solid var(--border); border-radius:12px; padding:10px; background:rgba(18,34,55,.45); }
+    .details-meta .meta-box { border:1px solid var(--border); border-radius:12px; padding:10px; background:var(--content-soft-bg); }
     .pagination { display:flex; gap:10px; justify-content:flex-end; align-items:center; flex-wrap:wrap; }
     .empty-state { color:var(--muted); padding:24px 0; text-align:center; }
-    .error-banner { display:none; border:1px solid rgba(239,68,68,.42); background:rgba(91,31,31,.35); color:#ffd4d4; font-weight:700; }
+    .error-banner { display:none; border:1px solid color-mix(in srgb, var(--danger) 42%, transparent 58%); background:color-mix(in srgb, var(--danger) 14%, var(--surface) 86%); color:color-mix(in srgb, var(--danger) 32%, var(--text) 68%); font-weight:700; }
     .error-banner.show { display:block; }
     @media (max-width: 720px) {
       .error-table { min-width: 760px; }
