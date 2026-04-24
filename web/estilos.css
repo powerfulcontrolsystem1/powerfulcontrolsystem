@@ -2888,6 +2888,7 @@ body.has-floating-menu .header .form-actions{
 }
 .empresas-grid{
   grid-template-columns:repeat(auto-fill, minmax(320px, 320px));
+  grid-auto-rows: 1fr;
   justify-content:flex-start;
   justify-items:stretch;
   align-items:stretch;
@@ -2896,7 +2897,7 @@ body.has-floating-menu .header .form-actions{
   padding:0;
   width:100%;
 }
-.empresas-grid .card-link{display:flex;height:100%;min-height:220px;width:100%}
+.empresas-grid .card-link{display:flex;height:100%;min-height:260px;width:100%}
 .empresas-grid .portal-card.warm{width:100%;height:100%;}
 .empresas-grid .portal-card.empresa-card{
   justify-content:flex-start;

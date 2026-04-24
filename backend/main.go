@@ -842,6 +842,8 @@ func main() {
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
 	// Endpoint para configurar limitaciones por empresa (RustDesk e IA)
 	http.HandleFunc("/super/api/config/limitaciones_empresa", handlers.SuperEmpresaLimitacionesConfigHandler(dbSuper))
+	// Endpoint para configurar la lógica del chat con IA (empresas y super)
+	http.HandleFunc("/super/api/config/chat_ia_logica", handlers.SuperChatIALogicaConfigHandler(dbEmpresas, dbSuper))
 	// Endpoint para configurar gestion RustDesk en el VPS (GET/PUT)
 	http.HandleFunc("/super/api/config/rustdesk", handlers.RustDeskConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)

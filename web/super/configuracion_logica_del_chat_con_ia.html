@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración lógica del chat con IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuración lógica del chat con IA</h1>
+      <p class="form-help">Define restricciones operativas del chat con IA para empresas y para el chat global del super administrador. Estos valores se guardan en la base <strong>superadministrador</strong>.</p>
+    </div>
+
+    <section class="card form advanced-card" data-brand="ai" id="empresaChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+        Chat con IA de empresas
+      </h2>
+      <p class="form-help">Aplica a los chats de IA dentro del panel de cada empresa (restringidos por <strong>empresa_id</strong>).</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="empresaChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat IA de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el chat empresarial rechazará nuevas consultas.</div>
+          <div id="empresaChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaMaxConsultas">Máximo de consultas por día (por empresa)</label>
+          <input id="empresaMaxConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="10">
+          <div class="form-help">0 = bloquea completamente el chat de empresas. Default: 10.</div>
+          <div id="empresaMaxConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveEmpresaChatBtn" class="btn" type="button">Guardar chat IA de empresas</button>
+      </div>
+      <div id="empresaChatMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="ai" id="superChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M8 12h8"></path></svg>
+        Chat con IA global (Super Administrador)
+      </h2>
+      <p class="form-help">Aplica al chat global del super administrador. No afecta el switch global de IA del sistema, solo el acceso operativo a este chat.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="superChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="superChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat IA global super">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el chat global rechazará nuevas consultas.</div>
+          <div id="superChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="superMaxConsultas">Máximo de consultas por día (super)</label>
+          <input id="superMaxConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="30">
+          <div class="form-help">0 = bloquea completamente el chat global. Default: 30.</div>
+          <div id="superMaxConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveSuperChatBtn" class="btn" type="button">Guardar chat IA global</button>
+      </div>
+      <div id="superChatMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="ai" id="openAIUsageCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 14l3-3 3 2 5-6"></path></svg>
+        Consumo OpenAI (hoy)
+      </h2>
+      <p class="form-help">Resumen del consumo acumulado de tokens del día para OpenAI. Este valor viene de la base de datos.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Super (tu sesión)</label>
+          <div id="openAiSuperMine" class="form-help">Cargando...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Super (todas las cuentas)</label>
+          <div id="openAiSuperAll" class="form-help">Cargando...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Empresas (todas)</label>
+          <div id="openAiEmpresasAll" class="form-help">Cargando...</div>
+        </div>
+      </div>
+      <div id="openAiUsageNote" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function normalize(v){ return (v == null ? "" : String(v)).trim(); }
+      function toInt(v, fallback){
+        const n = Number(normalize(v));
+        if (!Number.isFinite(n)) return fallback;
+        const i = Math.floor(n);
+        if (i < 0) return 0;
+        return i;
+      }
+
+      async function apiFetch(url, options){
+        const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const raw = await res.text();
+        if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+        return raw ? JSON.parse(raw) : {};
+      }
+
+      function renderStatus(el, info){
+        if (!el) return;
+        const updatedAt = normalize(info && info.updated_at);
+        const updatedBy = normalize(info && info.updated_by);
+        el.textContent = updatedAt ? ('Última actualización: ' + updatedAt + (updatedBy ? (' - ' + updatedBy) : '')) : 'Valor por defecto o no configurado todavía.';
+      }
+
+      async function load(){
+        const empresaMsg = document.getElementById('empresaChatMsg');
+        const superMsg = document.getElementById('superChatMsg');
+        if (empresaMsg) empresaMsg.textContent = 'Cargando...';
+        if (superMsg) superMsg.textContent = 'Cargando...';
+        try {
+          const data = await apiFetch('/super/api/config/chat_ia_logica');
+          const defaults = data.defaults || {};
+          const values = data.values || {};
+
+          const empEnabledInfo = values.empresa_enabled || {};
+          const empMaxInfo = values.empresa_max_consultas || {};
+          const supEnabledInfo = values.super_enabled || {};
+          const supMaxInfo = values.super_max_consultas || {};
+
+          document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
+          document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
+
+          document.getElementById('empresaMaxConsultas').value = String(toInt(empMaxInfo.value, toInt(defaults.empresa_max_consultas, 10)));
+          document.getElementById('superMaxConsultas').value = String(toInt(supMaxInfo.value, toInt(defaults.super_max_consultas, 30)));
+
+          renderStatus(document.getElementById('empresaChatEnabledStatus'), empEnabledInfo);
+          renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
+          renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
+          renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
+
+          const usage = data.openai_usage_today || {};
+          const fechaUso = normalize(usage.fecha_uso);
+          const superMine = usage.super_admin || {};
+          const superAll = usage.super_todos || {};
+          const empAll = usage.empresas_todas || {};
+
+          document.getElementById('openAiSuperMine').textContent =
+            'Tokens: ' + String(superMine.tokens_total || 0) + ' — Consultas: ' + String(superMine.consultas_total || 0);
+          document.getElementById('openAiSuperAll').textContent =
+            'Tokens: ' + String(superAll.tokens_total || 0) + ' — Consultas: ' + String(superAll.consultas_total || 0);
+          document.getElementById('openAiEmpresasAll').textContent =
+            'Tokens: ' + String(empAll.tokens_total || 0) + ' — Consultas: ' + String(empAll.consultas_total || 0);
+          document.getElementById('openAiUsageNote').textContent = fechaUso ? ('Fecha uso: ' + fechaUso) : '';
+
+          if (empresaMsg) empresaMsg.textContent = 'Configuración cargada.';
+          if (superMsg) superMsg.textContent = 'Configuración cargada.';
+        } catch (err) {
+          if (empresaMsg) empresaMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+          if (superMsg) superMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+        }
+      }
+
+      async function save(which){
+        const empresaMsg = document.getElementById('empresaChatMsg');
+        const superMsg = document.getElementById('superChatMsg');
+        const isEmpresa = which === 'empresa';
+
+        const btn = document.getElementById(isEmpresa ? 'saveEmpresaChatBtn' : 'saveSuperChatBtn');
+        const prev = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+        if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardando...';
+        if (!isEmpresa && superMsg) superMsg.textContent = 'Guardando...';
+
+        try {
+          const payload = {
+            empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
+            empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
+            super_enabled: !!document.getElementById('superChatEnabled').checked,
+            super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
+          };
+          await apiFetch('/super/api/config/chat_ia_logica', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardado OK.';
+          if (!isEmpresa && superMsg) superMsg.textContent = 'Guardado OK.';
+          await load();
+        } catch (err) {
+          if (isEmpresa && empresaMsg) empresaMsg.textContent = err.message || 'No se pudo guardar.';
+          if (!isEmpresa && superMsg) superMsg.textContent = err.message || 'No se pudo guardar.';
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = prev; }
+        }
+      }
+
+      document.getElementById('saveEmpresaChatBtn').addEventListener('click', function(){ save('empresa'); });
+      document.getElementById('saveSuperChatBtn').addEventListener('click', function(){ save('super'); });
+      load();
+    })();
+  </script>
+</body>
+</html>
+

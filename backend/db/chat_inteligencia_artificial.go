@@ -11,6 +11,83 @@ import (
 	"time"
 )
 
+// GetEmpresaAIUsoDiarioOpenAITokensGlobal retorna el consumo del día (consultas/tokens) agregado
+// para todas las empresas en el proveedor indicado (ej: "openai").
+func GetEmpresaAIUsoDiarioOpenAITokensGlobal(dbConn *sql.DB, provider string, fechaUso string) (int64, int64, error) {
+	if dbConn == nil {
+		return 0, 0, nil
+	}
+	if strings.TrimSpace(fechaUso) == "" {
+		fechaUso = time.Now().Format("2006-01-02")
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "openai"
+	}
+	if err := EnsureEmpresaAIChatSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+
+	var consultas int64
+	var tokens int64
+	// Agrupar por día, sumar de todas las empresas y modelos.
+	if err := queryRowSQLCompat(dbConn, `SELECT
+		COALESCE(SUM(COALESCE(consultas_total, 0)), 0) AS consultas,
+		COALESCE(SUM(COALESCE(tokens_total, 0)), 0) AS tokens
+		FROM empresa_ai_uso_diario
+		WHERE LOWER(COALESCE(provider,'')) = ?
+		  AND COALESCE(fecha_uso,'') = ?`, provider, fechaUso).Scan(&consultas, &tokens); err != nil {
+		return 0, 0, err
+	}
+	return consultas, tokens, nil
+}
+
+// GetSuperAIUsoDiarioOpenAITokensGlobal retorna el consumo del día (consultas/tokens) agregado
+// del chat global de super administrador para el proveedor indicado.
+// Si adminEmail está vacío, agrega todas las cuentas super.
+func GetSuperAIUsoDiarioOpenAITokensGlobal(dbConn *sql.DB, adminEmail string, provider string, fechaUso string) (int64, int64, error) {
+	if dbConn == nil {
+		return 0, 0, nil
+	}
+	if strings.TrimSpace(fechaUso) == "" {
+		fechaUso = time.Now().Format("2006-01-02")
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "openai"
+	}
+	if err := EnsureSuperAIChatSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+
+	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
+
+	var consultas int64
+	var tokens int64
+	if adminEmail == "" {
+		if err := queryRowSQLCompat(dbConn, `SELECT
+			COALESCE(SUM(COALESCE(consultas_total, 0)), 0) AS consultas,
+			COALESCE(SUM(COALESCE(tokens_total, 0)), 0) AS tokens
+			FROM super_ai_uso_diario
+			WHERE LOWER(COALESCE(provider,'')) = ?
+			  AND COALESCE(fecha_uso,'') = ?`, provider, fechaUso).Scan(&consultas, &tokens); err != nil {
+			return 0, 0, err
+		}
+		return consultas, tokens, nil
+	}
+
+	if err := queryRowSQLCompat(dbConn, `SELECT
+		COALESCE(SUM(COALESCE(consultas_total, 0)), 0) AS consultas,
+		COALESCE(SUM(COALESCE(tokens_total, 0)), 0) AS tokens
+		FROM super_ai_uso_diario
+		WHERE LOWER(COALESCE(provider,'')) = ?
+		  AND COALESCE(fecha_uso,'') = ?
+		  AND LOWER(COALESCE(admin_email,'')) = ?`, provider, fechaUso, adminEmail).Scan(&consultas, &tokens); err != nil {
+		return 0, 0, err
+	}
+	return consultas, tokens, nil
+}
+
 // EmpresaAIConsulta representa una consulta/respuesta de IA por empresa.
 type EmpresaAIConsulta struct {
 	ID               int64  `json:"id"`

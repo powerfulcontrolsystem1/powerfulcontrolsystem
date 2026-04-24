@@ -139,6 +139,78 @@
     .header-dropdown-menu a:hover {
       background: rgba(31, 142, 241, 0.14);
     }
+
+    .ai-promo-banner {
+      margin: 18px auto 18px auto;
+      max-width: 1200px;
+      padding: 18px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(31, 142, 241, 0.22), transparent 52%),
+        radial-gradient(circle at 78% 0%, rgba(14, 165, 164, 0.18), transparent 48%),
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+        var(--surface);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ai-promo-banner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(90deg, rgba(250, 204, 21, 0.72), rgba(31, 142, 241, 0.72), rgba(14, 165, 164, 0.72));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+
+    .ai-promo-banner-title {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      font-size: clamp(1.05rem, 2.1vw, 1.5rem);
+      color: var(--text);
+      text-wrap: balance;
+    }
+
+    .ai-promo-banner-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 90ch;
+      line-height: 1.5;
+    }
+
+    .ai-promo-banner-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--accent-yellow-light);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 820px) {
+      .ai-promo-banner { flex-direction: column; align-items: flex-start; }
+      .ai-promo-banner-kicker { order: -1; }
+    }
   </style>
 </head>
 <body>
@@ -164,6 +236,13 @@
     </header>
 
     <main class="portal-main container">
+      <section class="ai-promo-banner" aria-label="Banner de inteligencia artificial">
+        <div>
+          <div class="ai-promo-banner-kicker">IA incorporada</div>
+          <h2 class="ai-promo-banner-title">Sistema con inteligencia artificial integrada: habla con tu empresa y pídele lo que necesites.</h2>
+          <p class="ai-promo-banner-subtitle">Consulta ventas, cartera, inventario, clientes y tareas. La IA responde con el contexto de tu operación (por empresa) y con control de límites desde el panel super.</p>
+        </div>
+      </section>
       <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
       <h1 class="portal-cards-heading">Sistema de Facturación Electrónica</h1>
       <section id="portalCardsGrid" class="portal-grid" aria-live="polite" ></section>

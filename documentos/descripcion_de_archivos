@@ -3,6 +3,20 @@
 	- `backend/handlers/super_limitaciones_empresa.go` (nuevo) : endpoint `GET/PUT /super/api/config/limitaciones_empresa` que persiste los valores en la base superadministrador (tabla `configuraciones`) bajo las keys `empresa.limitaciones.rustdesk.max_minutos` y `empresa.limitaciones.ai.max_consultas`.
 	- `backend/main.go` : registra la nueva ruta `/super/api/config/limitaciones_empresa`.
 
+- Actualizacion 2026-04-24: pagina super para configuracion logica del chat con IA
+	- `web/super/configuracion_logica_del_chat_con_ia.html` (nuevo) : pagina de super administrador para configurar restricciones del chat IA para empresas y para el chat global.
+	- `backend/handlers/super_chat_ia_logica.go` (nuevo) : endpoint `GET/PUT /super/api/config/chat_ia_logica` que persiste estado y limites diarios (`ai.chat.empresa.*`, `ai.chat.super.*`) en la tabla `configuraciones` (base superadministrador).
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` : aplica las restricciones configuradas (habilitado + limite diario efectivo) al chat IA de empresas.
+	- `backend/handlers/chat_con_ia_global_super.go` : aplica las restricciones configuradas (habilitado + limite diario efectivo) al chat global super.
+	- `web/super_administrador.html` : agrega el enlace de menú a `Configuración lógica chat IA`.
+	- `backend/main.go` : registra la nueva ruta `/super/api/config/chat_ia_logica`.
+	- `web/index.html` : agrega un banner promocional visible del sistema con IA integrada en la portada pública.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : añade micrófono (dictado a texto) para facilitar consultas por voz.
+	- `web/super/chat_con_ia_global.html` : añade micrófono (dictado a texto) para facilitar consultas por voz.
+	- `backend/db/chat_inteligencia_artificial.go` : agrega consultas agregadas para reportar tokens/consultas del día por proveedor.
+	- `web/js/seleccionar_empresa.js`, `web/estilos.css` : ajustan el layout del selector de empresas para que todas las tarjetas tengan el mismo tamaño y los botones queden alineados al pie; el botón verde de licencia activa deja de mostrarse cuando la licencia está vigente, manteniendo siempre el botón de descarga.
+	- `web/ayuda/ayuda.html` : documenta el comportamiento del selector (tarjetas uniformes y botón de descarga siempre disponible).
+
 - Actualizacion 2026-04-23: documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de backup en `backup/`
 	- `documentos/manual_de_instalacion.md` : añade la sección de Google reCAPTCHA (claves, provider, `RECAPTCHA_DEV_BYPASS`, errores de dominio en localhost) y explica dónde se guardan copias JSON bajo `backup/`.
 	- `backend/handlers/recaptcha.go` : expone `window.RECAPTCHA_PROVIDER` con soporte a `google-recaptcha-v3` e incluye timestamps de `fecha_actualizacion` por clave para el panel super.

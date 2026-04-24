@@ -115,6 +115,9 @@ Actualizacion: 2026-04-17
 Actualizacion 2026-04-24 (super: limitaciones por empresa en configuracion avanzada):
 - `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk y (2) número de consultas del chat con IA, persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa`.
 
+Actualizacion 2026-04-24 (super: configuracion logica del chat con IA):
+- `web/super/configuracion_logica_del_chat_con_ia.html` agrega una pagina para administrar restricciones del chat con IA para empresas y para el chat global super, con persistencia en la base superadministrador mediante `GET/PUT /super/api/config/chat_ia_logica`.
+
 Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global de configuracion avanzada):
 - `backend/handlers/super_email_templates.go` crea la fuente de verdad del modulo super para plantillas de correo y expone `/super/api/config/email_templates` con plantillas configurables para confirmación administrativa, confirmación de usuario empresa, activación de licencias, recuperación de contraseña y alerta de reinicio del servidor.
 - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` consumen ese render centralizado para que el panel super pueda cambiar correos reales sin tocar código.

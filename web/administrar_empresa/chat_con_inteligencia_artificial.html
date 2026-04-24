@@ -46,6 +46,7 @@
         <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué productos se están vendiendo más y cuáles debo reabastecer primero?"></textarea>
 
         <div class="ai-chat-actions">
+          <button id="micBtn" class="btn secondary" type="button" title="Hablar (convertir a texto)">🎙️ Dictar</button>
           <button id="sendBtn" class="btn" type="submit">Preguntar a la IA</button>
           <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
         </div>
@@ -462,6 +463,7 @@
       });
 
       document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+      setupSpeechToText();
       document.getElementById("modelSelect").addEventListener("change", function(ev) {
         onModelChange(ev).catch(function(err) {
           const payload = err && err.payload ? err.payload : {};
@@ -474,6 +476,75 @@
       });
       document.querySelectorAll(".ai-gemini-pill").forEach(function(btn) {
         btn.addEventListener("click", onSuggestionClick);
+      });
+    }
+
+    function setupSpeechToText(){
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btn = document.getElementById("micBtn");
+      const input = document.getElementById("promptInput");
+      if (!btn || !input) return;
+
+      if (!SpeechRecognition) {
+        btn.disabled = true;
+        btn.title = "Tu navegador no soporta dictado (SpeechRecognition).";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "es-CO";
+      recognition.interimResults = true;
+      recognition.continuous = false;
+
+      let listening = false;
+      let finalText = "";
+
+      function setListening(on){
+        listening = !!on;
+        btn.textContent = listening ? "⏹️ Detener" : "🎙️ Dictar";
+        btn.classList.toggle("danger", listening);
+        btn.classList.toggle("secondary", !listening);
+      }
+
+      recognition.onresult = function(ev){
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const r = ev.results[i];
+          const text = (r[0] && r[0].transcript) ? String(r[0].transcript) : "";
+          if (r.isFinal) finalText += text;
+          else interim += text;
+        }
+        const base = normalize(input.value);
+        const combined = (base ? (base + " ") : "") + normalize(finalText + interim);
+        input.value = combined.trim();
+      };
+
+      recognition.onerror = function(ev){
+        setListening(false);
+        setMsg("chatMsg", "Dictado: " + (ev && ev.error ? ev.error : "error"), true);
+      };
+
+      recognition.onend = function(){
+        setListening(false);
+        finalText = "";
+      };
+
+      btn.addEventListener("click", function(){
+        if (state.loading || state.authRequired || state.aiDisabled) return;
+        if (listening) {
+          try { recognition.stop(); } catch (e) {}
+          setListening(false);
+          return;
+        }
+        finalText = "";
+        try {
+          setMsg("chatMsg", "Dictado activo: habla ahora.", false);
+          setListening(true);
+          recognition.start();
+        } catch (e) {
+          setListening(false);
+          setMsg("chatMsg", "No se pudo iniciar el dictado.", true);
+        }
       });
     }
 

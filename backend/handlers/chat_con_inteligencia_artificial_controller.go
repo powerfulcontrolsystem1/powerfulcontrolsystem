@@ -392,7 +392,36 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		planActual = "free"
 	}
 
-	if planActual == "free" && model.FreeDailyLimit > 0 && usoActual.Consultas >= int64(model.FreeDailyLimit) {
+	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuración de chat IA", http.StatusInternalServerError)
+		return
+	}
+	if !empresaChatEnabled {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_chat_disabled",
+			"error": "El chat con IA para empresas está desactivado desde configuración lógica del chat con IA.",
+		})
+		return
+	}
+
+	empresaMaxConsultas, _, _, err := getChatIAEmpresaMaxConsultasDia(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuración de límites IA", http.StatusInternalServerError)
+		return
+	}
+	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
+	if effectiveLimit == 0 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_chat_blocked",
+			"error": "El chat con IA para empresas está bloqueado por configuración (límite en 0).",
+		})
+		return
+	}
+
+	if usoActual.Consultas >= effectiveLimit {
 		c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 		return
 	}
@@ -453,7 +482,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "No se pudo obtener uso actualizado", http.StatusInternalServerError)
 		return
 	}
-	restante := int64(model.FreeDailyLimit) - usoActualizado.Consultas
+	restante := effectiveLimit - usoActualizado.Consultas
 	if restante < 0 {
 		restante = 0
 	}
@@ -469,7 +498,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		"usage": map[string]interface{}{
 			"plan":              planActual,
 			"daily_used":        usoActualizado.Consultas,
-			"daily_limit":       model.FreeDailyLimit,
+			"daily_limit":       effectiveLimit,
 			"daily_remaining":   restante,
 			"prompt_tokens":     promptTokens,
 			"completion_tokens": completionTokens,

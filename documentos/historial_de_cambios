@@ -16,6 +16,23 @@
         - `backend/handlers/super_limitaciones_empresa.go` (nuevo)
     - Descripción: en `Super Administrador → Configuración avanzada` se agrega una tarjeta para definir topes globales por empresa: minutos de uso RustDesk (default 30) y número de consultas de chat con IA (default 10). Los valores se guardan en la base `pcs_superadministrador` (tabla `configuraciones`) bajo `empresa.limitaciones.rustdesk.max_minutos` y `empresa.limitaciones.ai.max_consultas`.
     - Verificación: `go test ./...`
+- 2026-04-24: super — página `configuracion_logica_del_chat_con_ia` y restricciones de chats IA.
+    - Archivos modificados/agregados:
+        - `web/super/configuracion_logica_del_chat_con_ia.html` (nuevo)
+        - `web/super_administrador.html`
+        - `backend/main.go`
+        - `backend/handlers/super_chat_ia_logica.go` (nuevo)
+        - `backend/handlers/chat_con_inteligencia_artificial_controller.go`
+        - `backend/handlers/chat_con_ia_global_super.go`
+    - Descripción: se crea una nueva página en el panel super para administrar la lógica del chat con IA. Incluye una tarjeta para el chat IA de empresas y otra para el chat global del super administrador, permitiendo habilitar/deshabilitar cada chat y definir su límite diario de consultas. Persistencia en `pcs_superadministrador.configuraciones` bajo `ai.chat.empresa.*` y `ai.chat.super.*`. Los controladores de chat aplican estas restricciones como límite efectivo adicional al límite por modelo/plan.
+    - Verificación: `go test ./...`
+- 2026-04-24: selector de empresas — tarjetas uniformes y descarga siempre visible.
+    - Archivos modificados:
+        - `web/js/seleccionar_empresa.js`
+        - `web/estilos.css`
+        - `web/ayuda/ayuda.html`
+    - Descripción: en `/seleccionar_empresa.html` las tarjetas quedan con altura uniforme y la botonera alineada al pie. Se oculta el indicador/botón verde de “Licencia activa” en empresas con licencia vigente, pero todas las tarjetas mantienen disponible el botón de descarga de datos de la empresa.
+    - Verificación: revisión visual (frontend) y `go test ./...` (sin cambios backend en esta iteración).
 - 2026-04-24: landing pública — tarjeta única por tipo y video embebido.
     - Descripción: `web/descripcion_de_los_sistemas.ht` ahora muestra **solo** la tarjeta del tipo de negocio seleccionado (por hash `#...` o query `?tipo=...`) y permite adjuntar un enlace de YouTube por tarjeta desde `web/super/pagina_principal.html`, mostrando el video embebido en la vista pública. Se moderniza el estilo de la tarjeta y se agrega CSS específico en `web/estilos.css`.
 - 2026-04-24: portal público y super — menú contacto y retiro de venta digital.
