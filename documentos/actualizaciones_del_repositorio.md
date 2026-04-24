@@ -666,3 +666,10 @@ Archivos modificados:
 - web/img/baner_ia.png
 - web/index.html
 - web/super/pagina_principal.html
+
+2026-04-24 16:52:40 - Mensaje: Portal index: subtítulo IA; documentación; retiro banner promocional fijo; Commit: fe6844c; PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/index.html
