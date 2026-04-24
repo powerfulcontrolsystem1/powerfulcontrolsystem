@@ -621,3 +621,9 @@ Archivos modificados:
 - backend/handlers/super_email_templates.go
 - backend/utils/utils.go
 - web/js/seleccionar_empresa.js
+
+2026-04-24 14:47:22 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: d008dc3; PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_admin_compartida.go
+- backend/handlers/empresa_compartida_handlers.go
+- web/js/seleccionar_empresa.js
