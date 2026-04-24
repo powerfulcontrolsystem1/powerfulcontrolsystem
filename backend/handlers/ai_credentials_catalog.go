@@ -59,11 +59,11 @@ type aiCredentialModelDef struct {
 func aiCredentialCatalogModels() []aiCredentialModelDef {
 	return []aiCredentialModelDef{
 		{
-			ModelID:      "openai:gpt-4o-mini",
+			ModelID:      "openai:gpt-5.4-mini",
 			Provider:     "openai",
-			DisplayName:  "OpenAI GPT-4o mini",
+			DisplayName:  "OpenAI GPT-5.4 mini",
 			ApiKeyEnv:    "OPENAI_API_KEY",
-			ConfigKey:    "ai.model.openai.gpt_4o_mini.api_key",
+			ConfigKey:    "ai.model.openai.gpt_5_4_mini.api_key",
 			FreePlanNote: "OpenAI: requiere API key y se guarda cifrada en configuracion avanzada.",
 		},
 	}

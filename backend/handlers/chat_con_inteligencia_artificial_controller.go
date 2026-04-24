@@ -64,10 +64,10 @@ func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
-			ID:             "openai:gpt-4o-mini",
+			ID:             "openai:gpt-5.4-mini",
 			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-4o mini",
-			UpstreamModel:  "gpt-4o-mini",
+			DisplayName:    "OpenAI GPT-5.4 mini",
+			UpstreamModel:  "gpt-5.4-mini",
 			Endpoint:       "https://api.openai.com/v1/chat/completions",
 			ApiKeyEnv:      "OPENAI_API_KEY",
 			Famous:         true,
