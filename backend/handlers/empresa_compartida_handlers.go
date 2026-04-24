@@ -26,6 +26,18 @@ func hashAdminEmpresaCompartidaToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func isAllowedAdminEmpresaCompartidaRole(raw string) bool {
+	role := strings.ToLower(strings.TrimSpace(raw))
+	switch role {
+	case "super_administrador", "superadmin", "super":
+		return true
+	case "administrador", "admin", "admin_empresa":
+		return true
+	default:
+		return false
+	}
+}
+
 func newAdminEmpresaCompartidaInvitationTokenAndExpiration() (string, string, string, error) {
 	token, err := utils.GenerateSecureToken(32)
 	if err != nil {
@@ -337,6 +349,10 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "el administrador invitado debe existir y estar registrado", http.StatusBadRequest)
 				return
 			}
+			if !isAllowedAdminEmpresaCompartidaRole(adminTarget.Role) {
+				http.Error(w, "solo se puede compartir con un usuario administrador o superadministrador", http.StatusForbidden)
+				return
+			}
 			if strings.EqualFold(strings.TrimSpace(adminTarget.Estado), "inactivo") {
 				http.Error(w, "el administrador invitado está inactivo", http.StatusConflict)
 				return
@@ -540,8 +556,13 @@ func EmpresaCompartidaAcceptHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "message": "La invitación ya había sido aceptada.", "empresa_id": inv.EmpresaID})
 			return
 		}
-		if _, err := dbpkg.GetAdminByEmailFull(dbSuper, requesterEmail); err != nil {
+		adminRequester, err := dbpkg.GetAdminByEmailFull(dbSuper, requesterEmail)
+		if err != nil || adminRequester == nil {
 			http.Error(w, "el administrador autenticado no existe o no está disponible", http.StatusBadRequest)
+			return
+		}
+		if !isAllowedAdminEmpresaCompartidaRole(adminRequester.Role) {
+			http.Error(w, "solo un usuario administrador o superadministrador puede aceptar una empresa compartida", http.StatusForbidden)
 			return
 		}
 		acceptedAt := time.Now().Format("2006-01-02 15:04:05")

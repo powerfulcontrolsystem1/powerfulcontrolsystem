@@ -417,7 +417,12 @@
       : "Compartir empresa con otro administrador";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M15 8a3 3 0 1 0-2.83-4H12a3 3 0 0 0 .17 1L8.91 6.63a3 3 0 0 0-1.91-.68A3 3 0 1 0 10 9a2.9 2.9 0 0 0-.17-.98l3.26-1.63A3 3 0 0 0 15 8Zm-8 3a3 3 0 0 0 1.91-.68l3.26 1.63A3 3 0 0 0 12 13a3 3 0 1 0 1.09-2.31l-3.26-1.63A2.9 2.9 0 0 0 10 8a2.9 2.9 0 0 0-.09-.69l3.26-1.63A3 3 0 0 0 15 6a3 3 0 1 0-1.09-2.31L10.65 5.32A3 3 0 1 0 7 11Zm8 8a3 3 0 0 0-2.83-4H12a3 3 0 0 0 .17 1l-3.26 1.63A3 3 0 1 0 10 20a2.9 2.9 0 0 0-.17-.98l3.26-1.63A3 3 0 1 0 15 19Z"/></svg>' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+      '<circle cx="18" cy="5" r="2.6" fill="none" stroke="currentColor" stroke-width="2"></circle>' +
+      '<circle cx="6" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="2"></circle>' +
+      '<circle cx="18" cy="19" r="2.6" fill="none" stroke="currentColor" stroke-width="2"></circle>' +
+      '<path d="M8.3 11.1L15.7 6.9M8.3 12.9L15.7 17.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>' +
+      '</svg>' +
       '</button>';
   }
 

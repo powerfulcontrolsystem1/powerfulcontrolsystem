@@ -24,6 +24,7 @@
       <h2>Secciones</h2>
       <div class="email-templates-tabs" id="emailTemplateTabs">
         <button type="button" class="email-templates-tab active" data-panel="panel-confirmacion">Confirmación de correo</button>
+        <button type="button" class="email-templates-tab" data-panel="panel-administracion">Administración</button>
         <button type="button" class="email-templates-tab" data-panel="panel-licencias">Pago de licencia</button>
         <button type="button" class="email-templates-tab" data-panel="panel-recomendadas">Recomendados</button>
       </div>
@@ -68,6 +69,43 @@
           <span>{{name}}</span>
           <span>{{company_name}}</span>
           <span>{{confirm_url}}</span>
+          <span>{{login_url}}</span>
+          <span>{{admin_message}}</span>
+          <span>{{admin_message_block_text}}</span>
+          <span>{{admin_message_block_html}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-administracion" class="email-template-panel" hidden>
+      <article class="card form mp-card email-template-card" data-template-key="empresa_admin_share_invitation">
+        <h2>Correo de invitación para compartir empresa entre administradores</h2>
+        <p class="form-help">Se envía cuando un administrador propietario comparte su empresa con otro administrador ya registrado. El invitado acepta desde el enlace y la empresa aparece en su selector.</p>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{company_name}}</span>
+          <span>{{invited_by_name}}</span>
+          <span>{{accept_url}}</span>
           <span>{{login_url}}</span>
           <span>{{admin_message}}</span>
           <span>{{admin_message_block_text}}</span>

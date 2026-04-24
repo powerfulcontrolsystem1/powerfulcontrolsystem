@@ -123,6 +123,7 @@
           descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
           imagen_url: image,
           enlace: '/login.html',
+          youtube_url: '',
           detalle_etiqueta: 'Solucion especializada',
           detalle_titular: 'Explica aqui el principal valor de esta solucion.',
           detalle_parrafo_uno: 'Describe el primer bloque de la experiencia o alcance funcional de esta tarjeta.',
@@ -233,6 +234,7 @@
           var title = String(card.titulo || '').trim();
           var description = String(card.descripcion || '').trim();
           var link = String(card.enlace || '').trim();
+          var youtubeURL = String(card.youtube_url || '').trim();
           var detailTag = String(card.detalle_etiqueta || '').trim();
           var detailHeadline = String(card.detalle_titular || '').trim();
           var detailParagraphOne = String(card.detalle_parrafo_uno || '').trim();
@@ -249,6 +251,13 @@
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppLink' + idx + '">Destino de Probar Gratis</label>';
           html += '    <input id="ppLink' + idx + '" class="form-input pp-field" data-field="enlace" type="text" value="' + escapeHTML(link) + '" placeholder="/login.html">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppYoutube' + idx + '">Video de YouTube (opcional)</label>';
+          html += '    <input id="ppYoutube' + idx + '" class="form-input pp-field" data-field="youtube_url" type="url" value="' + escapeHTML(youtubeURL) + '" placeholder="https://www.youtube.com/watch?v=...">';
+          html += '    <p class="form-help">Pega un enlace de YouTube o youtu.be. La landing pública mostrará el video embebido en la tarjeta seleccionada.</p>';
           html += '  </div>';
           html += '</div>';
           html += '<div class="form-row">';
@@ -391,6 +400,7 @@
               descripcion: String(card.descripcion || '').trim(),
               imagen_url: String(card.imagen_url || '').trim(),
               enlace: String(card.enlace || '').trim(),
+              youtube_url: String(card.youtube_url || '').trim(),
               detalle_etiqueta: String(card.detalle_etiqueta || '').trim(),
               detalle_titular: String(card.detalle_titular || '').trim(),
               detalle_parrafo_uno: String(card.detalle_parrafo_uno || '').trim(),

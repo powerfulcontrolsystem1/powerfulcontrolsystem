@@ -165,21 +165,6 @@
       </div>
     </section>
 
-    <section class="card form advanced-card" data-brand="store" id="ventaDigitalConfigShortcut">
-      <h2>
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        Configuración de venta digital
-      </h2>
-      <p class="form-help">Administra catálogo de licencias y software, visualiza órdenes de compra y ajusta formatos de email.</p>
-      <div class="form-actions" >
-        <a class="btn" href="/super/venta_digital.html">Abrir panel de venta</a>
-        <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pública</a>
-        <a class="btn secondary" href="/super/formato_para_emviar_email.html">Editar email templates</a>
-        <button id="testVentaDigitalBtn" class="btn secondary" type="button">Probar salud del panel</button>
-      </div>
-      <div id="ventaDigitalTestMsg" class="form-help" ></div>
-    </section>
-
     <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
@@ -1073,19 +1058,23 @@
           }
           const cfg = await res.json();
           inputEl.value = cfg.whatsapp_contact_number || '';
-          inputEl.disabled = true;
           refreshPortalWhatsAppPreview();
           if (cfg.whatsapp_contact_number_set) {
             const ts = cfg.whatsapp_contact_number_updated ? (' - Última actualización: ' + cfg.whatsapp_contact_number_updated) : '';
             statusEl.innerText = 'Número configurado' + ts;
+            inputEl.disabled = true;
             editBtn.style.display = '';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
           } else {
             statusEl.innerText = 'No configurado';
+            // Si no hay número aún, permitir edición inmediata (sin obligar a "Editar").
+            inputEl.disabled = false;
             editBtn.style.display = 'none';
+            saveBtn.style.display = '';
+            cancelBtn.style.display = 'none';
           }
-          saveBtn.style.display = 'none';
           saveBtn.disabled = false;
-          cancelBtn.style.display = 'none';
           if (!msgEl.innerText || msgEl.innerText.indexOf('Error') === -1) {
             msgEl.innerText = 'Este número se usará en el botón flotante de WhatsApp del index.';
           }
@@ -1862,19 +1851,6 @@
       }
 
       // Funciones de prueba por tarjeta / modulo
-      async function testVentaDigital(){
-        const out = document.getElementById('ventaDigitalTestMsg');
-        if (out) out.innerText = 'Probando panel de venta digital...';
-        try {
-          const res = await fetch('/super/venta_digital.html', { method: 'GET', credentials: 'same-origin' });
-          if (!out) return;
-          if (res.ok) out.innerText = 'OK: panel de venta digital accesible.';
-          else out.innerText = 'ERROR: respuesta HTTP ' + res.status;
-        } catch (err) {
-          if (out) out.innerText = 'Error: ' + (err.message || err);
-        }
-      }
-
       async function testEpayco(){
         const out = document.getElementById('epaycoTestResult');
         if (out) out.innerText = 'Probando Epayco...';

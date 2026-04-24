@@ -67,6 +67,72 @@
       text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
     }
     .portal-footer { text-align: center; padding: 40px; margin-top: auto; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-dropdown {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .header-dropdown-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .header-dropdown-toggle:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .header-dropdown-toggle .caret {
+      font-weight: 900;
+      opacity: 0.9;
+    }
+
+    .header-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 220px;
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)), var(--surface);
+      box-shadow: 0 22px 50px rgba(0,0,0,0.28);
+      display: none;
+      z-index: 50;
+    }
+
+    .header-dropdown.is-open .header-dropdown-menu {
+      display: block;
+    }
+
+    .header-dropdown-menu a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .header-dropdown-menu a:hover {
+      background: rgba(31, 142, 241, 0.14);
+    }
   </style>
 </head>
 <body>
@@ -80,6 +146,14 @@
       <nav class="nav-actions">
         <a class="btn dark" href="/login.html">Iniciar sesión</a>
         <a class="btn dark" href="/registrar_nuevo_usuario_administrador.html">Crear cuenta</a>
+        <div class="header-dropdown" id="headerMoreMenu">
+          <button type="button" class="header-dropdown-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="headerMoreMenuList" id="headerMoreMenuToggle">
+            Más <span class="caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="Más opciones">
+            <a role="menuitem" href="/Informacion_de_contacto.html">Información de contacto</a>
+          </div>
+        </div>
       </nav>
     </header>
 
@@ -104,6 +178,36 @@
 
   <script>
     (function () {
+      (function initHeaderDropdown() {
+        var wrap = document.getElementById('headerMoreMenu');
+        var toggle = document.getElementById('headerMoreMenuToggle');
+        if (!wrap || !toggle) return;
+
+        function setOpen(open) {
+          wrap.classList.toggle('is-open', !!open);
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        toggle.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          setOpen(!wrap.classList.contains('is-open'));
+        });
+
+        document.addEventListener('click', function (ev) {
+          if (!wrap.classList.contains('is-open')) return;
+          if (wrap.contains(ev.target)) return;
+          setOpen(false);
+        });
+
+        document.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Escape') {
+            if (!wrap.classList.contains('is-open')) return;
+            setOpen(false);
+            try { toggle.focus(); } catch (e) {}
+          }
+        });
+      })();
+
       var gridEl = document.getElementById('portalCardsGrid');
       var statusEl = document.getElementById('portalCardsStatus');
       var whatsAppFloatingCTA = document.querySelector('.whatsapp-floating-cta');

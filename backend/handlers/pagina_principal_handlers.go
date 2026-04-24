@@ -31,6 +31,7 @@ type paginaPrincipalCard struct {
 	Descripcion       string   `json:"descripcion"`
 	ImagenURL         string   `json:"imagen_url"`
 	Enlace            string   `json:"enlace"`
+	YouTubeURL        string   `json:"youtube_url,omitempty"`
 	DetalleEtiqueta   string   `json:"detalle_etiqueta"`
 	DetalleTitular    string   `json:"detalle_titular"`
 	DetalleParrafoUno string   `json:"detalle_parrafo_uno"`
@@ -263,6 +264,28 @@ func paginaPrincipalNormalizeLink(raw, fallback string) string {
 	return "/" + strings.TrimLeft(value, "/")
 }
 
+func paginaPrincipalNormalizeYouTubeURL(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	lower := strings.ToLower(value)
+	if strings.HasPrefix(lower, "https://youtu.be/") ||
+		strings.HasPrefix(lower, "https://www.youtube.com/") ||
+		strings.HasPrefix(lower, "https://youtube.com/") ||
+		strings.HasPrefix(lower, "http://youtu.be/") ||
+		strings.HasPrefix(lower, "http://www.youtube.com/") ||
+		strings.HasPrefix(lower, "http://youtube.com/") {
+		// Normalizar a https para evitar mixed-content en el portal.
+		value = strings.TrimSpace(value)
+		if strings.HasPrefix(strings.ToLower(value), "http://") {
+			value = "https://" + strings.TrimPrefix(value, "http://")
+		}
+		return value
+	}
+	return ""
+}
+
 func paginaPrincipalNormalizeText(raw, fallback string) string {
 	value := strings.TrimSpace(raw)
 	if value != "" {
@@ -325,6 +348,7 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 			Descripcion:       description,
 			ImagenURL:         paginaPrincipalNormalizeImageURL(current.ImagenURL, base.ImagenURL),
 			Enlace:            paginaPrincipalNormalizeLink(current.Enlace, base.Enlace),
+			YouTubeURL:        paginaPrincipalNormalizeYouTubeURL(current.YouTubeURL),
 			DetalleEtiqueta:   paginaPrincipalNormalizeText(current.DetalleEtiqueta, base.DetalleEtiqueta),
 			DetalleTitular:    paginaPrincipalNormalizeText(current.DetalleTitular, base.DetalleTitular),
 			DetalleParrafoUno: paginaPrincipalNormalizeText(current.DetalleParrafoUno, base.DetalleParrafoUno),

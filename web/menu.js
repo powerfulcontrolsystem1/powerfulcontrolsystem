@@ -322,6 +322,10 @@
       if (path === '/login.html' || path.endsWith('/login.html') || path === '/login_usuario.html' || path.endsWith('/login_usuario.html')) {
         return true;
       }
+      // Páginas públicas donde NO debe mostrarse el menú flotante (perfil/sesión)
+      if (path === '/descripcion_de_los_sistemas' || path === '/descripcion_de_los_sistemas.ht' || path.indexOf('/descripcion_de_los_sistemas.') === 0) {
+        return true;
+      }
     } catch (error) {
       return true;
     }
