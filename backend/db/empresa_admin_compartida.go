@@ -329,6 +329,56 @@ func ListActiveAdminEmpresaCompartidaAccesosByAdmin(dbConn *sql.DB, adminEmail s
 	return out, rows.Err()
 }
 
+func ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbConn *sql.DB, adminEmail string) ([]AdminEmpresaCompartidaInvitacion, error) {
+	adminEmail = normalizeAdminEmpresaCompartidaEmail(adminEmail)
+	if dbConn == nil || adminEmail == "" {
+		return []AdminEmpresaCompartidaInvitacion{}, nil
+	}
+	if err := EnsureAdminEmpresaCompartidaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		i.id,
+		i.empresa_id,
+		COALESCE(i.admin_email, ''),
+		COALESCE(adm.name, ''),
+		COALESCE(i.invitado_por_email, ''),
+		COALESCE(inv.name, ''),
+		COALESCE(i.token_hash, ''),
+		COALESCE(i.mensaje, ''),
+		COALESCE(i.expira_en, ''),
+		COALESCE(i.aceptada_en, ''),
+		COALESCE(i.rechazada_en, ''),
+		COALESCE(i.revocada_en, ''),
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'pendiente'),
+		COALESCE(i.observaciones, '')
+	FROM admin_empresa_compartida_invitaciones i
+	LEFT JOIN administradores adm ON lower(adm.email) = lower(i.admin_email)
+	LEFT JOIN administradores inv ON lower(inv.email) = lower(i.invitado_por_email)
+	WHERE lower(COALESCE(i.admin_email, '')) = lower(?)
+	  AND lower(COALESCE(i.estado, 'pendiente')) = 'pendiente'
+	  AND COALESCE(i.aceptada_en, '') = ''
+	  AND COALESCE(i.rechazada_en, '') = ''
+	  AND COALESCE(i.revocada_en, '') = ''
+	ORDER BY i.id DESC`, adminEmail)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]AdminEmpresaCompartidaInvitacion, 0)
+	for rows.Next() {
+		item, scanErr := scanAdminEmpresaCompartidaInvitacion(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
 func GetActiveAdminEmpresaCompartidaAcceso(dbConn *sql.DB, empresaID int64, adminEmail string) (*AdminEmpresaCompartidaAcceso, error) {
 	adminEmail = normalizeAdminEmpresaCompartidaEmail(adminEmail)
 	if dbConn == nil || empresaID <= 0 || adminEmail == "" {

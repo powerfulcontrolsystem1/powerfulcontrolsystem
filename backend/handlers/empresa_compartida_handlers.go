@@ -366,6 +366,44 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "pendientes_mias") {
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				invitaciones, err := dbpkg.ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbSuper, requesterEmail)
+				if err != nil {
+					http.Error(w, "no se pudieron cargar invitaciones pendientes: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				items := make([]map[string]interface{}, 0, len(invitaciones))
+				for _, inv := range invitaciones {
+					inv = normalizeAdminEmpresaCompartidaInvitation(inv)
+					empresaNombre := ""
+					empresaEstado := ""
+					if dbEmp != nil && inv.EmpresaID > 0 {
+						if emp, eerr := dbpkg.GetEmpresaByID(dbEmp, inv.EmpresaID); eerr == nil && emp != nil {
+							empresaNombre = strings.TrimSpace(emp.Nombre)
+							empresaEstado = strings.TrimSpace(emp.Estado)
+						}
+					}
+					items = append(items, map[string]interface{}{
+						"id":             inv.ID,
+						"empresa_id":     inv.EmpresaID,
+						"empresa_nombre": empresaNombre,
+						"empresa_estado": empresaEstado,
+						"admin_email":    strings.TrimSpace(inv.AdminEmail),
+						"invitado_por":   strings.TrimSpace(inv.InvitadoPorEmail),
+						"mensaje":        strings.TrimSpace(inv.Mensaje),
+						"expira_en":      strings.TrimSpace(inv.ExpiraEn),
+						"fecha_creacion": strings.TrimSpace(inv.FechaCreacion),
+						"estado":         strings.TrimSpace(inv.Estado),
+					})
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
+				return
+			}
 			empresaID, err := parseInt64QueryOptional(r, "empresa_id")
 			if err != nil || empresaID <= 0 {
 				http.Error(w, "empresa_id invalido", http.StatusBadRequest)
@@ -503,6 +541,74 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "aceptar" {
+				id, err := parseInt64QueryOptional(r, "id")
+				if err != nil || id <= 0 {
+					http.Error(w, "id invalido", http.StatusBadRequest)
+					return
+				}
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				inv, err := dbpkg.GetAdminEmpresaCompartidaInvitacionByID(dbSuper, id)
+				if err != nil || inv == nil {
+					http.Error(w, "invitación no encontrada", http.StatusNotFound)
+					return
+				}
+				if !strings.EqualFold(strings.TrimSpace(inv.AdminEmail), requesterEmail) {
+					http.Error(w, "la invitación no corresponde al administrador autenticado", http.StatusForbidden)
+					return
+				}
+				if isAdminEmpresaCompartidaInvitationExpired(inv) {
+					_ = dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "expirada", requesterEmail)
+					http.Error(w, "la invitación expiró", http.StatusConflict)
+					return
+				}
+				estado := strings.ToLower(strings.TrimSpace(inv.Estado))
+				if estado == "revocada" || estado == "rechazada" {
+					http.Error(w, "la invitación ya no está disponible", http.StatusConflict)
+					return
+				}
+				if estado == "aceptada" {
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "message": "La invitación ya había sido aceptada.", "empresa_id": inv.EmpresaID})
+					return
+				}
+				adminRequester, err := dbpkg.GetAdminByEmailFull(dbSuper, requesterEmail)
+				if err != nil || adminRequester == nil {
+					http.Error(w, "el administrador autenticado no existe o no está disponible", http.StatusBadRequest)
+					return
+				}
+				if !isAllowedAdminEmpresaCompartidaRole(adminRequester.Role) {
+					http.Error(w, "solo un usuario administrador o superadministrador puede aceptar una empresa compartida", http.StatusForbidden)
+					return
+				}
+				if strings.EqualFold(strings.TrimSpace(adminRequester.Estado), "inactivo") {
+					http.Error(w, "el administrador autenticado está inactivo", http.StatusConflict)
+					return
+				}
+				acceptedAt := time.Now().Format("2006-01-02 15:04:05")
+				if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
+					EmpresaID:          inv.EmpresaID,
+					AdminEmail:         requesterEmail,
+					CompartidoPorEmail: inv.InvitadoPorEmail,
+					InvitacionID:       inv.ID,
+					FechaAceptada:      acceptedAt,
+					UsuarioCreador:     requesterEmail,
+					Estado:             "activo",
+				}); err != nil {
+					http.Error(w, "no se pudo activar el acceso compartido: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.MarkAdminEmpresaCompartidaInvitacionAccepted(dbSuper, inv.ID, acceptedAt, requesterEmail); err != nil {
+					http.Error(w, "no se pudo cerrar la invitación compartida", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "message": "Acceso compartido aceptado correctamente.", "empresa_id": inv.EmpresaID})
+				return
+			}
+
 			if action != "reenviar" {
 				http.Error(w, "accion no soportada", http.StatusBadRequest)
 				return

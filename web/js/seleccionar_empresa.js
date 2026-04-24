@@ -6,7 +6,9 @@
   var viewKey = "seleccionar_empresa:view";
   var currentEmpresas = [];
   var currentAccount = null;
+  var currentActiveByEmpresa = {};
   var shareNoticeEl = document.getElementById("selectorShareNotice");
+  var shareInvitesPanel = null;
 
   try {
     storage = window.sessionStorage;
@@ -51,7 +53,10 @@
       data = null;
     }
     if (!res.ok) {
-      throw new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+      var err = new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+      err.status = res.status;
+      err.payload = data;
+      throw err;
     }
     return data;
   }
@@ -62,6 +67,73 @@
     shareNoticeEl.textContent = text || "";
     shareNoticeEl.classList.toggle("error", !!isError);
     shareNoticeEl.classList.toggle("success", !isError && !!text);
+  }
+
+  function ensureShareInvitesPanel() {
+    if (shareInvitesPanel) return shareInvitesPanel;
+    if (!shareNoticeEl || !shareNoticeEl.parentNode) return null;
+    var panel = document.getElementById("selectorShareInvitesPanel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "selectorShareInvitesPanel";
+      panel.className = "card";
+      panel.style.marginTop = "12px";
+      panel.style.padding = "14px 16px";
+      panel.style.borderRadius = "14px";
+      panel.style.display = "none";
+      shareNoticeEl.parentNode.insertBefore(panel, shareNoticeEl.nextSibling);
+    }
+    shareInvitesPanel = panel;
+    return panel;
+  }
+
+  function renderPendingShareInvites(items) {
+    var panel = ensureShareInvitesPanel();
+    if (!panel) return;
+    if (!Array.isArray(items) || items.length === 0) {
+      panel.style.display = "none";
+      panel.innerHTML = "";
+      return;
+    }
+    panel.style.display = "";
+    panel.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+      '<div><strong>Invitaciones de empresas pendientes</strong><div class="muted" style="margin-top:4px;">Acepta para que aparezcan en tu lista y se abran automáticamente.</div></div>' +
+      '<button type="button" class="btn secondary" data-action="refresh-share-invites">Actualizar</button>' +
+      "</div>" +
+      '<div style="margin-top:10px;display:grid;gap:10px;">' +
+      items.map(function (it) {
+        var empresaNombre = String(it.empresa_nombre || "").trim() || ("Empresa #" + String(it.empresa_id || ""));
+        var invitadoPor = String(it.invitado_por || "").trim();
+        var expira = String(it.expira_en || "").trim();
+        var msg = String(it.mensaje || "").trim();
+        return '' +
+          '<article class="card" style="padding:12px 14px;border-radius:14px;border:1px solid rgba(148,163,184,.25);background:rgba(15,23,42,.35)">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+          '<div style="min-width:220px;">' +
+          '<div><strong>' + escapeHtml(empresaNombre) + "</strong></div>" +
+          (invitadoPor ? '<div class="muted">Compartida por: ' + escapeHtml(invitadoPor) + "</div>" : "") +
+          (expira ? '<div class="muted">Expira: ' + escapeHtml(expira) + "</div>" : "") +
+          (msg ? '<div class="muted" style="margin-top:6px;">Mensaje: ' + escapeHtml(msg) + "</div>" : "") +
+          "</div>" +
+          '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<button type="button" class="btn" data-action="accept-share-invite" data-invitation-id="' + escapeHtml(String(it.id || "")) + '" data-empresa-id="' + escapeHtml(String(it.empresa_id || "")) + '">Aceptar</button>' +
+          '<button type="button" class="btn secondary empresa-share-resend" data-empresa-id="' + escapeHtml(String(it.empresa_id || "")) + '" data-invitation-id="' + escapeHtml(String(it.id || "")) + '">Reenviar email</button>' +
+          "</div>" +
+          "</div>" +
+          "</article>";
+      }).join("") +
+      "</div>";
+  }
+
+  async function loadPendingShareInvites() {
+    try {
+      var data = await fetchJSON("/super/api/empresas/compartidos?action=pendientes_mias", { credentials: "same-origin" });
+      var items = data && Array.isArray(data.items) ? data.items : [];
+      renderPendingShareInvites(items);
+    } catch (err) {
+      renderPendingShareInvites([]);
+    }
   }
 
   function setHidden(element, hidden) {
@@ -459,9 +531,32 @@
     if (!panel) return;
     var feedback = panel.querySelector('[data-share-feedback]');
     if (!feedback) return;
+    // limpiar acciones previas (ej. botón reenviar)
+    Array.prototype.forEach.call(feedback.querySelectorAll('button.empresa-share-resend'), function (btn) {
+      try { btn.remove(); } catch (e) {}
+    });
     feedback.textContent = text || '';
     feedback.classList.toggle('is-error', !!isError && !!text);
     feedback.classList.toggle('is-success', !isError && !!text);
+  }
+
+  function showEmpresaShareResendAction(empresaId, invitationId) {
+    var panel = findEmpresaSharePanel(empresaId);
+    if (!panel) return;
+    var feedback = panel.querySelector('[data-share-feedback]');
+    if (!feedback) return;
+    // asegurar separación visual si ya hay texto
+    if (feedback.textContent) {
+      feedback.textContent = String(feedback.textContent).trim() + ' ';
+    }
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn secondary empresa-share-resend';
+    btn.style.marginLeft = '8px';
+    btn.textContent = 'Reenviar invitación';
+    btn.setAttribute('data-empresa-id', String(empresaId || ''));
+    btn.setAttribute('data-invitation-id', String(invitationId || ''));
+    feedback.appendChild(btn);
   }
 
   function closeAllEmpresaSharePanels(exceptEmpresaId) {
@@ -519,6 +614,14 @@
         emailInput.value = '';
       }
     } catch (err) {
+      var payload = err && err.payload ? err.payload : null;
+      if (payload && String(payload.code || '') === 'invitation_pending' && payload.invitation_id) {
+        var pendingMsg = (payload.error || err.message || 'Ya existe una invitación pendiente para ese administrador.') + ' ';
+        setEmpresaShareFeedback(empresaId, pendingMsg + 'Puedes reenviarla.', true);
+        showEmpresaShareResendAction(empresaId, payload.invitation_id);
+        setShareNotice(pendingMsg + 'Puedes reenviarla.', true);
+        return;
+      }
       var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitación.';
       setEmpresaShareFeedback(empresaId, errorMessage, true);
       setShareNotice(errorMessage, true);
@@ -759,6 +862,7 @@
           activeByEmpresa[l.empresa_id] = true;
         }
       });
+      currentActiveByEmpresa = activeByEmpresa;
 
       var container = document.getElementById("cards");
       container.innerHTML = "";
@@ -996,6 +1100,7 @@
       await render();
       await processSharedInvitationToken();
       await render();
+      await loadPendingShareInvites();
       processSharedInvitationAcceptedNotice();
       restoreLastView();
     });
@@ -1075,6 +1180,73 @@
         setShareNotice('', false);
         toggleEmpresaSharePanel(empresaIdShare);
       }
+      return;
+    }
+
+    var resendBtn = ev.target.closest && ev.target.closest('button.empresa-share-resend');
+    if (resendBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var empresaIdResend = parseInt(resendBtn.getAttribute('data-empresa-id') || '0', 10);
+      var invitationId = parseInt(resendBtn.getAttribute('data-invitation-id') || '0', 10);
+      if (!empresaIdResend || !invitationId) {
+        return;
+      }
+      setEmpresaShareFeedback(empresaIdResend, 'Reenviando invitación...', false);
+      fetchJSON('/super/api/empresas/compartidos?id=' + encodeURIComponent(invitationId) + '&action=reenviar', {
+        method: 'PUT',
+        credentials: 'same-origin'
+      }).then(function (data) {
+        var msg = data && data.message ? data.message : 'Invitación reenviada.';
+        setEmpresaShareFeedback(empresaIdResend, msg, false);
+        setShareNotice(msg, false);
+      }).catch(function (err) {
+        var msg = err && err.message ? err.message : 'No se pudo reenviar la invitación.';
+        setEmpresaShareFeedback(empresaIdResend, msg, true);
+        setShareNotice(msg, true);
+      });
+      return;
+    }
+
+    var acceptInviteBtn = ev.target.closest && ev.target.closest('button[data-action="accept-share-invite"]');
+    if (acceptInviteBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var invitationIdAccept = parseInt(acceptInviteBtn.getAttribute("data-invitation-id") || "0", 10);
+      var empresaIdAccept = parseInt(acceptInviteBtn.getAttribute("data-empresa-id") || "0", 10);
+      if (!invitationIdAccept || !empresaIdAccept) {
+        return;
+      }
+      setShareNotice("Aceptando invitación...", false);
+      fetchJSON("/super/api/empresas/compartidos?id=" + encodeURIComponent(invitationIdAccept) + "&action=aceptar", {
+        method: "PUT",
+        credentials: "same-origin",
+      }).then(async function (data) {
+        var empresaId = data && data.empresa_id ? Number(data.empresa_id) : empresaIdAccept;
+        if (empresaId) {
+          persistEmpresaContext(empresaId);
+        }
+        await render();
+        await loadPendingShareInvites();
+        var empresa = getEmpresaFromCurrentList(empresaId);
+        if (empresa) {
+          var hasLicense = !!currentActiveByEmpresa[empresa.id];
+          navigateToEmpresa(empresa, hasLicense);
+          return;
+        }
+        setShareNotice("Invitación aceptada. La empresa ya está en tu lista.", false);
+      }).catch(function (err) {
+        var msg = err && err.message ? err.message : "No se pudo aceptar la invitación.";
+        setShareNotice(msg, true);
+      });
+      return;
+    }
+
+    var refreshInvitesBtn = ev.target.closest && ev.target.closest('button[data-action="refresh-share-invites"]');
+    if (refreshInvitesBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      loadPendingShareInvites();
       return;
     }
 
