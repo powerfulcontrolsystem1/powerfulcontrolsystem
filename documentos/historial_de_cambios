@@ -14151,3 +14151,23 @@ Archivos modificados:
 - backend/logs/server_runtime_state.json
 - backend/server.exe
 - documentos/historial_de_cambios
+
+2026-04-24: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/pagina_principal_handlers.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- documentos/historial_de_cambios
+- web/descripcion_de_los_sistemas.ht
+- web/estilos.css
+- web/index.html
+- web/js/seleccionar_empresa.js
+- web/menu.js
+- web/super/configuracion_avanzada.html
+- web/super/formato_para_emviar_email.html
+- web/super/pagina_principal.html
+- web/super/venta_digital.html
+- web/super_administrador.html
