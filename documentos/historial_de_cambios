@@ -14224,3 +14224,11 @@ Archivos modificados:
 - backend/logs/server_runtime_state.json
 - web/administrar_empresa/facturas_electronicas.html
 - web/super/configuracion_avanzada.html
+
+2026-04-24: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- web/img/advanced-red-dot.svg
+- web/super/configuracion_avanzada.html
+- web/super_administrador.html

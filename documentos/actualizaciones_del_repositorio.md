@@ -595,3 +595,10 @@ Archivos modificados:
 - backend/logs/server_runtime_state.json
 - web/administrar_empresa/facturas_electronicas.html
 - web/super/configuracion_avanzada.html
+
+2026-04-24 13:27:32 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: ed68e30; PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- web/img/advanced-red-dot.svg
+- web/super/configuracion_avanzada.html
+- web/super_administrador.html
