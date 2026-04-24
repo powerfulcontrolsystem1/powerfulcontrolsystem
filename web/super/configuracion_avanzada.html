@@ -161,6 +161,34 @@
       </div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="empresaLimitacionesCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 6v6l4 2"></path></svg>
+        Limitaciones por empresa (RustDesk e IA)
+      </h2>
+      <p class="form-help">Define topes globales por empresa para el soporte remoto (RustDesk) y el chat con IA. Estos valores se guardan en la base <strong>superadministrador</strong>.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaLimitRustDeskMinutes">Uso de RustDesk (minutos por empresa)</label>
+          <input id="empresaLimitRustDeskMinutes" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="30">
+          <div class="form-help">Por defecto: 30. Usa 0 para bloquear el uso de RustDesk por empresa.</div>
+          <div id="empresaLimitRustDeskStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaLimitAIConsultas">Chat con IA (consultas por empresa)</label>
+          <input id="empresaLimitAIConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="10">
+          <div class="form-help">Por defecto: 10. Usa 0 para bloquear nuevas consultas de IA por empresa.</div>
+          <div id="empresaLimitAIStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveEmpresaLimitacionesBtn" class="btn" type="button">Guardar limitaciones</button>
+      </div>
+      <div id="empresaLimitacionesMsg" class="form-help"></div>
+    </section>
+
     <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
@@ -706,6 +734,101 @@
         }
       }
 
+      function normalizeNonNegativeInt(value, fallback){
+        const raw = String(value ?? '').trim();
+        if (!raw) return fallback;
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return fallback;
+        const asInt = Math.floor(n);
+        if (asInt < 0) return 0;
+        return asInt;
+      }
+
+      async function loadEmpresaLimitacionesConfig(){
+        const msgEl = document.getElementById('empresaLimitacionesMsg');
+        const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
+        const aiInput = document.getElementById('empresaLimitAIConsultas');
+        const rustdeskStatus = document.getElementById('empresaLimitRustDeskStatus');
+        const aiStatus = document.getElementById('empresaLimitAIStatus');
+        const btn = document.getElementById('saveEmpresaLimitacionesBtn');
+        if (!rustdeskInput || !aiInput || !btn) return;
+
+        if (msgEl) msgEl.innerText = 'Cargando limitaciones...';
+        try {
+          const res = await fetch('/super/api/config/limitaciones_empresa', { credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          const data = raw ? JSON.parse(raw) : {};
+          const defaults = data.defaults || {};
+          const values = data.values || {};
+
+          const rustdeskInfo = values.rustdesk_max_minutos || {};
+          const aiInfo = values.ai_max_consultas || {};
+
+          const rustdeskDefault = normalizeNonNegativeInt(defaults.rustdesk_max_minutos, 30);
+          const aiDefault = normalizeNonNegativeInt(defaults.ai_max_consultas, 10);
+
+          rustdeskInput.value = String(normalizeNonNegativeInt(rustdeskInfo.value, rustdeskDefault));
+          aiInput.value = String(normalizeNonNegativeInt(aiInfo.value, aiDefault));
+
+          const rustdeskUpdatedAt = String(rustdeskInfo.updated_at || '').trim();
+          const rustdeskUpdatedBy = String(rustdeskInfo.updated_by || '').trim();
+          const aiUpdatedAt = String(aiInfo.updated_at || '').trim();
+          const aiUpdatedBy = String(aiInfo.updated_by || '').trim();
+
+          if (rustdeskStatus) {
+            rustdeskStatus.innerText = rustdeskUpdatedAt
+              ? ('Última actualización: ' + rustdeskUpdatedAt + (rustdeskUpdatedBy ? (' - ' + rustdeskUpdatedBy) : ''))
+              : 'Valor por defecto o no configurado todavía.';
+          }
+          if (aiStatus) {
+            aiStatus.innerText = aiUpdatedAt
+              ? ('Última actualización: ' + aiUpdatedAt + (aiUpdatedBy ? (' - ' + aiUpdatedBy) : ''))
+              : 'Valor por defecto o no configurado todavía.';
+          }
+
+          if (msgEl) msgEl.innerText = 'Limitaciones cargadas.';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar limitaciones.';
+          if (rustdeskStatus) rustdeskStatus.innerText = 'Error al leer.';
+          if (aiStatus) aiStatus.innerText = 'Error al leer.';
+        }
+      }
+
+      async function saveEmpresaLimitacionesConfig(){
+        const msgEl = document.getElementById('empresaLimitacionesMsg');
+        const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
+        const aiInput = document.getElementById('empresaLimitAIConsultas');
+        const btn = document.getElementById('saveEmpresaLimitacionesBtn');
+        if (!rustdeskInput || !aiInput || !btn) return;
+
+        const prevText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+        if (msgEl) msgEl.innerText = 'Guardando limitaciones...';
+        try {
+          const payload = {
+            rustdesk_max_minutos: normalizeNonNegativeInt(rustdeskInput.value, 30),
+            ai_max_consultas: normalizeNonNegativeInt(aiInput.value, 10),
+          };
+          const res = await fetch('/super/api/config/limitaciones_empresa', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          if (msgEl) msgEl.innerText = 'Limitaciones guardadas correctamente.';
+          await loadEmpresaLimitacionesConfig();
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar limitaciones.';
+        } finally {
+          btn.disabled = false;
+          btn.innerText = prevText;
+        }
+      }
+
       async function loadMantenimientoConfig(){
         const toggleEl = document.getElementById('mantenimientoToggle');
         const msgEl = document.getElementById('mantenimientoMsg');
@@ -787,6 +910,7 @@
       async function load(){
         await loadRustDeskSshConfig();
         await loadRustDeskCard();
+        await loadEmpresaLimitacionesConfig();
         await loadMantenimientoConfig();
         // cargar estado Wompi
         try {
@@ -1917,6 +2041,7 @@
       document.getElementById('rustdeskStopBtn').addEventListener('click', function(){ toggleRustDeskService('stop'); });
       document.getElementById('rustdeskProbeBtn').addEventListener('click', probeRustDeskCard);
       document.getElementById('rustdeskSaveSshBtn').addEventListener('click', saveRustDeskSshConfig);
+      document.getElementById('saveEmpresaLimitacionesBtn').addEventListener('click', saveEmpresaLimitacionesConfig);
       document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
         if (rustdeskActiveToggleBusy) return;
         toggleRustDeskService(this.checked ? 'start' : 'stop');

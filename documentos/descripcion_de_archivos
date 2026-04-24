@@ -1,3 +1,8 @@
+- Actualizacion 2026-04-24: super configuracion avanzada agrega limitaciones por empresa (RustDesk e IA)
+	- `web/super/configuracion_avanzada.html` : nueva tarjeta **Limitaciones por empresa** para guardar (1) minutos de uso RustDesk por empresa (default 30) y (2) número de consultas de chat IA por empresa (default 10).
+	- `backend/handlers/super_limitaciones_empresa.go` (nuevo) : endpoint `GET/PUT /super/api/config/limitaciones_empresa` que persiste los valores en la base superadministrador (tabla `configuraciones`) bajo las keys `empresa.limitaciones.rustdesk.max_minutos` y `empresa.limitaciones.ai.max_consultas`.
+	- `backend/main.go` : registra la nueva ruta `/super/api/config/limitaciones_empresa`.
+
 - Actualizacion 2026-04-23: documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de backup en `backup/`
 	- `documentos/manual_de_instalacion.md` : añade la sección de Google reCAPTCHA (claves, provider, `RECAPTCHA_DEV_BYPASS`, errores de dominio en localhost) y explica dónde se guardan copias JSON bajo `backup/`.
 	- `backend/handlers/recaptcha.go` : expone `window.RECAPTCHA_PROVIDER` con soporte a `google-recaptcha-v3` e incluye timestamps de `fecha_actualizacion` por clave para el panel super.

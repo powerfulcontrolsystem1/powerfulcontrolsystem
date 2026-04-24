@@ -9,6 +9,13 @@
     - Descripción: el ícono de **compartir empresa** en `seleccionar_empresa` cambia a una nueva versión (SVG). Además, el backend ahora **solo permite enviar/aceptar** invitaciones si el correo invitado corresponde a un usuario con rol `administrador` o `super_administrador` (otros roles reciben `403`). Esto asegura que al aceptar, la empresa aparezca en `seleccionar_empresa` y ambos puedan administrarla bajo el ACL existente.
 - 2026-04-24: formatos de email — plantilla de invitación a empresa compartida.
     - Descripción: se expone en `web/super/formato_para_emviar_email.html` la plantilla `empresa_admin_share_invitation` para editar el correo que llega cuando se comparte una empresa entre administradores (asunto, texto plano y HTML).
+- 2026-04-24: super — limitaciones por empresa (RustDesk e IA).
+    - Archivos modificados/agregados:
+        - `web/super/configuracion_avanzada.html`
+        - `backend/main.go`
+        - `backend/handlers/super_limitaciones_empresa.go` (nuevo)
+    - Descripción: en `Super Administrador → Configuración avanzada` se agrega una tarjeta para definir topes globales por empresa: minutos de uso RustDesk (default 30) y número de consultas de chat con IA (default 10). Los valores se guardan en la base `pcs_superadministrador` (tabla `configuraciones`) bajo `empresa.limitaciones.rustdesk.max_minutos` y `empresa.limitaciones.ai.max_consultas`.
+    - Verificación: `go test ./...`
 - 2026-04-24: landing pública — tarjeta única por tipo y video embebido.
     - Descripción: `web/descripcion_de_los_sistemas.ht` ahora muestra **solo** la tarjeta del tipo de negocio seleccionado (por hash `#...` o query `?tipo=...`) y permite adjuntar un enlace de YouTube por tarjeta desde `web/super/pagina_principal.html`, mostrando el video embebido en la vista pública. Se moderniza el estilo de la tarjeta y se agrega CSS específico en `web/estilos.css`.
 - 2026-04-24: portal público y super — menú contacto y retiro de venta digital.
