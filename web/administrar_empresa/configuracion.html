@@ -738,11 +738,10 @@
 
       <div class="form-actions" >
         <button id="btnRefrescarPasarelasPago" type="button" class="btn secondary">Refrescar</button>
-        <button id="btnAbrirVentaPublicaConfig" type="button" class="btn secondary">Abrir módulo venta pública</button>
         <button id="btnAbrirVentaPublicaPublica" type="button" class="btn secondary">Abrir tienda pública</button>
       </div>
       <div id="pasarelasPagoMsg" class="form-help"></div>
-      <div id="pasarelasPagoLinks" class="form-help">URL pública: pendiente de cargar.</div>
+      <div id="pasarelasPagoLinks" class="form-help">Tienda pública: pendiente de cargar.</div>
     </section>
   </div>
 
@@ -917,11 +916,10 @@
       const box = document.getElementById('pasarelasPagoLinks');
       const slug = String(cfg && cfg.empresa_slug || '').trim();
       if (!slug) {
-        box.textContent = 'URL pública: pendiente de cargar.';
+        box.textContent = 'Tienda pública: pendiente de cargar.';
         return;
       }
-      box.innerHTML = 'URL local: <a href="/venta_publica.html?empresa_slug=' + encodeURIComponent(slug) + '" target="_top">/venta_publica.html?empresa_slug=' + slug + '</a><br>' +
-        'URL patrón: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
+      box.innerHTML = 'Slug tienda: <strong>' + slug + '</strong>';
     }
 
     function fillPasarelasForm(cfg) {
@@ -1013,18 +1011,13 @@
       }
     }
 
-    function openVentaPublicaModule() {
-      if (!empresaId) return;
-      window.location.href = '/administrar_empresa/venta_publica.html?empresa_id=' + encodeURIComponent(empresaId);
-    }
-
     function openVentaPublicaPublica() {
       const slug = String(ventaPublicaConfigCache && ventaPublicaConfigCache.empresa_slug || '').trim();
       if (!slug) {
         setPasarelasMessage('Guarda o carga primero la configuración de venta pública para obtener el slug.', 'error');
         return;
       }
-      window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
+      window.top.location.href = '/?tienda=' + encodeURIComponent(slug);
     }
 
     function normalizeRoleName(raw) {
@@ -2371,7 +2364,6 @@
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
       document.getElementById('btnGuardarPasarelasPago').addEventListener('click', savePasarelasConfig);
       document.getElementById('btnRefrescarPasarelasPago').addEventListener('click', loadPasarelasConfig);
-      document.getElementById('btnAbrirVentaPublicaConfig').addEventListener('click', openVentaPublicaModule);
       document.getElementById('btnAbrirVentaPublicaPublica').addEventListener('click', openVentaPublicaPublica);
     }
 

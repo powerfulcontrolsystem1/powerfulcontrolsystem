@@ -9,58 +9,65 @@ import (
 // EmpresaConfiguracionAvanzada almacena la configuración empresarial y fiscal
 // necesaria para preparar facturación electrónica en Colombia por empresa.
 type EmpresaConfiguracionAvanzada struct {
-	ID                        int64  `json:"id"`
-	EmpresaID                 int64  `json:"empresa_id"`
-	ModoDocumentoVenta        string `json:"modo_documento_venta,omitempty"`
-	TipoDocumentoEmisor       string `json:"tipo_documento_emisor,omitempty"`
-	NIT                       string `json:"nit,omitempty"`
-	DigitoVerificacion        string `json:"digito_verificacion,omitempty"`
-	RazonSocial               string `json:"razon_social,omitempty"`
-	NombreComercial           string `json:"nombre_comercial,omitempty"`
-	RegimenFiscal             string `json:"regimen_fiscal,omitempty"`
-	ResponsabilidadTributaria string `json:"responsabilidad_tributaria,omitempty"`
-	EmailFacturacion          string `json:"email_facturacion,omitempty"`
-	TelefonoFacturacion       string `json:"telefono_facturacion,omitempty"`
-	DireccionFiscal           string `json:"direccion_fiscal,omitempty"`
-	Departamento              string `json:"departamento,omitempty"`
-	Municipio                 string `json:"municipio,omitempty"`
-	PaisCodigo                string `json:"pais_codigo,omitempty"`
-	CodigoPostal              string `json:"codigo_postal,omitempty"`
-	AmbienteFE                string `json:"ambiente_fe,omitempty"`
-	TipoOperacion             string `json:"tipo_operacion,omitempty"`
-	PrefijoFactura            string `json:"prefijo_factura,omitempty"`
-	ResolucionNumero          string `json:"resolucion_numero,omitempty"`
-	ResolucionFechaDesde      string `json:"resolucion_fecha_desde,omitempty"`
-	ResolucionFechaHasta      string `json:"resolucion_fecha_hasta,omitempty"`
-	ConsecutivoDesde          int64  `json:"consecutivo_desde,omitempty"`
-	ConsecutivoHasta          int64  `json:"consecutivo_hasta,omitempty"`
-	ProximoConsecutivo        int64  `json:"proximo_consecutivo,omitempty"`
-	FormatoImpresion          string `json:"formato_impresion,omitempty"`
-	ImprimirCopiaFactura      bool   `json:"imprimir_copia_factura"`
-	MostrarLogo               bool   `json:"mostrar_logo"`
-	LogoURL                   string `json:"logo_url,omitempty"`
-	PieFactura                string `json:"pie_factura,omitempty"`
-	NotasLegales              string `json:"notas_legales,omitempty"`
-	ColorCarritoActivo        string `json:"color_carrito_activo,omitempty"`
-	ColorCarritoInactivo      string `json:"color_carrito_inactivo,omitempty"`
-	MonedaCodigo              string `json:"moneda_codigo,omitempty"`
-	SistemaNumerico           string `json:"sistema_numerico,omitempty"`
-	UsarDecimales             bool   `json:"usar_decimales"`
-	CantidadDecimales         int64  `json:"cantidad_decimales,omitempty"`
-	FechaCreacion             string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion        string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador            string `json:"usuario_creador,omitempty"`
-	Estado                    string `json:"estado,omitempty"`
-	Observaciones             string `json:"observaciones,omitempty"`
+	ID                                    int64  `json:"id"`
+	EmpresaID                             int64  `json:"empresa_id"`
+	ModoDocumentoVenta                    string `json:"modo_documento_venta,omitempty"`
+	FacturacionElectronicaActiva          bool   `json:"facturacion_electronica_activa"`
+	EnviarEmailVenta                      bool   `json:"enviar_email_venta"`
+	EnviarFacturaElectronicaVenta         bool   `json:"enviar_factura_electronica_venta"`
+	FacturacionFrecuenciaAutomaticaActiva bool   `json:"facturacion_frecuencia_automatica_activa"`
+	FacturacionFrecuenciaCadaNNo          int64  `json:"facturacion_frecuencia_cada_n_no,omitempty"`
+	FacturacionFrecuenciaContador         int64  `json:"facturacion_frecuencia_contador,omitempty"`
+	TipoDocumentoEmisor                   string `json:"tipo_documento_emisor,omitempty"`
+	NIT                                   string `json:"nit,omitempty"`
+	DigitoVerificacion                    string `json:"digito_verificacion,omitempty"`
+	RazonSocial                           string `json:"razon_social,omitempty"`
+	NombreComercial                       string `json:"nombre_comercial,omitempty"`
+	RegimenFiscal                         string `json:"regimen_fiscal,omitempty"`
+	ResponsabilidadTributaria             string `json:"responsabilidad_tributaria,omitempty"`
+	EmailFacturacion                      string `json:"email_facturacion,omitempty"`
+	TelefonoFacturacion                   string `json:"telefono_facturacion,omitempty"`
+	DireccionFiscal                       string `json:"direccion_fiscal,omitempty"`
+	Departamento                          string `json:"departamento,omitempty"`
+	Municipio                             string `json:"municipio,omitempty"`
+	PaisCodigo                            string `json:"pais_codigo,omitempty"`
+	CodigoPostal                          string `json:"codigo_postal,omitempty"`
+	AmbienteFE                            string `json:"ambiente_fe,omitempty"`
+	TipoOperacion                         string `json:"tipo_operacion,omitempty"`
+	PrefijoFactura                        string `json:"prefijo_factura,omitempty"`
+	ResolucionNumero                      string `json:"resolucion_numero,omitempty"`
+	ResolucionFechaDesde                  string `json:"resolucion_fecha_desde,omitempty"`
+	ResolucionFechaHasta                  string `json:"resolucion_fecha_hasta,omitempty"`
+	ConsecutivoDesde                      int64  `json:"consecutivo_desde,omitempty"`
+	ConsecutivoHasta                      int64  `json:"consecutivo_hasta,omitempty"`
+	ProximoConsecutivo                    int64  `json:"proximo_consecutivo,omitempty"`
+	FormatoImpresion                      string `json:"formato_impresion,omitempty"`
+	ImprimirCopiaFactura                  bool   `json:"imprimir_copia_factura"`
+	MostrarLogo                           bool   `json:"mostrar_logo"`
+	LogoURL                               string `json:"logo_url,omitempty"`
+	PieFactura                            string `json:"pie_factura,omitempty"`
+	NotasLegales                          string `json:"notas_legales,omitempty"`
+	ColorCarritoActivo                    string `json:"color_carrito_activo,omitempty"`
+	ColorCarritoInactivo                  string `json:"color_carrito_inactivo,omitempty"`
+	MonedaCodigo                          string `json:"moneda_codigo,omitempty"`
+	SistemaNumerico                       string `json:"sistema_numerico,omitempty"`
+	UsarDecimales                         bool   `json:"usar_decimales"`
+	CantidadDecimales                     int64  `json:"cantidad_decimales,omitempty"`
+	FechaCreacion                         string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion                    string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                        string `json:"usuario_creador,omitempty"`
+	Estado                                string `json:"estado,omitempty"`
+	Observaciones                         string `json:"observaciones,omitempty"`
 }
 
 const (
-	defaultColorCarritoActivo   = "#d9fbe8"
-	defaultColorCarritoInactivo = "#fff9ef"
-	defaultMonedaCodigo         = "COP"
-	defaultSistemaNumericoValue = "latino"
-	defaultCantidadDecimales    = int64(2)
-	defaultModoDocumentoVenta   = "comprobante_pago"
+	defaultColorCarritoActivo           = "#d9fbe8"
+	defaultColorCarritoInactivo         = "#fff9ef"
+	defaultMonedaCodigo                 = "COP"
+	defaultSistemaNumericoValue         = "latino"
+	defaultCantidadDecimales            = int64(2)
+	defaultModoDocumentoVenta           = "comprobante_pago"
+	defaultFacturacionFrecuenciaCadaNNo = int64(0)
 )
 
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
@@ -71,6 +78,11 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			modo_documento_venta TEXT DEFAULT 'comprobante_pago',
+			enviar_email_venta INTEGER DEFAULT 0,
+			enviar_factura_electronica_venta INTEGER DEFAULT 0,
+			facturacion_frecuencia_automatica_activa INTEGER DEFAULT 0,
+			facturacion_frecuencia_cada_n_no INTEGER DEFAULT 0,
+			facturacion_frecuencia_contador INTEGER DEFAULT 0,
 			tipo_documento_emisor TEXT DEFAULT 'NIT',
 			nit TEXT,
 			digito_verificacion TEXT,
@@ -122,6 +134,21 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "modo_documento_venta", "TEXT DEFAULT 'comprobante_pago'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "enviar_email_venta", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "enviar_factura_electronica_venta", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "facturacion_frecuencia_automatica_activa", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "facturacion_frecuencia_cada_n_no", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "facturacion_frecuencia_contador", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "tipo_documento_emisor", "TEXT DEFAULT 'NIT'"); err != nil {
@@ -246,24 +273,30 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 
 func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 	return EmpresaConfiguracionAvanzada{
-		EmpresaID:            empresaID,
-		ModoDocumentoVenta:   defaultModoDocumentoVenta,
-		TipoDocumentoEmisor:  "NIT",
-		PaisCodigo:           "CO",
-		AmbienteFE:           "habilitacion",
-		TipoOperacion:        "10",
-		ConsecutivoDesde:     1,
-		ConsecutivoHasta:     999999,
-		ProximoConsecutivo:   1,
-		FormatoImpresion:     "carta",
-		MostrarLogo:          true,
-		ColorCarritoActivo:   defaultColorCarritoActivo,
-		ColorCarritoInactivo: defaultColorCarritoInactivo,
-		MonedaCodigo:         defaultMonedaCodigo,
-		SistemaNumerico:      defaultSistemaNumericoValue,
-		UsarDecimales:        true,
-		CantidadDecimales:    defaultCantidadDecimales,
-		Estado:               "activo",
+		EmpresaID:                             empresaID,
+		ModoDocumentoVenta:                    defaultModoDocumentoVenta,
+		FacturacionElectronicaActiva:          false,
+		EnviarEmailVenta:                      false,
+		EnviarFacturaElectronicaVenta:         false,
+		FacturacionFrecuenciaAutomaticaActiva: false,
+		FacturacionFrecuenciaCadaNNo:          defaultFacturacionFrecuenciaCadaNNo,
+		FacturacionFrecuenciaContador:         0,
+		TipoDocumentoEmisor:                   "NIT",
+		PaisCodigo:                            "CO",
+		AmbienteFE:                            "habilitacion",
+		TipoOperacion:                         "10",
+		ConsecutivoDesde:                      1,
+		ConsecutivoHasta:                      999999,
+		ProximoConsecutivo:                    1,
+		FormatoImpresion:                      "carta",
+		MostrarLogo:                           true,
+		ColorCarritoActivo:                    defaultColorCarritoActivo,
+		ColorCarritoInactivo:                  defaultColorCarritoInactivo,
+		MonedaCodigo:                          defaultMonedaCodigo,
+		SistemaNumerico:                       defaultSistemaNumericoValue,
+		UsarDecimales:                         true,
+		CantidadDecimales:                     defaultCantidadDecimales,
+		Estado:                                "activo",
 	}
 }
 
@@ -351,6 +384,30 @@ func normalizeCantidadDecimales(v int64) int64 {
 	return v
 }
 
+func normalizeFrecuenciaCadaNNo(v int64) int64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1000 {
+		return 1000
+	}
+	return v
+}
+
+func normalizeFrecuenciaContador(v int64, cadaNNo int64) int64 {
+	if v < 0 {
+		v = 0
+	}
+	ciclo := cadaNNo + 1
+	if ciclo <= 0 {
+		ciclo = 1
+	}
+	if v >= ciclo {
+		return v % ciclo
+	}
+	return v
+}
+
 // GetEmpresaConfiguracionAvanzada obtiene la configuración avanzada por empresa.
 // Si no existe registro, retorna valores por defecto para facilitar captura inicial.
 func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaConfiguracionAvanzada, error) {
@@ -362,6 +419,11 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		id,
 		empresa_id,
 		COALESCE(modo_documento_venta, 'comprobante_pago'),
+		COALESCE(enviar_email_venta, 0),
+		COALESCE(enviar_factura_electronica_venta, 0),
+		COALESCE(facturacion_frecuencia_automatica_activa, 0),
+		COALESCE(facturacion_frecuencia_cada_n_no, 0),
+		COALESCE(facturacion_frecuencia_contador, 0),
 		COALESCE(tipo_documento_emisor, 'NIT'),
 		COALESCE(nit, ''),
 		COALESCE(digito_verificacion, ''),
@@ -410,10 +472,18 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	var imprimirCopiaFacturaInt int
 	var mostrarLogoInt int
 	var usarDecimalesInt int
+	var enviarEmailVentaInt int
+	var enviarFacturaElectronicaVentaInt int
+	var frecuenciaAutomaticaActivaInt int
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.EmpresaID,
 		&cfg.ModoDocumentoVenta,
+		&enviarEmailVentaInt,
+		&enviarFacturaElectronicaVentaInt,
+		&frecuenciaAutomaticaActivaInt,
+		&cfg.FacturacionFrecuenciaCadaNNo,
+		&cfg.FacturacionFrecuenciaContador,
 		&cfg.TipoDocumentoEmisor,
 		&cfg.NIT,
 		&cfg.DigitoVerificacion,
@@ -461,6 +531,12 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		return nil, err
 	}
 	cfg.ModoDocumentoVenta = defaultModoDocumentoVentaValue(cfg.ModoDocumentoVenta)
+	cfg.FacturacionElectronicaActiva = cfg.ModoDocumentoVenta == "factura_electronica"
+	cfg.EnviarEmailVenta = enviarEmailVentaInt == 1
+	cfg.EnviarFacturaElectronicaVenta = enviarFacturaElectronicaVentaInt == 1
+	cfg.FacturacionFrecuenciaAutomaticaActiva = frecuenciaAutomaticaActivaInt == 1
+	cfg.FacturacionFrecuenciaCadaNNo = normalizeFrecuenciaCadaNNo(cfg.FacturacionFrecuenciaCadaNNo)
+	cfg.FacturacionFrecuenciaContador = normalizeFrecuenciaContador(cfg.FacturacionFrecuenciaContador, cfg.FacturacionFrecuenciaCadaNNo)
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarLogo = mostrarLogoInt == 1
 	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
@@ -490,7 +566,11 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 
 	payload.TipoDocumentoEmisor = strings.TrimSpace(payload.TipoDocumentoEmisor)
-	payload.ModoDocumentoVenta = defaultModoDocumentoVentaValue(payload.ModoDocumentoVenta)
+	if payload.FacturacionElectronicaActiva {
+		payload.ModoDocumentoVenta = "factura_electronica"
+	} else {
+		payload.ModoDocumentoVenta = defaultModoDocumentoVentaValue(payload.ModoDocumentoVenta)
+	}
 	if payload.TipoDocumentoEmisor == "" {
 		payload.TipoDocumentoEmisor = "NIT"
 	}
@@ -506,6 +586,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.MonedaCodigo = normalizeMonedaCodigo(payload.MonedaCodigo)
 	payload.SistemaNumerico = defaultSistemaNumerico(payload.SistemaNumerico)
 	payload.CantidadDecimales = normalizeCantidadDecimales(payload.CantidadDecimales)
+	payload.FacturacionFrecuenciaCadaNNo = normalizeFrecuenciaCadaNNo(payload.FacturacionFrecuenciaCadaNNo)
+	payload.FacturacionFrecuenciaContador = normalizeFrecuenciaContador(payload.FacturacionFrecuenciaContador, payload.FacturacionFrecuenciaCadaNNo)
 	if payload.UsarDecimales {
 		if payload.CantidadDecimales <= 0 {
 			payload.CantidadDecimales = defaultCantidadDecimales
@@ -540,10 +622,27 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	if payload.UsarDecimales {
 		usarDecimalesInt = 1
 	}
+	enviarEmailVentaInt := 0
+	if payload.EnviarEmailVenta {
+		enviarEmailVentaInt = 1
+	}
+	enviarFacturaElectronicaVentaInt := 0
+	if payload.EnviarFacturaElectronicaVenta {
+		enviarFacturaElectronicaVentaInt = 1
+	}
+	frecuenciaAutomaticaActivaInt := 0
+	if payload.FacturacionFrecuenciaAutomaticaActiva {
+		frecuenciaAutomaticaActivaInt = 1
+	}
 
 	_, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
 		modo_documento_venta,
+		enviar_email_venta,
+		enviar_factura_electronica_venta,
+		facturacion_frecuencia_automatica_activa,
+		facturacion_frecuencia_cada_n_no,
+		facturacion_frecuencia_contador,
 		tipo_documento_emisor,
 		nit,
 		digito_verificacion,
@@ -584,9 +683,14 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		modo_documento_venta = excluded.modo_documento_venta,
+		enviar_email_venta = excluded.enviar_email_venta,
+		enviar_factura_electronica_venta = excluded.enviar_factura_electronica_venta,
+		facturacion_frecuencia_automatica_activa = excluded.facturacion_frecuencia_automatica_activa,
+		facturacion_frecuencia_cada_n_no = excluded.facturacion_frecuencia_cada_n_no,
+		facturacion_frecuencia_contador = excluded.facturacion_frecuencia_contador,
 		tipo_documento_emisor = excluded.tipo_documento_emisor,
 		nit = excluded.nit,
 		digito_verificacion = excluded.digito_verificacion,
@@ -631,6 +735,11 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		observaciones = excluded.observaciones`,
 		payload.EmpresaID,
 		payload.ModoDocumentoVenta,
+		enviarEmailVentaInt,
+		enviarFacturaElectronicaVentaInt,
+		frecuenciaAutomaticaActivaInt,
+		payload.FacturacionFrecuenciaCadaNNo,
+		payload.FacturacionFrecuenciaContador,
 		payload.TipoDocumentoEmisor,
 		strings.TrimSpace(payload.NIT),
 		strings.TrimSpace(payload.DigitoVerificacion),

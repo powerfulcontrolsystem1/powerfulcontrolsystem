@@ -109,7 +109,6 @@ try {
   }
   var links = [
     document.getElementById("linkEstaciones"),
-    document.getElementById("linkVentaPublica"),
     document.getElementById("linkProductos"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkFacturacionElectronica"),
@@ -145,7 +144,6 @@ try {
 
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
-    linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },

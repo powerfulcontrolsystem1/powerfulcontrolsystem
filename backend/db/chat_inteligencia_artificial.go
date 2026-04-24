@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -1977,6 +1978,72 @@ func empresaAISafeUpdateProductoPrecio(dbConn *sql.DB, empresaID int64, pregunta
 		Estado:            "activo",
 		Observaciones:     "Cambio ejecutado desde chat IA con confirmación explícita.",
 	})
+
+	// Auditoría empresarial: registrar el cambio como evento forense.
+	metadataObj := map[string]interface{}{
+		"origen":              "chat_ia",
+		"motivo":              "ia_update_precio",
+		"producto":            productoNombre,
+		"producto_id":         productoID,
+		"precio_anterior":     precioAnterior,
+		"precio_nuevo":        val,
+		"confirmacion":        true,
+		"prompt_referencia":   ref,
+		"usuario_creador":     u,
+		"tabla_afectada":      "productos",
+		"campo_actualizado":   "precio",
+		"empresa_id":          empresaID,
+	}
+	if metaRaw, merr := json.Marshal(metadataObj); merr == nil && json.Valid(metaRaw) {
+		_, _ = insertTxSQLCompat(tx, `INSERT INTO empresa_auditoria_eventos (
+			empresa_id,
+			modulo,
+			accion,
+			recurso,
+			recurso_id,
+			metodo_http,
+			endpoint,
+			resultado,
+			codigo_http,
+			request_id,
+			ip_origen,
+			user_agent,
+			metadata_json,
+			retencion_dias,
+			fecha_evento,
+			fecha_expiracion,
+			fecha_creacion,
+			fecha_actualizacion,
+			usuario_creador,
+			estado,
+			observaciones
+		) VALUES (
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			datetime('now','localtime'),
+			datetime(datetime('now','localtime'), '+3650 days'),
+			datetime('now','localtime'),
+			datetime('now','localtime'),
+			?, ?, ?
+		)`,
+			empresaID,
+			"ia",
+			"update_precio_producto",
+			"productos",
+			productoID,
+			"IA",
+			"/api/empresa/chat_con_inteligencia_artificial/consultar",
+			"ok",
+			200,
+			"",
+			"",
+			"",
+			string(metaRaw),
+			int64(3650),
+			u,
+			"activo",
+			"Cambio de precio ejecutado desde chat IA con confirmación explícita.",
+		)
+	}
 
 	if err := tx.Commit(); err != nil {
 		return []string{"resultado=error", "detalle=" + safeAIValue(err.Error())}

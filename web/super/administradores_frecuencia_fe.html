@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administradores - Frecuencia FE</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Administradores - Frecuencia FE</h1>
+        <p class="form-help page-header-lead">Registra correos de administradores autorizados. Si un admin está en esta lista, verá la página <b>Frecuencia FP</b> dentro de administrar empresa.</p>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>Correos autorizados</h2>
+      <p class="form-help">Un correo por línea. Se guardan en la base de datos del super administrador.</p>
+      <textarea id="emailsText" class="input" rows="10" placeholder="admin1@dominio.com&#10;admin2@dominio.com"></textarea>
+      <div class="form-row" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="btnGuardar" class="btn primary">Guardar</button>
+        <button id="btnRecargar" class="btn">Recargar</button>
+        <div class="form-help" style="margin-left:auto;">
+          <div>Actualizado: <span id="updatedAt">-</span></div>
+          <div>Por: <span id="updatedBy">-</span></div>
+        </div>
+      </div>
+      <div id="msg" class="form-help" style="margin-top:10px;"></div>
+    </section>
+  </div>
+
+  <script>
+    function showMsg(text, kind) {
+      var el = document.getElementById('msg');
+      if (!el) return;
+      el.textContent = String(text || '');
+      el.style.color = (kind === 'error') ? '#ffb4b4' : (kind === 'success') ? '#9dffb5' : '';
+    }
+
+    function normalizeEmailLine(v) {
+      return String(v || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function parseEmailsFromTextarea() {
+      var raw = document.getElementById('emailsText').value || '';
+      var lines = raw.split(/\r?\n/);
+      var uniq = {};
+      var out = [];
+      for (var i = 0; i < lines.length; i++) {
+        var e = normalizeEmailLine(lines[i]);
+        if (!e) continue;
+        if (uniq[e]) continue;
+        uniq[e] = true;
+        out.push(e);
+      }
+      out.sort();
+      return out;
+    }
+
+    async function apiFetch(url, opts) {
+      opts = opts || {};
+      opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      var res = await fetch(url, opts);
+      var txt = await res.text();
+      var data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch (e) { data = {}; }
+      if (!res.ok) {
+        var msg = (data && (data.error || data.message)) ? (data.error || data.message) : (txt || ('HTTP ' + res.status));
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function load() {
+      showMsg('Cargando...', 'info');
+      var data = await apiFetch('/super/api/administradores_frecuencia_fe', { method: 'GET' });
+      var emails = (data && data.emails) ? data.emails : [];
+      document.getElementById('emailsText').value = (emails || []).join('\n');
+      document.getElementById('updatedAt').textContent = (data.updated_at || '-');
+      document.getElementById('updatedBy').textContent = (data.updated_by || '-');
+      showMsg('Listo.', 'success');
+    }
+
+    async function save() {
+      var emails = parseEmailsFromTextarea();
+      showMsg('Guardando...', 'info');
+      await apiFetch('/super/api/administradores_frecuencia_fe', {
+        method: 'PUT',
+        body: JSON.stringify({ emails: emails })
+      });
+      await load();
+      showMsg('Guardado correctamente.', 'success');
+    }
+
+    (function init(){
+      document.getElementById('btnGuardar').addEventListener('click', function(ev){ ev.preventDefault(); save().catch(function(err){ showMsg(err.message || String(err), 'error'); }); });
+      document.getElementById('btnRecargar').addEventListener('click', function(ev){ ev.preventDefault(); load().catch(function(err){ showMsg(err.message || String(err), 'error'); }); });
+      load().catch(function(err){ showMsg(err.message || String(err), 'error'); });
+    })();
+  </script>
+</body>
+</html>
+

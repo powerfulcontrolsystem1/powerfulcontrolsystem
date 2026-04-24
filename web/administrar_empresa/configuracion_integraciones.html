@@ -17,7 +17,7 @@
         </div>
       </div>
       <p id="integracionesEmpresaInfo" class="form-help">Empresa: cargando...</p>
-      <p class="form-help">Esta vista guarda la configuración real de pasarelas empresariales reutilizando `/api/empresa/venta_publica?action=config`. Gmail y claves IA siguen centralizadas en configuración avanzada.</p>
+      <p class="form-help">Esta vista guarda la configuración de pasarelas y parámetros de la empresa. Gmail y claves IA siguen centralizadas en configuración avanzada.</p>
 
       <div class="form" >
         <div class="form-row">
@@ -88,10 +88,9 @@
       </div>
 
       <div class="form-actions" >
-        <button id="btnOpenVentaPublica" class="btn secondary" type="button">Abrir módulo venta pública</button>
         <button id="btnOpenTiendaPublica" class="btn secondary" type="button">Abrir tienda pública</button>
       </div>
-      <div id="integracionesLinks" class="form-help" >URL pública: pendiente de cargar.</div>
+      <div id="integracionesLinks" class="form-help" >Tienda pública: pendiente de configurar.</div>
       <div id="integracionesMsg" class="form-help" ></div>
     </section>
   </div>
@@ -132,9 +131,8 @@
         var box = document.getElementById('integracionesLinks');
         var slug = String(cfg && cfg.empresa_slug || '').trim();
         if (!box) return;
-        if (!slug) { box.textContent = 'URL pública: pendiente de cargar.'; return; }
-        box.innerHTML = 'URL local: <a href="/venta_publica.html?empresa_slug=' + encodeURIComponent(slug) + '" target="_top">/venta_publica.html?empresa_slug=' + slug + '</a><br>' +
-          'URL patrón: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
+        if (!slug) { box.textContent = 'Tienda pública: pendiente de configurar.'; return; }
+        box.innerHTML = 'Slug tienda: <strong>' + slug + '</strong>';
       }
       function fillForm(cfg){
         currentConfig = cfg && typeof cfg === 'object' ? cfg : {};
@@ -225,11 +223,9 @@
           setMessage('No se pudieron guardar las integraciones: ' + (err && err.message ? err.message : err), true);
         }
       }
-      function openVentaPublica(){ if (!empresaId) return; window.location.href = '/administrar_empresa/venta_publica.html?empresa_id=' + encodeURIComponent(String(empresaId)); }
-      function openTienda(){ var slug = String(currentConfig && currentConfig.empresa_slug || document.getElementById('empresaSlug').value || '').trim(); if (!slug) { setMessage('Guarda primero un slug para abrir la tienda pública.', true); return; } window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug); }
+      function openTienda(){ var slug = String(currentConfig && currentConfig.empresa_slug || document.getElementById('empresaSlug').value || '').trim(); if (!slug) { setMessage('Guarda primero un slug para abrir la tienda pública.', true); return; } window.top.location.href = '/?tienda=' + encodeURIComponent(slug); }
       document.getElementById('btnReloadIntegrations')?.addEventListener('click', loadConfig);
       document.getElementById('btnSaveIntegrations')?.addEventListener('click', saveConfig);
-      document.getElementById('btnOpenVentaPublica')?.addEventListener('click', openVentaPublica);
       document.getElementById('btnOpenTiendaPublica')?.addEventListener('click', openTienda);
       loadConfig();
     })();

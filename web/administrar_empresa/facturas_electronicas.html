@@ -447,7 +447,7 @@
             '<td>' +
               '<button type="button" class="btn secondary" data-action="ver" data-key="' + escapeHtml(key) + '">Ver</button> ' +
               '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '">Enviar correo</button> ' +
-              '<button type="button" class="btn secondary" data-action="imprimir" data-key="' + escapeHtml(key) + '">Imprimir</button>' +
+              '<button type="button" class="btn secondary" data-action="imprimir" data-key="' + escapeHtml(key) + '">Visualizar</button>' +
             '</td>' +
           '</tr>';
         });
@@ -509,6 +509,30 @@
         document.getElementById("busquedaGlobal").value = "";
         document.getElementById("includeInactive").checked = false;
         setDefaultDateRange();
+      }
+
+      function applyFiltersFromQueryParams() {
+        try {
+          var tipo = normalize(getQueryParam("tipo_documento"));
+          var estado = normalize(getQueryParam("estado_documento"));
+          var cliente = normalize(getQueryParam("cliente"));
+          var documento = normalize(getQueryParam("documento"));
+          var fechaDesde = normalize(getQueryParam("fecha_desde"));
+          var fechaHasta = normalize(getQueryParam("fecha_hasta"));
+          var q = normalize(getQueryParam("q"));
+          var includeInactive = normalize(getQueryParam("include_inactive"));
+
+          if (tipo) document.getElementById("tipoDocumento").value = tipo;
+          if (estado) document.getElementById("estadoDocumento").value = estado;
+          if (cliente) document.getElementById("clienteFiltro").value = cliente;
+          if (documento) document.getElementById("documentoFiltro").value = documento;
+          if (fechaDesde) document.getElementById("fechaDesde").value = fechaDesde;
+          if (fechaHasta) document.getElementById("fechaHasta").value = fechaHasta;
+          if (q) document.getElementById("busquedaGlobal").value = q;
+          if (includeInactive) document.getElementById("includeInactive").checked = includeInactive === "1" || includeInactive.toLowerCase() === "true";
+        } catch (e) {
+          // no-op
+        }
       }
 
       function printInvoice(item) {
@@ -630,6 +654,7 @@
           return;
         }
         clearFilters();
+        applyFiltersFromQueryParams();
         loadEmpresa();
         runSearch();
       }

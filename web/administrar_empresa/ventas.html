@@ -3,6 +3,450 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reporte de ventas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1 id="pageTitle">Ventas</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas</span>
+          <strong id="kpiTotal">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas FE</span>
+          <strong id="kpiFE">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Comprobantes</span>
+          <strong id="kpiCP">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Monto total</span>
+          <strong id="kpiMonto">$0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Filtros</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnExportCSV" class="btn secondary" type="button">Exportar CSV</button>
+        </div>
+      </div>
+      <form id="filtrosForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fechaDesde">Fecha desde</label>
+            <input id="fechaDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaHasta">Fecha hasta</label>
+            <input id="fechaHasta" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="q">Búsqueda</label>
+            <input id="q" class="form-input" placeholder="Cliente, código, número legal...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tipo venta</label>
+            <select id="tipoVenta" class="form-input">
+              <option value="">Todas</option>
+              <option value="factura_electronica">Factura electrónica</option>
+              <option value="comprobante_pago">Comprobante</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Estado documento</label>
+            <select id="estadoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="emitida">Emitida</option>
+              <option value="pendiente_emision">Pendiente emisión</option>
+              <option value="borrador">Borrador</option>
+              <option value="anulada">Anulada</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Opciones</label>
+            <label class="empresa-config-check inline-check" for="includeInactive">
+              <input id="includeInactive" type="checkbox">
+              <span>Incluir inactivos</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="btnBuscar" type="submit" class="btn">Buscar</button>
+          <button id="btnLimpiar" type="button" class="btn secondary">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Resultados</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="ventasTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Código</th>
+              <th>Número legal</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado doc.</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Detalle / vista previa</h2>
+      </div>
+      <div id="detalle" class="form-help">Selecciona una venta para ver el detalle.</div>
+      <div id="preview" class="factura-print-preview-empty">Selecciona una venta para ver la vista previa.</div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function qp(name){ try { return new URLSearchParams(window.location.search||"").get(name); } catch(e){ return ""; } }
+      function norm(v){ return String(v||"").trim(); }
+      function esc(v){ return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;"); }
+      function formatDate(v){ var raw=norm(v); if(!raw) return "-"; var d=raw.length>=10?raw.slice(0,10):raw; var b=d.split("-"); return b.length===3?(b[2]+"/"+b[1]+"/"+b[0]):d; }
+      function formatMoney(val, moneda){
+        var amount = Number(val||0);
+        var cur = norm(moneda).toUpperCase() || "COP";
+        try { return new Intl.NumberFormat("es-CO",{style:"currency",currency:cur,maximumFractionDigits:2}).format(amount); }
+        catch(e){ return amount.toFixed(2)+" "+cur; }
+      }
+      function badge(estado){
+        var s=norm(estado).toLowerCase();
+        if(s==="emitida") return '<span class="badge low">emitida</span>';
+        if(s==="anulada") return '<span class="badge urgent">anulada</span>';
+        if(s==="pendiente_emision") return '<span class="badge mid">pendiente</span>';
+        return '<span class="badge high">'+esc(s||"borrador")+'</span>';
+      }
+      function api(url, opts){
+        return fetch(url, Object.assign({credentials:"same-origin"}, opts||{})).then(function(r){
+          if(!r.ok){ return r.text().then(function(t){ throw new Error(t||("HTTP "+r.status)); }); }
+          return r.json();
+        });
+      }
+      function msg(text, kind){
+        var box=document.getElementById("messageBox");
+        box.textContent=text||"";
+        box.className = (kind==="error") ? "error" : "form-help";
+      }
+
+      var empresaID = Number(qp("empresa_id")||qp("id")||0);
+      var tbody = document.querySelector("#ventasTable tbody");
+      var detalle = document.getElementById("detalle");
+      var preview = document.getElementById("preview");
+      var state = { items: [], index: Object.create(null), selectedKey: "", empresaNombre: "" };
+
+      function makeKey(it){ return norm(it.tipo_documento).toLowerCase()+"::"+norm(it.documento_codigo).toUpperCase(); }
+
+      function setDefaultDates(){
+        var now=new Date(); var y=now.getFullYear(); var m=String(now.getMonth()+1).padStart(2,"0"); var d=String(now.getDate()).padStart(2,"0");
+        document.getElementById("fechaDesde").value = y+"-"+m+"-01";
+        document.getElementById("fechaHasta").value = y+"-"+m+"-"+d;
+      }
+
+      function buildQuery(){
+        var p=new URLSearchParams();
+        p.set("action","documentos");
+        p.set("empresa_id", String(empresaID));
+        var tipo=norm(document.getElementById("tipoVenta").value);
+        if(tipo) p.set("tipo_documento", tipo);
+        var estado=norm(document.getElementById("estadoDocumento").value);
+        if(estado) p.set("estado_documento", estado);
+        var q=norm(document.getElementById("q").value);
+        if(q) p.set("q", q);
+        var desde=norm(document.getElementById("fechaDesde").value);
+        var hasta=norm(document.getElementById("fechaHasta").value);
+        if(desde) p.set("fecha_desde", desde);
+        if(hasta) p.set("fecha_hasta", hasta);
+        if(document.getElementById("includeInactive").checked) p.set("include_inactive","1");
+        return p.toString();
+      }
+
+      function getPrintableMeta(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if (tipo === "comprobante_pago") return { title:"Comprobante de pago", subtitle:"Documento comercial interno", accent:"comprobante" };
+        if (tipo === "nota_credito") return { title:"Nota crédito", subtitle:"Documento de ajuste", accent:"nota-credito" };
+        return { title:"Factura electrónica", subtitle:"Documento fiscal", accent:"factura" };
+      }
+
+      function buildPreviewBody(item){
+        var meta=getPrintableMeta(item);
+        var cliente = norm(item && item.cliente_nombre) || "Consumidor final";
+        var clienteEmail = norm(item && item.cliente_email) || "No registrado";
+        var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
+        var empresaLabel = norm(state.empresaNombre) || ("Empresa #"+String(empresaID||""));
+        return '' +
+          '<article class="factura-print-sheet '+esc(meta.accent)+'">' +
+            '<header class="factura-print-head">' +
+              '<div><span class="factura-print-kicker">Venta</span><h3>'+esc(meta.title)+'</h3><p>'+esc(meta.subtitle)+'</p></div>' +
+              '<div class="factura-print-company"><strong>'+esc(empresaLabel)+'</strong><span>ID empresa '+esc(String(empresaID||0))+'</span></div>' +
+            '</header>' +
+            '<section class="factura-print-strip">' +
+              '<div><span>Código</span><strong>'+esc(item.documento_codigo||"")+'</strong></div>' +
+              '<div><span>Número legal</span><strong>'+esc(numeroLegal)+'</strong></div>' +
+              '<div><span>Fecha</span><strong>'+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</strong></div>' +
+              '<div><span>Estado</span><strong>'+esc(item.estado_documento||"borrador")+'</strong></div>' +
+            '</section>' +
+            '<div class="factura-print-grid">' +
+              '<section class="factura-print-panel"><h4>Cliente</h4><dl>' +
+                '<div><dt>Nombre</dt><dd>'+esc(cliente)+'</dd></div>' +
+                '<div><dt>Correo</dt><dd>'+esc(clienteEmail)+'</dd></div>' +
+              '</dl></section>' +
+              '<section class="factura-print-panel"><h4>Resumen</h4><dl>' +
+                '<div><dt>Total</dt><dd>'+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</dd></div>' +
+                '<div><dt>Moneda</dt><dd>'+esc(item.moneda||"COP")+'</dd></div>' +
+                '<div><dt>Periodo</dt><dd>'+esc(item.periodo_contable||"")+'</dd></div>' +
+              '</dl></section>' +
+            '</div>' +
+          '</article>';
+      }
+
+      function renderDetail(item){
+        if(!item){
+          detalle.textContent="Selecciona una venta para ver el detalle.";
+          preview.className="factura-print-preview-empty";
+          preview.textContent="Selecciona una venta para ver la vista previa.";
+          return;
+        }
+        detalle.innerHTML =
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Tipo:</strong> '+esc(item.tipo_documento||"")+'</div>' +
+            '<div class="form-col"><strong>Código:</strong> '+esc(item.documento_codigo||"")+'</div>' +
+            '<div class="form-col"><strong>Número legal:</strong> '+esc(item.numero_legal||"")+'</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Cliente:</strong> '+esc(item.cliente_nombre||"")+'</div>' +
+            '<div class="form-col"><strong>Correo:</strong> '+esc(item.cliente_email||"")+'</div>' +
+            '<div class="form-col"><strong>Total:</strong> '+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</div>' +
+          '</div>';
+        preview.className="factura-print-preview";
+        preview.innerHTML = buildPreviewBody(item);
+      }
+
+      function updateKPIs(){
+        var total=state.items.length, fe=0, cp=0, monto=0;
+        state.items.forEach(function(it){
+          var t=norm(it.tipo_documento).toLowerCase();
+          if(t==="factura_electronica") fe+=1;
+          if(t==="comprobante_pago") cp+=1;
+          monto += Number(it.monto_total||0);
+        });
+        document.getElementById("kpiTotal").textContent=String(total);
+        document.getElementById("kpiFE").textContent=String(fe);
+        document.getElementById("kpiCP").textContent=String(cp);
+        document.getElementById("kpiMonto").textContent=formatMoney(monto, "COP");
+      }
+
+      function renderTable(){
+        state.index = Object.create(null);
+        if(!state.items.length){
+          tbody.innerHTML='<tr><td colspan="8">No se encontraron ventas para los filtros seleccionados.</td></tr>';
+          renderDetail(null);
+          updateKPIs();
+          return;
+        }
+        var rows = state.items.map(function(it){
+          var key=makeKey(it); state.index[key]=it;
+          var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || "Sin cliente";
+          return '<tr data-key="'+esc(key)+'">' +
+            '<td>'+esc(formatDate(it.fecha_documento||it.fecha_creacion))+'</td>' +
+            '<td>'+esc(it.tipo_documento||"")+'</td>' +
+            '<td>'+esc(it.documento_codigo||"")+'</td>' +
+            '<td>'+esc(it.numero_legal||"")+'</td>' +
+            '<td>'+esc(clienteLabel)+'</td>' +
+            '<td>'+esc(formatMoney(it.monto_total, it.moneda||"COP"))+'</td>' +
+            '<td>'+badge(it.estado_documento)+'</td>' +
+            '<td>' +
+              '<button type="button" class="btn secondary" data-action="ver" data-key="'+esc(key)+'">Ver</button> ' +
+              '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Visualizar</button> ' +
+              '<button type="button" class="btn secondary" data-action="ver_facturas" data-key="'+esc(key)+'">Ver en Facturas electrónicas</button> ' +
+              '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button>' +
+            '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = rows.join("");
+        updateKPIs();
+        state.selectedKey = state.selectedKey && state.index[state.selectedKey] ? state.selectedKey : makeKey(state.items[0]);
+        renderDetail(state.index[state.selectedKey]);
+      }
+
+      function buildPrintablePage(item){
+        return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '<title>'+esc((item && item.documento_codigo) || "Venta")+'</title>' +
+          '<link rel="stylesheet" href="/estilos.css">' +
+          '<style>body{margin:0;background:#eef2f7;color:#14212d;font-family:Georgia,"Times New Roman",serif}.factura-print-shell{max-width:1120px;margin:0 auto;padding:28px 18px 42px}.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}@media print{.factura-print-toolbar{display:none}body{background:#fff}.factura-print-shell{padding:0}}</style>' +
+          '</head><body><div class="factura-print-shell"><div class="factura-print-toolbar">' +
+          '<button type="button" class="btn" onclick="window.print()">Imprimir ahora</button>' +
+          '<button type="button" class="btn secondary" onclick="window.close()">Cerrar</button>' +
+          '</div>' + buildPreviewBody(item) + '</div></body></html>';
+      }
+
+      function visualizar(item){
+        var win = window.open("", "_blank", "noopener,noreferrer,width=980,height=760");
+        if(!win){ msg("No se pudo abrir la ventana. Revisa el bloqueador de popups.", "error"); return; }
+        win.document.open(); win.document.write(buildPrintablePage(item)); win.document.close();
+      }
+
+      function reenviarCorreo(item){
+        var correoSugerido = norm(item.cliente_email);
+        var correo = window.prompt("Correo destino (deja vacío para usar el correo del cliente):", correoSugerido);
+        if (correo === null) return;
+        var nombreSugerido = norm(item.cliente_nombre);
+        var nombre = window.prompt("Nombre del cliente (opcional):", nombreSugerido);
+        if (nombre === null) return;
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo,
+          cliente_id: Number(item.entidad_relacionada_id || 0),
+          cliente_email: norm(correo),
+          cliente_nombre: norm(nombre)
+        };
+        api("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function(out){
+          var envio = out && out.factura_email ? out.factura_email : null;
+          if (envio && envio.enviado) { msg("Correo enviado a " + (envio.destinatario || "destinatario"), "ok"); return; }
+          if (envio && envio.error) { msg("No se pudo enviar correo: " + envio.error, "error"); return; }
+          msg("Intento de envío procesado.", "ok");
+        }).catch(function(err){
+          msg(err.message || "No se pudo reenviar el correo", "error");
+        });
+      }
+
+      function exportCSV(){
+        if(!state.items.length){ msg("No hay ventas para exportar.", "error"); return; }
+        var headers = ["fecha","tipo_documento","documento_codigo","numero_legal","cliente","cliente_email","monto_total","moneda","estado_documento","pais_codigo","ambiente_fe"];
+        var lines = [headers.join(",")];
+        state.items.forEach(function(it){
+          var row = [
+            norm(it.fecha_documento||it.fecha_creacion),
+            norm(it.tipo_documento),
+            norm(it.documento_codigo),
+            norm(it.numero_legal),
+            norm(it.cliente_nombre),
+            norm(it.cliente_email),
+            String(Number(it.monto_total||0)),
+            norm(it.moneda||"COP"),
+            norm(it.estado_documento),
+            norm(it.pais_codigo),
+            norm(it.ambiente_fe)
+          ].map(function(cell){
+            var c = String(cell||"");
+            if (c.indexOf('"') !== -1) c = c.replace(/"/g,'""');
+            if (/[",\n]/.test(c)) c = '"' + c + '"';
+            return c;
+          });
+          lines.push(row.join(","));
+        });
+        var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "ventas_empresa_" + String(empresaID) + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function run(){
+        msg("", "");
+        var qs = buildQuery();
+        return api("/api/empresa/facturacion_electronica?" + qs).then(function(data){
+          var items = Array.isArray(data && data.items) ? data.items : [];
+          state.items = items.filter(function(it){
+            var t = norm(it.tipo_documento).toLowerCase();
+            return t === "factura_electronica" || t === "comprobante_pago";
+          });
+          renderTable();
+        }).catch(function(err){
+          state.items = [];
+          renderTable();
+          msg(err.message || "No se pudo consultar ventas", "error");
+        });
+      }
+
+      function loadEmpresa(){
+        var empresaInfo=document.getElementById("empresaInfo");
+        empresaInfo.textContent="Empresa ID: "+String(empresaID);
+        return api("/super/api/empresas?id=" + encodeURIComponent(String(empresaID))).then(function(emp){
+          if(emp && emp.nombre){
+            state.empresaNombre = emp.nombre;
+            document.getElementById("pageTitle").textContent = "Ventas - " + emp.nombre;
+            empresaInfo.textContent = "Empresa: " + emp.nombre + " (ID " + empresaID + ")";
+          }
+        }).catch(function(){});
+      }
+
+      document.getElementById("filtrosForm").addEventListener("submit", function(ev){ ev.preventDefault(); run(); });
+      document.getElementById("btnLimpiar").addEventListener("click", function(){ document.getElementById("tipoVenta").value=""; document.getElementById("estadoDocumento").value=""; document.getElementById("q").value=""; document.getElementById("includeInactive").checked=false; setDefaultDates(); run(); });
+      document.getElementById("btnExportCSV").addEventListener("click", exportCSV);
+      tbody.addEventListener("click", function(ev){
+        var btn = ev.target.closest("button[data-action]");
+        if(!btn) return;
+        var action = norm(btn.getAttribute("data-action")).toLowerCase();
+        var key = norm(btn.getAttribute("data-key"));
+        var item = state.index[key];
+        if(!item) return;
+        state.selectedKey = key;
+        if(action==="ver"){ renderDetail(item); return; }
+        if(action==="visualizar"){ visualizar(item); return; }
+        if(action==="ver_facturas"){
+          try {
+            var u = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
+            u.searchParams.set("empresa_id", String(empresaID));
+            if (norm(item.tipo_documento)) u.searchParams.set("tipo_documento", norm(item.tipo_documento));
+            if (norm(item.documento_codigo)) u.searchParams.set("documento", norm(item.documento_codigo));
+            window.location.href = u.pathname + u.search;
+          } catch (e) {}
+          return;
+        }
+        if(action==="enviar"){ reenviarCorreo(item); return; }
+      });
+
+      (function init(){
+        if(!empresaID){ msg("empresa_id es obligatorio en la URL", "error"); return; }
+        setDefaultDates();
+        loadEmpresa();
+        run();
+      })();
+    })();
+  </script>
+</body>
+</html>
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ventas</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>

@@ -192,6 +192,15 @@
       <form id="advancedConfigForm" class="form">
         <input type="hidden" id="adv_empresa_id">
 
+        <h3>Automatización de ventas y facturación</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <div class="form-help"><label><input id="adv_facturacion_electronica_activa" type="checkbox"> Activar facturación electrónica automática al cerrar venta</label></div>
+            <div class="form-help"><label><input id="adv_enviar_email_venta" type="checkbox"> Enviar correo de la venta (comprobante)</label></div>
+            <div class="form-help"><label><input id="adv_enviar_factura_electronica_venta" type="checkbox"> Enviar factura electrónica de la venta</label></div>
+          </div>
+        </div>
+
         <h3 >Datos fiscales del emisor</h3>
         <div class="form-row">
           <div class="form-col">
@@ -491,6 +500,9 @@
     }
 
     function setAdvancedFormData(cfg) {
+      document.getElementById("adv_facturacion_electronica_activa").checked = cfg.facturacion_electronica_activa === true || txt(cfg.modo_documento_venta) === "factura_electronica";
+      document.getElementById("adv_enviar_email_venta").checked = cfg.enviar_email_venta === true;
+      document.getElementById("adv_enviar_factura_electronica_venta").checked = cfg.enviar_factura_electronica_venta === true;
       document.getElementById("adv_tipo_documento_emisor").value = txt(cfg.tipo_documento_emisor) || "NIT";
       document.getElementById("adv_nit").value = txt(cfg.nit);
       document.getElementById("adv_digito_verificacion").value = txt(cfg.digito_verificacion);
@@ -528,6 +540,9 @@
     function collectAdvancedPayload() {
       return {
         empresa_id: Number(state.empresaID),
+        facturacion_electronica_activa: !!document.getElementById("adv_facturacion_electronica_activa").checked,
+        enviar_email_venta: !!document.getElementById("adv_enviar_email_venta").checked,
+        enviar_factura_electronica_venta: !!document.getElementById("adv_enviar_factura_electronica_venta").checked,
         tipo_documento_emisor: txt(document.getElementById("adv_tipo_documento_emisor").value) || "NIT",
         nit: txt(document.getElementById("adv_nit").value),
         digito_verificacion: txt(document.getElementById("adv_digito_verificacion").value),
