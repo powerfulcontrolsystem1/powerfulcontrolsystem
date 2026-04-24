@@ -130,6 +130,9 @@
       <div class="empresa-section-header">
         <h2>Detalle del documento seleccionado</h2>
       </div>
+      <div class="empresa-inline-actions" style="margin-top:10px;">
+        <button id="btnVisualizarSeleccionado" type="button" class="btn secondary" disabled>Visualizar factura</button>
+      </div>
       <div id="detalleFactura" class="form-help">Selecciona un documento para ver su detalle.</div>
     </section>
 
@@ -262,6 +265,8 @@
       function renderDetalle(item) {
         if (!item) {
           detalleFactura.textContent = "Selecciona un documento para ver su detalle.";
+          var vbtn0 = document.getElementById("btnVisualizarSeleccionado");
+          if (vbtn0) vbtn0.disabled = true;
           renderPrintPreview(null);
           return;
         }
@@ -295,6 +300,11 @@
             '<div class="form-col"><strong>Observaciones:</strong> ' + escapeHtml(item.observaciones || "-") + '</div>' +
           '</div>';
 
+        var vbtn = document.getElementById("btnVisualizarSeleccionado");
+        if (vbtn) {
+          vbtn.disabled = false;
+          vbtn.setAttribute("data-key", makeKey(item));
+        }
         renderPrintPreview(item);
       }
 
@@ -647,6 +657,19 @@
           printInvoice(item);
         }
       });
+
+      var btnVisualizarSeleccionado = document.getElementById("btnVisualizarSeleccionado");
+      if (btnVisualizarSeleccionado) {
+        btnVisualizarSeleccionado.addEventListener("click", function () {
+          var key = normalize(btnVisualizarSeleccionado.getAttribute("data-key"));
+          var item = key && state.index ? state.index[key] : null;
+          if (!item && state.selectedKey && state.index && state.index[state.selectedKey]) {
+            item = state.index[state.selectedKey];
+          }
+          if (!item) return;
+          printInvoice(item);
+        });
+      }
 
       function init() {
         if (!empresaID) {

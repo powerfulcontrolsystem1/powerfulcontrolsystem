@@ -135,3 +135,5 @@ decir que es gtp 5.4 mini
 - seccion de vendedores autorizados donde agregue sus numeros y datos
 
 - en las licencias que las separe o agrupe por pais.
+
+ejecuta actualizar_repositorio y luego sync_to_vps
