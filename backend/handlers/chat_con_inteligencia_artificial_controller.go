@@ -615,7 +615,7 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 		"model":       strings.TrimSpace(model.UpstreamModel),
 		"messages":    messages,
 		"temperature": 0.2,
-		"max_tokens":  700,
+		"max_completion_tokens": 700,
 	}
 	payload, _ := json.Marshal(body)
 
