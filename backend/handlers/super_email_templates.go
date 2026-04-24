@@ -13,22 +13,22 @@ import (
 )
 
 const (
-	superEmailTemplateKeyAdminConfirmation        = "admin_confirmation"
-	superEmailTemplateKeyEmpresaConfirmation      = "empresa_user_confirmation"
-	superEmailTemplateKeyEmpresaAdminShareInvite  = "empresa_admin_share_invitation"
-	superEmailTemplateKeyLicenciaActivation       = "licencia_activation_payment"
-	superEmailTemplateKeyAdminPasswordRecovery    = "admin_password_recovery"
-	superEmailTemplateKeyEmpresaPasswordRecovery  = "empresa_user_password_recovery"
-	superEmailTemplateKeyServerRestartAlert       = "server_restart_alert"
+	superEmailTemplateKeyAdminConfirmation       = "admin_confirmation"
+	superEmailTemplateKeyEmpresaConfirmation     = "empresa_user_confirmation"
+	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
+	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
+	superEmailTemplateKeyAdminPasswordRecovery   = "admin_password_recovery"
+	superEmailTemplateKeyEmpresaPasswordRecovery = "empresa_user_password_recovery"
+	superEmailTemplateKeyServerRestartAlert      = "server_restart_alert"
 )
 
 type superEmailTemplateDefinition struct {
-	Key          string
-	Label        string
-	Category     string
-	Description  string
-	Recommended  bool
-	Variables    []string
+	Key             string
+	Label           string
+	Category        string
+	Description     string
+	Recommended     bool
+	Variables       []string
 	DefaultSubject  string
 	DefaultBodyText string
 	DefaultBodyHTML string
@@ -49,75 +49,75 @@ type superEmailTemplateItem struct {
 
 var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 	{
-		Key:         superEmailTemplateKeyAdminConfirmation,
-		Label:       "Confirmación de correo administrativo",
-		Category:    "confirmacion",
-		Description: "Correo que recibe el administrador cuando debe confirmar su cuenta del panel.",
-		Variables:   []string{"name", "confirm_url", "login_url"},
-		DefaultSubject: "Confirma tu correo - Powerful Control System",
+		Key:             superEmailTemplateKeyAdminConfirmation,
+		Label:           "Confirmación de correo administrativo",
+		Category:        "confirmacion",
+		Description:     "Correo que recibe el administrador cuando debe confirmar su cuenta del panel.",
+		Variables:       []string{"name", "confirm_url", "login_url"},
+		DefaultSubject:  "Confirma tu correo - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nPara activar tu cuenta, haz clic en el siguiente enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>Para activar tu cuenta, haz clic en el siguiente enlace:</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyEmpresaConfirmation,
-		Label:       "Confirmación de correo de usuario empresa",
-		Category:    "confirmacion",
-		Description: "Invitación y confirmación para usuarios creados dentro de una empresa.",
-		Variables:   []string{"name", "company_name", "confirm_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
-		DefaultSubject: "Confirma tu correo - Powerful Control System",
+		Key:             superEmailTemplateKeyEmpresaConfirmation,
+		Label:           "Confirmación de correo de usuario empresa",
+		Category:        "confirmacion",
+		Description:     "Invitación y confirmación para usuarios creados dentro de una empresa.",
+		Variables:       []string{"name", "company_name", "confirm_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
+		DefaultSubject:  "Confirma tu correo - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nEl administrador de la empresa {{company_name}} te ha invitado a registrarte al sistema de motel Powerful Control System.\n\n{{admin_message_block_text}}Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\nHaz clic en este enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>El administrador de la empresa <strong>{{company_name}}</strong> te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>.</p>{{admin_message_block_html}}<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyEmpresaAdminShareInvite,
-		Label:       "Invitación para compartir empresa entre administradores",
-		Category:    "administracion",
-		Description: "Correo enviado a un administrador registrado para darle acceso compartido a una empresa.",
-		Variables:   []string{"name", "company_name", "invited_by_name", "accept_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
-		DefaultSubject: "Te compartieron una empresa en Powerful Control System",
-		DefaultBodyText: "Hola {{name}},\n\n{{invited_by_name}} te compartió acceso administrativo a la empresa {{company_name}} en Powerful Control System.\n\n{{admin_message_block_text}}Para aceptar el acceso, inicia sesión con tu cuenta administrativa desde este enlace:\n{{accept_url}}\n\nSi prefieres entrar primero al login, usa:\n{{login_url}}\n\nSi no esperabas esta invitación, ignora este mensaje.\n",
-		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p><strong>{{invited_by_name}}</strong> te compartió acceso administrativo a la empresa <strong>{{company_name}}</strong> en Powerful Control System.</p>{{admin_message_block_html}}<p>Para aceptar el acceso, inicia sesión con tu cuenta administrativa desde este enlace:</p><p><a href=\"{{accept_url}}\">Aceptar acceso compartido</a></p><p>Si prefieres entrar primero al login, usa <a href=\"{{login_url}}\">este acceso</a>.</p><p>Si no esperabas esta invitación, ignora este mensaje.</p></body></html>",
+		Key:             superEmailTemplateKeyEmpresaAdminShareInvite,
+		Label:           "Invitación para compartir empresa entre administradores",
+		Category:        "administracion",
+		Description:     "Correo enviado a un administrador registrado para darle acceso compartido a una empresa.",
+		Variables:       []string{"name", "company_name", "invited_by_name", "accept_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
+		DefaultSubject:  "Te compartieron una empresa en Powerful Control System",
+		DefaultBodyText: "Hola {{name}},\n\n{{invited_by_name}} te compartió acceso administrativo a la empresa {{company_name}} en Powerful Control System.\n\n{{admin_message_block_text}}Para aceptar el acceso, haz clic en este enlace:\n{{accept_url}}\n\nEl enlace acepta la invitación directamente y abre seleccionar empresa con tu cuenta administrativa.\n\nSi prefieres entrar manualmente al login, usa:\n{{login_url}}\n\nSi no esperabas esta invitación, ignora este mensaje.\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p><strong>{{invited_by_name}}</strong> te compartió acceso administrativo a la empresa <strong>{{company_name}}</strong> en Powerful Control System.</p>{{admin_message_block_html}}<p>Para aceptar el acceso, haz clic en este enlace:</p><p><a href=\"{{accept_url}}\">Aceptar acceso compartido</a></p><p>El enlace acepta la invitación directamente y abre seleccionar empresa con tu cuenta administrativa.</p><p>Si prefieres entrar manualmente al login, usa <a href=\"{{login_url}}\">este acceso</a>.</p><p>Si no esperabas esta invitación, ignora este mensaje.</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyLicenciaActivation,
-		Label:       "Pago de licencia aprobado",
-		Category:    "licencias",
-		Description: "Notificación enviada cuando una licencia queda activa tras un pago aprobado.",
-		Variables:   []string{"company_name", "license_name", "provider", "reference", "start_date_line", "end_date_line", "reference_line", "license_name_line"},
-		DefaultSubject: "Tu licencia ya quedó activa",
+		Key:             superEmailTemplateKeyLicenciaActivation,
+		Label:           "Pago de licencia aprobado",
+		Category:        "licencias",
+		Description:     "Notificación enviada cuando una licencia queda activa tras un pago aprobado.",
+		Variables:       []string{"company_name", "license_name", "provider", "reference", "start_date_line", "end_date_line", "reference_line", "license_name_line"},
+		DefaultSubject:  "Tu licencia ya quedó activa",
 		DefaultBodyText: "Hola,\n\nTu pago fue confirmado correctamente y la licencia ya quedó activa en Powerful Control System.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}Pasarela: {{provider}}\n\nYa puedes ingresar al sistema y continuar con la operación normal de tu empresa.\n\nSi no reconoces este movimiento o necesitas ayuda, responde este correo.\n\nPowerful Control System\n",
 		DefaultBodyHTML: "<html><body><p>Hola,</p><p>Tu pago fue confirmado correctamente y la licencia ya quedó activa en <strong>Powerful Control System</strong>.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}</p><p>Ya puedes ingresar al sistema y continuar con la operación normal de tu empresa.</p><p>Si no reconoces este movimiento o necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyAdminPasswordRecovery,
-		Label:       "Recuperación de contraseña administrativa",
-		Category:    "recomendadas",
-		Description: "Correo con enlace directo para restablecer contraseña del panel administrativo.",
-		Recommended: true,
-		Variables:   []string{"name", "token", "reset_url"},
-		DefaultSubject: "Recuperacion de contraseña - Powerful Control System",
+		Key:             superEmailTemplateKeyAdminPasswordRecovery,
+		Label:           "Recuperación de contraseña administrativa",
+		Category:        "recomendadas",
+		Description:     "Correo con enlace directo para restablecer contraseña del panel administrativo.",
+		Recommended:     true,
+		Variables:       []string{"name", "token", "reset_url"},
+		DefaultSubject:  "Recuperacion de contraseña - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nRecibimos una solicitud para restablecer tu contraseña. Abre este enlace para definir una nueva clave:\n{{reset_url}}\n\nSi no solicitaste este cambio, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href=\"{{reset_url}}\" style=\"display:inline-block;padding:12px 20px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;\">Cambiar contraseña</a></p><p>Si el botón no abre correctamente, usa este enlace:</p><p><a href=\"{{reset_url}}\">{{reset_url}}</a></p><p>Si no solicitaste este cambio, ignora este mensaje.</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyEmpresaPasswordRecovery,
-		Label:       "Recuperación de contraseña de usuario empresa",
-		Category:    "recomendadas",
-		Description: "Correo con token para restablecer contraseña de un usuario interno de empresa.",
-		Recommended: true,
-		Variables:   []string{"name", "token", "reset_url"},
-		DefaultSubject: "Recuperacion de contraseña - Powerful Control System",
+		Key:             superEmailTemplateKeyEmpresaPasswordRecovery,
+		Label:           "Recuperación de contraseña de usuario empresa",
+		Category:        "recomendadas",
+		Description:     "Correo con token para restablecer contraseña de un usuario interno de empresa.",
+		Recommended:     true,
+		Variables:       []string{"name", "token", "reset_url"},
+		DefaultSubject:  "Recuperacion de contraseña - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nRecibimos una solicitud para restablecer tu contraseña.\nToken de recuperación (vigencia limitada):\n{{token}}\n\nAbre el login de usuario y usa el token para completar el restablecimiento:\n{{reset_url}}\n\nSi no solicitaste este cambio, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>Recibimos una solicitud para restablecer tu contraseña.</p><p><strong>Token de recuperación (vigencia limitada):</strong><br/>{{token}}</p><p><a href=\"{{reset_url}}\" style=\"display:inline-block;padding:12px 20px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;\">Cambiar contraseña</a></p><p>Si el botón no abre correctamente, usa este enlace:</p><p><a href=\"{{reset_url}}\">{{reset_url}}</a></p><p>Si no solicitaste este cambio, ignora este mensaje.</p></body></html>",
 	},
 	{
-		Key:         superEmailTemplateKeyServerRestartAlert,
-		Label:       "Alerta de inicio o reinicio del servidor",
-		Category:    "recomendadas",
-		Description: "Notificación operativa cuando el backend detecta inicio o reinicio inesperado.",
-		Recommended: true,
-		Variables:   []string{"hostname", "event_date", "listen_addr_line", "reason", "unexpected_restart", "detail_line", "previous_status_block", "previous_start_block", "previous_stop_block", "previous_stop_reason_block"},
-		DefaultSubject: "[PCS] Inicio de servidor detectado ({{hostname}})",
+		Key:             superEmailTemplateKeyServerRestartAlert,
+		Label:           "Alerta de inicio o reinicio del servidor",
+		Category:        "recomendadas",
+		Description:     "Notificación operativa cuando el backend detecta inicio o reinicio inesperado.",
+		Recommended:     true,
+		Variables:       []string{"hostname", "event_date", "listen_addr_line", "reason", "unexpected_restart", "detail_line", "previous_status_block", "previous_start_block", "previous_stop_block", "previous_stop_reason_block"},
+		DefaultSubject:  "[PCS] Inicio de servidor detectado ({{hostname}})",
 		DefaultBodyText: "Inicio de servidor detectado.\n\nFecha evento: {{event_date}}\nHost: {{hostname}}\n{{listen_addr_line}}Motivo: {{reason}}\nReinicio inesperado: {{unexpected_restart}}\n{{detail_line}}{{previous_status_block}}{{previous_start_block}}{{previous_stop_block}}{{previous_stop_reason_block}}\nMensaje generado automaticamente por el backend PCS.",
 	},
 }

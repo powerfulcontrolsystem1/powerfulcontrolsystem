@@ -467,13 +467,13 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		// Verificación de Modo Mantenimiento
 		if dbSuper != nil {
 			if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
-			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
-			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
-			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
-			if !isMntAllowed && !isStatic {
-				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
-				return
-			}
+				// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
+				isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
+				isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
+				if !isMntAllowed && !isStatic {
+					http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
+					return
+				}
 			}
 		}
 
@@ -494,13 +494,14 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/super/api/administradores/login":                      {},
 			"/super/api/administradores/solicitar_recuperacion":     {},
 			"/super/api/administradores/restablecer_password":       {},
+			"/super/api/empresas/compartidos/aceptar":               {},
 			"/auth/google/login":                                    {},
 			"/auth/google/callback":                                 {},
 			"/auth/confirmar_correo":                                {},
 			"/auth/confirmar_admin":                                 {},
 			"/auth/logout":                                          {},
 			"/api/public/venta_publica":                             {},
-			"/api/public/publicaciones":                            {},
+			"/api/public/publicaciones":                             {},
 			"/api/public/soporte_remoto":                            {},
 			"/api/public/venta_digital":                             {},
 			"/api/public/pagina_principal":                          {},

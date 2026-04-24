@@ -977,6 +977,18 @@
     }
   }
 
+  function processSharedInvitationAcceptedNotice() {
+    if (getQueryParam("shared_invitation_accepted") !== "1") {
+      return;
+    }
+    var empresaId = parseInt(getQueryParam("empresa_id") || "0", 10);
+    if (Number.isFinite(empresaId) && empresaId > 0) {
+      persistEmpresaContext(empresaId);
+    }
+    setShareNotice("Invitación aceptada correctamente. La empresa compartida ya aparece en tu lista.", false);
+    clearQueryParam("shared_invitation_accepted");
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     applySidebarPermissions(null);
     wireSidebarFrameLinks();
@@ -984,6 +996,7 @@
       await render();
       await processSharedInvitationToken();
       await render();
+      processSharedInvitationAcceptedNotice();
       restoreLastView();
     });
 

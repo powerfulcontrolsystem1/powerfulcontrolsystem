@@ -586,6 +586,7 @@ func MarkAdminEmpresaCompartidaInvitacionAccepted(dbConn *sql.DB, id int64, acce
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE admin_empresa_compartida_invitaciones
 	SET aceptada_en = ?,
+	    token_hash = '',
 	    fecha_actualizacion = `+sqlNowExpr()+`,
 	    usuario_creador = ?,
 	    estado = 'aceptada'
