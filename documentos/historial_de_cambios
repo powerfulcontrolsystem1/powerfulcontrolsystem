@@ -14177,3 +14177,31 @@ Archivos modificados:
 - web/super/pagina_principal.html
 - web/super/venta_digital.html
 - web/super_administrador.html
+
+2026-04-24: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/empresa_configuracion_avanzada.go
+- backend/handlers/administradores_frecuencia_fe_handlers.go
+- backend/handlers/carritos_compras.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_integraciones.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/frecuencia_fp.html
+- web/administrar_empresa/reportes_menu.html
+- web/administrar_empresa/ventas.html
+- web/ayuda/ayuda.html
+- web/js/administrar_empresa.js
+- web/super/administradores_frecuencia_fe.html
+- web/super_administrador.html
+- web/venta_publica.html
