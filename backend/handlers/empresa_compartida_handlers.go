@@ -75,10 +75,8 @@ func decorateEmpresaAccessForRequester(dbSuper *sql.DB, requesterEmail, principa
 	if empresa == nil {
 		return nil
 	}
-	owner, err := empresaBelongsToPrincipalScope(dbSuper, principalEmail, empresa.UsuarioCreador)
-	if err != nil {
-		return err
-	}
+	_ = principalEmail
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
 	if owner {
 		empresa.AccessSource = "owner"
 		empresa.CompartidaPor = ""
@@ -111,10 +109,8 @@ func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principa
 	}
 	out := make([]dbpkg.Empresa, 0, len(empresas))
 	for _, empresa := range empresas {
-		owner, err := empresaBelongsToPrincipalScope(dbSuper, principalEmail, empresa.UsuarioCreador)
-		if err != nil {
-			return nil, err
-		}
+		_ = principalEmail
+		owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
 		if owner {
 			empresa.AccessSource = "owner"
 			out = append(out, empresa)
@@ -131,6 +127,7 @@ func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principa
 }
 
 func ensureEmpresaOwnerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (*dbpkg.Empresa, string, bool, error) {
+	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 	_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 	if err != nil {
 		return nil, "", false, err
@@ -142,10 +139,7 @@ func ensureEmpresaOwnerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID
 	if err != nil {
 		return nil, principalEmail, false, err
 	}
-	owner, err := empresaBelongsToPrincipalScope(dbSuper, principalEmail, empresa.UsuarioCreador)
-	if err != nil {
-		return nil, principalEmail, false, err
-	}
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
 	return empresa, principalEmail, owner, nil
 }
 
@@ -248,6 +242,29 @@ func sendAdminEmpresaCompartidaInvitationEmail(r *http.Request, dbEmp, dbSuper *
 	return acceptURL, nil
 }
 
+func targetAdminAlreadyHasEmpresaAccess(dbSuper *sql.DB, empresa *dbpkg.Empresa, targetAdminEmail string) (bool, error) {
+	if empresa == nil || dbSuper == nil {
+		return false, nil
+	}
+	targetAdminEmail = strings.ToLower(strings.TrimSpace(targetAdminEmail))
+	if targetAdminEmail == "" || empresa.EmpresaID <= 0 {
+		return false, nil
+	}
+
+	// 1) Dueño exacto: solo el email creador real de la empresa.
+	creator := strings.ToLower(strings.TrimSpace(empresa.UsuarioCreador))
+	if creator != "" && creator == targetAdminEmail {
+		return true, nil
+	}
+
+	// 2) Acceso compartido activo (solo existe tras aceptación de invitación).
+	access, err := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresa.EmpresaID, targetAdminEmail)
+	if err != nil {
+		return false, err
+	}
+	return access != nil, nil
+}
+
 func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -324,10 +341,10 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "el administrador invitado está inactivo", http.StatusConflict)
 				return
 			}
-			if canAccess, accessErr := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, payload.Email, payload.EmpresaID); accessErr != nil {
+			if alreadyHasAccess, accessErr := targetAdminAlreadyHasEmpresaAccess(dbSuper, empresa, payload.Email); accessErr != nil {
 				http.Error(w, "no se pudo validar acceso actual del administrador invitado", http.StatusInternalServerError)
 				return
-			} else if canAccess {
+			} else if alreadyHasAccess {
 				http.Error(w, "ese administrador ya tiene acceso a la empresa", http.StatusConflict)
 				return
 			}

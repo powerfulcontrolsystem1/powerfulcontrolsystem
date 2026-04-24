@@ -108,16 +108,18 @@ func adminEmailMatchesPrincipalScope(dbSuper *sql.DB, principalEmail, targetEmai
 	return strings.EqualFold(strings.TrimSpace(resolved), principalEmail), nil
 }
 
-func empresaBelongsToPrincipalScope(dbSuper *sql.DB, principalEmail, empresaCreator string) (bool, error) {
-	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+func adminOwnsEmpresaByCreatorEmail(adminEmail, empresaCreator string) bool {
+	adminEmail = strings.ToLower(strings.TrimSpace(adminEmail))
 	creator := strings.ToLower(strings.TrimSpace(empresaCreator))
-	if principalEmail == "" || creator == "" {
-		return true, nil
+	if adminEmail == "" || creator == "" {
+		return false
 	}
-	if creator == principalEmail {
-		return true, nil
-	}
-	return adminEmailMatchesPrincipalScope(dbSuper, principalEmail, creator)
+	return creator == adminEmail
+}
+
+func empresaBelongsToPrincipalScope(dbSuper *sql.DB, principalEmail, empresaCreator string) (bool, error) {
+	_ = dbSuper
+	return adminOwnsEmpresaByCreatorEmail(principalEmail, empresaCreator), nil
 }
 
 func filterEmpresasByPrincipalScope(dbSuper *sql.DB, principalEmail string, empresas []dbpkg.Empresa) ([]dbpkg.Empresa, error) {

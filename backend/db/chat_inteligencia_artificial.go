@@ -586,17 +586,6 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 		}
 	}
 
-	principalEmail := adminEmail
-	if dbSuper != nil {
-		resolved, err := ResolveAdminPrincipalEmail(dbSuper, adminEmail)
-		if err != nil && err != sql.ErrNoRows {
-			return false, err
-		}
-		if strings.TrimSpace(resolved) != "" {
-			principalEmail = strings.TrimSpace(strings.ToLower(resolved))
-		}
-	}
-
 	var creador string
 	err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&creador)
 	if err != nil {
@@ -606,10 +595,7 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 		return false, err
 	}
 	creador = strings.TrimSpace(strings.ToLower(creador))
-	if creador == "" {
-		return true, nil
-	}
-	if creador == principalEmail || creador == adminEmail {
+	if creador != "" && creador == adminEmail {
 		return true, nil
 	}
 	if dbSuper != nil {
@@ -618,13 +604,6 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 			return false, err
 		}
 		if access != nil {
-			return true, nil
-		}
-		resolvedCreator, err := ResolveAdminPrincipalEmail(dbSuper, creador)
-		if err != nil && err != sql.ErrNoRows {
-			return false, err
-		}
-		if strings.TrimSpace(strings.ToLower(resolvedCreator)) == principalEmail {
 			return true, nil
 		}
 	}
