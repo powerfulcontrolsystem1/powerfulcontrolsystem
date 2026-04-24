@@ -466,12 +466,12 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">OpenAI (gpt-4o-mini)</label>
+          <label class="form-label">OpenAI (gpt-5.4-mini)</label>
           <label class="mode-switch-row" for="aiProviderOpenAIEnabled">
             <span class="mode-label">Disponible en chats</span>
             <input id="aiProviderOpenAIEnabled" type="checkbox" role="switch" aria-label="Activar OpenAI en los chats">
           </label>
-          <input id="aiKeyOpenAI" class="form-input" type="password" placeholder="API key para openai:gpt-4o-mini">
+          <input id="aiKeyOpenAI" class="form-input" type="password" placeholder="API key para openai:gpt-5.4-mini">
           <div id="aiStatusOpenAI" class="form-help">Cargando estado...</div>
           <div id="aiUsageOpenAI" class="form-help">Consumo del plan: --</div>
           <div class="form-help">La API key se guarda cifrada obligatoriamente en backend y nunca se expone en pantalla.</div>
@@ -1244,7 +1244,7 @@
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
 
-          const openAIItem = byModel['openai:gpt-4o-mini'] || null;
+          const openAIItem = byModel['openai:gpt-5.4-mini'] || null;
           if (openAIEnabledEl) openAIEnabledEl.checked = !openAIItem || !!openAIItem.enabled;
 
           let hasAIConfig = false;
@@ -1267,7 +1267,7 @@
           (function renderUsage(){
             const usageEl = document.getElementById('aiUsageOpenAI');
             if (!usageEl) return;
-            const item = byModel['openai:gpt-4o-mini'] || null;
+            const item = byModel['openai:gpt-5.4-mini'] || null;
             const u = item && item.usage_today ? item.usage_today : null;
             if (u) {
               usageEl.innerText = 'Consumo del plan (hoy): ' + (Number(u.consultas_total || 0)) + ' consulta(s), ' + (Number(u.tokens_total || 0)) + ' token(s).';
@@ -1283,7 +1283,12 @@
           if (openAIEnabledEl) openAIEnabledEl.disabled = false;
           if (enabledToggle) enabledToggle.disabled = false;
 
-          document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
+          // Si ya hay credencial configurada, se entra por "Editar". Si no, se muestra Guardar directo.
+          const saveAiBtn = document.getElementById('saveAiConfigBtn');
+          if (saveAiBtn) {
+            saveAiBtn.style.display = hasAIConfig ? 'none' : '';
+            saveAiBtn.disabled = false;
+          }
           document.getElementById('editAiConfigBtn').style.display = hasAIConfig ? '' : 'none';
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
@@ -1438,6 +1443,7 @@
         });
         document.getElementById('aiEnabledToggle').disabled = false;
 		document.getElementById('aiProviderOpenAIEnabled').disabled = false;
+        document.getElementById('saveAiConfigBtn').style.display = '';
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
