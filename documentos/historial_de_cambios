@@ -33,6 +33,13 @@
         - `web/ayuda/ayuda.html`
     - Descripción: en `/seleccionar_empresa.html` las tarjetas quedan con altura uniforme y la botonera alineada al pie. Se oculta el indicador/botón verde de “Licencia activa” en empresas con licencia vigente, pero todas las tarjetas mantienen disponible el botón de descarga de datos de la empresa.
     - Verificación: revisión visual (frontend) y `go test ./...` (sin cambios backend en esta iteración).
+- 2026-04-24: index — tarjetas tipo baner (solo imagen) configurables desde super.
+    - Archivos modificados:
+        - `web/super/pagina_principal.html`
+        - `backend/handlers/pagina_principal_handlers.go`
+        - `web/index.html`
+    - Descripción: se agrega un nuevo tipo de tarjeta para el index (“tarjetas tipo baner”) que solo carga una imagen desde `/img/` y se renderiza debajo de las tarjetas principales. El tamaño fijo (ancho/alto en px) se configura desde `Super → Página principal`. Se deja un baner inicial apuntando a `/img/baner_ia.png` (pendiente de que el archivo exista en `web/img/`).
+    - Verificación: `go test ./...`
 - 2026-04-24: landing pública — tarjeta única por tipo y video embebido.
     - Descripción: `web/descripcion_de_los_sistemas.ht` ahora muestra **solo** la tarjeta del tipo de negocio seleccionado (por hash `#...` o query `?tipo=...`) y permite adjuntar un enlace de YouTube por tarjeta desde `web/super/pagina_principal.html`, mostrando el video embebido en la vista pública. Se moderniza el estilo de la tarjeta y se agrega CSS específico en `web/estilos.css`.
 - 2026-04-24: portal público y super — menú contacto y retiro de venta digital.

@@ -16,6 +16,8 @@
 	- `backend/db/chat_inteligencia_artificial.go` : agrega consultas agregadas para reportar tokens/consultas del día por proveedor.
 	- `web/js/seleccionar_empresa.js`, `web/estilos.css` : ajustan el layout del selector de empresas para que todas las tarjetas tengan el mismo tamaño y los botones queden alineados al pie; el botón verde de licencia activa deja de mostrarse cuando la licencia está vigente, manteniendo siempre el botón de descarga.
 	- `web/ayuda/ayuda.html` : documenta el comportamiento del selector (tarjetas uniformes y botón de descarga siempre disponible).
+	- `web/super/pagina_principal.html`, `backend/handlers/pagina_principal_handlers.go`, `web/index.html` : agrega soporte a tarjetas tipo baner (solo imagen desde `/img/`) debajo de las tarjetas del index, con tamaño fijo configurable desde el editor super.
+	- `web/img/baner_ia.png` (nuevo) : imagen inicial de ejemplo para tarjetas tipo baner del index.
 
 - Actualizacion 2026-04-23: documentacion y operacion reCAPTCHA (v2/v3/Enterprise) + copias de backup en `backup/`
 	- `documentos/manual_de_instalacion.md` : añade la sección de Google reCAPTCHA (claves, provider, `RECAPTCHA_DEV_BYPASS`, errores de dominio en localhost) y explica dónde se guardan copias JSON bajo `backup/`.

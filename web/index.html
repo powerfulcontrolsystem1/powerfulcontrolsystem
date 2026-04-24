@@ -211,6 +211,35 @@
       .ai-promo-banner { flex-direction: column; align-items: flex-start; }
       .ai-promo-banner-kicker { order: -1; }
     }
+
+    .portal-banner-grid{
+      margin: 0 auto 10px auto;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      --banner-width: 1200px;
+      --banner-height: 220px;
+    }
+
+    .portal-banner-card{
+      width: 100%;
+      max-width: var(--banner-width);
+      height: var(--banner-height);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--surface);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.22);
+      margin: 0 auto;
+    }
+
+    .portal-banner-image{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -247,6 +276,9 @@
       <h1 class="portal-cards-heading">Sistema de Facturación Electrónica</h1>
       <section id="portalCardsGrid" class="portal-grid" aria-live="polite" ></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
+      <section id="portalBannersWrap" style="display:none; margin-top: 18px;">
+        <div id="portalBannersGrid" class="portal-banner-grid" aria-live="polite"></div>
+      </section>
 
     </main>
     <footer class="portal-footer">&copy; 2026 - Powerful Control System - Desarrollado para la Gobernanza Tecnológica Multiempresa</footer>
@@ -384,7 +416,9 @@
         var source = raw && typeof raw === 'object' ? raw : {};
         return {
           index_card_size: normalizeVisualSize(source.index_card_size),
-          index_text_size: normalizeVisualSize(source.index_text_size)
+          index_text_size: normalizeVisualSize(source.index_text_size),
+          index_banner_width_px: Number(source.index_banner_width_px || 1200) || 1200,
+          index_banner_height_px: Number(source.index_banner_height_px || 220) || 220
         };
       }
 
@@ -392,6 +426,11 @@
         var settings = normalizeVisualSettings(raw);
         gridEl.setAttribute('data-card-size', settings.index_card_size);
         gridEl.setAttribute('data-text-size', settings.index_text_size);
+        var bannersGrid = document.getElementById('portalBannersGrid');
+        if (bannersGrid) {
+          bannersGrid.style.setProperty('--banner-width', String(Number(settings.index_banner_width_px || 1200)) + 'px');
+          bannersGrid.style.setProperty('--banner-height', String(Number(settings.index_banner_height_px || 220)) + 'px');
+        }
       }
 
       function normalizeWhatsAppNumber(raw) {
@@ -426,6 +465,34 @@
             detalle_href: '/descripcion_de_los_sistemas.ht#' + encodeURIComponent(detalleId)
           };
         });
+      }
+
+      function normalizeBanners(rawBanners) {
+        var list = Array.isArray(rawBanners) ? rawBanners : [];
+        return list
+          .map(function (b) {
+            var img = normalizeImage(b && b.imagen_url);
+            return { imagen_url: img };
+          })
+          .filter(function (b) { return !!normalize(b.imagen_url); });
+      }
+
+      function renderBanners(banners) {
+        var wrap = document.getElementById('portalBannersWrap');
+        var grid = document.getElementById('portalBannersGrid');
+        if (!wrap || !grid) return;
+        if (!Array.isArray(banners) || banners.length === 0) {
+          wrap.style.display = 'none';
+          grid.innerHTML = '';
+          return;
+        }
+        wrap.style.display = '';
+        grid.innerHTML = banners.map(function (b, idx) {
+          return '' +
+            '<article class="portal-banner-card" style="animation-delay:' + (idx * 80) + 'ms">' +
+            '  <img class="portal-banner-image" src="' + escapeHTML(b.imagen_url) + '" alt="Banner">' +
+            '</article>';
+        }).join('');
       }
 
       function renderCards(cards) {
@@ -464,12 +531,15 @@
           applyVisualSettings(payload && payload.estilos);
           applyWhatsAppContactNumber(payload && payload.whatsapp_contact_number);
           var cards = normalizeCards(payload && payload.tarjetas);
+          var banners = normalizeBanners(payload && payload.banners);
           renderCards(cards);
+          renderBanners(banners);
           statusEl.textContent = '';
         } catch (err) {
           applyVisualSettings(null);
           applyWhatsAppContactNumber('573043306506');
           renderCards(normalizeCards(fallbackCards));
+          renderBanners([]);
           statusEl.textContent = 'Se mostraron ofertas predeterminadas por un problema temporal de conexion.';
         }
       }

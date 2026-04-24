@@ -53,8 +53,29 @@
           <select id="ppLandingTextSize" class="form-input pp-style-field" data-field="landing_text_size"></select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ppIndexBannerWidth">Ancho fijo tarjetas tipo baner (px)</label>
+          <input id="ppIndexBannerWidth" class="form-input pp-style-field" data-field="index_banner_width_px" type="number" min="240" max="2400" placeholder="1200">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ppIndexBannerHeight">Alto fijo tarjetas tipo baner (px)</label>
+          <input id="ppIndexBannerHeight" class="form-input pp-style-field" data-field="index_banner_height_px" type="number" min="120" max="800" placeholder="220">
+        </div>
+      </div>
       <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
+      <div class="card" style="margin-top:14px;padding:14px 16px;border-radius:14px;">
+        <h3 style="margin-top:0">Tarjetas tipo baner (solo imagen)</h3>
+        <p class="form-help">Estas tarjetas se renderizan debajo de las tarjetas principales del index. Solo cargan una imagen desde <code>/img/</code>.</p>
+        <div class="form-row">
+          <div class="form-col pp-col-small">
+            <label class="form-label" for="ppBannerCantidad">Cantidad de baners</label>
+            <input id="ppBannerCantidad" class="form-input" type="number" min="0" max="12" value="" placeholder="0">
+          </div>
+        </div>
+        <div id="ppBannersEditor" class="pp-cards-editor"></div>
+      </div>
       <div class="form-actions pp-bottom-actions">
         <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
       </div>
@@ -86,6 +107,10 @@
       var indexTextSizeEl = document.getElementById('ppIndexTextSize');
       var landingCardSizeEl = document.getElementById('ppLandingCardSize');
       var landingTextSizeEl = document.getElementById('ppLandingTextSize');
+      var indexBannerWidthEl = document.getElementById('ppIndexBannerWidth');
+      var indexBannerHeightEl = document.getElementById('ppIndexBannerHeight');
+      var bannerCantidadEl = document.getElementById('ppBannerCantidad');
+      var bannersEditorEl = document.getElementById('ppBannersEditor');
 
       function setCantidadLoading(isLoading) {
         cantidadEl.disabled = !!isLoading;
@@ -143,7 +168,9 @@
           index_card_size: 'mediano',
           index_text_size: 'mediano',
           landing_card_size: 'mediano',
-          landing_text_size: 'mediano'
+          landing_text_size: 'mediano',
+          index_banner_width_px: 1200,
+          index_banner_height_px: 220
         };
       }
 
@@ -165,7 +192,9 @@
           index_card_size: normalizeVisualSize(source.index_card_size || defaults.index_card_size),
           index_text_size: normalizeVisualSize(source.index_text_size || defaults.index_text_size),
           landing_card_size: normalizeVisualSize(source.landing_card_size || defaults.landing_card_size),
-          landing_text_size: normalizeVisualSize(source.landing_text_size || defaults.landing_text_size)
+          landing_text_size: normalizeVisualSize(source.landing_text_size || defaults.landing_text_size),
+          index_banner_width_px: Number(source.index_banner_width_px || defaults.index_banner_width_px) || defaults.index_banner_width_px,
+          index_banner_height_px: Number(source.index_banner_height_px || defaults.index_banner_height_px) || defaults.index_banner_height_px
         };
       }
 
@@ -188,6 +217,8 @@
         indexTextSizeEl.innerHTML = sizeOptionsHTML(styles.index_text_size);
         landingCardSizeEl.innerHTML = sizeOptionsHTML(styles.landing_card_size);
         landingTextSizeEl.innerHTML = sizeOptionsHTML(styles.landing_text_size);
+        if (indexBannerWidthEl) indexBannerWidthEl.value = String(styles.index_banner_width_px || 1200);
+        if (indexBannerHeightEl) indexBannerHeightEl.value = String(styles.index_banner_height_px || 220);
       }
 
       function normalizeCount(raw) {
@@ -208,6 +239,41 @@
         }
         state.config.cantidad = total;
         state.config.tarjetas = cards;
+      }
+
+      function ensureBanners(count) {
+        var total = Number(count || 0);
+        if (!Number.isFinite(total) || total < 0) total = 0;
+        if (total > 12) total = 12;
+        total = Math.floor(total);
+        var banners = Array.isArray(state.config.banners) ? state.config.banners.slice() : [];
+        while (banners.length < total) {
+          banners.push({ imagen_url: '/img/baner_ia.png' });
+        }
+        if (banners.length > total) {
+          banners = banners.slice(0, total);
+        }
+        state.config.banners = banners;
+        if (bannerCantidadEl) bannerCantidadEl.value = String(total);
+      }
+
+      function renderBannersEditor() {
+        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
+        if (!bannersEditorEl) return;
+        var html = '';
+        (state.config.banners || []).forEach(function (banner, idx) {
+          var image = String(banner.imagen_url || '').trim();
+          html += '<article class="card pp-card-item" data-banner-index="' + idx + '">';
+          html += '<h3>Baner ' + (idx + 1) + '</h3>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppBannerImage' + idx + '">Imagen (web/img)</label>';
+          html += '    <select id="ppBannerImage' + idx + '" class="form-input pp-image-select pp-banner-field" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '  </div>';
+          html += '</div>';
+          html += '</article>';
+        });
+        bannersEditorEl.innerHTML = html;
       }
 
       function imageOptionsHTML(selected) {
@@ -390,6 +456,7 @@
         var data = await requestJSON('/super/api/pagina_principal?action=config');
         var cfg = data && data.config ? data.config : {};
         state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
+        state.config.banners = Array.isArray(cfg.banners) ? cfg.banners : [];
         var persistedCount = normalizeCount(cfg.cantidad || 0);
         if (state.config.tarjetas.length > persistedCount) {
           persistedCount = normalizeCount(state.config.tarjetas.length);
@@ -397,10 +464,12 @@
         state.config.cantidad = persistedCount;
         state.config.estilos = normalizeVisualSettings(cfg.estilos);
         ensureCards(state.config.cantidad);
+        ensureBanners((cfg.banners && cfg.banners.length) || 0);
       }
 
       function buildPayloadFromState() {
         ensureCards(cantidadEl.value);
+        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
         return {
           cantidad: state.config.cantidad,
           estilos: normalizeVisualSettings(state.config.estilos),
@@ -420,16 +489,41 @@
                 ? card.detalle_puntos.map(function (item) { return String(item || '').trim(); }).filter(Boolean)
                 : []
             };
+          }),
+          banners: (state.config.banners || []).map(function (banner) {
+            return { imagen_url: String(banner.imagen_url || '').trim() };
           })
         };
       }
 
-      [indexCardSizeEl, indexTextSizeEl, landingCardSizeEl, landingTextSizeEl].forEach(function (el) {
+      [indexCardSizeEl, indexTextSizeEl, landingCardSizeEl, landingTextSizeEl, indexBannerWidthEl, indexBannerHeightEl].forEach(function (el) {
+        if (!el) return;
         el.addEventListener('change', function () {
           var field = el.getAttribute('data-field');
           if (!field) return;
+          if (field === 'index_banner_width_px' || field === 'index_banner_height_px') {
+            state.config.estilos[field] = Number(el.value || 0) || (field === 'index_banner_width_px' ? 1200 : 220);
+            return;
+          }
           state.config.estilos[field] = normalizeVisualSize(el.value);
         });
+      });
+
+      if (bannerCantidadEl) {
+        bannerCantidadEl.addEventListener('change', function () {
+          renderBannersEditor();
+          setMsg('Cantidad de baners actualizada en el editor. Guarda la configuracion para publicarla.', '');
+        });
+      }
+
+      document.addEventListener('change', function (ev) {
+        var target = ev.target;
+        if (!target || !target.classList || !target.classList.contains('pp-banner-field')) return;
+        var idx = Number(target.id.replace('ppBannerImage', ''));
+        if (!Number.isFinite(idx) || idx < 0) return;
+        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
+        if (!state.config.banners[idx]) state.config.banners[idx] = { imagen_url: '' };
+        state.config.banners[idx].imagen_url = String(target.value || '').trim();
       });
 
       async function saveConfig() {
@@ -462,6 +556,7 @@
           await loadImages();
           await loadConfig();
           renderCardsEditor();
+          renderBannersEditor();
           renderStyleControls();
           setCantidadLoading(false);
           setMsg('Configuracion cargada correctamente.', 'success');
