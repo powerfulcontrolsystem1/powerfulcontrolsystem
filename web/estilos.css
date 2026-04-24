@@ -2897,11 +2897,24 @@ body.has-floating-menu .header .form-actions{
   padding:0;
   width:100%;
 }
+.empresas-grid .card-link.empresa-card-link{
+  display:flex;
+  flex-direction:column;
+  align-self:stretch;
+  height:100%;
+  min-height:280px;
+  width:100%;
+  max-width:320px;
+  box-sizing:border-box;
+}
 .empresas-grid .card-link{display:flex;height:100%;min-height:260px;width:100%}
 .empresas-grid .portal-card.warm{width:100%;height:100%;}
 .empresas-grid .portal-card.empresa-card{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
   justify-content:flex-start;
-  min-height:unset;
 }
 .empresas-grid .card-body{
   position:relative;
@@ -4073,6 +4086,65 @@ body.has-floating-menu .header .form-actions{
 .mp-card .form-input::placeholder{ color: rgba(255,255,255,0.8) }
 .mp-card .form-actions .btn{ color: #fff; border-color: rgba(0,0,0,0.12) }
 .mp-card .form{ background: transparent }
+
+/* Paneles claros anidados dentro de mp-card (p. ej. pagina_principal): sin esto heredan #fff del padre y en modo claro no se lee */
+.mp-card .card,
+.mp-card .pp-card-item{
+  color: var(--text);
+}
+.mp-card .card h2,
+.mp-card .card h3,
+.mp-card .pp-card-item h2,
+.mp-card .pp-card-item h3{
+  color: var(--text);
+}
+.mp-card .card .form-label,
+.mp-card .pp-card-item .form-label{
+  color: var(--muted);
+}
+.mp-card .card .form-help,
+.mp-card .card p,
+.mp-card .pp-card-item .form-help,
+.mp-card .pp-card-item p{
+  color: var(--muted);
+}
+.mp-card .card .form-input,
+.mp-card .card .form-textarea,
+.mp-card .card select.form-input,
+.mp-card .pp-card-item .form-input,
+.mp-card .pp-card-item .form-textarea,
+.mp-card .pp-card-item select.form-input{
+  background: var(--form-input-bg);
+  border-color: var(--form-border);
+  color: var(--text);
+}
+.mp-card .card .form-input::placeholder,
+.mp-card .card .form-textarea::placeholder,
+.mp-card .pp-card-item .form-input::placeholder,
+.mp-card .pp-card-item .form-textarea::placeholder{
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+.mp-card .card code,
+.mp-card .pp-card-item code{
+  color: var(--text);
+  background: var(--content-soft-bg);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.mp-card .card .btn.secondary,
+.mp-card .pp-card-item .btn.secondary{
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+html.theme-light .pp-image-preview-wrap,
+html[data-theme="light"] .pp-image-preview-wrap,
+html[data-theme="light-rose"] .pp-image-preview-wrap,
+html[data-theme="light-gold"] .pp-image-preview-wrap{
+  background: color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%);
+  border-color: var(--border);
+}
 
 /* Tarjeta de configuración Nequi/Wompi */
 .nequi-card{
@@ -5915,91 +5987,82 @@ body.has-floating-menu .header .form-actions{
   font-size:1.25rem;
 }
 
-.chat-tareas-page-intro{
+.chat-tareas-shell{
   margin:0;
-  max-width:860px;
+  min-height:100vh;
+  box-sizing:border-box;
+  background:linear-gradient(180deg,var(--bg-alt),var(--bg));
+  color:var(--text);
 }
 
 .chat-dashboard-strip{
-  display:grid;
-  grid-template-columns:minmax(0,1.8fr) minmax(260px,.9fr);
-  gap:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
   margin-bottom:12px;
 }
 
-.chat-dashboard-summary{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
-}
-
-.chat-dashboard-card{
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:16px;
-  padding:14px 16px;
-  background:linear-gradient(180deg, rgba(12,23,39,0.94), rgba(18,31,50,0.88));
-  box-shadow:0 14px 28px rgba(4,11,23,0.22);
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.chat-dashboard-card span,
-.chat-dashboard-card small{
-  color:var(--muted);
-}
-
-.chat-dashboard-card strong{
-  font-size:1.45rem;
-  color:#f6fbff;
-}
-
-.chat-dashboard-card-accent{
-  border-color:rgba(89,174,255,0.24);
-  background:linear-gradient(180deg, rgba(15,35,63,0.96), rgba(17,42,74,0.9));
-}
-
 .chat-dashboard-actions{
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:16px;
-  padding:14px;
-  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  background:var(--surface-soft);
   display:flex;
-  gap:10px;
+  gap:8px;
   flex-wrap:wrap;
   align-items:center;
 }
 
-/* Compactar la fila de resúmenes en la página Chat y Tareas: una sola fila con textos pequeños */
-.chat-tareas-page .chat-dashboard-summary{
-  display:flex;
-  flex-direction:row;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-.chat-tareas-page .chat-dashboard-card{
-  padding:8px 10px;
+.chat-dashboard-metrics{
+  max-width:min(480px,100%);
+  border:1px solid var(--border);
   border-radius:10px;
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  gap:8px;
-  min-width:unset;
+  padding:6px 10px;
+  background:var(--surface-soft);
+  box-sizing:border-box;
 }
-.chat-tareas-page .chat-dashboard-card span{
-  font-size:0.78rem;
+
+.chat-dashboard-metrics-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.72rem;
+}
+
+.chat-dashboard-metrics-table th{
+  text-align:left;
   font-weight:700;
   color:var(--muted);
+  padding:3px 8px 3px 2px;
+  vertical-align:middle;
+  white-space:normal;
+  line-height:1.25;
 }
-.chat-tareas-page .chat-dashboard-card strong{
-  font-size:1rem;
+
+.chat-dashboard-metrics-table td{
+  text-align:right;
   font-weight:800;
+  color:var(--text);
+  padding:3px 2px 3px 8px;
+  vertical-align:middle;
+  white-space:nowrap;
 }
-.chat-tareas-page .chat-dashboard-card small{
-  font-size:0.72rem;
+
+.chat-dashboard-metrics-table td.chat-metric-text{
+  font-weight:700;
+  font-size:0.7rem;
   color:var(--muted);
-  margin-left:6px;
+  white-space:normal;
+  max-width:12rem;
+}
+
+.chat-dashboard-metrics-table tbody tr:nth-child(even) th,
+.chat-dashboard-metrics-table tbody tr:nth-child(even) td{
+  background:rgba(128,128,128,0.06);
+}
+
+html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) th,
+html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
+  background:rgba(15,35,64,0.04);
 }
 
 /* Hacer los títulos de páginas pequeños y en negrita (excluye hero principal) */
@@ -6617,10 +6680,10 @@ body.has-floating-menu .header .form-actions{
   }
 }
 
-.task-status.pending{color:#e7f1ff}
-.task-status.progress{color:#ffd58a}
-.task-status.blocked{color:#f8b4b4}
-.task-status.done{color:#a9f3c7}
+.task-status.pending{color:var(--accent)}
+.task-status.progress{color:var(--accent-yellow)}
+.task-status.blocked{color:var(--danger)}
+.task-status.done{color:var(--success)}
 
 .chat-calendar-card{
   margin-top:10px;
@@ -6631,9 +6694,9 @@ body.has-floating-menu .header .form-actions{
 
 .chat-calendar-card-primary{
   margin-top:0;
-  border:1px solid rgba(90, 172, 255, 0.18);
-  background:linear-gradient(180deg, rgba(10, 24, 43, 0.96), rgba(14, 30, 53, 0.92));
-  box-shadow:0 20px 40px rgba(4, 11, 23, 0.34);
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, var(--surface-soft), var(--card));
+  box-shadow:0 12px 28px rgba(0, 0, 0, 0.12);
 }
 
 .chat-calendar-hero{
@@ -6656,8 +6719,8 @@ body.has-floating-menu .header .form-actions{
   width:max-content;
   padding:4px 10px;
   border-radius:999px;
-  background:rgba(90, 172, 255, 0.14);
-  color:#d6ebff;
+  background:var(--focus);
+  color:var(--accent);
   font-size:.76rem;
   font-weight:800;
   letter-spacing:.04em;
@@ -6683,10 +6746,10 @@ body.has-floating-menu .header .form-actions{
 
 .chat-calendar-stat{
   min-height:108px;
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--border);
   border-radius:16px;
   padding:14px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  background:var(--surface-soft);
   display:flex;
   flex-direction:column;
   justify-content:space-between;
@@ -6703,7 +6766,7 @@ body.has-floating-menu .header .form-actions{
 
 .chat-calendar-stat strong{
   font-size:1.15rem;
-  color:#f6fbff;
+  color:var(--text);
   line-height:1.15;
 }
 
@@ -6730,9 +6793,9 @@ body.has-floating-menu .header .form-actions{
 }
 
 .chat-reminder-banner{
-  border:1px solid rgba(255, 193, 85, 0.4);
-  background:rgba(255, 193, 85, 0.12);
-  color:#ffe9c1;
+  border:1px solid var(--accent-yellow);
+  background:rgba(255, 193, 85, 0.14);
+  color:var(--text);
   border-radius:10px;
   padding:8px 10px;
   font-size:.9rem;
@@ -6750,7 +6813,7 @@ body.has-floating-menu .header .form-actions{
   height:550px;
   border:1px solid var(--border);
   border-radius:18px;
-  background:rgba(255,255,255,0.03);
+  background:var(--surface-soft);
   padding:14px;
   display:grid;
   grid-template-rows:auto 1fr;
@@ -7365,6 +7428,50 @@ body.has-floating-menu .header .form-actions{
   box-shadow:0 10px 20px rgba(240,166,74,0.18);
 }
 
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  margin-top:auto;
+  padding-top:6px;
+  flex-shrink:0;
+  box-sizing:border-box;
+}
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--license{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+}
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--license .license-indicator{
+  white-space:nowrap;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-license-spacer{
+  display:block;
+  width:6.5rem;
+  min-width:6.5rem;
+  height:2.3rem;
+  min-height:2.3rem;
+  flex-shrink:0;
+  pointer-events:none;
+  visibility:hidden;
+}
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--download,
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--share{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+}
+.empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--share .empresa-card-icon-action{
+  margin:0;
+}
+
 .empresas-grid .portal-card.empresa-card .card-download{
   display:flex;
   justify-content:flex-start;
@@ -7972,13 +8079,8 @@ body.has-floating-menu .header .form-actions{
 }
 
 @media (max-width:1320px){
-  .chat-dashboard-strip,
   .chat-calendar-hero{
     grid-template-columns:1fr;
-  }
-
-  .chat-dashboard-summary{
-    grid-template-columns:repeat(2,minmax(0,1fr));
   }
 
   .chat-tareas-layout{
@@ -7997,7 +8099,6 @@ body.has-floating-menu .header .form-actions{
     align-items:stretch;
   }
 
-  .chat-dashboard-summary,
   .chat-calendar-hero-stats{
     grid-template-columns:1fr;
   }

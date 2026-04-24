@@ -1,3 +1,8 @@
+2026-04-24: Chat y tareas — resumen en tabla y apariencia alineada al tema
+- Modulos afectados: `chat y tareas`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/chat_y_tareas.html` prioriza botones rapidos y muestra metricas en tabla compacta bajo ellos; elimina titulo con nombre de empresa y texto introductorio fijo. Estilos del modulo pasan a depender de variables CSS de tema; lectura inicial de `theme` / cookie `pcs_theme` en la pagina para coherencia al abrirse en iframe.
+- Impacto operativo: la vista se ve coherente en modo claro u oscuro segun la apariencia elegida; el resumen ocupa menos espacio vertical.
+
 2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
 - Modulos afectados: `soporte remoto`, `super`
 - Cambio funcional: la configuracion inicial consultada desde `backend/db/soporte_remoto.go` para una empresa sin registro previo ahora nace alineada al flujo simplificado de RustDesk, con `habilitado = true`, `portal_publico_habilitado = true`, `proveedor_preferido = rustdesk_oss` y `modo_operacion = cliente_local`. `web/super/servidores.html` preserva ese estado por defecto en la primera carga para evitar falsos inactivos cuando todavia no existe configuracion persistida.
@@ -113,7 +118,13 @@ Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
 Actualizacion 2026-04-24 (super: limitaciones por empresa en configuracion avanzada):
-- `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk y (2) número de consultas del chat con IA, persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa`.
+- `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk, (2) número de consultas del chat con IA y (3) máximo de dispositivos del módulo de ubicación GPS por empresa (default 2), persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa` (clave GPS: `empresa.limitaciones.gps.max_dispositivos`).
+- `backend/handlers/ubicacion_gps.go` aplica ese tope en el alta de dispositivos (`POST`); si se supera, responde `409 Conflict` sin crear fila.
+
+Actualizacion 2026-04-24 (ubicacion GPS: cupo por empresa):
+- Modulos afectados: `ubicacion_gps`, `super`, `administrar_empresa`
+- Cambio funcional: el cupo efectivo lo define super en configuracion avanzada; la empresa no puede registrar mas dispositivos de los permitidos hasta que elimine registros o super suba el limite.
+- Impacto operativo: instalaciones con muchos dispositivos legacy pueden quedar por encima del tope hasta que se ajuste la configuracion o se depuren filas; nuevas altas quedan bloqueadas al alcanzar el maximo.
 
 Actualizacion 2026-04-24 (super: configuracion logica del chat con IA):
 - `web/super/configuracion_logica_del_chat_con_ia.html` agrega una pagina para administrar restricciones del chat con IA para empresas y para el chat global super, con persistencia en la base superadministrador mediante `GET/PUT /super/api/config/chat_ia_logica`.

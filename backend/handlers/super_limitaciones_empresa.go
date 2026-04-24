@@ -13,11 +13,13 @@ import (
 const (
 	superEmpresaLimitRustDeskMinutesKey = "empresa.limitaciones.rustdesk.max_minutos"
 	superEmpresaLimitAIConsultasKey     = "empresa.limitaciones.ai.max_consultas"
+	superEmpresaLimitGPSDispositivosKey = "empresa.limitaciones.gps.max_dispositivos"
 
 	superEmpresaLimitUpdatedByKeySuffix = ".updated_by"
 
-	defaultEmpresaRustDeskMaxMinutos = int64(30)
-	defaultEmpresaAIMaxConsultas     = int64(10)
+	defaultEmpresaRustDeskMaxMinutos   = int64(30)
+	defaultEmpresaAIMaxConsultas       = int64(10)
+	defaultEmpresaGPSMaxDispositivos   = int64(2)
 )
 
 func parsePositiveInt64OrDefault(raw string, fallback int64) int64 {
@@ -33,6 +35,12 @@ func parsePositiveInt64OrDefault(raw string, fallback int64) int64 {
 		return 0
 	}
 	return v
+}
+
+// MaxGPSDispositivosPorEmpresa devuelve el tope configurado de dispositivos GPS por empresa (pcs_superadministrador).
+func MaxGPSDispositivosPorEmpresa(dbSuper *sql.DB) (int64, error) {
+	v, _, _, err := getLimitacionInt64(dbSuper, superEmpresaLimitGPSDispositivosKey, defaultEmpresaGPSMaxDispositivos)
+	return v, err
 }
 
 func getLimitacionInt64(dbSuper *sql.DB, key string, fallback int64) (int64, string, string, error) {
@@ -63,11 +71,17 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			gpsMax, gpsUpdatedAt, gpsUpdatedBy, err := getLimitacionInt64(dbSuper, superEmpresaLimitGPSDispositivosKey, defaultEmpresaGPSMaxDispositivos)
+			if err != nil {
+				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"defaults": map[string]int64{
-					"rustdesk_max_minutos": defaultEmpresaRustDeskMaxMinutos,
-					"ai_max_consultas":     defaultEmpresaAIMaxConsultas,
+					"rustdesk_max_minutos":    defaultEmpresaRustDeskMaxMinutos,
+					"ai_max_consultas":        defaultEmpresaAIMaxConsultas,
+					"gps_max_dispositivos":    defaultEmpresaGPSMaxDispositivos,
 				},
 				"values": map[string]interface{}{
 					"rustdesk_max_minutos": map[string]interface{}{
@@ -82,6 +96,12 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 						"updated_by": aiUpdatedBy,
 						"config_key": superEmpresaLimitAIConsultasKey,
 					},
+					"gps_max_dispositivos": map[string]interface{}{
+						"value":      gpsMax,
+						"updated_at": gpsUpdatedAt,
+						"updated_by": gpsUpdatedBy,
+						"config_key": superEmpresaLimitGPSDispositivosKey,
+					},
 				},
 			})
 			return
@@ -90,6 +110,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			var payload struct {
 				RustDeskMaxMinutos *int64 `json:"rustdesk_max_minutos"`
 				AIMaxConsultas     *int64 `json:"ai_max_consultas"`
+				GPSMaxDispositivos *int64 `json:"gps_max_dispositivos"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -111,6 +132,13 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if ai < 0 {
 				ai = 0
 			}
+			gps := defaultEmpresaGPSMaxDispositivos
+			if payload.GPSMaxDispositivos != nil {
+				gps = *payload.GPSMaxDispositivos
+			}
+			if gps < 0 {
+				gps = 0
+			}
 
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
 			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitRustDeskMinutesKey, strconv.FormatInt(rustdesk, 10), false); err != nil {
@@ -125,11 +153,18 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitAIConsultasKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitGPSDispositivosKey, strconv.FormatInt(gps, 10), false); err != nil {
+				http.Error(w, "error guardando limite gps: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitGPSDispositivosKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
+
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"saved": map[string]int64{
 					"rustdesk_max_minutos": rustdesk,
 					"ai_max_consultas":     ai,
+					"gps_max_dispositivos": gps,
 				},
 			})
 			return

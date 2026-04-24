@@ -5,44 +5,79 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Chat y tareas</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) {
+          t = "dark";
+        }
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page chat-tareas-shell">
   <div class="container chat-tareas-page">
     <div class="page-header chat-tareas-page-header">
       <div class="chat-tareas-page-headcopy">
         <h1 id="pageTitle">Chat y tareas</h1>
-        <p class="form-help chat-tareas-page-intro">La administradora puede registrar reuniones en este calendario y todos los usuarios de esta empresa las verán desde su propia cuenta.</p>
       </div>
       <button id="reloadBtn" class="btn secondary" type="button">Actualizar todo</button>
     </div>
 
     <section class="chat-dashboard-strip">
-      <div class="chat-dashboard-summary">
-        <article class="chat-dashboard-card">
-          <span>Conversaciones abiertas</span>
-          <strong id="summaryConvOpen">0</strong>
-          <small id="summaryConvHint">Sin actividad reciente</small>
-        </article>
-        <article class="chat-dashboard-card">
-          <span>Tareas activas</span>
-          <strong id="summaryTasksPending">0</strong>
-          <small id="summaryTaskHint">Nada pendiente</small>
-        </article>
-        <article class="chat-dashboard-card">
-          <span>Urgentes</span>
-          <strong id="summaryTasksUrgent">0</strong>
-          <small id="summaryUrgentHint">Sin bloqueos críticos</small>
-        </article>
-        <article class="chat-dashboard-card chat-dashboard-card-accent">
-          <span>Citas de hoy</span>
-          <strong id="summaryAppointmentsToday">0</strong>
-          <small id="summaryLastRefresh">Pendiente de sincronizar</small>
-        </article>
-      </div>
       <div class="chat-dashboard-actions">
         <button id="quickConversationBtn" class="btn secondary" type="button">Nueva conversación</button>
         <button id="quickTaskBtn" class="btn secondary" type="button">Nueva tarea</button>
         <button id="quickAppointmentBtn" class="btn secondary" type="button">Programar reunión</button>
+      </div>
+      <div class="chat-dashboard-metrics" aria-label="Resumen operativo">
+        <table class="chat-dashboard-metrics-table">
+          <tbody>
+            <tr>
+              <th scope="row">Conversaciones abiertas</th>
+              <td id="metricConvOpen">0</td>
+            </tr>
+            <tr>
+              <th scope="row">Con seguimiento activo</th>
+              <td id="metricConvFollow" class="chat-metric-text">Sin actividad reciente</td>
+            </tr>
+            <tr>
+              <th scope="row">Tareas activas</th>
+              <td id="metricTasksActive">0</td>
+            </tr>
+            <tr>
+              <th scope="row">Pendientes por resolver</th>
+              <td id="metricTaskPending" class="chat-metric-text">Nada pendiente</td>
+            </tr>
+            <tr>
+              <th scope="row">Urgentes</th>
+              <td id="metricTasksUrgent">0</td>
+            </tr>
+            <tr>
+              <th scope="row">Situación de urgencias</th>
+              <td id="metricUrgentSituation" class="chat-metric-text">Sin bloqueos críticos</td>
+            </tr>
+            <tr>
+              <th scope="row">Citas de hoy</th>
+              <td id="metricApptToday">0</td>
+            </tr>
+            <tr>
+              <th scope="row">Sincronización</th>
+              <td id="metricLastRefresh" class="chat-metric-text">Pendiente de sincronizar</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -668,14 +703,18 @@
         return normalize(cita.estado || "activo").toLowerCase() === "activo" && toDateKey(cita.fecha_inicio) === todayKey;
       });
 
-      document.getElementById("summaryConvOpen").textContent = String(openConvs.length);
-      document.getElementById("summaryTasksPending").textContent = String(activeTasks.length);
-      document.getElementById("summaryTasksUrgent").textContent = String(urgentTasks.length);
-      document.getElementById("summaryAppointmentsToday").textContent = String(todaysAppointments.length);
-      document.getElementById("summaryConvHint").textContent = openConvs.length ? "Con seguimiento activo" : "Sin actividad reciente";
-      document.getElementById("summaryTaskHint").textContent = activeTasks.length ? "Pendientes por resolver" : "Nada pendiente";
-      document.getElementById("summaryUrgentHint").textContent = urgentTasks.length ? "Prioridad inmediata" : "Sin bloqueos críticos";
-      document.getElementById("summaryLastRefresh").textContent = state.lastRefreshAt ? ("Actualizado " + formatDate(state.lastRefreshAt)) : "Pendiente de sincronizar";
+      function setMetric(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text || "";
+      }
+      setMetric("metricConvOpen", String(openConvs.length));
+      setMetric("metricConvFollow", openConvs.length ? "Sí" : "No");
+      setMetric("metricTasksActive", String(activeTasks.length));
+      setMetric("metricTaskPending", activeTasks.length ? "Pendientes por resolver" : "Sin pendientes");
+      setMetric("metricTasksUrgent", String(urgentTasks.length));
+      setMetric("metricUrgentSituation", urgentTasks.length ? "Prioridad inmediata" : "Sin bloqueos críticos");
+      setMetric("metricApptToday", String(todaysAppointments.length));
+      setMetric("metricLastRefresh", state.lastRefreshAt ? ("Actualizado " + formatDate(state.lastRefreshAt)) : "Pendiente de sincronizar");
     }
 
     async function ensureOk(resp) {
@@ -869,7 +908,6 @@
       const nombre = normalize(data && (data.nombre || data.Nombre));
       if (nombre) {
         state.empresaNombre = nombre;
-        document.getElementById("pageTitle").textContent = "Chat y tareas - " + nombre;
       }
     }
 

@@ -1,3 +1,28 @@
+- Actualizacion 2026-04-24: limitacion dispositivos GPS por empresa (super + enforcement)
+	- `backend/handlers/super_limitaciones_empresa.go` : clave `empresa.limitaciones.gps.max_dispositivos` (default 2) en `GET/PUT /super/api/config/limitaciones_empresa`; helper `MaxGPSDispositivosPorEmpresa`.
+	- `backend/db/ubicacion_gps.go` : `CountEmpresaGPSDispositivos` cuenta filas en `empresa_gps_dispositivos` por `empresa_id` (todos los estados).
+	- `backend/handlers/ubicacion_gps.go` : `EmpresaUbicacionGPSDispositivosHandler` recibe `dbSuper`; en `POST` valida tope antes de crear y responde `409 Conflict` si la empresa ya alcanzo el maximo.
+	- `backend/main.go` : registra el handler GPS con `dbEmpresas` y `dbSuper`.
+	- `web/super/configuracion_avanzada.html` : campo **Ubicacion GPS (dispositivos por empresa)** en la tarjeta de limitaciones; payload `gps_max_dispositivos`.
+
+- Actualizacion 2026-04-24: chat_y_tareas — resumen en tabla, tema y textos
+	- `web/administrar_empresa/chat_y_tareas.html` : quita titulo dinamico con nombre de empresa, parrafo introductorio del calendario; botones de accion arriba y tabla compacta de metricas debajo; script inicial lee `theme` / cookie `pcs_theme` para alinear `data-theme` con el shell.
+	- `web/estilos.css` : cuerpo `.chat-tareas-shell` con fondo por variables; panel de acciones y metricas sin gradientes oscuros fijos; calendario principal y estados de tarea usan variables de tema.
+	- `web/ayuda/ayuda.html` : describe el resumen en tabla y el respeto del tema.
+
+- Actualizacion 2026-04-24: seleccionar empresa — pie de tarjeta en una fila
+	- `web/js/seleccionar_empresa.js`, `web/estilos.css`, `web/ayuda/ayuda.html` : el pie de cada tarjeta usa una barra de tres celdas (estado de licencia o espacio reservado, descarga, compartir) alineada en fila; tarjetas con misma estructura y altura coherente con flex en el enlace de tarjeta.
+
+- Actualizacion 2026-04-24: super pagina_principal — contraste modo claro (mp-card anidado)
+	- `web/estilos.css` : reglas para `.mp-card .card` y `.mp-card .pp-card-item` (textos, labels, inputs, secundarios, code) para que no hereden el color blanco del pasarela sobre fondos claros; ajuste de `.pp-image-preview-wrap` en temas claros.
+	- `web/super/pagina_principal.html` : quita `form-bg-dark` del body (alineado al tema del shell).
+
+- Actualizacion 2026-04-24: index — baners en rejilla horizontal e imagen estirada
+	- `web/index.html` : `portal-banner-grid` usa la misma logica que `portal-grid` (repeat(auto-fit, minmax(280px,1fr)), gap y padding); imagen con `object-fit: fill` dentro de la altura configurada.
+
+- Actualizacion 2026-04-24: index — fix baners (JS)
+	- `web/index.html` : corrige `normalizeBanners` (filtro: ya no se llama a `normalize` inexistente) para que las tarjetas tipo baner vuelvan a mostrarse al cargar `/api/public/pagina_principal`.
+
 - Actualizacion 2026-04-24: index — subtítulo IA bajo el titulo de facturación electrónica
 	- `web/index.html` : bajo el h1 "Sistema de Facturación Electrónica" añade linea de apoyo "Habla con tu empresa — Inteligencia artificial integrada" (`.portal-cards-subheading`).
 

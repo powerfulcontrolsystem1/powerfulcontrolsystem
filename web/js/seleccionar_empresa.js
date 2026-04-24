@@ -664,11 +664,9 @@
     var div = document.createElement("div");
     div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone;
     div.setAttribute('data-tone', visual.tone || 'generic');
-    var licenseIndicatorHTML = "";
-    if (!hasLicense) {
-      licenseIndicatorHTML =
-        '<span class="license-indicator inactive" aria-hidden="true">Sin licencia</span>';
-    }
+    var licenseCellHTML = hasLicense
+      ? '<span class="empresa-card-footer-license-spacer" aria-hidden="true"></span>'
+      : '<span class="license-indicator inactive">Sin licencia</span>';
     div.innerHTML =
       '<span class="empresa-card-badge">' +
       escapeHtml(visual.label || "Empresa") +
@@ -676,7 +674,7 @@
       '<span class="empresa-card-watermark" aria-hidden="true">' +
       '<img src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
       "</span>" +
-      '<div class="card-body">' +
+      '<div class="card-body empresa-card-body">' +
       '<h3 class="card-title">' +
       escapeHtml(empresa.nombre || "--") +
       "</h3>" +
@@ -686,11 +684,14 @@
       '<p class="card-desc muted">' +
       escapeHtml(descripcion || "") +
       "</p>" +
-      '<div class="card-actions">' +
-      licenseIndicatorHTML +
-      '<div class="empresa-card-quick-actions">' +
+      '<div class="empresa-card-footer-bar" role="group" aria-label="Acciones de la empresa">' +
+      '<div class="empresa-card-footer-bar__cell empresa-card-footer-bar__cell--license">' +
+      licenseCellHTML +
+      "</div>" +
+      '<div class="empresa-card-footer-bar__cell empresa-card-footer-bar__cell--download"></div>' +
+      '<div class="empresa-card-footer-bar__cell empresa-card-footer-bar__cell--share">' +
       buildEmpresaShareButton(empresa) +
-      '</div>' +
+      "</div>" +
       "</div>" +
       buildEmpresaSharePanel(empresa) +
       "</div>";
@@ -703,9 +704,9 @@
     dlBtn.setAttribute("aria-label", "Descargar informacion de la empresa " + String(empresa.nombre || ""));
     dlBtn.setAttribute("title", "Descargar informacion de la empresa");
     dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10l4-4-1.4-1.4L13 9.2V3h-2zM5 18v2h14v-2H5z"/></svg>';
-    var actions = div.querySelector(".card-actions");
-    if (actions) {
-      actions.appendChild(dlBtn);
+    var dlCell = div.querySelector(".empresa-card-footer-bar__cell--download");
+    if (dlCell) {
+      dlCell.appendChild(dlBtn);
     }
 
     cardLink.appendChild(div);

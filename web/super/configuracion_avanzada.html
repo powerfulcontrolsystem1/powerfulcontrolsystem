@@ -164,9 +164,9 @@
     <section class="card form advanced-card" data-brand="system" id="empresaLimitacionesCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 6v6l4 2"></path></svg>
-        Limitaciones por empresa (RustDesk e IA)
+        Limitaciones por empresa (RustDesk, IA y GPS)
       </h2>
-      <p class="form-help">Define topes globales por empresa para el soporte remoto (RustDesk) y el chat con IA. Estos valores se guardan en la base <strong>superadministrador</strong>.</p>
+      <p class="form-help">Define topes globales por empresa para RustDesk, chat con IA y dispositivos del módulo de ubicación GPS. Se guardan en la base <strong>superadministrador</strong>.</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -180,6 +180,12 @@
           <input id="empresaLimitAIConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="10">
           <div class="form-help">Por defecto: 10. Usa 0 para bloquear nuevas consultas de IA por empresa.</div>
           <div id="empresaLimitAIStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaLimitGPSDispositivos">Ubicación GPS (dispositivos por empresa)</label>
+          <input id="empresaLimitGPSDispositivos" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="2">
+          <div class="form-help">Por defecto: 2. Máximo de dispositivos GPS que cada empresa puede registrar. Usa 0 para no permitir altas nuevas.</div>
+          <div id="empresaLimitGPSStatus" class="form-help">Cargando estado...</div>
         </div>
       </div>
 
@@ -748,10 +754,12 @@
         const msgEl = document.getElementById('empresaLimitacionesMsg');
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
+        const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
         const rustdeskStatus = document.getElementById('empresaLimitRustDeskStatus');
         const aiStatus = document.getElementById('empresaLimitAIStatus');
+        const gpsStatus = document.getElementById('empresaLimitGPSStatus');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!rustdeskInput || !aiInput || !btn) return;
+        if (!rustdeskInput || !aiInput || !gpsInput || !btn) return;
 
         if (msgEl) msgEl.innerText = 'Cargando limitaciones...';
         try {
@@ -764,17 +772,22 @@
 
           const rustdeskInfo = values.rustdesk_max_minutos || {};
           const aiInfo = values.ai_max_consultas || {};
+          const gpsInfo = values.gps_max_dispositivos || {};
 
           const rustdeskDefault = normalizeNonNegativeInt(defaults.rustdesk_max_minutos, 30);
           const aiDefault = normalizeNonNegativeInt(defaults.ai_max_consultas, 10);
+          const gpsDefault = normalizeNonNegativeInt(defaults.gps_max_dispositivos, 2);
 
           rustdeskInput.value = String(normalizeNonNegativeInt(rustdeskInfo.value, rustdeskDefault));
           aiInput.value = String(normalizeNonNegativeInt(aiInfo.value, aiDefault));
+          gpsInput.value = String(normalizeNonNegativeInt(gpsInfo.value, gpsDefault));
 
           const rustdeskUpdatedAt = String(rustdeskInfo.updated_at || '').trim();
           const rustdeskUpdatedBy = String(rustdeskInfo.updated_by || '').trim();
           const aiUpdatedAt = String(aiInfo.updated_at || '').trim();
           const aiUpdatedBy = String(aiInfo.updated_by || '').trim();
+          const gpsUpdatedAt = String(gpsInfo.updated_at || '').trim();
+          const gpsUpdatedBy = String(gpsInfo.updated_by || '').trim();
 
           if (rustdeskStatus) {
             rustdeskStatus.innerText = rustdeskUpdatedAt
@@ -786,12 +799,18 @@
               ? ('Última actualización: ' + aiUpdatedAt + (aiUpdatedBy ? (' - ' + aiUpdatedBy) : ''))
               : 'Valor por defecto o no configurado todavía.';
           }
+          if (gpsStatus) {
+            gpsStatus.innerText = gpsUpdatedAt
+              ? ('Última actualización: ' + gpsUpdatedAt + (gpsUpdatedBy ? (' - ' + gpsUpdatedBy) : ''))
+              : 'Valor por defecto o no configurado todavía.';
+          }
 
           if (msgEl) msgEl.innerText = 'Limitaciones cargadas.';
         } catch (err) {
           if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar limitaciones.';
           if (rustdeskStatus) rustdeskStatus.innerText = 'Error al leer.';
           if (aiStatus) aiStatus.innerText = 'Error al leer.';
+          if (gpsStatus) gpsStatus.innerText = 'Error al leer.';
         }
       }
 
@@ -799,8 +818,9 @@
         const msgEl = document.getElementById('empresaLimitacionesMsg');
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
+        const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!rustdeskInput || !aiInput || !btn) return;
+        if (!rustdeskInput || !aiInput || !gpsInput || !btn) return;
 
         const prevText = btn.innerText;
         btn.disabled = true;
@@ -810,6 +830,7 @@
           const payload = {
             rustdesk_max_minutos: normalizeNonNegativeInt(rustdeskInput.value, 30),
             ai_max_consultas: normalizeNonNegativeInt(aiInput.value, 10),
+            gps_max_dispositivos: normalizeNonNegativeInt(gpsInput.value, 2),
           };
           const res = await fetch('/super/api/config/limitaciones_empresa', {
             method: 'PUT',

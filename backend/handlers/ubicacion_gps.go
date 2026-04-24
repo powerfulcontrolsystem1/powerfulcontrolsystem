@@ -13,7 +13,7 @@ import (
 )
 
 // EmpresaUbicacionGPSDispositivosHandler gestiona CRUD de dispositivos GPS por empresa.
-func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -54,6 +54,20 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if strings.TrimSpace(payload.Codigo) == "" {
 				payload.Codigo = fmt.Sprintf("GPS-%d-%d", payload.EmpresaID, time.Now().Unix())
+			}
+			maxGPS, err := MaxGPSDispositivosPorEmpresa(dbSuper)
+			if err != nil {
+				http.Error(w, "No se pudo validar limite de dispositivos GPS: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			existing, err := dbpkg.CountEmpresaGPSDispositivos(dbEmp, payload.EmpresaID)
+			if err != nil {
+				http.Error(w, "No se pudo contar dispositivos GPS", http.StatusInternalServerError)
+				return
+			}
+			if maxGPS >= 0 && existing >= maxGPS {
+				http.Error(w, fmt.Sprintf("La empresa alcanzo el maximo de dispositivos GPS permitidos (%d). Elimina uno inactivo o solicita al super administrador un mayor tope en configuracion avanzada.", maxGPS), http.StatusConflict)
+				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			id, err := dbpkg.CreateEmpresaGPSDispositivo(dbEmp, payload)

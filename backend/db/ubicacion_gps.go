@@ -249,6 +249,16 @@ func GetEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64, includeInactive 
 	return out, rows.Err()
 }
 
+// CountEmpresaGPSDispositivos cuenta todos los dispositivos GPS registrados para la empresa (cualquier estado).
+func CountEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64) (int64, error) {
+	var n int64
+	err := dbConn.QueryRow(`SELECT COUNT(*) FROM empresa_gps_dispositivos WHERE empresa_id = ?`, empresaID).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
 // UpdateEmpresaGPSDispositivo actualiza datos base de un dispositivo GPS.
 func UpdateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) error {
 	codigo := sanitizeGPSCode(d.Codigo)
