@@ -1,3 +1,9 @@
+- Actualizacion 2026-04-24: index — subtítulo IA bajo el titulo de facturación electrónica
+	- `web/index.html` : bajo el h1 "Sistema de Facturación Electrónica" añade linea de apoyo "Habla con tu empresa — Inteligencia artificial integrada" (`.portal-cards-subheading`).
+
+- Actualizacion 2026-04-24: index — retiro del banner fijo de promocion IA
+	- `web/index.html` : elimina la seccion estatica y estilos asociados al mensaje "IA incorporada" en la portada; se conservan el titulo del portal, las tarjetas del home y las tarjetas tipo baner (solo imagen) configurables en super.
+
 - Actualizacion 2026-04-24: super configuracion avanzada agrega limitaciones por empresa (RustDesk e IA)
 	- `web/super/configuracion_avanzada.html` : nueva tarjeta **Limitaciones por empresa** para guardar (1) minutos de uso RustDesk por empresa (default 30) y (2) número de consultas de chat IA por empresa (default 10).
 	- `backend/handlers/super_limitaciones_empresa.go` (nuevo) : endpoint `GET/PUT /super/api/config/limitaciones_empresa` que persiste los valores en la base superadministrador (tabla `configuraciones`) bajo las keys `empresa.limitaciones.rustdesk.max_minutos` y `empresa.limitaciones.ai.max_consultas`.
@@ -10,7 +16,6 @@
 	- `backend/handlers/chat_con_ia_global_super.go` : aplica las restricciones configuradas (habilitado + limite diario efectivo) al chat global super.
 	- `web/super_administrador.html` : agrega el enlace de menú a `Configuración lógica chat IA`.
 	- `backend/main.go` : registra la nueva ruta `/super/api/config/chat_ia_logica`.
-	- `web/index.html` : agrega un banner promocional visible del sistema con IA integrada en la portada pública.
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : añade micrófono (dictado a texto) para facilitar consultas por voz.
 	- `web/super/chat_con_ia_global.html` : añade micrófono (dictado a texto) para facilitar consultas por voz.
 	- `backend/db/chat_inteligencia_artificial.go` : agrega consultas agregadas para reportar tokens/consultas del día por proveedor.
