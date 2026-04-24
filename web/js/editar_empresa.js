@@ -27,7 +27,10 @@
       data = null;
     }
     if (!res.ok) {
-      throw new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+      var err = new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+      err.status = res.status;
+      err.payload = data;
+      throw err;
     }
     return data;
   }
@@ -38,6 +41,31 @@
     node.textContent = text || "";
     node.classList.toggle("error", !!isError);
     node.classList.toggle("success", !isError && !!text);
+  }
+
+  function clearMessageActions() {
+    var node = $("empresaShareMessageBox");
+    if (!node) return;
+    var existing = node.querySelector(".empresa-share-msg-actions");
+    if (existing) existing.remove();
+  }
+
+  function showResendPendingInvitationAction(invitationId) {
+    var node = $("empresaShareMessageBox");
+    if (!node) return;
+    clearMessageActions();
+    var wrap = document.createElement("div");
+    wrap.className = "empresa-share-msg-actions";
+    wrap.style.marginTop = "10px";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn secondary";
+    btn.textContent = "Reenviar invitación";
+    btn.onclick = function () {
+      handleShareAction("resend", invitationId, "invitation");
+    };
+    wrap.appendChild(btn);
+    node.appendChild(wrap);
   }
 
   function buildImpactoTexto(impacto) {
@@ -266,6 +294,7 @@
     }
 
     try {
+      clearMessageActions();
       var data = await fetchJSON('/super/api/empresas/compartidos', {
         method: 'POST',
         credentials: 'same-origin',
@@ -277,6 +306,13 @@
       $("empresaShareMessage").value = '';
       await loadShares();
     } catch (err) {
+      var payload = err && err.payload ? err.payload : null;
+      if (payload && String(payload.code || "") === "invitation_pending" && payload.invitation_id) {
+        setMessage("empresaShareMessageBox", (payload.error || err.message || "Ya existe una invitación pendiente.") + " Puedes reenviarla.", true);
+        showResendPendingInvitationAction(payload.invitation_id);
+        return;
+      }
+      clearMessageActions();
       setMessage("empresaShareMessageBox", err.message || 'No se pudo enviar la invitación.', true);
     }
   }

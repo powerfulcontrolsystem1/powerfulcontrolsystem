@@ -370,7 +370,16 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if pending != nil && !isAdminEmpresaCompartidaInvitationExpired(pending) {
-				http.Error(w, "ya existe una invitación pendiente para ese administrador", http.StatusConflict)
+				writeJSON(w, http.StatusConflict, map[string]interface{}{
+					"ok":            false,
+					"code":          "invitation_pending",
+					"error":         "Ya existe una invitación pendiente para ese administrador.",
+					"invitation_id": pending.ID,
+					"empresa_id":    pending.EmpresaID,
+					"admin_email":   strings.TrimSpace(pending.AdminEmail),
+					"estado":        strings.TrimSpace(pending.Estado),
+					"expira_en":     strings.TrimSpace(pending.ExpiraEn),
+				})
 				return
 			}
 			token, tokenHash, expiraEn, err := newAdminEmpresaCompartidaInvitationTokenAndExpiration()

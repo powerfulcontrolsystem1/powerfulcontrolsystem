@@ -22,6 +22,20 @@ type EmpresaAIChatController struct {
 	client  *http.Client
 }
 
+type aiProviderHTTPError struct {
+	Provider string
+	Status   int
+	Body     string
+}
+
+func (e *aiProviderHTTPError) Error() string {
+	body := strings.TrimSpace(e.Body)
+	if body == "" {
+		return fmt.Sprintf("error proveedor %s (%d)", strings.TrimSpace(e.Provider), e.Status)
+	}
+	return fmt.Sprintf("error proveedor %s (%d): %s", strings.TrimSpace(e.Provider), e.Status, body)
+}
+
 type empresaAIModelDef struct {
 	ID             string `json:"id"`
 	Provider       string `json:"provider"`
@@ -620,7 +634,11 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 
 	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		return "", 0, 0, fmt.Errorf("error proveedor (%d): %s", resp.StatusCode, truncateText(string(raw), 600))
+		return "", 0, 0, &aiProviderHTTPError{
+			Provider: "openai",
+			Status:   resp.StatusCode,
+			Body:     truncateText(string(raw), 600),
+		}
 	}
 
 	var parsed struct {

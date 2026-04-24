@@ -93,10 +93,44 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		"Eres un asistente de prueba. Responde solo OK_PANEL_TEST.",
 	)
 	if err != nil {
-		return http.StatusBadGateway, map[string]interface{}{
+		status := http.StatusBadGateway
+		code := "ai_test_failed"
+		publicErr := err.Error()
+		providerStatus := 0
+		if perr := (*aiProviderHTTPError)(nil); errors.As(err, &perr) && perr != nil {
+			providerStatus = perr.Status
+			// Mapear errores de proveedor a códigos no-5xx para que el panel vea el detalle.
+			switch perr.Status {
+			case http.StatusUnauthorized, http.StatusForbidden:
+				status = perr.Status
+				code = "ai_api_key_invalid"
+				publicErr = "API key de OpenAI inválida o sin permisos. Usa Editar y vuelve a guardar la credencial."
+			case http.StatusTooManyRequests:
+				status = perr.Status
+				code = "ai_rate_limited"
+				publicErr = "OpenAI respondió límite de uso (429). Intenta de nuevo en unos minutos."
+			case http.StatusBadRequest:
+				status = perr.Status
+				code = "ai_bad_request"
+				publicErr = perr.Error()
+			default:
+				// 4xx distintos: devolverlos como 400 para no esconder el mensaje por middleware.
+				if perr.Status >= 400 && perr.Status < 500 {
+					status = http.StatusBadRequest
+					code = "ai_provider_rejected"
+					publicErr = perr.Error()
+				}
+			}
+		}
+
+		return status, map[string]interface{}{
 			"ok":             false,
-			"code":           "ai_test_failed",
-			"error":          err.Error(),
+			"code":           code,
+			"error":          publicErr,
+			"provider":       model.Provider,
+			"model_id":       model.ID,
+			"upstream_model": model.UpstreamModel,
+			"provider_http":  providerStatus,
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
