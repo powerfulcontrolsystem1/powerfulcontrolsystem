@@ -14368,3 +14368,25 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/index.html
+
+2026-04-24: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/ubicacion_gps.go
+- backend/handlers/super_limitaciones_empresa.go
+- backend/handlers/ubicacion_gps.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/chat_y_tareas.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/index.html
+- web/js/seleccionar_empresa.js
+- web/super/configuracion_avanzada.html
+- web/super/pagina_principal.html
