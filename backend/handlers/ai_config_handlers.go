@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -62,8 +59,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if len(defs) == 0 {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "gemini_catalog_missing",
-			"error":          "No hay modelo Gemini configurado en el catalogo.",
+			"code":           "ai_catalog_missing",
+			"error":          "No hay modelo IA configurado en el catalogo.",
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
@@ -72,8 +69,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if !ok {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "gemini_model_missing",
-			"error":          "No se pudo resolver el modelo Gemini de prueba.",
+			"code":           "ai_model_missing",
+			"error":          "No se pudo resolver el modelo IA de prueba.",
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
@@ -81,94 +78,38 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if err != nil {
 		return http.StatusBadRequest, map[string]interface{}{
 			"ok":             false,
-			"code":           "gemini_api_key_missing",
+			"code":           "ai_api_key_missing",
 			"error":          err.Error(),
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
-	endpoint := model.Endpoint
-	separator := "?"
-	if strings.Contains(endpoint, "?") {
-		separator = "&"
-	}
-	endpoint = endpoint + separator + "key=" + url.QueryEscape(apiKey)
+	testController := &EmpresaAIChatController{dbSuper: dbSuper, client: &http.Client{Timeout: 20 * time.Second}}
+	_ = apiKey
 
-	payload, _ := json.Marshal(map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"role":  "user",
-				"parts": []map[string]string{{"text": "Responde solo OK_PANEL_TEST"}},
-			},
-		},
-		"generationConfig": map[string]interface{}{
-			"temperature":     0,
-			"maxOutputTokens": 32,
-		},
-	})
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
+	respuesta, promptTokens, completionTokens, err := testController.generateResponseWithSystemPrompt(
+		model,
+		"Responde solo OK_PANEL_TEST",
+		nil,
+		"Eres un asistente de prueba. Responde solo OK_PANEL_TEST.",
+	)
 	if err != nil {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "gemini_request_build_failed",
-			"error":          "No se pudo construir la solicitud de prueba a Gemini.",
-			"detail":         err.Error(),
+			"code":           "ai_test_failed",
+			"error":          err.Error(),
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return http.StatusBadGateway, map[string]interface{}{
-			"ok":             false,
-			"code":           "gemini_unreachable",
-			"error":          "No se pudo contactar Google Gemini con la API key configurada.",
-			"detail":         err.Error(),
-			"service_status": superAIServiceStatus(dbSuper),
-		}
-	}
-	defer resp.Body.Close()
-
-	raw, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 400 {
-		return http.StatusBadGateway, map[string]interface{}{
-			"ok":             false,
-			"code":           "gemini_error",
-			"error":          "Google Gemini respondió con error durante la prueba.",
-			"status":         resp.StatusCode,
-			"raw":            truncateText(string(raw), 300),
-			"service_status": superAIServiceStatus(dbSuper),
-		}
-	}
-
-	var parsed struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
-	}
-	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return http.StatusBadGateway, map[string]interface{}{
-			"ok":             false,
-			"code":           "gemini_invalid_json",
-			"error":          "La respuesta de Gemini no fue JSON valido.",
-			"raw":            truncateText(string(raw), 300),
-			"service_status": superAIServiceStatus(dbSuper),
-		}
-	}
-	response := extractGeminiText(parsed.Candidates)
 
 	return http.StatusOK, map[string]interface{}{
-		"ok":             true,
-		"provider":       model.Provider,
-		"model_id":       model.ID,
-		"upstream_model": model.UpstreamModel,
-		"response":       strings.TrimSpace(response),
-		"service_status": superAIServiceStatus(dbSuper),
+		"ok":               true,
+		"provider":         model.Provider,
+		"model_id":         model.ID,
+		"upstream_model":   model.UpstreamModel,
+		"response":         strings.TrimSpace(respuesta),
+		"prompt_tokens":    promptTokens,
+		"completion_tokens": completionTokens,
+		"service_status":   superAIServiceStatus(dbSuper),
 	}
 }
 
@@ -229,7 +170,28 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"updated_by":       strings.TrimSpace(updatedBy),
 					"google_account":   adminEmail,
 					"encryption_state": enc,
+					"usage_today":      nil,
 				})
+			}
+
+			// Enriquecer consumo del día (si se puede) por modelo.
+			fechaUso := time.Now().Format("2006-01-02")
+			for idx := range items {
+				modelID, _ := items[idx]["model_id"].(string)
+				provider, _ := items[idx]["provider"].(string)
+				if strings.TrimSpace(modelID) == "" || strings.TrimSpace(provider) == "" || strings.TrimSpace(adminEmail) == "" {
+					continue
+				}
+				uso, err := dbpkg.GetSuperAIUsoDiario(dbSuper, adminEmail, provider, modelID, fechaUso)
+				if err != nil {
+					continue
+				}
+				items[idx]["usage_today"] = map[string]interface{}{
+					"fecha_uso":       fechaUso,
+					"consultas_total": uso.Consultas,
+					"tokens_total":    uso.TokensTotal,
+					"plan_actual":     strings.TrimSpace(uso.PlanActual),
+				}
 			}
 
 			writeJSON(w, http.StatusOK, map[string]interface{}{

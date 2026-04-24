@@ -59,12 +59,12 @@ type aiCredentialModelDef struct {
 func aiCredentialCatalogModels() []aiCredentialModelDef {
 	return []aiCredentialModelDef{
 		{
-			ModelID:      "google:gemini-2.0-flash",
-			Provider:     "google",
-			DisplayName:  "Google Gemini 2.0 Flash",
-			ApiKeyEnv:    "GEMINI_API_KEY",
-			ConfigKey:    "ai.model.google.gemini_2_0_flash.api_key",
-			FreePlanNote: "Google Gemini: requiere API key del proyecto y se guarda cifrada en configuracion avanzada.",
+			ModelID:      "openai:gpt-4o-mini",
+			Provider:     "openai",
+			DisplayName:  "OpenAI GPT-4o mini",
+			ApiKeyEnv:    "OPENAI_API_KEY",
+			ConfigKey:    "ai.model.openai.gpt_4o_mini.api_key",
+			FreePlanNote: "OpenAI: requiere API key y se guarda cifrada en configuracion avanzada.",
 		},
 	}
 }

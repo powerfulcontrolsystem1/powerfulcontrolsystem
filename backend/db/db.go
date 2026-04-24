@@ -116,6 +116,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT,
 			tipo_id BIGINT,
+			pais_codigo TEXT DEFAULT 'CO',
 			nombre TEXT,
 			descripcion TEXT,
 			valor DOUBLE PRECISION DEFAULT 0,
@@ -133,6 +134,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		)`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS empresa_id BIGINT`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS tipo_id BIGINT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS pais_codigo TEXT DEFAULT 'CO'`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS nombre TEXT`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS descripcion TEXT`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
@@ -153,6 +155,10 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+
+	// Backfill: licencias ya creadas deben quedar en Colombia por defecto.
+	// Es idempotente y no afecta registros ya definidos.
+	_, _ = dbConn.Exec(`UPDATE licencias SET pais_codigo = 'CO' WHERE COALESCE(TRIM(pais_codigo),'') = ''`)
 	return nil
 }
 
@@ -321,6 +327,7 @@ type Licencia struct {
 	EmpresaNombre string  `json:"empresa_nombre,omitempty"`
 	TipoID        int64   `json:"tipo_id"`
 	TipoNombre    string  `json:"tipo_nombre,omitempty"`
+	PaisCodigo    string  `json:"pais_codigo,omitempty"`
 	Nombre        string  `json:"nombre"`
 	Descripcion   string  `json:"descripcion"`
 	Valor         float64 `json:"valor"`
@@ -334,10 +341,10 @@ type Licencia struct {
 }
 
 // CreateLicencia inserta una nueva licencia en dbSuper
-func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
+func CreateLicencia(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
 	nowExpr := sqlNowExpr()
-	query := "INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
-	id, err := insertSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
+	query := "INSERT INTO licencias (tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
+	id, err := insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
 	if err == nil {
 		return id, nil
 	}
@@ -347,7 +354,7 @@ func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, va
 	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
 		return 0, err
 	}
-	return insertSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
+	return insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
 }
 
 // GetLicencias obtiene todas las licencias (comportamiento legado sin filtros)
@@ -355,9 +362,33 @@ func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
 	return GetLicenciasFiltered(dbConn, false, "", false)
 }
 
+// GetLicenciasFilteredByPais filtra licencias por país (best-effort).
+// Si paisCodigo está vacío, retorna todas las licencias.
+func GetLicenciasFilteredByPais(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool, paisCodigo string) ([]Licencia, error) {
+	rows, err := GetLicenciasFiltered(dbConn, soloActivas, usuarioCreador, conEmpresa)
+	if err != nil {
+		return nil, err
+	}
+	pais := strings.ToUpper(strings.TrimSpace(paisCodigo))
+	if pais == "" {
+		return rows, nil
+	}
+	out := make([]Licencia, 0, len(rows))
+	for _, item := range rows {
+		code := strings.ToUpper(strings.TrimSpace(item.PaisCodigo))
+		if code == "" {
+			code = "CO"
+		}
+		if code == pais {
+			out = append(out, item)
+		}
+	}
+	return out, nil
+}
+
 // GetLicenciasFiltered obtiene licencias con filtros opcionales.
 func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
-	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.modulos_habilitados, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.modulos_habilitados, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
 	baseFrom := `
 		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
 	q += baseFrom
@@ -417,12 +448,13 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		var empresaID sql.NullInt64
 		var empresaNombre sql.NullString
 		var tipoNombre sql.NullString
+		var paisCodigo sql.NullString
 		var descripcion sql.NullString
 		var modulosHab sql.NullString
 		var fechaInicio sql.NullString
 		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
@@ -433,6 +465,11 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		}
 		if tipoNombre.Valid {
 			lic.TipoNombre = tipoNombre.String
+		}
+		if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+			lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+		} else {
+			lic.PaisCodigo = "CO"
 		}
 		if descripcion.Valid {
 			lic.Descripcion = descripcion.String
@@ -456,21 +493,27 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
-	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
 	scanLicencia := func() (*Licencia, error) {
 		row := queryRowSQLCompat(dbConn, q, id)
 		var lic Licencia
 		var empresaID sql.NullInt64
+		var paisCodigo sql.NullString
 		var descripcion sql.NullString
 		var modulosHab sql.NullString
 		var fechaInicio sql.NullString
 		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
 			lic.EmpresaID = empresaID.Int64
+		}
+		if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+			lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+		} else {
+			lic.PaisCodigo = "CO"
 		}
 		if descripcion.Valid {
 			lic.Descripcion = descripcion.String
@@ -504,11 +547,11 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 }
 
 // UpdateLicencia actualiza campos editables de una licencia
-func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
+func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
 	nowExpr := sqlNowExpr()
-	query := "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
-	fallbackQuery := "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ? WHERE id = ?"
-	args := []interface{}{tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id}
+	query := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+	fallbackQuery := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ? WHERE id = ?"
+	args := []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id}
 
 	_, err := execSQLCompat(dbConn, query, args...)
 	if err == nil {

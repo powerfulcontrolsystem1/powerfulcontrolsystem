@@ -64,15 +64,15 @@ func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
-			ID:             "google:gemini-2.0-flash",
-			Provider:       "google",
-			DisplayName:    "Google Gemini 2.0 Flash",
-			UpstreamModel:  "gemini-2.0-flash",
-			Endpoint:       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-			ApiKeyEnv:      "GEMINI_API_KEY",
+			ID:             "openai:gpt-4o-mini",
+			Provider:       "openai",
+			DisplayName:    "OpenAI GPT-4o mini",
+			UpstreamModel:  "gpt-4o-mini",
+			Endpoint:       "https://api.openai.com/v1/chat/completions",
+			ApiKeyEnv:      "OPENAI_API_KEY",
 			Famous:         true,
 			FreeDailyLimit: 120,
-			Description:    "Chat empresarial con Google Gemini, restringido por empresa_id y con API key cifrada en el panel super.",
+			Description:    "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
 		},
 	}
 }
@@ -383,7 +383,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta)
+		contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -565,7 +565,86 @@ func (c *EmpresaAIChatController) generateResponseWithSystemPrompt(model empresa
 	if strings.EqualFold(model.Provider, "google") {
 		return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
 	}
+	if strings.EqualFold(model.Provider, "openai") {
+		return c.callOpenAIWithSystemPrompt(model, pregunta, historial, systemPrompt)
+	}
 	return "", 0, 0, fmt.Errorf("proveedor no soportado")
+}
+
+func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	apiKey, err := c.resolveModelAPIKey(model)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	if strings.TrimSpace(apiKey) == "" {
+		return "", 0, 0, fmt.Errorf("OPENAI_API_KEY no configurada")
+	}
+
+	type msg struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+	messages := make([]msg, 0, 12)
+	messages = append(messages, msg{Role: "system", Content: systemPrompt})
+
+	clean := sanitizeHistorial(historial, 8)
+	for _, h := range clean {
+		role := strings.ToLower(strings.TrimSpace(h.Rol))
+		if role != "user" && role != "assistant" {
+			continue
+		}
+		messages = append(messages, msg{Role: role, Content: strings.TrimSpace(h.Contenido)})
+	}
+	messages = append(messages, msg{Role: "user", Content: strings.TrimSpace(pregunta)})
+
+	body := map[string]interface{}{
+		"model":       strings.TrimSpace(model.UpstreamModel),
+		"messages":    messages,
+		"temperature": 0.2,
+		"max_tokens":  700,
+	}
+	payload, _ := json.Marshal(body)
+
+	req, err := http.NewRequest(http.MethodPost, model.Endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", 0, 0, fmt.Errorf("error proveedor (%d): %s", resp.StatusCode, truncateText(string(raw), 600))
+	}
+
+	var parsed struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int64 `json:"prompt_tokens"`
+			CompletionTokens int64 `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return "", 0, 0, fmt.Errorf("respuesta del proveedor no es JSON valido")
+	}
+	if len(parsed.Choices) == 0 {
+		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
+	}
+	text := strings.TrimSpace(parsed.Choices[0].Message.Content)
+	if text == "" {
+		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
+	}
+	return text, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens, nil
 }
 
 func buildEmpresaAISystemPrompt(contexto string) string {

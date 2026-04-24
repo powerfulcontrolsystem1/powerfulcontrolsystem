@@ -53,6 +53,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			soloActivas := parseTruthy(q.Get("activo"))
 			conEmpresa := parseTruthy(q.Get("con_empresa"))
 			usuarioCreador := strings.TrimSpace(q.Get("usuario_creador"))
+			paisCodigo := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
 
 			// scope=mine permite filtrar por el administrador autenticado sin exponer email en la URL.
 			if strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine") && usuarioCreador == "" {
@@ -69,7 +70,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				usuarioCreador = strings.TrimSpace(s.AdminEmail)
 			}
 
-			licencias, err := dbpkg.GetLicenciasFiltered(dbSuper, soloActivas, usuarioCreador, conEmpresa)
+			licencias, err := dbpkg.GetLicenciasFilteredByPais(dbSuper, soloActivas, usuarioCreador, conEmpresa, paisCodigo)
 			if err != nil {
 				log.Println("GET /super/api/licencias error:", err)
 				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
@@ -81,6 +82,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodPost:
 			var payload struct {
 				TipoID       int64   `json:"tipo_id"`
+				PaisCodigo   string  `json:"pais_codigo"`
 				Nombre       string  `json:"nombre"`
 				Descripcion  string  `json:"descripcion"`
 				Valor        float64 `json:"valor"`
@@ -98,7 +100,12 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
 			}
-			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.SuperRol)
+			pais := strings.ToUpper(strings.TrimSpace(payload.PaisCodigo))
+			if pais == "" {
+				http.Error(w, "pais_codigo required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.SuperRol)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
@@ -142,6 +149,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			// actualización normal (payload JSON)
 			var payloadUpdate struct {
 				TipoID       int64   `json:"tipo_id"`
+				PaisCodigo   string  `json:"pais_codigo"`
 				Nombre       string  `json:"nombre"`
 				Descripcion  string  `json:"descripcion"`
 				Valor        float64 `json:"valor"`
@@ -153,7 +161,12 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.SuperRol); err != nil {
+			pais := strings.ToUpper(strings.TrimSpace(payloadUpdate.PaisCodigo))
+			if pais == "" {
+				http.Error(w, "pais_codigo required", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.SuperRol); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return

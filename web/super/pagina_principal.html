@@ -122,6 +122,7 @@
           titulo: 'Tarjeta ' + (index + 1),
           descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
           imagen_url: image,
+          imagen_secundaria_url: '/img/sistema punto de venta.png',
           enlace: '/login.html',
           youtube_url: '',
           detalle_etiqueta: 'Solucion especializada',
@@ -231,6 +232,7 @@
         var html = '';
         state.config.tarjetas.forEach(function (card, idx) {
           var image = String(card.imagen_url || '').trim();
+          var secondaryImage = String(card.imagen_secundaria_url || '').trim();
           var title = String(card.titulo || '').trim();
           var description = String(card.descripcion || '').trim();
           var link = String(card.enlace || '').trim();
@@ -247,6 +249,11 @@
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppImage' + idx + '">Imagen (web/img)</label>';
           html += '    <select id="ppImage' + idx + '" class="form-input pp-image-select" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppSecondaryImage' + idx + '">Imagen pequeña (derecha del logo)</label>';
+          html += '    <select id="ppSecondaryImage' + idx + '" class="form-input pp-image-select pp-field" data-field="imagen_secundaria_url">' + imageOptionsHTML(secondaryImage) + '</select>';
+          html += '    <p class="form-help">Se muestra como imagen pequeña al lado del icono principal en el index.</p>';
           html += '  </div>';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppLink' + idx + '">Destino de Probar Gratis</label>';
@@ -344,12 +351,15 @@
         if (!target.classList.contains('pp-image-select')) return;
         var idx = getCardIndexFromElement(target);
         if (idx < 0 || idx >= state.config.tarjetas.length) return;
-        state.config.tarjetas[idx].imagen_url = target.value;
+        var field = target.getAttribute('data-field') || 'imagen_url';
+        state.config.tarjetas[idx][field] = target.value;
         var cardEl = target.closest('.pp-card-item');
         if (!cardEl) return;
-        var previewEl = cardEl.querySelector('.pp-image-preview');
-        if (previewEl) {
-          previewEl.src = target.value || '/img/punto_venta.png';
+        if (field === 'imagen_url') {
+          var previewEl = cardEl.querySelector('.pp-image-preview');
+          if (previewEl) {
+            previewEl.src = target.value || '/img/punto_venta.png';
+          }
         }
       });
 
@@ -399,6 +409,7 @@
               titulo: String(card.titulo || '').trim(),
               descripcion: String(card.descripcion || '').trim(),
               imagen_url: String(card.imagen_url || '').trim(),
+              imagen_secundaria_url: String(card.imagen_secundaria_url || '').trim(),
               enlace: String(card.enlace || '').trim(),
               youtube_url: String(card.youtube_url || '').trim(),
               detalle_etiqueta: String(card.detalle_etiqueta || '').trim(),

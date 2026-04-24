@@ -30,6 +30,7 @@ type paginaPrincipalCard struct {
 	Titulo            string   `json:"titulo"`
 	Descripcion       string   `json:"descripcion"`
 	ImagenURL         string   `json:"imagen_url"`
+	ImagenSecundaria  string   `json:"imagen_secundaria_url,omitempty"`
 	Enlace            string   `json:"enlace"`
 	YouTubeURL        string   `json:"youtube_url,omitempty"`
 	DetalleEtiqueta   string   `json:"detalle_etiqueta"`
@@ -105,6 +106,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			Titulo:            "Punto de venta",
 			Descripcion:       "Solucion completa para ventas rapidas y facturacion electronica.",
 			ImagenURL:         "/img/punto_venta.png",
+			ImagenSecundaria:  "/img/sistema punto de venta.png",
 			Enlace:            "/administrar_empresa.html?module=punto_venta",
 			DetalleEtiqueta:   "Retail y mostrador",
 			DetalleTitular:    "Vende rapido, factura mejor y controla la caja desde una sola pantalla.",
@@ -121,6 +123,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			Titulo:            "Motel",
 			Descripcion:       "Gestion por tiempo de servicio y facturacion tarifada por estancia.",
 			ImagenURL:         "/img/motel.png",
+			ImagenSecundaria:  "/img/sistema punto de venta.png",
 			Enlace:            "/administrar_empresa.html?module=motel",
 			DetalleEtiqueta:   "Operacion por estancias",
 			DetalleTitular:    "Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.",
@@ -137,6 +140,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			Titulo:            "Restaurante",
 			Descripcion:       "Gestion de mesas, pedidos y facturacion para restaurantes.",
 			ImagenURL:         "/img/restaurante.png",
+			ImagenSecundaria:  "/img/sistema punto de venta.png",
 			Enlace:            "/administrar_empresa.html?module=restaurante",
 			DetalleEtiqueta:   "Mesas y cocina",
 			DetalleTitular:    "Administra mesas, pedidos, cocina y cobro final con flujo continuo.",
@@ -153,6 +157,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			Titulo:            "Control por sensor",
 			Descripcion:       "Integracion y alertas con sensores para control de accesos.",
 			ImagenURL:         "/img/sensor.png",
+			ImagenSecundaria:  "/img/sistema punto de venta.png",
 			Enlace:            "/administrar_empresa.html?module=sensor",
 			DetalleEtiqueta:   "Monitoreo y automatizacion",
 			DetalleTitular:    "Conecta eventos fisicos con alertas, estados y control operativo centralizado.",
@@ -169,6 +174,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			Titulo:            "Hotel",
 			Descripcion:       "Administracion de empresas, roles y permisos para operacion hotelera.",
 			ImagenURL:         "/img/settings-color.svg",
+			ImagenSecundaria:  "/img/sistema punto de venta.png",
 			Enlace:            "/administrar_empresa.html?module=configuracion",
 			DetalleEtiqueta:   "Reservas y hospedaje",
 			DetalleTitular:    "Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.",
@@ -347,6 +353,7 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 			Titulo:            title,
 			Descripcion:       description,
 			ImagenURL:         paginaPrincipalNormalizeImageURL(current.ImagenURL, base.ImagenURL),
+			ImagenSecundaria:  paginaPrincipalNormalizeImageURL(current.ImagenSecundaria, base.ImagenSecundaria),
 			Enlace:            paginaPrincipalNormalizeLink(current.Enlace, base.Enlace),
 			YouTubeURL:        paginaPrincipalNormalizeYouTubeURL(current.YouTubeURL),
 			DetalleEtiqueta:   paginaPrincipalNormalizeText(current.DetalleEtiqueta, base.DetalleEtiqueta),

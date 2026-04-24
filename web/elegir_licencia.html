@@ -37,6 +37,29 @@
       padding:6px 11px;
       font-size:.8rem;
     }
+
+    body.elegir-licencia-page .page-header{
+      position: relative;
+      padding-right: 62px;
+    }
+
+    .detected-country-flag{
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      width: 46px;
+      height: 34px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+      font-size: 20px;
+      line-height: 1;
+      user-select: none;
+    }
   </style>
   <script src="/menu.js"></script>
 </head>
@@ -53,6 +76,7 @@
       <div class="container">
         <div class="page-header">
           <h1 id="pageTitle">Elegir Licencia</h1>
+          <div id="detectedCountryFlag" class="detected-country-flag" title="País detectado" aria-label="País detectado" hidden>CO</div>
         </div>
         <p class="form-help" id="licenciasHelp">Explora las licencias disponibles y elige la opción que mejor encaje con la operación de la empresa.</p>
         <div id="licencias" class="portal-grid portal-home-grid">Cargando licencias...</div>
@@ -81,10 +105,38 @@
         return '/img/punto_venta.png';
       }
 
-      function formatMoney(value) {
+      function resolveCurrencyByCountry(paisCodigo) {
+        switch (normalizeCountryCode(paisCodigo) || 'CO') {
+          case 'CO': return { currency: 'COP', locale: 'es-CO', symbolFallback: '$' };
+          case 'MX': return { currency: 'MXN', locale: 'es-MX', symbolFallback: '$' };
+          case 'PE': return { currency: 'PEN', locale: 'es-PE', symbolFallback: 'S/' };
+          case 'EC': return { currency: 'USD', locale: 'es-EC', symbolFallback: '$' };
+          case 'CL': return { currency: 'CLP', locale: 'es-CL', symbolFallback: '$' };
+          case 'AR': return { currency: 'ARS', locale: 'es-AR', symbolFallback: '$' };
+          default:   return { currency: 'USD', locale: 'es',    symbolFallback: '$' };
+        }
+      }
+
+      function normalizeCurrencyCode(raw) {
+        var c = String(raw || '').trim().toUpperCase();
+        if (c.length !== 3) return '';
+        for (var i = 0; i < c.length; i += 1) {
+          var ch = c.charCodeAt(i);
+          if (ch < 65 || ch > 90) return '';
+        }
+        return c;
+      }
+
+      function formatMoney(value, currencyCode, locale) {
         var amount = Number(value || 0);
-        if (!Number.isFinite(amount)) return '$0';
-        return '$' + amount.toLocaleString('es-CO');
+        if (!Number.isFinite(amount)) amount = 0;
+        var curr = normalizeCurrencyCode(currencyCode) || 'COP';
+        var loc = String(locale || '').trim() || 'es-CO';
+        try {
+          return new Intl.NumberFormat(loc, { style: 'currency', currency: curr, maximumFractionDigits: 2 }).format(amount);
+        } catch (e) {
+          return (curr === 'PEN' ? 'S/' : '$') + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
       }
 
       function getLicenciaValor(licencia) {
@@ -93,12 +145,54 @@
         return amount;
       }
 
-      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre) {
+      function normalizeCountryCode(raw) {
+        var code = String(raw || '').trim().toUpperCase();
+        return code.length === 2 ? code : '';
+      }
+
+      function countryCodeToFlagEmoji(code) {
+        code = normalizeCountryCode(code);
+        if (!code) return '🌎';
+        var A = 0x1F1E6;
+        var out = '';
+        for (var i = 0; i < code.length; i += 1) {
+          var c = code.charCodeAt(i);
+          if (c < 65 || c > 90) return '🌎';
+          out += String.fromCodePoint(A + (c - 65));
+        }
+        return out || '🌎';
+      }
+
+      function setDetectedCountryBadge(paisCodigo) {
+        var el = document.getElementById('detectedCountryFlag');
+        if (!el) return;
+        var code = normalizeCountryCode(paisCodigo) || 'CO';
+        el.textContent = countryCodeToFlagEmoji(code);
+        el.title = 'País detectado: ' + code;
+        el.hidden = false;
+      }
+
+      async function detectCountryCode() {
+        try {
+          // En producción, el backend puede resolver país via headers (ej. Cloudflare).
+          // En local puedes forzar: /api/public/geo?pais=CO
+          var res = await fetch('/api/public/geo', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('geo http ' + res.status);
+          var data = await res.json().catch(function(){ return {}; });
+          var code = normalizeCountryCode(data && data.pais_codigo);
+          return code || 'CO';
+        } catch (e) {
+          return 'CO';
+        }
+      }
+
+      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre, currencyCtx) {
         var valor = getLicenciaValor(licencia);
         var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
         var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
         var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
         var actionLabel = valor <= 0 ? 'Activar licencia' : 'Comprar licencia';
+        var money = formatMoney(valor, currencyCtx && currencyCtx.currency, currencyCtx && currencyCtx.locale);
         return '' +
           '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
           '  <div class="home-offer-media">' +
@@ -106,7 +200,7 @@
           '  </div>' +
           '  <h3>' + escapeHtml(String(licencia.nombre || licencia.Nombre || '--')) + '</h3>' +
           '  <p>' + escapeHtml(descripcion || ('Licencia con duración de ' + String(duracion || '--') + ' días y activación para la empresa seleccionada.')) + '</p>' +
-          '  <p><strong>Valor:</strong> ' + escapeHtml(formatMoney(valor)) + '</p>' +
+          '  <p><strong>Valor:</strong> ' + escapeHtml(money) + '</p>' +
           '  <p><strong>Duración:</strong> ' + escapeHtml(String(duracion)) + ' días</p>' +
           '  <div class="card-actions">' +
           '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
@@ -125,8 +219,28 @@
           const meRes = await fetch('/me');
           if (!meRes.ok) { window.location.href = '/login.html'; return }
 
+          const paisCodigo = await detectCountryCode();
+          setDetectedCountryBadge(paisCodigo);
+
+          // Moneda: por defecto según país; si la empresa tiene moneda configurada, gana.
+          var currencyCtx = resolveCurrencyByCountry(paisCodigo);
+          try {
+            if (empresaId) {
+              var cfgRes = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(String(empresaId)), { credentials: 'same-origin' });
+              if (cfgRes.ok) {
+                var cfg = await cfgRes.json().catch(function(){ return {}; });
+                var empresaCurrency = normalizeCurrencyCode(cfg && cfg.moneda_codigo);
+                if (empresaCurrency) {
+                  currencyCtx.currency = empresaCurrency;
+                  // Mantener locale por país detectado (salvo COP)
+                }
+              }
+            }
+          } catch (e) {}
+
           // fetch licencias and empresas (to show company name)
-          const [licRes, empRes] = await Promise.all([fetch('/super/api/licencias'), fetch('/super/api/empresas')]);
+          const licURL = '/super/api/licencias?pais_codigo=' + encodeURIComponent(paisCodigo);
+          const [licRes, empRes] = await Promise.all([fetch(licURL), fetch('/super/api/empresas')]);
           const licencias = licRes.ok ? await licRes.json() : [];
           const empresas = empRes.ok ? await empRes.json() : [];
 
@@ -158,7 +272,7 @@
           }
 
           container.innerHTML = filtered.map(function(l, idx){
-            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre);
+            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre, currencyCtx);
           }).join('');
 
           Array.prototype.forEach.call(container.querySelectorAll('.js-buy-license'), function(btn){

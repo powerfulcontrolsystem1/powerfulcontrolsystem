@@ -1558,7 +1558,7 @@
           '<td>' + sanitize(p.sku || '') + '</td>' +
           '<td>' + sanitize(p.nombre || '') + '</td>' +
           '<td>' + sanitize(p.categoria || '') + '</td>' +
-          '<td>' + Number(p.precio || 0).toFixed(2) + '</td>' +
+          '<td data-field="precio" data-producto-id="' + Number(p.id) + '">' + Number(p.precio || 0).toFixed(2) + '</td>' +
           '<td>' + Number(p.stock_total || 0).toFixed(2) + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
@@ -1569,6 +1569,50 @@
         '</tr>';
       }).join('');
     }
+
+    (function bindAIRealtimeUpdates(){
+      function applyPrecioUpdate(payload){
+        try {
+          if (!payload || payload.type !== 'producto_precio_actualizado') return;
+          if (Number(payload.empresa_id || 0) !== Number(empresaId || 0)) return;
+          const productoId = Number(payload.producto_id || 0);
+          const precioNuevo = Number(payload.precio_nuevo);
+          if (!(productoId > 0) || !Number.isFinite(precioNuevo)) return;
+
+          // Actualizar estado en memoria
+          const p = (state.productos || []).find(function(item){ return Number(item.id) === productoId; });
+          if (p) p.precio = precioNuevo;
+
+          // Actualizar celda en tabla (si está renderizada)
+          const cell = document.querySelector('#productosTable td[data-field="precio"][data-producto-id="' + productoId + '"]');
+          if (cell) {
+            cell.textContent = precioNuevo.toFixed(2);
+            cell.style.background = 'rgba(34,197,94,0.12)';
+            window.setTimeout(function(){ cell.style.background = ''; }, 2200);
+          }
+
+          // Actualizar formulario si está abierto en ese producto
+          const currentId = Number(document.getElementById('productoId').value || 0);
+          if (currentId === productoId) {
+            document.getElementById('productoPrecio').value = precioNuevo.toFixed(2);
+          }
+
+          showMessage('Precio actualizado desde Chat IA (producto #' + productoId + ').', 'success');
+        } catch (e) {}
+      }
+
+      window.addEventListener('storage', function(ev){
+        if (!ev || ev.key !== 'pcs:last_ai_action' || !ev.newValue) return;
+        try {
+          applyPrecioUpdate(JSON.parse(ev.newValue));
+        } catch (e) {}
+      });
+
+      try {
+        const last = window.localStorage.getItem('pcs:last_ai_action');
+        if (last) applyPrecioUpdate(JSON.parse(last));
+      } catch (e) {}
+    })();
 
     function fillProductoForm(p) {
       document.getElementById('productoId').value = p ? Number(p.id) : '';

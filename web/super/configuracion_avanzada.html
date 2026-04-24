@@ -463,20 +463,21 @@
     <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
-        Inteligencia Artificial - Google Gemini
+        Inteligencia Artificial - OpenAI
       </h2>
       <p class="form-help" style="margin-bottom:8px">Conecta servicios de GenAI (100% integrados y unificados) para la asistente del portal corporativo y super-admin.</p>
-      <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
+      <div id="aiLoggedAccount" class="form-help">Cuenta: Cargando...</div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Google Gemini 2.0 Flash</label>
-          <label class="mode-switch-row" for="aiProviderGeminiEnabled">
+          <label class="form-label">OpenAI (gpt-4o-mini)</label>
+          <label class="mode-switch-row" for="aiProviderOpenAIEnabled">
             <span class="mode-label">Disponible en chats</span>
-            <input id="aiProviderGeminiEnabled" type="checkbox" role="switch" aria-label="Activar Google Gemini en los chats">
+            <input id="aiProviderOpenAIEnabled" type="checkbox" role="switch" aria-label="Activar OpenAI en los chats">
           </label>
-          <input id="aiKeyGemini" class="form-input" type="password" placeholder="API key para google:gemini-2.0-flash">
-          <div id="aiStatusGemini" class="form-help">Cargando estado...</div>
+          <input id="aiKeyOpenAI" class="form-input" type="password" placeholder="API key para openai:gpt-4o-mini">
+          <div id="aiStatusOpenAI" class="form-help">Cargando estado...</div>
+          <div id="aiUsageOpenAI" class="form-help">Consumo del plan: --</div>
           <div class="form-help">La API key se guarda cifrada obligatoriamente en backend y nunca se expone en pantalla.</div>
         </div>
       </div>
@@ -497,10 +498,10 @@
         <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar configuración IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
-        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Google Gemini</button>
+        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar OpenAI</button>
       </div>
       <div id="aiConfigMsg" class="form-help"></div>
-      <div class="form-help">Usa la prueba para validar la API key de Google Gemini desde el backend.</div>
+      <div class="form-help">Usa la prueba para validar la API key de OpenAI desde el backend.</div>
       <div id="aiTestResult" class="form-help"></div>
     </section>
 
@@ -557,7 +558,7 @@
   <script>
     (function(){
       const aiCredentialBindings = [
-  		{ model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
+        { model_id: 'openai:gpt-4o-mini', inputId: 'aiKeyOpenAI', statusId: 'aiStatusOpenAI' }
       ];
       const globalSaveButtons = [document.getElementById('saveAllConfigTopBtn'), document.getElementById('saveAllConfigBottomBtn')];
       let rustdeskActiveToggleBusy = false;
@@ -1243,12 +1244,12 @@
         const accountEl = document.getElementById('aiLoggedAccount');
         const enabledToggle = document.getElementById('aiEnabledToggle');
         const enabledStatusEl = document.getElementById('aiEnabledStatus');
-        const geminiEnabledEl = document.getElementById('aiProviderGeminiEnabled');
+        const openAIEnabledEl = document.getElementById('aiProviderOpenAIEnabled');
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
             msg.innerText = 'Error al leer configuración IA.';
-            accountEl.innerText = 'Cuenta Google logueada: no disponible';
+            accountEl.innerText = 'Cuenta: no disponible';
             aiCredentialBindings.forEach(function(binding){
               const statusEl = document.getElementById(binding.statusId);
               if (statusEl) statusEl.innerText = 'Error al leer estado';
@@ -1257,7 +1258,7 @@
           }
 
           const data = await res.json();
-          accountEl.innerText = 'Cuenta Google logueada: ' + (data.google_account || 'no disponible');
+          accountEl.innerText = 'Cuenta: ' + (data.google_account || 'no disponible');
           const serviceStatus = data.service_status || {};
           if (enabledToggle) enabledToggle.checked = !!serviceStatus.enabled;
           if (enabledStatusEl) enabledStatusEl.innerText = serviceStatus.enabled ? 'Servicio IA habilitado' : 'Servicio IA desactivado';
@@ -1271,8 +1272,8 @@
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
 
-          const geminiItem = byModel['google:gemini-2.0-flash'] || null;
-          if (geminiEnabledEl) geminiEnabledEl.checked = !geminiItem || !!geminiItem.enabled;
+          const openAIItem = byModel['openai:gpt-4o-mini'] || null;
+          if (openAIEnabledEl) openAIEnabledEl.checked = !openAIItem || !!openAIItem.enabled;
 
           let hasAIConfig = false;
           aiCredentialBindings.forEach(function(binding){
@@ -1291,11 +1292,23 @@
             inputEl.value = '';
           });
 
+          (function renderUsage(){
+            const usageEl = document.getElementById('aiUsageOpenAI');
+            if (!usageEl) return;
+            const item = byModel['openai:gpt-4o-mini'] || null;
+            const u = item && item.usage_today ? item.usage_today : null;
+            if (u) {
+              usageEl.innerText = 'Consumo del plan (hoy): ' + (Number(u.consultas_total || 0)) + ' consulta(s), ' + (Number(u.tokens_total || 0)) + ' token(s).';
+              return;
+            }
+            usageEl.innerText = 'Consumo del plan: --';
+          })();
+
           aiCredentialBindings.forEach(function(binding){
             const inputEl = document.getElementById(binding.inputId);
             if (inputEl) inputEl.disabled = hasAIConfig;
           });
-          if (geminiEnabledEl) geminiEnabledEl.disabled = false;
+          if (openAIEnabledEl) openAIEnabledEl.disabled = false;
           if (enabledToggle) enabledToggle.disabled = false;
 
           document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
@@ -1303,12 +1316,12 @@
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
             msg.innerText = hasAIConfig
-        ? 'Google Gemini quedó disponible para el chat empresarial y el chat global super. Usa Editar si necesitas actualizar la API key.'
-        : 'Aún no hay API key de Google Gemini guardada.';
+        ? 'OpenAI quedó disponible para el chat empresarial y el chat global super. Usa Editar si necesitas actualizar la API key.'
+        : 'Aún no hay API key de OpenAI guardada.';
           }
         } catch (err) {
           msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
-          accountEl.innerText = 'Cuenta Google logueada: no disponible';
+          accountEl.innerText = 'Cuenta: no disponible';
         }
       }
 
@@ -1332,7 +1345,7 @@
 		  credentials: credentials,
       enabled: !!document.getElementById('aiEnabledToggle').checked,
       provider_enabled: {
-		  google: !!document.getElementById('aiProviderGeminiEnabled').checked
+		  openai: !!document.getElementById('aiProviderOpenAIEnabled').checked
       }
         };
 
@@ -1347,14 +1360,14 @@
           });
           const raw = await res.text();
           if (!res.ok) {
-      msg.innerText = 'Error guardando credencial Gemini: ' + raw;
+      msg.innerText = 'Error guardando credencial OpenAI: ' + raw;
             return;
           }
 
-      msg.innerText = 'API key de Google Gemini guardada correctamente para la cuenta Google logueada.';
+      msg.innerText = 'API key de OpenAI guardada correctamente.';
           await loadAIConfig();
         } catch (err) {
-      msg.innerText = 'Error guardando credencial Gemini: ' + (err.message || err);
+      msg.innerText = 'Error guardando credencial OpenAI: ' + (err.message || err);
         } finally {
 		  btn.disabled = false;
       btn.innerText = 'Guardar configuración IA';
@@ -1430,7 +1443,7 @@
           credentials: credentials,
           enabled: !!document.getElementById('aiEnabledToggle').checked,
           provider_enabled: {
-            google: !!document.getElementById('aiProviderGeminiEnabled').checked
+            openai: !!document.getElementById('aiProviderOpenAIEnabled').checked
           }
         };
         const res = await fetch('/super/api/config/ai', {
@@ -1470,16 +1483,16 @@
           if (inputEl) inputEl.disabled = false;
         });
         document.getElementById('aiEnabledToggle').disabled = false;
-		document.getElementById('aiProviderGeminiEnabled').disabled = false;
+		document.getElementById('aiProviderOpenAIEnabled').disabled = false;
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
-    document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva API key de Google Gemini.';
+    document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva API key de OpenAI.';
       }
 
       function cancelEditAIConfig(){
         loadAIConfig();
-    	document.getElementById('aiConfigMsg').innerText = 'Edición de Google Gemini cancelada.';
+    	document.getElementById('aiConfigMsg').innerText = 'Edición de OpenAI cancelada.';
       }
 
       function refreshAIEnabledHint(){
@@ -1487,7 +1500,7 @@
 		const helpEl = document.getElementById('aiEnabledHelp');
 		if (!enabledEl || !helpEl) return;
 		helpEl.innerText = enabledEl.checked
-      ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar Google Gemini cuando el proveedor esté disponible.'
+      ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar OpenAI cuando el proveedor esté disponible.'
     		  : 'IA desactivada: los chats empresariales y el chat global super quedarán bloqueados hasta volver a activarla, liberando carga del servidor.';
       }
 
@@ -1984,7 +1997,7 @@
 		refreshAIEnabledHint();
 		document.getElementById('saveAiConfigBtn').disabled = false;
 	  });
-      document.getElementById('aiProviderGeminiEnabled').addEventListener('change', function(){
+      document.getElementById('aiProviderOpenAIEnabled').addEventListener('change', function(){
     document.getElementById('saveAiConfigBtn').disabled = false;
     });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);

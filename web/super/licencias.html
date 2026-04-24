@@ -31,6 +31,17 @@
           <select id="tipo_id" class="form-input"></select>
         </div>
         <div class="form-col">
+          <label class="form-label">País</label>
+          <select id="pais_codigo" class="form-input" required>
+            <option value="CO">Colombia</option>
+            <option value="PE">Perú</option>
+            <option value="EC">Ecuador</option>
+            <option value="MX">México</option>
+            <option value="CL">Chile</option>
+            <option value="AR">Argentina</option>
+          </select>
+        </div>
+        <div class="form-col">
           <label class="form-label">Nombre</label>
           <input id="nombre" class="form-input" required />
         </div>
@@ -183,6 +194,7 @@
         document.getElementById('valor').value='';
         document.getElementById('duracion_dias').value='';
         document.getElementById('tipo_id').value='';
+        document.getElementById('pais_codigo').value='CO';
         document.getElementById('super_rol_habilitado').checked = false;
         setSelectedLicenciaModulos('');
         document.getElementById('saveBtn').innerText='Guardar';
@@ -432,6 +444,7 @@
             addBtn.style.display = 'none';
             document.getElementById('itemId').value = item.id;
             document.getElementById('tipo_id').value = item.tipo_id || '';
+            document.getElementById('pais_codigo').value = (item.pais_codigo || 'CO');
             document.getElementById('nombre').value = item.nombre || '';
             document.getElementById('valor').value = fieldNumberValue(item.valor);
             document.getElementById('duracion_dias').value = fieldNumberValue(item.duracion_dias);
@@ -467,6 +480,7 @@
         const id = document.getElementById('itemId').value;
         const payload = {
           tipo_id: parseInt(document.getElementById('tipo_id').value || 0, 10),
+          pais_codigo: String(document.getElementById('pais_codigo').value || '').trim(),
           nombre: document.getElementById('nombre').value.trim(),
           descripcion: document.getElementById('descripcion').value.trim(),
           valor: parseFloat(document.getElementById('valor').value || 0),
@@ -476,6 +490,7 @@
         };
         try {
           if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return; }
+          if(!payload.pais_codigo){ document.getElementById('msg').innerText='País requerido'; return; }
           if(id){
             await fetchTextOrThrow('/super/api/licencias?id=' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           } else {

@@ -11,7 +11,7 @@
     <header class="page-header ai-gemini-header">
       <div>
         <h1 id="pageTitle">Chat IA Empresarial</h1>
-        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. El chat usa Google Gemini segun la configuracion disponible del panel super.</p>
+        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. El chat usa OpenAI según la configuración disponible del panel super.</p>
       </div>
     </header>
 
@@ -66,7 +66,7 @@
       empresaNombre: "",
       models: [],
       modelID: "",
-      modelDisplay: "Google Gemini 2.0 Flash",
+      modelDisplay: "OpenAI GPT-4o mini",
       googleAccount: "",
       usage: null,
       loading: false,
@@ -91,6 +91,25 @@
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    function broadcastPrecioUpdateFromAI(text) {
+      try {
+        const raw = normalize(text);
+        if (!raw) return;
+        if (raw.indexOf("resultado=ok") === -1) return;
+        const idMatch = raw.match(/producto_id=(\d+)/i);
+        const priceMatch = raw.match(/precio_nuevo=([0-9]+(?:\.[0-9]+)?)/i);
+        if (!idMatch || !priceMatch) return;
+        const payload = {
+          type: "producto_precio_actualizado",
+          empresa_id: Number(state.empresaID || 0),
+          producto_id: Number(idMatch[1]),
+          precio_nuevo: Number(priceMatch[1]),
+          at: new Date().toISOString()
+        };
+        window.localStorage.setItem("pcs:last_ai_action", JSON.stringify(payload));
+      } catch (e) {}
     }
 
     function setMsg(id, text, isError) {
@@ -398,7 +417,9 @@
           })
         });
 
-        appendMessage("assistant", normalize(data.respuesta));
+        const respuesta = normalize(data.respuesta);
+        appendMessage("assistant", respuesta);
+        broadcastPrecioUpdateFromAI(respuesta);
         state.googleAccount = normalize(data.google_account || state.googleAccount);
         state.usage = data.usage || null;
         renderContext();

@@ -55,8 +55,8 @@ INSERT INTO tipos_de_licencia (nombre)
 VALUES ('Gratis')
 ON CONFLICT (nombre) DO NOTHING;
 
-INSERT INTO licencias (empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, activo, usuario_creador)
-VALUES (1, (SELECT id FROM tipos_de_licencia WHERE nombre = 'Gratis' LIMIT 1), 'Licencia Demo', 'Licencia demo para integración', 0, 365, 1, 'system')
+INSERT INTO licencias (empresa_id, tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, activo, usuario_creador)
+VALUES (1, (SELECT id FROM tipos_de_licencia WHERE nombre = 'Gratis' LIMIT 1), 'CO', 'Licencia Demo', 'Licencia demo para integración', 0, 365, 1, 'system')
 ON CONFLICT DO NOTHING;
 
 -- Ajustar secuencias al max(id) existente

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -1274,12 +1275,12 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 
 // BuildEmpresaAIContextoForQuestion amplía el contexto base con resultados de consultas seguras
 // resueltas por intención, sin permitir SQL libre generado por IA.
-func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string) (string, error) {
+func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string) (string, error) {
 	base, err := BuildEmpresaAIContexto(dbConn, empresaID)
 	if err != nil {
 		return "", err
 	}
-	safeContext, err := buildEmpresaAISafeIntentContext(dbConn, empresaID, pregunta)
+	safeContext, err := buildEmpresaAISafeIntentContext(dbConn, empresaID, pregunta, usuarioCreador)
 	if err != nil {
 		return "", err
 	}
@@ -1790,7 +1791,7 @@ type empresaAISafeIntent struct {
 	Lines []string
 }
 
-func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta string) (string, error) {
+func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string) (string, error) {
 	folded := aiFoldText(pregunta)
 	if strings.TrimSpace(folded) == "" {
 		return "", nil
@@ -1831,6 +1832,18 @@ func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta s
 		}
 	}
 
+	// Acción segura (best-effort): cambiar precio de un producto cuando viene explícito.
+	// Reglas:
+	// - Debe venir el nombre del producto entre comillas: "Cocacola pequeña"
+	// - Debe venir un número en la pregunta: precio 3500 / a 3500 / $3500
+	// - No ejecuta SQL libre; hace UPDATE parametrizado por empresa_id + nombre.
+	if slicesContain(availableTables, "productos") && strings.Contains(folded, "precio") &&
+		(strings.Contains(folded, "cambia") || strings.Contains(folded, "cambiale") || strings.Contains(folded, "cambiar")) {
+		if actionLines := empresaAISafeUpdateProductoPrecio(dbConn, empresaID, pregunta, terms, usuarioCreador); len(actionLines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "ACCION_SEGURA_ACTUALIZAR_PRECIO_PRODUCTO", Lines: actionLines})
+		}
+	}
+
 	if aiLooksLikeNoRotationQuestion(folded) {
 		lines := empresaAISafeProductosSinRotacion(dbConn, empresaID, availableTables, 30, 5)
 		if len(lines) > 0 {
@@ -1846,6 +1859,11 @@ func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta s
 	}
 
 	if aiLooksLikeSalesQuestion(folded) {
+		if strings.Contains(folded, "ayer") {
+			if lines := empresaAISafeVentasAyer(dbConn, empresaID, availableTables); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_VENTAS_AYER", Lines: lines})
+			}
+		}
 		lines := empresaAIVentasRecientes(dbConn, empresaID, availableTables, 5)
 		if len(lines) > 0 {
 			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_VENTAS_RECIENTES", Lines: lines})
@@ -1872,6 +1890,140 @@ func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta s
 		writeAIContextSection(&b, intent.Name, intent.Lines)
 	}
 	return b.String(), nil
+}
+
+var aiFirstNumberRE = regexp.MustCompile(`(?i)(?:\\$\\s*)?(\\d+(?:[\\.,]\\d+)?)`)
+
+func truncateText(v string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	r := []rune(strings.TrimSpace(v))
+	if len(r) <= max {
+		return string(r)
+	}
+	return string(r[:max])
+}
+
+func empresaAISafeUpdateProductoPrecio(dbConn *sql.DB, empresaID int64, pregunta string, terms []string, usuarioCreador string) []string {
+	if dbConn == nil || empresaID <= 0 {
+		return nil
+	}
+	folded := aiFoldText(pregunta)
+	if !strings.Contains(folded, "confirmar") && !strings.Contains(folded, "confirmo") && !strings.Contains(folded, "confirmación") {
+		return []string{
+			"resultado=requiere_confirmacion",
+			"detalle=Para ejecutar esta acción escribe la misma instrucción agregando la palabra CONFIRMAR al final. Ejemplo: Cambiale el precio a \"Producto\" 3500 CONFIRMAR",
+		}
+	}
+	if len(terms) == 0 {
+		return []string{"resultado=sin_accion (falta nombre del producto entre comillas)"}
+	}
+	nmatch := aiFirstNumberRE.FindStringSubmatch(pregunta)
+	if len(nmatch) < 2 {
+		return []string{"resultado=sin_accion (falta valor numérico de precio)"}
+	}
+	raw := strings.ReplaceAll(nmatch[1], ".", "")
+	raw = strings.ReplaceAll(raw, ",", ".")
+	val, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil || val < 0 {
+		return []string{"resultado=sin_accion (precio inválido)"}
+	}
+	productoNombre := strings.TrimSpace(terms[0])
+	if productoNombre == "" {
+		return []string{"resultado=sin_accion (nombre vacío)"}
+	}
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return []string{"resultado=error", "detalle=" + safeAIValue(err.Error())}
+	}
+	defer tx.Rollback()
+
+	var productoID int64
+	var costoAnterior, precioAnterior, impuestoAnterior float64
+	row := queryRowTxSQLCompat(tx, `SELECT id, COALESCE(costo,0), COALESCE(precio,0), COALESCE(impuesto_porcentaje,0)
+		FROM productos
+		WHERE empresa_id = ? AND LOWER(COALESCE(nombre,'')) = LOWER(?) LIMIT 1`, empresaID, productoNombre)
+	if scanErr := row.Scan(&productoID, &costoAnterior, &precioAnterior, &impuestoAnterior); scanErr != nil {
+		if scanErr == sql.ErrNoRows {
+			return []string{"resultado=sin_cambios", "detalle=Producto no encontrado", "producto=" + safeAIValue(productoNombre)}
+		}
+		return []string{"resultado=error", "detalle=" + safeAIValue(scanErr.Error())}
+	}
+
+	nowExpr := sqlNowExpr()
+	if _, uerr := execTxSQLCompat(tx, "UPDATE productos SET precio = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND empresa_id = ?", val, productoID, empresaID); uerr != nil {
+		return []string{"resultado=error", "detalle=" + safeAIValue(uerr.Error())}
+	}
+
+	u := strings.TrimSpace(usuarioCreador)
+	if u == "" {
+		u = "ia_chat"
+	}
+	ref := truncateText(strings.TrimSpace(pregunta), 180)
+	_ = insertProductoPrecioHistorialTx(tx, ProductoPrecioHistorial{
+		EmpresaID:         empresaID,
+		ProductoID:        productoID,
+		CostoAnterior:     costoAnterior,
+		CostoNuevo:        costoAnterior,
+		PrecioAnterior:    precioAnterior,
+		PrecioNuevo:       val,
+		ImpuestoAnterior:  impuestoAnterior,
+		ImpuestoNuevo:     impuestoAnterior,
+		Motivo:            "ia_update_precio",
+		Referencia:        ref,
+		UsuarioCreador:    u,
+		Estado:            "activo",
+		Observaciones:     "Cambio ejecutado desde chat IA con confirmación explícita.",
+	})
+
+	if err := tx.Commit(); err != nil {
+		return []string{"resultado=error", "detalle=" + safeAIValue(err.Error())}
+	}
+
+	return []string{
+		"resultado=ok",
+		"producto=" + safeAIValue(productoNombre),
+		fmt.Sprintf("precio_anterior=%.2f", precioAnterior),
+		fmt.Sprintf("precio_nuevo=%.2f", val),
+		fmt.Sprintf("producto_id=%d", productoID),
+		"usuario=" + safeAIValue(u),
+	}
+}
+
+func empresaAISafeVentasAyer(dbConn *sql.DB, empresaID int64, availableTables []string) []string {
+	if !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	var total float64
+	var count int64
+	var q string
+	var args []interface{}
+	if isPostgresDialect() {
+		q = `SELECT COUNT(1),
+			COALESCE(SUM(COALESCE(NULLIF(total_pagado, 0), NULLIF(total, 0), 0)), 0)
+			FROM carritos_compras
+			WHERE empresa_id = ?
+			  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+			  AND LOWER(COALESCE(estado_carrito, '')) IN ('pagado','cerrado','finalizado')
+			  AND DATE(COALESCE(NULLIF(pagado_en, ''), fecha_creacion)::timestamp) = (CURRENT_DATE - INTERVAL '1 day')::date`
+		args = []interface{}{empresaID}
+	} else {
+		q = `SELECT COUNT(1),
+			COALESCE(SUM(COALESCE(NULLIF(total_pagado, 0), NULLIF(total, 0), 0)), 0)
+			FROM carritos_compras
+			WHERE empresa_id = ?
+			  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+			  AND LOWER(COALESCE(estado_carrito, '')) IN ('pagado','cerrado','finalizado')
+			  AND date(COALESCE(NULLIF(pagado_en,''), fecha_creacion)) = date('now','localtime','-1 day')`
+		args = []interface{}{empresaID}
+	}
+	_ = queryRowSQLCompat(dbConn, q, args...).Scan(&count, &total)
+	return []string{
+		fmt.Sprintf("ventas_ayer_total=%.2f", total),
+		fmt.Sprintf("ventas_ayer_transacciones=%d", count),
+	}
 }
 
 func buildSuperAISafeIntentContext(dbConn *sql.DB, pregunta string) (string, error) {
