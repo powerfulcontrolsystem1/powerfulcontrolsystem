@@ -1459,14 +1459,25 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 	return strings.Join(contexto, "\n"), nil
 }
 
+// SuperAIContextoOpts modula el contexto inyectado al chat global de superadministrador.
+type SuperAIContextoOpts struct {
+	AmpliarContextoSuper bool
+	EmpresaSoloLectura   bool
+}
+
 // BuildSuperAIContextoForQuestion amplía el contexto global con consultas seguras resueltas
 // a partir de la intención de la pregunta.
-func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunta string) (string, error) {
+func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunta string, opts SuperAIContextoOpts) (string, error) {
 	base, err := BuildSuperAIContexto(dbEmp, dbSuper, adminEmail)
 	if err != nil {
 		return "", err
 	}
-	safeContext, err := buildSuperAISafeIntentContext(dbEmp, pregunta)
+	if opts.AmpliarContextoSuper && dbSuper != nil {
+		if ampliado := buildSuperAIContextoAmpliadoSuper(dbSuper); ampliado != "" {
+			base = base + "\n" + ampliado
+		}
+	}
+	safeContext, err := buildSuperAISafeIntentContext(dbEmp, pregunta, opts.EmpresaSoloLectura)
 	if err != nil {
 		return "", err
 	}
@@ -1474,6 +1485,64 @@ func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunt
 		return base, nil
 	}
 	return base + "\n" + safeContext, nil
+}
+
+// buildSuperAIContextoAmpliadoSuper agrega conteos agregados (solo metadatos) de tablas
+// frecuentes en pcs_superadministrador, sin volcar claves de configuración ni secretos.
+func buildSuperAIContextoAmpliadoSuper(dbSuper *sql.DB) string {
+	if dbSuper == nil {
+		return ""
+	}
+	whitelist := []string{
+		"administradores",
+		"configuraciones",
+		"super_ai_consultas",
+		"super_ai_uso_diario",
+		"super_contrato_versiones",
+		"asesores_comerciales",
+		"asesor_comercial_comisiones",
+		"sesiones",
+	}
+	var b strings.Builder
+	b.WriteString("CONTEXTO_SUPER_AMPLIADO\n")
+	b.WriteString("nota=conteos de filas en tablas del esquema super; no incluye valores de claves, tokens ni credenciales.\n")
+	hasData := false
+	for _, t := range whitelist {
+		ok, err := tableExists(dbSuper, t)
+		if err != nil || !ok {
+			continue
+		}
+		var n int64
+		q := "SELECT COUNT(1) FROM " + t
+		if err := queryRowSQLCompat(dbSuper, q).Scan(&n); err != nil {
+			continue
+		}
+		b.WriteString(fmt.Sprintf("- %s=%d\n", t, n))
+		hasData = true
+	}
+	// Resumen de administradores por rol (sin PII: solo conteos)
+	if ok, _ := tableExists(dbSuper, "administradores"); ok {
+		rows, err := querySQLCompat(dbSuper, `SELECT LOWER(COALESCE(role,'')) AS r, COUNT(1) FROM administradores GROUP BY LOWER(COALESCE(role,''))`)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var role string
+				var c int64
+				if err := rows.Scan(&role, &c); err != nil {
+					break
+				}
+				if strings.TrimSpace(role) == "" {
+					role = "sin_rol"
+				}
+				b.WriteString(fmt.Sprintf("- administradores_por_rol %s=%d\n", safeAIValue(role), c))
+				hasData = true
+			}
+		}
+	}
+	if !hasData {
+		return ""
+	}
+	return b.String()
 }
 
 func aiAvailableTables(dbConn *sql.DB, candidates []string) ([]string, error) {
@@ -2170,34 +2239,204 @@ func empresaAISafeVentasAyer(dbConn *sql.DB, empresaID int64, availableTables []
 	}
 }
 
-func buildSuperAISafeIntentContext(dbConn *sql.DB, pregunta string) (string, error) {
-	folded := aiFoldText(pregunta)
-	if strings.TrimSpace(folded) == "" {
-		return "", nil
+func superAIEmpresasListadoSoloLectura(dbConn *sql.DB, limit int) []string {
+	if dbConn == nil || limit <= 0 {
+		return nil
 	}
+	ok, err := tableExists(dbConn, "empresas")
+	if err != nil || !ok {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(nombre, printf('empresa_%d', id)), COALESCE(CAST(nit AS TEXT), ''), COALESCE(estado, '')
+		FROM empresas ORDER BY id ASC LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var id int64
+		var nombre, nit, estado string
+		if err := rows.Scan(&id, &nombre, &nit, &estado); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("id=%d nombre=%s nit=%s estado=%s", id, safeAIValue(nombre), safeAIValue(nit), safeAIValue(estado)))
+	}
+	return out
+}
+
+func superAIFinanzasMuestraGlobal(dbConn *sql.DB, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "empresa_finanzas_movimientos") || !slicesContain(availableTables, "empresas") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(e.nombre, printf('empresa_%d', e.id)),
+		m.id,
+		COALESCE(m.tipo_movimiento, ''),
+		COALESCE(NULLIF(m.concepto, ''), NULLIF(m.descripcion, ''), 'mov'),
+		COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0),
+		COALESCE(m.fecha_movimiento, m.fecha_actualizacion, m.fecha_creacion, '')
+	FROM empresa_finanzas_movimientos m
+	JOIN empresas e ON e.id = m.empresa_id
+	WHERE LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+	ORDER BY COALESCE(m.fecha_movimiento, m.fecha_actualizacion, m.fecha_creacion, '') DESC, m.id DESC
+	LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var enombre string
+		var mid int64
+		var tipo, concepto, fecha string
+		var total float64
+		if err := rows.Scan(&enombre, &mid, &tipo, &concepto, &total, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("empresa=%s mov_id=%d tipo=%s concepto=%s total=%.2f fecha=%s", safeAIValue(enombre), mid, safeAIValue(tipo), safeAIValue(concepto), total, safeAIValue(fecha)))
+	}
+	return out
+}
+
+func superAIProductosMuestraSoloLectura(dbConn *sql.DB, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "productos") || !slicesContain(availableTables, "empresas") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(e.nombre, printf('empresa_%d', e.id)),
+		p.id,
+		COALESCE(p.nombre, ''),
+		COALESCE(p.precio, 0)
+	FROM productos p
+	JOIN empresas e ON e.id = p.empresa_id
+	WHERE LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+	ORDER BY p.id DESC
+	LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var enombre, pnombre string
+		var pid int64
+		var precio float64
+		if err := rows.Scan(&enombre, &pid, &pnombre, &precio); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("empresa=%s producto_id=%d nombre=%s precio=%.2f", safeAIValue(enombre), pid, safeAIValue(pnombre), precio))
+	}
+	return out
+}
+
+func superAIClientesResumenSoloLectura(dbConn *sql.DB, availableTables []string) []string {
+	if !slicesContain(availableTables, "clientes") {
+		return nil
+	}
+	var total int64
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM clientes WHERE LOWER(COALESCE(estado, 'activo')) = 'activo'`).Scan(&total); err != nil {
+		return nil
+	}
+	out := []string{fmt.Sprintf("clientes_activos_total=%d", total)}
+	if !slicesContain(availableTables, "empresas") {
+		return out
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(e.nombre, printf('empresa_%d', e.id)) AS en,
+		COUNT(c.id) AS n
+	FROM clientes c
+	JOIN empresas e ON e.id = c.empresa_id
+	WHERE LOWER(COALESCE(c.estado, 'activo')) = 'activo'
+	GROUP BY e.id, e.nombre
+	ORDER BY n DESC, e.nombre ASC
+	LIMIT 8`)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		var n int64
+		if err := rows.Scan(&name, &n); err != nil {
+			return out
+		}
+		out = append(out, fmt.Sprintf("clientes_por_empresa=%s n=%d", safeAIValue(name), n))
+	}
+	return out
+}
+
+// buildSuperAIEmpresaSoloLecturaSnapshot añade bloques de solo lectura sobre la base empresas
+// (agregados y filas puntuales acotadas), sin operaciones de escritura.
+func buildSuperAIEmpresaSoloLecturaSnapshot(dbConn *sql.DB, availableTables []string) []empresaAISafeIntent {
+	intents := make([]empresaAISafeIntent, 0, 6)
+	if lines := superAIEmpresasListadoSoloLectura(dbConn, 35); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_EMPRESAS_LISTA", Lines: lines})
+	}
+	if lines := superAIFinanzasMuestraGlobal(dbConn, availableTables, 12); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_FINANZAS_MUESTRA", Lines: lines})
+	}
+	if lines := superAIProductosMuestraSoloLectura(dbConn, availableTables, 14); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_PRODUCTOS_MUESTRA", Lines: lines})
+	}
+	if lines := superAIClientesResumenSoloLectura(dbConn, availableTables); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_CLIENTES_RESUMEN", Lines: lines})
+	}
+	if lines := superAIVentasRecientes(dbConn, availableTables, 8); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_VENTAS_RECIENTES", Lines: lines})
+	}
+	if lines := superAITopEmpresasVentas(dbConn, availableTables, 8); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_TOP_EMPRESAS_VENTAS", Lines: lines})
+	}
+	if lines := superAIAlertasInventario(dbConn, availableTables, 6); len(lines) > 0 {
+		intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SOLO_LECTURA_INVENTARIO_ALERTAS", Lines: lines})
+	}
+	return intents
+}
+
+func buildSuperAISafeIntentContext(dbConn *sql.DB, pregunta string, empresaSoloLectura bool) (string, error) {
+	folded := aiFoldText(pregunta)
 	availableTables, err := aiAvailableTables(dbConn, []string{
 		"empresas",
 		"productos",
 		"inventario_existencias",
 		"carritos_compras",
 		"empresa_finanzas_movimientos",
+		"clientes",
 	})
 	if err != nil {
 		return "", err
 	}
 
-	intents := make([]empresaAISafeIntent, 0, 3)
-	if aiLooksLikeSalesQuestion(folded) {
-		if lines := superAIVentasRecientes(dbConn, availableTables, 5); len(lines) > 0 {
-			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_VENTAS_RECIENTES", Lines: lines})
+	intents := make([]empresaAISafeIntent, 0, 8)
+	if empresaSoloLectura {
+		intents = append(intents, buildSuperAIEmpresaSoloLecturaSnapshot(dbConn, availableTables)...)
+	} else {
+		if strings.TrimSpace(folded) == "" {
+			return "", nil
 		}
-		if lines := superAITopEmpresasVentas(dbConn, availableTables, 5); len(lines) > 0 {
-			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_EMPRESAS_TOP_VENTAS", Lines: lines})
+		if aiLooksLikeSalesQuestion(folded) {
+			if lines := superAIVentasRecientes(dbConn, availableTables, 5); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_VENTAS_RECIENTES", Lines: lines})
+			}
+			if lines := superAITopEmpresasVentas(dbConn, availableTables, 5); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_EMPRESAS_TOP_VENTAS", Lines: lines})
+			}
 		}
-	}
-	if aiLooksLikeInventoryQuestion(folded) || aiLooksLikeProductQuestion(folded) {
-		if lines := superAIAlertasInventario(dbConn, availableTables, 5); len(lines) > 0 {
-			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_ALERTAS_INVENTARIO", Lines: lines})
+		if aiLooksLikeInventoryQuestion(folded) || aiLooksLikeProductQuestion(folded) {
+			if lines := superAIAlertasInventario(dbConn, availableTables, 5); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_ALERTAS_INVENTARIO", Lines: lines})
+			}
+		}
+		if aiLooksLikeFinanceQuestion(folded) {
+			if lines := superAIFinanzasMuestraGlobal(dbConn, availableTables, 8); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_FINANZAS_MUESTRA", Lines: lines})
+			}
+		}
+		if aiLooksLikeClientQuestion(folded) {
+			if lines := superAIClientesResumenSoloLectura(dbConn, availableTables); len(lines) > 0 {
+				intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_CLIENTES_RESUMEN", Lines: lines})
+			}
 		}
 	}
 	if len(intents) == 0 {
@@ -2205,6 +2444,9 @@ func buildSuperAISafeIntentContext(dbConn *sql.DB, pregunta string) (string, err
 	}
 	var b strings.Builder
 	b.WriteString("CONSULTAS_SEGURAS_GLOBALES_RESUELTAS\n")
+	if empresaSoloLectura {
+		b.WriteString("nota=fragmentos de solo lectura de la base empresas; el modelo no puede editar ni eliminar datos; no sugieras escrituras.\n")
+	}
 	for _, intent := range intents {
 		writeAIContextSection(&b, intent.Name, intent.Lines)
 	}

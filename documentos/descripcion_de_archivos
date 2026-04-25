@@ -80,8 +80,8 @@
 	- `backend/main.go` : registra la nueva ruta `/super/api/config/limitaciones_empresa`.
 
 - Actualizacion 2026-04-24: pagina super para configuracion logica del chat con IA
-	- `web/super/configuracion_logica_del_chat_con_ia.html` (nuevo) : pagina de super administrador para configurar restricciones del chat IA para empresas y para el chat global.
-	- `backend/handlers/super_chat_ia_logica.go` (nuevo) : endpoint `GET/PUT /super/api/config/chat_ia_logica` que persiste estado y limites diarios (`ai.chat.empresa.*`, `ai.chat.super.*`) en la tabla `configuraciones` (base superadministrador).
+	- `web/super/configuracion_logica_del_chat_con_ia.html` (nuevo) : pagina de super administrador para configurar restricciones del chat IA para empresas y para el chat global; incluye conmutadores de contexto ampliado (base super, metadatos agregados) y de solo lectura sobre datos de la base de empresas inyectados al chat global.
+	- `backend/handlers/super_chat_ia_logica.go` (nuevo) : endpoint `GET/PUT /super/api/config/chat_ia_logica` que persiste estado, limites diarios y flags de contexto (`ai.chat.empresa.*`, `ai.chat.super.*`, `ai.chat.super.contexto_amplio`, `ai.chat.super.empresa_solo_lectura`) en la tabla `configuraciones` (base superadministrador).
 	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` : aplica las restricciones configuradas (habilitado + limite diario efectivo) al chat IA de empresas.
 	- `backend/handlers/chat_con_ia_global_super.go` : aplica las restricciones configuradas (habilitado + limite diario efectivo) al chat global super.
 	- `web/super_administrador.html` : agrega el enlace de menú a `Configuración lógica chat IA`.
@@ -4798,6 +4798,8 @@ Actualizacion 2026-04-05: Cierre de wrappers en todas las rutas `/api/empresa`
 
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- Ajusta `loadCountries()` para enviar `empresa_id` al endpoint `paises_disponibles` bajo el nuevo wrapper de facturacion.
+
+- Actualizacion 2026-04-25: `web/administrar_empresa/facturacion_electronica.html` — bloque de contexto por pais (vista SRI/DGI vs DIAN), campos estructurados EC/PA fusionados a `campos_pais_json`, y catalogo con `vista` desde `GET paises_disponibles` y `pais_detectado` (backend en `FacturacionPaisVistaFor` / `ListFacturacionPaisesConVista`).
 
 Actualizacion 2026-04-05: Refuerzo de integracion multiempresa por contexto de request
 

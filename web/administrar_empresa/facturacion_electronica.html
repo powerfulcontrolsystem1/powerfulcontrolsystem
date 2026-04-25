@@ -23,6 +23,43 @@
       </div>
     </div>
 
+    <div id="feVistaBloque" class="card fe-vista-bloque">
+      <h2 id="feVistaTitulo">Perfil de facturación</h2>
+      <p id="feVistaEnte" class="form-help"></p>
+      <p id="feVistaResumen" class="form-help"></p>
+      <p id="feVistaIndependencia" class="form-help fe-vista-indep"></p>
+      <p id="feVistaDianWrap" class="is-hidden"><a id="feVistaDianLink" class="btn secondary" href="#" rel="noopener">Abrir módulo DIAN / documental (solo Colombia)</a></p>
+    </div>
+
+    <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
+      <h3>Campos estructurados — Ecuador (SRI)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>establecimiento</code>, <code>punto_emision</code>, <code>ambiente_sri</code>). No interfiere con Colombia ni con la DIAN.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ec_ruc">RUC</label><input id="fe_ec_ruc" class="form-input" placeholder="RUC" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ec_est">Establecimiento</label><input id="fe_ec_est" class="form-input" placeholder="001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ec_punto">Punto de emisión</label><input id="fe_ec_punto" class="form-input" placeholder="001" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="fe_ec_ambiente_sri">Ambiente SRI (opcional)</label>
+          <select id="fe_ec_ambiente_sri" class="form-input">
+            <option value="">(definir en JSON o aquí)</option>
+            <option value="1">1 — Pruebas</option>
+            <option value="2">2 — Producción</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoPA" class="card is-hidden fe-estructurado fe-estructurado-pa">
+      <h3>Campos estructurados — Panamá (DGI)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>dv</code>. Independiente de Colombia y de la DIAN.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_pa_ruc">RUC</label><input id="fe_pa_ruc" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_pa_dv">Dígito verificador (DV)</label><input id="fe_pa_dv" class="form-input" autocomplete="off"></div>
+      </div>
+    </div>
+
     <form id="feForm" class="form">
       <input type="hidden" id="empresa_id">
       <div class="form-row">
@@ -53,7 +90,7 @@
           <input id="tipo_documento_emisor" class="form-input" placeholder="NIT / RUC / Cédula jurídica">
         </div>
         <div class="form-col">
-          <label class="form-label">Identificador fiscal</label>
+          <label class="form-label" id="labelIdentificador">Identificador fiscal</label>
           <input id="identificador_fiscal" class="form-input" placeholder="NIT / RUC por país">
         </div>
       </div>
@@ -82,11 +119,11 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Prefijo de factura</label>
+          <label class="form-label" id="labelPrefijo">Prefijo de factura</label>
           <input id="prefijo_factura" class="form-input" placeholder="FE / INV / F">
         </div>
         <div class="form-col">
-          <label class="form-label">Número de resolución</label>
+          <label class="form-label" id="labelResolucion">Número de resolución</label>
           <input id="resolucion_numero" class="form-input" placeholder="Resolución/autorización local">
         </div>
         <div class="form-col">
@@ -394,7 +431,8 @@
     const state = {
       empresaID: 0,
       paisSeleccionado: "",
-      paises: []
+      paises: [],
+      catalog: []
     };
 
     const advancedConfigState = {
@@ -599,18 +637,133 @@
       return (item.bandera || "") + " " + (item.nombre || item.codigo || "");
     }
 
+    function findCatalogItem(code) {
+      const c = (code || "").toUpperCase();
+      if (!state.catalog || !state.catalog.length) return null;
+      for (var i = 0; i < state.catalog.length; i += 1) {
+        if ((state.catalog[i].codigo || "").toUpperCase() === c) return state.catalog[i];
+      }
+      return null;
+    }
+
+    function applyVistaForPais(code, vistaOpt) {
+      const codeU = (code || "").toUpperCase() || "CO";
+      var vista = vistaOpt;
+      if (!vista) {
+        var it = findCatalogItem(codeU);
+        if (it) vista = it.vista;
+      }
+      if (document.getElementById("feVistaTitulo")) {
+        document.getElementById("feVistaTitulo").textContent = "Perfil de facturación — " + codeU;
+      }
+      if (vista) {
+        var ente = document.getElementById("feVistaEnte");
+        var res = document.getElementById("feVistaResumen");
+        var indep = document.getElementById("feVistaIndependencia");
+        if (ente) ente.textContent = vista.ente_fiscal || "";
+        if (res) res.textContent = vista.resumen_operativo || "";
+        if (indep) indep.textContent = vista.nota_independencia || "";
+        var dwrap = document.getElementById("feVistaDianWrap");
+        var dlink = document.getElementById("feVistaDianLink");
+        if (dwrap && dlink) {
+          if (codeU === "CO" && vista.modulo_dian_ruta) {
+            dlink.href = vista.modulo_dian_ruta + encodeURIComponent(state.empresaID) + "#dianToolsSection";
+            dwrap.classList.remove("is-hidden");
+          } else {
+            dwrap.classList.add("is-hidden");
+          }
+        }
+        if (vista.label_identificador) {
+          var li = document.getElementById("labelIdentificador");
+          if (li) li.textContent = vista.label_identificador;
+        }
+        if (vista.label_prefijo) {
+          var lp = document.getElementById("labelPrefijo");
+          if (lp) lp.textContent = vista.label_prefijo;
+        }
+        if (vista.label_resolucion) {
+          var lr = document.getElementById("labelResolucion");
+          if (lr) lr.textContent = vista.label_resolucion;
+        }
+        var rz = document.getElementById("razon_social");
+        if (rz && vista.placeholder_razon_social) rz.setAttribute("placeholder", vista.placeholder_razon_social);
+      }
+      var ec = document.getElementById("feEstructuradoEC");
+      var pa = document.getElementById("feEstructuradoPA");
+      if (ec) ec.classList.toggle("is-hidden", codeU !== "EC");
+      if (pa) pa.classList.toggle("is-hidden", codeU !== "PA");
+      fillCountryHint(codeU);
+      defaultMonedaForPais(codeU);
+    }
+
+    function defaultMonedaForPais(codeU) {
+      var c = (codeU || "").toUpperCase();
+      var m = document.getElementById("moneda_codigo");
+      var op = document.getElementById("op_moneda");
+      if (c === "EC") {
+        if (m && !txt(m.value)) m.value = "USD";
+        if (op && !txt(op.value)) op.value = "USD";
+      } else if (c === "PA") {
+        if (m && !txt(m.value)) m.value = "PAB";
+        if (op && !txt(op.value)) op.value = "PAB";
+      } else if (c === "CO") {
+        if (m && !txt(m.value)) m.value = "COP";
+        if (op && !txt(op.value)) op.value = "COP";
+      }
+    }
+
+    function mergeEstructuradoToJson() {
+      var code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+      var extra = {};
+      try {
+        var raw = txt(document.getElementById("campos_pais_json").value);
+        if (raw) extra = JSON.parse(raw) || {};
+      } catch (e) { extra = {}; }
+      if (code === "EC") {
+        if (document.getElementById("fe_ec_ruc")) extra.ruc = txt(document.getElementById("fe_ec_ruc").value) || extra.ruc;
+        if (document.getElementById("fe_ec_est")) extra.establecimiento = txt(document.getElementById("fe_ec_est").value) || extra.establecimiento;
+        if (document.getElementById("fe_ec_punto")) extra.punto_emision = txt(document.getElementById("fe_ec_punto").value) || extra.punto_emision;
+        var amb = document.getElementById("fe_ec_ambiente_sri");
+        if (amb && txt(amb.value)) extra.ambiente_sri = txt(amb.value);
+      }
+      if (code === "PA") {
+        if (document.getElementById("fe_pa_ruc")) extra.ruc = txt(document.getElementById("fe_pa_ruc").value) || extra.ruc;
+        if (document.getElementById("fe_pa_dv")) extra.dv = txt(document.getElementById("fe_pa_dv").value) || extra.dv;
+      }
+      document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
+    }
+
+    function applyEstructuradoFromJson(raw) {
+      var j = {};
+      try { if (raw) j = JSON.parse(raw) || {}; } catch (e) {}
+      if (document.getElementById("fe_ec_ruc")) {
+        document.getElementById("fe_ec_ruc").value = j.ruc || "";
+        document.getElementById("fe_ec_est").value = j.establecimiento || "";
+        document.getElementById("fe_ec_punto").value = j.punto_emision || "";
+        var as = document.getElementById("fe_ec_ambiente_sri");
+        if (as) {
+          as.value = (j.ambiente_sri != null && j.ambiente_sri !== "") ? String(j.ambiente_sri) : "";
+        }
+      }
+      if (document.getElementById("fe_pa_ruc")) {
+        document.getElementById("fe_pa_ruc").value = j.ruc || "";
+        document.getElementById("fe_pa_dv").value = j.dv || "";
+      }
+    }
+
     function fillCountryHint(code) {
       const hint = document.getElementById("countryHint");
+      if (!hint) return;
       const key = (code || "").toUpperCase();
       if (key === "PA") {
-        hint.textContent = "Panamá: puedes guardar campos como {\"ruc\":\"...\",\"dv\":\"...\",\"punto_factura\":\"...\"}.";
+        hint.textContent = "Complementa con JSON (opcional) para folios, PSE o códigos adicionales. Panamá no usa módulo DIAN Colombia.";
         return;
       }
       if (key === "EC") {
-        hint.textContent = "Ecuador: puedes guardar campos como {\"ruc\":\"...\",\"ambiente_sri\":\"2\",\"establecimiento\":\"001\",\"punto_emision\":\"001\"}.";
+        hint.textContent = "Use los campos estructurados o JSON con ruc, establecimiento, punto_emision, ambiente_sri. No se mezcla con resolución DIAN.";
         return;
       }
-      hint.textContent = "Colombia: puedes guardar campos como {\"software_id\":\"...\",\"pin\":\"...\",\"tipo_operacion\":\"10\"}.";
+      hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). La DIAN detallada está en el módulo del ERP (enlace arriba).";
     }
 
     function renderList(items) {
@@ -654,6 +807,7 @@
     }
 
     function collectPayload() {
+      mergeEstructuradoToJson();
       return {
         empresa_id: Number(state.empresaID),
         pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
@@ -710,7 +864,8 @@
       document.getElementById("api_base_url").value = txt(cfg.api_base_url);
       document.getElementById("campos_pais_json").value = txt(cfg.campos_pais_json) || "{}";
       document.getElementById("observaciones").value = txt(cfg.observaciones);
-      fillCountryHint(document.getElementById("pais_codigo").value);
+      applyEstructuradoFromJson(document.getElementById("campos_pais_json").value);
+      applyVistaForPais(document.getElementById("pais_codigo").value, null);
     }
 
     async function loadCountryConfig(countryCode) {
@@ -737,28 +892,29 @@
       if (info.pais_codigo) {
         state.paisSeleccionado = String(info.pais_codigo).toUpperCase();
         document.getElementById("pais_codigo").value = state.paisSeleccionado;
-        fillCountryHint(state.paisSeleccionado);
+        applyVistaForPais(state.paisSeleccionado, info.vista);
       }
       return info;
     }
 
     async function loadCountries() {
-	  const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles?empresa_id=" + encodeURIComponent(state.empresaID));
+      const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles?empresa_id=" + encodeURIComponent(state.empresaID));
       await ensureOk(res);
       const data = await res.json();
-      state.paises = Array.isArray(data.items) ? data.items : [];
+      state.catalog = Array.isArray(data.items) ? data.items : [];
+      state.paises = state.catalog;
       const sel = document.getElementById("pais_codigo");
       sel.innerHTML = "";
-      state.paises.forEach(function(item) {
+      state.catalog.forEach(function(item) {
         const opt = document.createElement("option");
         opt.value = item.codigo;
         opt.textContent = countryLabel(item);
         sel.appendChild(opt);
       });
-      if (!state.paises.length) {
+      if (!state.catalog.length) {
         const opt = document.createElement("option");
         opt.value = "CO";
-        opt.textContent = "ðŸ‡¨ðŸ‡´ Colombia";
+        opt.textContent = "Colombia (CO)";
         sel.appendChild(opt);
       }
     }
@@ -808,13 +964,14 @@
       }
     }
 
-    document.getElementById("pais_codigo").addEventListener("change", function() {
+      document.getElementById("pais_codigo").addEventListener("change", function() {
       const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
-      fillCountryHint(code);
       if (code) {
         loadCountryConfig(code).catch(function(err) {
           setMessage(err.message || "No se pudo cargar configuración de país", true);
         });
+      } else {
+        applyVistaForPais("", null);
       }
     });
 

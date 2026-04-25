@@ -71,6 +71,29 @@
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="superContextoAmplio">Contexto ampliado (base superadministrador)</label>
+          <label class="mode-switch-row" for="superContextoAmplio">
+            <span class="mode-label">Off</span>
+            <input id="superContextoAmplio" type="checkbox" role="switch" aria-label="Incluir contexto ampliado de la base superadministrador en el chat global">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Activa un bloque extra con <strong>conteos y metadatos</strong> de tablas del esquema super (administradores, configuración clave, IA, asesores, etc.). <strong>No</strong> inyecta credenciales ni valores secretos. Equivale a una visión de gestión de plataforma.</div>
+          <div id="superContextoAmplioStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaSoloLectura">Solo lectura: base de empresas</label>
+          <label class="mode-switch-row" for="empresaSoloLectura">
+            <span class="mode-label">Off</span>
+            <input id="empresaSoloLectura" type="checkbox" role="switch" aria-label="Habilitar en el chat global fragmentos de solo lectura de la base de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">El servidor solo adjunta <strong>SELECT</strong> y agregados aprobados (listado de empresas, muestras de productos, finanzas, clientes, ventas). <strong>Prohíbe</strong> a la IA sugerir ediciones o <code>PCS_ACTION</code> de negocio; el prompt refuerza solo análisis y consulta informativa.</div>
+          <div id="empresaSoloLecturaStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button id="saveSuperChatBtn" class="btn" type="button">Guardar chat IA global</button>
       </div>
@@ -140,9 +163,15 @@
           const empMaxInfo = values.empresa_max_consultas || {};
           const supEnabledInfo = values.super_enabled || {};
           const supMaxInfo = values.super_max_consultas || {};
+          const supCtxInfo = values.super_contexto_amplio || {};
+          const empROInfo = values.empresa_solo_lectura || {};
 
           document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
           document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
+          var supCtx = document.getElementById('superContextoAmplio');
+          if (supCtx) supCtx.checked = !!supCtxInfo.value;
+          var empRO = document.getElementById('empresaSoloLectura');
+          if (empRO) empRO.checked = !!empROInfo.value;
 
           document.getElementById('empresaMaxConsultas').value = String(toInt(empMaxInfo.value, toInt(defaults.empresa_max_consultas, 10)));
           document.getElementById('superMaxConsultas').value = String(toInt(supMaxInfo.value, toInt(defaults.super_max_consultas, 30)));
@@ -151,6 +180,8 @@
           renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
           renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
           renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
+          renderStatus(document.getElementById('superContextoAmplioStatus'), supCtxInfo);
+          renderStatus(document.getElementById('empresaSoloLecturaStatus'), empROInfo);
 
           const usage = data.openai_usage_today || {};
           const fechaUso = normalize(usage.fecha_uso);
@@ -186,11 +217,15 @@
         if (!isEmpresa && superMsg) superMsg.textContent = 'Guardando...';
 
         try {
+          const elSupCtx = document.getElementById('superContextoAmplio');
+          const elEmpRO = document.getElementById('empresaSoloLectura');
           const payload = {
             empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
             empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
             super_enabled: !!document.getElementById('superChatEnabled').checked,
             super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
+            super_contexto_amplio: elSupCtx ? !!elSupCtx.checked : false,
+            empresa_solo_lectura: elEmpRO ? !!elEmpRO.checked : false,
           };
           await apiFetch('/super/api/config/chat_ia_logica', {
             method: 'PUT',

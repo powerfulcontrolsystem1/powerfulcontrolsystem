@@ -45,6 +45,13 @@
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
+## 2026-04-25
+- Facturación electrónica: perfiles independientes para Ecuador (SRI) y Panamá (DGE/DGI) frente a Colombia (DIAN); detección por licencia; API y UI con `vista` por país.
+	- Archivos: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`.
+
+- Configuración lógica del chat global (super): contexto ampliado de la base superadministrador y modo solo lectura de datos de empresas inyectados al prompt; ajuste de legibilidad en estaciones (vista miniaturas móvil).
+	- Archivos: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `CHANGELOG.md`.
+
 ## 2026-04-23
 - Retiro del modulo Tipos de usuario en panel super: API, handlers, pagina web y tabla `tipos_de_usuario` (DROP al arranque); solo permanecen roles y permisos por rol.
 	- Archivos modificados/eliminados: `backend/main.go`, `backend/handlers/roles_tipos_usuario.go`, `backend/db/roles_tipos_usuario.go`, `web/super_administrador.html`, `web/js/super_administrador.js`, `web/super/tipos_de_usuario.htm` (eliminado), `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.

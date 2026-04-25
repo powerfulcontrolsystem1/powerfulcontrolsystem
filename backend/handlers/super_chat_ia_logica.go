@@ -16,6 +16,8 @@ const (
 	superChatIASuperEnabledKey       = "ai.chat.super.enabled"
 	superChatIAEmpresaMaxConsultasKey = "ai.chat.empresa.max_consultas_dia"
 	superChatIASuperMaxConsultasKey   = "ai.chat.super.max_consultas_dia"
+	superChatIASuperContextoAmplioKey = "ai.chat.super.contexto_amplio"
+	superChatIAEmpresaSoloLecturaKey  = "ai.chat.super.empresa_solo_lectura"
 
 	superChatIALogicaUpdatedBySuffix = ".updated_by"
 
@@ -23,6 +25,8 @@ const (
 	defaultChatIASuperEnabled        = true
 	defaultChatIAEmpresaMaxConsultas = int64(10)
 	defaultChatIASuperMaxConsultas   = int64(30)
+	defaultChatIASuperContextoAmplio = false
+	defaultChatIAEmpresaSoloLectura  = false
 )
 
 func parseConfigBoolWithDefault(raw string, fallback bool) bool {
@@ -102,6 +106,22 @@ func getChatIASuperMaxConsultasDia(dbSuper *sql.DB) (int64, string, string, erro
 	return parseConfigNonNegativeInt64WithDefault(raw, defaultChatIASuperMaxConsultas), updatedAt, updatedBy, nil
 }
 
+func getChatIASuperContextoAmplio(dbSuper *sql.DB) (bool, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIASuperContextoAmplioKey)
+	if err != nil {
+		return defaultChatIASuperContextoAmplio, "", "", err
+	}
+	return parseConfigBoolWithDefault(raw, defaultChatIASuperContextoAmplio), updatedAt, updatedBy, nil
+}
+
+func getChatIAEmpresaSoloLectura(dbSuper *sql.DB) (bool, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaSoloLecturaKey)
+	if err != nil {
+		return defaultChatIAEmpresaSoloLectura, "", "", err
+	}
+	return parseConfigBoolWithDefault(raw, defaultChatIAEmpresaSoloLectura), updatedAt, updatedBy, nil
+}
+
 func effectiveDailyLimitBySuperConfig(maxConfigured int64, modelFreeDailyLimit int) int64 {
 	effective := int64(modelFreeDailyLimit)
 	if effective <= 0 {
@@ -151,6 +171,16 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			superCtxAmplio, superCtxAmplioAt, superCtxAmplioBy, err := getChatIASuperContextoAmplio(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			empSoloLectura, empSoloLecturaAt, empSoloLecturaBy, err := getChatIAEmpresaSoloLectura(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 
 			fechaUso := time.Now().Format("2006-01-02")
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
@@ -173,10 +203,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"defaults": map[string]interface{}{
-					"empresa_enabled":        defaultChatIAEmpresaEnabled,
-					"empresa_max_consultas":  defaultChatIAEmpresaMaxConsultas,
-					"super_enabled":          defaultChatIASuperEnabled,
-					"super_max_consultas":    defaultChatIASuperMaxConsultas,
+					"empresa_enabled":             defaultChatIAEmpresaEnabled,
+					"empresa_max_consultas":       defaultChatIAEmpresaMaxConsultas,
+					"super_enabled":               defaultChatIASuperEnabled,
+					"super_max_consultas":         defaultChatIASuperMaxConsultas,
+					"super_contexto_amplio":       defaultChatIASuperContextoAmplio,
+					"empresa_solo_lectura":        defaultChatIAEmpresaSoloLectura,
 				},
 				"values": map[string]interface{}{
 					"empresa_enabled": map[string]interface{}{
@@ -203,6 +235,18 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"updated_at": superMaxAt,
 						"updated_by": superMaxBy,
 					},
+					"super_contexto_amplio": map[string]interface{}{
+						"value":      superCtxAmplio,
+						"config_key": superChatIASuperContextoAmplioKey,
+						"updated_at": superCtxAmplioAt,
+						"updated_by": superCtxAmplioBy,
+					},
+					"empresa_solo_lectura": map[string]interface{}{
+						"value":      empSoloLectura,
+						"config_key": superChatIAEmpresaSoloLecturaKey,
+						"updated_at": empSoloLecturaAt,
+						"updated_by": empSoloLecturaBy,
+					},
 				},
 				"openai_usage_today": map[string]interface{}{
 					"fecha_uso": fechaUso,
@@ -225,10 +269,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut, http.MethodPost:
 			var payload struct {
-				EmpresaEnabled       *bool  `json:"empresa_enabled"`
-				EmpresaMaxConsultas  *int64 `json:"empresa_max_consultas"`
-				SuperEnabled         *bool  `json:"super_enabled"`
-				SuperMaxConsultas    *int64 `json:"super_max_consultas"`
+				EmpresaEnabled          *bool  `json:"empresa_enabled"`
+				EmpresaMaxConsultas     *int64 `json:"empresa_max_consultas"`
+				SuperEnabled            *bool  `json:"super_enabled"`
+				SuperMaxConsultas       *int64 `json:"super_max_consultas"`
+				SuperContextoAmplio     *bool  `json:"super_contexto_amplio"`
+				EmpresaSoloLectura      *bool  `json:"empresa_solo_lectura"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -257,6 +303,22 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if superMax < 0 {
 				superMax = 0
 			}
+			superCtxAmplio := defaultChatIASuperContextoAmplio
+			if payload.SuperContextoAmplio != nil {
+				superCtxAmplio = *payload.SuperContextoAmplio
+			} else {
+				if cur, _, _, err := getChatIASuperContextoAmplio(dbSuper); err == nil {
+					superCtxAmplio = cur
+				}
+			}
+			empSoloLectura := defaultChatIAEmpresaSoloLectura
+			if payload.EmpresaSoloLectura != nil {
+				empSoloLectura = *payload.EmpresaSoloLectura
+			} else {
+				if cur, _, _, err := getChatIAEmpresaSoloLectura(dbSuper); err == nil {
+					empSoloLectura = cur
+				}
+			}
 
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
 
@@ -284,13 +346,27 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superChatIASuperMaxConsultasKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIASuperContextoAmplioKey, strconv.FormatBool(superCtxAmplio), false); err != nil {
+				http.Error(w, "error guardando super_contexto_amplio: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIASuperContextoAmplioKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaSoloLecturaKey, strconv.FormatBool(empSoloLectura), false); err != nil {
+				http.Error(w, "error guardando empresa_solo_lectura: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaSoloLecturaKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"saved": map[string]interface{}{
-					"empresa_enabled":       empresaEnabled,
-					"empresa_max_consultas": empresaMax,
-					"super_enabled":         superEnabled,
-					"super_max_consultas":   superMax,
+					"empresa_enabled":        empresaEnabled,
+					"empresa_max_consultas":  empresaMax,
+					"super_enabled":          superEnabled,
+					"super_max_consultas":    superMax,
+					"super_contexto_amplio":  superCtxAmplio,
+					"empresa_solo_lectura":   empSoloLectura,
 				},
 			})
 			return

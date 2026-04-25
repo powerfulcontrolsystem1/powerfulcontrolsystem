@@ -847,6 +847,7 @@ func EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmp *sql.DB) http.Handl
 			"bandera":     pais.Bandera,
 			"moneda":      pais.Moneda,
 			"source":      source,
+			"vista":       dbpkg.FacturacionPaisVistaFor(pais.Codigo),
 		})
 	}
 }
@@ -859,7 +860,7 @@ func EmpresaFacturacionElectronicaPaisesDisponiblesHandler() http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"items": dbpkg.ListPaisesFacturacionDisponibles(),
+			"items": dbpkg.ListFacturacionPaisesConVista(),
 		})
 	}
 }
@@ -1086,8 +1087,23 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 		"periodo_contable":  strings.TrimSpace(facturacionFirstNonBlank(doc.PeriodoContable, payload.PeriodoContable)),
 		"campos_pais":       camposPais,
 	}
-	if payloadReq["moneda"] == "" {
-		payloadReq["moneda"] = "COP"
+	if m, _ := payloadReq["moneda"].(string); strings.TrimSpace(m) == "" {
+		def := "COP"
+		if cfg != nil {
+			if mc := strings.TrimSpace(cfg.MonedaCodigo); mc != "" {
+				def = strings.ToUpper(mc)
+			} else {
+				switch strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo)) {
+				case "EC":
+					def = "USD"
+				case "PA":
+					def = "PAB"
+				case "CO":
+					def = "COP"
+				}
+			}
+		}
+		payloadReq["moneda"] = def
 	}
 
 	return dispatchFacturacionProveedorHTTP(endpoint, payloadReq)

@@ -32,9 +32,10 @@
     }
     .home-offer-card { 
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 35px 25px; text-align: center;
+      border-radius: 16px; padding: 28px 22px; text-align: center;
       transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
       position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: stretch;
     }
     .home-offer-card::before {
       content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px;
@@ -43,16 +44,38 @@
     }
     .home-offer-card:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0,0,0,0.3); border-color: var(--accent); }
     .home-offer-card:hover::before { opacity: 1; }
-    .home-offer-media { margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .home-offer-media img { width: 72px; height: 72px; object-fit: contain; }
-    .home-offer-media .card-logo-secondary { width: 168px; height: 168px; object-fit: contain; opacity: 0.96; }
-
-    @media (max-width: 520px) {
-      .home-offer-media { flex-wrap: wrap; }
-      .home-offer-media .card-logo-secondary { width: 120px; height: 120px; }
+    /* Arriba: logo pequeño + título */
+    .home-offer-head {
+      display: flex; align-items: center; justify-content: center; gap: 10px 14px;
+      flex-wrap: wrap; margin-bottom: 16px; text-align: center;
     }
-    .home-offer-card h3 { font-size: 1.5rem; font-family: 'Montserrat', sans-serif; margin-bottom: 12px; color: var(--text); }
-    .home-offer-card p { font-size: 1rem; color: var(--muted); margin-bottom: 25px; line-height: 1.6; }
+    .home-offer-card .home-offer-head .card-logo {
+      width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+      object-fit: contain; flex: 0 0 36px;
+      opacity: 0.95;
+    }
+    .home-offer-head h3 {
+      font-size: 1.45rem; font-family: 'Montserrat', sans-serif; margin: 0;
+      color: var(--text); line-height: 1.2; text-align: center;
+    }
+    /* Imagen principal debajo del título, centrada */
+    .home-offer-figure {
+      margin: 0 0 18px; display: flex; align-items: center; justify-content: center;
+      min-height: 100px;
+    }
+    .home-offer-figure .card-figure-img {
+      max-width: 100%; width: auto; max-height: 180px; height: auto;
+      object-fit: contain; display: block; opacity: 0.98;
+      filter: none; margin: 0;
+    }
+    @media (max-width: 520px) {
+      .home-offer-figure img { max-height: 140px; }
+    }
+    .home-offer-card .home-offer-body { text-align: center; }
+    .home-offer-card p { font-size: 1rem; color: var(--muted); margin: 0 0 20px; line-height: 1.6; padding: 0; }
+    /* Sobre-escribir reglas globales de estilos.css para h3/p dentro de la nueva estructura */
+    .home-offer-card .home-offer-head h3 { padding: 0; }
+    .home-offer-body p { margin: 0 0 20px; }
     .home-offer-btn {
       display: inline-block; padding: 10px 20px; width: 100%;
       background: transparent; color: var(--text); border: 1px solid var(--accent);
@@ -437,13 +460,17 @@
         var html = cards.map(function (card, idx) {
           return '' +
             '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
-            '  <div class="home-offer-media">' +
-            '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Icono ' + escapeHTML(card.titulo) + '" class="card-logo">' +
-            '    <img src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="Sistema" class="card-logo-secondary">' +
+            '  <div class="home-offer-head">' +
+            '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Logo: ' + escapeHTML(card.titulo) + '" class="card-logo" width="36" height="36">' +
+            '    <h3>' + escapeHTML(card.titulo) + '</h3>' +
             '  </div>' +
-            '  <h3>' + escapeHTML(card.titulo) + '</h3>' +
-            '  <p>' + escapeHTML(card.descripcion) + '</p>' +
-            '  <div class="card-actions">' +
+            '  <div class="home-offer-figure">' +
+            '    <img class="card-figure-img" src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
+            '  </div>' +
+            '  <div class="home-offer-body">' +
+            '    <p>' + escapeHTML(card.descripcion) + '</p>' +
+            '  </div>' +
+            '  <div class="card-actions" style="margin-top:auto;">' +
             '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '">Explorar oferta</a>' +
             '  </div>' +
             '</article>';

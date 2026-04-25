@@ -1,3 +1,15 @@
+2026-04-25: Facturación electrónica — Ecuador y Panamá (perfiles independientes de Colombia)
+- Módulos afectados: `facturación electrónica`, `licencias`, `administrar_empresa`
+- Cambio funcional: el catálogo por país (CO, EC, PA) expone metadatos `vista` para textos legales, etiquetas de formulario y enlace al módulo DIAN/documental **solo para Colombia**. Ecuador (SRI) y Panamá (DGI) tienen bloques de captura estructurada que se fusionan con `campos_pais_json` sin tocar `empresa_dian` ni flujos DIAN. La detección automática considera `empresa_configuracion_avanzada`, `facturacion_electronica_pais`, **licencia activa** (`pais_codigo`), zona horaria e idioma.
+- Archivos clave: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`
+- Impacto operativo: sin dependencias nuevas; el envío HTTP a proveedor usa moneda por configuración o país si el monto iba sin moneda.
+
+2026-04-25: Chat IA super — contexto ampliado y solo lectura empresas
+- Modulos afectados: `chat IA`, `super`, `estaciones` (miniaturas CSS)
+- Cambio funcional: `configuracion_logica_del_chat_con_ia` persiste `ai.chat.super.contexto_amplio` (conteos/metadatos de tablas del esquema super, sin secretos) y `ai.chat.super.empresa_solo_lectura` (fragmentos de lectura de la base empresas: empresas, finanzas, productos, clientes, ventas). El handler del chat global (`BuildSuperAIContextoForQuestion` con `SuperAIContextoOpts`) arma el prompt; con solo lectura se restringe la guía `PCS_ACTION` frente a datos de negocio. En `estaciones` la vista `estaciones-thumb-mobile` ajusta tipografía con `clamp` y elimina un `font-size` fijo demasiado pequeño en las tarjetas.
+- Archivos clave: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`
+- Impacto operativo: activar flags aumenta el tamaño del prompt; no se ejecuta SQL generado por el modelo.
+
 2026-04-25: Super — permisos por rol y cobertura de licencia (gobernanza)
 - Modulos afectados: `super`, `seguridad y permisos`, `licencias`
 - Cambio funcional: `web/super/permisos_rol.html` se rediseña como consola empresarial (resumen, módulos en tarjetas con acciones R/C/U/D/A etiquetadas, funciones del panel agrupadas con búsqueda sin perder estado al filtrar). El API `GET /super/api/roles_de_usuario/permisos` añade `acciones_etiqueta`, `modulos_etiqueta` y cada fila de `paginas` incluye `titulo` y `grupo` (catálogo en `backend/handlers/empresa_permisos.go`). `web/super/licencias.html` mejora la sección de módulos habilitados con textos de negocio y enlace a permisos por rol. Estilos `pcs-pr-*` y `lic-coverage-*` en `web/estilos.css`.

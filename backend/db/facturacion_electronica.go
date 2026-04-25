@@ -46,6 +46,71 @@ type PaisFacturacion struct {
 	Moneda  string `json:"moneda"`
 }
 
+// FacturacionPaisVista metadatos de presentación (UI). No fija lógica de envío;
+// Ecuador y Panamá quedan aislados de Colombia (DIAN) y se documenta el enrutamiento.
+type FacturacionPaisVista struct {
+	EnteFiscal         string `json:"ente_fiscal"`
+	NotaIndependencia  string `json:"nota_independencia"`
+	ResumenOperativo     string `json:"resumen_operativo"`
+	LabelResolucion      string `json:"label_resolucion"`
+	LabelIdentificador   string `json:"label_identificador"`
+	LabelPrefijo         string `json:"label_prefijo"`
+	PlaceholderRazon     string `json:"placeholder_razon_social"`
+	ModuloDianRuta      string `json:"modulo_dian_ruta,omitempty"`
+}
+
+// FacturacionPaisVistaFor retorna textos y etiquetas para la configuración según el país (CO / EC / PA).
+func FacturacionPaisVistaFor(codigo string) FacturacionPaisVista {
+	switch normalizePaisCodigo(codigo) {
+	case "EC":
+		return FacturacionPaisVista{
+			EnteFiscal:         "Ecuador (SRI): comprobantes de venta electrónicos, retenciones, notas y guías.",
+			NotaIndependencia:  "Ecuador (SRI) no utiliza el módulo de la DIAN Colombia. Guarde RUC, establecimiento, punto de emisión y ambiente; la integración con un proveedor o el SRI se configura con proveedor y API base URL, sin afectar Colombia.",
+			ResumenOperativo:     "Moneda habitual: USD. En campos estructurados: RUC, establecimiento, punto_emision, ambiente_sri (1=pruebas, 2=producción).",
+			LabelResolucion:      "Autorización SRI o referencia (según comprobante)",
+			LabelIdentificador:   "RUC",
+			LabelPrefijo:         "Establecimiento - punto (ej. 001-001)",
+			PlaceholderRazon:     "Razón social inscrita en el SRI",
+		}
+	case "PA":
+		return FacturacionPaisVista{
+			EnteFiscal:         "Panamá (DGI): facturación electrónica y validación a través de PSE o proveedores homologados.",
+			NotaIndependencia:  "Panamá (DGI) no utiliza el módulo de la DIAN Colombia. RUC, DV, folios y conexión con su PSE/ proveedor se definen solo en este perfil, sin tocar resoluciones DIAN.",
+			ResumenOperativo:     "Moneda habitual: PAB o USD. En campos estructurados: ruc, dv, (opcionales) folio_inicial, codigo_ubicación según su proveedor.",
+			LabelResolucion:      "Autorización o folio (según proveedor DGI / PSE)",
+			LabelIdentificador:   "RUC y dígito verificador (DV)",
+			LabelPrefijo:         "Punto de expedición o prefijo de documento",
+			PlaceholderRazon:     "Razón social o nombre fiscal inscrito en DGI",
+		}
+	default: // CO
+		return FacturacionPaisVista{
+			EnteFiscal:         "Colombia (DIAN UBL 2.1): resolución de numeración, set de pruebas y transmisión en ambientes de habilitación o producción.",
+			NotaIndependencia:  "La operación consecutiva, firma, Software ID/PIN, CUFE y el set de pruebas DIAN se configuran en el módulo DIAN/Documental (ERP) de su empresa; el perfil por país genérico aquí no aplica a Ecuador ni Panamá.",
+			ResumenOperativo:     "Moneda: COP. Vincule proveedor o API; en producción use credenciales homologadas con la DIAN.",
+			LabelResolucion:      "Número de resolución de facturación / autorización DIAN",
+			LabelIdentificador:   "NIT (con dígito de verificación)",
+			LabelPrefijo:         "Prefijo homologado (p. ej. SEFC)",
+			PlaceholderRazon:     "Razón social inscrita ante la DIAN",
+			ModuloDianRuta:       "/administrar_empresa/modulos_erp_dominio.html?empresa_id=",
+		}
+	}
+}
+
+// ListFacturacionPaisesConVista retorna el catálogo con metadatos de UI por país.
+func ListFacturacionPaisesConVista() []map[string]interface{} {
+	out := make([]map[string]interface{}, 0, 4)
+	for _, p := range ListPaisesFacturacionDisponibles() {
+		out = append(out, map[string]interface{}{
+			"codigo":  p.Codigo,
+			"nombre":  p.Nombre,
+			"bandera": p.Bandera,
+			"moneda":  p.Moneda,
+			"vista":   FacturacionPaisVistaFor(p.Codigo),
+		})
+	}
+	return out
+}
+
 // FacturacionDocumentoLegal representa los datos legales generados al emitir una factura.
 type FacturacionDocumentoLegal struct {
 	EmpresaID            int64  `json:"empresa_id"`
@@ -725,14 +790,43 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 	return out, nil
 }
 
+// getPaisFacturacionDesdeLicenciaActiva toma pais_codigo de la licencia activa vinculada a la empresa (señal fuerte de jurisdicción comercial).
+func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (string, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return "", nil
+	}
+	ok, err := tableExists(dbConn, "licencias")
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", nil
+	}
+	var pais sql.NullString
+	err = queryRowSQLCompat(dbConn, `SELECT COALESCE(pais_codigo, '') FROM licencias
+		WHERE empresa_id = ? AND COALESCE(activo, 0) = 1
+		ORDER BY id DESC
+		LIMIT 1`, empresaID).Scan(&pais)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	if !pais.Valid {
+		return "", nil
+	}
+	return strings.TrimSpace(pais.String), nil
+}
+
 func detectPaisByTimezone(tz string) string {
 	tz = strings.ToLower(strings.TrimSpace(tz))
 	switch {
 	case strings.Contains(tz, "panama"):
 		return "PA"
-	case strings.Contains(tz, "guayaquil"), strings.Contains(tz, "quito"):
+	case strings.Contains(tz, "guayaquil"), strings.Contains(tz, "quito"), strings.Contains(tz, "galapagos"):
 		return "EC"
-	case strings.Contains(tz, "bogota"):
+	case strings.Contains(tz, "bogota"), strings.Contains(tz, "medellin"), strings.Contains(tz, "cartagena"):
 		return "CO"
 	default:
 		return ""
@@ -772,6 +866,18 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 		}
 		if paisFE.Valid && normalizePaisCodigo(paisFE.String) != "" {
 			return paisFacturacionByCodigo(paisFE.String), "facturacion_electronica", nil
+		}
+
+		pc, errLic := getPaisFacturacionDesdeLicenciaActiva(dbConn, empresaID)
+		if errLic != nil {
+			return PaisFacturacion{}, "", errLic
+		}
+		if pc != "" {
+			if p := normalizePaisCodigo(pc); p != "" {
+				if _, ok := supportedPaisesFacturacionMap()[p]; ok {
+					return paisFacturacionByCodigo(p), "licencia_activa", nil
+				}
+			}
 		}
 	}
 

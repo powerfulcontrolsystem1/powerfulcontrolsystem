@@ -821,6 +821,10 @@ p{color:var(--muted);line-height:1.5}
 .iframe-remote { width:100%; min-height:600px; border:1px solid var(--border); border-radius:10px }
 .reportes-globales-portfolio-ring { width:88px; height:88px; border-radius:999px; display:inline-block; position:relative }
 .is-hidden { display:none; }
+.fe-vista-bloque{ margin-bottom:1rem; }
+.fe-vista-indep{ color: var(--text-muted, #8a8a8a); font-size: 0.95em; }
+.fe-estructurado h3{ margin-top:0; }
+.fe-estructurado-pa, .fe-estructurado-ec{ margin-bottom:1rem; }
 .table-full{width:100%}
 .page-header-lead{margin:6px 0 0 0}
 .m-0 { margin:0; }
@@ -3396,15 +3400,37 @@ body.has-floating-menu .header .form-actions{
     display: inline-flex;
   }
   #estacionesGrid.estaciones-thumb-mobile{
+    container-type: inline-size;
+    container-name: estaciones-thumb;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    --station-card-scale: 0.72;
+    /* Tamaño de texto fluido: evita 0,72 rem fijo (ilegible); se adapta al ancho de la celda con mínimo legible. */
+    --station-card-scale: 1;
+    font-size: clamp(0.78rem, 2.9vw + 0.2rem, 0.95rem);
     --station-card-min: 0;
     --station-card-height: 5.4em;
     --station-gap: 6px;
   }
   #estacionesGrid.estaciones-thumb-mobile .portal-card{
-    padding: 0.35em 0.25em;
-    font-size: 0.72rem;
+    padding: 0.4em 0.3em;
+    line-height: 1.2;
+  }
+  #estacionesGrid.estaciones-thumb-mobile .portal-card h3{
+    font-size: clamp(0.95em, 1em + 0.5cqi, 1.1em);
+    line-height: 1.15;
+  }
+  #estacionesGrid.estaciones-thumb-mobile .portal-card p,
+  #estacionesGrid.estaciones-thumb-mobile .station-entry-time,
+  #estacionesGrid.estaciones-thumb-mobile .caja-row,
+  #estacionesGrid.estaciones-thumb-mobile .notas-station-list-item{
+    font-size: max(0.88em, 0.7rem);
+  }
+  #estacionesGrid.estaciones-thumb-mobile .caja-title{
+    font-size: 1.05em;
+  }
+  #estacionesGrid.estaciones-thumb-mobile .ia-pedidos-station-head p,
+  #estacionesGrid.estaciones-thumb-mobile .notas-station-card p,
+  #estacionesGrid.estaciones-thumb-mobile .youtube-station-card p{
+    font-size: max(0.8em, 0.78rem);
   }
   #estacionesGrid.estaciones-thumb-mobile .youtube-station-card,
   #estacionesGrid.estaciones-thumb-mobile .notas-station-card,

@@ -1,6 +1,21 @@
-- 2026-04-25: super ? consola de permisos por rol y cobertura de licencia (UI + catálogo).
+- 2026-04-25: super ? chat global IA: contexto ampliado (super) y solo lectura empresas; estaciones miniaturas tipograf?a.
+    - Archivos: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: nuevas claves en `configuraciones` (`ai.chat.super.contexto_amplio`, `ai.chat.super.empresa_solo_lectura`); el chat global inyecta conteos y metadatos de tablas del esquema super o fragmentos de solo lectura de la base empresas (listados y muestras con SELECT aprobado); el system prompt restringe sugerencias de escritura cuando aplica solo lectura. En vista m?vil `Ver miniaturas` el texto de las tarjetas usa `clamp`/`max` y hereda escala de `#estacionesGrid` en lugar de un `0.72rem` fijo poco legible.
+    - Verificacion: `go build` en `backend/`.
+
+- 2026-04-25: facturacion electronica ? Ecuador y Panama (UI por pais, deteccion licencia, API vista).
+    - Archivos: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`
+    - Descripcion: catalogo CO/EC/PA con metadatos `vista` y `ListFacturacionPaisesConVista`; deteccion `licencia_activa`; bloques EC (SRI) y PA (DGI) que se guardan en `campos_pais_json`; Colombia enlaza al modulo DIAN ERP sin mezclar otros paises; moneda por defecto en dispatch al proveedor si payload vacio.
+    - Verificacion: `go build` en `backend/`.
+
+- 2026-04-25: portal / index ? orden de contenido en tarjetas (logo+t?tulo, imagen, descripci?n).
+    - Archivos: `web/index.html`, `documentos/historial_de_cambios`
+    - Descripcion: en `index` las tarjetas de ofertas muestran arriba logo peque?o y titulo, debajo la imagen secundaria centrada, luego el texto; estilos locales ajustan cabecera e ilustraci?n sin perder CTA.
+    - Verificacion: revision estatica HTML/CSS.
+
+- 2026-04-25: super ? consola de permisos por rol y cobertura de licencia (UI + cat?logo).
     - Archivos: `web/super/permisos_rol.html`, `web/super/licencias.html`, `web/estilos.css`, `backend/handlers/empresa_permisos.go`, `backend/handlers/roles_tipos_usuario.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`
-    - Descripcion: pantalla de permisos con resumen, tarjetas por módulo (acciones R/C/U/D/A con etiquetas), funciones del menú agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por función; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de módulos, rol = matriz y overrides de menú.
+    - Descripcion: pantalla de permisos con resumen, tarjetas por m?dulo (acciones R/C/U/D/A con etiquetas), funciones del men? agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por funci?n; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de m?dulos, rol = matriz y overrides de men?.
     - Verificacion: `go build` en `backend/`.
 
 - 2026-04-24: chat IA ? UI tipo Gemini (sidebar, modelo visible, compartir, limites).
@@ -15,12 +30,12 @@
 
 - 2026-04-25: super ? panel inicial, contador empresas y fix CRUD frecuencia_fp.
     - Archivos: `web/super_administrador.html`, `web/super/licencias_resumen.html`, `backend/handlers/administradores_frecuencia_fe_handlers.go`, `web/super/administradores_frecuencia_fe.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: agrega botón superior `Panel` en el menú super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesión/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
+    - Descripcion: agrega bot?n superior `Panel` en el men? super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesi?n/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-25: pagos/licencias ? registrar codigo asesor en pago de licencia.
     - Archivos: `backend/handlers/payments_handlers.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo envía). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
+    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo env?a). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
