@@ -2226,6 +2226,27 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
 		}
+		// Si no llegó empresa_id (algunos flujos solo pasan licencia_id), usar la empresa ya asociada a la licencia.
+		// Esto es clave para registrar trazabilidad y comisiones por asesor.
+		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
+			payload.EmpresaID = lic.EmpresaID
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id requerido para crear la transacción", http.StatusBadRequest)
+			return
+		}
+		payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
+		if payload.AsesorID != "" {
+			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
+			if aerr != nil {
+				http.Error(w, "no se pudo validar el código de asesor", http.StatusInternalServerError)
+				return
+			}
+			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
+				http.Error(w, "código de asesor inválido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
+				return
+			}
+		}
 
 		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
 		if err != nil {
@@ -2371,7 +2392,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		rawBytes, _ := json.Marshal(rawMap)
 		rawPayload := mergePaymentPayloadJSON(string(respBody), string(rawBytes))
 
-		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, rawPayload, payload.DiscountCode, strings.ToUpper(strings.TrimSpace(payload.AsesorID))); err != nil {
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, rawPayload, payload.DiscountCode, payload.AsesorID); err != nil {
 			log.Println("warning: failed to record Wompi transaction in DB:", err)
 		}
 
@@ -2383,6 +2404,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"transaction_id":          transactionID,
 			"reference":               respReference,
 			"status":                  transactionStatus,
+			"asesor_id":               payload.AsesorID,
 			"acceptance_permalink":    acceptancePermalink,
 			"personal_data_permalink": personalPermalink,
 			"data":                    data,
@@ -2881,6 +2903,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia_id invalido", http.StatusBadRequest)
 			return
 		}
+		payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
 
 		enabledRaw, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.enabled")
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -2913,6 +2936,24 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
+		}
+		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
+			payload.EmpresaID = lic.EmpresaID
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id requerido para crear la transacción", http.StatusBadRequest)
+			return
+		}
+		if payload.AsesorID != "" {
+			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
+			if aerr != nil {
+				http.Error(w, "no se pudo validar el código de asesor", http.StatusInternalServerError)
+				return
+			}
+			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
+				http.Error(w, "código de asesor inválido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
+				return
+			}
 		}
 
 		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
@@ -3014,14 +3055,14 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"customer_email":   email,
 			"discount_code":    payload.DiscountCode,
 			"valor_pagado":     summary.TotalValue,
-			"asesor_id":        strings.ToUpper(strings.TrimSpace(payload.AsesorID)),
+			"asesor_id":        payload.AsesorID,
 			"created_at":       time.Now().Format(time.RFC3339),
 			"integration_flow": "smart_checkout_v2",
 			"apify_login_raw":  loginRaw,
 			"session_raw":      sessionRaw,
 		}
 		rawBytes, _ := json.Marshal(rawMap)
-		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, strings.ToUpper(strings.TrimSpace(payload.AsesorID))); err != nil {
+		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
 			log.Println("warning: failed to record Epayco transaction in DB:", err)
 		}
 
@@ -3034,6 +3075,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"transaction_id":      reference,
 			"reference":           reference,
 			"status":              "PENDING",
+			"asesor_id":           payload.AsesorID,
 			"session_id":          sessionID,
 			"checkout_session_id": sessionID,
 			"checkout_type":       "standard",

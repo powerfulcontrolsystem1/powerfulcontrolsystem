@@ -13,6 +13,11 @@
     - Descripcion: agrega botón superior `Panel` en el menú super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesión/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
     - Verificacion: `go test ./...` en `backend/`.
 
+- 2026-04-25: pagos/licencias ? registrar codigo asesor en pago de licencia.
+    - Archivos: `backend/handlers/payments_handlers.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo envía). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
+    - Verificacion: `go test ./...` en `backend/`.
+
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; en `pagina_principal` se reemplaza `mp-card` por `pp-main-card` para evitar gradientes rosados en temas oscuros y asegurar contraste consistente en todas las apariencias; area `.pp-image-preview-wrap` con mezclas por tema.
