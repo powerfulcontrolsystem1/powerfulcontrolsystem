@@ -827,3 +827,19 @@ Archivos modificados:
 - web/estilos.css
 - web/index.html
 - web/super/configuracion_logica_del_chat_con_ia.html
+
+2026-04-25 15:04:44 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 839a0f5; PushStatus: OK
+Archivos modificados:
+- backend/db/db_admin_crud.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/empresa_db_admin.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/ayuda/chat_ia.html
+- web/img/sistema motel con sensor en puertas.png
+- web/img/sistema motel.png
+- web/super/chat_con_ia_global.html
