@@ -66,6 +66,22 @@
           <label class="ai-gemini-visually-hidden" for="promptInput">Mensaje</label>
           <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Escribe tu consulta…" title="Enter envía · Mayús+Enter nueva línea"></textarea>
           <div class="form-help ai-gemini-enter-hint">Enter envía · Mayús+Enter nueva línea</div>
+          <div class="form-row compact-row" style="margin-top:8px;">
+            <div class="form-col">
+              <label class="form-label" for="attachFile">Adjuntar foto o documento (GPT-5.5)</label>
+              <input id="attachFile" class="form-input" type="file" accept="image/*,.pdf,.txt,.csv,.json,.xml,.doc,.docx,.xls,.xlsx">
+              <div class="form-help">Las consultas con adjuntos o usando GPT-5.5 cuentan contra el límite diario configurado en Super.</div>
+            </div>
+            <div class="form-col" style="min-width:260px;">
+              <label class="form-label">Modo</label>
+              <label class="mode-switch-row" for="useGPT55">
+                <span class="mode-label">Normal</span>
+                <input id="useGPT55" type="checkbox" role="switch" aria-label="Usar GPT-5.5 (cuota diaria)">
+                <span class="mode-label">GPT-5.5</span>
+              </label>
+              <div class="form-help">Actívalo para pedir informes/documentos aunque no adjuntes archivo (cuenta como GPT-5.5).</div>
+            </div>
+          </div>
           <div class="ai-chat-actions">
             <button id="micBtn" class="btn secondary" type="button" title="Dictar">Dictar</button>
             <button id="sendBtn" class="btn" type="submit">Enviar</button>
@@ -95,6 +111,9 @@
       serverHistoryItems: [],
       viewingServerReadOnly: false
     };
+
+    // Flags opcionales desde super (si no existe, queda desactivado).
+    window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };
 
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
@@ -597,6 +616,10 @@
       const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
       clearAIDisabledState();
       hideLimitBanner();
+      try {
+        window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };
+        window.PCS_CHAT_STREAMING.empresa = !!(data && data.streaming_enabled);
+      } catch (e) {}
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
       if (!modelos.length) {
         throw new Error("No hay modelos IA disponibles para esta empresa.");
@@ -748,17 +771,44 @@
       document.getElementById("promptInput").value = "";
 
       try {
-        const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/consultar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empresa_id: Number(state.empresaID),
-            model_id: state.modelID,
-            pregunta: pregunta,
-            historial: buildHistoryPayload(),
-            temperatura: 0.2
-          })
-        });
+        var attachEl = document.getElementById("attachFile");
+        var use55El = document.getElementById("useGPT55");
+        var useGPT55 = !!(use55El && use55El.checked);
+        var file = attachEl && attachEl.files && attachEl.files.length ? attachEl.files[0] : null;
+
+        var data;
+        if (file || useGPT55) {
+          var fd = new FormData();
+          fd.append("empresa_id", String(Number(state.empresaID)));
+          fd.append("pregunta", pregunta);
+          fd.append("historial", JSON.stringify(buildHistoryPayload() || []));
+          fd.append("use_gpt55", useGPT55 ? "1" : "0");
+          if (file) fd.append("file", file, file.name || "adjunto");
+          data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/consultar_con_adjunto", {
+            method: "POST",
+            body: fd
+          });
+          if (attachEl) attachEl.value = "";
+        } else {
+          // Si el streaming está habilitado en super, intentar SSE.
+          var streamingEnabled = false;
+          try { streamingEnabled = !!(window.PCS_CHAT_STREAMING && window.PCS_CHAT_STREAMING.empresa); } catch (e) {}
+          if (streamingEnabled) {
+            data = await sendPromptStreamingEmpresa(pregunta);
+          } else {
+            data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/consultar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                empresa_id: Number(state.empresaID),
+                model_id: state.modelID,
+                pregunta: pregunta,
+                historial: buildHistoryPayload(),
+                temperatura: 0.2
+              })
+            });
+          }
+        }
 
         const parsed = extractPCSActionBlock(normalize(data.respuesta));
         state.messages.push({
@@ -787,7 +837,7 @@
         } else if (normalize(payload.code) === "ai_disabled") {
           appendMessage("system", normalize(payload.error || "La IA está desactivada."));
           setAIDisabledState(payload.error);
-        } else if (normalize(payload.code) === "free_tier_limit_reached" || st === 429 || normalize(payload.code) === "ai_empresa_chat_blocked") {
+        } else if (normalize(payload.code) === "free_tier_limit_reached" || st === 429 || normalize(payload.code) === "ai_empresa_chat_blocked" || normalize(payload.code) === "ai_empresa_gpt55_limit_reached") {
           appendMessage("system", normalize(payload.error || "Límite de uso alcanzado."));
           showLimitBanner(payload, st);
           setMsg("chatMsg", "Consulta no enviada por límite o restricción.", true);
@@ -801,6 +851,67 @@
       } finally {
         state.loading = false;
       }
+    }
+
+    async function sendPromptStreamingEmpresa(pregunta) {
+      // Devuelve un objeto similar al endpoint normal: { respuesta: "...", usage?: ... }
+      const body = {
+        empresa_id: Number(state.empresaID),
+        model_id: state.modelID,
+        pregunta: pregunta,
+        historial: buildHistoryPayload(),
+        temperatura: 0.2
+      };
+
+      const res = await fetch("/api/empresa/chat_con_inteligencia_artificial/consultar_stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "same-origin"
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch (_) {}
+        const err = new Error(payload.error || text || ("HTTP " + res.status));
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+      }
+
+      // Crear mensaje "assistant" en vivo.
+      const live = { role: "assistant", content: "", at: new Date().toLocaleString("es-CO"), actionProposal: null, streaming: true };
+      state.messages.push(live);
+      renderMessages();
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        // parse SSE frames separated by \n\n
+        const parts = buf.split("\n\n");
+        buf = parts.pop() || "";
+        parts.forEach(function (frame) {
+          const line = frame.split("\n").find(l => l.startsWith("data:"));
+          if (!line) return;
+          const jsonText = line.replace(/^data:\s*/, "");
+          let ev = null;
+          try { ev = JSON.parse(jsonText); } catch (_) { ev = null; }
+          if (!ev) return;
+          if (ev.delta) {
+            live.content += String(ev.delta);
+            renderMessages();
+          }
+          if (ev.error) {
+            appendMessage("system", String(ev.error));
+          }
+        });
+      }
+
+      return { respuesta: live.content };
     }
 
     function bindEvents() {

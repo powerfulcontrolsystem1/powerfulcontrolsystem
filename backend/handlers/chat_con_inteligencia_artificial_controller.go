@@ -2,19 +2,133 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/base64"
+	"bufio"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type openAIStreamEvent struct {
+	Delta string `json:"delta"`
+	Done  bool   `json:"done,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+func sseWriteJSON(w http.ResponseWriter, payload interface{}) error {
+	b, _ := json.Marshal(payload)
+	_, err := w.Write([]byte("data: " + string(b) + "\n\n"))
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+	return err
+}
+
+func (c *EmpresaAIChatController) callOpenAIStreamChatCompletions(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, onDelta func(string)) (string, error) {
+	apiKey, err := c.resolveModelAPIKey(model)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(apiKey) == "" {
+		return "", fmt.Errorf("OPENAI_API_KEY no configurada")
+	}
+
+	type msg struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+	messages := make([]msg, 0, 12)
+	messages = append(messages, msg{Role: "system", Content: systemPrompt})
+	clean := sanitizeHistorial(historial, 8)
+	for _, h := range clean {
+		role := strings.ToLower(strings.TrimSpace(h.Rol))
+		if role != "user" && role != "assistant" {
+			continue
+		}
+		messages = append(messages, msg{Role: role, Content: strings.TrimSpace(h.Contenido)})
+	}
+	messages = append(messages, msg{Role: "user", Content: strings.TrimSpace(pregunta)})
+
+	body := map[string]interface{}{
+		"model":                 strings.TrimSpace(model.UpstreamModel),
+		"messages":              messages,
+		"temperature":           0.2,
+		"max_completion_tokens": 700,
+		"stream":                true,
+	}
+	payload, _ := json.Marshal(body)
+
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", bytes.NewReader(payload))
+	if err != nil {
+		return "", fmt.Errorf("no se pudo crear solicitud al proveedor")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo contactar proveedor: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		raw, _ := io.ReadAll(resp.Body)
+		return "", &aiProviderHTTPError{Provider: "openai", Status: resp.StatusCode, Body: truncateText(string(raw), 600)}
+	}
+
+	var out strings.Builder
+	sc := bufio.NewScanner(resp.Body)
+	// Permitir chunks grandes.
+	sc.Buffer(make([]byte, 0, 64*1024), 2*1024*1024)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "data:") {
+			continue
+		}
+		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if data == "[DONE]" {
+			break
+		}
+		var parsed struct {
+			Choices []struct {
+				Delta struct {
+					Content string `json:"content"`
+				} `json:"delta"`
+			} `json:"choices"`
+		}
+		if err := json.Unmarshal([]byte(data), &parsed); err != nil {
+			continue
+		}
+		if len(parsed.Choices) == 0 {
+			continue
+		}
+		d := parsed.Choices[0].Delta.Content
+		if strings.TrimSpace(d) == "" {
+			continue
+		}
+		out.WriteString(d)
+		if onDelta != nil {
+			onDelta(d)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return "", fmt.Errorf("stream interrumpido: %v", err)
+	}
+	return out.String(), nil
+}
 
 type EmpresaAIChatController struct {
 	dbEmp   *sql.DB
@@ -62,6 +176,12 @@ type empresaAIChatRequest struct {
 	Temperatura float64                `json:"temperatura"`
 }
 
+type aiAttachment struct {
+	Filename string
+	MimeType string
+	Bytes    []byte
+}
+
 type empresaAIModeloPreferidoPayload struct {
 	EmpresaID int64  `json:"empresa_id"`
 	ModelID   string `json:"model_id"`
@@ -87,6 +207,17 @@ func empresaAIModelCatalog() []empresaAIModelDef {
 			Famous:         true,
 			FreeDailyLimit: 120,
 			Description:    "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
+		},
+		{
+			ID:             "openai:gpt-5.5",
+			Provider:       "openai",
+			DisplayName:    "OpenAI GPT-5.5 (documentos)",
+			UpstreamModel:  "gpt-5.5",
+			Endpoint:       "https://api.openai.com/v1/responses",
+			ApiKeyEnv:      "OPENAI_API_KEY",
+			Famous:         true,
+			FreeDailyLimit: 20,
+			Description:    "Procesamiento de documentos e imágenes con OpenAI. Se recomienda limitar su uso diario por empresa desde el panel super.",
 		},
 	}
 }
@@ -197,11 +328,14 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		})
 	}
 
+	streamingEnabled, _, _, _ := getChatIAEmpresaStreamingEnabled(c.dbSuper)
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":               true,
 		"empresa_id":       empresaID,
 		"google_account":   googleAccount,
 		"modelo_preferido": modeloPreferido,
+		"streaming_enabled": streamingEnabled,
 		"modelos":          items,
 	})
 }
@@ -510,6 +644,351 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	})
 }
 
+// ConsultarConAdjuntoHandler permite consultas con documentos/imagenes y/o forzar uso GPT-5.5.
+// Este endpoint está pensado para "2 consultas diarias" (configurable) por empresa usando GPT-5.5.
+func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	if !isSuperAIEnabled(c.dbSuper) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
+		return
+	}
+
+	// multipart/form-data:
+	// - empresa_id
+	// - pregunta
+	// - historial (json)
+	// - use_gpt55 (1/true)
+	// - file (opcional)
+	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
+	if err != nil {
+		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	empresaID, err := parseInt64FormOptional(r, "empresa_id")
+	if err != nil || empresaID <= 0 {
+		http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		return
+	}
+
+	pregunta := strings.TrimSpace(r.FormValue("pregunta"))
+	if pregunta == "" {
+		http.Error(w, "pregunta es obligatoria", http.StatusBadRequest)
+		return
+	}
+	if len([]rune(pregunta)) > 2500 {
+		http.Error(w, "pregunta supera el maximo permitido (2500 caracteres)", http.StatusBadRequest)
+		return
+	}
+
+	var historial []empresaAIChatMensaje
+	if raw := strings.TrimSpace(r.FormValue("historial")); raw != "" {
+		_ = json.Unmarshal([]byte(raw), &historial)
+	}
+
+	useGPT55 := queryBool(r, "use_gpt55") || queryBool(r, "gpt55") || queryBool(r, "premium")
+	if v := strings.TrimSpace(strings.ToLower(r.FormValue("use_gpt55"))); v == "1" || v == "true" || v == "si" || v == "sí" {
+		useGPT55 = true
+	}
+	if att != nil {
+		useGPT55 = true
+	}
+	if !useGPT55 {
+		http.Error(w, "Debe adjuntar un archivo o activar use_gpt55=1", http.StatusBadRequest)
+		return
+	}
+
+	googleAccount := googleAccountFromRequest(r)
+	if googleAccount == "" {
+		http.Error(w, "No se pudo identificar la cuenta de Google del usuario autenticado", http.StatusUnauthorized)
+		return
+	}
+	if err := c.ensureEmpresaAccessByAccount(googleAccount, empresaID); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuración de chat IA", http.StatusInternalServerError)
+		return
+	}
+	if !empresaChatEnabled {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_chat_disabled",
+			"error": "El chat con IA para empresas está desactivado desde configuración lógica del chat con IA.",
+		})
+		return
+	}
+
+	// Enforce GPT-5.5 daily limit (configurable)
+	maxGPT55, _, _, err := getChatIAEmpresaMaxGPT55ConsultasDia(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar límite GPT-5.5", http.StatusInternalServerError)
+		return
+	}
+	if maxGPT55 == 0 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_gpt55_blocked",
+			"error": "Las consultas con GPT-5.5 están bloqueadas para empresas (límite en 0).",
+		})
+		return
+	}
+
+	catalog := availableEmpresaAIModelMap(c.dbSuper)
+	model, ok := catalog["openai:gpt-5.5"]
+	if !ok {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_gpt55_unavailable",
+			"error": "GPT-5.5 no está disponible o el proveedor OpenAI está deshabilitado.",
+		})
+		return
+	}
+
+	fechaUso := time.Now().Format("2006-01-02")
+	usoActual, err := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, empresaID, model.Provider, model.ID, fechaUso)
+	if err != nil {
+		http.Error(w, "No se pudo consultar uso diario", http.StatusInternalServerError)
+		return
+	}
+	if usoActual.Consultas >= maxGPT55 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_gpt55_limit_reached",
+			"error": "Se alcanzó el límite diario de consultas con GPT-5.5 para esta empresa. Intenta mañana o solicita ampliar el límite en Super Administrador.",
+			"usage": map[string]interface{}{
+				"daily_used":      usoActual.Consultas,
+				"daily_limit":     maxGPT55,
+				"daily_remaining": 0,
+			},
+		})
+		return
+	}
+
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, empresaID, pregunta, googleAccount)
+	if err != nil {
+		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
+		return
+	}
+
+	preguntaFinal := pregunta
+	if att != nil && strings.TrimSpace(att.Filename) != "" {
+		preguntaFinal = "Adjunto: " + strings.TrimSpace(att.Filename) + " (" + strings.TrimSpace(att.MimeType) + ")\n\n" + pregunta
+	}
+
+	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildEmpresaAISystemPrompt(contexto), att)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	respuesta = strings.TrimSpace(respuesta)
+	if respuesta == "" {
+		http.Error(w, "El proveedor no devolvio contenido", http.StatusBadGateway)
+		return
+	}
+	if len([]rune(respuesta)) > 12000 {
+		rn := []rune(respuesta)
+		respuesta = string(rn[:12000])
+	}
+
+	planActual := strings.ToLower(strings.TrimSpace(usoActual.PlanActual))
+	if planActual == "" {
+		planActual = "free"
+	}
+	adminEmail := googleAccount
+	_, err = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID:        empresaID,
+		Provider:         model.Provider,
+		ModelID:          model.ID,
+		Pregunta:         preguntaFinal,
+		Respuesta:        respuesta,
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
+		TotalTokens:      promptTokens + completionTokens,
+		FechaConsulta:    time.Now().Format("2006-01-02 15:04:05"),
+		PlanActual:       planActual,
+		UsuarioCreador:   adminEmail,
+		Estado:           "activo",
+		Observaciones:    "consulta con adjunto/gpt55 desde chat_con_inteligencia_artificial",
+	})
+	if err != nil {
+		http.Error(w, "No se pudo registrar auditoria de consulta", http.StatusInternalServerError)
+		return
+	}
+
+	usoActualizado, _ := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, empresaID, model.Provider, model.ID, fechaUso)
+	restante := maxGPT55 - usoActualizado.Consultas
+	if restante < 0 {
+		restante = 0
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":         true,
+		"empresa_id": empresaID,
+		"provider":   model.Provider,
+		"model_id":   model.ID,
+		"respuesta":  respuesta,
+		"usage": map[string]interface{}{
+			"plan":              planActual,
+			"daily_used":        usoActualizado.Consultas,
+			"daily_limit":       maxGPT55,
+			"daily_remaining":   restante,
+			"prompt_tokens":     promptTokens,
+			"completion_tokens": completionTokens,
+		},
+	})
+}
+
+// ConsultarStreamHandler entrega respuesta en vivo (SSE) para texto (GPT-5.4 mini).
+func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	if !isSuperAIEnabled(c.dbSuper) {
+		http.Error(w, "IA desactivada", http.StatusServiceUnavailable)
+		return
+	}
+	enabled, _, _, err := getChatIAEmpresaStreamingEnabled(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar configuración streaming", http.StatusInternalServerError)
+		return
+	}
+	if !enabled {
+		http.Error(w, "Streaming desactivado", http.StatusServiceUnavailable)
+		return
+	}
+
+	var payload empresaAIChatRequest
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID <= 0 {
+		http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		return
+	}
+	googleAccount := googleAccountFromRequest(r)
+	if googleAccount == "" {
+		http.Error(w, "No se pudo identificar la cuenta de Google del usuario autenticado", http.StatusUnauthorized)
+		return
+	}
+	if err := c.ensureEmpresaAccessByAccount(googleAccount, payload.EmpresaID); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	payload.Pregunta = strings.TrimSpace(payload.Pregunta)
+	if payload.Pregunta == "" {
+		http.Error(w, "pregunta es obligatoria", http.StatusBadRequest)
+		return
+	}
+
+	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
+	if err != nil || !empresaChatEnabled {
+		http.Error(w, "chat empresarial desactivado", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Modelo: mantener el preferido actual (normalmente GPT-5.4 mini).
+	payload.ModelID = strings.TrimSpace(payload.ModelID)
+	if payload.ModelID == "" {
+		payload.ModelID = firstAvailableEmpresaAIModelID(c.dbSuper)
+	}
+	catalog := availableEmpresaAIModelMap(c.dbSuper)
+	model, ok := catalog[payload.ModelID]
+	if !ok {
+		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
+		return
+	}
+	// Solo streaming para chat/completions.
+	if !strings.Contains(strings.ToLower(model.Endpoint), "/v1/chat/completions") {
+		http.Error(w, "modelo no soporta streaming", http.StatusBadRequest)
+		return
+	}
+
+	fechaUso := time.Now().Format("2006-01-02")
+	usoActual, err := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, payload.EmpresaID, model.Provider, model.ID, fechaUso)
+	if err != nil {
+		http.Error(w, "No se pudo consultar uso diario", http.StatusInternalServerError)
+		return
+	}
+	empresaMaxConsultas, _, _, err := getChatIAEmpresaMaxConsultasDia(c.dbSuper)
+	if err != nil {
+		http.Error(w, "No se pudo consultar límites IA", http.StatusInternalServerError)
+		return
+	}
+	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
+	if effectiveLimit == 0 || usoActual.Consultas >= effectiveLimit {
+		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = sseWriteJSON(w, openAIStreamEvent{Error: "Límite de uso alcanzado."})
+		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+		return
+	}
+
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
+	if err != nil {
+		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
+		return
+	}
+	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+
+	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	var full strings.Builder
+	_, err = c.callOpenAIStreamChatCompletions(model, payload.Pregunta, payload.Historial, systemPrompt, func(delta string) {
+		full.WriteString(delta)
+		_ = sseWriteJSON(w, openAIStreamEvent{Delta: delta})
+	})
+	if err != nil {
+		_ = sseWriteJSON(w, openAIStreamEvent{Error: err.Error()})
+		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+		return
+	}
+	text := strings.TrimSpace(full.String())
+	if text == "" {
+		_ = sseWriteJSON(w, openAIStreamEvent{Error: "Respuesta vacía"})
+		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+		return
+	}
+
+	planActual := strings.ToLower(strings.TrimSpace(usoActual.PlanActual))
+	if planActual == "" {
+		planActual = "free"
+	}
+	// Registrar consulta (tokens desconocidos en streaming → 0).
+	_, _ = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID:        payload.EmpresaID,
+		Provider:         model.Provider,
+		ModelID:          model.ID,
+		Pregunta:         payload.Pregunta,
+		Respuesta:        text,
+		PromptTokens:     0,
+		CompletionTokens: 0,
+		TotalTokens:      0,
+		FechaConsulta:    time.Now().Format("2006-01-02 15:04:05"),
+		PlanActual:       planActual,
+		UsuarioCreador:   googleAccount,
+		Estado:           "activo",
+		Observaciones:    "consulta streaming desde chat_con_inteligencia_artificial",
+	})
+
+	_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+}
+
 func (c *EmpresaAIChatController) HistorialHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -609,9 +1088,169 @@ func (c *EmpresaAIChatController) generateResponseWithSystemPrompt(model empresa
 		return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
 	}
 	if strings.EqualFold(model.Provider, "openai") {
+		// Si el modelo apunta al endpoint de Responses, usar el flujo nuevo.
+		if strings.Contains(strings.ToLower(model.Endpoint), "/v1/responses") {
+			return c.callOpenAIResponsesWithSystemPrompt(model, pregunta, historial, systemPrompt, nil)
+		}
 		return c.callOpenAIWithSystemPrompt(model, pregunta, historial, systemPrompt)
 	}
 	return "", 0, 0, fmt.Errorf("proveedor no soportado")
+}
+
+func (c *EmpresaAIChatController) generateResponseWithSystemPromptAndAttachment(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment) (string, int64, int64, error) {
+	if strings.EqualFold(model.Provider, "openai") {
+		return c.callOpenAIResponsesWithSystemPrompt(model, pregunta, historial, systemPrompt, att)
+	}
+	return c.generateResponseWithSystemPrompt(model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment) (string, int64, int64, error) {
+	apiKey, err := c.resolveModelAPIKey(model)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	if strings.TrimSpace(apiKey) == "" {
+		return "", 0, 0, fmt.Errorf("OPENAI_API_KEY no configurada")
+	}
+
+	type inMsg struct {
+		Role    string      `json:"role"`
+		Content interface{} `json:"content"`
+	}
+	type inPart struct {
+		Type     string `json:"type"`
+		Text     string `json:"text,omitempty"`
+		ImageURL string `json:"image_url,omitempty"`
+		Filename string `json:"filename,omitempty"`
+		FileData string `json:"file_data,omitempty"`
+	}
+
+	parts := make([]inPart, 0, 4)
+	parts = append(parts, inPart{Type: "input_text", Text: strings.TrimSpace(pregunta)})
+	if att != nil && len(att.Bytes) > 0 {
+		mt := strings.ToLower(strings.TrimSpace(att.MimeType))
+		if mt == "" {
+			mt = "application/octet-stream"
+		}
+		if strings.HasPrefix(mt, "image/") {
+			parts = append(parts, inPart{
+				Type:     "input_image",
+				ImageURL: "data:" + mt + ";base64," + base64.StdEncoding.EncodeToString(att.Bytes),
+			})
+		} else {
+			parts = append(parts, inPart{
+				Type:     "input_file",
+				Filename: strings.TrimSpace(att.Filename),
+				FileData: base64.StdEncoding.EncodeToString(att.Bytes),
+			})
+		}
+	}
+
+	messages := make([]inMsg, 0, 12)
+	messages = append(messages, inMsg{Role: "system", Content: strings.TrimSpace(systemPrompt)})
+	clean := sanitizeHistorial(historial, 8)
+	for _, h := range clean {
+		role := strings.ToLower(strings.TrimSpace(h.Rol))
+		if role != "user" && role != "assistant" {
+			continue
+		}
+		messages = append(messages, inMsg{Role: role, Content: strings.TrimSpace(h.Contenido)})
+	}
+	messages = append(messages, inMsg{Role: "user", Content: parts})
+
+	body := map[string]interface{}{
+		"model": strings.TrimSpace(model.UpstreamModel),
+		"input": messages,
+	}
+	payload, _ := json.Marshal(body)
+
+	req, err := http.NewRequest(http.MethodPost, strings.TrimSpace(model.Endpoint), bytes.NewReader(payload))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", 0, 0, &aiProviderHTTPError{
+			Provider: "openai",
+			Status:   resp.StatusCode,
+			Body:     truncateText(string(raw), 600),
+		}
+	}
+
+	var parsed struct {
+		Output []struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"output"`
+		Usage struct {
+			InputTokens  int64 `json:"input_tokens"`
+			OutputTokens int64 `json:"output_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return "", 0, 0, fmt.Errorf("respuesta del proveedor no es JSON valido")
+	}
+
+	var textParts []string
+	for _, out := range parsed.Output {
+		for _, c := range out.Content {
+			if strings.EqualFold(strings.TrimSpace(c.Type), "output_text") && strings.TrimSpace(c.Text) != "" {
+				textParts = append(textParts, strings.TrimSpace(c.Text))
+			}
+		}
+	}
+	text := strings.TrimSpace(strings.Join(textParts, "\n\n"))
+	if text == "" {
+		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
+	}
+	return text, parsed.Usage.InputTokens, parsed.Usage.OutputTokens, nil
+}
+
+func parseSingleAttachmentFromMultipart(r *http.Request, field string, maxBytes int64) (*aiAttachment, error) {
+	if maxBytes <= 0 {
+		maxBytes = 8 << 20
+	}
+	if err := r.ParseMultipartForm(maxBytes); err != nil {
+		return nil, err
+	}
+	f, fh, err := r.FormFile(field)
+	if err != nil {
+		if err == http.ErrMissingFile {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer f.Close()
+
+	var b []byte
+	limited := io.LimitReader(f, maxBytes+1)
+	b, _ = io.ReadAll(limited)
+	if int64(len(b)) > maxBytes {
+		return nil, fmt.Errorf("adjunto supera el máximo permitido (%d bytes)", maxBytes)
+	}
+	mt := strings.TrimSpace(fh.Header.Get("Content-Type"))
+	if mt == "" {
+		mt = mime.TypeByExtension(strings.ToLower(strings.TrimSpace(filepath.Ext(fh.Filename))))
+	}
+	if mt == "" {
+		mt = "application/octet-stream"
+	}
+	return &aiAttachment{
+		Filename: strings.TrimSpace(fh.Filename),
+		MimeType: mt,
+		Bytes:    b,
+	}, nil
 }
 
 func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {

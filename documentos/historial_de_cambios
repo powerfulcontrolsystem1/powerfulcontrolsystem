@@ -14788,6 +14788,13 @@ Archivos modificados:
 2026-04-25: Portal pùblico: chat IA comercial en index (10 consultas / 5 min)
 PushStatus: PENDIENTE
 Archivos modificados:
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/main.go
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/super/chat_con_ia_global.html
 - backend/handlers/public_chat_portal.go
 - backend/main.go
 - backend/utils/utils.go
@@ -14805,7 +14812,22 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - Descripcion: Se agrega un chat IA pùblico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mùdulos, planes/precios, contrataciùn). El backend expone `POST /api/public/chat_portal` con limitaciùn por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el lùmite. El chat no ejecuta acciones ni expone datos sensibles.
 
-2026-04-25: Portal: chat IA p˙blico index + switch; mensajes privados; eliminar banners; mejorar tÌtulo
+2026-04-25: Chat IA (empresa y super): streaming (respuesta en vivo) configurable
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/main.go
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/super/chat_con_ia_global.html
+- web/super/configuracion_logica_del_chat_con_ia.html
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- Descripcion: Se agrega modo streaming (SSE) para mostrar la respuesta en vivo en los chats de empresa y super cuando se usa OpenAI chat completions. Se controla desde Super por switches `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled`. Si el streaming est· apagado, el chat opera en modo normal.
+
+2026-04-25: Portal: chat IA pùblico index + switch; mensajes privados; eliminar banners; mejorar tùtulo
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/pagina_principal_handlers.go

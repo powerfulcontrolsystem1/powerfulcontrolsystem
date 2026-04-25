@@ -38,6 +38,31 @@
           <div id="empresaMaxConsultasStatus" class="form-help">Cargando estado...</div>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Streaming (respuesta en vivo)</label>
+          <label class="mode-switch-row" for="empresaStreamingEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaStreamingEnabled" type="checkbox" role="switch" aria-label="Habilitar streaming en chat IA de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está activo, el chat puede mostrar la respuesta en vivo (SSE). Si está apagado, siempre responde en modo normal.</div>
+          <div id="empresaStreamingEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaMaxGPT55Consultas">Máximo de consultas GPT-5.5 por día (por empresa)</label>
+          <input id="empresaMaxGPT55Consultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="2">
+          <div class="form-help">Aplica a consultas “premium” (documentos/imagenes/reportes) usando GPT-5.5. Default: 2. 0 = bloquea GPT-5.5 para empresas.</div>
+          <div id="empresaMaxGPT55ConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <div class="form-label">Nota</div>
+          <div class="form-help">El chat normal puede seguir usando GPT-5.4 mini para texto. GPT-5.5 se reserva para adjuntos o reportes avanzados.</div>
+        </div>
+      </div>
 
       <div class="form-actions">
         <button id="saveEmpresaChatBtn" class="btn" type="button">Guardar chat IA de empresas</button>
@@ -99,6 +124,19 @@
           <div class="form-help">0 = bloquea completamente el chat global. Default: 30.</div>
           <div id="superMaxConsultasStatus" class="form-help">Cargando estado...</div>
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Streaming (respuesta en vivo)</label>
+          <label class="mode-switch-row" for="superStreamingEnabled">
+            <span class="mode-label">Off</span>
+            <input id="superStreamingEnabled" type="checkbox" role="switch" aria-label="Habilitar streaming en chat IA global">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está activo, el chat global puede mostrar la respuesta en vivo (SSE).</div>
+          <div id="superStreamingEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col"></div>
       </div>
 
       <div class="form-row">
@@ -187,25 +225,37 @@
 
           const empEnabledInfo = values.empresa_enabled || {};
           const empMaxInfo = values.empresa_max_consultas || {};
+          const empMaxGPT55Info = values.empresa_max_gpt55_consultas || {};
+          const empStreamingInfo = values.empresa_streaming_enabled || {};
           const supEnabledInfo = values.super_enabled || {};
           const supMaxInfo = values.super_max_consultas || {};
+          const supStreamingInfo = values.super_streaming_enabled || {};
           const empROInfo = values.empresa_solo_lectura || {};
           const portalEnabledInfo = values.portal_enabled || {};
 
           document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
           document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
+          var empStreamEl = document.getElementById('empresaStreamingEnabled');
+          if (empStreamEl) empStreamEl.checked = !!empStreamingInfo.value;
+          var supStreamEl = document.getElementById('superStreamingEnabled');
+          if (supStreamEl) supStreamEl.checked = !!supStreamingInfo.value;
           var portalEl = document.getElementById('portalChatEnabled');
           if (portalEl) portalEl.checked = !!portalEnabledInfo.value;
           var empRO = document.getElementById('empresaSoloLectura');
           if (empRO) empRO.checked = !!empROInfo.value;
 
           document.getElementById('empresaMaxConsultas').value = String(toInt(empMaxInfo.value, toInt(defaults.empresa_max_consultas, 10)));
+          var empMax55El = document.getElementById('empresaMaxGPT55Consultas');
+          if (empMax55El) empMax55El.value = String(toInt(empMaxGPT55Info.value, toInt(defaults.empresa_max_gpt55_consultas, 2)));
           document.getElementById('superMaxConsultas').value = String(toInt(supMaxInfo.value, toInt(defaults.super_max_consultas, 30)));
 
           renderStatus(document.getElementById('empresaChatEnabledStatus'), empEnabledInfo);
           renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
+          renderStatus(document.getElementById('empresaMaxGPT55ConsultasStatus'), empMaxGPT55Info);
+          renderStatus(document.getElementById('empresaStreamingEnabledStatus'), empStreamingInfo);
           renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
           renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
+          renderStatus(document.getElementById('superStreamingEnabledStatus'), supStreamingInfo);
           renderStatus(document.getElementById('empresaSoloLecturaStatus'), empROInfo);
           renderStatus(document.getElementById('portalChatEnabledStatus'), portalEnabledInfo);
 
@@ -250,11 +300,17 @@
         try {
           const elEmpRO = document.getElementById('empresaSoloLectura');
           const elPortalEnabled = document.getElementById('portalChatEnabled');
+          const elEmpMax55 = document.getElementById('empresaMaxGPT55Consultas');
+          const elEmpStream = document.getElementById('empresaStreamingEnabled');
+          const elSupStream = document.getElementById('superStreamingEnabled');
           const payload = {
             empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
             empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
+            empresa_max_gpt55_consultas: elEmpMax55 ? toInt(elEmpMax55.value, 2) : 2,
+            empresa_streaming_enabled: elEmpStream ? !!elEmpStream.checked : false,
             super_enabled: !!document.getElementById('superChatEnabled').checked,
             super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
+            super_streaming_enabled: elSupStream ? !!elSupStream.checked : false,
             portal_enabled: elPortalEnabled ? !!elPortalEnabled.checked : true,
             super_contexto_amplio: true,
             empresa_solo_lectura: elEmpRO ? !!elEmpRO.checked : false,

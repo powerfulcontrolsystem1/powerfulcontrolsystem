@@ -17,6 +17,9 @@ const (
 	superChatIAPortalEnabledKey      = "ai.chat.portal.enabled"
 	superChatIAEmpresaMaxConsultasKey = "ai.chat.empresa.max_consultas_dia"
 	superChatIASuperMaxConsultasKey   = "ai.chat.super.max_consultas_dia"
+	superChatIAEmpresaMaxGPT55ConsultasKey = "ai.chat.empresa.max_gpt55_consultas_dia"
+	superChatIAEmpresaStreamingEnabledKey  = "ai.chat.empresa.streaming_enabled"
+	superChatIASuperStreamingEnabledKey    = "ai.chat.super.streaming_enabled"
 	superChatIASuperContextoAmplioKey = "ai.chat.super.contexto_amplio"
 	superChatIAEmpresaSoloLecturaKey  = "ai.chat.super.empresa_solo_lectura"
 
@@ -27,6 +30,9 @@ const (
 	defaultChatIAPortalEnabled       = true
 	defaultChatIAEmpresaMaxConsultas = int64(10)
 	defaultChatIASuperMaxConsultas   = int64(30)
+	defaultChatIAEmpresaMaxGPT55Consultas = int64(2)
+	defaultChatIAEmpresaStreamingEnabled  = false
+	defaultChatIASuperStreamingEnabled    = false
 	defaultChatIASuperContextoAmplio = true
 	defaultChatIAEmpresaSoloLectura  = false
 )
@@ -105,6 +111,33 @@ func getChatIAEmpresaMaxConsultasDia(dbSuper *sql.DB) (int64, string, string, er
 	return parseConfigNonNegativeInt64WithDefault(raw, defaultChatIAEmpresaMaxConsultas), updatedAt, updatedBy, nil
 }
 
+func getChatIAEmpresaMaxGPT55ConsultasDia(dbSuper *sql.DB) (int64, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaMaxGPT55ConsultasKey)
+	if err != nil {
+		return defaultChatIAEmpresaMaxGPT55Consultas, "", "", err
+	}
+	if raw == "" {
+		return defaultChatIAEmpresaMaxGPT55Consultas, updatedAt, updatedBy, nil
+	}
+	return parseConfigNonNegativeInt64WithDefault(raw, defaultChatIAEmpresaMaxGPT55Consultas), updatedAt, updatedBy, nil
+}
+
+func getChatIAEmpresaStreamingEnabled(dbSuper *sql.DB) (bool, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaStreamingEnabledKey)
+	if err != nil {
+		return defaultChatIAEmpresaStreamingEnabled, "", "", err
+	}
+	return parseConfigBoolWithDefault(raw, defaultChatIAEmpresaStreamingEnabled), updatedAt, updatedBy, nil
+}
+
+func getChatIASuperStreamingEnabled(dbSuper *sql.DB) (bool, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIASuperStreamingEnabledKey)
+	if err != nil {
+		return defaultChatIASuperStreamingEnabled, "", "", err
+	}
+	return parseConfigBoolWithDefault(raw, defaultChatIASuperStreamingEnabled), updatedAt, updatedBy, nil
+}
+
 func getChatIASuperMaxConsultasDia(dbSuper *sql.DB) (int64, string, string, error) {
 	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIASuperMaxConsultasKey)
 	if err != nil {
@@ -181,7 +214,22 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			empresaMaxGPT55, empresaMaxGPT55At, empresaMaxGPT55By, err := getChatIAEmpresaMaxGPT55ConsultasDia(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			superMax, superMaxAt, superMaxBy, err := getChatIASuperMaxConsultasDia(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			empresaStreaming, empresaStreamingAt, empresaStreamingBy, err := getChatIAEmpresaStreamingEnabled(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			superStreaming, superStreamingAt, superStreamingBy, err := getChatIASuperStreamingEnabled(dbSuper)
 			if err != nil {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -220,8 +268,11 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"defaults": map[string]interface{}{
 					"empresa_enabled":             defaultChatIAEmpresaEnabled,
 					"empresa_max_consultas":       defaultChatIAEmpresaMaxConsultas,
+					"empresa_max_gpt55_consultas": defaultChatIAEmpresaMaxGPT55Consultas,
+					"empresa_streaming_enabled":  defaultChatIAEmpresaStreamingEnabled,
 					"super_enabled":               defaultChatIASuperEnabled,
 					"super_max_consultas":         defaultChatIASuperMaxConsultas,
+					"super_streaming_enabled":    defaultChatIASuperStreamingEnabled,
 					"portal_enabled":              defaultChatIAPortalEnabled,
 					"super_contexto_amplio":       defaultChatIASuperContextoAmplio,
 					"empresa_solo_lectura":        defaultChatIAEmpresaSoloLectura,
@@ -245,6 +296,18 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"updated_at": empresaMaxAt,
 						"updated_by": empresaMaxBy,
 					},
+					"empresa_max_gpt55_consultas": map[string]interface{}{
+						"value":      empresaMaxGPT55,
+						"config_key": superChatIAEmpresaMaxGPT55ConsultasKey,
+						"updated_at": empresaMaxGPT55At,
+						"updated_by": empresaMaxGPT55By,
+					},
+					"empresa_streaming_enabled": map[string]interface{}{
+						"value":      empresaStreaming,
+						"config_key": superChatIAEmpresaStreamingEnabledKey,
+						"updated_at": empresaStreamingAt,
+						"updated_by": empresaStreamingBy,
+					},
 					"super_enabled": map[string]interface{}{
 						"value":      superEnabled,
 						"config_key": superChatIASuperEnabledKey,
@@ -256,6 +319,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"config_key": superChatIASuperMaxConsultasKey,
 						"updated_at": superMaxAt,
 						"updated_by": superMaxBy,
+					},
+					"super_streaming_enabled": map[string]interface{}{
+						"value":      superStreaming,
+						"config_key": superChatIASuperStreamingEnabledKey,
+						"updated_at": superStreamingAt,
+						"updated_by": superStreamingBy,
 					},
 					"super_contexto_amplio": map[string]interface{}{
 						"value":      true,
@@ -294,8 +363,11 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			var payload struct {
 				EmpresaEnabled          *bool  `json:"empresa_enabled"`
 				EmpresaMaxConsultas     *int64 `json:"empresa_max_consultas"`
+				EmpresaMaxGPT55Consultas *int64 `json:"empresa_max_gpt55_consultas"`
+				EmpresaStreamingEnabled  *bool  `json:"empresa_streaming_enabled"`
 				SuperEnabled            *bool  `json:"super_enabled"`
 				SuperMaxConsultas       *int64 `json:"super_max_consultas"`
+				SuperStreamingEnabled    *bool  `json:"super_streaming_enabled"`
 				PortalEnabled           *bool  `json:"portal_enabled"`
 				SuperContextoAmplio     *bool  `json:"super_contexto_amplio"`
 				EmpresaSoloLectura      *bool  `json:"empresa_solo_lectura"`
@@ -324,12 +396,27 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if empresaMax < 0 {
 				empresaMax = 0
 			}
+			empresaMaxGPT55 := defaultChatIAEmpresaMaxGPT55Consultas
+			if payload.EmpresaMaxGPT55Consultas != nil {
+				empresaMaxGPT55 = *payload.EmpresaMaxGPT55Consultas
+			}
+			if empresaMaxGPT55 < 0 {
+				empresaMaxGPT55 = 0
+			}
+			empresaStreamingEnabled := defaultChatIAEmpresaStreamingEnabled
+			if payload.EmpresaStreamingEnabled != nil {
+				empresaStreamingEnabled = *payload.EmpresaStreamingEnabled
+			}
 			superMax := defaultChatIASuperMaxConsultas
 			if payload.SuperMaxConsultas != nil {
 				superMax = *payload.SuperMaxConsultas
 			}
 			if superMax < 0 {
 				superMax = 0
+			}
+			superStreamingEnabled := defaultChatIASuperStreamingEnabled
+			if payload.SuperStreamingEnabled != nil {
+				superStreamingEnabled = *payload.SuperStreamingEnabled
 			}
 			// El chat global siempre inyecta inventario de la base super (conteos/columnas); la clave se mantiene en true.
 			superCtxAmplio := true
@@ -356,6 +443,18 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaMaxConsultasKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaMaxGPT55ConsultasKey, strconv.FormatInt(empresaMaxGPT55, 10), false); err != nil {
+				http.Error(w, "error guardando empresa_max_gpt55_consultas: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaMaxGPT55ConsultasKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaStreamingEnabledKey, strconv.FormatBool(empresaStreamingEnabled), false); err != nil {
+				http.Error(w, "error guardando empresa_streaming_enabled: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIAEmpresaStreamingEnabledKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
 			if err := dbpkg.SetConfigValue(dbSuper, superChatIASuperEnabledKey, strconv.FormatBool(superEnabled), false); err != nil {
 				http.Error(w, "error guardando super_enabled: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -374,6 +473,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superChatIASuperMaxConsultasKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIASuperStreamingEnabledKey, strconv.FormatBool(superStreamingEnabled), false); err != nil {
+				http.Error(w, "error guardando super_streaming_enabled: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIASuperStreamingEnabledKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
 			if err := dbpkg.SetConfigValue(dbSuper, superChatIASuperContextoAmplioKey, strconv.FormatBool(superCtxAmplio), false); err != nil {
 				http.Error(w, "error guardando super_contexto_amplio: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -391,8 +496,11 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"saved": map[string]interface{}{
 					"empresa_enabled":        empresaEnabled,
 					"empresa_max_consultas":  empresaMax,
+					"empresa_max_gpt55_consultas": empresaMaxGPT55,
+					"empresa_streaming_enabled":  empresaStreamingEnabled,
 					"super_enabled":          superEnabled,
 					"super_max_consultas":    superMax,
+					"super_streaming_enabled":    superStreamingEnabled,
 					"portal_enabled":         portalEnabled,
 					"super_contexto_amplio":  superCtxAmplio,
 					"empresa_solo_lectura":   empSoloLectura,

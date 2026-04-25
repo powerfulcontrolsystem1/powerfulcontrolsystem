@@ -856,6 +856,8 @@ func main() {
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/consultar", superAIChatController.ConsultarHandler)
+	http.HandleFunc("/super/api/chat_con_ia_global/consultar_con_adjunto", superAIChatController.ConsultarConAdjuntoHandler)
+	http.HandleFunc("/super/api/chat_con_ia_global/consultar_stream", superAIChatController.ConsultarStreamHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/historial", superAIChatController.HistorialHandler)
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))

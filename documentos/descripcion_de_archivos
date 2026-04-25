@@ -22,6 +22,10 @@
 - Actualizacion 2026-04-25: chat IA — Enter envia mensaje (Mayus+Enter salto de linea)
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : listener `keydown` en `#promptInput` (Enter sin Mayus = `requestSubmit` si el boton Enviar no esta deshabilitado; Mayus+Enter = varias lineas). Linea de ayuda `form-help` y `title` en el textarea.
 	- `web/super/chat_con_ia_global.html` : mismo comportamiento y ayudas.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go` : endpoint adicional `consultar_con_adjunto` usando OpenAI Responses (GPT-5.5) para procesar imágenes/documentos y registrar uso diario por modelo.
+	- `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html` : nueva clave `ai.chat.empresa.max_gpt55_consultas_dia` para limitar consultas GPT-5.5 por empresa (default 2).
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go` : endpoints `consultar_stream` (SSE) para responder en vivo (streaming) usando OpenAI chat completions (texto). El streaming se activa/desactiva desde super.
+	- `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html` : claves `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled` para habilitar streaming por alcance.
 
 - Actualizacion 2026-04-25: portal publico — chat IA comercial (index)
 	- `backend/handlers/public_chat_portal.go` : endpoint público `POST /api/public/chat_portal` para responder preguntas comerciales del portal (solo Powerful Control System), con limitación 10 consultas por 5 minutos por usuario (cookie+IP) y sin acciones/PCS_ACTION.

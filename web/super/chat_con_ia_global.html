@@ -57,6 +57,22 @@
           <label class="ai-gemini-visually-hidden" for="promptInput">Consulta global</label>
           <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Escribe tu consulta sobre el sistema…" title="Enter envía · Mayús+Enter nueva línea"></textarea>
           <div class="form-help ai-gemini-enter-hint">Enter envía · Mayús+Enter nueva línea</div>
+          <div class="form-row compact-row" style="margin-top:8px;">
+            <div class="form-col">
+              <label class="form-label" for="attachFile">Adjuntar foto o documento (GPT-5.5)</label>
+              <input id="attachFile" class="form-input" type="file" accept="image/*,.pdf,.txt,.csv,.json,.xml,.doc,.docx,.xls,.xlsx">
+              <div class="form-help">Si adjuntas un archivo, se usará GPT-5.5 para analizarlo.</div>
+            </div>
+            <div class="form-col" style="min-width:260px;">
+              <label class="form-label">Modo</label>
+              <label class="mode-switch-row" for="useGPT55">
+                <span class="mode-label">Normal</span>
+                <input id="useGPT55" type="checkbox" role="switch" aria-label="Usar GPT-5.5">
+                <span class="mode-label">GPT-5.5</span>
+              </label>
+              <div class="form-help">Actívalo para informes avanzados aunque no adjuntes archivo.</div>
+            </div>
+          </div>
           <div class="ai-chat-actions">
             <button id="micBtn" class="btn secondary" type="button" title="Dictar">Dictar</button>
             <button id="sendBtn" class="btn" type="submit">Enviar</button>
@@ -83,6 +99,9 @@
       serverHistoryItems: [],
       viewingServerReadOnly: false
     };
+
+    window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };
+    // Nota: si quieres activar streaming, se controla desde Super en Configuración lógica del chat IA.
 
     function normalize(v) {
       return (v == null ? "" : String(v)).trim();
@@ -516,6 +535,10 @@
       const data = await apiFetch("/super/api/chat_con_ia_global/modelos");
       clearAIDisabledState();
       hideLimitBanner();
+      try {
+        window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };
+        window.PCS_CHAT_STREAMING.super = !!(data && data.streaming_enabled);
+      } catch (e) {}
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
       if (!modelos.length) {
         throw new Error("No hay modelos IA disponibles para el panel super.");
@@ -656,16 +679,41 @@
       document.getElementById("promptInput").value = "";
 
       try {
-        const data = await apiFetch("/super/api/chat_con_ia_global/consultar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model_id: state.modelID,
-            pregunta: pregunta,
-            historial: buildHistoryPayload(),
-            temperatura: 0.2
-          })
-        });
+        var attachEl = document.getElementById("attachFile");
+        var use55El = document.getElementById("useGPT55");
+        var useGPT55 = !!(use55El && use55El.checked);
+        var file = attachEl && attachEl.files && attachEl.files.length ? attachEl.files[0] : null;
+
+        var data;
+        if (file || useGPT55) {
+          var fd = new FormData();
+          fd.append("pregunta", pregunta);
+          fd.append("historial", JSON.stringify(buildHistoryPayload() || []));
+          fd.append("use_gpt55", useGPT55 ? "1" : "0");
+          if (file) fd.append("file", file, file.name || "adjunto");
+          data = await apiFetch("/super/api/chat_con_ia_global/consultar_con_adjunto", {
+            method: "POST",
+            body: fd
+          });
+          if (attachEl) attachEl.value = "";
+        } else {
+          var streamingEnabled = false;
+          try { streamingEnabled = !!(window.PCS_CHAT_STREAMING && window.PCS_CHAT_STREAMING.super); } catch (e) {}
+          if (streamingEnabled) {
+            data = await sendPromptStreamingSuper(pregunta);
+          } else {
+            data = await apiFetch("/super/api/chat_con_ia_global/consultar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model_id: state.modelID,
+                pregunta: pregunta,
+                historial: buildHistoryPayload(),
+                temperatura: 0.2
+              })
+            });
+          }
+        }
 
         const parsed = extractPCSActionBlock(normalize(data.respuesta));
         state.messages.push({
@@ -703,6 +751,61 @@
       } finally {
         state.loading = false;
       }
+    }
+
+    async function sendPromptStreamingSuper(pregunta) {
+      const body = {
+        model_id: state.modelID,
+        pregunta: pregunta,
+        historial: buildHistoryPayload(),
+        temperatura: 0.2
+      };
+      const res = await fetch("/super/api/chat_con_ia_global/consultar_stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "same-origin"
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch (_) {}
+        const err = new Error(payload.error || text || ("HTTP " + res.status));
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+      }
+
+      const live = { role: "assistant", content: "", at: new Date().toLocaleString("es-CO"), actionProposal: null, streaming: true };
+      state.messages.push(live);
+      renderMessages();
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop() || "";
+        parts.forEach(function (frame) {
+          const line = frame.split("\n").find(l => l.startsWith("data:"));
+          if (!line) return;
+          const jsonText = line.replace(/^data:\s*/, "");
+          let ev = null;
+          try { ev = JSON.parse(jsonText); } catch (_) { ev = null; }
+          if (!ev) return;
+          if (ev.delta) {
+            live.content += String(ev.delta);
+            renderMessages();
+          }
+          if (ev.error) {
+            appendMessage("system", String(ev.error));
+          }
+        });
+      }
+      return { respuesta: live.content };
     }
 
     function bindEvents() {

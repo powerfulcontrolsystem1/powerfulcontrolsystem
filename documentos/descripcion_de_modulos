@@ -59,6 +59,9 @@
 - Cambio funcional: la página `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vía PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
 
 2026-04-25: Portal público — chat IA comercial en `index`
+2026-04-25: Chat IA — adjuntar documentos/imágenes con GPT-5.5 y límite diario por empresa
+- Modulos afectados: `chat IA`, `super`
+- Cambio funcional: los chats (empresa y global super) permiten adjuntar una foto o documento para análisis usando GPT-5.5 (OpenAI Responses). Para empresas se aplica un límite diario configurable desde super (`ai.chat.empresa.max_gpt55_consultas_dia`, default 2). El chat normal puede seguir usando GPT-5.4 mini para texto.
 - Modulos afectados: `portal_publico`
 - Cambio funcional: se agrega un chat IA público al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (módulos, planes/precios, novedades y contratación). No ejecuta acciones del sistema ni muestra información sensible. Incluye limitación de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el límite. El super administrador puede activar/desactivar este chat desde `Configuración lógica del chat con IA`.
 
