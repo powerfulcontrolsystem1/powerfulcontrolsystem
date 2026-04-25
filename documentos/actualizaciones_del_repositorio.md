@@ -768,3 +768,16 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/estilos.css
 - web/super/pagina_principal.html
+
+2026-04-24 22:22:30 - Mensaje: Chat IA transaccional: PCS_ACTION confirmable + auditoria source chat_ia; Commit: fd78cb2; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/auditoria_empresa.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/estilos.css
+- web/super/chat_con_ia_global.html
