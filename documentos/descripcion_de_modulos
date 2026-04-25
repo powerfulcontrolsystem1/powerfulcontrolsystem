@@ -21,6 +21,12 @@
 - Cambio funcional: `web/administrar_empresa/chat_y_tareas.html` prioriza botones rapidos y muestra metricas en tabla compacta bajo ellos; elimina titulo con nombre de empresa y texto introductorio fijo. Estilos del modulo pasan a depender de variables CSS de tema; lectura inicial de `theme` / cookie `pcs_theme` en la pagina para coherencia al abrirse en iframe.
 - Impacto operativo: la vista se ve coherente en modo claro u oscuro segun la apariencia elegida; el resumen ocupa menos espacio vertical.
 
+2026-04-25: Chat IA — acciones confirmables con auditoria (chat transaccional)
+- Modulos afectados: `chat IA`, `inventario/productos`, `finanzas`, `super`
+- Cambio funcional: el chat IA puede sugerir acciones operativas (crear producto, actualizar precio, registrar egreso, etc.) como un bloque estructurado `PCS_ACTION` (JSON) que el usuario debe confirmar. Al confirmar, el frontend ejecuta llamadas a los endpoints existentes del sistema con encabezado `X-PCS-Source=chat_ia` y `X-PCS-Chat-Conversation-ID` para trazabilidad.
+- Trazabilidad: la auditoria critica (`empresa_auditoria_eventos`) registra la fuente `chat_ia` y el id de conversacion; los endpoints mantienen los mismos permisos por rol y alcance por `empresa_id`.
+- Impacto operativo: no se agregan dependencias externas; el chat no ejecuta acciones sin confirmacion explicita del usuario. Si falta un dato, el asistente debe preguntarlo antes de proponer `PCS_ACTION`.
+
 2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
 - Modulos afectados: `soporte remoto`, `super`
 - Cambio funcional: la configuracion inicial consultada desde `backend/db/soporte_remoto.go` para una empresa sin registro previo ahora nace alineada al flujo simplificado de RustDesk, con `habilitado = true`, `portal_publico_habilitado = true`, `proveedor_preferido = rustdesk_oss` y `modo_operacion = cliente_local`. `web/super/servidores.html` preserva ese estado por defecto en la primera carga para evitar falsos inactivos cuando todavia no existe configuracion persistida.

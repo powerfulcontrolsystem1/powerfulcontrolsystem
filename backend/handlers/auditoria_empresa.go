@@ -434,6 +434,12 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 		"permission_action": strings.ToUpper(strings.TrimSpace(permissionAction)),
 		"duracion_ms":       elapsed.Milliseconds(),
 	}
+	if src := strings.TrimSpace(r.Header.Get("X-PCS-Source")); src != "" {
+		metadata["source"] = strings.ToLower(src)
+	}
+	if cid := strings.TrimSpace(r.Header.Get("X-PCS-Chat-Conversation-ID")); cid != "" {
+		metadata["chat_conversation_id"] = cid
+	}
 	if strings.TrimSpace(r.Header.Get(permissionApprovalHeaderRequired)) == "1" {
 		metadata["permission_approval_required"] = true
 	}

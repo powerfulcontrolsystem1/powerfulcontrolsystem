@@ -359,12 +359,16 @@
         const role = normalize(item.role).toLowerCase();
         const cls = role === "assistant" ? "assistant" : (role === "user" ? "user" : "system");
         const label = role === "assistant" ? "IA" : (role === "user" ? "Tú" : "Aviso");
+        const actionUI = (role === "assistant" && item.actionProposal && Array.isArray(item.actionProposal.actions) && item.actionProposal.actions.length)
+          ? renderActionProposalHTML(item.actionProposal, idx)
+          : "";
         const shareBtn = role === "assistant"
           ? "<button type=\"button\" class=\"btn secondary ai-gemini-share-btn\" data-share-index=\"" + idx + "\">Compartir</button>"
           : "";
         return "<article class=\"ai-chat-bubble " + cls + "\">" +
           "<header><strong>" + escapeHtml(label) + "</strong><span>" + escapeHtml(normalize(item.at)) + "</span>" + shareBtn + "</header>" +
           "<div class=\"ai-chat-content\">" + escapeHtml(normalize(item.content)) + "</div>" +
+          actionUI +
           "</article>";
       }).join("");
 
@@ -381,6 +385,99 @@
       if (!state.viewingServerReadOnly) {
         syncActiveConversationFromState();
       }
+    }
+
+    function extractPCSActionBlock(text) {
+      const raw = normalize(text);
+      if (!raw) return { clean: raw, proposal: null };
+      const marker = "\nPCS_ACTION\n";
+      const idx = raw.lastIndexOf(marker);
+      if (idx < 0) return { clean: raw, proposal: null };
+      const before = raw.slice(0, idx).trim();
+      const after = raw.slice(idx + marker.length).trim();
+      if (!after) return { clean: before, proposal: null };
+      try {
+        const proposal = JSON.parse(after);
+        if (!proposal || proposal.version !== 1 || !Array.isArray(proposal.actions)) {
+          return { clean: raw, proposal: null };
+        }
+        return { clean: before, proposal: proposal };
+      } catch (e) {
+        return { clean: raw, proposal: null };
+      }
+    }
+
+    function renderActionProposalHTML(proposal, msgIdx) {
+      const actions = Array.isArray(proposal.actions) ? proposal.actions : [];
+      if (!actions.length) return "";
+      const rows = actions.map(function (a, i) {
+        const title = escapeHtml(normalize(a.title) || ("Acción " + (i + 1)));
+        const endpoint = escapeHtml(normalize(a.endpoint));
+        const method = escapeHtml(normalize(a.method).toUpperCase());
+        const body = a.body != null ? escapeHtml(JSON.stringify(a.body, null, 2)) : "";
+        return "<div class=\"ai-action-item\">" +
+          "<div class=\"ai-action-head\"><b>" + title + "</b><span class=\"ai-action-mini\">" + method + " " + endpoint + "</span></div>" +
+          (body ? ("<pre class=\"ai-action-body\">" + body + "</pre>") : "") +
+          "</div>";
+      }).join("");
+      const note = proposal.note ? ("<div class=\"ai-action-note\">" + escapeHtml(normalize(proposal.note)) + "</div>") : "";
+      return "<section class=\"ai-action-card\" data-action-msg-idx=\"" + msgIdx + "\">" +
+        "<div class=\"ai-action-title\">Acciones sugeridas (requieren confirmación)</div>" +
+        note +
+        rows +
+        "<div class=\"ai-action-actions\">" +
+          "<button type=\"button\" class=\"btn\" data-action-confirm=\"" + msgIdx + "\">Confirmar y ejecutar</button>" +
+          "<button type=\"button\" class=\"btn secondary\" data-action-cancel=\"" + msgIdx + "\">Cancelar</button>" +
+        "</div>" +
+      "</section>";
+    }
+
+    async function executeActionProposal(msgIdx) {
+      const m = state.messages[msgIdx];
+      if (!m || !m.actionProposal || !Array.isArray(m.actionProposal.actions) || !m.actionProposal.actions.length) return;
+      if (state.loading || state.aiDisabled) return;
+      if (state.viewingServerReadOnly) return;
+      state.loading = true;
+      setMsg("chatMsg", "Ejecutando acciones…", false);
+      try {
+        for (const act of m.actionProposal.actions) {
+          const endpoint = normalize(act.endpoint);
+          const method = normalize(act.method || "POST").toUpperCase();
+          const bodyObj = act.body != null ? act.body : null;
+          const res = await fetch(endpoint, {
+            method: method,
+            headers: {
+              "Content-Type": "application/json",
+              "X-PCS-Source": "chat_ia",
+              "X-PCS-Chat-Conversation-ID": String(state.activeConvId || "")
+            },
+            body: bodyObj ? JSON.stringify(bodyObj) : null
+          });
+          const ct = normalize(res.headers.get("content-type")).toLowerCase();
+          let payload = null;
+          if (ct.indexOf("application/json") >= 0) payload = await res.json().catch(function () { return null; });
+          else payload = { error: await res.text().catch(function () { return "" }) };
+          if (!res.ok) {
+            throw new Error("Fallo al ejecutar acción: HTTP " + res.status + " — " + normalize(payload && (payload.error || payload.message)));
+          }
+          appendMessage("system", "Acción ejecutada: " + normalize(act.title) + ". Respuesta: " + JSON.stringify(payload || {}));
+        }
+        m.actionProposal = null;
+        syncActiveConversationFromState();
+        renderMessages();
+        setMsg("chatMsg", "Acciones ejecutadas y registradas en auditoría.", false);
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    function cancelActionProposal(msgIdx) {
+      const m = state.messages[msgIdx];
+      if (!m || !m.actionProposal) return;
+      m.actionProposal = null;
+      syncActiveConversationFromState();
+      renderMessages();
+      setMsg("chatMsg", "Acciones canceladas.", false);
     }
 
     function buildHistoryPayload() {
@@ -553,7 +650,17 @@
           })
         });
 
-        appendMessage("assistant", normalize(data.respuesta));
+        const parsed = extractPCSActionBlock(normalize(data.respuesta));
+        state.messages.push({
+          role: "assistant",
+          content: normalize(parsed.clean),
+          at: new Date().toLocaleString("es-CO"),
+          actionProposal: parsed.proposal
+        });
+        renderMessages();
+        if (!state.viewingServerReadOnly) {
+          syncActiveConversationFromState();
+        }
         state.adminEmail = normalize(data.admin_email || state.adminEmail);
         state.usage = data.usage || null;
         renderTopMeta();
@@ -620,6 +727,24 @@
         const m = state.messages[i];
         if (m && normalize(m.role) === "assistant") {
           shareAssistantText(m.content);
+        }
+      });
+      document.getElementById("messagesList").addEventListener("click", function (ev) {
+        const c = ev.target && ev.target.closest ? ev.target.closest("[data-action-confirm],[data-action-cancel]") : null;
+        if (!c) return;
+        const confirmIdx = c.getAttribute("data-action-confirm");
+        const cancelIdx = c.getAttribute("data-action-cancel");
+        if (confirmIdx != null) {
+          const idx = parseInt(confirmIdx, 10);
+          if (!Number.isNaN(idx)) {
+            executeActionProposal(idx).catch(function (e) {
+              appendMessage("system", "Error ejecutando acciones: " + normalize(e && e.message));
+              setMsg("chatMsg", normalize(e && e.message) || "No se pudieron ejecutar las acciones.", true);
+            });
+          }
+        } else if (cancelIdx != null) {
+          const idx = parseInt(cancelIdx, 10);
+          if (!Number.isNaN(idx)) cancelActionProposal(idx);
         }
       });
       setupSpeechToText();

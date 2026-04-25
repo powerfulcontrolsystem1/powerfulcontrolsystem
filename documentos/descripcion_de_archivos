@@ -5,7 +5,9 @@
 - Actualizacion 2026-04-24: chat IA — layout tipo Gemini (empresa y super)
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : barra lateral con conversaciones en `localStorage` por empresa e historial del servidor; barra superior con selector y pastilla de modelo y uso; compartir respuestas (Web Share o portapapeles); banner explicativo ante 429 / `free_tier_limit_reached` / bloqueo; sin titulo largo ni tarjeta de chips Empresa/Cuenta; tema claro/oscuro alineado a variables.
 	- `web/super/chat_con_ia_global.html` : mismo patron de layout, persistencia `pcs_gemini_chat_global_v1`, historial en sidebar, limites y compartir.
-	- `web/estilos.css` : clases `.ai-gemini-app`, sidebar, topbar, pastillas, banner de limite, mensajes y overrides `html.theme-light` para contraste.
+	- `web/estilos.css` : clases `.ai-gemini-app`, sidebar, topbar, pastillas, banner de limite, mensajes, y tarjeta `.ai-action-card` para acciones confirmables desde el chat.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go` : el prompt del sistema instruye a proponer acciones como bloque `PCS_ACTION` (JSON) solo cuando hay datos completos; nunca ejecuta cambios directamente.
+	- `backend/handlers/auditoria_empresa.go` : la auditoria critica captura `X-PCS-Source=chat_ia` y `X-PCS-Chat-Conversation-ID` como metadata del evento.
 
 - Actualizacion 2026-04-24: estaciones — pedidos IA y miniaturas movil
 	- `backend/handlers/ia_pedidos_estacion.go` (nuevo) : `POST /api/empresa/ia_pedidos_estacion/ejecutar` con permisos de ventas; usa OpenAI segun configuracion super, interpreta pedidos en lenguaje natural y agrega lineas al carrito de estacion.
