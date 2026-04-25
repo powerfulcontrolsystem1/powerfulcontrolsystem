@@ -791,3 +791,9 @@ Archivos modificados:
 - web/super/administradores_frecuencia_fe.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-04-24 23:17:29 - Mensaje: Fix: registrar y validar asesor_id en pago de licencias (Wompi/Epayco); Commit: e494935; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- documentos/historial_de_cambios
