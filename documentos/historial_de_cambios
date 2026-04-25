@@ -80,13 +80,18 @@
 
 - 2026-04-25: chats IA ù botùn Ayuda y guùa de uso ù PushStatus: PENDIENTE
     - Archivos: `web/ayuda/chat_ia.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega un botùn **Ayuda** en ambos chats IA (empresa y global) que abre una pùgina corta explicando cùmo usar el chat, cùmo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con ìELIMINARî), y ejemplos de consultas/acciones.
+    - Descripcion: se agrega un botùn **Ayuda** en ambos chats IA (empresa y global) que abre una pùgina corta explicando cùmo usar el chat, cùmo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con ùELIMINARù), y ejemplos de consultas/acciones.
     - Verificacion: revisiùn estùtica HTML/JS.
 
-- 2026-04-25: inventario ó documento/imprimir/exportar formatos comunes ó PushStatus: PENDIENTE
+- 2026-04-25: inventario ù documento/imprimir/exportar formatos comunes ù PushStatus: PENDIENTE
     - Archivos: `web/administrar_empresa/reportes_inventario.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vÌa PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
-    - Verificacion: revisiÛn est·tica HTML/JS.
+    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vùa PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
+    - Verificacion: revisiùn estùtica HTML/JS.
+
+- 2026-04-25: portal pùblico ù texto del footer actualizado ù PushStatus: PENDIENTE
+    - Archivos: `web/index.html`, `documentos/historial_de_cambios`
+    - Descripcion: se actualiza el texto del pie de pùgina del portal para reflejar ùPlataforma SaaS POS Multiempresaù, derechos reservados y el correo `powerfulcontrolsystem@gmail.com`.
+    - Verificacion: revisiùn estùtica HTML.
 
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
@@ -14779,3 +14784,23 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/index.html
+
+2026-04-25: Portal pùblico: chat IA comercial en index (10 consultas / 5 min)
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/public_chat_portal.go
+- backend/main.go
+- backend/utils/utils.go
+- web/index.html
+- backend/handlers/super_chat_ia_logica.go
+- web/super/configuracion_logica_del_chat_con_ia.html
+- backend/handlers/public_mensajes_privados.go
+- web/red_social_comercial.html
+- web/venta_publica.html
+- web/pagar_productos_de_venta_publica.html
+- backend/handlers/pagina_principal_handlers.go
+- web/super/pagina_principal.html
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- Descripcion: Se agrega un chat IA pùblico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mùdulos, planes/precios, contrataciùn). El backend expone `POST /api/public/chat_portal` con limitaciùn por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el lùmite. El chat no ejecuta acciones ni expone datos sensibles.

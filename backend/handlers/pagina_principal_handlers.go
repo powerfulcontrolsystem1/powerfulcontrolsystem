@@ -50,14 +50,11 @@ type paginaPrincipalVisualSettings struct {
 	IndexTextSize   string `json:"index_text_size"`
 	LandingCardSize string `json:"landing_card_size"`
 	LandingTextSize string `json:"landing_text_size"`
-	IndexBannerWidthPx  int `json:"index_banner_width_px"`
-	IndexBannerHeightPx int `json:"index_banner_height_px"`
 }
 
 type paginaPrincipalConfig struct {
 	Cantidad int                           `json:"cantidad"`
 	Tarjetas []paginaPrincipalCard         `json:"tarjetas"`
-	Banners  []paginaPrincipalBannerCard   `json:"banners,omitempty"`
 	Estilos  paginaPrincipalVisualSettings `json:"estilos"`
 }
 
@@ -105,8 +102,6 @@ func paginaPrincipalDefaultVisualSettings() paginaPrincipalVisualSettings {
 		IndexTextSize:   paginaPrincipalVisualSizeMedium,
 		LandingCardSize: paginaPrincipalVisualSizeMedium,
 		LandingTextSize: paginaPrincipalVisualSizeMedium,
-		IndexBannerWidthPx:  1200,
-		IndexBannerHeightPx: 220,
 	}
 }
 
@@ -201,9 +196,6 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 	return paginaPrincipalConfig{
 		Cantidad: len(cards),
 		Tarjetas: cards,
-		Banners: []paginaPrincipalBannerCard{
-			{ImagenURL: "/img/baner_ia.png", Enlace: ""},
-		},
 		Estilos:  paginaPrincipalDefaultVisualSettings(),
 	}
 }
@@ -240,21 +232,11 @@ func paginaPrincipalNormalizeVisualSettings(raw paginaPrincipalVisualSettings) p
 	if landingTextSize == "" {
 		landingTextSize = defaults.LandingTextSize
 	}
-	widthPx := raw.IndexBannerWidthPx
-	if widthPx <= 0 || widthPx > 2400 {
-		widthPx = defaults.IndexBannerWidthPx
-	}
-	heightPx := raw.IndexBannerHeightPx
-	if heightPx <= 0 || heightPx > 800 {
-		heightPx = defaults.IndexBannerHeightPx
-	}
 	return paginaPrincipalVisualSettings{
 		IndexCardSize:   indexCardSize,
 		IndexTextSize:   indexTextSize,
 		LandingCardSize: landingCardSize,
 		LandingTextSize: landingTextSize,
-		IndexBannerWidthPx:  widthPx,
-		IndexBannerHeightPx: heightPx,
 	}
 }
 
@@ -403,22 +385,9 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 		})
 	}
 
-	bannersSource := cfg.Banners
-	if len(bannersSource) == 0 {
-		bannersSource = defaults.Banners
-	}
-	normalizedBanners := make([]paginaPrincipalBannerCard, 0, len(bannersSource))
-	for _, it := range bannersSource {
-		normalizedBanners = append(normalizedBanners, paginaPrincipalBannerCard{
-			ImagenURL: paginaPrincipalNormalizeImageURL(it.ImagenURL, "/img/baner_ia.png"),
-			Enlace:    paginaPrincipalNormalizeLink(it.Enlace, ""),
-		})
-	}
-
 	return paginaPrincipalConfig{
 		Cantidad: cfg.Cantidad,
 		Tarjetas: normalized,
-		Banners:  normalizedBanners,
 		Estilos:  paginaPrincipalNormalizeVisualSettings(cfg.Estilos),
 	}
 }
@@ -617,7 +586,6 @@ func PublicPaginaPrincipalHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"ok":         true,
 			"cantidad":   cfg.Cantidad,
 			"tarjetas":   cfg.Tarjetas,
-			"banners":    cfg.Banners,
 			"estilos":    cfg.Estilos,
 			"whatsapp_contact_number": paginaPrincipalLoadWhatsAppContactNumber(dbSuper),
 			"updated_at": updatedAt,

@@ -45,6 +45,36 @@
       <div id="empresaChatMsg" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="ai" id="portalChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M2 12h20"></path><path d="M12 2c2.8 2.7 4.6 6.2 4.6 10S14.8 19.3 12 22c-2.8-2.7-4.6-6.2-4.6-10S9.2 4.7 12 2z"></path></svg>
+        Chat IA público del portal (index)
+      </h2>
+      <p class="form-help">Aplica al chat de la página pública <code>index.html</code> (visitantes sin iniciar sesión). Ideal para preguntas comerciales sobre Powerful Control System.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="portalChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="portalChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat público del portal">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el endpoint público del chat responderá “deshabilitado”.</div>
+          <div id="portalChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <div class="form-label">Límite</div>
+          <div class="form-help">10 consultas por usuario cada 5 minutos (controlado por servidor).</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="savePortalChatBtn" class="btn" type="button">Guardar chat público</button>
+      </div>
+      <div id="portalChatMsg" class="form-help"></div>
+    </section>
+
     <section class="card form advanced-card" data-brand="ai" id="superChatIACard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M8 12h8"></path></svg>
@@ -146,8 +176,10 @@
       async function load(){
         const empresaMsg = document.getElementById('empresaChatMsg');
         const superMsg = document.getElementById('superChatMsg');
+        const portalMsg = document.getElementById('portalChatMsg');
         if (empresaMsg) empresaMsg.textContent = 'Cargando...';
         if (superMsg) superMsg.textContent = 'Cargando...';
+        if (portalMsg) portalMsg.textContent = 'Cargando...';
         try {
           const data = await apiFetch('/super/api/config/chat_ia_logica');
           const defaults = data.defaults || {};
@@ -158,9 +190,12 @@
           const supEnabledInfo = values.super_enabled || {};
           const supMaxInfo = values.super_max_consultas || {};
           const empROInfo = values.empresa_solo_lectura || {};
+          const portalEnabledInfo = values.portal_enabled || {};
 
           document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
           document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
+          var portalEl = document.getElementById('portalChatEnabled');
+          if (portalEl) portalEl.checked = !!portalEnabledInfo.value;
           var empRO = document.getElementById('empresaSoloLectura');
           if (empRO) empRO.checked = !!empROInfo.value;
 
@@ -172,6 +207,7 @@
           renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
           renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
           renderStatus(document.getElementById('empresaSoloLecturaStatus'), empROInfo);
+          renderStatus(document.getElementById('portalChatEnabledStatus'), portalEnabledInfo);
 
           const usage = data.openai_usage_today || {};
           const fechaUso = normalize(usage.fecha_uso);
@@ -189,30 +225,37 @@
 
           if (empresaMsg) empresaMsg.textContent = 'Configuración cargada.';
           if (superMsg) superMsg.textContent = 'Configuración cargada.';
+          if (portalMsg) portalMsg.textContent = 'Configuración cargada.';
         } catch (err) {
           if (empresaMsg) empresaMsg.textContent = err.message || 'No se pudo cargar la configuración.';
           if (superMsg) superMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+          if (portalMsg) portalMsg.textContent = err.message || 'No se pudo cargar la configuración.';
         }
       }
 
       async function save(which){
         const empresaMsg = document.getElementById('empresaChatMsg');
         const superMsg = document.getElementById('superChatMsg');
+        const portalMsg = document.getElementById('portalChatMsg');
         const isEmpresa = which === 'empresa';
+        const isPortal = which === 'portal';
 
-        const btn = document.getElementById(isEmpresa ? 'saveEmpresaChatBtn' : 'saveSuperChatBtn');
+        const btn = document.getElementById(isEmpresa ? 'saveEmpresaChatBtn' : (isPortal ? 'savePortalChatBtn' : 'saveSuperChatBtn'));
         const prev = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
         if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardando...';
-        if (!isEmpresa && superMsg) superMsg.textContent = 'Guardando...';
+        if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = 'Guardando...';
+        if (isPortal && portalMsg) portalMsg.textContent = 'Guardando...';
 
         try {
           const elEmpRO = document.getElementById('empresaSoloLectura');
+          const elPortalEnabled = document.getElementById('portalChatEnabled');
           const payload = {
             empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
             empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
             super_enabled: !!document.getElementById('superChatEnabled').checked,
             super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
+            portal_enabled: elPortalEnabled ? !!elPortalEnabled.checked : true,
             super_contexto_amplio: true,
             empresa_solo_lectura: elEmpRO ? !!elEmpRO.checked : false,
           };
@@ -222,11 +265,13 @@
             body: JSON.stringify(payload),
           });
           if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardado OK.';
-          if (!isEmpresa && superMsg) superMsg.textContent = 'Guardado OK.';
+          if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = 'Guardado OK.';
+          if (isPortal && portalMsg) portalMsg.textContent = 'Guardado OK.';
           await load();
         } catch (err) {
           if (isEmpresa && empresaMsg) empresaMsg.textContent = err.message || 'No se pudo guardar.';
-          if (!isEmpresa && superMsg) superMsg.textContent = err.message || 'No se pudo guardar.';
+          if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = err.message || 'No se pudo guardar.';
+          if (isPortal && portalMsg) portalMsg.textContent = err.message || 'No se pudo guardar.';
         } finally {
           if (btn) { btn.disabled = false; btn.textContent = prev; }
         }
@@ -234,6 +279,7 @@
 
       document.getElementById('saveEmpresaChatBtn').addEventListener('click', function(){ save('empresa'); });
       document.getElementById('saveSuperChatBtn').addEventListener('click', function(){ save('super'); });
+      document.getElementById('savePortalChatBtn').addEventListener('click', function(){ save('portal'); });
       load();
     })();
   </script>

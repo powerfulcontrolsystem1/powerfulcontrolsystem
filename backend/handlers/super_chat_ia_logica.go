@@ -14,6 +14,7 @@ import (
 const (
 	superChatIAEmpresaEnabledKey     = "ai.chat.empresa.enabled"
 	superChatIASuperEnabledKey       = "ai.chat.super.enabled"
+	superChatIAPortalEnabledKey      = "ai.chat.portal.enabled"
 	superChatIAEmpresaMaxConsultasKey = "ai.chat.empresa.max_consultas_dia"
 	superChatIASuperMaxConsultasKey   = "ai.chat.super.max_consultas_dia"
 	superChatIASuperContextoAmplioKey = "ai.chat.super.contexto_amplio"
@@ -23,6 +24,7 @@ const (
 
 	defaultChatIAEmpresaEnabled      = true
 	defaultChatIASuperEnabled        = true
+	defaultChatIAPortalEnabled       = true
 	defaultChatIAEmpresaMaxConsultas = int64(10)
 	defaultChatIASuperMaxConsultas   = int64(30)
 	defaultChatIASuperContextoAmplio = true
@@ -82,6 +84,14 @@ func getChatIASuperEnabled(dbSuper *sql.DB) (bool, string, string, error) {
 		return defaultChatIASuperEnabled, "", "", err
 	}
 	return parseConfigBoolWithDefault(raw, defaultChatIASuperEnabled), updatedAt, updatedBy, nil
+}
+
+func getChatIAPortalEnabled(dbSuper *sql.DB) (bool, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAPortalEnabledKey)
+	if err != nil {
+		return defaultChatIAPortalEnabled, "", "", err
+	}
+	return parseConfigBoolWithDefault(raw, defaultChatIAPortalEnabled), updatedAt, updatedBy, nil
 }
 
 func getChatIAEmpresaMaxConsultasDia(dbSuper *sql.DB) (int64, string, string, error) {
@@ -161,6 +171,11 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			portalEnabled, portalEnabledAt, portalEnabledBy, err := getChatIAPortalEnabled(dbSuper)
+			if err != nil {
+				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			empresaMax, empresaMaxAt, empresaMaxBy, err := getChatIAEmpresaMaxConsultasDia(dbSuper)
 			if err != nil {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
@@ -207,6 +222,7 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"empresa_max_consultas":       defaultChatIAEmpresaMaxConsultas,
 					"super_enabled":               defaultChatIASuperEnabled,
 					"super_max_consultas":         defaultChatIASuperMaxConsultas,
+					"portal_enabled":              defaultChatIAPortalEnabled,
 					"super_contexto_amplio":       defaultChatIASuperContextoAmplio,
 					"empresa_solo_lectura":        defaultChatIAEmpresaSoloLectura,
 				},
@@ -216,6 +232,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"config_key": superChatIAEmpresaEnabledKey,
 						"updated_at": empresaEnabledAt,
 						"updated_by": empresaEnabledBy,
+					},
+					"portal_enabled": map[string]interface{}{
+						"value":      portalEnabled,
+						"config_key": superChatIAPortalEnabledKey,
+						"updated_at": portalEnabledAt,
+						"updated_by": portalEnabledBy,
 					},
 					"empresa_max_consultas": map[string]interface{}{
 						"value":      empresaMax,
@@ -274,6 +296,7 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				EmpresaMaxConsultas     *int64 `json:"empresa_max_consultas"`
 				SuperEnabled            *bool  `json:"super_enabled"`
 				SuperMaxConsultas       *int64 `json:"super_max_consultas"`
+				PortalEnabled           *bool  `json:"portal_enabled"`
 				SuperContextoAmplio     *bool  `json:"super_contexto_amplio"`
 				EmpresaSoloLectura      *bool  `json:"empresa_solo_lectura"`
 			}
@@ -289,6 +312,10 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			superEnabled := defaultChatIASuperEnabled
 			if payload.SuperEnabled != nil {
 				superEnabled = *payload.SuperEnabled
+			}
+			portalEnabled := defaultChatIAPortalEnabled
+			if payload.PortalEnabled != nil {
+				portalEnabled = *payload.PortalEnabled
 			}
 			empresaMax := defaultChatIAEmpresaMaxConsultas
 			if payload.EmpresaMaxConsultas != nil {
@@ -335,6 +362,12 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superChatIASuperEnabledKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superChatIAPortalEnabledKey, strconv.FormatBool(portalEnabled), false); err != nil {
+				http.Error(w, "error guardando portal_enabled: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superChatIAPortalEnabledKey+superChatIALogicaUpdatedBySuffix, adminEmail, false)
+
 			if err := dbpkg.SetConfigValue(dbSuper, superChatIASuperMaxConsultasKey, strconv.FormatInt(superMax, 10), false); err != nil {
 				http.Error(w, "error guardando super_max_consultas: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -360,6 +393,7 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"empresa_max_consultas":  empresaMax,
 					"super_enabled":          superEnabled,
 					"super_max_consultas":    superMax,
+					"portal_enabled":         portalEnabled,
 					"super_contexto_amplio":  superCtxAmplio,
 					"empresa_solo_lectura":   empSoloLectura,
 				},

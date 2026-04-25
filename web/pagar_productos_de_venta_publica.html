@@ -27,6 +27,9 @@
     <section class="card">
       <h2>Datos para pagar</h2>
       <p class="form-help">El pago se procesa con la pasarela configurada por esta empresa. El dinero llega directamente a su cuenta Wompi o Epayco.</p>
+      <div class="form-help" style="margin-top:-6px;">
+        ¿Tienes preguntas antes de pagar? <a href="#" id="privateMsgLink">Enviar mensaje privado a la empresa</a>
+      </div>
       <div class="form-grid">
         <input id="buyerName" class="form-input" placeholder="Nombre completo">
         <input id="buyerEmail" class="form-input" placeholder="Correo electrónico">
@@ -53,6 +56,40 @@
     async function openEpaycoCheckout(data){await loadScript(data.checkout_script_url); if(!window.ePayco||!window.ePayco.checkout||!window.ePayco.checkout.configure)throw new Error('Smart Checkout de Epayco no quedó disponible'); const checkout=window.ePayco.checkout.configure({sessionId:data.session_id,type:data.checkout_type||'standard',test:String(data.mode||'sandbox').toLowerCase()!=='production'}); try{checkout.onErrors&&checkout.onErrors(e=>setMsg('Epayco reportó un error: '+JSON.stringify(e),true)); checkout.onClosed&&checkout.onClosed(()=>setMsg('Checkout cerrado. Puedes consultar el estado con la referencia: '+(data.reference||''),false));}catch(_){} checkout.open();}
     async function pay(){try{if(!state.item)throw new Error('Producto no disponible.'); const payload={empresa_slug:state.data.empresa_slug||state.slug,metodo_pago:state.method,comprador_nombre:buyerName.value.trim(),comprador_email:buyerEmail.value.trim(),comprador_telefono:buyerPhone.value.trim(),accept_terms:terms.checked,items:[{item_id:state.item.id,cantidad:Number(qty.value||1)}]}; setMsg('Creando pago...',false); const res=await fetch('/api/public/venta_publica?action=crear_pago',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const text=await res.text(); const data=text?JSON.parse(text):{}; if(!res.ok)throw new Error(data.error||text||'No se pudo crear el pago'); if(data.provider==='epayco'&&data.session_id){setMsg('Abriendo Smart Checkout de Epayco...',false); await openEpaycoCheckout(data); return;} setMsg('Pago creado. Estado: '+(data.status_local||data.status||'pendiente')+'\\nReferencia: '+(data.reference||''),false);}catch(e){setMsg(e.message||String(e),true);}}
     payBtn.onclick=pay; load();
+
+    // Mensaje privado desde checkout (crea conversación en Chat y tareas de la empresa)
+    privateMsgLink.onclick = async function(ev){
+      ev.preventDefault();
+      try {
+        const empresaSlug = String(state.data && state.data.empresa_slug ? state.data.empresa_slug : state.slug).trim();
+        if (!empresaSlug) throw new Error('Empresa no disponible.');
+        const nombre = String((buyerName && buyerName.value) || '').trim() || String(prompt('Tu nombre (opcional):') || '').trim();
+        const contacto = String((buyerEmail && buyerEmail.value) || '').trim() || String((buyerPhone && buyerPhone.value) || '').trim() || String(prompt('Tu WhatsApp o correo (opcional):') || '').trim();
+        const mensaje = String(prompt('Escribe tu mensaje para la empresa:') || '').trim();
+        if (!mensaje) return;
+        privateMsgLink.style.pointerEvents = 'none';
+        const res = await fetch('/api/public/mensajes_privados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_slug: empresaSlug,
+            origen: 'venta_publica',
+            origen_ref: 'checkout: item_id=' + String(state.itemId || 0),
+            nombre: nombre,
+            contacto: contacto,
+            mensaje: mensaje
+          })
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
+        alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
+      } catch (e) {
+        alert(e.message || 'No se pudo enviar el mensaje.');
+      } finally {
+        privateMsgLink.style.pointerEvents = '';
+      }
+    };
   </script>
 </body>
 </html>

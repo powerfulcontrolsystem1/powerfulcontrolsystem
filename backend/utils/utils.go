@@ -504,6 +504,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/auth/logout":                                          {},
 			"/api/public/venta_publica":                             {},
 			"/api/public/estacion_vip":                              {},
+			"/api/public/chat_portal":                               {},
+			"/api/public/mensajes_privados":                          {},
 			"/api/public/publicaciones":                             {},
 			"/api/public/soporte_remoto":                            {},
 			"/api/public/venta_digital":                             {},

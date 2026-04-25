@@ -18,7 +18,7 @@
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
     .product{border:1px solid var(--border);background:var(--surface);border-radius:24px;box-shadow:0 16px 34px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;min-height:420px}
     .img{height:190px;background:var(--input-bg-soft);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
-    .body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}.body h2{font-size:1.18rem;margin:0}.desc{color:var(--muted);line-height:1.5}.price{font-size:1.35rem;font-weight:950}.actions{margin-top:auto;display:flex;gap:10px}.actions .btn{width:100%;text-align:center}
+    .body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}.body h2{font-size:1.18rem;margin:0}.desc{color:var(--muted);line-height:1.5}.price{font-size:1.35rem;font-weight:950}.actions{margin-top:auto;display:flex;gap:10px}.actions .btn{width:100%;text-align:center}.actions .btn.secondary{background:transparent}
     .empty{padding:42px;border:1px dashed var(--border);border-radius:24px;text-align:center;color:var(--muted);background:var(--surface)}
   </style>
 </head>
@@ -39,8 +39,46 @@
     function payUrl(item){const p=new URL('/pagar_productos_de_venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(state.page)p.searchParams.set('pagina_slug',state.page); p.searchParams.set('item_id',item.id); return p.pathname+p.search;}
     function pageUrl(page){const p=new URL('/venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(page&&page.slug)p.searchParams.set('pagina_slug',page.slug); return p.pathname+p.search;}
     async function load(){try{let qs='action=catalogo'; if(state.slug)qs+='&empresa_slug='+encodeURIComponent(state.slug); if(state.page)qs+='&pagina_slug='+encodeURIComponent(state.page); const res=await fetch('/api/public/venta_publica?'+qs); const text=await res.text(); const data=text?JSON.parse(text):{}; if(!res.ok)throw new Error(data.error||text||'No se pudo cargar'); state.data=data; render(data);}catch(e){status.textContent=e.message; grid.innerHTML='<div class="empty">No se pudo cargar esta página pública.</div>';}}
-    function render(data){const tienda=data.tienda||{}; title.textContent=(data.page&&data.page.nombre)||tienda.nombre_tienda||'Venta pública'; desc.textContent=(data.page&&data.page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en línea.'; tabs.innerHTML='<a class="tab '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'">Todos</a>'; (data.pages||[]).forEach(p=>{tabs.innerHTML+='<a class="tab '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'">'+esc(p.nombre)+'</a>';}); const items=data.items||[]; if(!items.length){grid.innerHTML='<div class="empty">Esta página aún no tiene productos publicados.</div>';return;} grid.innerHTML=''; items.forEach(it=>{const div=document.createElement('article');div.className='product';div.innerHTML='<div class="img" style="'+(it.imagen_url?'background-image:url('+esc(it.imagen_url)+')':'')+'">'+(it.imagen_url?'':'Producto')+'</div><div class="body"><h2>'+esc(it.nombre)+'</h2><div class="desc">'+esc(it.descripcion||'')+'</div><div class="price">'+money(it.precio,it.moneda||tienda.moneda)+'</div><div class="actions"><a class="btn" href="'+payUrl(it)+'">Pagar</a></div></div>';grid.appendChild(div);}); status.textContent='';}
+    function render(data){const tienda=data.tienda||{}; title.textContent=(data.page&&data.page.nombre)||tienda.nombre_tienda||'Venta pública'; desc.textContent=(data.page&&data.page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en línea.'; tabs.innerHTML='<a class="tab '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'">Todos</a>'; (data.pages||[]).forEach(p=>{tabs.innerHTML+='<a class="tab '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'">'+esc(p.nombre)+'</a>';}); const items=data.items||[]; if(!items.length){grid.innerHTML='<div class="empty">Esta página aún no tiene productos publicados.</div>';return;} grid.innerHTML=''; items.forEach(it=>{const div=document.createElement('article');div.className='product';div.innerHTML='<div class="img" style="'+(it.imagen_url?'background-image:url('+esc(it.imagen_url)+')':'')+'">'+(it.imagen_url?'':'Producto')+'</div><div class="body"><h2>'+esc(it.nombre)+'</h2><div class="desc">'+esc(it.descripcion||'')+'</div><div class="price">'+money(it.precio,it.moneda||tienda.moneda)+'</div><div class="actions"><a class="btn secondary" href="#" data-private-msg="1" data-item="'+String(it.id||'')+'">Mensaje privado</a><a class="btn" href="'+payUrl(it)+'">Pagar</a></div></div>';grid.appendChild(div);}); status.textContent='';}
     load();
+
+    // Mensaje privado desde venta pública (crea conversación en Chat y tareas de la empresa)
+    document.addEventListener('click', async function(ev){
+      const a = ev.target && ev.target.closest ? ev.target.closest('a[data-private-msg="1"]') : null;
+      if (!a) return;
+      ev.preventDefault();
+      try {
+        if (!state.data) throw new Error('Cargando catálogo...');
+        const empresaSlug = String(state.data.empresa_slug || state.slug || '').trim();
+        if (!empresaSlug) throw new Error('Empresa no disponible.');
+        const itemId = String(a.getAttribute('data-item') || '').trim();
+        const nombre = String(prompt('Tu nombre (opcional):') || '').trim();
+        const contacto = String(prompt('Tu WhatsApp o correo para que te respondan (opcional):') || '').trim();
+        const mensaje = String(prompt('Escribe tu mensaje para la empresa:') || '').trim();
+        if (!mensaje) return;
+        a.style.pointerEvents = 'none';
+        const res = await fetch('/api/public/mensajes_privados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_slug: empresaSlug,
+            origen: 'venta_publica',
+            origen_ref: 'pagina: ' + String((state.data.page && state.data.page.slug) || state.page || 'todos') + (itemId ? (' / item_id=' + itemId) : ''),
+            nombre: nombre,
+            contacto: contacto,
+            mensaje: mensaje
+          })
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
+        alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
+      } catch (e) {
+        alert(e.message || 'No se pudo enviar el mensaje.');
+      } finally {
+        a.style.pointerEvents = '';
+      }
+    });
   </script>
 </body>
 </html>

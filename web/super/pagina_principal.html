@@ -73,22 +73,12 @@
       </div>
       <div class="form-row">
         <div class="form-col">
-          <p class="form-help">Las tarjetas tipo banner ahora toman el mismo tamaño/estilo de las tarjetas superiores del index. Ya no hay ancho/alto fijo separado.</p>
+          <p class="form-help">Las tarjetas tipo banner fueron removidas del index. Ahora solo se muestran las tarjetas principales y, debajo, el chat público centrado.</p>
         </div>
       </div>
       <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
-      <div class="card" style="margin-top:14px;padding:14px 16px;border-radius:14px;">
-        <h3 style="margin-top:0">Tarjetas tipo baner (solo imagen)</h3>
-        <p class="form-help">Estas tarjetas se renderizan debajo de las tarjetas principales del index. Solo cargan una imagen desde <code>/img/</code>.</p>
-        <div class="form-row">
-          <div class="form-col pp-col-small">
-            <label class="form-label" for="ppBannerCantidad">Cantidad de baners</label>
-            <input id="ppBannerCantidad" class="form-input" type="number" min="0" max="12" value="" placeholder="0">
-          </div>
-        </div>
-        <div id="ppBannersEditor" class="pp-cards-editor"></div>
-      </div>
+      <!-- Banners removidos del index: ya no se configuran aquí. -->
       <div class="form-actions pp-bottom-actions">
         <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
       </div>
@@ -120,8 +110,7 @@
       var indexTextSizeEl = document.getElementById('ppIndexTextSize');
       var landingCardSizeEl = document.getElementById('ppLandingCardSize');
       var landingTextSizeEl = document.getElementById('ppLandingTextSize');
-      var bannerCantidadEl = document.getElementById('ppBannerCantidad');
-      var bannersEditorEl = document.getElementById('ppBannersEditor');
+      // Banners removidos del index.
 
       function setCantidadLoading(isLoading) {
         cantidadEl.disabled = !!isLoading;
@@ -246,40 +235,7 @@
         state.config.tarjetas = cards;
       }
 
-      function ensureBanners(count) {
-        var total = Number(count || 0);
-        if (!Number.isFinite(total) || total < 0) total = 0;
-        if (total > 12) total = 12;
-        total = Math.floor(total);
-        var banners = Array.isArray(state.config.banners) ? state.config.banners.slice() : [];
-        while (banners.length < total) {
-          banners.push({ imagen_url: '/img/baner_ia.png' });
-        }
-        if (banners.length > total) {
-          banners = banners.slice(0, total);
-        }
-        state.config.banners = banners;
-        if (bannerCantidadEl) bannerCantidadEl.value = String(total);
-      }
-
-      function renderBannersEditor() {
-        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
-        if (!bannersEditorEl) return;
-        var html = '';
-        (state.config.banners || []).forEach(function (banner, idx) {
-          var image = String(banner.imagen_url || '').trim();
-          html += '<article class="card pp-card-item" data-banner-index="' + idx + '">';
-          html += '<h3>Baner ' + (idx + 1) + '</h3>';
-          html += '<div class="form-row">';
-          html += '  <div class="form-col">';
-          html += '    <label class="form-label" for="ppBannerImage' + idx + '">Imagen (web/img)</label>';
-          html += '    <select id="ppBannerImage' + idx + '" class="form-input pp-image-select pp-banner-field" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
-          html += '  </div>';
-          html += '</div>';
-          html += '</article>';
-        });
-        bannersEditorEl.innerHTML = html;
-      }
+      // (se eliminó la lógica de banners)
 
       function imageOptionsHTML(selected) {
         var current = String(selected || '').trim();
@@ -461,7 +417,7 @@
         var data = await requestJSON('/super/api/pagina_principal?action=config');
         var cfg = data && data.config ? data.config : {};
         state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
-        state.config.banners = Array.isArray(cfg.banners) ? cfg.banners : [];
+        state.config.banners = [];
         var persistedCount = normalizeCount(cfg.cantidad || 0);
         if (state.config.tarjetas.length > persistedCount) {
           persistedCount = normalizeCount(state.config.tarjetas.length);
@@ -469,12 +425,10 @@
         state.config.cantidad = persistedCount;
         state.config.estilos = normalizeVisualSettings(cfg.estilos);
         ensureCards(state.config.cantidad);
-        ensureBanners((cfg.banners && cfg.banners.length) || 0);
       }
 
       function buildPayloadFromState() {
         ensureCards(cantidadEl.value);
-        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
         return {
           cantidad: state.config.cantidad,
           estilos: normalizeVisualSettings(state.config.estilos),
@@ -495,9 +449,6 @@
                 : []
             };
           }),
-          banners: (state.config.banners || []).map(function (banner) {
-            return { imagen_url: String(banner.imagen_url || '').trim() };
-          })
         };
       }
 
@@ -510,22 +461,7 @@
         });
       });
 
-      if (bannerCantidadEl) {
-        bannerCantidadEl.addEventListener('change', function () {
-          renderBannersEditor();
-          setMsg('Cantidad de baners actualizada en el editor. Guarda la configuracion para publicarla.', '');
-        });
-      }
-
-      document.addEventListener('change', function (ev) {
-        var target = ev.target;
-        if (!target || !target.classList || !target.classList.contains('pp-banner-field')) return;
-        var idx = Number(target.id.replace('ppBannerImage', ''));
-        if (!Number.isFinite(idx) || idx < 0) return;
-        ensureBanners(bannerCantidadEl ? bannerCantidadEl.value : 0);
-        if (!state.config.banners[idx]) state.config.banners[idx] = { imagen_url: '' };
-        state.config.banners[idx].imagen_url = String(target.value || '').trim();
-      });
+      // (listeners de banners removidos)
 
       async function saveConfig() {
         var payload = buildPayloadFromState();
@@ -557,7 +493,6 @@
           await loadImages();
           await loadConfig();
           renderCardsEditor();
-          renderBannersEditor();
           renderStyleControls();
           setCantidadLoading(false);
           setMsg('Configuracion cargada correctamente.', 'success');

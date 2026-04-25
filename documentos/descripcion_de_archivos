@@ -23,6 +23,13 @@
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : listener `keydown` en `#promptInput` (Enter sin Mayus = `requestSubmit` si el boton Enviar no esta deshabilitado; Mayus+Enter = varias lineas). Linea de ayuda `form-help` y `title` en el textarea.
 	- `web/super/chat_con_ia_global.html` : mismo comportamiento y ayudas.
 
+- Actualizacion 2026-04-25: portal publico — chat IA comercial (index)
+	- `backend/handlers/public_chat_portal.go` : endpoint público `POST /api/public/chat_portal` para responder preguntas comerciales del portal (solo Powerful Control System), con limitación 10 consultas por 5 minutos por usuario (cookie+IP) y sin acciones/PCS_ACTION.
+	- `web/index.html` : se remueven tarjetas tipo banner y se deja solo el grid principal de tarjetas; debajo queda el chat público centrado. Se mejora el estilo del título “Sistema de Facturación Electrónica / Habla con tu empresa — Inteligencia artificial integrada” y se añade un ícono tipo ChatGPT al subtítulo.
+	- `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html` : switch `portal_enabled` (`ai.chat.portal.enabled`) para activar/desactivar el chat público desde el panel super.
+	- `backend/handlers/public_mensajes_privados.go` : endpoint público `POST /api/public/mensajes_privados` para que visitantes envíen mensajes privados a una empresa; se crea una conversación en `Chat y tareas` con participante tipo `publico`.
+	- `web/red_social_comercial.html`, `web/venta_publica.html`, `web/pagar_productos_de_venta_publica.html` : botón/enlace "Mensaje privado" para enviar consultas a la empresa y continuar el seguimiento desde `administrar_empresa/chat_y_tareas.html`.
+
 - Actualizacion 2026-04-24: super — pagina principal, tema claro/oscuro
 	- `web/super/pagina_principal.html` : script inicial que aplica `data-theme`, `theme-light` / `theme-dark` desde cookie `pcs_theme` y `localStorage` (coherente con iframe del panel super).
 	- `web/estilos.css` : `body.super-page` con `background`/`color` por variables; titulo `.super-page .page-header h1` sin gradiente ilegible en temas claros; `pagina_principal` usa `.pp-main-card` (en vez de `mp-card`) para evitar gradientes rosados en temas oscuros; `.pp-image-preview-wrap` con `color-mix` por tema.

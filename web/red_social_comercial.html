@@ -23,6 +23,7 @@
     .post-actions{margin-top:auto;display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px}
     .post-chip{font-size:.82rem;color:var(--muted)}
     .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:800;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 24%,transparent)}
+    .btn-private{background:transparent;color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:800}
     .empty-state{grid-column:1/-1;text-align:center;color:var(--muted);padding:42px;border:1px dashed var(--border);border-radius:22px;background:var(--surface)}
     @media(max-width:640px){.social-shell{padding:24px 12px 44px}.feed{grid-template-columns:1fr}.post-card{min-height:auto}}
   </style>
@@ -82,11 +83,51 @@
                 <p class="post-desc">${escapeHtml(p.descripcion)}</p>
                 <div class="post-actions">
                   <span class="post-chip">Post empresarial</span>
-                  <a href="https://api.whatsapp.com/send?text=${encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || ''))}" target="_blank" rel="noopener" class="btn-contact">Contactar</a>
+                  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                    <button class="btn-private" type="button" data-empresa-id="${escapeHtml(p.empresa_id)}" data-post-nombre="${escapeHtml(p.nombre||'')}">Mensaje privado</button>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || ''))}" target="_blank" rel="noopener" class="btn-contact">WhatsApp</a>
+                  </div>
                 </div>
               </div>
             </article>
           `;
+        });
+
+        // Delegación del botón: mensaje privado (crea conversación en Chat y tareas de la empresa)
+        feed.querySelectorAll('button.btn-private').forEach(btn => {
+          btn.addEventListener('click', async function(){
+            try {
+              const empresaId = Number(btn.getAttribute('data-empresa-id') || 0);
+              const postNombre = String(btn.getAttribute('data-post-nombre') || '').trim();
+              if (!empresaId) throw new Error('Empresa no disponible.');
+              const nombre = String(prompt('Tu nombre (opcional):') || '').trim();
+              const contacto = String(prompt('Tu WhatsApp o correo para que te respondan (opcional):') || '').trim();
+              const mensaje = String(prompt('Escribe tu mensaje:') || '').trim();
+              if (!mensaje) return;
+
+              btn.disabled = true;
+              const res = await fetch('/api/public/mensajes_privados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  empresa_id: empresaId,
+                  origen: 'red_social',
+                  origen_ref: postNombre ? ('post: ' + postNombre) : '',
+                  nombre: nombre,
+                  contacto: contacto,
+                  mensaje: mensaje
+                })
+              });
+              const text = await res.text();
+              const data = text ? JSON.parse(text) : {};
+              if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
+              alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
+            } catch (e) {
+              alert(e.message || 'No se pudo enviar el mensaje.');
+            } finally {
+              btn.disabled = false;
+            }
+          });
         });
       } catch (err) {
         console.error(err);

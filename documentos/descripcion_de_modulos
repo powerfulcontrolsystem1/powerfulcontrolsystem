@@ -58,6 +58,10 @@
 - Modulos afectados: `reportes`, `inventario`, `administrar_empresa`
 - Cambio funcional: la página `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vía PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
 
+2026-04-25: Portal público — chat IA comercial en `index`
+- Modulos afectados: `portal_publico`
+- Cambio funcional: se agrega un chat IA público al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (módulos, planes/precios, novedades y contratación). No ejecuta acciones del sistema ni muestra información sensible. Incluye limitación de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el límite. El super administrador puede activar/desactivar este chat desde `Configuración lógica del chat con IA`.
+
 2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
 - Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
 - Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).
@@ -1312,6 +1316,10 @@ Criterio de esta guia:
 
 36) Venta publica y pagos Wompi por empresa
 - Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.
+
+43) Mensajes privados desde portal público (red social / venta pública)
+- Visitantes pueden enviar mensajes privados a una empresa desde `red_social_comercial` y desde `venta_publica` (catálogo/checkout).
+- Los mensajes se registran como una conversación en `Chat y tareas` de la empresa para que el equipo continúe la conversación internamente.
 
 37) Descripcion de modulos (este documento)
 - Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.
