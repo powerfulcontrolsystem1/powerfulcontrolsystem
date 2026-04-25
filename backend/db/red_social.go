@@ -9,6 +9,7 @@ import (
 type PublicacionRedSocial struct {
 	ID            int       `json:"id"`
 	EmpresaID     int       `json:"empresa_id"`
+	EmpresaNombre string    `json:"empresa_nombre,omitempty"`
 	Nombre        string    `json:"nombre"`
 	Descripcion   string    `json:"descripcion"`
 	FotoURL       string    `json:"foto_url"`
@@ -50,8 +51,10 @@ func GetPublicacionesRedSocialActivas(db *sql.DB) ([]PublicacionRedSocial, error
 	if err := EnsureEmpresaPublicacionesRedSocialSchema(db); err != nil {
 		return nil, err
 	}
-	query := `SELECT id, empresa_id, nombre, descripcion, COALESCE(foto_url,''), fecha_creacion, estado 
-	          FROM empresa_publicaciones_red_social WHERE estado = 'activo' ORDER BY fecha_creacion DESC LIMIT 50`
+	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), p.fecha_creacion, p.estado 
+	          FROM empresa_publicaciones_red_social p
+	          LEFT JOIN empresas e ON e.id = p.empresa_id OR COALESCE(e.empresa_id, 0) = p.empresa_id
+	          WHERE p.estado = 'activo' ORDER BY p.fecha_creacion DESC LIMIT 50`
 	rows, err := querySQLCompat(db, query)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func GetPublicacionesRedSocialActivas(db *sql.DB) ([]PublicacionRedSocial, error
 	var pubs []PublicacionRedSocial
 	for rows.Next() {
 		var p PublicacionRedSocial
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.Nombre, &p.Descripcion, &p.FotoURL, &p.FechaCreacion, &p.Estado); err != nil {
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.Nombre, &p.Descripcion, &p.FotoURL, &p.FechaCreacion, &p.Estado); err != nil {
 			return nil, err
 		}
 		pubs = append(pubs, p)
@@ -76,8 +79,10 @@ func GetPublicacionesRedSocialByEmpresa(db *sql.DB, empresaID int) ([]Publicacio
 	if err := EnsureEmpresaPublicacionesRedSocialSchema(db); err != nil {
 		return nil, err
 	}
-	query := `SELECT id, empresa_id, nombre, descripcion, COALESCE(foto_url,''), fecha_creacion, estado 
-	          FROM empresa_publicaciones_red_social WHERE empresa_id = ? ORDER BY fecha_creacion DESC`
+	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), p.fecha_creacion, p.estado 
+	          FROM empresa_publicaciones_red_social p
+	          LEFT JOIN empresas e ON e.id = p.empresa_id OR COALESCE(e.empresa_id, 0) = p.empresa_id
+	          WHERE p.empresa_id = ? ORDER BY p.fecha_creacion DESC`
 	rows, err := querySQLCompat(db, query, empresaID)
 	if err != nil {
 		return nil, err
@@ -87,7 +92,7 @@ func GetPublicacionesRedSocialByEmpresa(db *sql.DB, empresaID int) ([]Publicacio
 	var pubs []PublicacionRedSocial
 	for rows.Next() {
 		var p PublicacionRedSocial
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.Nombre, &p.Descripcion, &p.FotoURL, &p.FechaCreacion, &p.Estado); err != nil {
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.Nombre, &p.Descripcion, &p.FotoURL, &p.FechaCreacion, &p.Estado); err != nil {
 			return nil, err
 		}
 		pubs = append(pubs, p)

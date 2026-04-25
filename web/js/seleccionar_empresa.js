@@ -291,12 +291,29 @@
 
   function applySidebarPermissions(account) {
     var linkLicencias = document.getElementById("linkLicencias");
+    var linkMisClientes = document.getElementById("linkMisClientes");
     var linkAdministradores = document.getElementById("linkAdministradores");
     var linkReportes = document.getElementById("linkReportesGlobales");
     var principalSuper = isPrincipalSuperAccount(account);
     setElementVisible(linkLicencias, canManageScopedLicencias(account));
+    setElementVisible(linkMisClientes, false);
     setElementVisible(linkAdministradores, principalSuper);
     setElementVisible(linkReportes, principalSuper);
+  }
+
+  function refreshAsesorComercialLink() {
+    var linkMisClientes = document.getElementById("linkMisClientes");
+    if (!linkMisClientes) return Promise.resolve(false);
+    return fetchJSON("/api/asesor_comercial/mis_clientes", { credentials: "same-origin" })
+      .then(function (data) {
+        var isAsesor = !!(data && data.is_asesor);
+        setElementVisible(linkMisClientes, isAsesor);
+        return isAsesor;
+      })
+      .catch(function () {
+        setElementVisible(linkMisClientes, false);
+        return false;
+      });
   }
 
   function fetchCurrentAccount() {
@@ -310,6 +327,7 @@
       .then(function (data) {
         currentAccount = data || null;
         applySidebarPermissions(currentAccount);
+        refreshAsesorComercialLink();
         return currentAccount;
       })
       .catch(function () {

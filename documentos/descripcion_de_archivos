@@ -1,3 +1,36 @@
+- Actualizacion 2026-04-24: chat IA — layout tipo Gemini (empresa y super)
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : barra lateral con conversaciones en `localStorage` por empresa e historial del servidor; barra superior con selector y pastilla de modelo y uso; compartir respuestas (Web Share o portapapeles); banner explicativo ante 429 / `free_tier_limit_reached` / bloqueo; sin titulo largo ni tarjeta de chips Empresa/Cuenta; tema claro/oscuro alineado a variables.
+	- `web/super/chat_con_ia_global.html` : mismo patron de layout, persistencia `pcs_gemini_chat_global_v1`, historial en sidebar, limites y compartir.
+	- `web/estilos.css` : clases `.ai-gemini-app`, sidebar, topbar, pastillas, banner de limite, mensajes y overrides `html.theme-light` para contraste.
+
+- Actualizacion 2026-04-24: estaciones — pedidos IA y miniaturas movil
+	- `backend/handlers/ia_pedidos_estacion.go` (nuevo) : `POST /api/empresa/ia_pedidos_estacion/ejecutar` con permisos de ventas; usa OpenAI segun configuracion super, interpreta pedidos en lenguaje natural y agrega lineas al carrito de estacion.
+	- `backend/db/carritos_compras.go` : `GetCarritoCompraByCodigo` para localizar carritos `EST-{empresa}-{estacion}`.
+	- `backend/handlers/chat_con_inteligencia_artificial_router.go` : registra la ruta anterior junto al modulo de chat IA.
+	- `web/administrar_empresa/estacion_ia_pedidos.html` (nuevo) : UI compacta embebida (chat + dictado) para la estacion especial.
+	- `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js` : flags `ia_pedidos_*`, tarjeta con iframe, boton movil `Ver miniaturas` / `Vista normal`, estilos rejilla 3 columnas en modo miniatura.
+	- `.vscode/extensions.json` (nuevo) : recomendacion minima `golang.go` para el workspace.
+
+- Actualizacion 2026-04-24: modulo asesor comercial profesional
+	- `backend/db/asesor_comercial.go` (nuevo) : esquema PostgreSQL `asesores_comerciales` y `asesor_comercial_comisiones`, CRUD de asesores, aceptación de invitación, comisiones, asociación por empresa y marcado de pago de comisión.
+	- `backend/handlers/asesor_comercial.go` (nuevo) : endpoints `/super/api/asesor_comercial`, `/api/asesor_comercial/aceptar` y `/api/asesor_comercial/mis_clientes`; valida administradores, envía invitación por Gmail SMTP y expone ventas vigentes del asesor.
+	- `web/super/asesor_comercial.html` (nuevo) : página super para invitar administradores como asesores, configurar porcentaje/plazo y marcar comisiones pagadas.
+	- `web/mis_clientes.html` (nuevo) : página para asesores aceptados con empresas asociadas, valor pagado, fecha, comisión y estado de pago.
+	- `web/super/vendedores_licencias.html` (eliminado), `backend/handlers/vendedores_handlers.go` (eliminado), `backend/handlers/vendedor_config_handlers.go` (eliminado) : se retira el módulo anterior de vendedores.
+	- `backend/main.go`, `backend/handlers/payments_handlers.go`, `backend/utils/utils.go`, `web/pagar_licencia.html`, `web/seleccionar_empresa.html`, `web/js/seleccionar_empresa.js`, `web/super_administrador.html` : rutas, checkout de licencias, enlace `Mis clientes` y menú super actualizados al flujo de asesor comercial.
+
+- Actualizacion 2026-04-24: red social empresarial y venta publica por paginas
+	- `backend/db/red_social.go` : publicaciones públicas incluyen nombre de empresa para render tipo feed empresarial.
+	- `web/red_social_comercial.html` : red social empresarial en tarjetas medianas tipo post, con cabecera de empresa, imagen y acción de contacto.
+	- `web/administrar_empresa/publicar_red_social.html` : compositor de post empresarial con vista previa y listado en tarjetas.
+	- `backend/db/venta_publica.go` : nueva tabla `empresa_venta_publica_paginas`; `empresa_venta_publica_items` se asocia opcionalmente a `pagina_id` y los listados filtran por página.
+	- `backend/handlers/venta_publica.go` : `action=paginas` para CRUD lógico de páginas públicas; catálogo público devuelve `pages`, `page` e items filtrados por `pagina_slug`.
+	- `web/administrar_empresa/venta_publica.html` (nuevo) : módulo empresarial para configurar tienda, pasarelas propias Wompi/Epayco, crear páginas y publicar productos existentes.
+	- `web/venta_publica.html` (nuevo) : vitrina pública moderna por tienda/página con botón `Pagar` por producto.
+	- `web/pagar_productos_de_venta_publica.html` (nuevo) : checkout público de productos de venta pública usando `/api/public/venta_publica?action=crear_pago`.
+	- `web/administrar_empresa/configuracion_integraciones.html` : retira la configuración antigua de venta pública; queda informativa y redirige conceptualmente al nuevo módulo.
+	- `web/administrar_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `web/js/administrar_empresa.js`, `backend/main.go`, `backend/utils/utils.go` : menú/rutas públicas para `venta_publica` y `pagar_productos_de_venta_publica`.
+
 - Actualizacion 2026-04-24: limitacion dispositivos GPS por empresa (super + enforcement)
 	- `backend/handlers/super_limitaciones_empresa.go` : clave `empresa.limitaciones.gps.max_dispositivos` (default 2) en `GET/PUT /super/api/config/limitaciones_empresa`; helper `MaxGPSDispositivosPorEmpresa`.
 	- `backend/db/ubicacion_gps.go` : `CountEmpresaGPSDispositivos` cuenta filas en `empresa_gps_dispositivos` por `empresa_id` (todos los estados).

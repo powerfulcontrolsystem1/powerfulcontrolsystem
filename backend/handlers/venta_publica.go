@@ -24,199 +24,203 @@ import (
 
 // AdminCreatePaginaHandler crea una pagina publica para la empresa (requiere autenticacion y scope de empresa)
 func AdminCreatePaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
-    type req struct {
-        EmpresaID int64  `json:"empresa_id"`
-        Slug      string `json:"slug"`
-        Titulo    string `json:"titulo"`
-        Descripcion string `json:"descripcion"`
-        VideoURL  string `json:"video_url"`
-        Activo    bool   `json:"activo"`
-    }
-    return func(w http.ResponseWriter, r *http.Request) {
-        var payload req
-        if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-            http.Error(w, "invalid payload", http.StatusBadRequest)
-            return
-        }
-        slug := strings.TrimSpace(payload.Slug)
-        if slug == "" || payload.EmpresaID <= 0 || strings.TrimSpace(payload.Titulo) == "" {
-            http.Error(w, "missing required fields", http.StatusBadRequest)
-            return
-        }
-        id, err := dbpkg.CreatePaginaPublica(db, payload.EmpresaID, slug, payload.Titulo, payload.Descripcion, payload.VideoURL, payload.Activo)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
-    }
+	type req struct {
+		EmpresaID   int64  `json:"empresa_id"`
+		Slug        string `json:"slug"`
+		Titulo      string `json:"titulo"`
+		Descripcion string `json:"descripcion"`
+		VideoURL    string `json:"video_url"`
+		Activo      bool   `json:"activo"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		var payload req
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		slug := strings.TrimSpace(payload.Slug)
+		if slug == "" || payload.EmpresaID <= 0 || strings.TrimSpace(payload.Titulo) == "" {
+			http.Error(w, "missing required fields", http.StatusBadRequest)
+			return
+		}
+		id, err := dbpkg.CreatePaginaPublica(db, payload.EmpresaID, slug, payload.Titulo, payload.Descripcion, payload.VideoURL, payload.Activo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+	}
 }
 
 // AdminCreateProductoHandler crea un producto en una pagina publica
 func AdminCreateProductoHandler(db *sql.DB, webDir string) http.HandlerFunc {
-    type req struct {
-        PaginaID   int64  `json:"pagina_id"`
-        Nombre     string `json:"nombre"`
-        Descripcion string `json:"descripcion"`
-        PrecioCents int64 `json:"precio_cents"`
-        Moneda     string `json:"moneda"`
-        Stock      *int  `json:"stock"`
-        SKU        string `json:"sku"`
-        YoutubeURL string `json:"youtube_url"`
-        Activo     bool   `json:"activo"`
-    }
-    return func(w http.ResponseWriter, r *http.Request) {
-        var payload req
-        if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-            http.Error(w, "invalid payload", http.StatusBadRequest)
-            return
-        }
-        if payload.PaginaID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
-            http.Error(w, "missing required fields", http.StatusBadRequest)
-            return
-        }
-        stock := sql.NullInt64{}
-        if payload.Stock != nil {
-            stock.Int64 = int64(*payload.Stock)
-            stock.Valid = true
-        }
-        id, err := dbpkg.CreateProductoPublico(db, payload.PaginaID, payload.Nombre, payload.Descripcion, payload.PrecioCents, payload.Moneda, stock, payload.SKU, payload.YoutubeURL, payload.Activo)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
-    }
+	type req struct {
+		PaginaID    int64  `json:"pagina_id"`
+		Nombre      string `json:"nombre"`
+		Descripcion string `json:"descripcion"`
+		PrecioCents int64  `json:"precio_cents"`
+		Moneda      string `json:"moneda"`
+		Stock       *int   `json:"stock"`
+		SKU         string `json:"sku"`
+		YoutubeURL  string `json:"youtube_url"`
+		Activo      bool   `json:"activo"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		var payload req
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		if payload.PaginaID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
+			http.Error(w, "missing required fields", http.StatusBadRequest)
+			return
+		}
+		stock := sql.NullInt64{}
+		if payload.Stock != nil {
+			stock.Int64 = int64(*payload.Stock)
+			stock.Valid = true
+		}
+		id, err := dbpkg.CreateProductoPublico(db, payload.PaginaID, payload.Nombre, payload.Descripcion, payload.PrecioCents, payload.Moneda, stock, payload.SKU, payload.YoutubeURL, payload.Activo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+	}
 }
 
 // UploadProductImageHandler sube una imagen para un producto y la guarda en web dir bajo empresa/productos
 func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB
-            http.Error(w, "invalid multipart form", http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB
+			http.Error(w, "invalid multipart form", http.StatusBadRequest)
+			return
+		}
 		productoIDStr := r.FormValue("producto_id")
-        empresaIDStr := r.FormValue("empresa_id")
-        var empresaID int64
-        if empresaIDStr != "" {
-            v, err := strconv.ParseInt(empresaIDStr, 10, 64)
-            if err == nil { empresaID = v }
-        }
+		empresaIDStr := r.FormValue("empresa_id")
+		var empresaID int64
+		if empresaIDStr != "" {
+			v, err := strconv.ParseInt(empresaIDStr, 10, 64)
+			if err == nil {
+				empresaID = v
+			}
+		}
 
-        file, header, err := r.FormFile("file")
-        if err != nil {
-            http.Error(w, "file required", http.StatusBadRequest)
-            return
-        }
-        defer file.Close()
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "file required", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
 
-        // Ensure path exists: web/empresa_publica/<empresa_id>/productos/
-        baseDir := filepath.Join(webDir, "empresa_publica")
-        if empresaID > 0 {
-            baseDir = filepath.Join(baseDir, strconv.FormatInt(empresaID, 10))
-        } else {
-            baseDir = filepath.Join(baseDir, "misc")
-        }
-        prodDir := filepath.Join(baseDir, "productos")
-        if err := os.MkdirAll(prodDir, 0755); err != nil {
-            http.Error(w, "failed create dir", http.StatusInternalServerError)
-            return
-        }
+		// Ensure path exists: web/empresa_publica/<empresa_id>/productos/
+		baseDir := filepath.Join(webDir, "empresa_publica")
+		if empresaID > 0 {
+			baseDir = filepath.Join(baseDir, strconv.FormatInt(empresaID, 10))
+		} else {
+			baseDir = filepath.Join(baseDir, "misc")
+		}
+		prodDir := filepath.Join(baseDir, "productos")
+		if err := os.MkdirAll(prodDir, 0755); err != nil {
+			http.Error(w, "failed create dir", http.StatusInternalServerError)
+			return
+		}
 
-        // sanitize filename
-        fname := filepath.Base(header.Filename)
-        dstPath := filepath.Join(prodDir, fname)
-        out, err := os.Create(dstPath)
-        if err != nil {
-            http.Error(w, "failed to create file", http.StatusInternalServerError)
-            return
-        }
-        defer out.Close()
-        if _, err := io.Copy(out, file); err != nil {
-            http.Error(w, "failed to write file", http.StatusInternalServerError)
-            return
-        }
+		// sanitize filename
+		fname := filepath.Base(header.Filename)
+		dstPath := filepath.Join(prodDir, fname)
+		out, err := os.Create(dstPath)
+		if err != nil {
+			http.Error(w, "failed to create file", http.StatusInternalServerError)
+			return
+		}
+		defer out.Close()
+		if _, err := io.Copy(out, file); err != nil {
+			http.Error(w, "failed to write file", http.StatusInternalServerError)
+			return
+		}
 
-        // Save DB reference if producto_id provided
-        if productoIDStr != "" {
-            if pid, err := strconv.ParseInt(productoIDStr, 10, 64); err == nil {
-                rel := strings.TrimPrefix(dstPath, webDir)
-                rel = strings.ReplaceAll(rel, "\\", "/")
-                if !strings.HasPrefix(rel, "/") { rel = "/" + rel }
-                if err := dbpkg.AddImagenProductoPublico(db, pid, rel, 0); err != nil {
-                    // Non-fatal: log
-                }
-            }
-        }
+		// Save DB reference if producto_id provided
+		if productoIDStr != "" {
+			if pid, err := strconv.ParseInt(productoIDStr, 10, 64); err == nil {
+				rel := strings.TrimPrefix(dstPath, webDir)
+				rel = strings.ReplaceAll(rel, "\\", "/")
+				if !strings.HasPrefix(rel, "/") {
+					rel = "/" + rel
+				}
+				if err := dbpkg.AddImagenProductoPublico(db, pid, rel, 0); err != nil {
+					// Non-fatal: log
+				}
+			}
+		}
 
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
-    }
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
+	}
 }
 
 // PublicListPaginaHandler lista paginas publicas por empresa o por slug
 func PublicListPaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        empresaIDStr := r.URL.Query().Get("empresa_id")
-        slug := r.URL.Query().Get("slug")
-        if empresaIDStr == "" && slug == "" {
-            http.Error(w, "empresa_id or slug required", http.StatusBadRequest)
-            return
-        }
-        var resp interface{}
-        var err error
-        if slug != "" {
-            resp, err = dbpkg.GetPaginaPublicaBySlug(db, slug)
-        } else {
-            eid, _ := strconv.ParseInt(empresaIDStr, 10, 64)
-            resp, err = dbpkg.ListPaginasPublicasByEmpresa(db, eid)
-        }
-        if err != nil {
-            if err == sql.ErrNoRows {
-                http.NotFound(w, r)
-                return
-            }
-            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(resp)
-    }
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaIDStr := r.URL.Query().Get("empresa_id")
+		slug := r.URL.Query().Get("slug")
+		if empresaIDStr == "" && slug == "" {
+			http.Error(w, "empresa_id or slug required", http.StatusBadRequest)
+			return
+		}
+		var resp interface{}
+		var err error
+		if slug != "" {
+			resp, err = dbpkg.GetPaginaPublicaBySlug(db, slug)
+		} else {
+			eid, _ := strconv.ParseInt(empresaIDStr, 10, 64)
+			resp, err = dbpkg.ListPaginasPublicasByEmpresa(db, eid)
+		}
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}
 }
 
-
 type empresaVentaPublicaConfigPayload struct {
-	EmpresaID          int64  `json:"empresa_id"`
-	EmpresaSlug        string `json:"empresa_slug"`
-	NombreTienda       string `json:"nombre_tienda"`
-	DescripcionTienda  string `json:"descripcion_tienda"`
-	LogoURL            string `json:"logo_url"`
-	BannerURL          string `json:"banner_url"`
-	ColorPrimario      string `json:"color_primario"`
-	TemaVisual         string `json:"tema_visual"`
-	Moneda             string `json:"moneda"`
-	DominioPublico     string `json:"dominio_publico"`
-	MostrarStock       *bool  `json:"mostrar_stock"`
-	WompiActivo        *bool  `json:"wompi_activo"`
-	WompiMode          string `json:"wompi_mode"`
-	WompiPublicKey     string `json:"wompi_public_key"`
-	WompiPrivateKeyRef string `json:"wompi_private_key_ref"`
-	WompiIntegrityRef  string `json:"wompi_integrity_key_ref"`
-	WompiEventKeyRef   string `json:"wompi_event_key_ref"`
-	EpaycoActivo       *bool  `json:"epayco_activo"`
-	EpaycoMode         string `json:"epayco_mode"`
-	EpaycoPublicKey    string `json:"epayco_public_key"`
+	EmpresaID           int64  `json:"empresa_id"`
+	EmpresaSlug         string `json:"empresa_slug"`
+	NombreTienda        string `json:"nombre_tienda"`
+	DescripcionTienda   string `json:"descripcion_tienda"`
+	LogoURL             string `json:"logo_url"`
+	BannerURL           string `json:"banner_url"`
+	ColorPrimario       string `json:"color_primario"`
+	TemaVisual          string `json:"tema_visual"`
+	Moneda              string `json:"moneda"`
+	DominioPublico      string `json:"dominio_publico"`
+	MostrarStock        *bool  `json:"mostrar_stock"`
+	WompiActivo         *bool  `json:"wompi_activo"`
+	WompiMode           string `json:"wompi_mode"`
+	WompiPublicKey      string `json:"wompi_public_key"`
+	WompiPrivateKeyRef  string `json:"wompi_private_key_ref"`
+	WompiIntegrityRef   string `json:"wompi_integrity_key_ref"`
+	WompiEventKeyRef    string `json:"wompi_event_key_ref"`
+	EpaycoActivo        *bool  `json:"epayco_activo"`
+	EpaycoMode          string `json:"epayco_mode"`
+	EpaycoPublicKey     string `json:"epayco_public_key"`
 	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref"`
-	EpaycoCustomerID   string `json:"epayco_customer_id"`
-	Observaciones      string `json:"observaciones"`
+	EpaycoCustomerID    string `json:"epayco_customer_id"`
+	Observaciones       string `json:"observaciones"`
 }
 
 type empresaVentaPublicaItemPayload struct {
 	EmpresaID      int64   `json:"empresa_id"`
 	ID             int64   `json:"id"`
+	PaginaID       int64   `json:"pagina_id"`
 	ProductoID     int64   `json:"producto_id"`
 	CodigoPublico  string  `json:"codigo_publico"`
 	Nombre         string  `json:"nombre"`
@@ -228,6 +232,18 @@ type empresaVentaPublicaItemPayload struct {
 	OrdenVisual    int     `json:"orden_visual"`
 	Destacado      bool    `json:"destacado"`
 	Observaciones  string  `json:"observaciones"`
+}
+
+type empresaVentaPublicaPaginaPayload struct {
+	EmpresaID     int64  `json:"empresa_id"`
+	ID            int64  `json:"id"`
+	Slug          string `json:"slug"`
+	Nombre        string `json:"nombre"`
+	Descripcion   string `json:"descripcion"`
+	BannerURL     string `json:"banner_url"`
+	OrdenVisual   int    `json:"orden_visual"`
+	Estado        string `json:"estado"`
+	Observaciones string `json:"observaciones"`
 }
 
 type ventaPublicaPagoItemPayload struct {
@@ -266,6 +282,8 @@ func empresaVentaPublicaNormalizeAction(raw string) string {
 		return "desactivar"
 	case "config", "configuracion", "settings":
 		return "config"
+	case "paginas", "pages":
+		return "paginas"
 	case "ordenes", "orders":
 		return "ordenes"
 	case "subir_imagen", "upload_image", "imagen":
@@ -595,6 +613,8 @@ func EmpresaVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleEmpresaVentaPublicaDetail(w, r, dbEmp)
 			case "config":
 				handleEmpresaVentaPublicaConfigGet(w, r, dbEmp)
+			case "paginas":
+				handleEmpresaVentaPublicaPages(w, r, dbEmp)
 			case "ordenes":
 				handleEmpresaVentaPublicaOrders(w, r, dbEmp)
 			default:
@@ -606,6 +626,8 @@ func EmpresaVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleEmpresaVentaPublicaCreate(w, r, dbEmp)
 			case "config":
 				handleEmpresaVentaPublicaConfigUpsert(w, r, dbEmp)
+			case "paginas":
+				handleEmpresaVentaPublicaPageUpsert(w, r, dbEmp)
 			case "subir_imagen":
 				handleEmpresaVentaPublicaUploadImage(w, r, dbEmp)
 			default:
@@ -619,15 +641,113 @@ func EmpresaVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleEmpresaVentaPublicaToggle(w, r, dbEmp, action)
 			case "config":
 				handleEmpresaVentaPublicaConfigUpsert(w, r, dbEmp)
+			case "paginas":
+				handleEmpresaVentaPublicaPageUpsert(w, r, dbEmp)
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
 		case http.MethodDelete:
-			handleEmpresaVentaPublicaToggle(w, r, dbEmp, "desactivar")
+			if action == "paginas" {
+				handleEmpresaVentaPublicaPageToggle(w, r, dbEmp, "desactivar")
+			} else {
+				handleEmpresaVentaPublicaToggle(w, r, dbEmp, "desactivar")
+			}
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func handleEmpresaVentaPublicaPages(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	rows, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, empresaID, queryBool(r, "include_inactive"))
+	if err != nil {
+		http.Error(w, "No se pudieron listar paginas de venta publica", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":         true,
+		"empresa_id": empresaID,
+		"rows":       rows,
+	})
+}
+
+func handleEmpresaVentaPublicaPageUpsert(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var payload empresaVentaPublicaPaginaPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID > 0 && payload.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con contexto", http.StatusBadRequest)
+		return
+	}
+	if payload.ID <= 0 {
+		if qID, qErr := parseInt64QueryOptional(r, "id"); qErr == nil && qID > 0 {
+			payload.ID = qID
+		}
+	}
+	id, err := dbpkg.UpsertEmpresaVentaPublicaPagina(dbEmp, dbpkg.EmpresaVentaPublicaPagina{
+		ID:             payload.ID,
+		EmpresaID:      empresaID,
+		Slug:           payload.Slug,
+		Nombre:         payload.Nombre,
+		Descripcion:    payload.Descripcion,
+		BannerURL:      payload.BannerURL,
+		OrdenVisual:    payload.OrdenVisual,
+		UsuarioCreador: adminEmailFromRequest(r),
+		Estado:         firstNonEmptyString(payload.Estado, "activo"),
+		Observaciones:  payload.Observaciones,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	page, err := dbpkg.GetEmpresaVentaPublicaPaginaByID(dbEmp, empresaID, id)
+	if err != nil {
+		http.Error(w, "pagina guardada pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":         true,
+		"empresa_id": empresaID,
+		"page":       page,
+	})
+}
+
+func handleEmpresaVentaPublicaPageToggle(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, action string) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	pageID, err := parseInt64QueryOptional(r, "id")
+	if err != nil || pageID <= 0 {
+		http.Error(w, "id es obligatorio", http.StatusBadRequest)
+		return
+	}
+	estado := "activo"
+	if action == "desactivar" {
+		estado = "inactivo"
+	}
+	if err := dbpkg.SetEmpresaVentaPublicaPaginaEstadoByID(dbEmp, empresaID, pageID, estado); err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "pagina no encontrada", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "No se pudo actualizar pagina", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "id": pageID, "estado": estado})
 }
 
 func handleEmpresaVentaPublicaList(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -646,9 +766,16 @@ func handleEmpresaVentaPublicaList(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
+	paginaID, err := parseInt64QueryOptional(r, "pagina_id")
+	if err != nil {
+		http.Error(w, "pagina_id invalido", http.StatusBadRequest)
+		return
+	}
 
 	rows, total, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
+		PaginaID:        paginaID,
+		PaginaSlug:      strings.TrimSpace(r.URL.Query().Get("pagina_slug")),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
 		Limit:           limit,
 		Offset:          offset,
@@ -710,6 +837,7 @@ func handleEmpresaVentaPublicaCreate(w http.ResponseWriter, r *http.Request, dbE
 	}
 	id, err := dbpkg.CreateEmpresaVentaPublicaItem(dbEmp, dbpkg.EmpresaVentaPublicaItem{
 		EmpresaID:      empresaID,
+		PaginaID:       payload.PaginaID,
 		ProductoID:     payload.ProductoID,
 		CodigoPublico:  payload.CodigoPublico,
 		Nombre:         payload.Nombre,
@@ -768,6 +896,7 @@ func handleEmpresaVentaPublicaUpdate(w http.ResponseWriter, r *http.Request, dbE
 	err = dbpkg.UpdateEmpresaVentaPublicaItem(dbEmp, dbpkg.EmpresaVentaPublicaItem{
 		ID:             payload.ID,
 		EmpresaID:      empresaID,
+		PaginaID:       payload.PaginaID,
 		ProductoID:     payload.ProductoID,
 		CodigoPublico:  payload.CodigoPublico,
 		Nombre:         payload.Nombre,
@@ -918,31 +1047,31 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	}
 
 	_, err = dbpkg.UpsertEmpresaVentaPublicaConfig(dbEmp, dbpkg.EmpresaVentaPublicaConfig{
-		EmpresaID:          empresaID,
-		EmpresaSlug:        payload.EmpresaSlug,
-		NombreTienda:       payload.NombreTienda,
-		DescripcionTienda:  payload.DescripcionTienda,
-		LogoURL:            payload.LogoURL,
-		BannerURL:          payload.BannerURL,
-		ColorPrimario:      payload.ColorPrimario,
-		TemaVisual:         payload.TemaVisual,
-		Moneda:             payload.Moneda,
-		DominioPublico:     payload.DominioPublico,
-		MostrarStock:       mostrarStock,
-		WompiActivo:        wompiActivo,
-		WompiMode:          payload.WompiMode,
-		WompiPublicKey:     payload.WompiPublicKey,
-		WompiPrivateKeyRef: payload.WompiPrivateKeyRef,
-		WompiIntegrityRef:  payload.WompiIntegrityRef,
-		WompiEventKeyRef:   payload.WompiEventKeyRef,
-		EpaycoActivo:       epaycoActivo,
-		EpaycoMode:         payload.EpaycoMode,
-		EpaycoPublicKey:    payload.EpaycoPublicKey,
+		EmpresaID:           empresaID,
+		EmpresaSlug:         payload.EmpresaSlug,
+		NombreTienda:        payload.NombreTienda,
+		DescripcionTienda:   payload.DescripcionTienda,
+		LogoURL:             payload.LogoURL,
+		BannerURL:           payload.BannerURL,
+		ColorPrimario:       payload.ColorPrimario,
+		TemaVisual:          payload.TemaVisual,
+		Moneda:              payload.Moneda,
+		DominioPublico:      payload.DominioPublico,
+		MostrarStock:        mostrarStock,
+		WompiActivo:         wompiActivo,
+		WompiMode:           payload.WompiMode,
+		WompiPublicKey:      payload.WompiPublicKey,
+		WompiPrivateKeyRef:  payload.WompiPrivateKeyRef,
+		WompiIntegrityRef:   payload.WompiIntegrityRef,
+		WompiEventKeyRef:    payload.WompiEventKeyRef,
+		EpaycoActivo:        epaycoActivo,
+		EpaycoMode:          payload.EpaycoMode,
+		EpaycoPublicKey:     payload.EpaycoPublicKey,
 		EpaycoPrivateKeyRef: payload.EpaycoPrivateKeyRef,
-		EpaycoCustomerID:   payload.EpaycoCustomerID,
-		UsuarioCreador:     adminEmailFromRequest(r),
-		Estado:             "activo",
-		Observaciones:      payload.Observaciones,
+		EpaycoCustomerID:    payload.EpaycoCustomerID,
+		UsuarioCreador:      adminEmailFromRequest(r),
+		Estado:              "activo",
+		Observaciones:       payload.Observaciones,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusBadRequest)
@@ -1111,7 +1240,36 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "No se pudo cargar configuracion publica", http.StatusInternalServerError)
 		return
 	}
-	items, err := dbpkg.ListEmpresaVentaPublicaItemsPublic(dbEmp, resolvedEmpresaID)
+	pages, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, resolvedEmpresaID, false)
+	if err != nil {
+		http.Error(w, "No se pudieron cargar paginas publicas", http.StatusInternalServerError)
+		return
+	}
+	pageSlug := strings.TrimSpace(r.URL.Query().Get("pagina_slug"))
+	if pageSlug == "" {
+		pageSlug = strings.TrimSpace(r.URL.Query().Get("page"))
+	}
+	var currentPage interface{} = nil
+	var pageID int64
+	if pageSlug != "" {
+		page, err := dbpkg.GetEmpresaVentaPublicaPaginaBySlug(dbEmp, resolvedEmpresaID, pageSlug)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "pagina publica no encontrada", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "No se pudo consultar pagina publica", http.StatusInternalServerError)
+			return
+		}
+		currentPage = page
+		pageID = page.ID
+	}
+	items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, resolvedEmpresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
+		IncludeInactive: false,
+		PaginaID:        pageID,
+		Limit:           500,
+		Offset:          0,
+	})
 	if err != nil {
 		http.Error(w, "No se pudo cargar catalogo publico", http.StatusInternalServerError)
 		return
@@ -1122,6 +1280,8 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 		"empresa_id":   resolvedEmpresaID,
 		"empresa_slug": cfg.EmpresaSlug,
 		"tienda":       sanitizeVentaPublicaConfigForPublic(cfg),
+		"pages":        pages,
+		"page":         currentPage,
 		"items":        items,
 		"paths": map[string]string{
 			"local":      "/venta_publica.html?empresa_slug=" + cfg.EmpresaSlug,

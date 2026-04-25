@@ -9,7 +9,8 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
-      <div class="empresa-section-header" style="display:flex;align-items:center;gap:12px;">
+      <div class="empresa-section-header estaciones-toolbar" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btnEstacionesThumbToggle" class="btn secondary estaciones-thumb-toggle" aria-pressed="false">Ver miniaturas</button>
       </div>
       <p id="estacionesStatus" class="form-help empresa-loading-status">Cargando estaciones...</p>
       <div id="estacionesGrid" class="portal-grid"></div>
@@ -196,6 +197,9 @@
       const notas_repeat_minutes = normalizeNotesRepeatMinutes(cfg && (cfg.notas_repeat_minutes !== undefined ? cfg.notas_repeat_minutes : cfg.notasRepeatMinutes));
       const notas_beep_enabled = cfg && (cfg.notas_beep_enabled !== undefined ? cfg.notas_beep_enabled : cfg.notasBeepEnabled);
       const notas_blink_enabled = cfg && (cfg.notas_blink_enabled !== undefined ? cfg.notas_blink_enabled : cfg.notasBlinkEnabled);
+      const iaPedidosEnabledRaw = (cfg && (cfg.ia_pedidos_enabled !== undefined ? cfg.ia_pedidos_enabled : cfg.iaPedidosEnabled)) || false;
+      const ia_pedidos_enabled = toBool(iaPedidosEnabledRaw);
+      const ia_pedidos_placement = normalizeSpecialPlacement(cfg && (cfg.ia_pedidos_placement !== undefined ? cfg.ia_pedidos_placement : cfg.iaPedidosPlacement));
       return {
         cantidad,
         estaciones: out,
@@ -212,6 +216,8 @@
         notas_repeat_minutes,
         notas_beep_enabled: notas_beep_enabled === undefined ? true : toBool(notas_beep_enabled),
         notas_blink_enabled: notas_blink_enabled === undefined ? true : toBool(notas_blink_enabled),
+        ia_pedidos_enabled,
+        ia_pedidos_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
       };
     }
@@ -691,6 +697,23 @@
       return '/administrar_empresa/youtube_station_browser.html?' + params.toString();
     }
 
+    function buildIAPedidosStationURL() {
+      const params = new URLSearchParams();
+      if (empresaId) params.set('empresa_id', String(empresaId));
+      return '/administrar_empresa/estacion_ia_pedidos.html?' + params.toString();
+    }
+
+    function generateIAPedidosCardHtml() {
+      const src = sanitize(buildIAPedidosStationURL());
+      return '<article class="portal-card station-card-inactive ia-pedidos-station-card" id="iaPedidosStationCard" data-special-station="ia_pedidos" aria-label="Pedidos con IA">' +
+        '<div class="ia-pedidos-station-head">' +
+          '<h3>Pedidos con IA</h3>' +
+          '<p>Escribe o dicta pedidos del tipo: «dos cervezas para la mesa 5» o «agregar agua a la estación 2».</p>' +
+        '</div>' +
+        '<iframe class="ia-pedidos-station-frame" src="' + src + '" title="Pedidos con inteligencia artificial" loading="lazy" tabindex="-1"></iframe>' +
+      '</article>';
+    }
+
     function generateCajaCardHtml() {
       return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
         '<div class="station-sensor-indicator"></div>' +
@@ -1070,7 +1093,7 @@
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled)) {
+        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled)) {
           grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
           return;
         }
@@ -1087,6 +1110,7 @@
       pushSpecial(cfg && cfg.caja_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.caja_enabled, () => generateCajaCardHtml());
       pushSpecial(cfg && cfg.youtube_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.youtube_enabled, () => generateYouTubeCardHtml(cfg));
       pushSpecial(cfg && cfg.notas_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.notas_enabled, () => generateNotasCardHtml(cfg));
+      pushSpecial(cfg && cfg.ia_pedidos_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.ia_pedidos_enabled, () => generateIAPedidosCardHtml());
 
       html += beforeSpecial.join('');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
@@ -1381,6 +1405,41 @@
           openYouTubeStationOverlay(cfg);
         });
       }
+
+      const iaPedidosCard = document.getElementById('iaPedidosStationCard');
+      if (iaPedidosCard) {
+        iaPedidosCard.addEventListener('click', ev => {
+          if (ev.target && ev.target.closest && ev.target.closest('iframe')) {
+            ev.stopPropagation();
+          }
+        });
+      }
+    }
+
+    function wireEstacionesMobileThumbToggle() {
+      const btn = document.getElementById('btnEstacionesThumbToggle');
+      const grid = document.getElementById('estacionesGrid');
+      if (!btn || !grid) return;
+      const key = 'pcs_estaciones_thumb_mobile_' + String(empresaId || 0);
+      function applyThumbState(on) {
+        grid.classList.toggle('estaciones-thumb-mobile', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.textContent = on ? 'Vista normal' : 'Ver miniaturas';
+      }
+      let stored = false;
+      try {
+        stored = window.sessionStorage.getItem(key) === '1';
+      } catch (e) {
+        stored = false;
+      }
+      applyThumbState(stored);
+      btn.addEventListener('click', () => {
+        const next = !grid.classList.contains('estaciones-thumb-mobile');
+        try {
+          window.sessionStorage.setItem(key, next ? '1' : '0');
+        } catch (e) {}
+        applyThumbState(next);
+      });
     }
 
     function ensureYouTubeStationOverlay() {
@@ -1478,6 +1537,7 @@
           loadSensorStates()
         ]);
         renderEstaciones(stationConfig);
+        wireEstacionesMobileThumbToggle();
     window.setInterval(async function () {
       try {
       await loadEstadoCarritosEstacion();

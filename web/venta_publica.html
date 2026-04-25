@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta pública</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;min-height:100vh;color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI",Arial,sans-serif}
+    .store{max-width:1180px;margin:0 auto;padding:36px 16px 70px}
+    .hero{border:1px solid var(--border);border-radius:28px;padding:28px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--surface) 82%),var(--surface));box-shadow:0 22px 54px rgba(0,0,0,.16)}
+    .hero h1{font-size:clamp(2rem,4vw,3.6rem);line-height:1;margin:0 0 10px;font-weight:950;letter-spacing:-.04em}
+    .hero p{max-width:760px;color:var(--muted);line-height:1.6}
+    .tabs{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}
+    .tab{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:10px 14px;font-weight:800;text-decoration:none}
+    .tab.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+    .product{border:1px solid var(--border);background:var(--surface);border-radius:24px;box-shadow:0 16px 34px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;min-height:420px}
+    .img{height:190px;background:var(--input-bg-soft);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
+    .body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}.body h2{font-size:1.18rem;margin:0}.desc{color:var(--muted);line-height:1.5}.price{font-size:1.35rem;font-weight:950}.actions{margin-top:auto;display:flex;gap:10px}.actions .btn{width:100%;text-align:center}
+    .empty{padding:42px;border:1px dashed var(--border);border-radius:24px;text-align:center;color:var(--muted);background:var(--surface)}
+  </style>
+</head>
+<body>
+  <main class="store">
+    <section class="hero">
+      <h1 id="title">Venta pública</h1>
+      <p id="desc">Cargando catálogo...</p>
+      <div id="status" class="form-help"></div>
+    </section>
+    <nav id="tabs" class="tabs"></nav>
+    <section id="grid" class="grid"></section>
+  </main>
+  <script>
+    const params=new URLSearchParams(location.search); const state={slug:params.get('empresa_slug')||params.get('slug')||'',page:params.get('pagina_slug')||params.get('page')||'',data:null};
+    function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+    function money(v,c){return new Intl.NumberFormat('es-CO',{style:'currency',currency:c||'COP',maximumFractionDigits:0}).format(Number(v||0))}
+    function payUrl(item){const p=new URL('/pagar_productos_de_venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(state.page)p.searchParams.set('pagina_slug',state.page); p.searchParams.set('item_id',item.id); return p.pathname+p.search;}
+    function pageUrl(page){const p=new URL('/venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(page&&page.slug)p.searchParams.set('pagina_slug',page.slug); return p.pathname+p.search;}
+    async function load(){try{let qs='action=catalogo'; if(state.slug)qs+='&empresa_slug='+encodeURIComponent(state.slug); if(state.page)qs+='&pagina_slug='+encodeURIComponent(state.page); const res=await fetch('/api/public/venta_publica?'+qs); const text=await res.text(); const data=text?JSON.parse(text):{}; if(!res.ok)throw new Error(data.error||text||'No se pudo cargar'); state.data=data; render(data);}catch(e){status.textContent=e.message; grid.innerHTML='<div class="empty">No se pudo cargar esta página pública.</div>';}}
+    function render(data){const tienda=data.tienda||{}; title.textContent=(data.page&&data.page.nombre)||tienda.nombre_tienda||'Venta pública'; desc.textContent=(data.page&&data.page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en línea.'; tabs.innerHTML='<a class="tab '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'">Todos</a>'; (data.pages||[]).forEach(p=>{tabs.innerHTML+='<a class="tab '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'">'+esc(p.nombre)+'</a>';}); const items=data.items||[]; if(!items.length){grid.innerHTML='<div class="empty">Esta página aún no tiene productos publicados.</div>';return;} grid.innerHTML=''; items.forEach(it=>{const div=document.createElement('article');div.className='product';div.innerHTML='<div class="img" style="'+(it.imagen_url?'background-image:url('+esc(it.imagen_url)+')':'')+'">'+(it.imagen_url?'':'Producto')+'</div><div class="body"><h2>'+esc(it.nombre)+'</h2><div class="desc">'+esc(it.descripcion||'')+'</div><div class="price">'+money(it.precio,it.moneda||tienda.moneda)+'</div><div class="actions"><a class="btn" href="'+payUrl(it)+'">Pagar</a></div></div>';grid.appendChild(div);}); status.textContent='';}
+    load();
+  </script>
+</body>
+</html>

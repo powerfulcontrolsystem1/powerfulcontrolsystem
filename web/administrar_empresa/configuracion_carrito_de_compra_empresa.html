@@ -250,6 +250,8 @@
         notas_repeat_minutes: normalizeMinutes(src.notas_repeat_minutes || src.notasRepeatMinutes),
         notas_beep_enabled: src.notas_beep_enabled === undefined && src.notasBeepEnabled === undefined ? true : !!(src.notas_beep_enabled !== undefined ? src.notas_beep_enabled : src.notasBeepEnabled),
         notas_blink_enabled: src.notas_blink_enabled === undefined && src.notasBlinkEnabled === undefined ? true : !!(src.notas_blink_enabled !== undefined ? src.notas_blink_enabled : src.notasBlinkEnabled),
+        ia_pedidos_enabled: !!(src.ia_pedidos_enabled || src.iaPedidosEnabled),
+        ia_pedidos_placement: normalizePlacement(src.ia_pedidos_placement || src.iaPedidosPlacement),
         carrito_ui_global: normalizeUnifiedCartConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
       };
     }

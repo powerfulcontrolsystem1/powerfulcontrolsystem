@@ -983,6 +983,81 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 	return &item, nil
 }
 
+// GetCarritoCompraByCodigo obtiene un carrito por empresa y código (p. ej. EST-{empresa}-{estacion}).
+func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*CarritoCompra, error) {
+	codigo = strings.TrimSpace(codigo)
+	if codigo == "" {
+		return nil, sql.ErrNoRows
+	}
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo, ''),
+		COALESCE(nombre, ''),
+		COALESCE(canal_venta, 'mostrador'),
+		COALESCE(cliente_id, 0),
+		COALESCE(estado_carrito, 'abierto'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(referencia_externa, ''),
+		COALESCE(subtotal, 0),
+		COALESCE(descuento_total, 0),
+		COALESCE(impuesto_total, 0),
+		COALESCE(total, 0),
+		COALESCE(activado_en, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(descuento_tipo, ''),
+		COALESCE(descuento_codigo, ''),
+		COALESCE(descuento_valor, 0),
+		COALESCE(devolucion_total, 0),
+		COALESCE(total_pagado, 0),
+		COALESCE(metodo_pago, 'efectivo'),
+		COALESCE(referencia_pago, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM carritos_compras
+	WHERE empresa_id = ? AND lower(trim(codigo)) = lower(trim(?))
+	LIMIT 1`
+	row := dbConn.QueryRow(query, empresaID, codigo)
+
+	var item CarritoCompra
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Codigo,
+		&item.Nombre,
+		&item.CanalVenta,
+		&item.ClienteID,
+		&item.EstadoCarrito,
+		&item.Moneda,
+		&item.ReferenciaExterna,
+		&item.Subtotal,
+		&item.DescuentoTotal,
+		&item.ImpuestoTotal,
+		&item.Total,
+		&item.ActivadoEn,
+		&item.PagadoEn,
+		&item.DescuentoTipo,
+		&item.DescuentoCodigo,
+		&item.DescuentoValor,
+		&item.DevolucionTotal,
+		&item.TotalPagado,
+		&item.MetodoPago,
+		&item.ReferenciaPago,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	item.EstadoVenta = resolveCarritoEstadoVenta(item.EstadoCarrito, item.Estado, item.PagadoEn)
+	return &item, nil
+}
+
 // UpdateCarritoCompra actualiza los campos principales del carrito.
 func UpdateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) error {
 	_, err := dbConn.Exec(`UPDATE carritos_compras SET

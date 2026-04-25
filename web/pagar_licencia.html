@@ -339,15 +339,15 @@
                   '<div class="checkout-card-kicker">Códigos y referencias</div>'+
                   '<div class="home-offer-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
                   '<h3>Códigos de descuento</h3>'+
-                  '<p>Usa este espacio para aplicar promociones o asociar la venta a un vendedor antes de abrir el checkout.</p>'+
+                  '<p>Usa este espacio para aplicar promociones o asociar la venta a un asesor comercial antes de abrir el checkout.</p>'+
                   '<div class="form-row checkout-discount-row">'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+
                       '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional">'+
                     '</div>'+
                     '<div class="form-col">'+
-                      '<label class="form-label" for="asesorId">Código vendedor</label>'+
-                      '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
+                      '<label class="form-label" for="asesorId">Código asesor comercial</label>'+
+                      '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC">'+
                     '</div>'+
                   '</div>'+
                   '<div class="checkout-mini-pills">'+
@@ -733,7 +733,7 @@
               var freeCode = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
               if (freeCode) payload.discount_code = freeCode;
               var freeAsesor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
-              if (freeAsesor) { payload.asesor_id = freeAsesor; payload.vendedor_id = freeAsesor; }
+              if (freeAsesor) { payload.asesor_id = freeAsesor; }
               var freeRes = await fetch('/licencias/activar_sin_pago', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
@@ -811,7 +811,7 @@
               if (empresaId) payload.empresa_id = Number(empresaId);
               if (adminEmail) payload.customer_email = adminEmail;
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
-              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
               const wompiRes = await fetch('/wompi/create_transaction_nequi', {
                 method: 'POST',
@@ -873,7 +873,7 @@
               if (empresaId) payload.empresa_id = Number(empresaId);
               if (adminEmail) payload.customer_email = adminEmail;
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
-              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
               const epayRes = await fetch('/epayco/create_transaction', {
                 method: 'POST',

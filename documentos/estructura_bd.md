@@ -133,8 +133,11 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
   - wompi_private_key_ref, wompi_integrity_key_ref, wompi_event_key_ref
   - epayco_activo, epayco_mode, epayco_public_key
   - epayco_private_key_ref, epayco_customer_id
+- empresa_venta_publica_paginas:
+  - empresa_id, slug (UNIQUE por empresa), nombre, descripcion, banner_url
+  - orden_visual, estado, usuario_creador, observaciones
 - empresa_venta_publica_items:
-  - empresa_id, producto_id, codigo_publico
+  - empresa_id, pagina_id, producto_id, codigo_publico
   - nombre, descripcion, precio, moneda, imagen_url
   - stock_publicado, orden_visual, destacado
 - empresa_venta_publica_ordenes:
@@ -904,14 +907,14 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 - pagos_wompi:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
   - discount_code (TEXT) : código de descuento aplicado por cliente (opcional)
-  - asesor_id (TEXT) : referencia al asesor/vendedor que generó la venta (email o id externo, opcional)
+  - asesor_id (TEXT) : codigo de asesor comercial que originó la venta (opcional)
   - payment_method, provider_payload_json (opcional): metadatos del proveedor/método de pago
 
   - Descripción: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cálculo y trazabilidad de comisiones.
 - pagos_epayco:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
   - discount_code (TEXT) : codigo de descuento aplicado por cliente (opcional)
-  - asesor_id (TEXT) : referencia al asesor/vendedor que genero la venta (email o id externo, opcional)
+  - asesor_id (TEXT) : codigo de asesor comercial que genero la venta (opcional)
   - payment_method, provider_payload_json (opcional): metadatos del proveedor/metodo de pago
 
   - Descripcion: tabla canonica para registrar operaciones de checkout/confirmacion de Epayco, incluyendo estado por referencia y soporte de activacion automatica de licencia tras aprobacion.
@@ -929,58 +932,28 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
   - timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 
-### Tablas de vendedores / asesores comerciales (superadministrador)
-- asesores:
-  - id INTEGER PRIMARY KEY AUTOINCREMENT
-  - email TEXT UNIQUE NOT NULL
-  - nombre TEXT
-  - telefono TEXT
-  - notas TEXT
-  - activo INTEGER DEFAULT 1
-  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
-  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
-  - usuario_creador TEXT
-  - estado TEXT DEFAULT 'activo'
-  - observaciones TEXT
-  - Descripción: repositorio de vendedores/asesores comerciales que pueden recibir comisiones por venta de licencias. El campo `email` se usa como referencia principal al recibir `asesor_id` desde el frontend si no existe id numérico.
+### Tablas de asesor comercial (superadministrador)
+- asesores_comerciales:
+  - id, admin_email, admin_nombre, codigo (UNIQUE)
+  - porcentaje_comision, meses_asociacion
+  - estado_invitacion (`pendiente`, `aceptada`, `expirada`), invitacion_token_hash, invitacion_expira_en, invitado_por_email, aceptado_en
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+  - Descripción: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitación reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
 
-- asesor_comercial (planes):
-  - id INTEGER PRIMARY KEY AUTOINCREMENT
-  - asesor_id INTEGER NOT NULL -- FK a asesores.id
-  - comision_venta_pct REAL DEFAULT 0 -- porcentaje aplicado sobre el valor de venta de la licencia al momento de venta
-  - comision_pago_pct REAL DEFAULT 0 -- porcentaje aplicado sobre pagos recurrentes si aplica (opcional)
-  - meses_renovacion INTEGER DEFAULT 0 -- número de meses adicionales durante los cuales se programan comisiones recurrentes
-  - notas TEXT
-  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
-  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
-  - usuario_creador TEXT
-  - estado TEXT DEFAULT 'activo'
-  - observaciones TEXT
-  - Descripción: configuración por asesor/vendedor para definir porcentajes de comisión y duración en meses para comisiones programadas en renovaciones.
-
-- asesor_comisiones:
-  - id INTEGER PRIMARY KEY AUTOINCREMENT
-  - asesor_id INTEGER NOT NULL -- FK a asesores.id
-  - empresa_id INTEGER NOT NULL
-  - licencia_id INTEGER -- referencia a la licencia vendida
-  - pago_id INTEGER NULL -- referencia a `pagos_wompi.id` o `pagos_epayco.id` cuando aplica
-  - transaction_id TEXT NULL -- transaction_id del proveedor (o referencia manual)
-  - monto_total REAL -- monto total de la venta o periodo
-  - porcentaje REAL -- porcentaje aplicado para esta comision
-  - monto_comision REAL -- monto calculado a pagar al asesor
-  - referencia TEXT -- referencia humana (ej. "Comisión por venta licencia 123")
-  - observaciones TEXT
-  - programado_para TEXT NULL -- fecha programada para el pago (datetime)
-  - pagado INTEGER DEFAULT 0 -- flag booleano (0/1)
-  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
-  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
-  - Descripción: registro de comisiones generadas por ventas o programadas para meses posteriores. Se crea una entrada inmediata al procesar el pago/activación y, cuando el plan lo indica, entradas programadas para los meses siguientes.
+- asesor_comercial_comisiones:
+  - id, asesor_id, asesor_codigo, asesor_email
+  - empresa_id, empresa_nombre, licencia_id
+  - pago_provider, pago_id, transaction_id, referencia
+  - valor_pagado, porcentaje_comision, monto_comision, fecha_pago
+  - asociado_desde, asociado_hasta
+  - pagado, fecha_pago_comision, pagado_por
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+  - Descripción: historial de ventas/renovaciones de licencia asociadas a asesores comerciales. Si una empresa pagó con codigo de asesor, las renovaciones dentro de `meses_asociacion` siguen generando comisión hasta `asociado_hasta`; vencido ese plazo ya no se muestra en `mis_clientes`.
 
 ## Relaciones adicionales
-- asesores.id -> asesor_comercial.asesor_id
-- asesores.id -> asesor_comisiones.asesor_id
-- empresas.id -> asesor_comisiones.empresa_id
-- licencias.id -> asesor_comisiones.licencia_id
+- asesores_comerciales.id -> asesor_comercial_comisiones.asesor_id
+- empresas.id -> asesor_comercial_comisiones.empresa_id
+- licencias.id -> asesor_comercial_comisiones.licencia_id
 - administradores.contrato_version_aceptada -> super_contrato_versiones.version (referencia logica de aceptacion)
 - super_contrato_versiones.usuario_creador -> administradores.email (referencia logica de publicacion)
 - super_errores_sistema.empresa_id -> pcs_empresas.empresas.id (referencia logica para trazabilidad de incidencias por empresa)

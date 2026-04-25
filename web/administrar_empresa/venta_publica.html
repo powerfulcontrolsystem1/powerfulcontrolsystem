@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta pública</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;padding:18px;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
+    .vp-shell{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+    .vp-hero{padding:22px;border-radius:24px;border:1px solid var(--border);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface) 84%),var(--surface));box-shadow:0 18px 42px rgba(0,0,0,.12)}
+    .vp-hero h1{margin:0 0 6px;font-size:clamp(1.8rem,3vw,2.6rem);font-weight:900;letter-spacing:-.03em}
+    .vp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.72fr);gap:18px;align-items:start}
+    .vp-card{border:1px solid var(--border);border-radius:22px;background:var(--surface);box-shadow:0 14px 32px rgba(0,0,0,.10);padding:18px}
+    .vp-card h2,.vp-card h3{margin-top:0}
+    .vp-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .vp-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .vp-page-list,.vp-product-list,.vp-published-list{display:grid;gap:10px;margin-top:12px}
+    .vp-page,.vp-product,.vp-published{border:1px solid var(--border);border-radius:16px;background:var(--surface-soft);padding:12px;display:grid;gap:8px}
+    .vp-page.active{outline:3px solid color-mix(in srgb,var(--accent) 32%,transparent);border-color:var(--accent)}
+    .vp-product{grid-template-columns:72px minmax(0,1fr) auto;align-items:center}
+    .vp-thumb{width:72px;height:72px;border-radius:14px;background:var(--input-bg-soft);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-size:.78rem}
+    .vp-muted{color:var(--muted);font-size:.92rem}.vp-price{font-weight:900}
+    .vp-public-url{word-break:break-all}
+    @media(max-width:860px){body{padding:10px}.vp-grid,.vp-row{grid-template-columns:1fr}.vp-product{grid-template-columns:56px 1fr}.vp-product .vp-actions{grid-column:1/-1}.vp-thumb{width:56px;height:56px}}
+  </style>
+</head>
+<body>
+  <main class="vp-shell">
+    <section class="vp-hero">
+      <h1>Venta pública</h1>
+      <p class="vp-muted">Crea páginas bajo el dominio/slug de la empresa, publica productos existentes del sistema y deja listo el botón <strong>Pagar</strong> con las credenciales Wompi o Epayco propias de la empresa.</p>
+      <div class="vp-actions">
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+        <button id="openPublicBtn" class="btn" type="button">Abrir venta pública</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </section>
+
+    <section class="vp-grid">
+      <div class="vp-card">
+        <h2>1. Página pública</h2>
+        <div class="vp-row">
+          <div>
+            <label class="form-label" for="storeName">Nombre de la tienda</label>
+            <input id="storeName" class="form-input" placeholder="Mi empresa">
+          </div>
+          <div>
+            <label class="form-label" for="storeSlug">Slug/dominio de tienda</label>
+            <input id="storeSlug" class="form-input" placeholder="mi-empresa">
+          </div>
+          <div>
+            <label class="form-label" for="storeDomain">Dominio público opcional</label>
+            <input id="storeDomain" class="form-input" placeholder="tienda.miempresa.com">
+          </div>
+          <div>
+            <label class="form-label" for="storeCurrency">Moneda</label>
+            <input id="storeCurrency" class="form-input" value="COP">
+          </div>
+        </div>
+        <label class="form-label" for="storeDesc">Descripción de la tienda</label>
+        <textarea id="storeDesc" class="form-textarea" rows="3" placeholder="Describe la oferta pública de esta empresa"></textarea>
+
+        <h3>Pasarelas de esta empresa</h3>
+        <div class="vp-row">
+          <div>
+            <label><input id="wompiActivo" type="checkbox"> Activar Wompi / Nequi</label>
+            <select id="wompiMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">Producción</option></select>
+            <input id="wompiPublicKey" class="form-input" placeholder="Wompi public key">
+            <input id="wompiPrivateRef" class="form-input" placeholder="Wompi private key ref (env:)">
+            <input id="wompiIntegrityRef" class="form-input" placeholder="Wompi integrity key ref (env:)">
+          </div>
+          <div>
+            <label><input id="epaycoActivo" type="checkbox"> Activar Epayco</label>
+            <select id="epaycoMode" class="form-input"><option value="sandbox">Sandbox</option><option value="production">Producción</option></select>
+            <input id="epaycoPublicKey" class="form-input" placeholder="Epayco public key">
+            <input id="epaycoPrivateRef" class="form-input" placeholder="Epayco private key ref (env:)">
+            <input id="epaycoCustomerId" class="form-input" placeholder="Customer ID opcional">
+          </div>
+        </div>
+        <div class="vp-actions" style="margin-top:12px">
+          <button id="saveConfigBtn" class="btn" type="button">Guardar configuración</button>
+        </div>
+      </div>
+
+      <aside class="vp-card">
+        <h2>2. Páginas creadas</h2>
+        <label class="form-label" for="pageName">Nombre de página</label>
+        <input id="pageName" class="form-input" placeholder="Ej. Promociones abril">
+        <label class="form-label" for="pageSlug">Slug de página</label>
+        <input id="pageSlug" class="form-input" placeholder="promociones-abril">
+        <label class="form-label" for="pageDesc">Descripción</label>
+        <textarea id="pageDesc" class="form-textarea" rows="3"></textarea>
+        <div class="vp-actions">
+          <button id="savePageBtn" class="btn" type="button">Crear/guardar página</button>
+          <button id="clearPageBtn" class="btn secondary" type="button">Nueva</button>
+        </div>
+        <div id="pagesList" class="vp-page-list">Cargando páginas...</div>
+      </aside>
+    </section>
+
+    <section class="vp-grid">
+      <div class="vp-card">
+        <h2>3. Productos del sistema</h2>
+        <p class="vp-muted">Selecciona una página y agrega productos que ya existen en inventario.</p>
+        <input id="productSearch" class="form-input" placeholder="Buscar producto por nombre, SKU o código">
+        <div class="vp-actions" style="margin-top:10px">
+          <button id="searchProductsBtn" class="btn secondary" type="button">Buscar</button>
+        </div>
+        <div id="productsList" class="vp-product-list">Cargando productos...</div>
+      </div>
+      <div class="vp-card">
+        <h2>4. Productos publicados</h2>
+        <p id="selectedPageLabel" class="vp-muted">Selecciona una página para publicar productos.</p>
+        <div id="publishedList" class="vp-published-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = { empresaId: 0, config: {}, pages: [], selectedPage: null, products: [], published: [] };
+    function n(v){ const x = Number(String(v||'').trim()); return Number.isFinite(x) && x > 0 ? Math.trunc(x) : 0; }
+    function txt(v){ return String(v == null ? '' : v).trim(); }
+    function esc(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function setMsg(m,e){ const el=document.getElementById('msg'); el.textContent=m||''; el.style.color=e?'#ef5350':''; }
+    function money(v,c){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:c||'COP',maximumFractionDigits:0}).format(Number(v||0)); }
+    function resolveEmpresaId(){ try{ const p=new URLSearchParams(location.search); const id=n(p.get('empresa_id')||p.get('id')); if(id) return id; }catch(_){} try{ if(parent&&parent.__resolveEmpresaIdContext) return n(parent.__resolveEmpresaIdContext()); }catch(_){} return n(sessionStorage.getItem('empresa_id')||localStorage.getItem('empresa_id')); }
+    async function api(path, opts){ const res=await fetch(path, Object.assign({credentials:'same-origin'}, opts||{})); const text=await res.text(); let data={}; try{ data=text?JSON.parse(text):{}; }catch(_){ data={raw:text}; } if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status)); return data; }
+    function pageUrl(page){ const slug=txt(state.config.empresa_slug); const ps=page&&page.slug ? '&pagina_slug='+encodeURIComponent(page.slug) : ''; return '/venta_publica.html?empresa_slug='+encodeURIComponent(slug)+ps; }
+    function fillConfig(cfg){ state.config=cfg||{}; storeName.value=txt(cfg.nombre_tienda); storeSlug.value=txt(cfg.empresa_slug); storeDomain.value=txt(cfg.dominio_publico); storeCurrency.value=txt(cfg.moneda||'COP'); storeDesc.value=txt(cfg.descripcion_tienda); wompiActivo.checked=!!cfg.wompi_activo; wompiMode.value=txt(cfg.wompi_mode||'sandbox')==='production'?'production':'sandbox'; wompiPublicKey.value=txt(cfg.wompi_public_key); wompiPrivateRef.value=txt(cfg.wompi_private_key_ref); wompiIntegrityRef.value=txt(cfg.wompi_integrity_key_ref); epaycoActivo.checked=!!cfg.epayco_activo; epaycoMode.value=txt(cfg.epayco_mode||'sandbox')==='production'?'production':'sandbox'; epaycoPublicKey.value=txt(cfg.epayco_public_key); epaycoPrivateRef.value=txt(cfg.epayco_private_key_ref); epaycoCustomerId.value=txt(cfg.epayco_customer_id); }
+    function configPayload(){ return {empresa_id:state.empresaId, nombre_tienda:txt(storeName.value), empresa_slug:txt(storeSlug.value), dominio_publico:txt(storeDomain.value), moneda:txt(storeCurrency.value)||'COP', descripcion_tienda:txt(storeDesc.value), mostrar_stock:true, wompi_activo:wompiActivo.checked, wompi_mode:wompiMode.value, wompi_public_key:txt(wompiPublicKey.value), wompi_private_key_ref:txt(wompiPrivateRef.value), wompi_integrity_key_ref:txt(wompiIntegrityRef.value), epayco_activo:epaycoActivo.checked, epayco_mode:epaycoMode.value, epayco_public_key:txt(epaycoPublicKey.value), epayco_private_key_ref:txt(epaycoPrivateRef.value), epayco_customer_id:txt(epaycoCustomerId.value)}; }
+    async function loadConfig(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config'); fillConfig(data.config||{}); }
+    async function saveConfig(){ setMsg('Guardando configuración...',false); const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(configPayload())}); fillConfig(data.config||configPayload()); setMsg('Configuración guardada.',false); }
+    function renderPages(){ pagesList.innerHTML=''; if(!state.pages.length){ pagesList.innerHTML='<p class="vp-muted">Aún no hay páginas.</p>'; return; } state.pages.forEach(p=>{ const active=state.selectedPage&&state.selectedPage.id===p.id; const div=document.createElement('div'); div.className='vp-page'+(active?' active':''); div.innerHTML='<strong>'+esc(p.nombre)+'</strong><span class="vp-muted">/'+esc(p.slug)+'</span><div class="vp-public-url">'+esc(pageUrl(p))+'</div><div class="vp-actions"><button class="btn secondary" data-sel="'+p.id+'">Seleccionar</button><button class="btn secondary" data-edit="'+p.id+'">Editar</button></div>'; pagesList.appendChild(div); }); pagesList.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>selectPage(n(b.dataset.sel))); pagesList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editPage(n(b.dataset.edit))); }
+    async function loadPages(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas'); state.pages=data.rows||[]; if(!state.selectedPage&&state.pages.length) state.selectedPage=state.pages[0]; renderPages(); await loadPublished(); }
+    function editPage(id){ const p=state.pages.find(x=>x.id===id); if(!p)return; state.selectedPage=p; pageName.value=txt(p.nombre); pageSlug.value=txt(p.slug); pageDesc.value=txt(p.descripcion); renderPages(); loadPublished(); }
+    function selectPage(id){ const p=state.pages.find(x=>x.id===id); if(!p)return; state.selectedPage=p; renderPages(); loadPublished(); }
+    async function savePage(){ if(!txt(pageName.value)){ setMsg('El nombre de la página es obligatorio.',true); return; } const payload={empresa_id:state.empresaId,id:state.selectedPage&&txt(pageName.value)===state.selectedPage.nombre?n(state.selectedPage.id):0,nombre:txt(pageName.value),slug:txt(pageSlug.value),descripcion:txt(pageDesc.value),estado:'activo'}; const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); state.selectedPage=data.page; pageName.value=''; pageSlug.value=''; pageDesc.value=''; await loadPages(); setMsg('Página guardada.',false); }
+    function clearPage(){ state.selectedPage=null; pageName.value=''; pageSlug.value=''; pageDesc.value=''; renderPages(); loadPublished(); }
+    async function loadProducts(){ const q=encodeURIComponent(txt(productSearch.value)); const rows=await api('/api/empresa/productos?empresa_id='+state.empresaId+'&estado=activo&limit=80&q='+q); state.products=Array.isArray(rows)?rows:[]; renderProducts(); }
+    function renderProducts(){ productsList.innerHTML=''; if(!state.products.length){ productsList.innerHTML='<p class="vp-muted">No hay productos activos.</p>'; return; } state.products.forEach(p=>{ const div=document.createElement('div'); div.className='vp-product'; div.innerHTML='<div class="vp-thumb" style="'+(p.imagen_url?'background-image:url('+esc(p.imagen_url)+')':'')+'">'+(p.imagen_url?'':'IMG')+'</div><div><strong>'+esc(p.nombre)+'</strong><div class="vp-muted">'+esc(p.sku||p.codigo_barras||'Producto')+'</div><div class="vp-price">'+money(p.precio,state.config.moneda)+'</div></div><div class="vp-actions"><button class="btn" data-add="'+p.id+'">Agregar</button></div>'; productsList.appendChild(div); }); productsList.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>publishProduct(n(b.dataset.add))); }
+    async function publishProduct(productId){ if(!state.selectedPage){ setMsg('Selecciona o crea una página antes de publicar productos.',true); return; } const p=state.products.find(x=>x.id===productId); if(!p)return; const payload={empresa_id:state.empresaId,pagina_id:state.selectedPage.id,producto_id:p.id,codigo_publico:p.codigo_barras||p.sku||'',nombre:p.nombre,descripcion:p.descripcion||'',precio:Number(p.precio||0),moneda:state.config.moneda||'COP',imagen_url:p.imagen_url||'',stock_publicado:Number(p.stock_total||0),destacado:false}; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=crear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); await loadPublished(); setMsg('Producto agregado a la página.',false); }
+    async function loadPublished(){ selectedPageLabel.textContent=state.selectedPage?'Página seleccionada: '+state.selectedPage.nombre:'Selecciona una página para publicar productos.'; if(!state.selectedPage){ publishedList.innerHTML=''; return; } const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=catalogo&pagina_id='+state.selectedPage.id); state.published=data.rows||[]; renderPublished(); }
+    function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
+    async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); }
+    async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
+    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ location.href=pageUrl(state.selectedPage); };
+    init();
+  </script>
+</body>
+</html>

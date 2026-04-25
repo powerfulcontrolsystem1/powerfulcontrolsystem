@@ -156,6 +156,8 @@ try {
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
+    linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
+    linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
     linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },

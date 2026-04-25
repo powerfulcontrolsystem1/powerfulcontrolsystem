@@ -479,14 +479,15 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
-			"/":                               {},
-			"/index.html":                     {},
-			"/descripcion_de_los_sistemas.ht": {},
-			"/Informacion_de_contacto.html":   {},
-			"/soporte_remoto_acceso.html":     {},
-			"/venta_publica.html":             {},
-			"/venta_digital.html":             {},
-			"/login.html":                     {},
+			"/":                                                     {},
+			"/index.html":                                           {},
+			"/descripcion_de_los_sistemas.ht":                       {},
+			"/Informacion_de_contacto.html":                         {},
+			"/soporte_remoto_acceso.html":                           {},
+			"/venta_publica.html":                                   {},
+			"/pagar_productos_de_venta_publica.html":                {},
+			"/venta_digital.html":                                   {},
+			"/login.html":                                           {},
 			"/registrar_nuevo_usuario_administrador.html":           {},
 			"/login_usuario.html":                                   {},
 			"/contrato.html":                                        {},
@@ -495,6 +496,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/super/api/administradores/solicitar_recuperacion":     {},
 			"/super/api/administradores/restablecer_password":       {},
 			"/super/api/empresas/compartidos/aceptar":               {},
+			"/api/asesor_comercial/aceptar":                         {},
 			"/auth/google/login":                                    {},
 			"/auth/google/callback":                                 {},
 			"/auth/confirmar_correo":                                {},
@@ -528,6 +530,14 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 		if strings.HasSuffix(strings.ToLower(path), "/venta_publica.html") {
+			trimmed := strings.Trim(path, "/")
+			parts := strings.Split(trimmed, "/")
+			if len(parts) == 2 && strings.TrimSpace(parts[0]) != "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		if strings.HasSuffix(strings.ToLower(path), "/pagar_productos_de_venta_publica.html") {
 			trimmed := strings.Trim(path, "/")
 			parts := strings.Split(trimmed, "/")
 			if len(parts) == 2 && strings.TrimSpace(parts[0]) != "" {

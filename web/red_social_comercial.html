@@ -3,45 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Red Social Comercial</title>
+  <title>Red Social Empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
-    body {
-      font-family: "Segoe UI Variable","Segoe UI",Tahoma,sans-serif;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-      color: var(--text);
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top center, color-mix(in srgb, var(--accent) 12%, transparent 88%), transparent 34%),
-        linear-gradient(180deg, var(--bg-alt), var(--bg));
-    }
-    .social-hero { margin-top: 60px; }
-    .social-hero p { color: var(--muted); max-width: 720px; margin: 0.75rem auto 0; }
-    .feed { max-width: 880px; margin: 2rem auto; text-align: left; }
-    .card { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 86%, var(--surface) 14%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%)); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); margin-bottom: 2rem; overflow: hidden; display: flex; flex-direction: column; }
-    .card-img { width: 100%; height: 300px; background-color: var(--input-bg-soft); background-size: cover; background-position: center; }
-    .card-body { padding: 20px; }
-    .card-title { font-size: 1.5rem; margin: 0 0 10px 0; color: var(--text); }
-    .card-desc { color: var(--muted); line-height: 1.6; margin-bottom: 15px; }
-    .card-actions { display: flex; justify-content: flex-end; }
-    .btn-contact { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #fff; border: none; padding: 10px 20px; border-radius: 999px; cursor: pointer; text-decoration: none; font-weight: bold; }
-    .btn-contact:hover { filter: brightness(1.06); }
+    body{margin:0;color:var(--text);min-height:100vh;background:radial-gradient(circle at 30% 0%,color-mix(in srgb,var(--accent) 18%,transparent 82%),transparent 32%),linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif}
+    .social-shell{max-width:1120px;margin:0 auto;padding:42px 18px 64px}
+    .social-hero{display:grid;gap:10px;text-align:center;margin:22px auto 28px}
+    .social-hero h1{font-size:clamp(2rem,4vw,3.4rem);margin:0;font-weight:900;letter-spacing:-.04em}
+    .social-hero p{color:var(--muted);max-width:760px;margin:0 auto;line-height:1.6}
+    .feed{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;align-items:start}
+    .post-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 88%,var(--surface) 12%),var(--surface));border:1px solid var(--border);border-radius:24px;box-shadow:0 22px 48px rgba(0,0,0,.14);overflow:hidden;min-height:430px;display:flex;flex-direction:column}
+    .post-cover{height:210px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,transparent 78%),color-mix(in srgb,var(--accent-2) 20%,transparent 80%));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
+    .post-body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:12px;flex:1}
+    .post-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.92rem}
+    .post-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;font-weight:900}
+    .post-title{font-size:1.26rem;line-height:1.25;margin:0;font-weight:900}
+    .post-desc{color:var(--text);line-height:1.55;margin:0;white-space:pre-wrap}
+    .post-actions{margin-top:auto;display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px}
+    .post-chip{font-size:.82rem;color:var(--muted)}
+    .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:800;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 24%,transparent)}
+    .empty-state{grid-column:1/-1;text-align:center;color:var(--muted);padding:42px;border:1px dashed var(--border);border-radius:22px;background:var(--surface)}
+    @media(max-width:640px){.social-shell{padding:24px 12px 44px}.feed{grid-template-columns:1fr}.post-card{min-height:auto}}
   </style>
 </head>
 <body>
-  <div class="social-hero">
-    <h1>Red Social Comercial</h1>
-    <p>Descubre productos y ofertas exclusivas de nuestras empresas asociadas.</p>
-  </div>
-  
-  <div class="feed" id="feedContenedor">
-    <p class="text-center">Cargando publicaciones...</p>
+  <div class="social-shell">
+    <div class="social-hero">
+      <h1>Red Social Empresarial</h1>
+      <p>Publicaciones tipo feed de las empresas de la plataforma: novedades, productos, servicios y anuncios en tarjetas medianas, claras y fáciles de compartir.</p>
+    </div>
+    <div class="feed" id="feedContenedor">
+      <div class="empty-state">Cargando publicaciones...</div>
+    </div>
   </div>
 
   <script>
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    function initial(value) {
+      var raw = String(value || 'E').trim();
+      return escapeHtml(raw.charAt(0).toUpperCase() || 'E');
+    }
+    function formatDate(value) {
+      try { return new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }); } catch (_) { return ''; }
+    }
     async function cargarPublico() {
       try {
         const res = await fetch('/api/public/publicaciones');
@@ -51,38 +61,37 @@
         feed.innerHTML = '';
         
         if (data.length === 0) {
-          feed.innerHTML = '<p class="muted text-center">Aún no hay publicaciones disponibles.</p>';
+          feed.innerHTML = '<div class="empty-state">Aún no hay publicaciones disponibles.</div>';
           return;
         }
 
         data.forEach(p => {
-          const imgStyle = p.foto_url 
-            ? `class="bg-cover" data-bg-url="${p.foto_url}"`
-            : `class="bg-placeholder"`;
-          
-          const fallBackText = p.foto_url ? '' : '<span>Sin imagen</span>';
+          const img = String(p.foto_url || '').trim();
+          const cover = img ? `style="background-image:url('${escapeHtml(img)}')"` : '';
+          const empresa = p.empresa_nombre || ('Empresa #' + p.empresa_id);
 
           feed.innerHTML += `
-            <div class="card">
-              <div class="card-img" ${imgStyle}>${fallBackText}</div>
-              <div class="card-body">
-                <h2 class="card-title">${p.nombre}</h2>
-                <p class="card-desc">${p.descripcion}</p>
-                <div class="card-actions">
-                  <a href="https://api.whatsapp.com/send?text=Me%20interesa%20${encodeURIComponent(p.nombre)}" target="_blank" class="btn-contact">Contactar</a>
+            <article class="post-card">
+              <div class="post-cover" ${cover}>${img ? '' : 'Publicación empresarial'}</div>
+              <div class="post-body">
+                <div class="post-meta">
+                  <div class="post-avatar">${initial(empresa)}</div>
+                  <div><strong>${escapeHtml(empresa)}</strong><br><span>${escapeHtml(formatDate(p.fecha_creacion))}</span></div>
+                </div>
+                <h2 class="post-title">${escapeHtml(p.nombre)}</h2>
+                <p class="post-desc">${escapeHtml(p.descripcion)}</p>
+                <div class="post-actions">
+                  <span class="post-chip">Post empresarial</span>
+                  <a href="https://api.whatsapp.com/send?text=${encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || ''))}" target="_blank" rel="noopener" class="btn-contact">Contactar</a>
                 </div>
               </div>
-            </div>
+            </article>
           `;
         });
       } catch (err) {
         console.error(err);
-        document.getElementById('feedContenedor').innerHTML = '<p class="text-danger text-center">Error al cargar las publicaciones</p>';
+        document.getElementById('feedContenedor').innerHTML = '<div class="empty-state">Error al cargar las publicaciones.</div>';
       }
-      // Aplicar backgrounds a elementos con data-bg-url (uso de background-image desde atributo data)
-      document.querySelectorAll('.bg-cover[data-bg-url]').forEach(function(el){
-        try { el.style.backgroundImage = 'url(' + el.dataset.bgUrl + ')'; } catch(e) {}
-      });
     }
     cargarPublico();
   </script>

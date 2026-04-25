@@ -229,10 +229,29 @@ type EmpresaVentaPublicaConfig struct {
 	Observaciones       string `json:"observaciones,omitempty"`
 }
 
+// EmpresaVentaPublicaPagina representa una pagina publica creada por una empresa bajo su dominio/slug.
+type EmpresaVentaPublicaPagina struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	Slug               string `json:"slug"`
+	Nombre             string `json:"nombre"`
+	Descripcion        string `json:"descripcion,omitempty"`
+	BannerURL          string `json:"banner_url,omitempty"`
+	OrdenVisual        int    `json:"orden_visual,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
 // EmpresaVentaPublicaItem representa un producto publicado para venta por internet.
 type EmpresaVentaPublicaItem struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	PaginaID           int64   `json:"pagina_id,omitempty"`
+	PaginaSlug         string  `json:"pagina_slug,omitempty"`
+	PaginaNombre       string  `json:"pagina_nombre,omitempty"`
 	ProductoID         int64   `json:"producto_id,omitempty"`
 	CodigoPublico      string  `json:"codigo_publico"`
 	Nombre             string  `json:"nombre"`
@@ -253,6 +272,8 @@ type EmpresaVentaPublicaItem struct {
 // EmpresaVentaPublicaItemsFilter aplica filtros de listado para catalogo publico empresarial.
 type EmpresaVentaPublicaItemsFilter struct {
 	IncludeInactive bool
+	PaginaID        int64
+	PaginaSlug      string
 	Q               string
 	Limit           int
 	Offset          int
@@ -518,9 +539,25 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_paginas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			slug TEXT NOT NULL,
+			nombre TEXT NOT NULL,
+			descripcion TEXT,
+			banner_url TEXT,
+			orden_visual INTEGER DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, slug)
+		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_items (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			pagina_id INTEGER DEFAULT 0,
 			producto_id INTEGER DEFAULT 0,
 			codigo_publico TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -644,6 +681,9 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "producto_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "pagina_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "imagen_url", "TEXT"); err != nil {
 		return err
 	}
@@ -710,6 +750,12 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_estado ON empresa_venta_publica_items(empresa_id, estado, orden_visual, id)`); err != nil {
 		return err
 	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_pagina ON empresa_venta_publica_items(empresa_id, pagina_id, estado)`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_paginas_empresa_estado ON empresa_venta_publica_paginas(empresa_id, estado, orden_visual, id)`); err != nil {
+		return err
+	}
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_empresa_estado ON empresa_venta_publica_ordenes(empresa_id, estado_pago, fecha_creacion DESC)`); err != nil {
 		return err
 	}
@@ -717,6 +763,152 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	return nil
+}
+
+// ListEmpresaVentaPublicaPaginas lista las paginas publicas de una empresa.
+func ListEmpresaVentaPublicaPaginas(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaVentaPublicaPagina, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	where := `WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+	if !includeInactive {
+		where += ` AND COALESCE(estado, 'activo') <> 'inactivo'`
+	}
+	rows, err := dbConn.Query(`SELECT
+		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_venta_publica_paginas `+where+`
+	ORDER BY COALESCE(orden_visual, 0) ASC, id DESC`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]EmpresaVentaPublicaPagina, 0)
+	for rows.Next() {
+		var p EmpresaVentaPublicaPagina
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.Slug, &p.Nombre, &p.Descripcion, &p.BannerURL, &p.OrdenVisual, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones); err != nil {
+			return nil, err
+		}
+		p.Slug = NormalizeEmpresaPublicSlug(p.Slug)
+		p.Estado = ventaPublicaNormalizeEstado(p.Estado)
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+// UpsertEmpresaVentaPublicaPagina crea o actualiza una pagina publica por empresa.
+func UpsertEmpresaVentaPublicaPagina(dbConn *sql.DB, page EmpresaVentaPublicaPagina) (int64, error) {
+	if dbConn == nil {
+		return 0, errors.New("db connection is nil")
+	}
+	if page.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return 0, err
+	}
+	page.Nombre = strings.TrimSpace(page.Nombre)
+	if page.Nombre == "" {
+		return 0, fmt.Errorf("nombre es obligatorio")
+	}
+	page.Slug = NormalizeEmpresaPublicSlug(page.Slug)
+	if page.Slug == "" || page.Slug == "empresa" {
+		page.Slug = NormalizeEmpresaPublicSlug(page.Nombre)
+	}
+	if page.Slug == "" {
+		return 0, fmt.Errorf("slug invalido")
+	}
+	page.Estado = ventaPublicaNormalizeEstado(page.Estado)
+	var existingID int64
+	if page.ID > 0 {
+		_ = dbConn.QueryRow(`SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND id = ? LIMIT 1`, page.EmpresaID, page.ID).Scan(&existingID)
+	}
+	if existingID <= 0 {
+		_ = dbConn.QueryRow(`SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND slug = ? LIMIT 1`, page.EmpresaID, page.Slug).Scan(&existingID)
+	}
+	if existingID > 0 {
+		_, err := dbConn.Exec(`UPDATE empresa_venta_publica_paginas
+			SET slug = ?, nombre = ?, descripcion = ?, banner_url = ?, orden_visual = ?,
+				usuario_creador = ?, estado = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+			WHERE empresa_id = ? AND id = ?`,
+			page.Slug, page.Nombre, strings.TrimSpace(page.Descripcion), strings.TrimSpace(page.BannerURL), page.OrdenVisual,
+			strings.TrimSpace(page.UsuarioCreador), page.Estado, strings.TrimSpace(page.Observaciones), page.EmpresaID, existingID)
+		return existingID, err
+	}
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_venta_publica_paginas (
+		empresa_id, slug, nombre, descripcion, banner_url, orden_visual, usuario_creador, estado, observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		page.EmpresaID, page.Slug, page.Nombre, strings.TrimSpace(page.Descripcion), strings.TrimSpace(page.BannerURL),
+		page.OrdenVisual, strings.TrimSpace(page.UsuarioCreador), page.Estado, strings.TrimSpace(page.Observaciones))
+}
+
+// GetEmpresaVentaPublicaPaginaByID obtiene una pagina por id/empresa.
+func GetEmpresaVentaPublicaPaginaByID(dbConn *sql.DB, empresaID, pageID int64) (EmpresaVentaPublicaPagina, error) {
+	if dbConn == nil {
+		return EmpresaVentaPublicaPagina{}, errors.New("db connection is nil")
+	}
+	var p EmpresaVentaPublicaPagina
+	err := dbConn.QueryRow(`SELECT
+		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, pageID).Scan(
+		&p.ID, &p.EmpresaID, &p.Slug, &p.Nombre, &p.Descripcion, &p.BannerURL, &p.OrdenVisual, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones,
+	)
+	p.Slug = NormalizeEmpresaPublicSlug(p.Slug)
+	p.Estado = ventaPublicaNormalizeEstado(p.Estado)
+	return p, err
+}
+
+// GetEmpresaVentaPublicaPaginaBySlug obtiene una pagina activa por slug/empresa.
+func GetEmpresaVentaPublicaPaginaBySlug(dbConn *sql.DB, empresaID int64, slug string) (EmpresaVentaPublicaPagina, error) {
+	if dbConn == nil {
+		return EmpresaVentaPublicaPagina{}, errors.New("db connection is nil")
+	}
+	slug = NormalizeEmpresaPublicSlug(slug)
+	var p EmpresaVentaPublicaPagina
+	err := dbConn.QueryRow(`SELECT
+		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_venta_publica_paginas
+	WHERE empresa_id = ? AND slug = ? AND COALESCE(estado, 'activo') <> 'inactivo'
+	LIMIT 1`, empresaID, slug).Scan(
+		&p.ID, &p.EmpresaID, &p.Slug, &p.Nombre, &p.Descripcion, &p.BannerURL, &p.OrdenVisual, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones,
+	)
+	p.Slug = NormalizeEmpresaPublicSlug(p.Slug)
+	p.Estado = ventaPublicaNormalizeEstado(p.Estado)
+	return p, err
+}
+
+// SetEmpresaVentaPublicaPaginaEstadoByID activa/desactiva una pagina publica.
+func SetEmpresaVentaPublicaPaginaEstadoByID(dbConn *sql.DB, empresaID, pageID int64, estado string) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_paginas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, ventaPublicaNormalizeEstado(estado), empresaID, pageID)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected <= 0 {
+		return sql.ErrNoRows
+	}
 	return nil
 }
 
@@ -1127,6 +1319,14 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	if item.StockPublicado < 0 {
 		return 0, fmt.Errorf("stock_publicado invalido")
 	}
+	if item.PaginaID > 0 {
+		if _, err := GetEmpresaVentaPublicaPaginaByID(dbConn, item.EmpresaID, item.PaginaID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, fmt.Errorf("pagina_id no encontrado para la empresa")
+			}
+			return 0, err
+		}
+	}
 	if err := hydrateEmpresaVentaPublicaItemFromProducto(dbConn, &item); err != nil {
 		return 0, err
 	}
@@ -1138,11 +1338,15 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	if item.CodigoPublico = strings.TrimSpace(item.CodigoPublico); item.CodigoPublico == "" {
 		item.CodigoPublico = ventaPublicaGenerateItemCode(item.EmpresaID, item.Nombre)
 	}
+	if item.PaginaID > 0 {
+		item.CodigoPublico = fmt.Sprintf("%s-p%d", strings.TrimSuffix(item.CodigoPublico, fmt.Sprintf("-p%d", item.PaginaID)), item.PaginaID)
+	}
 	item.Moneda = ventaPublicaNormalizeMoneda(item.Moneda)
 	item.Estado = ventaPublicaNormalizeEstado(item.Estado)
 
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_venta_publica_items (
 		empresa_id,
+		pagina_id,
 		producto_id,
 		codigo_publico,
 		nombre,
@@ -1156,8 +1360,9 @@ func CreateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.EmpresaID,
+		item.PaginaID,
 		item.ProductoID,
 		item.CodigoPublico,
 		item.Nombre,
@@ -1192,6 +1397,14 @@ func UpdateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	if item.StockPublicado < 0 {
 		return fmt.Errorf("stock_publicado invalido")
 	}
+	if item.PaginaID > 0 {
+		if _, err := GetEmpresaVentaPublicaPaginaByID(dbConn, item.EmpresaID, item.PaginaID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("pagina_id no encontrado para la empresa")
+			}
+			return err
+		}
+	}
 	if err := hydrateEmpresaVentaPublicaItemFromProducto(dbConn, &item); err != nil {
 		return err
 	}
@@ -1203,11 +1416,15 @@ func UpdateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	if item.CodigoPublico == "" {
 		item.CodigoPublico = ventaPublicaGenerateItemCode(item.EmpresaID, item.Nombre)
 	}
+	if item.PaginaID > 0 {
+		item.CodigoPublico = fmt.Sprintf("%s-p%d", strings.TrimSuffix(item.CodigoPublico, fmt.Sprintf("-p%d", item.PaginaID)), item.PaginaID)
+	}
 	item.Moneda = ventaPublicaNormalizeMoneda(item.Moneda)
 	item.Estado = ventaPublicaNormalizeEstado(item.Estado)
 
 	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_items
-		SET producto_id = ?,
+		SET pagina_id = ?,
+			producto_id = ?,
 			codigo_publico = ?,
 			nombre = ?,
 			descripcion = ?,
@@ -1222,6 +1439,7 @@ func UpdateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 			observaciones = ?,
 			fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND id = ?`,
+		item.PaginaID,
 		item.ProductoID,
 		item.CodigoPublico,
 		item.Nombre,
@@ -1286,28 +1504,35 @@ func GetEmpresaVentaPublicaItemByID(dbConn *sql.DB, empresaID, itemID int64) (Em
 	var out EmpresaVentaPublicaItem
 	var destacado sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
-		id,
-		empresa_id,
-		COALESCE(producto_id, 0),
-		COALESCE(codigo_publico, ''),
-		COALESCE(nombre, ''),
-		COALESCE(descripcion, ''),
-		COALESCE(precio, 0),
-		COALESCE(moneda, 'COP'),
-		COALESCE(imagen_url, ''),
-		COALESCE(stock_publicado, 0),
-		COALESCE(orden_visual, 0),
-		COALESCE(destacado, 0),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
-		COALESCE(usuario_creador, ''),
-		COALESCE(estado, 'activo'),
-		COALESCE(observaciones, '')
-	FROM empresa_venta_publica_items
-	WHERE empresa_id = ? AND id = ?
+		i.id,
+		i.empresa_id,
+		COALESCE(i.pagina_id, 0),
+		COALESCE(p.slug, ''),
+		COALESCE(p.nombre, ''),
+		COALESCE(i.producto_id, 0),
+		COALESCE(i.codigo_publico, ''),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.descripcion, ''),
+		COALESCE(i.precio, 0),
+		COALESCE(i.moneda, 'COP'),
+		COALESCE(i.imagen_url, ''),
+		COALESCE(i.stock_publicado, 0),
+		COALESCE(i.orden_visual, 0),
+		COALESCE(i.destacado, 0),
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'activo'),
+		COALESCE(i.observaciones, '')
+	FROM empresa_venta_publica_items i
+	LEFT JOIN empresa_venta_publica_paginas p ON p.empresa_id = i.empresa_id AND p.id = COALESCE(i.pagina_id, 0)
+	WHERE i.empresa_id = ? AND i.id = ?
 	LIMIT 1`, empresaID, itemID).Scan(
 		&out.ID,
 		&out.EmpresaID,
+		&out.PaginaID,
+		&out.PaginaSlug,
+		&out.PaginaNombre,
 		&out.ProductoID,
 		&out.CodigoPublico,
 		&out.Nombre,
@@ -1343,47 +1568,60 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 	}
 
 	limit, offset := ventaPublicaNormalizeLimitOffset(filter.Limit, filter.Offset)
-	where := `WHERE empresa_id = ?`
+	where := `WHERE i.empresa_id = ?`
 	args := []interface{}{empresaID}
 	if !filter.IncludeInactive {
-		where += ` AND COALESCE(estado, 'activo') <> 'inactivo'`
+		where += ` AND COALESCE(i.estado, 'activo') <> 'inactivo'`
+	}
+	if filter.PaginaID > 0 {
+		where += ` AND COALESCE(i.pagina_id, 0) = ?`
+		args = append(args, filter.PaginaID)
+	} else if pageSlug := NormalizeEmpresaPublicSlug(filter.PaginaSlug); pageSlug != "" {
+		where += ` AND p.slug = ?`
+		args = append(args, pageSlug)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
 		pattern := ventaPublicaLikePattern(q)
 		where += ` AND (
-			LOWER(COALESCE(codigo_publico, '')) LIKE LOWER(?) ESCAPE '!' OR
-			LOWER(COALESCE(nombre, '')) LIKE LOWER(?) ESCAPE '!' OR
-			LOWER(COALESCE(descripcion, '')) LIKE LOWER(?) ESCAPE '!'
+			LOWER(COALESCE(i.codigo_publico, '')) LIKE LOWER(?) ESCAPE '!' OR
+			LOWER(COALESCE(i.nombre, '')) LIKE LOWER(?) ESCAPE '!' OR
+			LOWER(COALESCE(i.descripcion, '')) LIKE LOWER(?) ESCAPE '!'
 		)`
 		args = append(args, pattern, pattern, pattern)
 	}
 
-	countQuery := `SELECT COUNT(1) FROM empresa_venta_publica_items ` + where
+	countQuery := `SELECT COUNT(1)
+	FROM empresa_venta_publica_items i
+	LEFT JOIN empresa_venta_publica_paginas p ON p.empresa_id = i.empresa_id AND p.id = COALESCE(i.pagina_id, 0) ` + where
 	var total int64
 	if err := dbConn.QueryRow(countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	query := `SELECT
-		id,
-		empresa_id,
-		COALESCE(producto_id, 0),
-		COALESCE(codigo_publico, ''),
-		COALESCE(nombre, ''),
-		COALESCE(descripcion, ''),
-		COALESCE(precio, 0),
-		COALESCE(moneda, 'COP'),
-		COALESCE(imagen_url, ''),
-		COALESCE(stock_publicado, 0),
-		COALESCE(orden_visual, 0),
-		COALESCE(destacado, 0),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
-		COALESCE(usuario_creador, ''),
-		COALESCE(estado, 'activo'),
-		COALESCE(observaciones, '')
-	FROM empresa_venta_publica_items ` + where + `
-	ORDER BY COALESCE(orden_visual, 0) ASC, id DESC
+		i.id,
+		i.empresa_id,
+		COALESCE(i.pagina_id, 0),
+		COALESCE(p.slug, ''),
+		COALESCE(p.nombre, ''),
+		COALESCE(i.producto_id, 0),
+		COALESCE(i.codigo_publico, ''),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.descripcion, ''),
+		COALESCE(i.precio, 0),
+		COALESCE(i.moneda, 'COP'),
+		COALESCE(i.imagen_url, ''),
+		COALESCE(i.stock_publicado, 0),
+		COALESCE(i.orden_visual, 0),
+		COALESCE(i.destacado, 0),
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'activo'),
+		COALESCE(i.observaciones, '')
+	FROM empresa_venta_publica_items i
+	LEFT JOIN empresa_venta_publica_paginas p ON p.empresa_id = i.empresa_id AND p.id = COALESCE(i.pagina_id, 0) ` + where + `
+	ORDER BY COALESCE(p.orden_visual, 0) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC
 	LIMIT ? OFFSET ?`
 
 	rows, err := dbConn.Query(query, append(args, limit, offset)...)
@@ -1399,6 +1637,9 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
+			&item.PaginaID,
+			&item.PaginaSlug,
+			&item.PaginaNombre,
 			&item.ProductoID,
 			&item.CodigoPublico,
 			&item.Nombre,

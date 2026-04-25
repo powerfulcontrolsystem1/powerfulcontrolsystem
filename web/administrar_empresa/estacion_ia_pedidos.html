@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pedidos con IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+  <style>
+    .ia-pedidos-embed { display:flex; flex-direction:column; height:100%; min-height:200px; max-height:420px; font-size:0.9rem; }
+    .ia-pedidos-msgs { flex:1; overflow:auto; padding:8px; border:1px solid var(--border, rgba(120,120,120,.25)); border-radius:8px; margin-bottom:8px; background:var(--surface, rgba(255,255,255,.04)); }
+    .ia-pedidos-msg { margin:6px 0; padding:6px 8px; border-radius:8px; text-align:left; }
+    .ia-pedidos-msg.user { background:rgba(59,130,246,.18); align-self:flex-end; }
+    .ia-pedidos-msg.assistant { background:rgba(148,163,184,.15); }
+    .ia-pedidos-msg.system { font-size:0.85em; opacity:0.9; }
+    .ia-pedidos-form { display:flex; flex-direction:column; gap:6px; }
+    .ia-pedidos-actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  </style>
+</head>
+<body class="empresa-subpage ia-pedidos-body">
+  <div class="ia-pedidos-embed">
+    <div id="msgs" class="ia-pedidos-msgs" aria-live="polite"></div>
+    <form id="f" class="ia-pedidos-form">
+      <label class="form-label" for="txt">Pedido (texto o voz)</label>
+      <textarea id="txt" class="form-textarea" maxlength="2500" rows="2" placeholder="Ej.: agrega dos cervezas a la mesa 5"></textarea>
+      <div class="ia-pedidos-actions">
+        <button type="button" id="mic" class="btn secondary">Dictar</button>
+        <button type="submit" id="go" class="btn">Interpretar y agregar</button>
+      </div>
+      <p id="hint" class="form-help"></p>
+    </form>
+  </div>
+  <script>
+    (function () {
+      var state = { empresaID: 0, modelID: "", models: [], loading: false, messages: [] };
+
+      function q(name) {
+        try { return new URLSearchParams(window.location.search || "").get(name) || ""; } catch (e) { return ""; }
+      }
+
+      function norm(v) { return (v == null ? "" : String(v)).trim(); }
+
+      function esc(v) {
+        return String(v == null ? "" : v)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function hint(t, err) {
+        var el = document.getElementById("hint");
+        if (!el) return;
+        el.textContent = t || "";
+        el.style.color = err ? "var(--status-danger, #c0392b)" : "";
+      }
+
+      function append(role, text) {
+        var r = norm(role).toLowerCase();
+        if (r === "user" || r === "assistant") {
+          state.messages.push({ role: r, content: norm(text) });
+          if (state.messages.length > 24) state.messages = state.messages.slice(-24);
+        }
+        var box = document.getElementById("msgs");
+        if (!box) return;
+        var d = document.createElement("div");
+        d.className = "ia-pedidos-msg " + (role || "system");
+        d.innerHTML = "<strong>" + esc(role) + "</strong><div>" + esc(text).replace(/\n/g, "<br>") + "</div>";
+        box.appendChild(d);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function apiFetch(url, options) {
+        return fetch(url, options || {}).then(function (res) {
+          var ct = norm(res.headers.get("content-type")).toLowerCase();
+          var payload = null;
+          if (ct.indexOf("application/json") >= 0) {
+            return res.json().then(function (j) {
+              payload = j;
+              if (!res.ok) {
+                var er = new Error((payload && (payload.error || payload.message)) || ("HTTP " + res.status));
+                er.status = res.status;
+                er.payload = payload;
+                throw er;
+              }
+              return payload;
+            });
+          }
+          return res.text().then(function (txt) {
+            if (!res.ok) {
+              var er2 = new Error(txt || ("HTTP " + res.status));
+              er2.status = res.status;
+              throw er2;
+            }
+            return txt;
+          });
+        });
+      }
+
+      function buildHistorialPayload() {
+        var out = [];
+        for (var i = 0; i < state.messages.length; i++) {
+          var m = state.messages[i];
+          var role = norm(m.role).toLowerCase();
+          if (role !== "user" && role !== "assistant") continue;
+          var c = norm(m.content);
+          if (!c) continue;
+          out.push({ rol: role, contenido: c });
+        }
+        return out.slice(-8);
+      }
+
+      function loadModels() {
+        return apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID))
+          .then(function (data) {
+            var modelos = Array.isArray(data.modelos) ? data.modelos : [];
+            if (!modelos.length) throw new Error("No hay modelos IA disponibles.");
+            state.models = modelos;
+            state.modelID = norm(data.modelo_preferido) || norm(modelos[0].id);
+          });
+      }
+
+      function onSubmit(ev) {
+        ev.preventDefault();
+        if (state.loading) return;
+        var text = norm(document.getElementById("txt").value);
+        if (!text) {
+          hint("Escribe o dicta un pedido.", true);
+          return;
+        }
+        if (!state.modelID) {
+          hint("No hay modelo IA disponible.", true);
+          return;
+        }
+        state.loading = true;
+        hint("Procesando con IA…", false);
+        var historial = buildHistorialPayload();
+        append("user", text);
+        document.getElementById("txt").value = "";
+        apiFetch("/api/empresa/ia_pedidos_estacion/ejecutar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            model_id: state.modelID,
+            mensaje: text,
+            historial: historial
+          })
+        }).then(function (data) {
+          var natural = norm(data.respuesta_natural) || "Listo.";
+          append("assistant", natural);
+          var acc = data.acciones_ejecutadas;
+          if (Array.isArray(acc) && acc.length) {
+            var lines = acc.map(function (a) {
+              if (a && a.ok) {
+                return "OK estación " + a.estacion_id + ": " + (a.producto || "") + " x" + (a.cantidad != null ? a.cantidad : "");
+              }
+              return "Error estación " + (a && a.estacion_id) + ": " + (a && a.error ? a.error : "?");
+            });
+            append("system", lines.join("\n"));
+          }
+          hint("", false);
+        }).catch(function (err) {
+          var p = err && err.payload ? err.payload : {};
+          append("system", norm(p.error || err.message || "Error"));
+          hint(norm(p.error || err.message || "Error"), true);
+        }).then(function () {
+          state.loading = false;
+        });
+      }
+
+      function setupMic() {
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var btn = document.getElementById("mic");
+        var input = document.getElementById("txt");
+        if (!btn || !input) return;
+        if (!SpeechRecognition) {
+          btn.disabled = true;
+          btn.title = "Navegador sin dictado";
+          return;
+        }
+        var recognition = new SpeechRecognition();
+        recognition.lang = "es-CO";
+        recognition.interimResults = true;
+        recognition.continuous = false;
+        var listening = false;
+        var finalText = "";
+        function setL(on) {
+          listening = !!on;
+          btn.textContent = listening ? "Detener" : "Dictar";
+        }
+        recognition.onresult = function (ev) {
+          var interim = "";
+          for (var i = ev.resultIndex; i < ev.results.length; i++) {
+            var r = ev.results[i];
+            var tx = (r[0] && r[0].transcript) ? String(r[0].transcript) : "";
+            if (r.isFinal) finalText += tx;
+            else interim += tx;
+          }
+          var base = norm(input.value);
+          input.value = (base ? base + " " : "") + norm(finalText + interim);
+        };
+        recognition.onerror = function () { setL(false); hint("Error de micrófono.", true); };
+        recognition.onend = function () { setL(false); finalText = ""; };
+        btn.addEventListener("click", function () {
+          if (state.loading) return;
+          if (listening) {
+            try { recognition.stop(); } catch (e) {}
+            setL(false);
+            return;
+          }
+          finalText = "";
+          try {
+            setL(true);
+            recognition.start();
+          } catch (e) {
+            setL(false);
+          }
+        });
+      }
+
+      state.empresaID = Number(q("empresa_id") || q("id") || 0);
+      if (!state.empresaID) {
+        hint("empresa_id requerido en la URL.", true);
+      } else {
+        append("system", "Indica mesa, habitación o número de estación y los productos. Ej.: «tres aguas para la estación 2».");
+        loadModels().then(function () {
+          hint("Modelo: " + state.modelID, false);
+        }).catch(function (err) {
+          hint(err.message || "No se pudo cargar IA.", true);
+        });
+      }
+      document.getElementById("f").addEventListener("submit", onSubmit);
+      setupMic();
+    })();
+  </script>
+</body>
+</html>

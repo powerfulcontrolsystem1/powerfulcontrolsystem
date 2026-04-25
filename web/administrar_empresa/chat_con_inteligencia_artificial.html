@@ -3,62 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Chat IA Empresarial</title>
+  <title>Chat IA</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
 </head>
-<body class="super-page form-bg-dark ai-gemini-body">
-  <div class="container ai-chat-page ai-gemini-page">
-    <header class="page-header ai-gemini-header">
-      <div>
-        <h1 id="pageTitle">Chat IA Empresarial</h1>
-        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. El chat usa OpenAI según la configuración disponible del panel super.</p>
-      </div>
-    </header>
-
-    <section class="card ai-gemini-context">
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Empresa</span>
-        <strong id="chipEmpresa">Cargando...</strong>
-      </div>
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Cuenta Google</span>
-        <strong id="chipGoogle">Cargando...</strong>
-      </div>
-    </section>
-
-    <section id="authPanel" class="card ai-gemini-auth" hidden>
-      <h2>Inicia sesión con Google</h2>
-      <p class="form-help">Para usar el chat empresarial debes autenticarte con Google. El sistema registra automáticamente tu cuenta administradora en el primer acceso válido.</p>
-      <div class="form-actions">
-        <a id="googleLoginLink" class="btn" href="/auth/google/login">Continuar con Google</a>
-      </div>
-      <div id="authMsg" class="form-help"></div>
-    </section>
-
-    <section class="card ai-chat-shell ai-gemini-shell">
-      <div id="aiDisabledBanner" class="form-help" hidden>La IA está desactivada desde configuración avanzada del panel super. Este chat quedará disponible cuando vuelvan a activarla.</div>
-      <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
-
-      <form id="promptForm" class="ai-chat-form ai-gemini-form">
-        <select id="modelSelect" class="form-input ai-gemini-input" hidden aria-hidden="true" tabindex="-1"></select>
-
-        <label class="form-label" for="promptInput">Pregunta empresarial</label>
-        <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué productos se están vendiendo más y cuáles debo reabastecer primero?"></textarea>
-
-        <div class="ai-chat-actions">
-          <button id="micBtn" class="btn secondary" type="button" title="Hablar (convertir a texto)">🎙️ Dictar</button>
-          <button id="sendBtn" class="btn" type="submit">Preguntar a la IA</button>
-          <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
+<body class="ai-gemini-body ai-gemini-app-body">
+  <div class="ai-gemini-app">
+    <aside class="ai-gemini-sidebar" aria-label="Conversaciones">
+      <button type="button" id="btnNewChat" class="ai-gemini-new-chat">+ Nuevo chat</button>
+      <div class="ai-gemini-sidebar-section-title">En este dispositivo</div>
+      <div id="conversationList" class="ai-gemini-conv-list"></div>
+      <div class="ai-gemini-sidebar-section-title">Historial en servidor</div>
+      <div id="serverHistoryList" class="ai-gemini-conv-list ai-gemini-conv-list--server"></div>
+    </aside>
+    <main class="ai-gemini-main">
+      <header class="ai-gemini-topbar">
+        <div class="ai-gemini-topbar-inner">
+          <span class="ai-gemini-logo-dot" aria-hidden="true"></span>
+          <label class="ai-gemini-visually-hidden" for="modelSelect">Modelo de IA</label>
+          <select id="modelSelect" class="ai-gemini-model-select"></select>
         </div>
-        <div id="chatMsg" class="form-help"></div>
-
-        <div class="ai-gemini-suggestions">
-          <button class="ai-gemini-pill" type="button" data-prompt="Resume ventas, clientes y balance de hoy para mi empresa.">Resumen del día</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Muestra alertas de inventario bajo y productos con mayor rotación.">Alertas de inventario</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Dame 3 recomendaciones para mejorar flujo de caja esta semana.">Mejorar flujo de caja</button>
+        <div class="ai-gemini-topmeta">
+          <span id="modelPill" class="ai-gemini-meta-pill" title="Modelo en uso"></span>
+          <span id="usagePill" class="ai-gemini-meta-pill ai-gemini-meta-pill--soft" hidden></span>
         </div>
-      </form>
-    </section>
+      </header>
+
+      <div id="limitBanner" class="ai-gemini-limit-banner" role="alert" hidden></div>
+
+      <section id="authPanel" class="ai-gemini-auth card" hidden>
+        <h2 class="ai-gemini-auth-title">Inicia sesión con Google</h2>
+        <p class="form-help">Para usar el chat empresarial debes autenticarte con Google.</p>
+        <div class="form-actions">
+          <a id="googleLoginLink" class="btn" href="/auth/google/login">Continuar con Google</a>
+        </div>
+        <div id="authMsg" class="form-help"></div>
+      </section>
+
+      <div class="ai-gemini-chat-area">
+        <div id="aiDisabledBanner" class="ai-gemini-inline-alert" hidden></div>
+        <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
+
+        <form id="promptForm" class="ai-chat-form ai-gemini-form ai-gemini-composer">
+          <label class="ai-gemini-visually-hidden" for="promptInput">Mensaje</label>
+          <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Escribe tu consulta…"></textarea>
+          <div class="ai-chat-actions">
+            <button id="micBtn" class="btn secondary" type="button" title="Dictar">Dictar</button>
+            <button id="sendBtn" class="btn" type="submit">Enviar</button>
+            <button id="clearBtn" class="btn secondary" type="button">Limpiar vista</button>
+          </div>
+          <div id="chatMsg" class="form-help ai-gemini-form-msg"></div>
+        </form>
+      </div>
+    </main>
   </div>
 
   <script>
@@ -67,13 +81,17 @@
       empresaNombre: "",
       models: [],
       modelID: "",
-      modelDisplay: "OpenAI GPT-4o mini",
+      modelDisplay: "",
       googleAccount: "",
       usage: null,
       loading: false,
       authRequired: false,
       aiDisabled: false,
-      messages: []
+      messages: [],
+      conversations: [],
+      activeConvId: null,
+      serverHistoryItems: [],
+      viewingServerReadOnly: false
     };
 
     function getQueryParam(name) {
@@ -92,6 +110,77 @@
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    function genConvId() {
+      return "c-" + Date.now() + "-" + Math.floor(Math.random() * 1e6);
+    }
+
+    function convStorageKey() {
+      return "pcs_gemini_chat_v1_" + String(state.empresaID || 0);
+    }
+
+    function loadConversationsFromStorage() {
+      try {
+        const raw = window.localStorage.getItem(convStorageKey());
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.list) && parsed.list.length) {
+          state.conversations = parsed.list;
+          state.activeConvId = parsed.activeId || parsed.list[0].id;
+        }
+      } catch (e) {}
+    }
+
+    function saveConversationsToStorage() {
+      try {
+        window.localStorage.setItem(convStorageKey(), JSON.stringify({
+          list: state.conversations,
+          activeId: state.activeConvId
+        }));
+      } catch (e) {}
+    }
+
+    function ensureDefaultConversation() {
+      if (!state.conversations.length) {
+        const id = genConvId();
+        state.conversations.push({
+          id: id,
+          title: "Nuevo chat",
+          messages: [],
+          updatedAt: Date.now()
+        });
+        state.activeConvId = id;
+        state.messages = [];
+        saveConversationsToStorage();
+        return;
+      }
+      const exists = state.conversations.some(function (x) { return x.id === state.activeConvId; });
+      if (!state.activeConvId || !exists) {
+        state.activeConvId = state.conversations[0].id;
+      }
+      const c = state.conversations.find(function (x) { return x.id === state.activeConvId; });
+      if (c) {
+        state.messages = (c.messages || []).map(function (m) {
+          return { role: m.role, content: m.content, at: m.at || "" };
+        });
+      }
+    }
+
+    function syncActiveConversationFromState() {
+      const c = state.conversations.find(function (x) { return x.id === state.activeConvId; });
+      if (!c) return;
+      c.messages = state.messages.map(function (m) {
+        return { role: m.role, content: m.content, at: m.at || "" };
+      });
+      c.updatedAt = Date.now();
+      const fu = state.messages.find(function (m) { return normalize(m.role) === "user" && normalize(m.content); });
+      if (fu) {
+        const t = normalize(fu.content);
+        c.title = t.length > 52 ? (t.slice(0, 52) + "…") : t;
+      }
+      saveConversationsToStorage();
+      renderSidebarLocal();
     }
 
     function broadcastPrecioUpdateFromAI(text) {
@@ -117,7 +206,43 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.textContent = text || "";
-      el.style.color = isError ? "#ffd1d1" : "";
+      el.classList.toggle("ai-gemini-form-msg--error", !!isError);
+    }
+
+    function hideLimitBanner() {
+      const el = document.getElementById("limitBanner");
+      if (!el) return;
+      el.hidden = true;
+      el.textContent = "";
+    }
+
+    function showLimitBanner(payload, httpStatus) {
+      const el = document.getElementById("limitBanner");
+      if (!el) return;
+      const code = normalize(payload && payload.code);
+      const err = normalize(payload && payload.error);
+      const lim = payload && payload.daily_limit != null ? String(payload.daily_limit) : "—";
+      const us = payload && payload.daily_used != null ? String(payload.daily_used) : "—";
+      const upUrl = normalize(payload && payload.upgrade_url);
+      let msg = "";
+      if (code === "free_tier_limit_reached" || httpStatus === 429) {
+        msg = "Has alcanzado el límite diario de consultas con IA para esta empresa con el modelo seleccionado. "
+          + "Las consultas se reinician cada día natural. "
+          + "Resumen: usadas hoy " + us + ", límite configurado " + lim + ". "
+          + (err ? ("Detalle: " + err + " ") : "")
+          + (normalize(payload && payload.upgrade_message) || "Si tu organización tiene un plan ampliado, el administrador de la plataforma puede aumentar el tope desde configuración avanzada.")
+          + (upUrl ? (" Más información: " + upUrl) : "");
+      } else if (code === "ai_empresa_chat_blocked") {
+        msg = "El chat con IA para empresas está bloqueado: el límite diario está en 0 o la función fue deshabilitada desde el panel de superadministración. Contacta al administrador de la plataforma para que habiliten consultas o suban el tope diario.";
+      } else if (code === "ai_empresa_chat_disabled") {
+        msg = "El chat con IA para empresas está desactivado en la configuración lógica del servicio. Un administrador de la plataforma debe activarlo de nuevo.";
+      } else if (httpStatus === 503 && err) {
+        msg = err;
+      } else {
+        msg = err || "No se pudo completar la consulta por un límite o restricción del servicio.";
+      }
+      el.textContent = msg;
+      el.hidden = false;
     }
 
     function showAuthPanel(message) {
@@ -173,9 +298,9 @@
       let payload = null;
 
       if (ct.indexOf("application/json") >= 0) {
-        payload = await response.json().catch(function() { return null; });
+        payload = await response.json().catch(function () { return null; });
       } else {
-        const txt = await response.text().catch(function() { return ""; });
+        const txt = await response.text().catch(function () { return ""; });
         payload = txt ? { error: txt } : null;
       }
 
@@ -189,10 +314,24 @@
       return payload || {};
     }
 
-    function renderContext() {
-      const empresaText = state.empresaNombre ? (state.empresaNombre + " (#" + state.empresaID + ")") : ("Empresa #" + state.empresaID);
-      document.getElementById("chipEmpresa").textContent = empresaText;
-      document.getElementById("chipGoogle").textContent = state.googleAccount || "No detectada";
+    function renderTopMeta() {
+      const mp = document.getElementById("modelPill");
+      if (mp) {
+        mp.textContent = "Modelo: " + (state.modelDisplay || state.modelID || "—");
+      }
+      const up = document.getElementById("usagePill");
+      if (up) {
+        if (state.usage && (state.usage.daily_used != null || state.usage.daily_limit != null)) {
+          const u = state.usage.daily_used != null ? state.usage.daily_used : "—";
+          const l = state.usage.daily_limit != null ? state.usage.daily_limit : "—";
+          const r = state.usage.daily_remaining != null ? state.usage.daily_remaining : "—";
+          up.textContent = "Uso hoy: " + u + " / " + l + " · Restantes: " + r;
+          up.hidden = false;
+        } else {
+          up.hidden = true;
+          up.textContent = "";
+        }
+      }
     }
 
     function renderModelOptions() {
@@ -204,32 +343,86 @@
         select.disabled = true;
         return;
       }
-      select.innerHTML = items.map(function(item) {
+      select.innerHTML = items.map(function (item) {
         const id = normalize(item.id);
         const name = normalize(item.display_name) || id;
         const description = normalize(item.description);
-        const selected = id === state.modelID ? ' selected' : '';
-        const suffix = description ? (' — ' + description) : '';
-        return '<option value="' + escapeHtml(id) + '"' + selected + '>' + escapeHtml(name + suffix) + '</option>';
+        const selected = id === state.modelID ? " selected" : "";
+        const suffix = description ? (" — " + description) : "";
+        return "<option value=\"" + escapeHtml(id) + "\"" + selected + ">" + escapeHtml(name + suffix) + "</option>";
       }).join("");
       select.disabled = false;
+    }
+
+    function renderSidebarLocal() {
+      const box = document.getElementById("conversationList");
+      if (!box) return;
+      const sorted = state.conversations.slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+      if (!sorted.length) {
+        box.innerHTML = '<div class="ai-gemini-conv-empty">Sin chats guardados</div>';
+        return;
+      }
+      box.innerHTML = sorted.map(function (c) {
+        const active = c.id === state.activeConvId ? " is-active" : "";
+        const title = escapeHtml(normalize(c.title) || "Chat");
+        return "<button type=\"button\" class=\"ai-gemini-conv-item" + active + "\" data-conv-id=\"" + escapeHtml(c.id) + "\">" + title + "</button>";
+      }).join("");
+    }
+
+    function renderServerHistorySidebar() {
+      const box = document.getElementById("serverHistoryList");
+      if (!box) return;
+      const items = state.serverHistoryItems || [];
+      if (!items.length) {
+        box.innerHTML = '<div class="ai-gemini-conv-empty">Sin registros</div>';
+        return;
+      }
+      box.innerHTML = items.map(function (item, idx) {
+        const pregunta = normalize(item.pregunta);
+        const title = pregunta.length > 56 ? (pregunta.slice(0, 56) + "…") : pregunta;
+        const fecha = normalize(item.fecha_consulta);
+        return "<button type=\"button\" class=\"ai-gemini-conv-item ai-gemini-conv-item--server\" data-srv-idx=\"" + idx + "\">" +
+          "<span class=\"ai-gemini-conv-item-title\">" + escapeHtml(title || "Consulta") + "</span>" +
+          "<span class=\"ai-gemini-conv-item-meta\">" + escapeHtml(fecha) + "</span></button>";
+      }).join("");
+    }
+
+    async function shareAssistantText(text) {
+      const t = normalize(text);
+      if (!t) return;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Respuesta IA", text: t });
+          setMsg("chatMsg", "Compartido.", false);
+          return;
+        }
+      } catch (e) {}
+      try {
+        await navigator.clipboard.writeText(t);
+        setMsg("chatMsg", "Respuesta copiada al portapapeles.", false);
+      } catch (e2) {
+        setMsg("chatMsg", "No se pudo compartir ni copiar el texto.", true);
+      }
     }
 
     function renderMessages() {
       const list = document.getElementById("messagesList");
       if (!state.messages.length) {
-        list.innerHTML = '<div class="ai-chat-empty">Inicia una consulta. La IA responderá con contexto estricto de la empresa seleccionada.</div>';
+        list.innerHTML = '<div class="ai-chat-empty ai-gemini-welcome">Escribe abajo para comenzar. Puedes abrir consultas anteriores desde la izquierda o guardar varias conversaciones en este dispositivo.</div>';
         return;
       }
 
-      list.innerHTML = state.messages.map(function(item) {
+      list.innerHTML = state.messages.map(function (item, idx) {
         const role = normalize(item.role).toLowerCase();
         const cls = role === "assistant" ? "assistant" : (role === "user" ? "user" : "system");
-        const label = role === "assistant" ? "Asistente IA" : (role === "user" ? "Tú" : "Sistema");
-        return '<article class="ai-chat-bubble ' + cls + '">' +
-          '<header><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(normalize(item.at)) + '</span></header>' +
-          '<div class="ai-chat-content">' + escapeHtml(normalize(item.content)) + '</div>' +
-          '</article>';
+        const label = role === "assistant" ? "IA" : (role === "user" ? "Tú" : "Aviso");
+        const shareBtn = role === "assistant"
+          ? "<button type=\"button\" class=\"btn secondary ai-gemini-share-btn\" data-share-index=\"" + idx + "\">Compartir</button>"
+          : "";
+        return "<article class=\"ai-chat-bubble " + cls + "\">" +
+          "<header><strong>" + escapeHtml(label) + "</strong><span>" + escapeHtml(normalize(item.at)) + "</span>" + shareBtn + "</header>" +
+          "<div class=\"ai-chat-content\">" + escapeHtml(normalize(item.content)) + "</div>" +
+          "</article>";
       }).join("");
 
       list.scrollTop = list.scrollHeight;
@@ -242,20 +435,19 @@
         at: new Date().toLocaleString("es-CO")
       });
       renderMessages();
+      if (!state.viewingServerReadOnly) {
+        syncActiveConversationFromState();
+      }
     }
-
-    function clearUpgradeOption() {}
-
-    function showUpgradeOption() {}
 
     function buildHistoryPayload() {
       return state.messages
-        .filter(function(item) {
+        .filter(function (item) {
           const role = normalize(item.role).toLowerCase();
           return role === "user" || role === "assistant";
         })
         .slice(-8)
-        .map(function(item) {
+        .map(function (item) {
           return {
             rol: normalize(item.role).toLowerCase(),
             contenido: normalize(item.content)
@@ -274,24 +466,23 @@
       } catch (err) {
         state.empresaNombre = "";
       }
-
-      if (state.empresaNombre) {
-  		document.getElementById("pageTitle").textContent = "Chat IA Empresarial - " + state.empresaNombre;
-      } else {
-  		document.getElementById("pageTitle").textContent = "Chat IA Empresarial - Empresa #" + state.empresaID;
-      }
-      renderContext();
+      try {
+        document.title = state.empresaNombre
+          ? ("Chat IA — " + state.empresaNombre)
+          : ("Chat IA — Empresa " + state.empresaID);
+      } catch (e) {}
     }
 
-     async function loadChatModel() {
+    async function loadChatModel() {
       const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
       clearAIDisabledState();
+      hideLimitBanner();
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
       if (!modelos.length) {
         throw new Error("No hay modelos IA disponibles para esta empresa.");
       }
 
-      state.models = modelos.map(function(item) {
+      state.models = modelos.map(function (item) {
         return {
           id: normalize(item.id),
           display_name: normalize(item.display_name),
@@ -301,7 +492,7 @@
       state.googleAccount = normalize(data.google_account || state.googleAccount);
 
       const modeloPreferido = normalize(data.modelo_preferido);
-      const selectedModel = state.models.find(function(item) {
+      const selectedModel = state.models.find(function (item) {
         return item.id === modeloPreferido;
       }) || state.models[0];
 
@@ -309,7 +500,7 @@
       state.modelDisplay = normalize(selectedModel && selectedModel.display_name) || "Modelo IA";
 
       renderModelOptions();
-      renderContext();
+      renderTopMeta();
 
       if (modeloPreferido !== state.modelID) {
         await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
@@ -337,39 +528,64 @@
         })
       });
       state.modelID = newModelID;
-      const selectedModel = (state.models || []).find(function(item) { return item.id === newModelID; });
+      const selectedModel = (state.models || []).find(function (item) { return item.id === newModelID; });
       state.modelDisplay = normalize(selectedModel && selectedModel.display_name) || newModelID;
       renderModelOptions();
-      renderContext();
-      setMsg("chatMsg", "Modelo IA actualizado para esta empresa.", false);
+      renderTopMeta();
+      setMsg("chatMsg", "Modelo actualizado.", false);
+    }
+
+    function openConversation(convId) {
+      syncActiveConversationFromState();
+      const c = state.conversations.find(function (x) { return x.id === convId; });
+      if (!c) return;
+      state.activeConvId = convId;
+      state.messages = (c.messages || []).map(function (m) {
+        return { role: m.role, content: m.content, at: m.at || "" };
+      });
+      state.viewingServerReadOnly = false;
+      hideLimitBanner();
+      saveConversationsToStorage();
+      renderSidebarLocal();
+      renderMessages();
+      document.getElementById("promptInput").disabled = !!state.authRequired || !!state.aiDisabled;
+      document.getElementById("sendBtn").disabled = !!state.authRequired || !!state.aiDisabled;
+    }
+
+    function newChat() {
+      syncActiveConversationFromState();
+      const id = genConvId();
+      state.conversations.unshift({ id: id, title: "Nuevo chat", messages: [], updatedAt: Date.now() });
+      state.activeConvId = id;
+      state.messages = [];
+      state.viewingServerReadOnly = false;
+      hideLimitBanner();
+      saveConversationsToStorage();
+      renderSidebarLocal();
+      renderMessages();
+      setMsg("chatMsg", "", false);
+    }
+
+    function openServerHistoryItem(idx) {
+      const item = state.serverHistoryItems[idx];
+      if (!item) return;
+      state.viewingServerReadOnly = true;
+      state.messages = [
+        { role: "user", content: normalize(item.pregunta), at: normalize(item.fecha_consulta) },
+        { role: "assistant", content: normalize(item.respuesta), at: normalize(item.fecha_consulta) }
+      ];
+      renderMessages();
+      setMsg("chatMsg", "Vista de historial (solo lectura). Usa «Nuevo chat» para continuar conversando.", false);
+      document.getElementById("promptInput").disabled = true;
+      document.getElementById("sendBtn").disabled = true;
     }
 
     async function loadHistorial() {
-      const box = document.getElementById("historyList");
-      if (!box) return;
       try {
-        const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=20");
+        const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=30");
         clearAIDisabledState();
-        const items = Array.isArray(data.items) ? data.items : [];
-
-        if (!items.length) {
-          box.innerHTML = '<div class="ai-chat-empty">No hay historial registrado.</div>';
-          setMsg("historyMsg", "Historial actualizado: 0 registros.", false);
-          return;
-        }
-
-        box.innerHTML = items.map(function(item) {
-          const pregunta = normalize(item.pregunta);
-          const respuesta = normalize(item.respuesta);
-          const fecha = normalize(item.fecha_consulta);
-          return '<article class="ai-history-item">' +
-            '<header><strong>IA</strong><span>' + escapeHtml(fecha) + '</span></header>' +
-            '<div><b>Q:</b> ' + escapeHtml(pregunta.length > 200 ? (pregunta.slice(0, 200) + "...") : pregunta) + '</div>' +
-            '<div><b>A:</b> ' + escapeHtml(respuesta.length > 260 ? (respuesta.slice(0, 260) + "...") : respuesta) + '</div>' +
-            '</article>';
-        }).join("");
-
-        setMsg("historyMsg", "Historial actualizado: " + items.length + " registros.", false);
+        state.serverHistoryItems = Array.isArray(data.items) ? data.items : [];
+        renderServerHistorySidebar();
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
         if (err && err.status === 401) {
@@ -378,30 +594,36 @@
         }
         if (normalize(payload.code) === "ai_disabled") {
           setAIDisabledState(payload.error);
-          setMsg("historyMsg", normalize(payload.error || "La IA está desactivada."), true);
-          document.getElementById("historyList").innerHTML = '<div class="ai-chat-empty">Historial no disponible mientras la IA esté desactivada.</div>';
+          state.serverHistoryItems = [];
+          renderServerHistorySidebar();
           return;
         }
-        setMsg("historyMsg", err.message || "No se pudo cargar historial.", true);
+        state.serverHistoryItems = [];
+        renderServerHistorySidebar();
       }
     }
 
     async function onSendPrompt(ev) {
       ev.preventDefault();
       if (state.loading || state.authRequired || state.aiDisabled) return;
+      if (state.viewingServerReadOnly) {
+        setMsg("chatMsg", "Estás viendo el historial en solo lectura. Pulsa «Nuevo chat» para escribir de nuevo.", true);
+        return;
+      }
 
       const pregunta = normalize(document.getElementById("promptInput").value);
       if (!pregunta) {
-        setMsg("chatMsg", "Debes escribir una pregunta.", true);
+        setMsg("chatMsg", "Escribe un mensaje.", true);
         return;
       }
       if (!state.modelID) {
-		setMsg("chatMsg", "No hay modelo IA disponible.", true);
+        setMsg("chatMsg", "No hay modelo IA disponible.", true);
         return;
       }
 
       state.loading = true;
-	  setMsg("chatMsg", "Consultando al asistente IA con contexto de empresa...", false);
+      hideLimitBanner();
+      setMsg("chatMsg", "Generando respuesta…", false);
       appendMessage("user", pregunta);
       document.getElementById("promptInput").value = "";
 
@@ -423,22 +645,28 @@
         broadcastPrecioUpdateFromAI(respuesta);
         state.googleAccount = normalize(data.google_account || state.googleAccount);
         state.usage = data.usage || null;
-        renderContext();
+        renderTopMeta();
         hideAuthPanel();
-        setMsg("chatMsg", "Respuesta generada correctamente.", false);
+        setMsg("chatMsg", "", false);
+        loadHistorial();
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
+        const st = err && err.status;
         if (err && err.status === 401) {
-          appendMessage("system", "Sesión expirada o no autenticada. Debes iniciar sesión con Google.");
-          showAuthPanel("Inicia sesión con Google. Si es tu primer ingreso, tu cuenta administradora se registra automáticamente.");
+          appendMessage("system", "Sesión expirada o no autenticada.");
+          showAuthPanel("Inicia sesión con Google.");
         } else if (normalize(payload.code) === "ai_disabled") {
-          appendMessage("system", normalize(payload.error || "La IA está desactivada desde configuración avanzada."));
+          appendMessage("system", normalize(payload.error || "La IA está desactivada."));
           setAIDisabledState(payload.error);
-        } else if (normalize(payload.code) === "free_tier_limit_reached") {
-          appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
-          setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzó el límite del plan gratuito."), true);
+        } else if (normalize(payload.code) === "free_tier_limit_reached" || st === 429 || normalize(payload.code) === "ai_empresa_chat_blocked") {
+          appendMessage("system", normalize(payload.error || "Límite de uso alcanzado."));
+          showLimitBanner(payload, st);
+          setMsg("chatMsg", "Consulta no enviada por límite o restricción.", true);
+        } else if (st === 503 && payload) {
+          showLimitBanner(payload, st);
+          setMsg("chatMsg", normalize(payload.error) || "Servicio no disponible.", true);
         } else {
-		  appendMessage("system", "Error al consultar la IA: " + normalize(err.message));
+          appendMessage("system", "Error: " + normalize(err.message));
           setMsg("chatMsg", err.message || "No se pudo procesar la consulta.", true);
         }
       } finally {
@@ -446,40 +674,66 @@
       }
     }
 
-    function onSuggestionClick(ev) {
-      const btn = ev.currentTarget;
-      const text = normalize(btn.getAttribute("data-prompt"));
-      if (!text) return;
-      const input = document.getElementById("promptInput");
-      input.value = text;
-      input.focus();
-    }
-
     function bindEvents() {
-      document.getElementById("clearBtn").addEventListener("click", function() {
+      document.getElementById("clearBtn").addEventListener("click", function () {
         state.messages = [];
+        const c = state.conversations.find(function (x) { return x.id === state.activeConvId; });
+        if (c) {
+          c.messages = [];
+          c.title = "Nuevo chat";
+          c.updatedAt = Date.now();
+          saveConversationsToStorage();
+          renderSidebarLocal();
+        }
         renderMessages();
-        setMsg("chatMsg", "Conversación local limpiada.", false);
+        setMsg("chatMsg", "Vista del chat actual limpiada.", false);
       });
 
       document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+      document.getElementById("btnNewChat").addEventListener("click", function () {
+        newChat();
+        document.getElementById("promptInput").disabled = !!state.authRequired || !!state.aiDisabled;
+        document.getElementById("sendBtn").disabled = !!state.authRequired || !!state.aiDisabled;
+      });
+
+      document.getElementById("conversationList").addEventListener("click", function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest("[data-conv-id]") : null;
+        if (!btn) return;
+        openConversation(btn.getAttribute("data-conv-id"));
+      });
+
+      document.getElementById("serverHistoryList").addEventListener("click", function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest("[data-srv-idx]") : null;
+        if (!btn) return;
+        const idx = parseInt(btn.getAttribute("data-srv-idx"), 10);
+        if (Number.isNaN(idx)) return;
+        openServerHistoryItem(idx);
+      });
+
+      document.getElementById("messagesList").addEventListener("click", function (ev) {
+        const b = ev.target && ev.target.closest ? ev.target.closest(".ai-gemini-share-btn") : null;
+        if (!b) return;
+        const i = parseInt(b.getAttribute("data-share-index"), 10);
+        const m = state.messages[i];
+        if (m && normalize(m.role) === "assistant") {
+          shareAssistantText(m.content);
+        }
+      });
+
       setupSpeechToText();
-      document.getElementById("modelSelect").addEventListener("change", function(ev) {
-        onModelChange(ev).catch(function(err) {
+      document.getElementById("modelSelect").addEventListener("change", function (ev) {
+        onModelChange(ev).catch(function (err) {
           const payload = err && err.payload ? err.payload : {};
           if (normalize(payload.code) === "ai_disabled") {
             setAIDisabledState(payload.error);
             return;
           }
-          setMsg("chatMsg", err.message || "No se pudo cambiar el modelo IA.", true);
+          setMsg("chatMsg", err.message || "No se pudo cambiar el modelo.", true);
         });
-      });
-      document.querySelectorAll(".ai-gemini-pill").forEach(function(btn) {
-        btn.addEventListener("click", onSuggestionClick);
       });
     }
 
-    function setupSpeechToText(){
+    function setupSpeechToText() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const btn = document.getElementById("micBtn");
       const input = document.getElementById("promptInput");
@@ -487,7 +741,7 @@
 
       if (!SpeechRecognition) {
         btn.disabled = true;
-        btn.title = "Tu navegador no soporta dictado (SpeechRecognition).";
+        btn.title = "Tu navegador no soporta dictado.";
         return;
       }
 
@@ -499,14 +753,14 @@
       let listening = false;
       let finalText = "";
 
-      function setListening(on){
+      function setListening(on) {
         listening = !!on;
-        btn.textContent = listening ? "⏹️ Detener" : "🎙️ Dictar";
+        btn.textContent = listening ? "Detener" : "Dictar";
         btn.classList.toggle("danger", listening);
         btn.classList.toggle("secondary", !listening);
       }
 
-      recognition.onresult = function(ev){
+      recognition.onresult = function (ev) {
         let interim = "";
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const r = ev.results[i];
@@ -519,17 +773,17 @@
         input.value = combined.trim();
       };
 
-      recognition.onerror = function(ev){
+      recognition.onerror = function (ev) {
         setListening(false);
         setMsg("chatMsg", "Dictado: " + (ev && ev.error ? ev.error : "error"), true);
       };
 
-      recognition.onend = function(){
+      recognition.onend = function () {
         setListening(false);
         finalText = "";
       };
 
-      btn.addEventListener("click", function(){
+      btn.addEventListener("click", function () {
         if (state.loading || state.authRequired || state.aiDisabled) return;
         if (listening) {
           try { recognition.stop(); } catch (e) {}
@@ -538,7 +792,7 @@
         }
         finalText = "";
         try {
-          setMsg("chatMsg", "Dictado activo: habla ahora.", false);
+          setMsg("chatMsg", "Dictado activo…", false);
           setListening(true);
           recognition.start();
         } catch (e) {
@@ -552,35 +806,38 @@
       state.empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
       if (!state.empresaID) {
         setMsg("chatMsg", "empresa_id es obligatorio en la URL.", true);
-        showAuthPanel("No se detectó empresa_id. Regresa al selector de empresas y vuelve a abrir el chat.");
+        showAuthPanel("No se detectó empresa_id. Vuelve al selector de empresas.");
         return;
       }
 
+      loadConversationsFromStorage();
+      ensureDefaultConversation();
+
       bindEvents();
-	  appendMessage("system", "Hola. Soy tu asistente IA empresarial. Responderé usando solo el contexto de la empresa seleccionada.");
+      renderSidebarLocal();
+      renderMessages();
 
       await loadEmpresaNameBestEffort();
       try {
-		await loadChatModel();
+        await loadChatModel();
         hideAuthPanel();
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
         if (err && err.status === 401) {
-          showAuthPanel("Para usar el chat empresarial debes iniciar sesión con Google.");
+          showAuthPanel("Para usar el chat debes iniciar sesión con Google.");
         } else if (normalize(payload.code) === "ai_disabled") {
           setAIDisabledState(payload.error);
         } else {
-		  setMsg("chatMsg", err.message || "No se pudo cargar el modelo IA.", true);
+          setMsg("chatMsg", err.message || "No se pudo cargar el modelo IA.", true);
         }
       }
 
       await loadHistorial();
-      renderContext();
-      renderMessages();
+      renderTopMeta();
     }
 
-    init().catch(function(err) {
-      setMsg("chatMsg", err.message || "No se pudo iniciar el módulo de chat IA.", true);
+    init().catch(function (err) {
+      setMsg("chatMsg", err.message || "No se pudo iniciar el chat.", true);
     });
   </script>
 </body>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mis clientes</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;padding:18px;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
+    .mc-shell{max-width:1120px;margin:0 auto;display:grid;gap:16px}
+    .mc-card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 16px 36px rgba(0,0,0,.12);padding:18px}
+    .mc-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+    .mc-code{font-family:Consolas,monospace;font-weight:900;color:var(--accent-yellow)}
+    .mc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .mc-kpi{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px}
+    .mc-kpi span{display:block;color:var(--muted);font-size:.78rem}.mc-kpi strong{display:block;margin-top:4px;font-size:1.08rem}
+    .mc-table-wrap{overflow:auto}.mc-table{width:100%;border-collapse:collapse}.mc-table th,.mc-table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.mc-table th{color:var(--muted);font-size:.78rem;text-transform:uppercase}
+    .mc-paid{color:var(--success);font-weight:800}.mc-pending{color:var(--accent-yellow);font-weight:800}
+    @media(max-width:760px){body{padding:10px}.mc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <main class="mc-shell">
+    <section class="mc-card mc-hero">
+      <div>
+        <h1>Mis clientes</h1>
+        <p class="muted">Empresas asociadas a tu código de asesor comercial por pagos de licencia dentro del plazo vigente.</p>
+        <div id="advisorInfo" class="form-help"></div>
+      </div>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </section>
+
+    <section class="mc-kpis">
+      <article class="mc-kpi"><span>Empresas vigentes</span><strong id="kpiCompanies">0</strong></article>
+      <article class="mc-kpi"><span>Valor pagado</span><strong id="kpiPaidValue">$0</strong></article>
+      <article class="mc-kpi"><span>Comisiones generadas</span><strong id="kpiCommission">$0</strong></article>
+      <article class="mc-kpi"><span>Comisiones pagadas</span><strong id="kpiCommissionPaid">$0</strong></article>
+    </section>
+
+    <section class="mc-card">
+      <h2>Ventas y renovaciones vigentes</h2>
+      <div id="listBox" class="mc-table-wrap">Cargando...</div>
+    </section>
+  </main>
+
+  <script>
+    const fmtMoney = new Intl.NumberFormat("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 });
+    function esc(v){return String(v == null ? "" : v).replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s]));}
+    async function api(url){
+      const res = await fetch(url, { credentials:"same-origin" });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch(e) {}
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || text || "Solicitud fallida");
+      return data;
+    }
+    function render(data){
+      const info = document.getElementById("advisorInfo");
+      const box = document.getElementById("listBox");
+      const items = (data && data.items) || [];
+      if (!data || !data.is_asesor) {
+        info.innerHTML = '<span class="text-empty">Tu cuenta aún no tiene activo el módulo de asesor comercial.</span>';
+        box.innerHTML = '<p class="text-empty">Cuando aceptes la invitación de asesor comercial, tus clientes aparecerán aquí.</p>';
+        return;
+      }
+      const asesor = data.asesor || {};
+      info.innerHTML = 'Código de asesor: <span class="mc-code">' + esc(asesor.codigo) + '</span> · Comisión: <strong>' + Number(asesor.porcentaje_comision || 0).toFixed(2) + '%</strong> · Plazo: <strong>' + esc(asesor.meses_asociacion || 0) + ' mes(es)</strong>';
+      const companies = new Set(items.map(x => String(x.empresa_id || ""))).size;
+      const paidValue = items.reduce((s,x) => s + Number(x.valor_pagado || 0), 0);
+      const commission = items.reduce((s,x) => s + Number(x.monto_comision || 0), 0);
+      const commissionPaid = items.filter(x => Number(x.pagado || 0) === 1).reduce((s,x) => s + Number(x.monto_comision || 0), 0);
+      kpiCompanies.textContent = companies;
+      kpiPaidValue.textContent = fmtMoney.format(paidValue);
+      kpiCommission.textContent = fmtMoney.format(commission);
+      kpiCommissionPaid.textContent = fmtMoney.format(commissionPaid);
+      if (!items.length) {
+        box.innerHTML = '<p class="text-empty">Aún no hay empresas asociadas vigentes.</p>';
+        return;
+      }
+      box.innerHTML = `<table class="mc-table"><thead><tr><th>Empresa</th><th>Valor pagado</th><th>Fecha</th><th>Comisión</th><th>Vigencia asesor</th><th>Pago comisión</th></tr></thead><tbody>${items.map(c => `
+        <tr>
+          <td><strong>${esc(c.empresa_nombre || ("Empresa #" + c.empresa_id))}</strong><br><span class="muted">Licencia #${esc(c.licencia_id || "")}</span></td>
+          <td>${fmtMoney.format(Number(c.valor_pagado || 0))}</td>
+          <td>${esc((c.fecha_pago || c.fecha_creacion || "").slice(0,10))}</td>
+          <td>${Number(c.porcentaje_comision || 0).toFixed(2)}%<br><strong>${fmtMoney.format(Number(c.monto_comision || 0))}</strong></td>
+          <td>${esc(c.asociado_desde || "-")} a ${esc(c.asociado_hasta || "-")}</td>
+          <td>${Number(c.pagado || 0) === 1 ? '<span class="mc-paid">Pagada</span><br><span class="muted">' + esc(c.fecha_pago_comision || "") + '</span>' : '<span class="mc-pending">Pendiente</span>'}</td>
+        </tr>`).join("")}</tbody></table>`;
+    }
+    async function load(){
+      try { render(await api("/api/asesor_comercial/mis_clientes")); }
+      catch(err){ listBox.innerHTML = '<p class="alert error">' + esc(err.message) + '</p>'; }
+    }
+    reloadBtn.addEventListener("click", load);
+    load();
+  </script>
+</body>
+</html>

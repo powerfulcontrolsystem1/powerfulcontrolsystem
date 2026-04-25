@@ -1,3 +1,8 @@
+2026-04-24: Nota operativa para `asesor comercial`, `licencias`, `pagos`, `super` y `seleccionar_empresa`
+- `super_administrador` administra `web/super/asesor_comercial.html`: invita administradores registrados, configura porcentaje/plazo, desactiva asesores y marca comisiones pagadas mediante `/super/api/asesor_comercial`.
+- `administrador` invitado solo obtiene la vista `Mis clientes` tras aceptar la invitacion por correo; no recibe permisos super ni acceso a empresas ajenas. La vista consume `/api/asesor_comercial/mis_clientes` y filtra por el email de la sesion.
+- El checkout publico de licencias acepta `asesor_id` como codigo de asesor comercial. La asociacion comercial no cambia permisos de empresa: solo registra comisiones sobre pagos aprobados y renovaciones dentro del plazo configurado.
+
 2026-04-20.3: Nota operativa para `soporte remoto` y `super` sobre activacion por defecto de RustDesk
 - `super_administrador` sigue siendo el unico rol que configura y opera RustDesk desde la vista super; el cambio solo fija que la primera lectura de configuracion llegue activa por defecto con portal publico habilitado y modo local preseleccionado.
 - No se crean permisos nuevos ni se amplian privilegios de `administrador`; se corrige un default funcional de la vista para que coincida con la operacion simplificada del modulo.
@@ -15,6 +20,9 @@
 2026-04-20: Nota operativa para `backups empresariales`, `administrar_empresa` y `configuracion`
 - La exportacion/importacion de configuracion por empresa reutiliza el modulo `backups empresariales` y no abre permisos nuevos: sigue limitada al acceso ya existente al enlace `Backups empresariales` del panel de empresa.
 - El flujo importa solo tablas de configuracion asociadas al `empresa_id` destino y no restaura datos transaccionales, usuarios ni historiales operativos; por eso el alcance funcional se mantiene en configuracion/aprobacion y no altera wrappers de venta, inventario o finanzas.
+
+2026-04-24: Nota operativa para `estaciones`, `ventas` y chat IA sobre pedidos por voz/texto
+- La tarjeta **Pedidos con IA** embebida en `estaciones.html` llama a `POST /api/empresa/ia_pedidos_estacion/ejecutar`, registrada con el mismo wrapper de permisos de ventas que los carritos (`WithEmpresaVentasPermissions`). Quien pueda operar carritos/estaciones y tenga IA habilitada puede usar el asistente; no se agrega clave nueva de menu ni rol distinto.
 
 2026-04-20: Nota operativa para `estaciones`, `carritos` y `administrar_empresa` sobre estaciones especiales reordenables
 - `Caja`, `YouTube` y `Notas` siguen siendo recursos visibles del modulo de estaciones y no crean permisos nuevos ni cambian wrappers backend; la autorizacion sigue determinada por el acceso existente a la vista empresarial de estaciones.
@@ -67,6 +75,10 @@
 2026-04-20: Nota operativa para `red_social_comercial`, `administrar_empresa` y portal publico
 - La correccion PostgreSQL del modulo de publicaciones comerciales no agrega permisos nuevos ni modifica wrappers: la escritura sigue exigiendo el contexto autenticado de empresa y la lectura publica conserva el alcance ya previsto para vitrinas comerciales.
 - El cambio solo estabiliza persistencia y lectura por `empresa_id` en PostgreSQL para que las publicaciones creadas por la empresa aparezcan tanto en su panel como en el feed publico sin error `500`.
+
+2026-04-24: Nota operativa para `red_social_empresarial` y `venta_publica`
+- La red social empresarial conserva escritura bajo `/api/empresa/publicaciones` con `WithEmpresaVentasPermissions`; la lectura pública `/api/public/publicaciones` no expone datos sensibles y ahora muestra nombre de empresa para el feed.
+- Venta pública se administra desde el módulo principal `Venta pública`; `/api/empresa/venta_publica?action=paginas|config|catalogo` mantiene el wrapper de ventas, mientras `/api/public/venta_publica` permanece público solo para catálogo, creación/estado de pago y datos sanitizados.
 
 2026-04-20: Nota operativa para apariencia global, autenticacion y acceso publico a Juegos
 - La reparacion de `menu.js`, `login.js`, `login_usuario.js` y los endpoints de login solo sincroniza una preferencia visual por usuario (`apariencia`) y no agrega permisos nuevos ni altera wrappers de acceso.
@@ -127,9 +139,15 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/administrar_empresa/estaciones.html` abre siempre `carrito_de_compras.html`; `ventas_simple.html` queda solo como compatibilidad de redireccion para URLs legacy.
 	- Impacto de matriz: sin cambios de roles ni wrappers; el ajuste es de operacion y UX dentro del mismo alcance autenticado del modulo critico `carritos`.
 
-- Actualizacion 2026-04-18 (chat con IA: simplificacion visual):
-	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` retiran acciones visuales de recarga/historial, selector visible de modelo y paneles de historial/uso diario.
-	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; la simplificacion afecta solo presentacion del modulo IA para empresa y super.
+- Actualizacion 2026-04-18 (chat con IA: simplificacion visual) — **obsoleta** (ver 2026-04-24 layout Gemini): en su momento se oculto selector e historial; la revision posterior los restituye en sidebar y topbar sin tocar permisos.
+
+- Actualizacion 2026-04-24 (chat IA: tema y sugerencias):
+	- Las pantallas de chat IA sincronizan tema con el panel (`pcs_theme` / `localStorage`) y dejan de mostrar sugerencias tipo pill; los estilos compartidos en `web/estilos.css` mejoran legibilidad en modo claro tambien dentro de `chat_y_tareas`.
+	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; solo UX y apariencia.
+
+- Actualizacion 2026-04-24 (chat IA: layout tipo Gemini y mensajes de limite):
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` muestran sidebar (conversaciones locales + historial API), selector y resumen de modelo/uso, compartir respuesta y banner explicativo ante 429 o bloqueo; sin cambiar wrappers ni rutas.
+	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; solo UX, persistencia local opcional y mensajes al usuario.
 
 - Actualizacion 2026-04-19 (chat IA Gemini-only):
 	- `super_administrador` mantiene la facultad exclusiva de activar o desactivar el servicio IA y el proveedor `google` desde `Configuración avanzada`.
@@ -335,8 +353,8 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (submenu configuracion: permisos reales y guardado real de integraciones):
 	- `web/administrar_empresa/configuracion_permisos.html` deja de fingir alta/guardado de roles y pasa a consumir `GET /api/empresa/permisos_contexto?empresa_id=...&include_matrix=1`, mostrando solo informacion permitida por el wrapper de seguridad existente.
-	- `web/administrar_empresa/configuracion_integraciones.html` deja de usar placeholders y guarda Wompi/Epayco con `POST /api/empresa/venta_publica?empresa_id=...&action=config`, dentro del mismo alcance ya autorizado del modulo de venta publica por empresa.
-	- Impacto de matriz: sin cambios en roles ni wrappers; `Permisos` queda como consulta de solo lectura y `Integraciones` reaprovecha el permiso autenticado ya existente sobre `venta_publica`.
+	- `web/administrar_empresa/configuracion_integraciones.html` queda informativa; Wompi/Epayco y la publicacion comercial por paginas se administran desde `web/administrar_empresa/venta_publica.html`, dentro del mismo alcance autorizado del modulo de venta publica por empresa.
+	- Impacto de matriz: sin cambios en roles ni wrappers; `Permisos` queda como consulta de solo lectura y `Venta publica` reaprovecha el permiso autenticado ya existente sobre `venta_publica`.
 
 - Actualizacion 2026-04-18 (submenu configuracion: persistencia real del bloque general):
 	- `web/administrar_empresa/configuracion.html` reemplaza el guardado local del bloque `Productos y pedidos` por `GET/PUT /api/empresa/configuracion_general?empresa_id=...`.
@@ -1052,6 +1070,8 @@ Regla de lectura comun (R):
 | `/api/empresa/chat_tareas/mensajes/adjunto` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | multipart con `empresa_id` obligatorio |
 | `/api/empresa/chat_tareas/tareas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | colaboracion operativa bajo modulo ventas |
 | `/api/empresa/chat_tareas/citas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | agenda de citas compartida por empresa con recordatorios y estado operativo |
+| `/api/empresa/publicaciones` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | posts de red social empresarial por `empresa_id`; lectura pública separada en `/api/public/publicaciones` |
+| `/api/empresa/venta_publica` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | configura tienda/pasarelas propias, páginas públicas (`action=paginas`), productos publicados y órdenes por empresa |
 | `/api/empresa/bodegas` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/categorias_productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |

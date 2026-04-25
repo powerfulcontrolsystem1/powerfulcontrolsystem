@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Asesor comercial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;padding:18px;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
+    .ac-shell{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+    .ac-hero,.ac-card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 16px 36px rgba(0,0,0,.12);padding:18px}
+    .ac-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+    .ac-grid{display:grid;grid-template-columns:minmax(320px,.72fr) minmax(0,1fr);gap:16px;align-items:start}
+    .ac-form{display:grid;gap:10px}
+    .ac-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .ac-list{display:grid;gap:10px}
+    .ac-item{border:1px solid var(--border);border-radius:16px;background:var(--surface-soft);padding:12px;display:grid;gap:8px}
+    .ac-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .ac-code{font-family:Consolas,monospace;font-weight:900;color:var(--accent-yellow)}
+    .ac-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .ac-metric{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:10px}
+    .ac-metric span{display:block;color:var(--muted);font-size:.78rem}
+    .ac-metric strong{display:block;margin-top:4px}
+    .ac-table-wrap{overflow:auto}
+    .ac-table{width:100%;border-collapse:collapse;font-size:.88rem}
+    .ac-table th,.ac-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .ac-table th{color:var(--muted);font-size:.78rem;text-transform:uppercase}
+    .ac-paid{color:var(--success);font-weight:800}.ac-pending{color:var(--accent-yellow);font-weight:800}
+    @media(max-width:900px){body{padding:10px}.ac-grid,.ac-row{grid-template-columns:1fr}.ac-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <main class="ac-shell">
+    <section class="ac-hero">
+      <div>
+        <h1>Asesor comercial</h1>
+        <p class="muted">Invita administradores registrados para que acepten operar como asesores comerciales. Cada asesor recibe un código único que se usa en el pago de licencias y conserva comisiones durante el plazo configurado.</p>
+      </div>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </section>
+
+    <section class="ac-grid">
+      <article class="ac-card">
+        <h2>Agregar asesor</h2>
+        <form id="advisorForm" class="ac-form">
+          <label class="form-label" for="email">Correo del administrador</label>
+          <input id="email" class="form-input" type="email" required placeholder="administrador@empresa.com">
+          <div class="ac-row">
+            <div>
+              <label class="form-label" for="pct">Comisión (%)</label>
+              <input id="pct" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
+            </div>
+            <div>
+              <label class="form-label" for="meses">Meses asociados</label>
+              <input id="meses" class="form-input" type="number" min="1" step="1" value="6">
+            </div>
+          </div>
+          <label class="form-label" for="obs">Observaciones</label>
+          <textarea id="obs" class="form-textarea" placeholder="Notas internas"></textarea>
+          <button class="btn" type="submit">Enviar invitación</button>
+          <div id="msg" class="form-help"></div>
+        </form>
+      </article>
+
+      <article class="ac-card">
+        <h2>Asesores activos e invitados</h2>
+        <div id="advisorsList" class="ac-list">Cargando...</div>
+      </article>
+    </section>
+
+    <section class="ac-card">
+      <h2>Comisiones y pagos</h2>
+      <p class="muted">Marca como pagadas las comisiones cuando se realice el pago al asesor. El estado se refleja en la página Mis clientes del asesor comercial.</p>
+      <div id="commissionsBox" class="ac-table-wrap">Cargando...</div>
+    </section>
+  </main>
+
+  <script>
+    const fmtMoney = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+    function esc(v){return String(v == null ? "" : v).replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s]));}
+    async function api(url, options){
+      const res = await fetch(url, Object.assign({ credentials:"same-origin" }, options || {}));
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch(e) {}
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || text || "Solicitud fallida");
+      return data;
+    }
+    function setMsg(text, err){
+      const el = document.getElementById("msg");
+      el.textContent = text || "";
+      el.style.color = err ? "var(--danger)" : "var(--success)";
+    }
+    function renderAdvisors(items){
+      const box = document.getElementById("advisorsList");
+      if (!items.length) {
+        box.innerHTML = '<div class="inline-panel-empty"><p class="text-empty">Aún no hay asesores comerciales.</p></div>';
+        return;
+      }
+      box.innerHTML = items.map(a => `
+        <article class="ac-item">
+          <div class="ac-item-head">
+            <div>
+              <strong>${esc(a.admin_nombre || a.admin_email)}</strong>
+              <div class="muted">${esc(a.admin_email)}</div>
+            </div>
+            <div class="ac-code">${esc(a.codigo)}</div>
+          </div>
+          <div class="ac-metrics">
+            <div class="ac-metric"><span>Comisión</span><strong>${Number(a.porcentaje_comision || 0).toFixed(2)}%</strong></div>
+            <div class="ac-metric"><span>Meses</span><strong>${esc(a.meses_asociacion || 0)}</strong></div>
+            <div class="ac-metric"><span>Invitación</span><strong>${esc(a.estado_invitacion || "-")}</strong></div>
+            <div class="ac-metric"><span>Aceptado</span><strong>${esc(a.aceptado_en || "Pendiente")}</strong></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn secondary" type="button" onclick="updateAdvisor(${Number(a.id)}, ${Number(a.porcentaje_comision || 0)}, ${Number(a.meses_asociacion || 6)}, ${JSON.stringify(a.observaciones || "")})">Editar reglas</button>
+            <button class="btn danger" type="button" onclick="deleteAdvisor(${Number(a.id)})">Desactivar</button>
+          </div>
+        </article>
+      `).join("");
+    }
+    function renderCommissions(items){
+      const box = document.getElementById("commissionsBox");
+      if (!items.length) {
+        box.innerHTML = '<p class="text-empty">No hay comisiones registradas.</p>';
+        return;
+      }
+      box.innerHTML = `<table class="ac-table"><thead><tr><th>Fecha</th><th>Asesor</th><th>Empresa</th><th>Valor pagado</th><th>Comisión</th><th>Asociación</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${items.map(c => `
+        <tr>
+          <td>${esc((c.fecha_pago || c.fecha_creacion || "").slice(0,10))}</td>
+          <td><strong>${esc(c.asesor_codigo)}</strong><br><span class="muted">${esc(c.asesor_email)}</span></td>
+          <td>${esc(c.empresa_nombre || ("Empresa #" + c.empresa_id))}</td>
+          <td>${fmtMoney.format(Number(c.valor_pagado || 0))}</td>
+          <td>${Number(c.porcentaje_comision || 0).toFixed(2)}%<br><strong>${fmtMoney.format(Number(c.monto_comision || 0))}</strong></td>
+          <td>${esc(c.asociado_desde || "-")} a ${esc(c.asociado_hasta || "-")}</td>
+          <td>${Number(c.pagado || 0) === 1 ? '<span class="ac-paid">Pagada</span>' : '<span class="ac-pending">Pendiente</span>'}</td>
+          <td>${Number(c.pagado || 0) === 1 ? esc(c.fecha_pago_comision || "Pagada") : `<button class="btn btn-sm" type="button" onclick="markPaid(${Number(c.id)})">Marcar pagada</button>`}</td>
+        </tr>`).join("")}</tbody></table>`;
+    }
+    async function loadAll(){
+      const advisors = await api("/super/api/asesor_comercial");
+      renderAdvisors((advisors && advisors.items) || []);
+      const commissions = await api("/super/api/asesor_comercial?action=comisiones");
+      renderCommissions((commissions && commissions.items) || []);
+    }
+    async function markPaid(id){
+      const obs = prompt("Observación del pago de comisión (opcional):") || "";
+      await api("/super/api/asesor_comercial?action=marcar_pago&id=" + encodeURIComponent(id), { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ observaciones:obs }) });
+      loadAll();
+    }
+    async function deleteAdvisor(id){
+      if (!confirm("¿Desactivar este asesor comercial? No se eliminará el historial de comisiones.")) return;
+      await api("/super/api/asesor_comercial?id=" + encodeURIComponent(id), { method:"DELETE" });
+      loadAll();
+    }
+    async function updateAdvisor(id, pct, meses, obs){
+      const newPct = prompt("Nuevo porcentaje de comisión:", pct);
+      if (newPct == null) return;
+      const newMeses = prompt("Meses de asociación por cliente:", meses);
+      if (newMeses == null) return;
+      await api("/super/api/asesor_comercial?id=" + encodeURIComponent(id), { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ porcentaje_comision:Number(newPct), meses_asociacion:Number(newMeses), observaciones:obs || "" }) });
+      loadAll();
+    }
+    document.getElementById("advisorForm").addEventListener("submit", async function(ev){
+      ev.preventDefault();
+      setMsg("Enviando invitación...", false);
+      try {
+        const data = await api("/super/api/asesor_comercial", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ email:email.value, porcentaje_comision:Number(pct.value || 0), meses_asociacion:Number(meses.value || 6), observaciones:obs.value }) });
+        setMsg((data.email_sent ? "Invitación enviada. " : "Invitación creada. ") + "Código: " + data.codigo, !data.email_sent);
+        this.reset(); pct.value = "10"; meses.value = "6";
+        loadAll();
+      } catch (err) {
+        setMsg(err.message, true);
+      }
+    });
+    document.getElementById("reloadBtn").addEventListener("click", loadAll);
+    loadAll().catch(err => setMsg(err.message, true));
+  </script>
+</body>
+</html>

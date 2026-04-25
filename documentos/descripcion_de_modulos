@@ -1,3 +1,16 @@
+2026-04-24: Estaciones — pedidos con IA (voz/texto) y miniaturas en movil
+- Modulos afectados: `estaciones`, `carritos`, `ventas`, `chat IA`, `administrar_empresa`
+- Cambio funcional: la configuracion JSON `estaciones_config` admite `ia_pedidos_enabled` y `ia_pedidos_placement` junto a Caja, YouTube y Notas. La pantalla de estaciones muestra una tarjeta especial con iframe a `estacion_ia_pedidos.html` donde el usuario dicta o escribe pedidos; el backend `POST /api/empresa/ia_pedidos_estacion/ejecutar` (permisos de ventas, misma cuota/reglas que el chat IA) interpreta el texto con el modelo disponible y agrega productos al carrito de la estacion (`EST-{empresa_id}-{estacion_id}`), activando sesion si hace falta. En vista movil, un boton `Ver miniaturas` alterna una rejilla de tres columnas con tarjetas mas compactas.
+- Archivos clave: `backend/handlers/ia_pedidos_estacion.go`, `backend/db/carritos_compras.go` (`GetCarritoCompraByCodigo`), `backend/handlers/chat_con_inteligencia_artificial_router.go`, `web/administrar_empresa/estacion_ia_pedidos.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js`, `.vscode/extensions.json`.
+- Impacto operativo: requiere proveedor IA activo, chat empresarial habilitado y productos activos; si el modelo no devuelve JSON valido, no se ejecutan acciones.
+
+2026-04-24: Asesor comercial — invitaciones, codigos y comisiones por licencias
+- Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`, `seleccionar_empresa`
+- Cambio funcional: se elimina la pagina anterior de vendedores y se crea `web/super/asesor_comercial.html` para que super invite administradores registrados como asesores comerciales. Al aceptar por correo, el asesor queda activo con codigo unico, porcentaje de comision y plazo de asociacion por cliente.
+- Integracion de pagos: `web/pagar_licencia.html` conserva un campo de codigo de asesor comercial. Si una empresa paga con ese codigo, se registra comision; las renovaciones posteriores siguen asociadas al asesor hasta `meses_asociacion`.
+- Vista del asesor: `web/mis_clientes.html` aparece en `seleccionar_empresa` solo para asesores aceptados y lista empresas vigentes, valor pagado, fecha, comision y si la comision ya fue pagada.
+- Impacto operativo: super puede marcar comisiones como pagadas desde la misma pagina; el asesor ve ese estado en su portal. No se agregan dependencias externas.
+
 2026-04-24: Chat y tareas — resumen en tabla y apariencia alineada al tema
 - Modulos afectados: `chat y tareas`, `administrar_empresa`
 - Cambio funcional: `web/administrar_empresa/chat_y_tareas.html` prioriza botones rapidos y muestra metricas en tabla compacta bajo ellos; elimina titulo con nombre de empresa y texto introductorio fijo. Estilos del modulo pasan a depender de variables CSS de tema; lectura inicial de `theme` / cookie `pcs_theme` en la pagina para coherencia al abrirse en iframe.
@@ -117,6 +130,13 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
+Actualizacion 2026-04-24 (red social empresarial y venta publica por paginas):
+- Modulos afectados: `red_social_empresarial`, `venta_publica`, `pagos`, `administrar_empresa`, `portal_publico`.
+- Cambio funcional: la red social pública se presenta como feed empresarial de posts medianos, con nombre de empresa, imagen y contacto. El panel empresa agrega el módulo `venta_publica`, donde la empresa configura su tienda, pasarelas propias Wompi/Epayco, crea páginas por slug bajo su dominio/tienda y publica productos ya existentes del sistema en cada página.
+- Backend: `empresa_venta_publica_paginas` modela páginas por empresa; `empresa_venta_publica_items` soporta `pagina_id`; `/api/empresa/venta_publica?action=paginas` administra páginas y `/api/public/venta_publica?action=catalogo&pagina_slug=...` devuelve páginas, página activa e items filtrados.
+- Frontend: `web/venta_publica.html` muestra páginas y productos con botón `Pagar`; `web/pagar_productos_de_venta_publica.html` crea la orden/pago con las credenciales propias de la empresa; `configuracion_integraciones.html` deja de contener configuración antigua de venta pública.
+- Impacto de permisos: administración bajo `WithEmpresaVentasPermissions`; catálogo y checkout se mantienen públicos y sanitizados, sin exponer claves privadas.
+
 Actualizacion 2026-04-24 (super: limitaciones por empresa en configuracion avanzada):
 - `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk, (2) número de consultas del chat con IA y (3) máximo de dispositivos del módulo de ubicación GPS por empresa (default 2), persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa` (clave GPS: `empresa.limitaciones.gps.max_dispositivos`).
 - `backend/handlers/ubicacion_gps.go` aplica ese tope en el alta de dispositivos (`POST`); si se supera, responde `409 Conflict` sin crear fila.
@@ -156,10 +176,18 @@ Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable po
 - `web/administrar_empresa/estaciones.html` ya no elige entre `ventas_simple.html` y `carrito_de_compras.html`; siempre abre el carrito unificado por estacion. `web/administrar_empresa/ventas_simple.html` queda como compatibilidad de redireccion.
 - Impacto de permisos: sin cambios en wrappers ni roles; la operacion sigue bajo el mismo alcance autenticado por `empresa_id`.
 
-Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super):
-- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` reducen la interfaz visible del chat: se retiran acciones superiores de recarga/historial, chips de modelo y uso diario, selector visible de modelo, CTA de upgrade y bloque de consultas recientes.
-- Las sugerencias rapidas pasan a mostrarse debajo del area principal del chat y el boton `Limpiar chat` queda junto a `Preguntar a la IA` para concentrar la operacion en un solo bloque.
-- El ajuste es solo de UX; no cambia endpoints, alcance por `empresa_id`, ni el flujo de consulta del backend.
+Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super) — **obsoleta** frente a 2026-04-24 (layout Gemini): la interfaz volvio a exponer selector de modelo, uso y sidebar; conservar solo el dato historico de que en esa fecha se redujo la UI antes de la revision mayor.
+
+Actualizacion 2026-04-24 (chat IA: tema y retiro definitivo de sugerencias pill):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` leen `pcs_theme` y `localStorage` al cargar para aplicar el mismo `data-theme` que el panel; se eliminan las pills de sugerencias bajo el formulario.
+- `web/estilos.css` alinea fondos y burbujas del chat IA con variables de tema; en `chat_y_tareas` se corrigen contrastes en modo claro (calendario, listas, estado).
+- Impacto de permisos: sin cambios en endpoints ni roles.
+
+Actualizacion 2026-04-24 (chat IA: layout tipo Gemini en empresa y super):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` adoptan layout de aplicacion: sidebar izquierda con conversaciones persistidas en el navegador (`localStorage`) mas lista del historial del servidor; area principal con barra superior (selector de modelo, pastilla de modelo en uso y resumen de cupo diario), mensajes y compositor.
+- Compartir respuesta del asistente vía Web Share API o, en su defecto, copia al portapapeles. Mensaje/banner explicativo cuando el backend responde 429 o codigos de limite o bloqueo (`free_tier_limit_reached`, `ai_empresa_chat_blocked`, etc.). En chat empresarial se retiran el titulo largo contextual y la tarjeta de chips Empresa/Cuenta.
+- `web/estilos.css` agrega bloque `.ai-gemini-app*` y overrides `html.theme-light` para contraste de textos en burbujas y banners.
+- Impacto de permisos: sin cambios en endpoints ni roles; solo UX y persistencia local opcional.
 
 Actualizacion 2026-04-19 (chat IA super/empresa: Gemini-only sin Ollama ni DeepSeek):
 - `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go` y `backend/handlers/chat_con_inteligencia_artificial_controller.go` dejan un unico proveedor soportado: `google:gemini-2.0-flash`.
@@ -401,7 +429,7 @@ Actualizacion 2026-04-18 (submenu de configuracion: boton de ocultar menu en mov
 
 Actualizacion 2026-04-18 (submenu de configuracion: permisos e integraciones dejan de ser placeholders):
 - `web/administrar_empresa/configuracion_permisos.html` reemplaza los botones falsos de agregar/guardar por una consulta real al endpoint `/api/empresa/permisos_contexto?include_matrix=1`, mostrando rol detectado, rol efectivo, modulos y matriz de roles disponible para la empresa autenticada.
-- `web/administrar_empresa/configuracion_integraciones.html` deja de usar `alert()` y pasa a cargar/guardar la configuracion real de Wompi y Epayco mediante `/api/empresa/venta_publica?action=config`, incluyendo `slug`, dominio publico, moneda y enlaces de tienda publica.
+- `web/administrar_empresa/configuracion_integraciones.html` queda como pantalla informativa; la configuracion operativa de Wompi/Epayco, slug, dominio, paginas y productos publicados se administra desde `web/administrar_empresa/venta_publica.html`.
 - Impacto de permisos: sin ampliacion de privilegios; `Permisos` pasa a ser una vista informativa de solo lectura sobre el contexto ya permitido y `Integraciones` reutiliza el mismo alcance autenticado de venta publica que ya existia para la empresa.
 
 Actualizacion 2026-04-18 (submenu de configuracion: bloque general ya persiste en backend):
@@ -483,7 +511,7 @@ Actualizacion 2026-04-17 (seleccionar empresa: descarga empresarial en pagina de
 - Impacto de permisos: sin cambio de rol; la funcionalidad sigue restringida al alcance del panel super y reutiliza el mismo control de acceso de `/super/api/empresas`.
 
 Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas home y medios Epayco visibles):
-- Se ajusta nuevamente el modulo `licencias y pasarelas de pago` para que `web/pagar_licencia.html` presente el resumen de compra en dos tarjetas con el mismo lenguaje visual del home publico: una tarjeta para la licencia y otra para codigos de descuento / vendedor.
+- Se ajusta nuevamente el modulo `licencias y pasarelas de pago` para que `web/pagar_licencia.html` presente el resumen de compra en dos tarjetas con el mismo lenguaje visual del home publico: una tarjeta para la licencia y otra para codigos de descuento / asesor comercial.
 - La misma pantalla mantiene el checkout de Epayco dentro de una tarjeta blanca mas compacta y centrada, elimina el campo visible de correo del cliente y deja solo la confirmacion de terminos antes de abrir la pasarela.
 - Impacto de permisos: sin cambios; el checkout de licencias sigue siendo publico en sus endpoints `/epayco/*`, `/wompi/*` y `/api/public/licencias/payment_methods`, mientras la configuracion de pasarelas y licencias sigue restringida a `super_administrador`.
 

@@ -613,6 +613,9 @@ func main() {
 		if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
+		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
+		}
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -699,12 +702,10 @@ func main() {
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/empresas/compartidos", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper))
-	// Endpoints para gestiÃ³n de vendedores (vendedor_de_licencia) y sus planes
-	http.HandleFunc("/super/api/asesores", handlers.AsesoresHandler(dbSuper))
-	http.HandleFunc("/super/api/vendedores", handlers.AsesoresHandler(dbSuper))
-	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialHandler(dbSuper))
-	http.HandleFunc("/super/api/vendedor_de_licencia", handlers.AsesorComercialHandler(dbSuper))
-	http.HandleFunc("/super/api/vendedor_config", handlers.VendedorConfigHandler(dbSuper))
+	// Endpoints para asesores comerciales y comisiones de licencias.
+	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialSuperHandler(dbSuper))
+	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
+	http.HandleFunc("/api/asesor_comercial/mis_clientes", handlers.AsesorComercialMisClientesHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
 	// MÃ³dulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
@@ -744,7 +745,8 @@ func main() {
 	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido
-	http.HandleFunc("/api/public/publicaciones", handlers.PublicacionesRedSocialHandler(dbEmpresas))                                                                     // Publico
+	http.HandleFunc("/api/empresa/publicaciones/", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas)))
+	http.HandleFunc("/api/public/publicaciones", handlers.PublicacionesRedSocialHandler(dbEmpresas)) // Publico
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
@@ -971,6 +973,12 @@ func main() {
 		if len(parts) == 2 && strings.EqualFold(parts[1], "venta_publica.html") && strings.TrimSpace(parts[0]) != "" {
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/venta_publica.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
+		if len(parts) == 2 && strings.EqualFold(parts[1], "pagar_productos_de_venta_publica.html") && strings.TrimSpace(parts[0]) != "" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/pagar_productos_de_venta_publica.html"
 			staticFS.ServeHTTP(w, r2)
 			return
 		}

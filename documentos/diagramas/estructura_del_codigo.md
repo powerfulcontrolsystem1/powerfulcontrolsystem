@@ -1,3 +1,29 @@
+## Actualizacion 2026-04-24 (estaciones: pedidos con IA y miniaturas movil)
+
+- Backend ventas / IA:
+  - `backend/handlers/ia_pedidos_estacion.go` expone `POST /api/empresa/ia_pedidos_estacion/ejecutar` (wrapper `WithEmpresaVentasPermissions`), reutiliza credenciales y limites del chat IA por empresa y agrega items con `CreateCarritoCompraItem` tras activar sesion de carrito de estacion si aplica.
+  - `backend/db/carritos_compras.go` agrega `GetCarritoCompraByCodigo` para resolver `EST-{empresa_id}-{estacion_id}`.
+  - `backend/handlers/chat_con_inteligencia_artificial_router.go` registra la ruta junto al modulo existente de chat.
+- Frontend:
+  - `web/administrar_empresa/estacion_ia_pedidos.html` es la vista embebida (iframe) con textarea, dictado y llamada al endpoint.
+  - `web/administrar_empresa/estaciones.html` y `web/administrar_empresa/configuracion_de_estaciones.html` persisten `ia_pedidos_enabled` y `ia_pedidos_placement` dentro de `estaciones_config`; boton movil alterna clase `estaciones-thumb-mobile` en la rejilla.
+  - `web/estilos.css` define layout compacto en modo miniatura (tres columnas en pantallas <=640px).
+- Flujo resumido:
+  - Usuario habilita estacion IA -> abre estaciones -> escribe «dos cervezas mesa 5» -> backend lista estaciones y productos activos en el prompt -> modelo devuelve JSON -> servidor valida y escribe lineas en el carrito de la estacion 5.
+
+## Actualizacion 2026-04-24 (asesor comercial: invitacion, codigo y comisiones)
+
+- Backend super:
+  - `backend/db/asesor_comercial.go` crea y regulariza `asesores_comerciales` y `asesor_comercial_comisiones` en PostgreSQL.
+  - `backend/handlers/asesor_comercial.go` expone `/super/api/asesor_comercial`, `/api/asesor_comercial/aceptar` y `/api/asesor_comercial/mis_clientes`.
+  - `backend/handlers/payments_handlers.go` registra comisiones al aprobar pagos Wompi/Epayco o activaciones manuales, usando codigo de asesor o asociacion vigente por empresa.
+- Frontend:
+  - `web/super/asesor_comercial.html` reemplaza la pagina anterior de vendedores y concentra invitacion, configuracion de comision/plazo y liquidacion.
+  - `web/mis_clientes.html` se muestra en `seleccionar_empresa` solo si la cuenta tiene asesor comercial aceptado.
+  - `web/pagar_licencia.html` cambia el campo comercial a `Codigo asesor comercial` y envia `asesor_id`.
+- Flujo:
+  - Super invita administrador -> correo con link `/api/asesor_comercial/aceptar` -> asesor acepta -> aparece `Mis clientes` -> empresa paga licencia con codigo -> se registra comision -> renovaciones dentro del plazo siguen asociadas -> super marca comision pagada.
+
 ## Actualizacion 2026-04-21 (autenticacion publica: Google reCAPTCHA reactivado y gobernado desde super)
 
 - Backend autenticacion:
@@ -11,6 +37,22 @@
 - Flujo:
   - `configuracion_avanzada.html` -> `GET/PUT /super/api/config/recaptcha` -> persistencia del toggle global en DB super.
   - `login.html`, `registrar_nuevo_usuario_administrador.html`, `login_usuario.html`, `accept.html` -> carga `config.js` -> render condicional del widget -> envío de `recaptcha_token` al backend -> validación remota en Google antes de crear sesión o emitir tokens de recuperación.
+
+## Actualizacion 2026-04-24 (red social empresarial y venta publica por paginas)
+
+- Backend red social:
+  - `backend/db/red_social.go` agrega nombre de empresa en las publicaciones públicas para que el feed renderice contexto empresarial.
+  - `backend/main.go` registra tambien `/api/empresa/publicaciones/` para operaciones con id.
+- Backend venta publica:
+  - `backend/db/venta_publica.go` agrega `empresa_venta_publica_paginas` y `pagina_id` en `empresa_venta_publica_items`.
+  - `backend/handlers/venta_publica.go` agrega `action=paginas` y filtra el catálogo público por `pagina_slug`.
+  - `backend/main.go` y `backend/utils/utils.go` publican `/pagar_productos_de_venta_publica.html` y `/{slug}/pagar_productos_de_venta_publica.html`.
+- Frontend:
+  - `web/administrar_empresa/venta_publica.html` administra tienda, páginas y productos existentes del sistema.
+  - `web/venta_publica.html` muestra páginas y productos publicados con botón `Pagar`.
+  - `web/pagar_productos_de_venta_publica.html` crea pagos públicos contra `/api/public/venta_publica?action=crear_pago`.
+- Flujo:
+  - `administrar_empresa/venta_publica.html` -> crear página -> agregar producto existente -> `venta_publica.html?empresa_slug=...&pagina_slug=...` -> `pagar_productos_de_venta_publica.html?item_id=...` -> Wompi/Epayco con credenciales propias de la empresa.
 
 ## Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 
@@ -188,14 +230,26 @@ Fecha de actualizacion: 2026-04-18
   - `estaciones.html` -> `carrito_de_compras.html?empresa_id=...&estacion_id=...&carrito_codigo=...` -> aplicacion de checks UI segun configuracion global/heredada de la estacion.
 
 
-## Actualizacion 2026-04-18 (chat con IA: interfaz reducida en empresa y super)
+## Actualizacion 2026-04-18 (chat con IA: interfaz reducida en empresa y super) — obsoleta
+
+- Nota: esta iteracion quedo reemplazada por el layout tipo Gemini (2026-04-24): sidebar, selector visible, uso diario y historial en panel lateral.
+
+## Actualizacion 2026-04-24 (chat IA: layout tipo Gemini, sidebar y limites)
 
 - Frontend IA:
-  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` elimina controles superiores de `Actualizar` y `Ver historial`, retira los cuadros visibles de modelo/uso diario y mueve las sugerencias rapidas debajo del bloque principal del chat.
-  - `web/super/chat_con_ia_global.html` adopta el mismo patron visual simplificado para el chat global del panel super.
-- Flujo:
-  - La consulta y el cambio de modelo siguen existiendo en la logica interna, pero el selector queda oculto y la operacion visible se concentra en `Preguntar a la IA` y `Limpiar chat`.
-  - Se elimina del render visible el bloque de `Consultas recientes` en ambas vistas sin cambiar endpoints backend.
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` usan rejilla `sidebar + main`: conversaciones locales (`localStorage`), historial del servidor en la barra, topbar con `<select>` de modelo y pastillas de modelo/uso, boton **Compartir** en burbujas del asistente, banner de texto ante 429 o codigos de limite.
+  - Chat empresarial sin titulo largo ni tarjeta de chips Empresa/Cuenta; `web/estilos.css` incorpora `.ai-gemini-app*` y refuerzos `html.theme-light` para contraste.
+- Flujo (sin cambio de API):
+  - Mismos `GET/PUT .../modelos`, `.../modelo_preferido`, `POST .../consultar`, `GET .../historial`; la persistencia extra es solo cliente.
+
+## Actualizacion 2026-04-24 (chat IA: tema del shell y sin sugerencias pill)
+
+- Frontend IA:
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ejecutan un bootstrap temprano que copia el tema desde cookie `pcs_theme` y clave `theme` de `localStorage`, fija `data-theme` en `<html>` y clases `theme-light` / `theme-dark`, alineando el iframe con el panel empresa o super.
+  - Se retiran las sugerencias rapidas tipo pill bajo el formulario en ambas vistas.
+  - `web/estilos.css` reemplaza fondos fijos oscuros de `.ai-gemini-*`, area de mensajes y burbujas por combinaciones basadas en variables de tema (`--bg`, `--surface`, `--accent`, etc.).
+- Modulo `chat_y_tareas`:
+  - Reglas `html.theme-light` refuerzan contraste de celdas del calendario, selector de participantes y tarjetas de estado frente a fondos claros.
 
 ## Actualizacion 2026-04-19 (chat IA Gemini-only y retiro de Ollama)
 
@@ -589,7 +643,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-17 (checkout de licencias: resumen en tarjetas home y catalogo visible de Epayco)
 
 - Frontend:
-  - `web/pagar_licencia.html` separa el resumen del checkout en dos tarjetas tipo `portal-card home-offer-card`: una para datos de la licencia y otra para codigos de descuento / vendedor, manteniendo intacta la logica de Wompi y Epayco.
+  - `web/pagar_licencia.html` separa el resumen del checkout en dos tarjetas tipo `portal-card home-offer-card`: una para datos de la licencia y otra para codigos de descuento / asesor comercial, manteniendo intacta la logica de Wompi y Epayco.
   - La misma vista agrega un bloque visible `Formas de pago con Epayco` dentro de la pagina para mostrar, antes de abrir el checkout, los medios digitales mas comunes publicados por esa pasarela.
   - `web/estilos.css` incorpora la capa visual del checkout con anatomia del home, chips de metadatos y una paleta propia para Epayco basada en su branding oscuro con acentos naranja/rojo.
 - Flujo:

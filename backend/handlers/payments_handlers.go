@@ -14,9 +14,9 @@ import (
 	"io"
 	"log"
 	"math"
-	"net/mail"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/smtp"
 	"net/url"
 	"regexp"
@@ -809,7 +809,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"tipo_nombre": empresa.TipoNombre,
 				}
 			}(),
-			"summary":     summary,
+			"summary": summary,
 		})
 	}
 }
@@ -2162,7 +2162,6 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			AcceptTerms   bool   `json:"accept_terms"`
 			DiscountCode  string `json:"discount_code,omitempty"`
 			AsesorID      string `json:"asesor_id,omitempty"`
-			VendedorID    string `json:"vendedor_id,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -2360,12 +2359,19 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			respReference = reference
 		}
 
-		// compatibilidad: si se envió `vendedor_id` usarlo como `asesor_id` si este último está vacío
-		if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
-			payload.AsesorID = payload.VendedorID
+		rawMap := map[string]interface{}{
+			"provider":      "wompi",
+			"valor_pagado":  summary.TotalValue,
+			"discount_code": payload.DiscountCode,
+			"asesor_id":     strings.ToUpper(strings.TrimSpace(payload.AsesorID)),
+			"licencia_id":   payload.LicenciaID,
+			"empresa_id":    payload.EmpresaID,
+			"created_at":    time.Now().Format(time.RFC3339),
 		}
+		rawBytes, _ := json.Marshal(rawMap)
+		rawPayload := mergePaymentPayloadJSON(string(respBody), string(rawBytes))
 
-		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, string(respBody), payload.DiscountCode, payload.AsesorID); err != nil {
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, rawPayload, payload.DiscountCode, strings.ToUpper(strings.TrimSpace(payload.AsesorID))); err != nil {
 			log.Println("warning: failed to record Wompi transaction in DB:", err)
 		}
 
@@ -2384,10 +2390,14 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// recordVendedorComisiones busca el pago por transaction o reference y crea registros de comisión
-func recordVendedorComisiones(db *sql.DB, transactionID, reference string, licenciaID, empresaID int64) {
+// recordAsesorComercialComision busca el pago y registra la comisión si hay código o asociación vigente.
+func recordAsesorComercialComision(db *sql.DB, provider, transactionID, reference string, licenciaID, empresaID int64) {
 	var payRec *dbpkg.WompiPaymentRecord
 	var err error
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "wompi"
+	}
 	if strings.TrimSpace(transactionID) != "" {
 		payRec, err = dbpkg.GetWompiPaymentByTransaction(db, transactionID)
 		if err != nil {
@@ -2403,39 +2413,13 @@ func recordVendedorComisiones(db *sql.DB, transactionID, reference string, licen
 		}
 	}
 	if payRec == nil {
-		// No payment record found
 		return
 	}
 
 	asesorID := ""
 	if payRec.AsesorID.Valid {
-		asesorID = payRec.AsesorID.String
+		asesorID = strings.ToUpper(strings.TrimSpace(payRec.AsesorID.String))
 	}
-	if strings.TrimSpace(asesorID) == "" {
-		// No vendor code provided
-		return
-	}
-
-	plan, err := dbpkg.GetAsesorComercialPlanByAsesorID(db, asesorID)
-	if err != nil {
-		log.Println("warning: failed to load vendedor plan:", err)
-		return
-	}
-	if plan == nil {
-		// No plan configured for this vendor
-		return
-	}
-
-	lic, err := dbpkg.GetLicenciaByID(db, licenciaID)
-	if err != nil || lic == nil {
-		log.Println("warning: licencia not found when recording comision for vendedor:", err)
-		return
-	}
-
-	montoTotal := lic.Valor
-	porcentaje := plan.ComisionVentaPct
-	montoComision := montoTotal * porcentaje / 100.0
-
 	pagoID := int64(0)
 	if payRec.ID > 0 {
 		pagoID = payRec.ID
@@ -2444,29 +2428,16 @@ func recordVendedorComisiones(db *sql.DB, transactionID, reference string, licen
 	if payRec.Reference.Valid {
 		referenciaStr = payRec.Reference.String
 	}
-
-	obs := fmt.Sprintf("Comisión por venta licencia %d (tx=%s ref=%s)", licenciaID, transactionID, referenciaStr)
-	if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referenciaStr, obs, "", 0); err != nil {
-		log.Println("warning: failed to create asesor_comisiones record:", err)
+	rawPayload := ""
+	if payRec.RawPayload.Valid {
+		rawPayload = payRec.RawPayload.String
 	}
-
-	// Programar comisiones para meses adicionales si aplica
-	meses := 0
-	if plan.MesesRenovacion > 0 {
-		meses = plan.MesesRenovacion
-	}
-	if meses > 1 {
-		for i := 1; i < meses; i++ {
-			scheduledDate := time.Now().AddDate(0, i, 0).Format("2006-01-02")
-			obs2 := fmt.Sprintf("Comisión programada %d/%d para vendedor %s", i+1, meses, asesorID)
-			if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, 0, "", montoTotal, porcentaje, montoComision, referenciaStr, obs2, scheduledDate, 0); err != nil {
-				log.Println("warning: failed to create scheduled asesor_comisiones record:", err)
-			}
-		}
+	if err := createAsesorComercialComisionFromPayment(db, provider, asesorID, empresaID, licenciaID, pagoID, transactionID, referenciaStr, rawPayload); err != nil {
+		log.Println("warning: failed to create asesor comercial commission:", err)
 	}
 }
 
-func recordVendedorComisionesEpayco(db *sql.DB, transactionID, reference string, licenciaID, empresaID int64) {
+func recordAsesorComercialComisionEpayco(db *sql.DB, transactionID, reference string, licenciaID, empresaID int64) {
 	var payRec *dbpkg.EpaycoPaymentRecord
 	var err error
 	if strings.TrimSpace(transactionID) != "" {
@@ -2489,31 +2460,8 @@ func recordVendedorComisionesEpayco(db *sql.DB, transactionID, reference string,
 
 	asesorID := ""
 	if payRec.AsesorID.Valid {
-		asesorID = payRec.AsesorID.String
+		asesorID = strings.ToUpper(strings.TrimSpace(payRec.AsesorID.String))
 	}
-	if strings.TrimSpace(asesorID) == "" {
-		return
-	}
-
-	plan, err := dbpkg.GetAsesorComercialPlanByAsesorID(db, asesorID)
-	if err != nil {
-		log.Println("warning: failed to load vendedor plan (epayco):", err)
-		return
-	}
-	if plan == nil {
-		return
-	}
-
-	lic, err := dbpkg.GetLicenciaByID(db, licenciaID)
-	if err != nil || lic == nil {
-		log.Println("warning: licencia not found when recording comision epayco:", err)
-		return
-	}
-
-	montoTotal := lic.Valor
-	porcentaje := plan.ComisionVentaPct
-	montoComision := montoTotal * porcentaje / 100.0
-
 	pagoID := int64(0)
 	if payRec.ID > 0 {
 		pagoID = payRec.ID
@@ -2522,25 +2470,122 @@ func recordVendedorComisionesEpayco(db *sql.DB, transactionID, reference string,
 	if payRec.Reference.Valid {
 		referenciaStr = payRec.Reference.String
 	}
-
-	obs := fmt.Sprintf("Comision por venta licencia %d (epayco tx=%s ref=%s)", licenciaID, transactionID, referenciaStr)
-	if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referenciaStr, obs, "", 0); err != nil {
-		log.Println("warning: failed to create asesor_comisiones record (epayco):", err)
+	rawPayload := ""
+	if payRec.RawPayload.Valid {
+		rawPayload = payRec.RawPayload.String
 	}
-
-	meses := 0
-	if plan.MesesRenovacion > 0 {
-		meses = plan.MesesRenovacion
+	if err := createAsesorComercialComisionFromPayment(db, "epayco", asesorID, empresaID, licenciaID, pagoID, transactionID, referenciaStr, rawPayload); err != nil {
+		log.Println("warning: failed to create asesor comercial commission (epayco):", err)
 	}
-	if meses > 1 {
-		for i := 1; i < meses; i++ {
-			scheduledDate := time.Now().AddDate(0, i, 0).Format("2006-01-02")
-			obs2 := fmt.Sprintf("Comision programada %d/%d para vendedor %s", i+1, meses, asesorID)
-			if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, 0, "", montoTotal, porcentaje, montoComision, referenciaStr, obs2, scheduledDate, 0); err != nil {
-				log.Println("warning: failed to create scheduled asesor_comisiones record (epayco):", err)
+}
+
+func createAsesorComercialComisionFromPayment(db *sql.DB, provider, asesorCode string, empresaID, licenciaID, pagoID int64, transactionID, reference, rawPayload string) error {
+	if db == nil || empresaID <= 0 || licenciaID <= 0 {
+		return nil
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	asesorCode = strings.ToUpper(strings.TrimSpace(asesorCode))
+	var advisor *dbpkg.AsesorComercial
+	var err error
+	if asesorCode != "" {
+		advisor, err = dbpkg.GetAsesorComercialByCode(db, asesorCode)
+		if err != nil {
+			return err
+		}
+		if advisor != nil && !strings.EqualFold(advisor.EstadoInvitacion, "aceptada") {
+			advisor = nil
+		}
+	}
+	var previous *dbpkg.AsesorComercialComision
+	if advisor == nil {
+		previous, err = dbpkg.GetActiveAsesorComercialAssociationByEmpresa(db, empresaID)
+		if err != nil {
+			return err
+		}
+		if previous != nil {
+			advisor, err = dbpkg.GetAsesorComercialByCode(db, previous.AsesorCodigo)
+			if err != nil {
+				return err
 			}
 		}
 	}
+	if advisor == nil {
+		return nil
+	}
+	lic, err := dbpkg.GetLicenciaByID(db, licenciaID)
+	if err != nil || lic == nil {
+		return err
+	}
+	empresaNombre := ""
+	if empresa, err := dbpkg.GetEmpresaByScopeID(db, empresaID); err == nil && empresa != nil {
+		empresaNombre = strings.TrimSpace(empresa.Nombre)
+	}
+	if empresaNombre == "" {
+		empresaNombre = fmt.Sprintf("Empresa #%d", empresaID)
+	}
+	valorPagado := paymentPayloadAmount(rawPayload)
+	if valorPagado <= 0 {
+		valorPagado = lic.Valor
+	}
+	fechaPago := time.Now()
+	asociadoDesde := fechaPago
+	asociadoHasta := fechaPago.AddDate(0, advisor.MesesAsociacion, 0)
+	if previous != nil {
+		if desde, ok := parsePaymentTime(previous.AsociadoDesde); ok {
+			asociadoDesde = desde
+		}
+		if hasta, ok := parsePaymentTime(previous.AsociadoHasta); ok {
+			asociadoHasta = hasta
+		}
+	}
+	pct := advisor.PorcentajeComision
+	monto := roundLicenciaCheckoutAmount(valorPagado * pct / 100)
+	obs := "Comision de asesor comercial por pago de licencia"
+	if asesorCode == "" && previous != nil {
+		obs = "Comision de asesor comercial por renovacion dentro del plazo de asociacion"
+	}
+	_, err = dbpkg.CreateAsesorComercialComision(db, dbpkg.AsesorComercialComision{
+		AsesorID:           advisor.ID,
+		AsesorCodigo:       advisor.Codigo,
+		AsesorEmail:        advisor.AdminEmail,
+		EmpresaID:          empresaID,
+		EmpresaNombre:      empresaNombre,
+		LicenciaID:         licenciaID,
+		PagoProvider:       provider,
+		PagoID:             pagoID,
+		TransactionID:      transactionID,
+		Referencia:         reference,
+		ValorPagado:        roundLicenciaCheckoutAmount(valorPagado),
+		PorcentajeComision: pct,
+		MontoComision:      monto,
+		FechaPago:          fechaPago.Format("2006-01-02 15:04:05"),
+		AsociadoDesde:      asociadoDesde.Format("2006-01-02"),
+		AsociadoHasta:      asociadoHasta.Format("2006-01-02"),
+		Pagado:             0,
+		Observaciones:      obs,
+	})
+	return err
+}
+
+func paymentPayloadAmount(raw string) float64 {
+	payload := parsePaymentPayloadMap(raw)
+	for _, key := range []string{"valor_pagado", "total_value", "amount", "x_amount", "amount_in_cents"} {
+		rawValue, ok := payload[key]
+		if !ok {
+			continue
+		}
+		amount, err := strconv.ParseFloat(strings.ReplaceAll(strings.TrimSpace(fmt.Sprint(rawValue)), ",", "."), 64)
+		if err != nil {
+			continue
+		}
+		if key == "amount_in_cents" {
+			amount = amount / 100
+		}
+		if amount > 0 {
+			return amount
+		}
+	}
+	return 0
 }
 
 // WompiTransactionStatusHandler consulta estado de la transacción y activa licencia si quedó APPROVED.
@@ -2651,15 +2696,15 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":               "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
-				"provider":            "wompi",
-				"transaction_id":      transactionID,
-				"reference":           reference,
-				"status":              status,
-				"context_found":       hasContext,
-				"context_mismatch":    true,
-				"licencia_id":         licenciaID,
-				"empresa_id":          empresaID,
+				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
+				"provider":             "wompi",
+				"transaction_id":       transactionID,
+				"reference":            reference,
+				"status":               status,
+				"context_found":        hasContext,
+				"context_mismatch":     true,
+				"licencia_id":          licenciaID,
+				"empresa_id":           empresaID,
 				"expected_licencia_id": expectedLicenciaID,
 				"expected_empresa_id":  expectedEmpresaID,
 			})
@@ -2679,12 +2724,12 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					activated = true
 				}
 
-				// Registrar comisiones para vendedor_de_licencia si aplica
+				// Registrar comisiones para asesor comercial si aplica.
 				go func(txID string, licID, empID int64) {
 					if txID == "" {
 						return
 					}
-					recordVendedorComisiones(dbSuper, txID, "", licID, empID)
+					recordAsesorComercialComision(dbSuper, "wompi", txID, "", licID, empID)
 				}(transactionID, licenciaID, empresaID)
 			}
 		}
@@ -2764,9 +2809,9 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				activated = act
 			}
 
-			// Registrar comisiones para vendedor_de_licencia si aplica (webhook puede venir sin transaction but with reference)
+			// Registrar comisiones para asesor comercial si aplica (webhook puede venir solo con referencia).
 			go func(txID, ref string, licID, empID int64) {
-				recordVendedorComisiones(dbSuper, txID, ref, licID, empID)
+				recordAsesorComercialComision(dbSuper, "wompi", txID, ref, licID, empID)
 			}(transactionID, reference, licenciaID, empresaID)
 		}
 
@@ -2827,7 +2872,6 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			CustomerEmail string `json:"customer_email,omitempty"`
 			DiscountCode  string `json:"discount_code,omitempty"`
 			AsesorID      string `json:"asesor_id,omitempty"`
-			VendedorID    string `json:"vendedor_id,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -2955,10 +2999,6 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
-			payload.AsesorID = payload.VendedorID
-		}
-
 		rawMap := map[string]interface{}{
 			"provider":         "epayco",
 			"mode":             mode,
@@ -2973,31 +3013,32 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"empresa_id":       payload.EmpresaID,
 			"customer_email":   email,
 			"discount_code":    payload.DiscountCode,
-			"asesor_id":        payload.AsesorID,
+			"valor_pagado":     summary.TotalValue,
+			"asesor_id":        strings.ToUpper(strings.TrimSpace(payload.AsesorID)),
 			"created_at":       time.Now().Format(time.RFC3339),
 			"integration_flow": "smart_checkout_v2",
 			"apify_login_raw":  loginRaw,
 			"session_raw":      sessionRaw,
 		}
 		rawBytes, _ := json.Marshal(rawMap)
-		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, strings.ToUpper(strings.TrimSpace(payload.AsesorID))); err != nil {
 			log.Println("warning: failed to record Epayco transaction in DB:", err)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"provider":       "epayco",
-			"payment_method": "SMART_CHECKOUT",
-			"mode":           mode,
-			"mode_source":    modeSource,
-			"transaction_id": reference,
-			"reference":      reference,
-			"status":         "PENDING",
-			"session_id":     sessionID,
+			"provider":            "epayco",
+			"payment_method":      "SMART_CHECKOUT",
+			"mode":                mode,
+			"mode_source":         modeSource,
+			"transaction_id":      reference,
+			"reference":           reference,
+			"status":              "PENDING",
+			"session_id":          sessionID,
 			"checkout_session_id": sessionID,
-			"checkout_type":      "standard",
+			"checkout_type":       "standard",
 			"checkout_script_url": epaycoSmartCheckoutScriptURL,
-			"customer_email": email,
+			"customer_email":      email,
 			"data": map[string]interface{}{
 				"id":         reference,
 				"reference":  reference,
@@ -3233,7 +3274,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			go func(txID, ref string, licID, empID int64) {
-				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
+				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
 			}(firstNonEmptyString(recordTransactionID, transactionID), firstNonEmptyString(recordReference, invoiceReference, reference), licenciaID, empresaID)
 		}
 
@@ -3364,7 +3405,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				}
 			}
 			go func(txID, ref string, licID, empID int64) {
-				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
+				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
 			}(transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
 		}
 		if len(dbEmp) > 0 && dbEmp[0] != nil {
@@ -3377,15 +3418,15 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"ok":             true,
-			"provider":       "epayco",
-			"transaction_id": transactionID,
-			"reference":      reference,
-			"status":         status,
-			"context_found":  hasContext,
-			"licencia_id":    licenciaID,
-			"empresa_id":     empresaID,
-			"activated":      activated,
+			"ok":                          true,
+			"provider":                    "epayco",
+			"transaction_id":              transactionID,
+			"reference":                   reference,
+			"status":                      status,
+			"context_found":               hasContext,
+			"licencia_id":                 licenciaID,
+			"empresa_id":                  empresaID,
+			"activated":                   activated,
 			"venta_publica_context_found": ventaPublicaContextFound,
 		})
 	}
@@ -3405,7 +3446,6 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Motivo       string `json:"motivo,omitempty"`
 			DiscountCode string `json:"discount_code,omitempty"`
 			AsesorID     string `json:"asesor_id,omitempty"`
-			VendedorID   string `json:"vendedor_id,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -3458,19 +3498,15 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		go func() {
 			reference := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 
-			// compatibilidad: si se envió `vendedor_id` usarlo como `asesor_id` si este último está vacío
-			if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
-				payload.AsesorID = payload.VendedorID
-			}
-
-			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "vendedor_id": payload.VendedorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}
+			payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
+			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}
 			rawBytes, _ := json.Marshal(rawMap)
 			if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
 				log.Println("warning: failed to record manual activation in pagos_wompi:", err)
 			}
 
-			// Registrar comisiones si el payload contiene codigo de vendedor
-			recordVendedorComisiones(dbSuper, "", reference, payload.LicenciaID, payload.EmpresaID)
+			// Registrar comisiones si el payload contiene codigo de asesor o asociacion vigente.
+			recordAsesorComercialComision(dbSuper, "manual", "", reference, payload.LicenciaID, payload.EmpresaID)
 		}()
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{

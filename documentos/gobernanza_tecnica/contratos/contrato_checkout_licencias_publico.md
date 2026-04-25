@@ -35,7 +35,7 @@ Este contrato cubre el flujo publico de checkout de licencias administrativas po
 
 - `customer_email`
 - `discount_code`
-- `asesor_id` o `vendedor_id`
+- `asesor_id` (codigo de asesor comercial)
 
 ## Salidas y estados
 

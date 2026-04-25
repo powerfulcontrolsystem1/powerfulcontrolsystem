@@ -82,6 +82,18 @@
               <option value="after">Después de las estaciones</option>
             </select>
           </div>
+          <div class="form-col">
+            <label class="form-label">Pedidos con IA</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="iaPedidosToggle"> Habilitar estación especial de pedidos por chat con IA (texto o voz a la mesa/estación)
+            </label>
+            <label class="form-label" for="iaPedidosPlacementSelect">Orden de carga de Pedidos IA</label>
+            <select id="iaPedidosPlacementSelect" class="form-input">
+              <option value="before">Antes de las estaciones</option>
+              <option value="after">Después de las estaciones</option>
+            </select>
+            <p class="form-help">Requiere proveedor IA activo en el panel super, chat empresarial habilitado y productos activos en inventario.</p>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-col">
@@ -709,6 +721,9 @@
       var notasRepeatMinutes = normalizeNotesRepeatMinutes(cfg && (cfg.notas_repeat_minutes !== undefined ? cfg.notas_repeat_minutes : cfg.notasRepeatMinutes));
       var notasBeepEnabled = cfg && (cfg.notas_beep_enabled !== undefined ? cfg.notas_beep_enabled : cfg.notasBeepEnabled);
       var notasBlinkEnabled = cfg && (cfg.notas_blink_enabled !== undefined ? cfg.notas_blink_enabled : cfg.notasBlinkEnabled);
+      var iaPedidosEnabledRaw = (cfg && (cfg.ia_pedidos_enabled !== undefined ? cfg.ia_pedidos_enabled : cfg.iaPedidosEnabled)) || false;
+      var ia_pedidos_enabled = toBool(iaPedidosEnabledRaw);
+      var ia_pedidos_placement = normalizeSpecialPlacement(cfg && (cfg.ia_pedidos_placement !== undefined ? cfg.ia_pedidos_placement : cfg.iaPedidosPlacement));
       return {
         cantidad: cantidad,
         estaciones: out,
@@ -725,6 +740,8 @@
         notas_repeat_minutes: notasRepeatMinutes,
         notas_beep_enabled: notasBeepEnabled === undefined ? true : toBool(notasBeepEnabled),
         notas_blink_enabled: notasBlinkEnabled === undefined ? true : toBool(notasBlinkEnabled),
+        ia_pedidos_enabled: ia_pedidos_enabled,
+        ia_pedidos_placement: ia_pedidos_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
       };
     }
@@ -1584,6 +1601,24 @@
         });
       }
 
+      var iaPedidosToggle = document.getElementById('iaPedidosToggle');
+      if (iaPedidosToggle) {
+        iaPedidosToggle.addEventListener('change', async function () {
+          try {
+            var current = await getConfigFromServer();
+            if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+            current.ia_pedidos_enabled = !!this.checked;
+            current.ia_pedidos_placement = normalizeSpecialPlacement(document.getElementById('iaPedidosPlacementSelect').value);
+            await saveConfigToServer(current);
+            showMessage('Preferencia de Pedidos con IA guardada.', 'success');
+          } catch (err) {
+            console.error('No se pudo guardar preferencia de Pedidos IA', err);
+            showMessage('No se pudo guardar la preferencia de Pedidos con IA.', 'error');
+            this.checked = !this.checked;
+          }
+        });
+      }
+
       var saveNotasConfigBtn = document.getElementById('saveNotasConfigBtn');
       if (saveNotasConfigBtn) {
         saveNotasConfigBtn.addEventListener('click', async function (ev) {
@@ -1607,7 +1642,7 @@
         });
       }
 
-      ['cajaPlacementSelect', 'youtubePlacementSelect', 'notasPlacementSelect'].forEach(function(id) {
+      ['cajaPlacementSelect', 'youtubePlacementSelect', 'notasPlacementSelect', 'iaPedidosPlacementSelect'].forEach(function(id) {
         var select = document.getElementById(id);
         if (!select) return;
         select.addEventListener('change', async function () {
@@ -1617,6 +1652,7 @@
             if (id === 'cajaPlacementSelect') current.caja_placement = normalizeSpecialPlacement(this.value);
             if (id === 'youtubePlacementSelect') current.youtube_placement = normalizeSpecialPlacement(this.value);
             if (id === 'notasPlacementSelect') current.notas_placement = normalizeSpecialPlacement(this.value);
+            if (id === 'iaPedidosPlacementSelect') current.ia_pedidos_placement = normalizeSpecialPlacement(this.value);
             await saveConfigToServer(current);
             showMessage('Orden de carga guardado.', 'success');
           } catch (err) {
@@ -1696,6 +1732,14 @@
       var notasPlacementSelect = document.getElementById('notasPlacementSelect');
       if (notasPlacementSelect) {
         try { notasPlacementSelect.value = normalizeSpecialPlacement(cfg && cfg.notas_placement); } catch (e) { /* ignore */ }
+      }
+      var iaPedidosToggleEl = document.getElementById('iaPedidosToggle');
+      if (iaPedidosToggleEl) {
+        try { iaPedidosToggleEl.checked = !!(cfg && cfg.ia_pedidos_enabled); } catch (e) { /* ignore */ }
+      }
+      var iaPedidosPlacementSelect = document.getElementById('iaPedidosPlacementSelect');
+      if (iaPedidosPlacementSelect) {
+        try { iaPedidosPlacementSelect.value = normalizeSpecialPlacement(cfg && cfg.ia_pedidos_placement); } catch (e) { /* ignore */ }
       }
       var notasDefaultTextInput = document.getElementById('notasDefaultTextInput');
       if (notasDefaultTextInput) {
