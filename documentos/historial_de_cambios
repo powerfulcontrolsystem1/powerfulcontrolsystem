@@ -14845,3 +14845,19 @@ Archivos modificados:
 - web/super/configuracion_logica_del_chat_con_ia.html
 - web/super/pagina_principal.html
 - web/venta_publica.html
+
+2026-04-25: Chat IA: adjuntos GPT-5.5 + streaming configurable
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/super/chat_con_ia_global.html
+- web/super/configuracion_logica_del_chat_con_ia.html
