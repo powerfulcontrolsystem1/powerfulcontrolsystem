@@ -527,6 +527,7 @@
           var estado = normalize(getQueryParam("estado_documento"));
           var cliente = normalize(getQueryParam("cliente"));
           var documento = normalize(getQueryParam("documento"));
+          var autoPrint = normalize(getQueryParam("auto_print"));
           var fechaDesde = normalize(getQueryParam("fecha_desde"));
           var fechaHasta = normalize(getQueryParam("fecha_hasta"));
           var q = normalize(getQueryParam("q"));
@@ -540,6 +541,9 @@
           if (fechaHasta) document.getElementById("fechaHasta").value = fechaHasta;
           if (q) document.getElementById("busquedaGlobal").value = q;
           if (includeInactive) document.getElementById("includeInactive").checked = includeInactive === "1" || includeInactive.toLowerCase() === "true";
+          if (autoPrint) {
+            state.autoPrintRequested = autoPrint === "1" || autoPrint.toLowerCase() === "true";
+          }
         } catch (e) {
           // no-op
         }
@@ -602,12 +606,37 @@
           .then(function (data) {
             state.items = Array.isArray(data && data.items) ? data.items : [];
             renderTable();
+            tryAutoPrintIfRequested();
           })
           .catch(function (err) {
             state.items = [];
             renderTable();
             showMessage(err.message || "No se pudo consultar documentos", "error");
           });
+      }
+
+      function tryAutoPrintIfRequested() {
+        if (!state.autoPrintRequested || state.autoPrintDone) return;
+        var needle = normalize(getQueryParam("documento")).toLowerCase();
+        if (!needle) return;
+        var found = null;
+        for (var i = 0; i < (state.items || []).length; i++) {
+          var it = state.items[i] || {};
+          var codigo = normalize(it.documento_codigo).toLowerCase();
+          var legal = normalize(it.numero_legal).toLowerCase();
+          var valid = normalize(it.codigo_validacion).toLowerCase();
+          if (codigo === needle || legal === needle || valid === needle) {
+            found = it;
+            break;
+          }
+          if (codigo && codigo.indexOf(needle) >= 0) { found = it; break; }
+          if (legal && legal.indexOf(needle) >= 0) { found = it; break; }
+        }
+        if (!found) return;
+        state.autoPrintDone = true;
+        state.selectedKey = makeKey(found);
+        renderDetalle(found);
+        try { printInvoice(found); } catch (e) {}
       }
 
       function loadEmpresa() {
@@ -676,6 +705,8 @@
           showMessage("empresa_id es obligatorio en la URL", "error");
           return;
         }
+        state.autoPrintRequested = false;
+        state.autoPrintDone = false;
         clearFilters();
         applyFiltersFromQueryParams();
         loadEmpresa();

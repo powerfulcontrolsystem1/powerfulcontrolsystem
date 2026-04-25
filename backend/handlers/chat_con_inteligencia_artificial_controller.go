@@ -426,7 +426,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-		contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -641,9 +641,9 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 	messages = append(messages, msg{Role: "user", Content: strings.TrimSpace(pregunta)})
 
 	body := map[string]interface{}{
-		"model":       strings.TrimSpace(model.UpstreamModel),
-		"messages":    messages,
-		"temperature": 0.2,
+		"model":                 strings.TrimSpace(model.UpstreamModel),
+		"messages":              messages,
+		"temperature":           0.2,
 		"max_completion_tokens": 700,
 	}
 	payload, _ := json.Marshal(body)
@@ -700,10 +700,11 @@ func buildEmpresaAISystemPrompt(contexto string) string {
 		"No inventes consultas SQL ni afirmes acceso a otras empresas. " +
 		"Cuando el usuario pida ejecutar acciones operativas (p. ej. crear productos, actualizar precios, registrar egresos, crear servicios o tarifas), NO ejecutes nada directamente. " +
 		"En su lugar, debes proponer una accion como una sugerencia estructurada para que el usuario la confirme. " +
+		"Regla de seguridad: puedes proponer acciones de lectura (GET/OPEN) y de crear/editar (POST/PUT), pero NO propongas acciones de eliminacion (DELETE) ni operativas destructivas. " +
 		"Solo cuando tengas TODOS los datos obligatorios, incluye al FINAL de tu respuesta un bloque literal con el prefijo EXACTO `PCS_ACTION` en una linea aparte, seguido por un JSON valido. " +
 		"Formato requerido:\n" +
 		"PCS_ACTION\n" +
-		"{\"version\":1,\"actions\":[{\"id\":\"...\",\"title\":\"...\",\"endpoint\":\"/api/empresa/...\",\"method\":\"POST|PUT|DELETE\",\"body\":{...},\"requires_confirmation\":true}],\"note\":\"...\"}\n" +
+		"{\"version\":1,\"actions\":[{\"id\":\"...\",\"title\":\"...\",\"endpoint\":\"/api/empresa/...\",\"method\":\"GET|OPEN|POST|PUT\",\"body\":{...},\"requires_confirmation\":true}],\"note\":\"...\"}\n" +
 		"- No incluyas Markdown dentro del JSON. - No incluyas comentarios. - El JSON debe ser parseable.\n" +
 		"Si te falta un dato (por ejemplo categoria_id, impuesto, monto, fecha, estacion_id), NO generes PCS_ACTION: pregunta lo que falta primero. " +
 		"Si la operacion es riesgosa o destructiva, pregunta confirmacion adicional.\n\n" +

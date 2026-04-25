@@ -501,6 +501,21 @@
         for (const act of m.actionProposal.actions) {
           const endpoint = normalize(act.endpoint);
           const method = normalize(act.method || "POST").toUpperCase();
+          if (method === "DELETE") {
+            throw new Error("Acción bloqueada: por política del chat IA no se permiten eliminaciones (DELETE). Solo se permiten POST/PUT.");
+          }
+          if (method === "OPEN") {
+            if (!endpoint || endpoint[0] !== "/") {
+              throw new Error("Acción OPEN bloqueada: la URL debe ser relativa (iniciar con /).");
+            }
+            try {
+              window.open(endpoint, "_blank", "noopener,noreferrer");
+              appendMessage("system", "Acción ejecutada: abrir vista — " + endpoint);
+              continue;
+            } catch (e) {
+              throw new Error("No se pudo abrir la vista en una nueva pestaña.");
+            }
+          }
           const bodyObj = act.body != null ? act.body : null;
           const res = await fetch(endpoint, {
             method: method,

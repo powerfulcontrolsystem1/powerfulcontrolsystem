@@ -8522,3 +8522,16 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/estilos.css`: clases `pcs-pr-*` (permisos rol) y `lic-coverage-*` (licencias).
 - `backend/handlers/empresa_permisos.go`: etiquetas de módulo y acción; `permissionPageRule` con `titulo` y `grupo`; filas de páginas con metadatos para la UI.
 - `backend/handlers/roles_tipos_usuario.go`: `GET /super/api/roles_de_usuario/permisos` incluye `acciones_etiqueta` y `modulos_etiqueta`.
+
+[2026-04-25] Chat IA: acciones sin eliminación
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html`: UI del chat IA por empresa; ahora bloquea ejecución de acciones `PCS_ACTION` con método `DELETE` (solo permite POST/PUT).
+- `web/super/chat_con_ia_global.html`: UI del chat IA global; ahora bloquea ejecución de acciones `PCS_ACTION` con método `DELETE` (solo permite POST/PUT).
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: prompt del chat IA por empresa instruye al modelo a proponer solo POST/PUT (sin DELETE).
+- `backend/handlers/chat_con_ia_global_super.go`: prompt del chat IA global instruye al modelo a proponer solo POST/PUT (sin DELETE).
+
+[2026-04-25] Chat IA: acciones de lectura y abrir vistas
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html`: soporta `PCS_ACTION` con método `OPEN` para abrir vistas internas (URL relativa) en nueva pestaña; mantiene bloqueo de DELETE.
+- `web/super/chat_con_ia_global.html`: soporta `PCS_ACTION` con método `OPEN` para abrir vistas internas (URL relativa) en nueva pestaña; mantiene bloqueo de DELETE.
+- `web/administrar_empresa/facturas_electronicas.html`: soporta `auto_print=1` + `documento=...` para auto-abrir impresión del documento tras cargar resultados (uso desde IA con `OPEN`).
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: prompt permite métodos `GET|OPEN|POST|PUT` (sin DELETE).
+- `backend/handlers/chat_con_ia_global_super.go`: prompt permite métodos `GET|OPEN|POST|PUT` (sin DELETE).

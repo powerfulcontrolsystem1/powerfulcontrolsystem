@@ -419,6 +419,7 @@ func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSolo
 			"NUNCA incluyas el bloque PCS_ACTION en la primera respuesta donde propones o describes un cambio. " +
 			"En ese turno solo explica el impacto, lista que haria cada llamada (endpoint, metodo, datos clave) y termina preguntando de forma explicita si el usuario confirma aplicar esos cambios. " +
 			"Unicamente en un turno POSTERIOR, cuando el ultimo mensaje del usuario sea una confirmacion explicita (por ejemplo: si, confirmo, de acuerdo, adelante, procede, ejecuta) referida a esa propuesta ya aclarada, puedes incluir al FINAL el bloque literal con prefijo EXACTO `PCS_ACTION` y JSON valido (mismo formato que el chat empresarial: version, actions, note). " +
+			"Regla de seguridad: NO propongas acciones de eliminacion (DELETE) ni operaciones destructivas; limita PCS_ACTION a GET/OPEN/POST/PUT. " +
 			"Si el historial no muestra que el usuario confirmo tras tu pregunta, o si la intencion sigue ambigua, no emitas PCS_ACTION: aclara o vuelve a pedir confirmacion. " +
 			"Si falta cualquier dato obligatorio, pregunta primero y NO emitas PCS_ACTION. " +
 			"Si la operacion es riesgosa o destructiva, pide confirmacion adicional antes de cualquier PCS_ACTION. "

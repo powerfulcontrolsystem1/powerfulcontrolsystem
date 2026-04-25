@@ -14621,3 +14621,16 @@ Archivos modificados:
 - web/estilos.css
 - web/index.html
 - web/super/configuracion_logica_del_chat_con_ia.html
+
+2026-04-25: Chat IA (super y empresa): permitir crear/editar, bloquear eliminaciones
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- web/super/chat_con_ia_global.html
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/administrar_empresa/facturas_electronicas.html
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- Descripcion: Se endurece el módulo de chat IA para que las acciones sugeridas/ejecutadas desde `PCS_ACTION` **no permitan `DELETE`**. Se bloquea `DELETE` en UI (antes de ejecutar `fetch`) y se instruye al modelo en los prompts del backend para proponer solo `GET/OPEN/POST/PUT`. El chat de empresa conserva aislamiento por `empresa_id` y el chat global aplica la misma política de no eliminación.
+- Nota: Se habilita `PCS_ACTION` con método `OPEN` (abrir URL relativa en nueva pestaña) para que la IA pueda ejecutar funciones del sistema que son vistas/pantallas (por ejemplo abrir `facturas_electronicas.html`). En `facturas_electronicas.html` se agrega `auto_print=1` para que al abrir la vista con `documento=...` se dispare la visualización/impresión del documento automáticamente.
