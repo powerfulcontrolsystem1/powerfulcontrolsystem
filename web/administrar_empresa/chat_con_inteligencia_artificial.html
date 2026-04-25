@@ -43,6 +43,7 @@
         <div class="ai-gemini-topmeta">
           <span id="modelPill" class="ai-gemini-meta-pill" title="Modelo en uso"></span>
           <span id="usagePill" class="ai-gemini-meta-pill ai-gemini-meta-pill--soft" hidden></span>
+          <a class="btn secondary" href="/ayuda/chat_ia.html?scope=empresa" target="_blank" rel="noopener noreferrer">Ayuda</a>
         </div>
       </header>
 
@@ -501,8 +502,12 @@
         for (const act of m.actionProposal.actions) {
           const endpoint = normalize(act.endpoint);
           const method = normalize(act.method || "POST").toUpperCase();
+          let confirmText = "";
           if (method === "DELETE") {
-            throw new Error("Acción bloqueada: por política del chat IA no se permiten eliminaciones (DELETE). Solo se permiten POST/PUT.");
+            confirmText = prompt("Confirmación adicional requerida.\n\nVas a ELIMINAR datos.\nEscribe exactamente: ELIMINAR", "") || "";
+            if (normalize(confirmText).toUpperCase() !== "ELIMINAR") {
+              throw new Error("Acción cancelada: no se confirmó ELIMINAR.");
+            }
           }
           if (method === "OPEN") {
             if (!endpoint || endpoint[0] !== "/") {
@@ -522,7 +527,9 @@
             headers: {
               "Content-Type": "application/json",
               "X-PCS-Source": "chat_ia",
-              "X-PCS-Chat-Conversation-ID": String(state.activeConvId || "")
+              "X-PCS-Chat-Conversation-ID": String(state.activeConvId || ""),
+              "X-PCS-Confirmed": "1",
+              "X-PCS-Confirm-Text": confirmText ? String(confirmText).toUpperCase() : ""
             },
             body: bodyObj ? JSON.stringify(bodyObj) : null
           });

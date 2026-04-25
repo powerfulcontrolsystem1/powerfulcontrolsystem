@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ayuda — Chat con IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Ayuda — Chat con IA</h1>
+      <p class="form-help" id="scopeHint"></p>
+    </div>
+
+    <section class="card empresa-section">
+      <h2>Cómo usarlo</h2>
+      <ul>
+        <li><b>Escribe una pregunta</b> (ej: “muéstrame los últimos 10 carritos pagados”).</li>
+        <li>La IA responde con explicación y, si hace falta ejecutar algo, mostrará una tarjeta <b>“Acciones sugeridas”</b>.</li>
+        <li>Para ejecutar, debes presionar <b>Confirmar y ejecutar</b>. Nada se ejecuta automáticamente.</li>
+      </ul>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Acciones (PCS_ACTION) y confirmaciones</h2>
+      <ul>
+        <li><b>GET/OPEN</b>: consultar datos o abrir una vista del sistema.</li>
+        <li><b>POST/PUT</b>: crear o actualizar datos (siempre pide confirmación).</li>
+        <li><b>DELETE</b>: eliminar datos (pide confirmación adicional escribiendo <b>ELIMINAR</b>).</li>
+      </ul>
+      <p class="form-help">Recomendación: pide primero una consulta (GET) para revisar resultados y luego confirma cambios.</p>
+    </section>
+
+    <section class="card empresa-section" id="empresaOnly" style="display:none;">
+      <h2>Chat IA empresarial (por empresa)</h2>
+      <ul>
+        <li>Opera <b>solo</b> sobre la empresa seleccionada (aislamiento por <code>empresa_id</code>).</li>
+        <li>Puede proponer CRUD por empresa usando el endpoint <code>/api/empresa/db_admin</code> (tablas con <code>empresa_id</code>).</li>
+        <li><b>Solo usuarios con rol administrador</b> pueden ejecutar operaciones de base de datos/CRUD desde el chat.</li>
+      </ul>
+      <p class="form-help">Todas las operaciones quedan registradas en auditoría empresarial.</p>
+    </section>
+
+    <section class="card empresa-section" id="globalOnly" style="display:none;">
+      <h2>Chat IA global (super)</h2>
+      <ul>
+        <li>Sirve para consultas globales del sistema y navegación a vistas.</li>
+        <li>Cuando proponga acciones, siempre requiere confirmación.</li>
+      </ul>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Ejemplos útiles</h2>
+      <ul>
+        <li>“Lista las tablas disponibles para mi empresa y dime cuáles son las más importantes.”</li>
+        <li>“Busca el producto ‘Coca Cola’ y actualiza el precio a 3500 (muéstrame antes el producto encontrado).”</li>
+        <li>“Crea un código de descuento del 10% llamado PROMO10 y dime cómo desactivarlo después.”</li>
+      </ul>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Trazabilidad</h2>
+      <p class="form-help">
+        Las ejecuciones confirmadas desde el chat se registran con metadatos del chat (fuente <code>chat_ia</code> y conversación),
+        y en operaciones de BD se registra además un evento en <code>empresa_auditoria_eventos</code>.
+      </p>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const params = new URLSearchParams(window.location.search);
+      const scope = (params.get("scope") || "").trim().toLowerCase();
+      const hint = document.getElementById("scopeHint");
+      const empresa = document.getElementById("empresaOnly");
+      const global = document.getElementById("globalOnly");
+      if (scope === "super" || scope === "global") {
+        if (hint) hint.textContent = "Esta guía aplica al chat IA global (super).";
+        if (global) global.style.display = "";
+      } else {
+        if (hint) hint.textContent = "Esta guía aplica al chat IA empresarial (por empresa).";
+        if (empresa) empresa.style.display = "";
+      }
+    })();
+  </script>
+</body>
+</html>
+

@@ -98,6 +98,19 @@
 	- `backend/handlers/public_estacion_vip.go` : API pública `GET/POST /api/public/estacion_vip` para validar código, listar productos activos y agregar un producto al carrito de la estación (con nota).
 	- `web/productos_estacion_clientes_publico.html` : página pública para que el cliente ingrese el código VIP, vea productos en botones y envíe pedidos con nota; botón de QR (link).
 
+- Actualizacion 2026-04-25: chat IA (empresa) — CRUD de base de datos con confirmación y auditoría
+	- `backend/db/db_admin_crud.go` : utilidades “DB admin” seguras (schema/columns/select/insert/update/delete) solo para tablas con `empresa_id`, con validación de identificadores y scoping obligatorio.
+	- `backend/handlers/empresa_db_admin.go` : endpoint protegido `POST/GET /api/empresa/db_admin` (solo rol administrador), requiere cabeceras de confirmación y registra auditoría en `empresa_auditoria_eventos`.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : ejecutor de `PCS_ACTION` agrega cabeceras `X-PCS-Confirmed` y confirmación adicional para `DELETE`.
+
+- Actualizacion 2026-04-25: permisos por rol — opciones Chat IA y rol administrador total
+	- `backend/handlers/empresa_permisos.go` : agrega `linkChatIAGlobal` al catálogo de páginas/funciones y el rol `administrador_total` (acceso completo a módulos/acciones).
+
+- Actualizacion 2026-04-25: ayuda — botón Ayuda en chats IA
+	- `web/ayuda/chat_ia.html` : guía corta de uso del chat IA (empresas y global) con reglas de confirmación y ejemplos.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : agrega botón **Ayuda** (abre la guía en nueva pestaña).
+	- `web/super/chat_con_ia_global.html` : agrega botón **Ayuda** (abre la guía en nueva pestaña).
+
 - Actualizacion 2026-04-24: index — subtítulo IA bajo el titulo de facturación electrónica
 	- `web/index.html` : bajo el h1 "Sistema de Facturación Electrónica" añade linea de apoyo "Habla con tu empresa — Inteligencia artificial integrada" (`.portal-cards-subheading`).
 

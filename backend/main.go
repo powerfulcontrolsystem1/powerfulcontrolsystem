@@ -767,6 +767,7 @@ func main() {
 	http.HandleFunc("/api/empresa/configuracion_general", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGeneralHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras/resolver", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasResolverHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))

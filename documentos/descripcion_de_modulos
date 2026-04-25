@@ -44,6 +44,16 @@
 - Trazabilidad: la auditoria critica (`empresa_auditoria_eventos`) registra la fuente `chat_ia` y el id de conversacion; los endpoints mantienen los mismos permisos por rol y alcance por `empresa_id`.
 - Impacto operativo: no se agregan dependencias externas; el chat no ejecuta acciones sin confirmacion explicita del usuario. Si falta un dato, el asistente debe preguntarlo antes de proponer `PCS_ACTION`.
 
+2026-04-25: Chat IA (empresa) — CRUD de base de datos por empresa con confirmación y trazabilidad
+- Modulos afectados: `chat IA`, `seguridad y permisos`, `auditoría empresarial`
+- Cambio funcional: el chat IA empresarial ahora puede proponer (si el usuario tiene rol **administrador**) operaciones de consulta y CRUD sobre tablas con `empresa_id` usando `/api/empresa/db_admin`. Toda operación requiere confirmación del usuario; para `DELETE` se exige confirmación adicional escribiendo “ELIMINAR”. Todas las operaciones quedan registradas en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
+- Alcance: solo tablas con `empresa_id` (aislamiento obligatorio). No se ejecuta SQL libre; se valida tabla/columna contra `information_schema`.
+- Impacto operativo: habilita soporte/operación avanzada con trazabilidad; reduce riesgo de inyección al usar valores parametrizados y validación de identificadores.
+
+2026-04-25: Permisos por rol — opciones para Chat IA (empresa y global) + rol administrador total
+- Modulos afectados: `seguridad y permisos`, `chat IA`, `super`
+- Cambio funcional: el catálogo de páginas/funciones por rol incluye `Asistente IA (chat empresarial)` y `Chat IA global (super)` para administración desde `super/permisos_rol.html`. Se agrega el rol `administrador_total` con acceso completo a todos los módulos y acciones (R/C/U/D/A) para operación administrativa sin restricciones por rol (sujeto a licencia).
+
 2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
 - Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
 - Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).

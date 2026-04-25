@@ -83,6 +83,7 @@ var permissionModuleDisplayNames = map[string]string{
 
 var permissionRolesCatalogOrdered = []string{
 	"super_administrador",
+	"administrador_total",
 	"admin_empresa",
 	"supervisor_sucursal",
 	"cajero",
@@ -122,6 +123,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integración"},
@@ -826,6 +828,8 @@ func normalizePermissionRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "super_administrador", "superadmin", "super":
 		return "super_administrador"
+	case "administrador_total", "admin_total", "admin_full", "full_admin":
+		return "administrador_total"
 	case "administrador", "admin", "admin_empresa":
 		return "admin_empresa"
 	case "supervisor", "supervisor_sucursal":
@@ -847,6 +851,9 @@ func normalizePermissionRole(raw string) string {
 
 func roleAllowsModuleAction(role, module, action string) bool {
 	if role == "super_administrador" {
+		return true
+	}
+	if role == "administrador_total" {
 		return true
 	}
 
