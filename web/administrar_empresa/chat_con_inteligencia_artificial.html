@@ -63,7 +63,8 @@
 
         <form id="promptForm" class="ai-chat-form ai-gemini-form ai-gemini-composer">
           <label class="ai-gemini-visually-hidden" for="promptInput">Mensaje</label>
-          <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Escribe tu consulta…"></textarea>
+          <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Escribe tu consulta…" title="Enter envía · Mayús+Enter nueva línea"></textarea>
+          <div class="form-help ai-gemini-enter-hint">Enter envía · Mayús+Enter nueva línea</div>
           <div class="ai-chat-actions">
             <button id="micBtn" class="btn secondary" type="button" title="Dictar">Dictar</button>
             <button id="sendBtn" class="btn" type="submit">Enviar</button>
@@ -796,6 +797,14 @@
       });
 
       document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+      document.getElementById("promptInput").addEventListener("keydown", function (ev) {
+        if (ev.key !== "Enter" || ev.shiftKey) return;
+        ev.preventDefault();
+        const sendBtn = document.getElementById("sendBtn");
+        if (sendBtn && !sendBtn.disabled) {
+          document.getElementById("promptForm").requestSubmit();
+        }
+      });
       document.getElementById("btnNewChat").addEventListener("click", function () {
         newChat();
         document.getElementById("promptInput").disabled = !!state.authRequired || !!state.aiDisabled;

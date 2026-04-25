@@ -271,11 +271,6 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	ampliarSuper, _, _, err := getChatIASuperContextoAmplio(c.base.dbSuper)
-	if err != nil {
-		http.Error(w, "No se pudo consultar configuración de contexto IA", http.StatusInternalServerError)
-		return
-	}
 	empresaRO, _, _, err := getChatIAEmpresaSoloLectura(c.base.dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuración de contexto IA", http.StatusInternalServerError)
@@ -283,15 +278,15 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 	}
 
 	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, payload.Pregunta, dbpkg.SuperAIContextoOpts{
-		AmpliarContextoSuper: ampliarSuper,
-		EmpresaSoloLectura:   empresaRO,
+		EmpresaSoloLectura: empresaRO,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
 	}
 
-	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, ampliarSuper, empresaRO))
+	superMeta := c.base.dbSuper != nil
+	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO))
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, model, usoActual.Consultas)
@@ -411,17 +406,22 @@ func (c *SuperAIChatController) HistorialHandler(w http.ResponseWriter, r *http.
 	})
 }
 
-func buildSuperAISystemPrompt(contexto string, superContextoAmplio, empresaSoloLectura bool) string {
+func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSoloLectura bool) string {
 	extra := ""
-	if superContextoAmplio {
-		extra += "El contexto incluye un bloque agregado ampliado de la base superadministrador (conteos y metadatos); no asumas accesos a credenciales ni a ejecutar SQL. "
+	if superEsquemaCompleto {
+		extra += "El contexto incluye inventario de la base superadministrador (conteos por tabla, columnas nombre:tipo, reparto de administradores por rol). No se inyectan valores de fila ni secretos. No asumas que puedes ejecutar SQL ni acceder fuera de lo resumido. "
 	}
 	if empresaSoloLectura {
 		extra += "Datos de empresas en el contexto provienen solo de consultas de lectura en el servidor. No sugieras ni describas operaciones de escritura, UPDATE, DELETE, ni PCS_ACTION que modifiquen datos de negocio; limítate a analizar o explicar lo mostrado. "
 	} else {
 		extra += "Si el usuario pide ejecutar acciones operativas (por ejemplo crear productos en una empresa, ajustar precios o registrar egresos), NO ejecutes nada directamente. " +
-			"Solo sugiere acciones confirmables usando un bloque literal con el prefijo EXACTO `PCS_ACTION` y JSON valido al final, igual que el chat empresarial. " +
-			"Si falta cualquier dato, pregunta primero y NO emitas PCS_ACTION. "
+			"Las acciones solo se materializan como bloque PCS_ACTION tras confirmacion humana en el hilo. Regla obligatoria: " +
+			"NUNCA incluyas el bloque PCS_ACTION en la primera respuesta donde propones o describes un cambio. " +
+			"En ese turno solo explica el impacto, lista que haria cada llamada (endpoint, metodo, datos clave) y termina preguntando de forma explicita si el usuario confirma aplicar esos cambios. " +
+			"Unicamente en un turno POSTERIOR, cuando el ultimo mensaje del usuario sea una confirmacion explicita (por ejemplo: si, confirmo, de acuerdo, adelante, procede, ejecuta) referida a esa propuesta ya aclarada, puedes incluir al FINAL el bloque literal con prefijo EXACTO `PCS_ACTION` y JSON valido (mismo formato que el chat empresarial: version, actions, note). " +
+			"Si el historial no muestra que el usuario confirmo tras tu pregunta, o si la intencion sigue ambigua, no emitas PCS_ACTION: aclara o vuelve a pedir confirmacion. " +
+			"Si falta cualquier dato obligatorio, pregunta primero y NO emitas PCS_ACTION. " +
+			"Si la operacion es riesgosa o destructiva, pide confirmacion adicional antes de cualquier PCS_ACTION. "
 	}
 	return "Eres un asistente global del sistema POS multiempresa para uso exclusivo de super administracion. " +
 		"Responde en espanol claro y accionable. Usa solo el contexto agregado validado del sistema completo. " +

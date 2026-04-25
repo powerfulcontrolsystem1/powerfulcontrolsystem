@@ -1460,9 +1460,10 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 }
 
 // SuperAIContextoOpts modula el contexto inyectado al chat global de superadministrador.
+// El bloque de metadatos de la base super (conteos/columnas) se adjunta siempre que exista conexión a dbSuper;
+// EmpresaSoloLectura controla si los fragmentos de la base empresas son estrictamente lectura informativa.
 type SuperAIContextoOpts struct {
-	AmpliarContextoSuper bool
-	EmpresaSoloLectura   bool
+	EmpresaSoloLectura bool
 }
 
 // BuildSuperAIContextoForQuestion amplía el contexto global con consultas seguras resueltas
@@ -1472,7 +1473,7 @@ func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunt
 	if err != nil {
 		return "", err
 	}
-	if opts.AmpliarContextoSuper && dbSuper != nil {
+	if dbSuper != nil {
 		if ampliado := buildSuperAIContextoAmpliadoSuper(dbSuper); ampliado != "" {
 			base = base + "\n" + ampliado
 		}
@@ -1487,37 +1488,127 @@ func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunt
 	return base + "\n" + safeContext, nil
 }
 
-// buildSuperAIContextoAmpliadoSuper agrega conteos agregados (solo metadatos) de tablas
-// frecuentes en pcs_superadministrador, sin volcar claves de configuración ni secretos.
+var aiPGUnquotedIdent = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+func isSafePostgresUnquotedIdent(s string) bool {
+	if s == "" || len(s) > 63 {
+		return false
+	}
+	return aiPGUnquotedIdent.MatchString(s)
+}
+
+func quotePGIdent(s string) string {
+	// Incluye reservas y mayúsculas: siempre entre comillas con escape estándar.
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+}
+
+type superQTable struct {
+	Schema string
+	Table  string
+}
+
+// superAIListBaseTablesInSearchPath devuelve tablas base en los esquemas de búsqueda actuales.
+func superAIListBaseTablesInSearchPath(dbConn *sql.DB) ([]superQTable, error) {
+	if dbConn == nil {
+		return nil, nil
+	}
+	rows, err := querySQLCompat(dbConn, `
+		SELECT table_schema, table_name
+		FROM information_schema.tables
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_type = 'BASE TABLE'
+		ORDER BY table_schema, table_name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []superQTable
+	for rows.Next() {
+		var sch, tbl string
+		if err := rows.Scan(&sch, &tbl); err != nil {
+			return nil, err
+		}
+		sch = strings.TrimSpace(sch)
+		tbl = strings.TrimSpace(tbl)
+		if !isSafePostgresUnquotedIdent(sch) || !isSafePostgresUnquotedIdent(tbl) {
+			continue
+		}
+		out = append(out, superQTable{Schema: sch, Table: tbl})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// superAIColumnLines lista columnas (nombre:tipo) para una tabla calificada.
+func superAIColumnLines(dbConn *sql.DB, q superQTable) ([]string, error) {
+	rows, err := querySQLCompat(dbConn, `
+		SELECT column_name, data_type
+		FROM information_schema.columns
+		WHERE table_schema = ?
+		  AND table_name = ?
+		ORDER BY ordinal_position
+	`, q.Schema, q.Table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var parts []string
+	for rows.Next() {
+		var col, typ string
+		if err := rows.Scan(&col, &typ); err != nil {
+			return nil, err
+		}
+		col = strings.TrimSpace(col)
+		typ = strings.TrimSpace(typ)
+		if col == "" {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s:%s", col, typ))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return parts, nil
+}
+
+// buildSuperAIContextoAmpliadoSuper agrega metadatos de toda la base superadministrador en el
+// search_path: conteo de filas por tabla, columnas (nombre:tipo) y conteos de administradores por rol.
+// No inyecta valores de fila ni contenidos de configuración/secretos.
 func buildSuperAIContextoAmpliadoSuper(dbSuper *sql.DB) string {
 	if dbSuper == nil {
 		return ""
 	}
-	whitelist := []string{
-		"administradores",
-		"configuraciones",
-		"super_ai_consultas",
-		"super_ai_uso_diario",
-		"super_contrato_versiones",
-		"asesores_comerciales",
-		"asesor_comercial_comisiones",
-		"sesiones",
+	tables, err := superAIListBaseTablesInSearchPath(dbSuper)
+	if err != nil || len(tables) == 0 {
+		return ""
 	}
 	var b strings.Builder
-	b.WriteString("CONTEXTO_SUPER_AMPLIADO\n")
-	b.WriteString("nota=conteos de filas en tablas del esquema super; no incluye valores de claves, tokens ni credenciales.\n")
+	b.WriteString("CONTEXTO_SUPER_ESQUEMA_COMPLETO\n")
+	b.WriteString("nota=metadatos de lectura: filas por tabla, columnas (nombre:tipo) y reparto de roles; no se incluyen filas, tokens, contraseñas ni valores de configuración sensibles.\n")
 	hasData := false
-	for _, t := range whitelist {
-		ok, err := tableExists(dbSuper, t)
-		if err != nil || !ok {
-			continue
-		}
+	for _, q := range tables {
+		cq := fmt.Sprintf(`SELECT COUNT(1) FROM %s.%s`, quotePGIdent(q.Schema), quotePGIdent(q.Table))
 		var n int64
-		q := "SELECT COUNT(1) FROM " + t
-		if err := queryRowSQLCompat(dbSuper, q).Scan(&n); err != nil {
+		if err := queryRowSQLCompat(dbSuper, cq).Scan(&n); err != nil {
 			continue
 		}
-		b.WriteString(fmt.Sprintf("- %s=%d\n", t, n))
+		b.WriteString(fmt.Sprintf("- %s.%s filas=%d\n", q.Schema, q.Table, n))
+		hasData = true
+	}
+	b.WriteString("CONTEXTO_SUPER_COLUMNAS_POR_TABLA\n")
+	for _, q := range tables {
+		lines, err := superAIColumnLines(dbSuper, q)
+		if err != nil || len(lines) == 0 {
+			continue
+		}
+		joined := strings.Join(lines, ", ")
+		if len([]rune(joined)) > 4000 {
+			joined = string([]rune(joined)[:4000]) + "..."
+		}
+		b.WriteString(fmt.Sprintf("- %s.%s: %s\n", q.Schema, q.Table, joined))
 		hasData = true
 	}
 	// Resumen de administradores por rol (sin PII: solo conteos)
@@ -1525,6 +1616,7 @@ func buildSuperAIContextoAmpliadoSuper(dbSuper *sql.DB) string {
 		rows, err := querySQLCompat(dbSuper, `SELECT LOWER(COALESCE(role,'')) AS r, COUNT(1) FROM administradores GROUP BY LOWER(COALESCE(role,''))`)
 		if err == nil {
 			defer rows.Close()
+			b.WriteString("CONTEXTO_SUPER_ADMIN_ROLES\n")
 			for rows.Next() {
 				var role string
 				var c int64
@@ -1539,10 +1631,15 @@ func buildSuperAIContextoAmpliadoSuper(dbSuper *sql.DB) string {
 			}
 		}
 	}
+	s := b.String()
+	if len([]rune(s)) > 100000 {
+		r := []rune(s)
+		s = string(r[:100000]) + "\n- nota=CONTEXTO_SUPER_RECORTADO (límite de caracteres; prioriza las tablas alfabéticamente iniciales).\n"
+	}
 	if !hasData {
 		return ""
 	}
-	return b.String()
+	return s
 }
 
 func aiAvailableTables(dbConn *sql.DB, candidates []string) ([]string, error) {

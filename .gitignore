@@ -1,5 +1,6 @@
 ﻿# Binarios y logs de backend
 backend/server.exe
+backend/pos-backend.exe
 backend/*.log
 backend/*.err
 backend/logs/*.log
@@ -10,6 +11,9 @@ backend/pos.db
 *.db
 logs/test_runs/*.log
 scripts/logs/*.log
+# URL local del remoto para actualizar_repositorio.ps1 (no versionar)
+scripts/actualizar_repositorio.repo_url
+scripts/pcs_deployment.local.ps1
 tmp/*.txt
 backend/.env.local
 .env.local

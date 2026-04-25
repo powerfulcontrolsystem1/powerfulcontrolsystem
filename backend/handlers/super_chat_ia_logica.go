@@ -25,7 +25,7 @@ const (
 	defaultChatIASuperEnabled        = true
 	defaultChatIAEmpresaMaxConsultas = int64(10)
 	defaultChatIASuperMaxConsultas   = int64(30)
-	defaultChatIASuperContextoAmplio = false
+	defaultChatIASuperContextoAmplio = true
 	defaultChatIAEmpresaSoloLectura  = false
 )
 
@@ -171,7 +171,7 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			superCtxAmplio, superCtxAmplioAt, superCtxAmplioBy, err := getChatIASuperContextoAmplio(dbSuper)
+			_, superCtxAmplioAt, superCtxAmplioBy, err := getChatIASuperContextoAmplio(dbSuper)
 			if err != nil {
 				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -236,10 +236,11 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"updated_by": superMaxBy,
 					},
 					"super_contexto_amplio": map[string]interface{}{
-						"value":      superCtxAmplio,
+						"value":      true,
 						"config_key": superChatIASuperContextoAmplioKey,
 						"updated_at": superCtxAmplioAt,
 						"updated_by": superCtxAmplioBy,
+						"nota":       "El chat global siempre recibe metadatos completos del esquema super (conteos, columnas, roles de admin). La clave histórica en base de datos ya no desactiva este inventario.",
 					},
 					"empresa_solo_lectura": map[string]interface{}{
 						"value":      empSoloLectura,
@@ -303,14 +304,8 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if superMax < 0 {
 				superMax = 0
 			}
-			superCtxAmplio := defaultChatIASuperContextoAmplio
-			if payload.SuperContextoAmplio != nil {
-				superCtxAmplio = *payload.SuperContextoAmplio
-			} else {
-				if cur, _, _, err := getChatIASuperContextoAmplio(dbSuper); err == nil {
-					superCtxAmplio = cur
-				}
-			}
+			// El chat global siempre inyecta inventario de la base super (conteos/columnas); la clave se mantiene en true.
+			superCtxAmplio := true
 			empSoloLectura := defaultChatIAEmpresaSoloLectura
 			if payload.EmpresaSoloLectura != nil {
 				empSoloLectura = *payload.EmpresaSoloLectura

@@ -1,3 +1,28 @@
+- Actualizacion 2026-04-25: scripts — publicar_git_y_vps y pcs_deployment (Git + VPS)
+	- `scripts/pcs_deployment.local.ps1.example` : plantilla con `$script:PcsGitRemoteUrl` (push) y `PcsVpsHost` / `PcsVpsUser` / `PcsVpsRemotePath` / `PcsVpsPort` (sync); copiar a `pcs_deployment.local.ps1` (en `.gitignore`).
+	- `scripts/actualizar_repositorio.ps1` : carga la config unificada antes de `param`; `Get-TargetRepoUrl` acepta `$script:PcsGitRemoteUrl`.
+	- `scripts/sync_to_vps.ps1` : carga la misma config y aplica destino VPS si no se pasan `-RemoteHost` / etc. en la linea de comandos.
+	- `scripts/publicar_git_y_vps.ps1` : ejecuta actualizar repositorio y luego `sync_to_vps` (parametros `-SkipGit` / `-SkipVps` y paso de `-Message` / `-SetOrigin` al script de git).
+	- `.gitignore` : `scripts/pcs_deployment.local.ps1`.
+
+- Actualizacion 2026-04-25: scripts — actualizar_repositorio (remoto configurable)
+	- `scripts/actualizar_repositorio.ps1` : resuelve URL del remoto con prioridad `-RepoUrl` > `PCS_REPO_URL` / `REPO_URL` > `scripts/actualizar_repositorio.repo_url`; sin `origin` agrega el remoto; si `origin` difiere de la URL configurada, exige `-SetOrigin` o `git remote set-url` (evita subir al repo antiguo por error).
+	- `scripts/actualizar_repositorio.repo_url.example` : plantilla comentada; el archivo real `actualizar_repositorio.repo_url` va en `.gitignore`.
+	- `.gitignore` : ignora `scripts/actualizar_repositorio.repo_url`.
+
+- Actualizacion 2026-04-25: chat global super — confirmación antes de PCS_ACTION
+	- `backend/handlers/chat_con_ia_global_super.go` : `buildSuperAISystemPrompt` exige turno de aclaración y confirmación antes de incluir `PCS_ACTION` (salvo modo solo lectura empresas, donde no aplica escritura).
+	- `web/super/chat_con_ia_global.html` : mensaje vacío/bienvenida menciona el flujo confirmar → ejecutar.
+
+- Actualizacion 2026-04-25: chat global super — inventario completo de metadatos (base superadministrador)
+	- `backend/db/chat_inteligencia_artificial.go` : `buildSuperAIContextoAmpliadoSuper` enumera tablas `BASE TABLE` en `current_schemas`, `COUNT` calificado, columnas desde `information_schema`, bloque de roles; limite de caracteres al contexto. `SuperAIContextoOpts` sin `AmpliarContextoSuper`; el bloque super se aplica siempre con `dbSuper`.
+	- `backend/handlers/super_chat_ia_logica.go` : `super_contexto_amplio` forzado a true al guardar; GET devuelve `value: true` y nota; default `defaultChatIASuperContextoAmplio` en true.
+	- `web/super/configuracion_logica_del_chat_con_ia.html` : texto fijo en lugar del interruptor de contexto ampliado super.
+
+- Actualizacion 2026-04-25: chat IA — Enter envia mensaje (Mayus+Enter salto de linea)
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : listener `keydown` en `#promptInput` (Enter sin Mayus = `requestSubmit` si el boton Enviar no esta deshabilitado; Mayus+Enter = varias lineas). Linea de ayuda `form-help` y `title` en el textarea.
+	- `web/super/chat_con_ia_global.html` : mismo comportamiento y ayudas.
+
 - Actualizacion 2026-04-24: super — pagina principal, tema claro/oscuro
 	- `web/super/pagina_principal.html` : script inicial que aplica `data-theme`, `theme-light` / `theme-dark` desde cookie `pcs_theme` y `localStorage` (coherente con iframe del panel super).
 	- `web/estilos.css` : `body.super-page` con `background`/`color` por variables; titulo `.super-page .page-header h1` sin gradiente ilegible en temas claros; `pagina_principal` usa `.pp-main-card` (en vez de `mp-card`) para evitar gradientes rosados en temas oscuros; `.pp-image-preview-wrap` con `color-mix` por tema.
@@ -8292,7 +8317,8 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 Nota: La regla del agente obliga a que cada nuevo archivo creado en el repositorio sea añadido y descrito en este documento. Si se mueven archivos a estas subcarpetas, documentar el cambio en `documentos/historial_de_cambios`.
 
 - scripts/iniciar_servidor.ps1: Script PowerShell para preparar el entorno, compilar y arrancar el backend localmente; detecta/exporta credenciales OAuth desde `documentos/descripcion_del_proyecto`, fuerza `PORT=8080` y abre el navegador.
-- scripts/actualizar_repositorio.ps1: Script PowerShell para preparar commits y push al repositorio remoto; puede actualizar automáticamente `documentos/historial_de_cambios` a menos que el usuario indique lo contrario.
+- scripts/actualizar_repositorio.ps1: Script PowerShell para preparar commits y push a `origin`; acepta URL vía `-RepoUrl`, `PCS_REPO_URL` / `REPO_URL`, o `scripts/actualizar_repositorio.repo_url`; con `-SetOrigin` alinea `origin` con esa URL. Actualiza bitácoras en documentos salvo `-SkipChangeLog`.
+- scripts/actualizar_repositorio.repo_url.example: Plantilla para copiar a `actualizar_repositorio.repo_url` (ignorada por git) con la URL HTTPS/SSH del repositorio.
 
 
 - copilot-instructions.md: Instrucciones del agente (local) que refuerzan reglas operativas del proyecto (ej. uso de Go puro, autorización para dependencias, trazabilidad).

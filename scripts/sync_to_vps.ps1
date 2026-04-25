@@ -7,6 +7,9 @@
   (OpenSSH ssh/scp para claves OpenSSH, PuTTY plink/pscp para .ppk)
   cuando WSL no está instalado o no tiene distribuciones.
   No programa tareas; se ejecuta manualmente cuando el usuario lo necesite.
+  Config opcional: scripts/pcs_deployment.local.ps1 (ver pcs_deployment.local.ps1.example) para
+  PcsVpsHost, PcsVpsUser, PcsVpsRemotePath, PcsVpsPort, PcsVpsIdentityFile, PcsVpsServerPort, PcsVpsPublicBaseUrl
+  cuando no pasas -RemoteHost, etc. en linea de comandos.
 #>
 
 param(
@@ -50,6 +53,32 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $script:SyncExitCode = 0
+
+$pcsDeployVps = Join-Path $PSScriptRoot "pcs_deployment.local.ps1"
+if (Test-Path -LiteralPath $pcsDeployVps) {
+  . $pcsDeployVps
+  if (-not $PSBoundParameters.ContainsKey('RemoteHost') -and (Get-Variable PcsVpsHost -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsHost)) {
+    $RemoteHost = $script:PcsVpsHost.Trim()
+  }
+  if (-not $PSBoundParameters.ContainsKey('RemoteUser') -and (Get-Variable PcsVpsUser -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsUser)) {
+    $RemoteUser = $script:PcsVpsUser.Trim()
+  }
+  if (-not $PSBoundParameters.ContainsKey('RemotePath') -and (Get-Variable PcsVpsRemotePath -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsRemotePath)) {
+    $RemotePath = $script:PcsVpsRemotePath.Trim()
+  }
+  if (-not $PSBoundParameters.ContainsKey('Port') -and (Get-Variable PcsVpsPort -Scope Script -ErrorAction SilentlyContinue) -and $null -ne $script:PcsVpsPort) {
+    $Port = [int]$script:PcsVpsPort
+  }
+  if (-not $PSBoundParameters.ContainsKey('IdentityFile') -and (Get-Variable PcsVpsIdentityFile -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsIdentityFile)) {
+    $IdentityFile = $script:PcsVpsIdentityFile.Trim()
+  }
+  if (-not $PSBoundParameters.ContainsKey('ServerPort') -and (Get-Variable PcsVpsServerPort -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsServerPort)) {
+    $ServerPort = $script:PcsVpsServerPort.Trim()
+  }
+  if (-not $PSBoundParameters.ContainsKey('PublicBaseUrl') -and (Get-Variable PcsVpsPublicBaseUrl -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsPublicBaseUrl)) {
+    $PublicBaseUrl = $script:PcsVpsPublicBaseUrl.Trim()
+  }
+}
 
 function Resolve-PublicDeployUrl {
   param(

@@ -229,7 +229,8 @@ Regla general de tablas:
 ## Scripts operativos
 
 - `scripts/iniciar_servidor.ps1`: arranque local del servidor.
-- `scripts/actualizar_repositorio.ps1`: commit/push automatizado y registro en documentos.
+- `scripts/actualizar_repositorio.ps1`: commit/push a `origin` con URL configurable (además `scripts/pcs_deployment.local.ps1` con `PcsGitRemoteUrl`, `-RepoUrl`, variables de entorno, o `actualizar_repositorio.repo_url`); `-SetOrigin` alinea el remoto. Registro opcional en documentos (bitácoras).
+- `scripts/pcs_deployment.local.ps1.example` → `pcs_deployment.local.ps1` (no versionado): misma config para el push y para `sync_to_vps.ps1` (VPS). `publicar_git_y_vps.ps1` encadena ambos.
 - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh`: despliegue al VPS con build Linux opcional, bootstrap endurecido de `backend/.env.local`, instalacion asistida de dependencias base del VPS segun gestor de paquetes y actualizacion del servicio `systemd` del backend con diagnosticos accionables para que reinicie automaticamente ante caidas, limpie procesos huerfanos del binario remoto y deje activo el backend nuevo al terminar el deploy o al reiniciar el VPS.
 
 ## Seguridad y configuracion sensible

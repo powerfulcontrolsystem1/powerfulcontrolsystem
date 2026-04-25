@@ -1,4 +1,14 @@
-﻿- Super — **Página principal** (`/super/pagina_principal.html`): sincronización de tema en iframe (cookie/localStorage), fondo del `body` con variables del tema, título de cabecera legible en modo claro y contenedor del editor con superficie neutra (`pp-main-card`) para evitar gradientes rosados en algunos temas oscuros; contraste consistente en todas las apariencias.
+﻿- **Flujo Git + VPS**: `scripts/pcs_deployment.local.ps1` (plantilla `pcs_deployment.local.ps1.example`, ignorada en git) centraliza `PcsGitRemoteUrl` y `PcsVpsHost` / ruta / puerto / SSH. `sync_to_vps.ps1` aplica la parte VPS; `publicar_git_y_vps.ps1` ejecuta `actualizar_repositorio.ps1` y luego el sync.
+
+- **Despliegue Git local**: `scripts/actualizar_repositorio.ps1` admite fijar el repositorio remoto con `-RepoUrl`, variables `PCS_REPO_URL` / `REPO_URL`, o el archivo local `scripts/actualizar_repositorio.repo_url` (plantilla `*.repo_url.example`). Si `origin` apunta a otra URL, el script exige `-SetOrigin` para actualizar el remoto antes del push. Archivos: `scripts/actualizar_repositorio.ps1`, `scripts/actualizar_repositorio.repo_url.example`, `.gitignore`, documentación relacionada.
+
+- **Chat global (super)**: la IA debe **preguntar confirmación** antes de emitir un bloque `PCS_ACTION` (resumen y pregunta en un turno; el JSON ejecutable solo tras un “sí”/equivalente explícito del usuario). Texto de bienvenida actualizado en la UI.
+
+- **Chat global (super)**: en cada pregunta el backend adjunta metadatos de **toda** la base `pcs_superadministrador` (conteos por tabla, columnas `nombre:tipo`, reparto de administradores por rol), sin filas con datos sensibles. La pantalla de lógica del chat deja de ofrecer el interruptor de “contexto ampliado”. Archivos: `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html`, documentación relacionada.
+
+- Chat IA (empresa y super): **Enter** envía el mensaje (mismo flujo que el botón); **Mayús+Enter** añade salto de línea en el textarea. Texto de ayuda bajo el campo. Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`.
+
+- Super — **Página principal** (`/super/pagina_principal.html`): sincronización de tema en iframe (cookie/localStorage), fondo del `body` con variables del tema, título de cabecera legible en modo claro y contenedor del editor con superficie neutra (`pp-main-card`) para evitar gradientes rosados en algunos temas oscuros; contraste consistente en todas las apariencias.
 
 - **Permisos por rol** (`/super/permisos_rol.html`): consola empresarial para activar/desactivar acciones por módulo (R/C/U/D/A) y visibilidad por función del menú; API `GET /super/api/roles_de_usuario/permisos` con `modulos_etiqueta`, `acciones_etiqueta` y en cada `pagina` `titulo` y `grupo` (catálogo en `empresa_permisos.go`). **Licencias** (`/super/licencias.html`): sección de cobertura por módulos con descripciones y enlace a la matriz de roles. Modelo: licencia = techo de módulos; rol = matriz y overrides de menú; sin un sistema “universal” duplicado.
 

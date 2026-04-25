@@ -73,14 +73,8 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="superContextoAmplio">Contexto ampliado (base superadministrador)</label>
-          <label class="mode-switch-row" for="superContextoAmplio">
-            <span class="mode-label">Off</span>
-            <input id="superContextoAmplio" type="checkbox" role="switch" aria-label="Incluir contexto ampliado de la base superadministrador en el chat global">
-            <span class="mode-label">On</span>
-          </label>
-          <div class="form-help">Activa un bloque extra con <strong>conteos y metadatos</strong> de tablas del esquema super (administradores, configuración clave, IA, asesores, etc.). <strong>No</strong> inyecta credenciales ni valores secretos. Equivale a una visión de gestión de plataforma.</div>
-          <div id="superContextoAmplioStatus" class="form-help">Cargando estado...</div>
+          <div class="form-label">Base de datos superadministrador (chat global)</div>
+          <div class="form-help">El chat global <strong>siempre</strong> incorpora, en cada consulta, el inventario de <strong>todas</strong> las tablas visibles en el esquema: número de filas, columnas (nombre y tipo) y reparto de administradores por rol. <strong>No</strong> se envían valores de fila, contraseñas, tokens ni contenidos de configuración sensibles.</div>
         </div>
         <div class="form-col">
           <label class="form-label" for="empresaSoloLectura">Solo lectura: base de empresas</label>
@@ -163,13 +157,10 @@
           const empMaxInfo = values.empresa_max_consultas || {};
           const supEnabledInfo = values.super_enabled || {};
           const supMaxInfo = values.super_max_consultas || {};
-          const supCtxInfo = values.super_contexto_amplio || {};
           const empROInfo = values.empresa_solo_lectura || {};
 
           document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
           document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
-          var supCtx = document.getElementById('superContextoAmplio');
-          if (supCtx) supCtx.checked = !!supCtxInfo.value;
           var empRO = document.getElementById('empresaSoloLectura');
           if (empRO) empRO.checked = !!empROInfo.value;
 
@@ -180,7 +171,6 @@
           renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
           renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
           renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
-          renderStatus(document.getElementById('superContextoAmplioStatus'), supCtxInfo);
           renderStatus(document.getElementById('empresaSoloLecturaStatus'), empROInfo);
 
           const usage = data.openai_usage_today || {};
@@ -217,14 +207,13 @@
         if (!isEmpresa && superMsg) superMsg.textContent = 'Guardando...';
 
         try {
-          const elSupCtx = document.getElementById('superContextoAmplio');
           const elEmpRO = document.getElementById('empresaSoloLectura');
           const payload = {
             empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
             empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
             super_enabled: !!document.getElementById('superChatEnabled').checked,
             super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
-            super_contexto_amplio: elSupCtx ? !!elSupCtx.checked : false,
+            super_contexto_amplio: true,
             empresa_solo_lectura: elEmpRO ? !!elEmpRO.checked : false,
           };
           await apiFetch('/super/api/config/chat_ia_logica', {

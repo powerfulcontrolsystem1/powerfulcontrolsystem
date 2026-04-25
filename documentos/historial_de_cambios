@@ -1,3 +1,28 @@
+- 2026-04-25: scripts ? config unificada Git+VPS (pcs_deployment) y publicar_git_y_vps.ps1.
+    - Archivos: `scripts/pcs_deployment.local.ps1.example`, `scripts/publicar_git_y_vps.ps1`, `scripts/actualizar_repositorio.ps1`, `scripts/sync_to_vps.ps1`, `.gitignore`, `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: un solo archivo local opcional define URL de Git e IP/ruta/SSH del VPS; sync y actualizar repositorio lo leen; wrapper encadena push y despliegue.
+    - Verificacion: revision estatica de scripts PowerShell.
+
+- 2026-04-25: scripts/actualizar_repositorio.ps1 ? remoto configurable y -SetOrigin.
+    - Archivos: `scripts/actualizar_repositorio.ps1`, `scripts/actualizar_repositorio.repo_url.example`, `.gitignore`, `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: prioridad de URL (-RepoUrl, env PCS_REPO_URL/REPO_URL, archivo local repo_url); comparacion con origin; set-url con -SetOrigin; mensajes sin asumir solo GitHub.
+    - Verificacion: revision estatica del script.
+
+- 2026-04-25: chat global super ? confirmacion explicita antes de PCS_ACTION.
+    - Archivos: `backend/handlers/chat_con_ia_global_super.go`, `web/super/chat_con_ia_global.html`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`
+    - Descripcion: el system prompt exige resumen y pregunta de confirmacion en un turno; PCS_ACTION solo en el siguiente turno si el usuario confirma (si, adelante, etc.). Bienvenida en UI alineada.
+    - Verificacion: `go build` en `backend/`.
+
+- 2026-04-25: chat global super ? inventario completo de la base superadministrador (metadatos).
+    - Archivos: `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: en cada consulta se inyectan conteos de filas por tabla (esquemas en search_path), listado de columnas nombre:tipo, y reparto de administradores por rol. Sin valores de fila ni secretos. Se elimina el interruptor de contexto ampliado en la UI; la API devuelve `super_contexto_amplio.value=true` con nota. `SuperAIContextoOpts` ya no incluye `AmpliarContextoSuper`.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-25: chat IA ? Enter envia mensaje (empresa y super); ayuda de teclado.
+    - Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: en el textarea del compositor, Enter (sin Mayus) dispara el envio mediante el mismo `submit` del formulario mientras el boton Enviar no este deshabilitado; Mayus+Enter no se intercepta y permite varias lineas. Linea `form-help` y `title` explican la convencion.
+    - Verificacion: revision estatica HTML/JS.
+
 - 2026-04-25: super ? chat global IA: contexto ampliado (super) y solo lectura empresas; estaciones miniaturas tipograf?a.
     - Archivos: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: nuevas claves en `configuraciones` (`ai.chat.super.contexto_amplio`, `ai.chat.super.empresa_solo_lectura`); el chat global inyecta conteos y metadatos de tablas del esquema super o fragmentos de solo lectura de la base empresas (listados y muestras con SELECT aprobado); el system prompt restringe sugerencias de escritura cuando aplica solo lectura. En vista m?vil `Ver miniaturas` el texto de las tarjetas usa `clamp`/`max` y hereda escala de `#estacionesGrid` en lugar de un `0.72rem` fijo poco legible.

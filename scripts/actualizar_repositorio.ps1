@@ -1,9 +1,25 @@
+# Sube cambios locales al remoto "origin".
+# URL del repositorio (en orden de prioridad): -RepoUrl, $script:PcsGitRemoteUrl en scripts/pcs_deployment.local.ps1,
+# variable PCS_REPO_URL o REPO_URL, archivo local scripts/actualizar_repositorio.repo_url
+# (copia desde .repo_url.example; no se versiona).
+# Flujo conjunto con VPS: scripts/publicar_git_y_vps.ps1
+# Si ya tienes origin pero apunta a un repo antiguo y configuraste la URL nueva, usa -SetOrigin
+# para ejecutar: git remote set-url origin <url>
+# Config unificada (opcional): scripts/pcs_deployment.local.ps1 (plantilla: pcs_deployment.local.ps1.example)
+# El dot-source debe ir *despues* de param (param ha de ser el primer bloque ejecutable).
 param(
     [string]$Message = "Actualizacion automatica desde script: anadir/actualizar archivos",
     [string]$RepoUrl = "",
     [switch]$SkipChangeLog,
-    [switch]$ForcePush
+    [switch]$ForcePush,
+    [switch]$SetOrigin
 )
+
+$__arDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$__arCfg = Join-Path $__arDir "pcs_deployment.local.ps1"
+if (Test-Path -LiteralPath $__arCfg) {
+    . $__arCfg
+}
 
 $script:TranscriptStarted = $false
 $script:ForceAlreadyConfirmed = $false
@@ -123,6 +139,43 @@ function Invoke-PushOrigin {
         Code   = $code
         Output = ($output -join "`n")
     }
+}
+
+function Get-TargetRepoUrl {
+    param([string]$ExplicitRepoUrl)
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitRepoUrl)) {
+        return $ExplicitRepoUrl.Trim()
+    }
+    if (Get-Variable -Name PcsGitRemoteUrl -Scope Script -ErrorAction SilentlyContinue) {
+        if (-not [string]::IsNullOrWhiteSpace($script:PcsGitRemoteUrl)) {
+            return $script:PcsGitRemoteUrl.Trim()
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:PCS_REPO_URL)) {
+        return $env:PCS_REPO_URL.Trim()
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:REPO_URL)) {
+        return $env:REPO_URL.Trim()
+    }
+    $path = Join-Path $PSScriptRoot 'actualizar_repositorio.repo_url'
+    if (Test-Path -LiteralPath $path) {
+        foreach ($line in Get-Content -LiteralPath $path) {
+            $t = $line.Trim()
+            if ([string]::IsNullOrWhiteSpace($t) -or $t.StartsWith('#')) {
+                continue
+            }
+            return $t
+        }
+    }
+    return ""
+}
+
+function Normalize-RepoUrlForCompare {
+    param([string]$Url)
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return ""
+    }
+    return $Url.Trim().TrimEnd('/').ToLowerInvariant()
 }
 
 function Push-WithPolicy {
@@ -271,30 +324,44 @@ $filesAsBullets = if ($mainFiles.Count -gt 0) {
     "- (sin archivos detectados)"
 }
 
-Write-Step "6/8 Subiendo commit principal a GitHub"
+Write-Step "6/8 Alineando remoto origin y subiendo commit principal"
+$targetUrl = Get-TargetRepoUrl -ExplicitRepoUrl $RepoUrl
 $originUrl = ((& git remote get-url origin 2>$null) | Out-String).Trim()
+
 if ([string]::IsNullOrWhiteSpace($originUrl)) {
-    if ([string]::IsNullOrWhiteSpace($RepoUrl)) {
-        $RepoUrl = $env:REPO_URL
-    }
-    if ([string]::IsNullOrWhiteSpace($RepoUrl)) {
-        Write-ErrMsg "No existe remoto origin y no se proporciono -RepoUrl ni REPO_URL."
+    if ([string]::IsNullOrWhiteSpace($targetUrl)) {
+        Write-ErrMsg "No existe remoto 'origin'. Indica la URL del repositorio nuevo: parametro -RepoUrl, variable de entorno PCS_REPO_URL o REPO_URL, o crea scripts/actualizar_repositorio.repo_url (plantilla: scripts/actualizar_repositorio.repo_url.example)."
         Exit-WithCode 1
     }
-
-    Write-Info "Agregando remoto origin desde parametro/entorno..."
-    git remote add origin $RepoUrl
+    Write-Info "Agregando remoto origin..."
+    & git remote add origin $targetUrl
     if ($LASTEXITCODE -ne 0) {
         Write-ErrMsg "No se pudo agregar el remoto origin. Revisa URL o permisos."
         Exit-WithCode $LASTEXITCODE
     }
-    $originUrl = $RepoUrl
+    $originUrl = ((& git remote get-url origin 2>$null) | Out-String).Trim()
+} elseif (-not [string]::IsNullOrWhiteSpace($targetUrl)) {
+    $a = Normalize-RepoUrlForCompare -Url $originUrl
+    $b = Normalize-RepoUrlForCompare -Url $targetUrl
+    if ($a -ne $b) {
+        if (-not $SetOrigin) {
+            Write-ErrMsg "El remoto 'origin' apunta a:`n  $originUrl`n`nLa URL configurada para este clone es:`n  $targetUrl`n`nPara cambiar al repositorio nuevo, ejecuta el script con -SetOrigin`n(o manualmente: git remote set-url origin <url>)."
+            Exit-WithCode 1
+        }
+        Write-Info "Ajustando origin a la URL configurada (-SetOrigin)..."
+        & git remote set-url origin $targetUrl
+        if ($LASTEXITCODE -ne 0) {
+            Write-ErrMsg "git remote set-url fallo. Revisa la URL y permisos."
+            Exit-WithCode $LASTEXITCODE
+        }
+        $originUrl = ((& git remote get-url origin 2>$null) | Out-String).Trim()
+    }
 }
 Write-Info "Remoto origin: $originUrl"
 
 $mainPush = Push-WithPolicy -AllowForce:$ForcePush -SetUpstream -Context "commit principal"
 if (-not $mainPush.Ok) {
-    Write-ErrMsg "No se pudo subir el commit principal a GitHub."
+    Write-ErrMsg "No se pudo subir el commit principal al remoto."
     if ($mainPush.Result.Output) {
         Write-Host $mainPush.Result.Output
     }

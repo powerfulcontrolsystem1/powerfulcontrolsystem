@@ -1,0 +1,9 @@
+# Copia este archivo como actualizar_repositorio.repo_url (en la misma carpeta scripts/)
+# y sustituye la URL por la de tu repositorio remoto (HTTPS o SSH).
+# Ese archivo esta en .gitignore para no mezclar remotes personales en el historial.
+#
+# Ejemplo HTTPS:
+# https://github.com/tu-usuario/tu-repositorio.git
+#
+# Ejemplo SSH:
+# git@github.com:tu-usuario/tu-repositorio.git
