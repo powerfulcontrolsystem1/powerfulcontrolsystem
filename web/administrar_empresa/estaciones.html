@@ -76,10 +76,22 @@
     const state = {
       colores: {
         activo: '#d9fbe8',
-        inactivo: '#fff9ef'
+        inactivo: '#fff9ef',
+        disponible: '#fff9ef',
+        ocupada: '#d9fbe8',
+        sucia: '#ffe0e0',
+        alertaTiempo: '#fff3cd'
       },
       carritosPorCodigo: {},
-      sensorsByEstacion: {}
+      sensorsByEstacion: {},
+      stationCardUI: {
+        mostrar_cliente_nombre: true,
+        mostrar_tarifa_resumen: true,
+        mostrar_hora_extra: true,
+        alerta_10_min: true,
+        marcar_sucia_al_pagar: true
+      },
+      dirtyByEstacion: {}
     };
 
     function sanitize(v) {
@@ -218,7 +230,8 @@
         notas_blink_enabled: notas_blink_enabled === undefined ? true : toBool(notas_blink_enabled),
         ia_pedidos_enabled,
         ia_pedidos_placement,
-        carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
+        carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
+        station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {}
       };
     }
 
@@ -468,7 +481,29 @@
         if (!pref || !pref.valor) return null;
         const parsed = parseStationConfigValue(pref.valor);
         if (!parsed) return null;
-        return normalizeConfig(parsed);
+        const normalized = normalizeConfig(parsed);
+        const ui = normalized.station_card_ui && typeof normalized.station_card_ui === 'object' ? normalized.station_card_ui : {};
+        state.stationCardUI = Object.assign({}, state.stationCardUI, {
+          mostrar_cliente_nombre: ui.mostrar_cliente_nombre === undefined ? true : !!ui.mostrar_cliente_nombre,
+          mostrar_tarifa_resumen: ui.mostrar_tarifa_resumen === undefined ? true : !!ui.mostrar_tarifa_resumen,
+          mostrar_hora_extra: ui.mostrar_hora_extra === undefined ? true : !!ui.mostrar_hora_extra,
+          alerta_10_min: ui.alerta_10_min === undefined ? true : !!ui.alerta_10_min,
+          marcar_sucia_al_pagar: ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar
+        });
+
+        state.dirtyByEstacion = {};
+        prefs.forEach(function(p) {
+          if (!p) return;
+          if (String(p.clave) !== 'estacion_estado_sucia') return;
+          const estId = Number(p.estacion_id || 0);
+          if (estId <= 0) return;
+          const v = String(p.valor || '').trim().toLowerCase();
+          if (v === '1' || v === 'true' || v === 'sucia') {
+            state.dirtyByEstacion[estId] = true;
+          }
+        });
+
+        return normalized;
       } catch (err) {
         console.warn('getConfigFromServer error:', err);
         return null;
@@ -585,6 +620,10 @@
         const cfg = await res.json();
         state.colores.activo = normalizeColor(cfg && cfg.color_carrito_activo, '#d9fbe8');
         state.colores.inactivo = normalizeColor(cfg && cfg.color_carrito_inactivo, '#fff9ef');
+        state.colores.disponible = normalizeColor(cfg && cfg.color_estacion_disponible, state.colores.inactivo || '#fff9ef');
+        state.colores.ocupada = normalizeColor(cfg && cfg.color_estacion_ocupada, state.colores.activo || '#d9fbe8');
+        state.colores.sucia = normalizeColor(cfg && cfg.color_estacion_sucia, '#ffe0e0');
+        state.colores.alertaTiempo = normalizeColor(cfg && cfg.color_estacion_alerta_tiempo, '#fff3cd');
         // Leer configuración de formato monetario (usar_decimales, cantidad_decimales)
         try {
           var usar = true;
@@ -614,9 +653,11 @@
           if (!code) return;
           state.carritosPorCodigo[code] = {
             activo: isCarritoOperativoActivo(item),
-      activadoEn: String((item && item.activado_en) || ''),
-      total: Number(item && item.total ? item.total : 0),
-      tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null
+            activadoEn: String((item && item.activado_en) || ''),
+            total: Number(item && item.total ? item.total : 0),
+            clienteNombre: String((item && item.cliente_nombre) || ''),
+            tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null,
+            tarifaPorDia: item && item.tarifa_por_dia ? item.tarifa_por_dia : null
           };
         });
       } catch (err) {
@@ -624,14 +665,87 @@
       }
     }
 
+    function parseMaybeLocalDateTime(raw) {
+      const s = String(raw || '').trim();
+      if (!s) return 0;
+      const t = Date.parse(s.replace(' ', 'T'));
+      if (Number.isFinite(t)) return t;
+      return 0;
+    }
+
     function buildStationRuntimeMeta(info, stationCfg) {
     const cfg = stationCfg && typeof stationCfg === 'object' ? stationCfg : {};
     const data = info && typeof info === 'object' ? info : null;
     const activo = !!(data && data.activo);
     const inicio = activo && cfg.mostrar_fecha_hora_inicio !== false ? formatStationEntryDateTime(data && data.activadoEn) : '';
-    const fin = activo && cfg.mostrar_fecha_hora_fin_tarifa !== false ? formatStationEntryDateTime(data && data.tarifaPorMinutos && data.tarifaPorMinutos.fecha_fin_tarifa_actual) : '';
+    const fin = activo && cfg.mostrar_fecha_hora_fin_tarifa !== false ? resolveFinLabel(data) : '';
     const total = activo && cfg.mostrar_total !== false ? formatMoney(data && typeof data.total !== 'undefined' ? data.total : 0) : '';
-    return { activo, inicio, fin, total };
+    const cliente = activo && state.stationCardUI.mostrar_cliente_nombre !== false ? String((data && data.clienteNombre) || '').trim() : '';
+    const tarifaResumen = activo && state.stationCardUI.mostrar_tarifa_resumen !== false ? buildTarifaResumen(data) : '';
+    const horaExtra = activo && state.stationCardUI.mostrar_hora_extra !== false ? buildHoraExtraLabel(data) : '';
+    const alerta = activo && state.stationCardUI.alerta_10_min !== false ? isTarifaWithinAlertWindow(data) : false;
+    return { activo, inicio, fin, total, cliente, tarifaResumen, horaExtra, alerta };
+    }
+
+    function resolveFinLabel(data) {
+      if (!data) return '';
+      const tpd = data.tarifaPorDia;
+      if (tpd && typeof tpd === 'object') {
+        const rawStart = String(data.activadoEn || '').trim();
+        const startMs = parseMaybeLocalDateTime(rawStart);
+        if (!startMs) return '';
+        const start = new Date(startMs);
+        const outTime = String(tpd.hora_check_out || '12:00').trim();
+        const parts = outTime.split(':');
+        const hh = Number(parts[0] || 0);
+        const mm = Number(parts[1] || 0);
+        const salida = new Date(start.getTime());
+        salida.setHours(Number.isFinite(hh) ? hh : 12, Number.isFinite(mm) ? mm : 0, 0, 0);
+        if (salida.getTime() <= start.getTime()) {
+          salida.setDate(salida.getDate() + 1);
+        }
+        return formatStationEntryDateTime(salida.toISOString());
+      }
+      const tpm = data.tarifaPorMinutos;
+      if (tpm && typeof tpm === 'object' && tpm.fecha_fin_tarifa_actual) {
+        return formatStationEntryDateTime(tpm.fecha_fin_tarifa_actual);
+      }
+      return '';
+    }
+
+    function buildTarifaResumen(data) {
+      if (!data) return '';
+      const tpd = data.tarifaPorDia;
+      if (tpd && typeof tpd === 'object') {
+        const svc = String(tpd.servicio_nombre || 'tarifa por día').trim();
+        return svc ? ('Tarifa: ' + svc) : '';
+      }
+      const tpm = data.tarifaPorMinutos;
+      if (tpm && typeof tpm === 'object') {
+        const mb = Number(tpm.minutos_base || 0);
+        const me = Number(tpm.minutos_extra || 0);
+        if (mb > 0 && me > 0) return 'Tarifa: ' + mb + ' min + ' + me + ' min extra';
+        if (mb > 0) return 'Tarifa: ' + mb + ' min';
+        return 'Tarifa: por minutos';
+      }
+      return '';
+    }
+
+    function buildHoraExtraLabel(data) {
+      const tpm = data && data.tarifaPorMinutos ? data.tarifaPorMinutos : null;
+      if (!tpm) return '';
+      const bloques = Number(tpm.bloques_extra || 0);
+      return bloques > 0 ? ('Hora extra: ' + bloques) : '';
+    }
+
+    function isTarifaWithinAlertWindow(data) {
+      const tpm = data && data.tarifaPorMinutos ? data.tarifaPorMinutos : null;
+      if (!tpm || !tpm.fecha_fin_tarifa_actual) return false;
+      const endMs = parseMaybeLocalDateTime(tpm.fecha_fin_tarifa_actual);
+      if (!endMs) return false;
+      const now = Date.now();
+      const diff = endMs - now;
+      return diff > 0 && diff <= 10 * 60 * 1000;
     }
 
     function refreshStationCardSummaries() {
@@ -645,17 +759,40 @@
     }) || null;
     const info = state.carritosPorCodigo[normalizeCode(getCarritoCodeForStation(stationID))] || null;
     const meta = buildStationRuntimeMeta(info, stationCfg || {});
-    card.classList.toggle('station-card-active', meta.activo);
-    card.classList.toggle('station-card-inactive', !meta.activo);
-    card.style.setProperty('--station-state-bg', meta.activo ? state.colores.activo : state.colores.inactivo);
+    const isDirty = !!state.dirtyByEstacion[stationID];
+    card.classList.toggle('station-card-active', meta.activo && !isDirty);
+    card.classList.toggle('station-card-inactive', !meta.activo && !isDirty);
+    card.classList.toggle('station-card-dirty', isDirty);
+    card.classList.toggle('station-card-alert', meta.alerta && !isDirty);
+    const bg = isDirty ? state.colores.sucia : (meta.alerta ? state.colores.alertaTiempo : (meta.activo ? state.colores.ocupada : state.colores.disponible));
+    card.style.setProperty('--station-state-bg', bg);
 
     const startEl = card.querySelector('.station-meta-start');
     if (startEl) startEl.textContent = meta.inicio ? ('Entrada: ' + meta.inicio) : '';
     const endEl = card.querySelector('.station-meta-end');
     if (endEl) endEl.textContent = meta.fin ? ('Fin tarifa: ' + meta.fin) : '';
+    const clienteEl = card.querySelector('.station-meta-cliente');
+    if (clienteEl) clienteEl.textContent = meta.cliente ? ('Cliente: ' + meta.cliente) : '';
+    const tarifaEl = card.querySelector('.station-meta-tarifa');
+    if (tarifaEl) tarifaEl.textContent = meta.tarifaResumen || '';
+    const extraEl = card.querySelector('.station-meta-extra');
+    if (extraEl) extraEl.textContent = meta.horaExtra || '';
     const totalEl = card.querySelector('.station-meta-total');
     if (totalEl) totalEl.textContent = meta.total ? ('Total: ' + meta.total) : '';
     });
+    }
+
+    async function clearDirtyState(stationID) {
+      const id = Number(stationID || 0);
+      if (!empresaId || id <= 0) return;
+      await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estacion_id: id, clave: 'estacion_estado_sucia', valor: '0' })
+      });
+      if (!state.dirtyByEstacion) state.dirtyByEstacion = {};
+      delete state.dirtyByEstacion[id];
+      refreshStationCardSummaries();
     }
 
     // readConfig replaced by server-backed getConfigFromServer
@@ -1137,8 +1274,9 @@
         const totalHtml = useMostrarTotal
           ? '<p class="station-entry-time station-meta-total">' + sanitize(meta.total ? ('Total: ' + meta.total) : '') + '</p>'
           : '';
-        const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
-        const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
+        const isDirty = !!state.dirtyByEstacion[stationID];
+        const stationClass = isDirty ? 'station-card-dirty' : (carritoActivo ? 'station-card-active' : 'station-card-inactive');
+        const stationColor = isDirty ? state.colores.sucia : (meta.alerta ? state.colores.alertaTiempo : (carritoActivo ? state.colores.ocupada : state.colores.disponible));
 
         // Estado del sensor asociado a la estación (negro = no conectado/inactivo, verde = sensor activo)
         const sensor = (state.sensorsByEstacion && state.sensorsByEstacion[stationID]) ? state.sensorsByEstacion[stationID] : null;
@@ -1160,11 +1298,17 @@
           }
         }
 
+          const clienteHtml = (meta && meta.cliente) ? '<p class="station-entry-time station-meta-cliente">' + sanitize('Cliente: ' + meta.cliente) + '</p>' : '<p class="station-entry-time station-meta-cliente"></p>';
+          const tarifaHtml = (meta && meta.tarifaResumen) ? '<p class="station-entry-time station-meta-tarifa">' + sanitize(meta.tarifaResumen) + '</p>' : '<p class="station-entry-time station-meta-tarifa"></p>';
+          const extraHtml = (meta && meta.horaExtra) ? '<p class="station-entry-time station-meta-extra">' + sanitize(meta.horaExtra) + '</p>' : '<p class="station-entry-time station-meta-extra"></p>';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
+            clienteHtml +
+            tarifaHtml +
             entradaHtml +
             finHtml +
+            extraHtml +
             totalHtml +
             '</article>';
       }).join('');
@@ -1180,6 +1324,14 @@
         card.addEventListener('click', ev => {
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+          if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            clearDirtyState(stationID).catch(function(err) {
+              console.warn('No se pudo limpiar estación sucia', err);
+            });
+            return;
+          }
           openStationCarrito(stationID, stationName);
         });
         card.addEventListener('keydown', ev => {
@@ -1187,6 +1339,13 @@
           ev.preventDefault();
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+          if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
+            ev.stopPropagation();
+            clearDirtyState(stationID).catch(function(err) {
+              console.warn('No se pudo limpiar estación sucia', err);
+            });
+            return;
+          }
           openStationCarrito(stationID, stationName);
         });
       });

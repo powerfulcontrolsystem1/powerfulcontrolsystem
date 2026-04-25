@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pedidos VIP por estación</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Pedidos VIP por estación</h1>
+        <p class="form-help">Digita tu código VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
+      </div>
+    </div>
+
+    <section class="card empresa-section">
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="vipCodigo">Código VIP</label>
+            <input id="vipCodigo" class="form-input" placeholder="Ej: ABCD2EFG3HJKL" autocomplete="one-time-code">
+          </div>
+          <div class="form-col maxw-240 flex-end">
+            <button id="btnIngresar" class="btn w-full" type="button">Ingresar</button>
+          </div>
+        </div>
+        <div id="vipMsg" class="form-help"></div>
+      </div>
+    </section>
+
+    <section id="vipPanel" class="card empresa-section" style="display:none;">
+      <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <h2 style="margin:0;">Productos</h2>
+        <button id="btnQR" type="button" class="btn secondary">Ver QR (link)</button>
+      </div>
+      <p class="form-help">Toca un producto para pedirlo. Puedes escribir una nota opcional (ej: “sin hielo”).</p>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="pedidoNota">Nota del pedido (opcional)</label>
+            <input id="pedidoNota" class="form-input" placeholder="Ej: por favor con servilletas">
+          </div>
+        </div>
+      </div>
+
+      <div id="productosGrid" class="portal-grid"></div>
+      <div id="pedidoMsg" class="form-help"></div>
+
+      <div id="qrBox" class="form" style="display:none;margin-top:14px;">
+        <p class="form-help">Este QR abre esta misma página. Comparte el link o muestra el código al cliente.</p>
+        <div class="form-row">
+          <div class="form-col">
+            <input id="publicLink" class="form-input" readonly>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col" style="display:flex;justify-content:center;">
+            <img id="qrImg" alt="QR" style="width:220px;height:220px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:#fff;">
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let vipCodigo = "";
+    let productos = [];
+
+    function normalize(v){ return String(v==null?'':v).trim(); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    async function fetchJSON(url, options){
+      const res = await fetch(url, Object.assign({ credentials:'same-origin' }, options||{}));
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch(_) { data = text; }
+      if (!res.ok) {
+        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : ('HTTP ' + res.status));
+        throw new Error(msg || ('HTTP ' + res.status));
+      }
+      return data;
+    }
+
+    function setMsg(id, text, isErr){
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.className = isErr ? 'error' : 'form-help';
+    }
+
+    function renderProductos(){
+      const grid = document.getElementById('productosGrid');
+      if (!grid) return;
+      if (!Array.isArray(productos) || productos.length === 0) {
+        grid.innerHTML = '<p class="form-help">No hay productos activos para esta empresa.</p>';
+        return;
+      }
+      grid.innerHTML = productos.map(p => {
+        const id = Number(p.id||0);
+        const nombre = esc(p.nombre||'Producto');
+        const precio = Number(p.precio||0);
+        return '<article class="portal-card home-offer-card" style="cursor:pointer;" data-id="' + id + '">' +
+          '<div class="home-offer-card-content">' +
+            '<h3>' + nombre + '</h3>' +
+            '<p class="form-help">Precio: ' + esc(String(precio)) + '</p>' +
+          '</div>' +
+          '<div class="home-offer-card-actions"><button class="btn w-full" type="button">Pedir</button></div>' +
+        '</article>';
+      }).join('');
+
+      grid.querySelectorAll('article[data-id]').forEach(card => {
+        card.addEventListener('click', async function(){
+          const productoID = Number(card.getAttribute('data-id')||0);
+          if (!productoID) return;
+          setMsg('pedidoMsg','Enviando pedido...',false);
+          try {
+            const nota = normalize(document.getElementById('pedidoNota').value);
+            await fetchJSON('/api/public/estacion_vip?action=agregar_item', {
+              method: 'POST',
+              headers: { 'Content-Type':'application/json' },
+              body: JSON.stringify({ codigo: vipCodigo, producto_id: productoID, cantidad: 1, nota: nota })
+            });
+            setMsg('pedidoMsg','Pedido enviado a la estación.',false);
+          } catch (e) {
+            setMsg('pedidoMsg', e.message || 'No se pudo enviar el pedido', true);
+          }
+        });
+      });
+    }
+
+    async function ingresar(){
+      vipCodigo = normalize(document.getElementById('vipCodigo').value).toUpperCase();
+      if (!vipCodigo) {
+        setMsg('vipMsg','Escribe tu código VIP.',true);
+        return;
+      }
+      setMsg('vipMsg','Validando código...',false);
+      try {
+        const data = await fetchJSON('/api/public/estacion_vip?action=info&codigo=' + encodeURIComponent(vipCodigo));
+        productos = Array.isArray(data && data.productos) ? data.productos : [];
+        document.getElementById('vipPanel').style.display = '';
+        setMsg('vipMsg','Código válido. Ya puedes pedir.',false);
+        renderProductos();
+      } catch (e) {
+        document.getElementById('vipPanel').style.display = 'none';
+        setMsg('vipMsg', e.message || 'Código inválido', true);
+      }
+    }
+
+    function toggleQR(){
+      const box = document.getElementById('qrBox');
+      if (!box) return;
+      const on = box.style.display === 'none' || box.style.display === '';
+      if (on) {
+        const link = window.location.origin + '/productos_estacion_clientes_publico.html';
+        document.getElementById('publicLink').value = link;
+        // QR externo (simple): genera imagen por URL pública
+        document.getElementById('qrImg').src =
+          'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link);
+        box.style.display = '';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btnIngresar').addEventListener('click', function(){ ingresar().catch(()=>{}); });
+    document.getElementById('vipCodigo').addEventListener('keydown', function(ev){
+      if (ev.key === 'Enter') { ev.preventDefault(); ingresar().catch(()=>{}); }
+    });
+    document.getElementById('btnQR').addEventListener('click', toggleQR);
+  </script>
+</body>
+</html>
+

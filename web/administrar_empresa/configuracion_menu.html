@@ -22,7 +22,7 @@
         <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Configuración de estaciones</a></li>
         <li><a id="linkTarifasPorMinutos" href="/administrar_empresa/tarifas_por_minutos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por minutos</a></li>
         <li><a id="linkTarifasPorDia" href="/administrar_empresa/tarifas_por_dia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por día</a></li>
-        <li id="menuFrecuenciaFP" hidden><a id="linkFrecuenciaFP" href="/administrar_empresa/frecuencia_fp.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FP</a></li>
+        <li id="menuFrecuenciaFE" hidden><a id="linkFrecuenciaFE" href="/administrar_empresa/frecuencia_fe.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FE</a></li>
         <li class="admin-menu-visibility-item">
           <button type="button" class="admin-menu-visibility-toggle" aria-controls="configuracionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
@@ -39,9 +39,18 @@
   <script src="/js/administrar_empresa.js"></script>
   <script>
     (function bindFrecuenciaFPMenuVisibility(){
-      var item = document.getElementById('menuFrecuenciaFP');
+      var item = document.getElementById('menuFrecuenciaFE');
       if (!item || item.dataset.pcsBound === '1') return;
       item.dataset.pcsBound = '1';
+
+      function getEmpresaIdFromUrl() {
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          return String(params.get("empresa_id") || params.get("id") || "").trim();
+        } catch (e) {
+          return "";
+        }
+      }
 
       function setVisible(ok) {
         item.hidden = !ok;
@@ -49,7 +58,12 @@
 
       async function check() {
         try {
-          var res = await fetch('/api/empresa/frecuencia_fp/permitido', { method: 'GET' });
+          var empresaId = getEmpresaIdFromUrl();
+          var url = '/api/empresa/frecuencia_fp/permitido';
+          if (empresaId) {
+            url += '?empresa_id=' + encodeURIComponent(empresaId);
+          }
+          var res = await fetch(url, { method: 'GET' });
           var txt = await res.text();
           var data = {};
           try { data = txt ? JSON.parse(txt) : {}; } catch (e) { data = {}; }

@@ -70,7 +70,7 @@ func saveFrecuenciaFEAdminEmails(dbSuper *sql.DB, emails []string, actor string)
 	return nil
 }
 
-// SuperAdministradoresFrecuenciaFEHandler gestiona la lista de emails autorizados para ver la página frecuencia_fp.html.
+// SuperAdministradoresFrecuenciaFEHandler gestiona la lista de emails autorizados para ver la página frecuencia_fe.html (alias legacy frecuencia_fp.html).
 func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Este endpoint no pasa por middleware que inyecte X-Admin-Role, así que
@@ -92,10 +92,10 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 				updatedBy = strings.TrimSpace(rawBy)
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"ok":         true,
-				"emails":     list,
-				"updated_at": updatedAt,
-				"updated_by": updatedBy,
+				"ok":          true,
+				"emails":      list,
+				"updated_at":  updatedAt,
+				"updated_by":  updatedBy,
 				"admin_email": strings.TrimSpace(adminEmail),
 			})
 			return
@@ -131,8 +131,8 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"ok":     true,
-				"emails": emails,
+				"ok":         true,
+				"emails":     emails,
 				"updated_by": strings.TrimSpace(adminEmail),
 			})
 			return
@@ -171,4 +171,3 @@ func EmpresaFrecuenciaFPAllowedHandler(dbSuper *sql.DB) http.HandlerFunc {
 		})
 	}
 }
-

@@ -752,6 +752,7 @@ func main() {
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
+	http.HandleFunc("/api/public/estacion_vip", handlers.PublicEstacionVIPHandler(dbEmpresas))
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
@@ -794,7 +795,7 @@ func main() {
 	http.HandleFunc("/api/empresa/reportes", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
-	// Endpoint empresa: verificar acceso a la página frecuencia_fp.html
+	// Endpoint empresa: verificar acceso a la página frecuencia_fe.html (alias legacy frecuencia_fp.html)
 	http.HandleFunc("/api/empresa/frecuencia_fp/permitido", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaFrecuenciaFPAllowedHandler(dbSuper)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)

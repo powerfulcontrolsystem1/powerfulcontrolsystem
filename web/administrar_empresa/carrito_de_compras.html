@@ -127,6 +127,17 @@
           <h3 class="section-heading">Cobro y estados del carrito</h3>
         </div>
 
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Acceso cliente VIP (público)</label>
+            <p class="form-help">Genera un código temporal para que el cliente pueda pedir productos desde su celular. Se desactiva al pagar.</p>
+            <div class="form-actions">
+              <button id="btnVipCodigo" type="button" class="btn secondary">Generar codigo para cliente vip</button>
+            </div>
+            <div id="vipCodigoMsg" class="form-help"></div>
+          </div>
+        </div>
+
         <div id="stationDiscountSettings" class="form-row">
           <div class="form-col">
             <label class="form-label" for="discountType">Tipo de descuento</label>
@@ -697,7 +708,8 @@
             carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
           };
         }),
-        carrito_ui_global: normalizeUnifiedCartUIConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
+        carrito_ui_global: normalizeUnifiedCartUIConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global),
+        station_card_ui: src.station_card_ui && typeof src.station_card_ui === 'object' ? src.station_card_ui : {}
       };
     }
 
@@ -1916,10 +1928,47 @@
           successMsg += ' Aviso comision: ' + normalize(payResp.comision.warning) + '.';
         }
         setStationPaymentMessage(successMsg, false);
+        // Si está configurado, marcar la estación como "sucia" al pagar.
+        try {
+          const ui = state.stationConfig && state.stationConfig.station_card_ui ? state.stationConfig.station_card_ui : null;
+          const shouldMarkDirty = !ui || ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar;
+          if (shouldMarkDirty && state.stationID > 0) {
+            await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ estacion_id: Number(state.stationID), clave: 'estacion_estado_sucia', valor: '1' })
+            });
+          }
+        } catch (_) {}
         await loadCarritos();
         await loadItems();
       } catch (err) {
         setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
+      }
+    }
+
+    async function generarCodigoVIP() {
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+      const box = document.getElementById('vipCodigoMsg');
+      if (box) { box.className = 'form-help'; box.textContent = 'Generando código...'; }
+      try {
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=generar_codigo_vip', {
+          method: 'PUT',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+        const data = await res.json();
+        const codigo = data && data.codigo ? String(data.codigo) : '';
+        const route = data && data.public_route ? String(data.public_route) : '/productos_estacion_clientes_publico.html';
+        const link = window.location.origin + route;
+        if (box) {
+          box.className = 'success';
+          box.textContent = 'Código VIP: ' + codigo + ' | Abrir: ' + link;
+        }
+      } catch (err) {
+        if (box) { box.className = 'error'; box.textContent = err.message || 'No se pudo generar el código.'; }
       }
     }
 

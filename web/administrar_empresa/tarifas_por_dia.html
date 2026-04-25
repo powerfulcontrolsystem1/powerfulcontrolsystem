@@ -184,7 +184,13 @@
       <div id="cmp_msg" class="form-help"></div>
     </div>
 
-    <div id="list">Cargando...</div>
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Tarifas configuradas</h2>
+      </div>
+      <p class="form-help">Aquí verás las tarifas guardadas y a qué estación aplican (incluye prioridad y estado).</p>
+      <div id="list">Cargando...</div>
+    </section>
   </div>
 
   <script>
@@ -483,7 +489,7 @@
         const autoLabel = item.aplicar_automaticamente ? "Sí" : "No";
 
         return "<tr>" +
-          "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || "") + "</small></td>" +
+          "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>ID " + esc(String(item.estacion_id || "")) + (item.estacion_codigo ? (" · " + esc(item.estacion_codigo)) : "") + "</small></td>" +
           "<td>" + esc(item.servicio_nombre || "hospedaje") + "</td>" +
           "<td>" + esc(formatMoney(item.valor_dia || 0, item.moneda || "COP")) + "</td>" +
           "<td>" + esc((item.hora_check_in || "15:00") + " / " + (item.hora_check_out || "12:00")) + "</td>" +

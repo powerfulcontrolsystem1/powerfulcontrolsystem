@@ -194,7 +194,13 @@
       <div id="sim_resultado" class="form-help"></div>
     </div>
 
-    <div id="list">Cargando...</div>
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Tarifas configuradas</h2>
+      </div>
+      <p class="form-help">Aquí verás las reglas guardadas y a qué estación aplican (incluye rango de días y prioridad).</p>
+      <div id="list">Cargando...</div>
+    </section>
   </div>
 
   <script>
@@ -555,7 +561,7 @@
         const rowData = esc(JSON.stringify(item));
 
         return "<tr>" +
-          "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || "") + "</small></td>" +
+          "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>ID " + esc(String(item.estacion_id || "")) + (item.estacion_codigo ? (" · " + esc(item.estacion_codigo)) : "") + "</small></td>" +
           "<td>" + esc(dayRangeLabel(item.dia_semana_desde, item.dia_semana_hasta)) + "</td>" +
           "<td>" + esc(String(item.minutos_base || 0)) + " min / " + esc(formatMoney(item.valor_base || 0, item.moneda || "COP")) + "</td>" +
           "<td>" + esc(String(item.minutos_extra || 0)) + " min / " + esc(formatMoney(item.valor_extra || 0, item.moneda || "COP")) + "</td>" +

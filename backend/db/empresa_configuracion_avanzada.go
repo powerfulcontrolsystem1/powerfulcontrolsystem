@@ -49,6 +49,10 @@ type EmpresaConfiguracionAvanzada struct {
 	NotasLegales                          string `json:"notas_legales,omitempty"`
 	ColorCarritoActivo                    string `json:"color_carrito_activo,omitempty"`
 	ColorCarritoInactivo                  string `json:"color_carrito_inactivo,omitempty"`
+	ColorEstacionDisponible               string `json:"color_estacion_disponible,omitempty"`
+	ColorEstacionOcupada                  string `json:"color_estacion_ocupada,omitempty"`
+	ColorEstacionSucia                    string `json:"color_estacion_sucia,omitempty"`
+	ColorEstacionAlertaTiempo             string `json:"color_estacion_alerta_tiempo,omitempty"`
 	MonedaCodigo                          string `json:"moneda_codigo,omitempty"`
 	SistemaNumerico                       string `json:"sistema_numerico,omitempty"`
 	UsarDecimales                         bool   `json:"usar_decimales"`
@@ -63,6 +67,10 @@ type EmpresaConfiguracionAvanzada struct {
 const (
 	defaultColorCarritoActivo           = "#d9fbe8"
 	defaultColorCarritoInactivo         = "#fff9ef"
+	defaultColorEstacionDisponible      = "#fff9ef"
+	defaultColorEstacionOcupada         = "#d9fbe8"
+	defaultColorEstacionSucia           = "#ffe0e0"
+	defaultColorEstacionAlertaTiempo    = "#fff3cd"
 	defaultMonedaCodigo                 = "COP"
 	defaultSistemaNumericoValue         = "latino"
 	defaultCantidadDecimales            = int64(2)
@@ -114,6 +122,10 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			notas_legales TEXT,
 			color_carrito_activo TEXT DEFAULT '#d9fbe8',
 			color_carrito_inactivo TEXT DEFAULT '#fff9ef',
+			color_estacion_disponible TEXT DEFAULT '#fff9ef',
+			color_estacion_ocupada TEXT DEFAULT '#d9fbe8',
+			color_estacion_sucia TEXT DEFAULT '#ffe0e0',
+			color_estacion_alerta_tiempo TEXT DEFAULT '#fff3cd',
 			moneda_codigo TEXT DEFAULT 'COP',
 			sistema_numerico TEXT DEFAULT 'latino',
 			usar_decimales INTEGER DEFAULT 1,
@@ -244,6 +256,18 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_carrito_inactivo", "TEXT DEFAULT '#fff9ef'"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_estacion_disponible", "TEXT DEFAULT '#fff9ef'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_estacion_ocupada", "TEXT DEFAULT '#d9fbe8'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_estacion_sucia", "TEXT DEFAULT '#ffe0e0'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_estacion_alerta_tiempo", "TEXT DEFAULT '#fff3cd'"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "moneda_codigo", "TEXT DEFAULT 'COP'"); err != nil {
 		return err
 	}
@@ -292,6 +316,10 @@ func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 		MostrarLogo:                           true,
 		ColorCarritoActivo:                    defaultColorCarritoActivo,
 		ColorCarritoInactivo:                  defaultColorCarritoInactivo,
+		ColorEstacionDisponible:               defaultColorEstacionDisponible,
+		ColorEstacionOcupada:                  defaultColorEstacionOcupada,
+		ColorEstacionSucia:                    defaultColorEstacionSucia,
+		ColorEstacionAlertaTiempo:             defaultColorEstacionAlertaTiempo,
 		MonedaCodigo:                          defaultMonedaCodigo,
 		SistemaNumerico:                       defaultSistemaNumericoValue,
 		UsarDecimales:                         true,
@@ -455,6 +483,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(notas_legales, ''),
 		COALESCE(color_carrito_activo, '#d9fbe8'),
 		COALESCE(color_carrito_inactivo, '#fff9ef'),
+		COALESCE(color_estacion_disponible, '#fff9ef'),
+		COALESCE(color_estacion_ocupada, '#d9fbe8'),
+		COALESCE(color_estacion_sucia, '#ffe0e0'),
+		COALESCE(color_estacion_alerta_tiempo, '#fff3cd'),
 		COALESCE(moneda_codigo, 'COP'),
 		COALESCE(sistema_numerico, 'latino'),
 		COALESCE(usar_decimales, 1),
@@ -515,6 +547,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.NotasLegales,
 		&cfg.ColorCarritoActivo,
 		&cfg.ColorCarritoInactivo,
+		&cfg.ColorEstacionDisponible,
+		&cfg.ColorEstacionOcupada,
+		&cfg.ColorEstacionSucia,
+		&cfg.ColorEstacionAlertaTiempo,
 		&cfg.MonedaCodigo,
 		&cfg.SistemaNumerico,
 		&usarDecimalesInt,
@@ -541,6 +577,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg.MostrarLogo = mostrarLogoInt == 1
 	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
 	cfg.ColorCarritoInactivo = normalizeHexColor(cfg.ColorCarritoInactivo, defaultColorCarritoInactivo)
+	cfg.ColorEstacionDisponible = normalizeHexColor(cfg.ColorEstacionDisponible, defaultColorEstacionDisponible)
+	cfg.ColorEstacionOcupada = normalizeHexColor(cfg.ColorEstacionOcupada, defaultColorEstacionOcupada)
+	cfg.ColorEstacionSucia = normalizeHexColor(cfg.ColorEstacionSucia, defaultColorEstacionSucia)
+	cfg.ColorEstacionAlertaTiempo = normalizeHexColor(cfg.ColorEstacionAlertaTiempo, defaultColorEstacionAlertaTiempo)
 	cfg.MonedaCodigo = normalizeMonedaCodigo(cfg.MonedaCodigo)
 	cfg.SistemaNumerico = defaultSistemaNumerico(cfg.SistemaNumerico)
 	cfg.UsarDecimales = usarDecimalesInt == 1
@@ -583,6 +623,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.FormatoImpresion = defaultFormatoImpresion(payload.FormatoImpresion)
 	payload.ColorCarritoActivo = normalizeHexColor(payload.ColorCarritoActivo, defaultColorCarritoActivo)
 	payload.ColorCarritoInactivo = normalizeHexColor(payload.ColorCarritoInactivo, defaultColorCarritoInactivo)
+	payload.ColorEstacionDisponible = normalizeHexColor(payload.ColorEstacionDisponible, defaultColorEstacionDisponible)
+	payload.ColorEstacionOcupada = normalizeHexColor(payload.ColorEstacionOcupada, defaultColorEstacionOcupada)
+	payload.ColorEstacionSucia = normalizeHexColor(payload.ColorEstacionSucia, defaultColorEstacionSucia)
+	payload.ColorEstacionAlertaTiempo = normalizeHexColor(payload.ColorEstacionAlertaTiempo, defaultColorEstacionAlertaTiempo)
 	payload.MonedaCodigo = normalizeMonedaCodigo(payload.MonedaCodigo)
 	payload.SistemaNumerico = defaultSistemaNumerico(payload.SistemaNumerico)
 	payload.CantidadDecimales = normalizeCantidadDecimales(payload.CantidadDecimales)
@@ -674,6 +718,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		notas_legales,
 		color_carrito_activo,
 		color_carrito_inactivo,
+		color_estacion_disponible,
+		color_estacion_ocupada,
+		color_estacion_sucia,
+		color_estacion_alerta_tiempo,
 		moneda_codigo,
 		sistema_numerico,
 		usar_decimales,
@@ -683,7 +731,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		modo_documento_venta = excluded.modo_documento_venta,
 		enviar_email_venta = excluded.enviar_email_venta,
@@ -722,6 +770,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		notas_legales = excluded.notas_legales,
 		color_carrito_activo = excluded.color_carrito_activo,
 		color_carrito_inactivo = excluded.color_carrito_inactivo,
+		color_estacion_disponible = excluded.color_estacion_disponible,
+		color_estacion_ocupada = excluded.color_estacion_ocupada,
+		color_estacion_sucia = excluded.color_estacion_sucia,
+		color_estacion_alerta_tiempo = excluded.color_estacion_alerta_tiempo,
 		moneda_codigo = excluded.moneda_codigo,
 		sistema_numerico = excluded.sistema_numerico,
 		usar_decimales = excluded.usar_decimales,
@@ -771,6 +823,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		strings.TrimSpace(payload.NotasLegales),
 		payload.ColorCarritoActivo,
 		payload.ColorCarritoInactivo,
+		payload.ColorEstacionDisponible,
+		payload.ColorEstacionOcupada,
+		payload.ColorEstacionSucia,
+		payload.ColorEstacionAlertaTiempo,
 		payload.MonedaCodigo,
 		payload.SistemaNumerico,
 		usarDecimalesInt,

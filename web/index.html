@@ -175,35 +175,14 @@
       background: rgba(31, 142, 241, 0.14);
     }
 
-    .portal-banner-grid{
-      margin: 0 auto 60px auto;
-      max-width: 1200px;
-      padding: 0 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 30px;
-      align-items: stretch;
-      --banner-width: 1200px;
-      --banner-height: 220px;
-    }
-
-    .portal-banner-card{
-      width: 100%;
-      min-width: 0;
-      height: var(--banner-height);
-      min-height: 120px;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--surface);
-      box-shadow: 0 22px 60px rgba(0,0,0,0.22);
-    }
-
     .portal-banner-image{
       width: 100%;
-      height: 100%;
-      object-fit: fill;
+      max-height: 180px;
+      height: auto;
+      object-fit: contain;
       display: block;
+      opacity: 0.98;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -236,7 +215,7 @@
       <section id="portalCardsGrid" class="portal-grid" aria-live="polite" ></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
       <section id="portalBannersWrap" style="display:none; margin-top: 18px;">
-        <div id="portalBannersGrid" class="portal-banner-grid" aria-live="polite"></div>
+        <div id="portalBannersGrid" class="portal-grid" aria-live="polite"></div>
       </section>
 
     </main>
@@ -375,9 +354,7 @@
         var source = raw && typeof raw === 'object' ? raw : {};
         return {
           index_card_size: normalizeVisualSize(source.index_card_size),
-          index_text_size: normalizeVisualSize(source.index_text_size),
-          index_banner_width_px: Number(source.index_banner_width_px || 1200) || 1200,
-          index_banner_height_px: Number(source.index_banner_height_px || 220) || 220
+          index_text_size: normalizeVisualSize(source.index_text_size)
         };
       }
 
@@ -387,8 +364,8 @@
         gridEl.setAttribute('data-text-size', settings.index_text_size);
         var bannersGrid = document.getElementById('portalBannersGrid');
         if (bannersGrid) {
-          bannersGrid.style.setProperty('--banner-width', String(Number(settings.index_banner_width_px || 1200)) + 'px');
-          bannersGrid.style.setProperty('--banner-height', String(Number(settings.index_banner_height_px || 220)) + 'px');
+          bannersGrid.setAttribute('data-card-size', settings.index_card_size);
+          bannersGrid.setAttribute('data-text-size', settings.index_text_size);
         }
       }
 
@@ -450,8 +427,10 @@
         wrap.style.display = '';
         grid.innerHTML = banners.map(function (b, idx) {
           return '' +
-            '<article class="portal-banner-card" style="animation-delay:' + (idx * 80) + 'ms">' +
-            '  <img class="portal-banner-image" src="' + escapeHTML(b.imagen_url) + '" alt="Banner">' +
+            '<article class="home-offer-card" style="animation-delay:' + (idx * 80) + 'ms">' +
+            '  <div class="home-offer-figure">' +
+            '    <img class="portal-banner-image" src="' + escapeHTML(b.imagen_url) + '" alt="Banner">' +
+            '  </div>' +
             '</article>';
         }).join('');
       }

@@ -44,6 +44,12 @@
 - Trazabilidad: la auditoria critica (`empresa_auditoria_eventos`) registra la fuente `chat_ia` y el id de conversacion; los endpoints mantienen los mismos permisos por rol y alcance por `empresa_id`.
 - Impacto operativo: no se agregan dependencias externas; el chat no ejecuta acciones sin confirmacion explicita del usuario. Si falta un dato, el asistente debe preguntarlo antes de proponer `PCS_ACTION`.
 
+2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
+- Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
+- Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).
+- Endpoints: `PUT /api/empresa/carritos_compra?action=generar_codigo_vip&id=...` (protegido) y `GET/POST /api/public/estacion_vip` (público, basado en código).
+- Impacto operativo: no se permiten operaciones destructivas; el acceso público queda acotado por un token aleatorio y caducable.
+
 2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
 - Modulos afectados: `soporte remoto`, `super`
 - Cambio funcional: la configuracion inicial consultada desde `backend/db/soporte_remoto.go` para una empresa sin registro previo ahora nace alineada al flujo simplificado de RustDesk, con `habilitado = true`, `portal_publico_habilitado = true`, `proveedor_preferido = rustdesk_oss` y `modo_operacion = cliente_local`. `web/super/servidores.html` preserva ese estado por defecto en la primera carga para evitar falsos inactivos cuando todavia no existe configuracion persistida.

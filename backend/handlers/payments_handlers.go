@@ -80,6 +80,56 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(licencias)
 			return
 		case http.MethodPost:
+			// Accion especial: crear y activar licencia de prueba 15 días (valor 0) para una empresa.
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "crear_prueba_15_dias") {
+				q := r.URL.Query()
+				empresaID, err := parseInt64Query(r, "empresa_id")
+				if err != nil || empresaID <= 0 {
+					http.Error(w, "empresa_id required", http.StatusBadRequest)
+					return
+				}
+				tipoID := int64(1)
+				if s := strings.TrimSpace(q.Get("tipo_id")); s != "" {
+					if v, perr := strconv.ParseInt(s, 10, 64); perr == nil && v > 0 {
+						tipoID = v
+					}
+				}
+				pais := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
+				if pais == "" {
+					pais = "CO"
+				}
+
+				nombre := "Licencia de prueba (15 días)"
+				descripcion := "Licencia de prueba por 15 días, valor 0."
+				valor := 0.0
+				duracion := 15
+				modulos := "" // vacío = sin restricciones de módulos
+				superRol := 0
+
+				licID, err := dbpkg.CreateLicencia(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, superRol)
+				if err != nil {
+					http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				now := time.Now()
+				fechaInicio := now.Format("2006-01-02")
+				fechaFin := now.Add(15 * 24 * time.Hour).Format("2006-01-02")
+				if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, licID, empresaID, fechaInicio, fechaFin, "trial15", "licencia_prueba_15_dias_valor_0"); err != nil {
+					http.Error(w, "failed to activate trial licencia: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				writeJSON(w, http.StatusCreated, map[string]interface{}{
+					"ok":         true,
+					"licencia_id": licID,
+					"empresa_id":  empresaID,
+					"fecha_inicio": fechaInicio,
+					"fecha_fin":    fechaFin,
+				})
+				return
+			}
+
 			var payload struct {
 				TipoID       int64   `json:"tipo_id"`
 				PaisCodigo   string  `json:"pais_codigo"`

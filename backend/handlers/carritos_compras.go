@@ -219,6 +219,58 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "generar_codigo_vip" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo obtener carrito", http.StatusInternalServerError)
+					return
+				}
+				estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(carrito)
+				if estacionID <= 0 {
+					http.Error(w, "este carrito no es de estación", http.StatusBadRequest)
+					return
+				}
+				if isCarritoVentaPagada(carrito) {
+					http.Error(w, "carrito ya pagado", http.StatusConflict)
+					return
+				}
+				ttl := 720
+				if s := strings.TrimSpace(r.URL.Query().Get("ttl_minutos")); s != "" {
+					if v, perr := strconv.Atoi(s); perr == nil && v > 0 && v <= 4320 {
+						ttl = v
+					}
+				}
+				vip, err := dbpkg.CreateEstacionVIPCodigo(dbEmp, empresaID, estacionID, carrito.ID, ttl, strings.TrimSpace(adminEmailFromRequest(r)), "codigo vip generado")
+				if err != nil {
+					http.Error(w, "No se pudo generar codigo vip", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":          true,
+					"empresa_id":   empresaID,
+					"estacion_id":  estacionID,
+					"carrito_id":   carrito.ID,
+					"codigo":       vip.Codigo,
+					"expira_en":    vip.ExpiraEn,
+					"public_route": "/productos_estacion_clientes_publico.html",
+				})
+				return
+			}
 			if action == "activar_estacion" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -619,6 +671,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_pagada",
 				}, "pago de venta en estacion")
+
+				// invalidar códigos VIP públicos asociados al carrito pagado
+				_ = dbpkg.InvalidateVIPCodesForCarrito(dbEmp, empresaID, id, "pago_estacion")
 
 				carritoPagado, errCarritoPagado := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
 				if errCarritoPagado != nil {

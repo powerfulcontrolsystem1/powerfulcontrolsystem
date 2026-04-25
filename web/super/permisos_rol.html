@@ -39,6 +39,19 @@
           <input id="prSearch" class="form-input" type="search" placeholder="Nombre de función, grupo o clave…" autocomplete="off">
         </div>
       </div>
+      <div class="pcs-pr-toolbar-row" style="margin-top:12px;">
+        <div class="form-col">
+          <label class="form-label" for="newRolNombre">Crear nuevo rol (mismo tipo seleccionado)</label>
+          <input id="newRolNombre" class="form-input" placeholder="Nombre del rol (ej. cajero, supervisor, auditor)" maxlength="80" autocomplete="off">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="newRolDescripcion">Descripción</label>
+          <input id="newRolDescripcion" class="form-input" placeholder="Descripción corta (opcional)" maxlength="180" autocomplete="off">
+        </div>
+        <div class="form-col" style="display:flex; align-items:flex-end; gap:10px;">
+          <button type="button" class="btn secondary" id="createRolBtn">Crear rol</button>
+        </div>
+      </div>
       <div class="pcs-pr-toolbar-actions">
         <button type="button" class="btn secondary" id="prExpandAll">Desplegar grupos</button>
         <button type="button" class="btn secondary" id="prCollapseAll">Plegar grupos</button>
@@ -100,6 +113,9 @@
       const prSearch = document.getElementById('prSearch');
       const prSummary = document.getElementById('prSummary');
       const prDirtyNote = document.getElementById('prDirtyNote');
+      const newRolNombre = document.getElementById('newRolNombre');
+      const newRolDescripcion = document.getElementById('newRolDescripcion');
+      const createRolBtn = document.getElementById('createRolBtn');
 
       function setMessage(text, isError) {
         msg.textContent = text || '';
@@ -359,6 +375,45 @@
         }
       }
 
+      async function createNewRol() {
+        const tipoEmpresaID = Number(tipoSelect.value || 0);
+        if (!tipoEmpresaID) {
+          setMessage('Selecciona un tipo de empresa antes de crear un rol.', true);
+          return;
+        }
+        const nombre = String((newRolNombre && newRolNombre.value) || '').trim();
+        const descripcion = String((newRolDescripcion && newRolDescripcion.value) || '').trim();
+        if (!nombre) {
+          setMessage('El nombre del rol es obligatorio.', true);
+          return;
+        }
+        createRolBtn.disabled = true;
+        try {
+          setMessage('Creando rol…', false);
+          const res = await fetch('/super/api/roles_de_usuario', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo_empresa_id: tipoEmpresaID, nombre: nombre, descripcion: descripcion })
+          });
+          await ensureOk(res);
+          const out = await res.json();
+          const newID = Number(out && out.id || 0);
+          if (!newID) {
+            throw new Error('No se pudo obtener el id del rol creado.');
+          }
+          if (newRolNombre) newRolNombre.value = '';
+          if (newRolDescripcion) newRolDescripcion.value = '';
+          await loadRoles(newID);
+          await loadPermisosByRole(newID);
+          setMessage('Rol creado y listo para configurar permisos.', false);
+        } catch (err) {
+          setMessage((err && err.message) || 'No se pudo crear el rol.', true);
+        } finally {
+          createRolBtn.disabled = false;
+        }
+      }
+
       async function loadPermisosByRole(rolID) {
         if (!rolID || rolID < 1) {
           panelPermisos.hidden = true;
@@ -443,6 +498,10 @@
           setMessage(err.message || 'Error cargando permisos.', true);
         }
       });
+
+      if (createRolBtn) {
+        createRolBtn.addEventListener('click', function () { createNewRol(); });
+      }
 
       prSearch.addEventListener('input', function () { applyPageFilter(); });
 

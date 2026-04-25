@@ -93,6 +93,11 @@
 - Actualizacion 2026-04-24: index — fix baners (JS)
 	- `web/index.html` : corrige `normalizeBanners` (filtro: ya no se llama a `normalize` inexistente) para que las tarjetas tipo baner vuelvan a mostrarse al cargar `/api/public/pagina_principal`.
 
+- Actualizacion 2026-04-25: módulo público — pedidos VIP por estación (código temporal)
+	- `backend/db/estacion_vip_codigos.go` : tabla `estacion_vip_codigos` + helpers para crear/validar/inactivar códigos VIP temporales atados a `empresa_id`, `estacion_id` y `carrito_id` (se inactivan al pagar).
+	- `backend/handlers/public_estacion_vip.go` : API pública `GET/POST /api/public/estacion_vip` para validar código, listar productos activos y agregar un producto al carrito de la estación (con nota).
+	- `web/productos_estacion_clientes_publico.html` : página pública para que el cliente ingrese el código VIP, vea productos en botones y envíe pedidos con nota; botón de QR (link).
+
 - Actualizacion 2026-04-24: index — subtítulo IA bajo el titulo de facturación electrónica
 	- `web/index.html` : bajo el h1 "Sistema de Facturación Electrónica" añade linea de apoyo "Habla con tu empresa — Inteligencia artificial integrada" (`.portal-cards-subheading`).
 
@@ -8535,3 +8540,21 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/facturas_electronicas.html`: soporta `auto_print=1` + `documento=...` para auto-abrir impresión del documento tras cargar resultados (uso desde IA con `OPEN`).
 - `backend/handlers/chat_con_inteligencia_artificial_controller.go`: prompt permite métodos `GET|OPEN|POST|PUT` (sin DELETE).
 - `backend/handlers/chat_con_ia_global_super.go`: prompt permite métodos `GET|OPEN|POST|PUT` (sin DELETE).
+
+[2026-04-25] Soporte remoto: limpiar código visible
+- `web/administrar_empresa/soporte_remoto.html`: se repara la vista para que no muestre código JavaScript en pantalla (se recrea el HTML limpio con solo descargas y guía operativa).
+
+[2026-04-25] Frecuencia FE (antes FP): renombre de página en panel empresa
+- `web/administrar_empresa/frecuencia_fe.html`: nueva página oficial de “Frecuencia FE” (configuración de facturación por frecuencia).
+- `web/administrar_empresa/frecuencia_fp.html`: se deja como redirección/compatibilidad hacia `frecuencia_fe.html`.
+- `web/administrar_empresa/configuracion_menu.html`: el enlace del menú de Configuración ahora muestra “Frecuencia FE” y apunta a `frecuencia_fe.html`; sigue validando visibilidad por lista de admins autorizados.
+
+[2026-04-25] Permisos por rol: crear rol desde la misma página
+- `web/super/permisos_rol.html`: agrega un formulario “Crear nuevo rol” (nombre + descripción) y botón para crear el rol vía `POST /super/api/roles_de_usuario`, recargar el selector y dejar el rol nuevo seleccionado para configurar restricciones en la misma vista.
+
+[2026-04-25] Index: banners con mismo tamaño que tarjetas
+- `web/index.html`: las tarjetas tipo banner (sección inferior) ahora usan el mismo grid y estilo de tarjetas principales; se elimina el tamaño fijo por ancho/alto de banner y se reutilizan los ajustes de tamaño de tarjeta del index.
+- `web/super/pagina_principal.html`: se eliminan los campos “Ancho fijo tarjetas tipo baner (px)” y “Alto fijo tarjetas tipo baner (px)” porque ya no aplican.
+
+[2026-04-25] Seed operativo: tarifas Motel Calipso
+- `backend/tools/seed_motel_calipso_tarifas/main.go`: herramienta CLI para sembrar/actualizar tarifas por minutos y por día para todas las estaciones de una empresa (pensado para Motel Calipso, `empresa_id=7`) leyendo `estaciones_config` desde `empresa_estacion_prefs`. Requiere `DB_EMPRESAS_DSN`.
