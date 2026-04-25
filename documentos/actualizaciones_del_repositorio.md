@@ -854,3 +854,21 @@ Archivos modificados:
 2026-04-25 15:11:00 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b13504b; PushStatus: OK
 Archivos modificados:
 - web/index.html
+
+2026-04-25 15:44:16 - Mensaje: Portal: chat IA público index + switch; mensajes privados; eliminar banners; mejorar título; Commit: 84e7e09; PushStatus: OK
+Archivos modificados:
+- backend/handlers/pagina_principal_handlers.go
+- backend/handlers/public_chat_portal.go
+- backend/handlers/public_mensajes_privados.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/main.go
+- backend/utils/utils.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/index.html
+- web/pagar_productos_de_venta_publica.html
+- web/red_social_comercial.html
+- web/super/configuracion_logica_del_chat_con_ia.html
+- web/super/pagina_principal.html
+- web/venta_publica.html
