@@ -746,3 +746,14 @@ Archivos modificados:
 - web/super/vendedores_licencias.html
 - web/super_administrador.html
 - web/venta_publica.html
+
+2026-04-24 20:28:22 - Mensaje: Super pagina principal: tema claro/oscuro, mp-card y documentacion; Commit: 2327ebe; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/estilos.css
+- web/super/pagina_principal.html
