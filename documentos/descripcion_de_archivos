@@ -1,6 +1,6 @@
 - Actualizacion 2026-04-24: super — pagina principal, tema claro/oscuro
 	- `web/super/pagina_principal.html` : script inicial que aplica `data-theme`, `theme-light` / `theme-dark` desde cookie `pcs_theme` y `localStorage` (coherente con iframe del panel super).
-	- `web/estilos.css` : `body.super-page` con `background`/`color` por variables; titulo `.super-page .page-header h1` sin gradiente ilegible en temas claros; `html.theme-light` (y variantes light-*) para `.mp-card` y campos; `.pp-image-preview-wrap` con `color-mix` por tema.
+	- `web/estilos.css` : `body.super-page` con `background`/`color` por variables; titulo `.super-page .page-header h1` sin gradiente ilegible en temas claros; `pagina_principal` usa `.pp-main-card` (en vez de `mp-card`) para evitar gradientes rosados en temas oscuros; `.pp-image-preview-wrap` con `color-mix` por tema.
 
 - Actualizacion 2026-04-24: chat IA — layout tipo Gemini (empresa y super)
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : barra lateral con conversaciones en `localStorage` por empresa e historial del servidor; barra superior con selector y pastilla de modelo y uso; compartir respuestas (Web Share o portapapeles); banner explicativo ante 429 / `free_tier_limit_reached` / bloqueo; sin titulo largo ni tarjeta de chips Empresa/Cuenta; tema claro/oscuro alineado a variables.

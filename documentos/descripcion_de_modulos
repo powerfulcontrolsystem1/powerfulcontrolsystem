@@ -1,6 +1,6 @@
 2026-04-24: Super — pagina principal (portal): tema claro/oscuro en iframe
 - Modulos afectados: `super`, `portal publico` (solo editor super)
-- Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); redefine `.mp-card` en temas claros para superficie legible y campos con variables de formulario; unifica `.pp-image-preview-wrap` con mezclas por tema.
+- Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). Para evitar gradientes rosados en temas oscuros, el editor deja de usar `mp-card` y pasa a `pp-main-card` con superficie neutra basada en variables. `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); unifica `.pp-image-preview-wrap` con mezclas por tema.
 - Impacto operativo: sin cambios de API ni permisos; mejora legibilidad al alternar apariencia. Las paginas super que usan `mp-card` (p. ej. formatos de email) se benefician del mismo bloque de tema claro.
 
 2026-04-24: Estaciones — pedidos con IA (voz/texto) y miniaturas en movil

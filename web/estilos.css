@@ -2349,6 +2349,34 @@ body.super-page{
 .pp-image-preview-wrap{display:flex;align-items:center;justify-content:center;min-height:140px;padding:10px;border:1px dashed color-mix(in srgb, var(--accent) 38%, var(--border));border-radius:12px;background:color-mix(in srgb, var(--surface) 82%, var(--accent) 18%)}
 .pp-image-preview{max-width:160px;max-height:110px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,0.3))}
 
+/* pagina_principal (super): el editor no debe heredar gradientes mp-card (pueden verse rosados en temas oscuros) */
+.pp-main-card{
+  background:linear-gradient(180deg, var(--surface-soft), var(--surface));
+  border:1px solid var(--border);
+  box-shadow:0 14px 30px color-mix(in srgb, var(--text) 10%, transparent);
+  color:var(--text);
+}
+.pp-main-card .form-label,
+.pp-main-card .form-help{
+  color:var(--muted);
+}
+.pp-main-card .form-input,
+.pp-main-card .form-textarea,
+.pp-main-card select.form-input{
+  background:var(--form-input-bg);
+  border-color:var(--form-border);
+  color:var(--text);
+}
+.pp-main-card .form-input::placeholder,
+.pp-main-card .form-textarea::placeholder{
+  color:color-mix(in srgb, var(--muted) 78%, transparent);
+}
+.pp-main-card .btn.secondary{
+  color:var(--text);
+  border-color:var(--border);
+  background:var(--surface-soft);
+}
+
 @media (max-width:700px){
   .super-page .container{padding:0.45rem 0.6rem}
 }

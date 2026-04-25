@@ -5,7 +5,7 @@
 
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; `mp-card` en tema claro con superficie y campos alineados a variables (afecta tambien formatos email que usan `mp-card`); area `.pp-image-preview-wrap` con mezclas por tema.
+    - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; en `pagina_principal` se reemplaza `mp-card` por `pp-main-card` para evitar gradientes rosados en temas oscuros y asegurar contraste consistente en todas las apariencias; area `.pp-image-preview-wrap` con mezclas por tema.
     - Verificacion: revision estatica CSS/HTML.
 
 - 2026-04-24: estaciones ? estacion especial pedidos con IA y miniaturas en movil.
