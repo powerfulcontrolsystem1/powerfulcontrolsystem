@@ -797,3 +797,16 @@ Archivos modificados:
 - CHANGELOG.md
 - backend/handlers/payments_handlers.go
 - documentos/historial_de_cambios
+
+2026-04-24 23:40:21 - Mensaje: Super: consola permisos por rol + API etiquetas; licencias cobertura modulos; Commit: c0cf905; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/roles_tipos_usuario.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/estilos.css
+- web/super/licencias.html
+- web/super/permisos_rol.html
