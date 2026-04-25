@@ -810,3 +810,20 @@ Archivos modificados:
 - web/estilos.css
 - web/super/licencias.html
 - web/super/permisos_rol.html
+
+2026-04-25 00:24:05 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 3cdbcd0; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/facturacion_electronica.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/pos-backend.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
+- web/estilos.css
+- web/index.html
+- web/super/configuracion_logica_del_chat_con_ia.html
