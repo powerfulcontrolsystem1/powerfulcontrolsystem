@@ -73,13 +73,10 @@ func saveFrecuenciaFEAdminEmails(dbSuper *sql.DB, emails []string, actor string)
 // SuperAdministradoresFrecuenciaFEHandler gestiona la lista de emails autorizados para ver la página frecuencia_fp.html.
 func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
-		if adminEmail == "" || adminEmail == "sistema" {
-			http.Error(w, "unauthenticated", http.StatusUnauthorized)
-			return
-		}
-		if !isSuperAdminRequest(r) {
-			http.Error(w, "forbidden", http.StatusForbidden)
+		// Este endpoint no pasa por middleware que inyecte X-Admin-Role, así que
+		// validamos sesión y rol directamente contra la BD super.
+		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
+		if !ok {
 			return
 		}
 
@@ -90,11 +87,16 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to load: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// Preferir actor real de la última operación si existe.
+			if rawBy, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, superFrecuenciaFEAdminsConfigKey+".updated_by"); strings.TrimSpace(rawBy) != "" {
+				updatedBy = strings.TrimSpace(rawBy)
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":         true,
 				"emails":     list,
 				"updated_at": updatedAt,
 				"updated_by": updatedBy,
+				"admin_email": strings.TrimSpace(adminEmail),
 			})
 			return
 
@@ -131,6 +133,7 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":     true,
 				"emails": emails,
+				"updated_by": strings.TrimSpace(adminEmail),
 			})
 			return
 

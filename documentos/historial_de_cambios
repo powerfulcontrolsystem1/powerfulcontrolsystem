@@ -8,6 +8,11 @@
     - Descripcion: el asistente puede proponer cambios como bloque `PCS_ACTION` (JSON) y el usuario confirma en UI; el frontend ejecuta contra endpoints reales del sistema y la auditoria critica registra la fuente `chat_ia` y el id de conversacion en metadata.
     - Verificacion: `go test ./...` en `backend/`.
 
+- 2026-04-25: super ? panel inicial, contador empresas y fix CRUD frecuencia_fp.
+    - Archivos: `web/super_administrador.html`, `web/super/licencias_resumen.html`, `backend/handlers/administradores_frecuencia_fe_handlers.go`, `web/super/administradores_frecuencia_fe.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: agrega botón superior `Panel` en el menú super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesión/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
+    - Verificacion: `go test ./...` en `backend/`.
+
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; en `pagina_principal` se reemplaza `mp-card` por `pp-main-card` para evitar gradientes rosados en temas oscuros y asegurar contraste consistente en todas las apariencias; area `.pp-image-preview-wrap` con mezclas por tema.

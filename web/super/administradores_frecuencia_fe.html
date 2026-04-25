@@ -6,7 +6,7 @@
   <title>Administradores - Frecuencia FE</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page">
   <div class="container">
     <div class="page-header">
       <div>
@@ -16,15 +16,47 @@
     </div>
 
     <section class="card">
-      <h2>Correos autorizados</h2>
-      <p class="form-help">Un correo por línea. Se guardan en la base de datos del super administrador.</p>
-      <textarea id="emailsText" class="input" rows="10" placeholder="admin1@dominio.com&#10;admin2@dominio.com"></textarea>
-      <div class="form-row" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="btnGuardar" class="btn primary">Guardar</button>
-        <button id="btnRecargar" class="btn">Recargar</button>
-        <div class="form-help" style="margin-left:auto;">
-          <div>Actualizado: <span id="updatedAt">-</span></div>
-          <div>Por: <span id="updatedBy">-</span></div>
+      <h2>Correos autorizados (CRUD)</h2>
+      <p class="form-help">Agrega o elimina correos. Estos administradores verán <b>Frecuencia FP</b> en el menú de configuración de administrar empresa.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="emailNuevo">Nuevo correo</label>
+          <input id="emailNuevo" class="form-input" type="email" placeholder="admin@dominio.com">
+          <p class="form-help">Tip: puedes pegar varios separados por salto de línea o coma.</p>
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label">&nbsp;</label>
+          <button id="btnAdd" type="button" class="btn">Agregar</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="form-row" style="align-items:center;">
+          <div class="form-col">
+            <b>Lista</b> <span class="form-help" id="totalCount"></span>
+          </div>
+          <div class="form-col" style="text-align:right;">
+            <button id="btnGuardar" type="button" class="btn">Guardar</button>
+            <button id="btnRecargar" type="button" class="btn secondary">Recargar</button>
+          </div>
+        </div>
+        <div style="overflow:auto;">
+          <table class="table" style="margin-top:10px;">
+            <thead>
+              <tr>
+                <th>Correo</th>
+                <th style="width:140px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="emailsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:10px;">
+        <div class="form-col">
+          <div class="form-help">Actualizado: <span id="updatedAt">-</span> · Por: <span id="updatedBy">-</span></div>
         </div>
       </div>
       <div id="msg" class="form-help" style="margin-top:10px;"></div>
@@ -36,20 +68,24 @@
       var el = document.getElementById('msg');
       if (!el) return;
       el.textContent = String(text || '');
-      el.style.color = (kind === 'error') ? '#ffb4b4' : (kind === 'success') ? '#9dffb5' : '';
+      el.classList.remove('error', 'success');
+      if (kind === 'error') el.classList.add('error');
+      if (kind === 'success') el.classList.add('success');
     }
 
     function normalizeEmailLine(v) {
       return String(v || '').trim().toLowerCase().replace(/\s+/g, '');
     }
 
-    function parseEmailsFromTextarea() {
-      var raw = document.getElementById('emailsText').value || '';
-      var lines = raw.split(/\r?\n/);
+    var state = { emails: [] };
+
+    function parseEmailsFromText(raw) {
+      raw = String(raw || '');
+      var parts = raw.split(/[\r\n,;]+/);
       var uniq = {};
       var out = [];
-      for (var i = 0; i < lines.length; i++) {
-        var e = normalizeEmailLine(lines[i]);
+      for (var i = 0; i < parts.length; i++) {
+        var e = normalizeEmailLine(parts[i]);
         if (!e) continue;
         if (uniq[e]) continue;
         uniq[e] = true;
@@ -57,6 +93,25 @@
       }
       out.sort();
       return out;
+    }
+
+    function renderTable() {
+      var tb = document.getElementById('emailsTbody');
+      if (!tb) return;
+      var rows = '';
+      for (var i = 0; i < state.emails.length; i++) {
+        var e = state.emails[i];
+        rows += '<tr>' +
+          '<td><code>' + e.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></td>' +
+          '<td><button type="button" class="btn secondary" data-del="' + i + '">Eliminar</button></td>' +
+          '</tr>';
+      }
+      if (!rows) {
+        rows = '<tr><td colspan="2" class="muted">No hay correos registrados.</td></tr>';
+      }
+      tb.innerHTML = rows;
+      var totalEl = document.getElementById('totalCount');
+      if (totalEl) totalEl.textContent = '(' + state.emails.length + ')';
     }
 
     async function apiFetch(url, opts) {
@@ -77,14 +132,16 @@
       showMsg('Cargando...', 'info');
       var data = await apiFetch('/super/api/administradores_frecuencia_fe', { method: 'GET' });
       var emails = (data && data.emails) ? data.emails : [];
-      document.getElementById('emailsText').value = (emails || []).join('\n');
+      state.emails = Array.isArray(emails) ? emails.slice() : [];
+      state.emails.sort();
+      renderTable();
       document.getElementById('updatedAt').textContent = (data.updated_at || '-');
       document.getElementById('updatedBy').textContent = (data.updated_by || '-');
       showMsg('Listo.', 'success');
     }
 
     async function save() {
-      var emails = parseEmailsFromTextarea();
+      var emails = state.emails.slice();
       showMsg('Guardando...', 'info');
       await apiFetch('/super/api/administradores_frecuencia_fe', {
         method: 'PUT',
@@ -97,6 +154,28 @@
     (function init(){
       document.getElementById('btnGuardar').addEventListener('click', function(ev){ ev.preventDefault(); save().catch(function(err){ showMsg(err.message || String(err), 'error'); }); });
       document.getElementById('btnRecargar').addEventListener('click', function(ev){ ev.preventDefault(); load().catch(function(err){ showMsg(err.message || String(err), 'error'); }); });
+      document.getElementById('btnAdd').addEventListener('click', function(ev){
+        ev.preventDefault();
+        var raw = document.getElementById('emailNuevo').value || '';
+        var add = parseEmailsFromText(raw);
+        if (!add.length) { showMsg('Escribe al menos un correo válido.', 'error'); return; }
+        var uniq = {};
+        state.emails.forEach(function(x){ uniq[x]=true; });
+        add.forEach(function(x){ if (!uniq[x]) { uniq[x]=true; state.emails.push(x); } });
+        state.emails.sort();
+        document.getElementById('emailNuevo').value = '';
+        renderTable();
+        showMsg('Agregado. Recuerda Guardar para persistir.', 'success');
+      });
+      document.getElementById('emailsTbody').addEventListener('click', function(ev){
+        var b = ev.target && ev.target.closest ? ev.target.closest('[data-del]') : null;
+        if (!b) return;
+        var idx = parseInt(b.getAttribute('data-del'), 10);
+        if (Number.isNaN(idx)) return;
+        state.emails.splice(idx, 1);
+        renderTable();
+        showMsg('Eliminado. Recuerda Guardar para persistir.', 'success');
+      });
       load().catch(function(err){ showMsg(err.message || String(err), 'error'); });
     })();
   </script>

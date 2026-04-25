@@ -6,9 +6,11 @@
   <title>Resumen de Licencias</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
+    .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .summary-card{padding:28px;text-align:center}
     .big-number{font-size:3.2rem;font-weight:800;color:var(--text)}
     .muted{color:var(--muted)}
+    @media (max-width:900px){.summary-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page">
@@ -20,10 +22,17 @@
         <a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a>
       </div>
     </div>
-    <div class="card summary-card">
-      <div class="muted">Licencias activas</div>
-      <div id="activeCount" class="big-number">Cargando...</div>
-      <div id="lastUpdate" class="form-help muted"></div>
+    <div class="summary-grid">
+      <div class="card summary-card">
+        <div class="muted">Licencias activas</div>
+        <div id="activeCount" class="big-number">Cargando...</div>
+        <div id="lastUpdate" class="form-help muted"></div>
+      </div>
+      <div class="card summary-card">
+        <div class="muted">Empresas registradas</div>
+        <div id="empresasCount" class="big-number">Cargando...</div>
+        <div class="form-help muted">Total de empresas creadas en el sistema (panel super).</div>
+      </div>
     </div>
   </div>
 
@@ -45,10 +54,24 @@
         if (btn) { btn.disabled = false; btn.textContent = 'Actualizar'; }
       }
     }
+
+    async function loadEmpresasCount(){
+      try{
+        const res = await fetch('/super/api/empresas', { method: 'GET' });
+        if(!res.ok){ document.getElementById('empresasCount').textContent = 'Error'; return }
+        const data = await res.json();
+        const total = Array.isArray(data) ? data.length : (Array.isArray(data.empresas) ? data.empresas.length : 0);
+        document.getElementById('empresasCount').textContent = total;
+      }catch(e){
+        console.error(e);
+        document.getElementById('empresasCount').textContent = 'Error';
+      }
+    }
     document.addEventListener('DOMContentLoaded', function(){
       const btn = document.getElementById('refreshBtn');
-      if (btn) btn.addEventListener('click', loadActiveCount);
+      if (btn) btn.addEventListener('click', function(){ loadActiveCount(); loadEmpresasCount(); });
       loadActiveCount();
+      loadEmpresasCount();
     });
   </script>
 </body>

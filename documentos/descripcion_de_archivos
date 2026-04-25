@@ -9,6 +9,12 @@
 	- `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go` : el prompt del sistema instruye a proponer acciones como bloque `PCS_ACTION` (JSON) solo cuando hay datos completos; nunca ejecuta cambios directamente.
 	- `backend/handlers/auditoria_empresa.go` : la auditoria critica captura `X-PCS-Source=chat_ia` y `X-PCS-Chat-Conversation-ID` como metadata del evento.
 
+- Actualizacion 2026-04-25: super_administrador — Panel inicial y Frecuencia FP (CRUD)
+	- `web/super_administrador.html` : agrega enlace superior `Panel` (apunta a `web/super/licencias_resumen.html`).
+	- `web/super/licencias_resumen.html` : agrega contador de empresas registradas (consulta `/super/api/empresas`) además de licencias activas.
+	- `backend/handlers/administradores_frecuencia_fe_handlers.go` : valida sesión/rol super usando `paginaPrincipalRequireSuperAdmin` para permitir guardar correos autorizados.
+	- `web/super/administradores_frecuencia_fe.html` : UI estilo CRUD (agregar/eliminar/listar + guardar/recargar) para correos autorizados.
+
 - Actualizacion 2026-04-24: estaciones — pedidos IA y miniaturas movil
 	- `backend/handlers/ia_pedidos_estacion.go` (nuevo) : `POST /api/empresa/ia_pedidos_estacion/ejecutar` con permisos de ventas; usa OpenAI segun configuracion super, interpreta pedidos en lenguaje natural y agrega lineas al carrito de estacion.
 	- `backend/db/carritos_compras.go` : `GetCarritoCompraByCodigo` para localizar carritos `EST-{empresa}-{estacion}`.
