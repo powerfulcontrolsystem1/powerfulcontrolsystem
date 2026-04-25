@@ -141,6 +141,10 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (chat con IA: simplificacion visual) — **obsoleta** (ver 2026-04-24 layout Gemini): en su momento se oculto selector e historial; la revision posterior los restituye en sidebar y topbar sin tocar permisos.
 
+- Actualizacion 2026-04-24 (super pagina principal: tema en iframe y mp-card en modo claro):
+	- `web/super/pagina_principal.html` sincroniza tema al cargar; `web/estilos.css` ajusta `body.super-page`, titulo de cabecera y `.mp-card` / `.pp-image-preview-wrap` para contraste en tema claro y oscuro.
+	- Impacto de matriz: sin cambios en rutas `/super/api/pagina_principal` ni roles; solo UX.
+
 - Actualizacion 2026-04-24 (chat IA: tema y sugerencias):
 	- Las pantallas de chat IA sincronizan tema con el panel (`pcs_theme` / `localStorage`) y dejan de mostrar sugerencias tipo pill; los estilos compartidos en `web/estilos.css` mejoran legibilidad en modo claro tambien dentro de `chat_y_tareas`.
 	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; solo UX y apariencia.

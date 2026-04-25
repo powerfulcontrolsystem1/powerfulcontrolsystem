@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Pagina principal</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
 </head>
 <body class="super-page">
   <div class="container">

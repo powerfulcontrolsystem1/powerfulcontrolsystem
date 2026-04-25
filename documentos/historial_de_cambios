@@ -3,6 +3,11 @@
     - Descripcion: conversaciones locales en barra izquierda mas historial API; encabezado con selector de modelo y pastilla de uso; boton Compartir en respuestas del asistente; mensajes claros al superar limite diario (429 y codigos conocidos); eliminacion de titulo descriptivo largo y tarjeta de contexto en chat empresarial; ajustes de contraste en modo claro para burbujas y banners.
     - Verificacion: revision estatica HTML/CSS/JS.
 
+- 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
+    - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
+    - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; `mp-card` en tema claro con superficie y campos alineados a variables (afecta tambien formatos email que usan `mp-card`); area `.pp-image-preview-wrap` con mezclas por tema.
+    - Verificacion: revision estatica CSS/HTML.
+
 - 2026-04-24: estaciones ? estacion especial pedidos con IA y miniaturas en movil.
     - Archivos: `backend/handlers/ia_pedidos_estacion.go`, `backend/db/carritos_compras.go`, `backend/handlers/chat_con_inteligencia_artificial_router.go`, `web/administrar_empresa/estacion_ia_pedidos.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js`, `.vscode/extensions.json`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: nueva estacion especial opcional que embebe un chat para dictar o escribir pedidos (p. ej. productos a una mesa/estacion); endpoint con IA que crea items en el carrito de la estacion. En movil, boton para alternar vista en miniatura (3 columnas). Recomendaciones VS Code minimas en `.vscode/extensions.json`.

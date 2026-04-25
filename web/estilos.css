@@ -2325,7 +2325,14 @@ html[data-theme="light-gold"] .login-usuario-contract-version{
 .portal-card{position:relative}
 .portal-card .station-sensor-indicator{position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:3px;box-shadow:0 4px 10px rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.06)}
 
-/* Ajustes específicos para páginas dentro de /web/super */
+/* Ajustes específicos para páginas dentro de /web/super (iframe incluido: fondo y texto según tema) */
+body.super-page{
+  margin:0;
+  min-height:100vh;
+  box-sizing:border-box;
+  background:var(--bg);
+  color:var(--text);
+}
 .super-page .container{max-width:none;width:100%;margin:0;padding:0.6rem 0.8rem}
 .super-page .container h1{font-size:0.95rem;margin:4px 0;color:var(--text)}
 .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
@@ -2339,7 +2346,7 @@ html[data-theme="light-gold"] .login-usuario-contract-version{
 .pp-col-grow{flex:1}
 .pp-inline-actions{justify-content:flex-start;gap:10px}
 .pp-preview-col{max-width:260px}
-.pp-image-preview-wrap{display:flex;align-items:center;justify-content:center;min-height:140px;padding:10px;border:1px dashed rgba(181,213,241,0.45);border-radius:12px;background:rgba(8,27,49,0.56)}
+.pp-image-preview-wrap{display:flex;align-items:center;justify-content:center;min-height:140px;padding:10px;border:1px dashed color-mix(in srgb, var(--accent) 38%, var(--border));border-radius:12px;background:color-mix(in srgb, var(--surface) 82%, var(--accent) 18%)}
 .pp-image-preview{max-width:160px;max-height:110px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,0.3))}
 
 @media (max-width:700px){
@@ -4108,6 +4115,18 @@ body.has-floating-menu .header .form-actions{
   margin-bottom: 16px;
 }
 
+/* Temas claros: el titulo con gradiente + text-fill transparente queda ilegible sobre fondo claro */
+html.theme-light .super-page .page-header h1,
+html[data-theme="light"] .super-page .page-header h1,
+html[data-theme="light-rose"] .super-page .page-header h1,
+html[data-theme="light-gold"] .super-page .page-header h1{
+  background:none;
+  -webkit-background-clip:unset;
+  background-clip:unset;
+  -webkit-text-fill-color:unset;
+  color:var(--text);
+}
+
 .super-page .page-header p.form-help {
   font-size: 1.15rem;
   max-width: 650px;
@@ -4196,6 +4215,48 @@ body.has-floating-menu .header .form-actions{
   color: var(--text);
   border-color: var(--border);
   background: var(--surface-soft);
+}
+
+/* mp-card: en tema claro el contenedor accent + etiquetas blancas rompe contraste (pagina principal, formatos email) */
+html.theme-light .mp-card,
+html[data-theme="light"] .mp-card,
+html[data-theme="light-rose"] .mp-card,
+html[data-theme="light-gold"] .mp-card{
+  background:linear-gradient(180deg, var(--surface-soft), var(--surface));
+  color:var(--text);
+  border:1px solid var(--border);
+  box-shadow:0 10px 28px color-mix(in srgb, var(--text) 6%, transparent);
+}
+html.theme-light .mp-card > h2,
+html[data-theme^="light"] .mp-card > h2{
+  color:var(--text);
+}
+html.theme-light .mp-card .form-label,
+html.theme-light .mp-card .form-help,
+html[data-theme^="light"] .mp-card .form-label,
+html[data-theme^="light"] .mp-card .form-help{
+  color:var(--muted);
+}
+html.theme-light .mp-card .form-input,
+html.theme-light .mp-card .form-textarea,
+html.theme-light .mp-card select.form-input,
+html[data-theme^="light"] .mp-card .form-input,
+html[data-theme^="light"] .mp-card .form-textarea,
+html[data-theme^="light"] .mp-card select.form-input{
+  background:var(--form-input-bg);
+  border-color:var(--form-border);
+  color:var(--text);
+}
+html.theme-light .mp-card .form-input::placeholder,
+html.theme-light .mp-card .form-textarea::placeholder,
+html[data-theme^="light"] .mp-card .form-input::placeholder,
+html[data-theme^="light"] .mp-card .form-textarea::placeholder{
+  color:color-mix(in srgb, var(--muted) 78%, transparent);
+}
+html.theme-light .mp-card .form-actions .btn,
+html[data-theme^="light"] .mp-card .form-actions .btn{
+  color:unset;
+  border-color:unset;
 }
 
 html.theme-light .pp-image-preview-wrap,
