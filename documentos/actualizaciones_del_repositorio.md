@@ -781,3 +781,13 @@ Archivos modificados:
 - web/administrar_empresa/chat_con_inteligencia_artificial.html
 - web/estilos.css
 - web/super/chat_con_ia_global.html
+
+2026-04-24 22:48:52 - Mensaje: Super: Panel primero + contador empresas + fix CRUD Frecuencia FP; Commit: ce3338e; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/administradores_frecuencia_fe_handlers.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/super/administradores_frecuencia_fe.html
+- web/super/licencias_resumen.html
+- web/super_administrador.html
