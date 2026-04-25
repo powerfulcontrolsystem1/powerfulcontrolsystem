@@ -183,7 +183,9 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"rol_nombre":        rol.Nombre,
 				"tipo_empresa_id":   rol.TipoEmpresaID,
 				"acciones_catalogo": append([]string{}, permissionActionsCatalogOrdered...),
+				"acciones_etiqueta": PermissionActionDisplayNameMap(),
 				"modulos_catalogo":  append([]string{}, permissionModulesCatalogOrdered...),
+				"modulos_etiqueta":  PermissionModuleDisplayNameMap(),
 				"modulos":           modulos,
 				"paginas":           paginas,
 			})

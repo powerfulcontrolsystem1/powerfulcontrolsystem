@@ -63,22 +63,27 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Módulos habilitados</label>
-          <div id="modulosLicenciaBox" class="lic-modulos-grid">
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="ventas"> Ventas</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="inventario"> Inventario</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="finanzas"> Finanzas</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="clientes"> Clientes</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="compras"> Compras</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="facturacion"> Facturación</label>
-            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="seguridad"> Seguridad</label>
+        <div class="form-col" style="grid-column:1/-1">
+          <label class="form-label">Cobertura de módulos (licencia)</label>
+          <p class="lic-coverage-lead">Define <strong>qué módulos negocio</strong> incluye el plan. Si dejas <strong>todo sin marcar</strong>, la licencia <strong>no restringe</strong> módulos (el administrador aplica luego <a href="/super/permisos_rol.html" target="_blank" rel="noopener">permisos por rol</a> sin techo de licencia). Si marcas uno o varios, la empresa <strong>solo</strong> accede a esos módulos; el resto queda inaccesible aunque el rol esté lleno.</p>
+          <div id="modulosLicenciaBox" class="lic-coverage">
+            <p class="lic-coverage-title">Módulos del plan</p>
+            <div class="lic-coverage-grid">
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="ventas"><span class="lic-coverage-h">Ventas y servicio</span><span class="lic-coverage-d">TPV, carritos, estaciones, venta pública, tarifas.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="inventario"><span class="lic-coverage-h">Inventario y almacén</span><span class="lic-coverage-d">Productos, combos, ubicación, stock.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="finanzas"><span class="lic-coverage-h">Finanzas y reportes</span><span class="lic-coverage-d">Caja, cierres, créditos, gráficos, nómina.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="clientes"><span class="lic-coverage-h">Clientes y cartera</span><span class="lic-coverage-d">CRM básico y seguimiento comercial.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="compras"><span class="lic-coverage-h">Compras y proveedores</span><span class="lic-coverage-d">Órdenes y abastecimiento.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">Facturación electrónica (DIAN)</span><span class="lic-coverage-d">Emisión y consulta de documentos.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Seguridad e integración</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditoría, ERP.</span></label>
+            </div>
           </div>
-          <div class="form-help">Si no seleccionas módulos, la licencia no restringe el catálogo por módulo.</div>
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Super rol por licencia</label>
-          <label class="lic-superrol-item"><input id="super_rol_habilitado" type="checkbox"> Habilitar super rol para supervisor de sucursal</label>
+          <label class="form-label">Política de rol jerárquico</label>
+          <label class="lic-superrol-item"><input id="super_rol_habilitado" type="checkbox"> Permitir que el <strong>supervisor de sucursal</strong> comparta módulo de aprobación ampliada previsto en el plan (según reglas de licencia y rol).</label>
         </div>
       </div>
       <div class="form-actions">

@@ -61,6 +61,26 @@ var permissionActionsCatalogOrdered = []string{
 	permActionApprove,
 }
 
+// Etiquetas cortas para UI (super: permisos por rol) y documentación.
+var permissionActionDisplayNames = map[string]string{
+	permActionRead:    "Leer / consultar",
+	permActionCreate:  "Crear / registrar",
+	permActionUpdate:  "Actualizar / modificar",
+	permActionDelete:  "Eliminar / anular",
+	permActionApprove: "Aprobar / auditar",
+}
+
+// permissionModuleDisplayNames nombres de negocio por clave de módulo.
+var permissionModuleDisplayNames = map[string]string{
+	permModuleVentas:      "Ventas y servicio al cliente",
+	permModuleInventario:  "Inventario y almacén",
+	permModuleFinanzas:    "Finanzas, caja y reportes",
+	permModuleClientes:    "Clientes y cartera comercial",
+	permModuleCompras:     "Compras y proveedores",
+	permModuleFacturacion: "Facturación electrónica (DIAN)",
+	permModuleSeguridad:   "Seguridad, usuarios e integración",
+}
+
 var permissionRolesCatalogOrdered = []string{
 	"super_administrador",
 	"admin_empresa",
@@ -77,44 +97,46 @@ type permissionPageRule struct {
 	Modulo        string `json:"modulo,omitempty"`
 	Accion        string `json:"accion,omitempty"`
 	AlwaysVisible bool   `json:"always_visible,omitempty"`
+	Titulo        string `json:"titulo,omitempty"`
+	Grupo         string `json:"grupo,omitempty"`
 }
 
 var permissionPagesCatalogOrdered = []permissionPageRule{
-	{PaginaClave: "linkInicio", AlwaysVisible: true},
-	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead},
-	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate},
-	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate},
-	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate},
-	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate},
-	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate},
-	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate},
-	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate},
-	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate},
-	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead},
-	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate},
-	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate},
-	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead},
-	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate},
-	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead},
-	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate},
-	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate},
-	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove},
-	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove},
-	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate},
-	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate},
-	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate},
-	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove},
-	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate},
-	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate},
-	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead},
-	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead},
-	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead},
+	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
+	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación y venta"},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "Operación y venta"},
+	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pública (e‑commerce)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
+	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
+	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Finanzas y nómina"},
+	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehículos", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación y venta"},
+	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
+	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
+	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
+	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobación: configuración de estaciones", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
+	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Gráficos y estadísticas", Grupo: "Finanzas y reportes"},
 }
 
 type permissionModuleMatrixRow struct {
@@ -133,6 +155,8 @@ type permissionPageAccessRow struct {
 	Accion        string `json:"accion,omitempty"`
 	Permitido     bool   `json:"permitido"`
 	AlwaysVisible bool   `json:"always_visible,omitempty"`
+	Titulo        string `json:"titulo,omitempty"`
+	Grupo         string `json:"grupo,omitempty"`
 }
 
 type permissionSummary struct {
@@ -1109,12 +1133,22 @@ func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixR
 			permitido = override
 		}
 
+		titulo := strings.TrimSpace(rule.Titulo)
+		if titulo == "" {
+			titulo = rule.PaginaClave
+		}
+		grupo := strings.TrimSpace(rule.Grupo)
+		if grupo == "" {
+			grupo = "Otras"
+		}
 		out = append(out, permissionPageAccessRow{
 			PaginaClave:   rule.PaginaClave,
 			Modulo:        rule.Modulo,
 			Accion:        rule.Accion,
 			Permitido:     permitido,
 			AlwaysVisible: rule.AlwaysVisible,
+			Titulo:        titulo,
+			Grupo:         grupo,
 		})
 	}
 
@@ -1218,4 +1252,30 @@ func summarizePermissionModules(rows []permissionModuleMatrixRow) permissionSumm
 		}
 	}
 	return summary
+}
+
+// PermissionModuleDisplayNameMap devuelve etiquetas de negocio por clave de módulo (API super: permisos por rol).
+func PermissionModuleDisplayNameMap() map[string]string {
+	out := make(map[string]string, len(permissionModulesCatalogOrdered))
+	for _, m := range permissionModulesCatalogOrdered {
+		if lab, ok := permissionModuleDisplayNames[m]; ok && strings.TrimSpace(lab) != "" {
+			out[m] = lab
+		} else {
+			out[m] = m
+		}
+	}
+	return out
+}
+
+// PermissionActionDisplayNameMap devuelve etiquetas por letra de acción (R/C/U/D/A).
+func PermissionActionDisplayNameMap() map[string]string {
+	out := make(map[string]string, len(permissionActionsCatalogOrdered))
+	for _, a := range permissionActionsCatalogOrdered {
+		if lab, ok := permissionActionDisplayNames[a]; ok && strings.TrimSpace(lab) != "" {
+			out[a] = lab
+		} else {
+			out[a] = a
+		}
+	}
+	return out
 }

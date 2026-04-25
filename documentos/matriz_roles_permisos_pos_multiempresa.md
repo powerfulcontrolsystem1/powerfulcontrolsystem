@@ -1,3 +1,8 @@
+2026-04-25: Nota de gobernanza (permisos por rol, licencia y menú empresa)
+- El panel `web/super/permisos_rol.html` configura la **matriz por rol** (módulo × R/C/U/D/A) y **anulaciones por función** del menú `administrar_empresa` (claves `link*`). El backend expone en `GET /super/api/roles_de_usuario/permisos` etiquetas legibles y agrupación para auditoría y UI.
+- La **licencia** (`licencias.modulos_habilitados` en `web/super/licencias.html`) define el **techo** de módulos contratados: lista vacía = sin restricción de módulo; lista con valores = solo esos módulos para la empresa, aplicada antes de la matriz de rol.
+- No se agrega un tercer sistema “universal” paralelo: la combinación licencia + rol + reglas de página del catálogo `permissionPagesCatalogOrdered` en `empresa_permisos.go` es el modelo soportado.
+
 2026-04-24: Nota operativa para `asesor comercial`, `licencias`, `pagos`, `super` y `seleccionar_empresa`
 - `super_administrador` administra `web/super/asesor_comercial.html`: invita administradores registrados, configura porcentaje/plazo, desactiva asesores y marca comisiones pagadas mediante `/super/api/asesor_comercial`.
 - `administrador` invitado solo obtiene la vista `Mis clientes` tras aceptar la invitacion por correo; no recibe permisos super ni acceso a empresas ajenas. La vista consume `/api/asesor_comercial/mis_clientes` y filtra por el email de la sesion.

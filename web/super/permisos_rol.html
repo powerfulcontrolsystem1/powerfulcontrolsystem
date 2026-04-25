@@ -3,97 +3,331 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Permisos por rol</title>
+  <title>Permisos por rol — Configuración empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function(){
+      try {
+        var t = localStorage.getItem('pcs_tema_empresa') || localStorage.getItem('pcs_theme') || '';
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
 </head>
-<body class="super-page form-bg-dark">
-  <div class="container">
-    <div class="page-header">
-      <h1>Permisos por rol</h1>
-      <button id="saveBtn" class="btn add" disabled>Guardar cambios</button>
-    </div>
+<body class="super-page">
+  <div class="container pcs-pr-app">
+    <header class="pcs-pr-hero">
+      <div class="pcs-pr-hero-text">
+        <p class="pcs-pr-kicker">Super administrador · Seguridad y gobernanza</p>
+        <h1>Permisos por rol</h1>
+        <p class="pcs-pr-lead">Define qué <strong>módulos</strong>, <strong>acciones (CRUD/A)</strong> y <strong>vínculos del panel empresa</strong> puede usar cada rol. La licencia activa de la empresa puede <strong>limitar módulos</strong>; los permisos del rol nunca ampliarán un módulo no cubierto por la licencia.</p>
+      </div>
+    </header>
 
-    <form id="filtroForm" class="form">
-      <div class="form-row">
+    <div class="pcs-pr-toolbar card">
+      <div class="pcs-pr-toolbar-row">
         <div class="form-col">
           <label class="form-label" for="tipo_empresa_id">Tipo de empresa</label>
           <select id="tipo_empresa_id" class="form-input"></select>
         </div>
         <div class="form-col">
-          <label class="form-label" for="rol_id">Rol</label>
+          <label class="form-label" for="rol_id">Rol a configurar</label>
           <select id="rol_id" class="form-input"></select>
         </div>
+        <div class="form-col pcs-pr-search-wrap">
+          <label class="form-label" for="prSearch">Buscar en el panel</label>
+          <input id="prSearch" class="form-input" type="search" placeholder="Nombre de función, grupo o clave…" autocomplete="off">
+        </div>
       </div>
-      <div class="form-help" id="msg"></div>
-    </form>
+      <div class="pcs-pr-toolbar-actions">
+        <button type="button" class="btn secondary" id="prExpandAll">Desplegar grupos</button>
+        <button type="button" class="btn secondary" id="prCollapseAll">Plegar grupos</button>
+        <span class="pcs-pr-divider" aria-hidden="true"></span>
+        <button type="button" class="btn add" id="saveBtn" disabled>Guardar cambios</button>
+      </div>
+    </div>
 
-    <section id="panelPermisos" hidden>
-      <h2>Matriz por módulo y acción</h2>
-      <div id="modulosBox"></div>
+    <p class="form-help" id="msg" role="status" aria-live="polite"></p>
 
-      <h2>Páginas del panel empresa</h2>
-      <div id="paginasBox"></div>
+    <section id="panelPermisos" class="pcs-pr-panel" hidden>
+      <div class="pcs-pr-summary" id="prSummary"></div>
+
+      <section class="pcs-pr-block card">
+        <div class="pcs-pr-block-head">
+          <h2>1. Módulos y acciones de negocio</h2>
+          <p class="form-help">Cada módulo agrupa un dominio funcional. Las letras <abbr title="Crear">C</abbr>, <abbr title="Leer">R</abbr>, <abbr title="Actualizar">U</abbr>, <abbr title="Eliminar">D</abbr> y aprobación definen el nivel de operación vinculado a la API y a los formularios.</p>
+        </div>
+        <div id="modulosBox" class="pcs-pr-mod-grid"></div>
+      </section>
+
+      <section class="pcs-pr-block card">
+        <div class="pcs-pr-block-head">
+          <h2>2. Panel de administrar empresa — funciones y menú</h2>
+          <p class="form-help">Cada fila es una <strong>función o pantalla</strong> del panel. Puedes anular el acceso aunque el módulo permita la acción base (útil para perfiles restringidos).</p>
+        </div>
+        <div id="paginasBox" class="pcs-pr-pages-wrap"></div>
+      </section>
+
+      <div class="pcs-pr-sticky-foot">
+        <p class="form-help" id="prDirtyNote" hidden>Hay cambios sin guardar.</p>
+        <button type="button" class="btn add" id="saveBtn2">Guardar cambios</button>
+      </div>
     </section>
+
+    <aside class="card pcs-pr-aside" id="prDocs">
+      <h3>Recomendación de modelo (grupo vs. universal)</h3>
+      <ul class="pcs-pr-dots">
+        <li><strong>Matriz por rol (esta pantalla):</strong> el estándar del sistema. Cada <em>rol</em> recibe módulo × acción y, si hace falta, anulación por <em>función del menú</em>. Es auditable y alineada con el backend.</li>
+        <li><strong>Licencia:</strong> fija el <strong>techo</strong> de módulos contratados. Configúrala en <a href="/super/licencias.html">Licencias</a> (módulos habilitados). Sin módulos marcados, la licencia <strong>no restringe</strong> el catálogo; con módulos marcados, la empresa solo ve lo contratado.</li>
+        <li><strong>No hace falta</strong> un “universal” aparte: la combinación <em>licencia → rol → anulación de menú</em> cubre lo empresarial sin duplicar reglas.</li>
+      </ul>
+    </aside>
   </div>
 
   <script>
     (function () {
-      var state = {
-        tipos: [],
-        roles: [],
-        modulos: [],
-        paginas: []
-      };
+      const ACTION_ORDER = ['R', 'C', 'U', 'D', 'A'];
+      const state = { tipos: [], roles: [], modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, snapshot: '' };
 
-      var tipoSelect = document.getElementById('tipo_empresa_id');
-      var rolSelect = document.getElementById('rol_id');
-      var saveBtn = document.getElementById('saveBtn');
-      var msg = document.getElementById('msg');
-      var panelPermisos = document.getElementById('panelPermisos');
-      var modulosBox = document.getElementById('modulosBox');
-      var paginasBox = document.getElementById('paginasBox');
+      const tipoSelect = document.getElementById('tipo_empresa_id');
+      const rolSelect = document.getElementById('rol_id');
+      const saveBtn = document.getElementById('saveBtn');
+      const saveBtn2 = document.getElementById('saveBtn2');
+      const msg = document.getElementById('msg');
+      const panelPermisos = document.getElementById('panelPermisos');
+      const modulosBox = document.getElementById('modulosBox');
+      const paginasBox = document.getElementById('paginasBox');
+      const prSearch = document.getElementById('prSearch');
+      const prSummary = document.getElementById('prSummary');
+      const prDirtyNote = document.getElementById('prDirtyNote');
 
       function setMessage(text, isError) {
         msg.textContent = text || '';
-        msg.style.color = isError ? '#ef5350' : '';
+        msg.className = 'form-help' + (isError ? ' pcs-pr-msg--err' : (text ? ' pcs-pr-msg--ok' : ''));
       }
 
       async function ensureOk(res) {
         if (res.ok) return;
-        var text = await res.text();
+        const text = await res.text();
         throw new Error(text || ('HTTP ' + res.status));
       }
 
-      function actionLabel(action) {
-        switch (String(action || '').toUpperCase()) {
-          case 'R': return 'Leer';
-          case 'C': return 'Crear';
-          case 'U': return 'Actualizar';
-          case 'D': return 'Eliminar';
-          case 'A': return 'Aprobar';
-          default: return action || '';
-        }
+      function boolValue(v) { return !!v; }
+
+      function actionLabelShort(action) {
+        const a = String(action || '').toUpperCase();
+        return (state.accionesEtiqueta && state.accionesEtiqueta[a]) ? state.accionesEtiqueta[a] : a;
       }
 
-      function boolValue(v) {
-        return !!v;
+      function moduleTitle(mod) {
+        const m = String(mod || '').trim();
+        return (state.modulosEtiqueta && state.modulosEtiqueta[m]) ? state.modulosEtiqueta[m] : m;
       }
 
       function loadRoleFromQueryString() {
-        var params = new URLSearchParams(window.location.search);
-        var raw = Number(params.get('rol_id') || 0);
-        if (!raw || raw < 1) return 0;
-        return raw;
+        const params = new URLSearchParams(window.location.search);
+        const raw = Number(params.get('rol_id') || 0);
+        return (raw > 0) ? raw : 0;
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function escapeSelector(s) {
+        if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(String(s));
+        return String(s).replace(/[^a-zA-Z0-9_-]/g, function (ch) { return '\\' + ch; });
+      }
+
+      function setModuleAll(mod, value) {
+        ACTION_ORDER.forEach(function (a) {
+          const el = modulosBox.querySelector('input[data-modulo="' + escapeSelector(mod) + '"][data-action="' + a + '"]');
+          if (el) el.checked = value;
+        });
+        markDirty();
+      }
+
+      function countEnabledActions() {
+        let n = 0;
+        modulosBox.querySelectorAll('input[type="checkbox"][data-modulo]').forEach(function (el) { if (el.checked) n += 1; });
+        return n;
+      }
+
+      function countEnabledPages() {
+        let n = 0;
+        paginasBox.querySelectorAll('input[type="checkbox"][data-page]').forEach(function (el) { if (el.checked) n += 1; });
+        return n;
+      }
+
+      function renderSummary() {
+        const mod = state.modulos ? state.modulos.length : 0;
+        prSummary.innerHTML = [
+          '<span class="pcs-pr-pill"><strong>' + String(mod) + '</strong> módulos en catálogo</span>',
+          '<span class="pcs-pr-pill"><strong>' + String(countEnabledActions()) + '</strong> acciones activas (casillas módulo)</span>',
+          '<span class="pcs-pr-pill"><strong>' + String(countEnabledPages()) + '</strong> funciones del menú visibles</span>'
+        ].join('');
+      }
+
+      function renderModulos() {
+        if (!Array.isArray(state.modulos) || !state.modulos.length) {
+          modulosBox.innerHTML = '<p class="form-help">No hay módulos en el catálogo.</p>';
+          return;
+        }
+        const parts = state.modulos.map(function (item) {
+          const modulo = String(item.modulo || '').trim();
+          const mTitle = moduleTitle(modulo);
+          const inner = ACTION_ORDER.map(function (a) {
+            const checked = boolValue(a === 'R' ? item.read : a === 'C' ? item.create : a === 'U' ? item.update : a === 'D' ? item.delete : item.approve);
+            return '<label class="pcs-pr-ac-label"><input type="checkbox" data-modulo="' + escapeHtml(modulo) + '" data-action="' + a + '"' + (checked ? ' checked' : '') + '> <span class="pcs-pr-ac-key">' + a + '</span> <span class="pcs-pr-ac-txt">' + escapeHtml(actionLabelShort(a)) + '</span></label>';
+          }).join('');
+
+          return (
+            '<article class="pcs-pr-mod-card" data-modulo="' + escapeHtml(modulo) + '">' +
+              '<header class="pcs-pr-mod-head">' +
+                '<h3 class="pcs-pr-mod-title">' + escapeHtml(mTitle) + '</h3>' +
+                '<p class="pcs-pr-mod-key"><code>' + escapeHtml(modulo) + '</code></p>' +
+                '<div class="pcs-pr-mod-bulk">' +
+                  '<button type="button" class="btn secondary pcs-pr-bulk" data-bulk="all" data-m="' + escapeHtml(modulo) + '">Activar todo</button>' +
+                  '<button type="button" class="btn secondary pcs-pr-bulk" data-bulk="none" data-m="' + escapeHtml(modulo) + '">Desactivar todo</button>' +
+                '</div>' +
+              '</header>' +
+              '<div class="pcs-pr-ac-grid">' + inner + '</div>' +
+            '</article>'
+          );
+        });
+        modulosBox.innerHTML = parts.join('');
+        modulosBox.querySelectorAll('.pcs-pr-bulk').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const m = btn.getAttribute('data-m') || '';
+            if (!m) return;
+            setModuleAll(m, btn.getAttribute('data-bulk') === 'all');
+            renderSummary();
+          });
+        });
+        modulosBox.querySelectorAll('input[type="checkbox"][data-modulo]').forEach(function (el) {
+          el.addEventListener('change', function () { markDirty(); renderSummary(); });
+        });
+        renderSummary();
+      }
+
+      function itemSearchBlob(item) {
+        return [item.pagina_clave, item.modulo, item.accion, item.titulo, item.grupo, item.titulo || ''].join(' ').toLowerCase();
+      }
+
+      function buildPaginasTable() {
+        if (!Array.isArray(state.paginas) || !state.paginas.length) {
+          paginasBox.innerHTML = '<p class="form-help">No hay funciones de menú registradas.</p>';
+          return;
+        }
+        const byGroup = {};
+        state.paginas.forEach(function (item) {
+          const g = String(item.grupo || 'Otras').trim() || 'Otras';
+          if (!byGroup[g]) byGroup[g] = [];
+          byGroup[g].push(item);
+        });
+        const groupNames = Object.keys(byGroup).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+        const blocks = groupNames.map(function (g) {
+          const items = byGroup[g].sort(function (a, b) {
+            return String(a.titulo || a.pagina_clave).localeCompare(String(b.titulo || b.pagina_clave), 'es');
+          });
+          const rows = items.map(function (item) {
+            const pag = String(item.pagina_clave || '').trim();
+            const tit = String(item.titulo || item.pagina_clave).trim();
+            const accionTxt = item.always_visible
+              ? 'Visible por defecto; override puede restringir'
+              : (item.accion ? actionLabelShort(item.accion) : '—');
+            const modLab = item.modulo ? moduleTitle(item.modulo) : '—';
+            const blob = itemSearchBlob(item);
+            return '<tr class="pcs-pr-pag-row" data-pag-clave="' + escapeHtml(pag) + '" data-search-blob="' + escapeHtml(blob) + '">' +
+              '<td class="pcs-pr-td-title"><strong>' + escapeHtml(tit) + '</strong><div class="pcs-pr-td-sub"><code>' + escapeHtml(pag) + '</code></div></td>' +
+              '<td>' + escapeHtml(modLab) + '</td>' +
+              '<td>' + escapeHtml(accionTxt) + (item.always_visible ? ' <span class="pcs-pr-badge">Base</span>' : '') + '</td>' +
+              '<td class="pcs-pr-td-ck"><input type="checkbox" data-page="' + escapeHtml(pag) + '" ' + (boolValue(item.permitido) ? 'checked' : '') + '></td>' +
+            '</tr>';
+          }).join('');
+
+          return (
+            '<details class="pcs-pr-group" open data-group="' + escapeHtml(g) + '">' +
+              '<summary class="pcs-pr-group-sum">' + escapeHtml(g) + ' <span class="pcs-pr-group-count">(' + items.length + ')</span></summary>' +
+              '<div class="table-wrap"><table class="table pcs-pr-page-table"><thead><tr><th>Función / pantalla</th><th>Módulo</th><th>Regla de acceso</th><th>Visible / permitida</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+            '</details>'
+          );
+        });
+
+        paginasBox.innerHTML = blocks.join('');
+        paginasBox.querySelectorAll('input[type="checkbox"][data-page]').forEach(function (el) {
+          el.addEventListener('change', function () { markDirty(); renderSummary(); });
+        });
+        applyPageFilter();
+        renderSummary();
+      }
+
+      function applyPageFilter() {
+        const q = (prSearch && prSearch.value) ? prSearch.value.trim().toLowerCase() : '';
+        paginasBox.querySelectorAll('tr.pcs-pr-pag-row').forEach(function (tr) {
+          const blob = (tr.getAttribute('data-search-blob') || '').toLowerCase();
+          if (!q) { tr.classList.remove('pcs-pr-pag-row--hidden'); return; }
+          if (blob.indexOf(q) >= 0) tr.classList.remove('pcs-pr-pag-row--hidden');
+          else tr.classList.add('pcs-pr-pag-row--hidden');
+        });
+        const groups = paginasBox.querySelectorAll('details.pcs-pr-group');
+        groups.forEach(function (det) {
+          const anyVisible = det.querySelector('tr.pcs-pr-pag-row:not(.pcs-pr-pag-row--hidden)');
+          if (!anyVisible && det.querySelector('tr.pcs-pr-pag-row')) {
+            det.classList.add('pcs-pr-group--empty');
+          } else {
+            det.classList.remove('pcs-pr-group--empty');
+          }
+        });
+      }
+
+      function takeSnapshot() {
+        return JSON.stringify(collectPayload());
+      }
+
+      function markDirty() {
+        const now = takeSnapshot();
+        const dirty = now !== state.snapshot;
+        if (prDirtyNote) prDirtyNote.hidden = !dirty;
+        return dirty;
+      }
+
+      function collectPayload() {
+        const rolID = Number(rolSelect.value || 0);
+        const modulos = [];
+        if (modulosBox) {
+          modulosBox.querySelectorAll('input[type="checkbox"][data-modulo]').forEach(function (input) {
+            modulos.push({
+              modulo: String(input.getAttribute('data-modulo') || '').trim(),
+              accion: String(input.getAttribute('data-action') || '').trim().toUpperCase(),
+              permitido: !!input.checked
+            });
+          });
+        }
+        const paginas = [];
+        if (paginasBox) {
+          paginasBox.querySelectorAll('input[type="checkbox"][data-page]').forEach(function (input) {
+            paginas.push({
+              pagina_clave: String(input.getAttribute('data-page') || '').trim(),
+              permitido: !!input.checked
+            });
+          });
+        }
+        return { rol_id: rolID, permisos_modulo: modulos, permisos_pagina: paginas };
       }
 
       async function loadTipos() {
-        var res = await fetch('/super/api/tipos_empresas', { credentials: 'same-origin' });
+        const res = await fetch('/super/api/tipos_empresas', { credentials: 'same-origin' });
         await ensureOk(res);
         state.tipos = await res.json();
-
-        tipoSelect.innerHTML = '<option value="">-- Todos --</option>';
+        tipoSelect.innerHTML = '<option value="">Todos los tipos</option>';
         state.tipos.forEach(function (item) {
-          var opt = document.createElement('option');
+          const opt = document.createElement('option');
           opt.value = item.id;
           opt.textContent = item.nombre;
           tipoSelect.appendChild(opt);
@@ -101,157 +335,61 @@
       }
 
       async function loadRoles(preferredRoleID) {
-        var tipoEmpresaID = Number(tipoSelect.value || 0);
-        var url = '/super/api/roles_de_usuario';
-        var params = [];
+        const tipoEmpresaID = Number(tipoSelect.value || 0);
+        let url = '/super/api/roles_de_usuario';
         if (tipoEmpresaID > 0) {
-          params.push('tipo_empresa_id=' + encodeURIComponent(tipoEmpresaID));
+          url += '?tipo_empresa_id=' + encodeURIComponent(tipoEmpresaID);
         }
-        if (params.length) {
-          url += '?' + params.join('&');
-        }
-
-        var res = await fetch(url, { credentials: 'same-origin' });
+        const res = await fetch(url, { credentials: 'same-origin' });
         await ensureOk(res);
         state.roles = await res.json();
-
-        rolSelect.innerHTML = '<option value="">-- Seleccionar rol --</option>';
+        rolSelect.innerHTML = '<option value="">— Seleccione un rol —</option>';
         state.roles.forEach(function (item) {
-          var opt = document.createElement('option');
+          const opt = document.createElement('option');
           opt.value = item.id;
-          opt.textContent = (item.nombre || 'Rol') + ' (ID ' + item.id + ')';
+          const tipoNom = (item.tipo_empresa_nombre || item.tipo_nombre || '') ? ' · ' + (item.tipo_empresa_nombre || item.tipo_nombre) : '';
+          opt.textContent = (item.nombre || 'Rol') + tipoNom;
+          opt.title = 'ID ' + item.id;
           rolSelect.appendChild(opt);
         });
-
         if (preferredRoleID > 0) {
           rolSelect.value = String(preferredRoleID);
-        }
-
-        if (!rolSelect.value && state.roles.length > 0) {
+        } else if (state.roles.length > 0) {
           rolSelect.value = String(state.roles[0].id);
         }
-      }
-
-      function renderModulos() {
-        if (!Array.isArray(state.modulos) || state.modulos.length === 0) {
-          modulosBox.innerHTML = '<p class="form-help">No hay módulos para este rol.</p>';
-          return;
-        }
-
-        var html = '' +
-          '<table class="table" id="modulosTable">' +
-          '<thead><tr>' +
-          '<th>Módulo</th>' +
-          '<th>Leer (R)</th>' +
-          '<th>Crear (C)</th>' +
-          '<th>Actualizar (U)</th>' +
-          '<th>Eliminar (D)</th>' +
-          '<th>Aprobar (A)</th>' +
-          '</tr></thead><tbody>';
-
-        state.modulos.forEach(function (item) {
-          var modulo = String(item.modulo || '').trim();
-          html += '<tr>' +
-            '<td>' + modulo + '</td>' +
-            '<td><input type="checkbox" data-modulo="' + modulo + '" data-action="R" ' + (boolValue(item.read) ? 'checked' : '') + '></td>' +
-            '<td><input type="checkbox" data-modulo="' + modulo + '" data-action="C" ' + (boolValue(item.create) ? 'checked' : '') + '></td>' +
-            '<td><input type="checkbox" data-modulo="' + modulo + '" data-action="U" ' + (boolValue(item.update) ? 'checked' : '') + '></td>' +
-            '<td><input type="checkbox" data-modulo="' + modulo + '" data-action="D" ' + (boolValue(item.delete) ? 'checked' : '') + '></td>' +
-            '<td><input type="checkbox" data-modulo="' + modulo + '" data-action="A" ' + (boolValue(item.approve) ? 'checked' : '') + '></td>' +
-            '</tr>';
-        });
-
-        html += '</tbody></table>';
-        modulosBox.innerHTML = html;
-      }
-
-      function renderPaginas() {
-        if (!Array.isArray(state.paginas) || state.paginas.length === 0) {
-          paginasBox.innerHTML = '<p class="form-help">No hay páginas registradas para este rol.</p>';
-          return;
-        }
-
-        var html = '' +
-          '<table class="table" id="paginasTable">' +
-          '<thead><tr>' +
-          '<th>Página</th>' +
-          '<th>Módulo</th>' +
-          '<th>Acción</th>' +
-          '<th>Permitir</th>' +
-          '</tr></thead><tbody>';
-
-        state.paginas.forEach(function (item) {
-          var paginaClave = String(item.pagina_clave || '').trim();
-          var modulo = String(item.modulo || '').trim();
-          var accion = String(item.accion || '').trim();
-          html += '<tr>' +
-            '<td>' + paginaClave + '</td>' +
-            '<td>' + (modulo || '-') + '</td>' +
-            '<td>' + (accion ? actionLabel(accion) : 'Siempre visible') + '</td>' +
-            '<td><input type="checkbox" data-page="' + paginaClave + '" ' + (boolValue(item.permitido) ? 'checked' : '') + '></td>' +
-            '</tr>';
-        });
-
-        html += '</tbody></table>';
-        paginasBox.innerHTML = html;
-      }
-
-      function collectPayload() {
-        var rolID = Number(rolSelect.value || 0);
-        var modulos = [];
-        var paginas = [];
-
-        var moduloChecks = document.querySelectorAll('#modulosTable tbody input[type="checkbox"]');
-        moduloChecks.forEach(function (input) {
-          modulos.push({
-            modulo: String(input.getAttribute('data-modulo') || '').trim(),
-            accion: String(input.getAttribute('data-action') || '').trim().toUpperCase(),
-            permitido: !!input.checked
-          });
-        });
-
-        var paginaChecks = document.querySelectorAll('#paginasTable tbody input[type="checkbox"]');
-        paginaChecks.forEach(function (input) {
-          paginas.push({
-            pagina_clave: String(input.getAttribute('data-page') || '').trim(),
-            permitido: !!input.checked
-          });
-        });
-
-        return {
-          rol_id: rolID,
-          permisos_modulo: modulos,
-          permisos_pagina: paginas
-        };
       }
 
       async function loadPermisosByRole(rolID) {
         if (!rolID || rolID < 1) {
           panelPermisos.hidden = true;
           saveBtn.disabled = true;
+          if (saveBtn2) saveBtn2.disabled = true;
           return;
         }
-
-        var res = await fetch('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), { credentials: 'same-origin' });
+        const res = await fetch('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), { credentials: 'same-origin' });
         await ensureOk(res);
-        var data = await res.json();
+        const data = await res.json();
         state.modulos = Array.isArray(data.modulos) ? data.modulos : [];
         state.paginas = Array.isArray(data.paginas) ? data.paginas : [];
-
+        state.accionesEtiqueta = (data && data.acciones_etiqueta && typeof data.acciones_etiqueta === 'object') ? data.acciones_etiqueta : {};
+        state.modulosEtiqueta = (data && data.modulos_etiqueta && typeof data.modulos_etiqueta === 'object') ? data.modulos_etiqueta : {};
         renderModulos();
-        renderPaginas();
+        buildPaginasTable();
+        state.snapshot = takeSnapshot();
+        if (prDirtyNote) prDirtyNote.hidden = true;
         panelPermisos.hidden = false;
         saveBtn.disabled = false;
+        if (saveBtn2) saveBtn2.disabled = false;
+        setMessage('', false);
       }
 
       async function savePermisos() {
-        var payload = collectPayload();
+        const payload = collectPayload();
         if (!payload.rol_id) {
-          setMessage('Debes seleccionar un rol.', true);
+          setMessage('Selecciona un rol.', true);
           return;
         }
-
-        var res = await fetch('/super/api/roles_de_usuario/permisos', {
+        const res = await fetch('/super/api/roles_de_usuario/permisos', {
           method: 'PUT',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -260,68 +398,78 @@
         await ensureOk(res);
       }
 
-      async function init() {
-        try {
-          setMessage('', false);
-          saveBtn.disabled = true;
-
-          await loadTipos();
-          var initialRoleID = loadRoleFromQueryString();
-          await loadRoles(initialRoleID);
-
-          var currentRoleID = Number(rolSelect.value || 0);
-          if (currentRoleID > 0) {
-            await loadPermisosByRole(currentRoleID);
+      function wireSave(btn) {
+        if (!btn) return;
+        btn.addEventListener('click', async function () {
+          try {
+            saveBtn.disabled = true;
+            if (saveBtn2) saveBtn2.disabled = true;
+            setMessage('Guardando…', false);
+            await savePermisos();
+            setMessage('Cambios guardados correctamente.', false);
+            await loadPermisosByRole(Number(rolSelect.value || 0));
+          } catch (err) {
+            setMessage((err && err.message) || 'No se pudieron guardar los permisos.', true);
+          } finally {
+            saveBtn.disabled = false;
+            if (saveBtn2) saveBtn2.disabled = false;
           }
-        } catch (err) {
-          panelPermisos.hidden = true;
-          saveBtn.disabled = true;
-          setMessage(err.message || 'No se pudo inicializar la pantalla de permisos.', true);
-        }
+        });
       }
+      wireSave(saveBtn);
+      wireSave(saveBtn2);
 
       tipoSelect.addEventListener('change', async function () {
         try {
           setMessage('', false);
           await loadRoles(0);
-          var currentRoleID = Number(rolSelect.value || 0);
-          if (currentRoleID > 0) {
-            await loadPermisosByRole(currentRoleID);
-          } else {
-            panelPermisos.hidden = true;
-            saveBtn.disabled = true;
-          }
+          const currentRoleID = Number(rolSelect.value || 0);
+          if (currentRoleID > 0) await loadPermisosByRole(currentRoleID);
+          else { panelPermisos.hidden = true; saveBtn.disabled = true; if (saveBtn2) saveBtn2.disabled = true; }
         } catch (err) {
-          setMessage(err.message || 'No se pudieron cargar los roles.', true);
+          setMessage(err.message || 'Error cargando roles.', true);
         }
       });
 
       rolSelect.addEventListener('change', async function () {
         try {
           setMessage('', false);
-          var currentRoleID = Number(rolSelect.value || 0);
+          const currentRoleID = Number(rolSelect.value || 0);
           await loadPermisosByRole(currentRoleID);
         } catch (err) {
           panelPermisos.hidden = true;
           saveBtn.disabled = true;
-          setMessage(err.message || 'No se pudieron cargar los permisos del rol.', true);
+          if (saveBtn2) saveBtn2.disabled = true;
+          setMessage(err.message || 'Error cargando permisos.', true);
         }
       });
 
-      saveBtn.addEventListener('click', async function () {
+      prSearch.addEventListener('input', function () { applyPageFilter(); });
+
+      document.getElementById('prExpandAll').addEventListener('click', function () {
+        document.querySelectorAll('details.pcs-pr-group').forEach(function (d) { d.open = true; });
+      });
+      document.getElementById('prCollapseAll').addEventListener('click', function () {
+        document.querySelectorAll('details.pcs-pr-group').forEach(function (d) { d.open = false; });
+      });
+
+      (async function init() {
         try {
+          setMessage('', false);
           saveBtn.disabled = true;
-          await savePermisos();
-          setMessage('Permisos guardados correctamente.', false);
-          await loadPermisosByRole(Number(rolSelect.value || 0));
+          if (saveBtn2) saveBtn2.disabled = true;
+          await loadTipos();
+          const initialRoleID = loadRoleFromQueryString();
+          await loadRoles(initialRoleID);
+          const currentRoleID = Number(rolSelect.value || 0);
+          if (currentRoleID > 0) await loadPermisosByRole(currentRoleID);
         } catch (err) {
-          setMessage(err.message || 'No se pudieron guardar los permisos.', true);
-        } finally {
-          saveBtn.disabled = false;
+          panelPermisos.hidden = true;
+          saveBtn.disabled = true;
+          if (saveBtn2) saveBtn2.disabled = true;
+          setMessage((err && err.message) || 'No se pudo cargar la pantalla de permisos.', true);
         }
-      });
-
-      init();
+      })();
     })();
   </script>
 </body>

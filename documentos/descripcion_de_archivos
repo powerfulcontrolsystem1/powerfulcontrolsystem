@@ -8487,3 +8487,10 @@ backend/handlers/erp_compras_proveedores.go: Handlers REST para gestionar el cic
  backend/db/usuario_config_schema.go - Define el esquema de la tabla de configuraciones por administrador/usuario y metodos de GET/POST. Creado el 2026-04-19.
 backend/handlers/user_config.go - Controlador que expone /api/user/configuracion para persistir en DB el modo apariencia de la UI. Creado el 2026-04-19.
 - \ackend/handlers/super_servidores_handlers.go\: Controlador de endpoints para interactuar con servicios del OS como \systemctl\, especificamente para gestionar RustDesk.
+
+[2026-04-25] Permisos por rol (super) y cobertura de licencia — UI y catálogo enriquecido
+- `web/super/permisos_rol.html`: consola empresarial (resumen, tarjetas por módulo con acciones etiquetadas, funciones del menú agrupadas, búsqueda sin perder estado al filtrar, barra de guardado, documentación de modelo licencia+rol en la misma página).
+- `web/super/licencias.html`: sección “Cobertura de módulos” con descripciones por módulo y enlace a permisos por rol; aclaración de política (vacío = sin techo; con checks = restringe).
+- `web/estilos.css`: clases `pcs-pr-*` (permisos rol) y `lic-coverage-*` (licencias).
+- `backend/handlers/empresa_permisos.go`: etiquetas de módulo y acción; `permissionPageRule` con `titulo` y `grupo`; filas de páginas con metadatos para la UI.
+- `backend/handlers/roles_tipos_usuario.go`: `GET /super/api/roles_de_usuario/permisos` incluye `acciones_etiqueta` y `modulos_etiqueta`.

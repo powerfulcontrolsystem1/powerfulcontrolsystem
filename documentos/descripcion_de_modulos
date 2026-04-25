@@ -1,3 +1,8 @@
+2026-04-25: Super — permisos por rol y cobertura de licencia (gobernanza)
+- Modulos afectados: `super`, `seguridad y permisos`, `licencias`
+- Cambio funcional: `web/super/permisos_rol.html` se rediseña como consola empresarial (resumen, módulos en tarjetas con acciones R/C/U/D/A etiquetadas, funciones del panel agrupadas con búsqueda sin perder estado al filtrar). El API `GET /super/api/roles_de_usuario/permisos` añade `acciones_etiqueta`, `modulos_etiqueta` y cada fila de `paginas` incluye `titulo` y `grupo` (catálogo en `backend/handlers/empresa_permisos.go`). `web/super/licencias.html` mejora la sección de módulos habilitados con textos de negocio y enlace a permisos por rol. Estilos `pcs-pr-*` y `lic-coverage-*` en `web/estilos.css`.
+- Modelo recomendado: la **licencia** fija el techo de módulos; el **rol** ajusta acciones y anulaciones por función de menú; no se añade un tercer sistema universal duplicado.
+
 2026-04-24: Super — pagina principal (portal): tema claro/oscuro en iframe
 - Modulos afectados: `super`, `portal publico` (solo editor super)
 - Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). Para evitar gradientes rosados en temas oscuros, el editor deja de usar `mp-card` y pasa a `pp-main-card` con superficie neutra basada en variables. `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); unifica `.pp-image-preview-wrap` con mezclas por tema.
