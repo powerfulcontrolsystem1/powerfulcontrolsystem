@@ -111,6 +111,9 @@
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` : agrega botón **Ayuda** (abre la guía en nueva pestaña).
 	- `web/super/chat_con_ia_global.html` : agrega botón **Ayuda** (abre la guía en nueva pestaña).
 
+- Actualizacion 2026-04-25: reportes inventario — ver/imprimir/exportar
+	- `web/administrar_empresa/reportes_inventario.html` : implementa carga real del dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y agrega acciones para ver PDF, imprimir y exportar (CSV/XLS/JSON/TXT/PDF).
+
 - Actualizacion 2026-04-24: index — subtítulo IA bajo el titulo de facturación electrónica
 	- `web/index.html` : bajo el h1 "Sistema de Facturación Electrónica" añade linea de apoyo "Habla con tu empresa — Inteligencia artificial integrada" (`.portal-cards-subheading`).
 

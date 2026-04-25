@@ -54,6 +54,10 @@
 - Modulos afectados: `seguridad y permisos`, `chat IA`, `super`
 - Cambio funcional: el catálogo de páginas/funciones por rol incluye `Asistente IA (chat empresarial)` y `Chat IA global (super)` para administración desde `super/permisos_rol.html`. Se agrega el rol `administrador_total` con acceso completo a todos los módulos y acciones (R/C/U/D/A) para operación administrativa sin restricciones por rol (sujeto a licencia).
 
+2026-04-25: Reportes de inventario — exportación e impresión (CSV/XLS/JSON/TXT/PDF)
+- Modulos afectados: `reportes`, `inventario`, `administrar_empresa`
+- Cambio funcional: la página `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vía PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
+
 2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
 - Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
 - Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).

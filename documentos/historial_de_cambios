@@ -83,6 +83,11 @@
     - Descripcion: se agrega un botùn **Ayuda** en ambos chats IA (empresa y global) que abre una pùgina corta explicando cùmo usar el chat, cùmo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con ìELIMINARî), y ejemplos de consultas/acciones.
     - Verificacion: revisiùn estùtica HTML/JS.
 
+- 2026-04-25: inventario ó documento/imprimir/exportar formatos comunes ó PushStatus: PENDIENTE
+    - Archivos: `web/administrar_empresa/reportes_inventario.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
+    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vÌa PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
+    - Verificacion: revisiÛn est·tica HTML/JS.
+
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: bootstrap temprano de `pcs_theme` / `localStorage` en iframe; `body.super-page` con fondo y texto por variables; titulos `.super-page .page-header h1` legibles en temas claros; en `pagina_principal` se reemplaza `mp-card` por `pp-main-card` para evitar gradientes rosados en temas oscuros y asegurar contraste consistente en todas las apariencias; area `.pp-image-preview-wrap` con mezclas por tema.
