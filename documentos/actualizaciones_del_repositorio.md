@@ -974,3 +974,10 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa.html
 - web/super/metricas_de_trafico_general.html
+
+2026-04-26 06:41:37 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 33be23f; PushStatus: OK
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- backend/handlers/onlyoffice_super_config.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/documentos_onlyoffice.html
