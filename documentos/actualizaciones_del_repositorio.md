@@ -948,3 +948,15 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/licencias.html
 - web/super/reportes_globales.html
+
+2026-04-26 05:52:59 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 91ee5f9; PushStatus: OK
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- backend/handlers/onlyoffice_super_config.go
+- backend/handlers/super_config_backup_handlers.go
+- backend/main.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- scripts/deploy_onlyoffice_to_vps.ps1
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/super/configuracion_avanzada.html
