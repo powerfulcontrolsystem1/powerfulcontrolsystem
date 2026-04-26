@@ -39,11 +39,62 @@
         <canvas id="netChart" height="120"></canvas>
       </div>
     </section>
+
+    <section class="metric-card" style="margin-top:14px">
+      <div class="row" style="align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">Procesos en el VPS (por memoria)</div>
+          <div class="muted" style="margin-top:4px">Ordenado de mayor a menor por RSS. (Top <span id="procLimitLabel">80</span>)</div>
+        </div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" id="btnReloadProcs">Actualizar</button>
+        </div>
+      </div>
+      <div style="margin-top:10px;overflow:auto">
+        <table class="table" style="min-width:900px">
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th>Comando</th>
+              <th>RSS</th>
+              <th>MEM%</th>
+              <th>CPU%</th>
+              <th>Args</th>
+            </tr>
+          </thead>
+          <tbody id="procTbody">
+            <tr><td colspan="6" class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="metric-card" style="margin-top:14px">
+      <div style="font-weight:700">Servicios del VPS y consumo</div>
+      <div class="muted" style="margin-top:4px">Resumen por servicio (RustDesk, OnlyOffice, Backend, Nginx, PostgreSQL).</div>
+      <div style="margin-top:10px;overflow:auto">
+        <table class="table" style="min-width:760px">
+          <thead>
+            <tr>
+              <th>Servicio</th>
+              <th>Estado</th>
+              <th>Memoria (RSS aprox.)</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="svcTbody">
+            <tr><td colspan="4" class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
     const apiCurrent = '/super/api/metrics/current'
     const apiHistory = '/super/api/metrics/history?limit=500'
+    const apiProcs = '/super/api/vps/procesos?limit=80'
+    const apiServicios = '/super/api/servidores'
     let cpuChart, memChart, netChart
 
     function fmtBytes(n){
@@ -96,6 +147,73 @@
       })
     }
 
+    function fmtKB(kb){
+      const n = Number(kb||0)
+      if(!n || !isFinite(n)) return '-'
+      return fmtBytes(n*1024)
+    }
+
+    function esc(s){
+      return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+    }
+
+    async function loadProcesos(){
+      const tbody = document.getElementById('procTbody')
+      tbody.innerHTML = '<tr><td colspan="6" class="muted">Cargando…</td></tr>'
+      try{
+        const res = await fetch(apiProcs)
+        const data = await res.json().catch(()=>null)
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || 'No se pudo cargar procesos')
+        const items = data.items || []
+        if(!items.length){
+          tbody.innerHTML = '<tr><td colspan="6" class="muted">Sin datos.</td></tr>'
+          return
+        }
+        tbody.innerHTML = items.map(p => (
+          '<tr>'+
+            '<td>'+esc(p.pid)+'</td>'+
+            '<td>'+esc(p.command)+'</td>'+
+            '<td>'+esc(fmtKB(p.rss_kb))+'</td>'+
+            '<td>'+esc(p.mem_pct)+'</td>'+
+            '<td>'+esc(p.cpu_pct)+'</td>'+
+            '<td style="max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(p.args)+'">'+esc(p.args)+'</td>'+
+          '</tr>'
+        )).join('')
+      }catch(e){
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">Error: '+esc(e.message||e)+' </td></tr>'
+      }
+    }
+
+    async function loadServicios(){
+      const tbody = document.getElementById('svcTbody')
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">Cargando…</td></tr>'
+      try{
+        const res = await fetch(apiServicios)
+        const data = await res.json().catch(()=>null)
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || 'No se pudo cargar servicios')
+        const items = data.servicios || []
+        if(!items.length){
+          tbody.innerHTML = '<tr><td colspan="4" class="muted">Sin datos.</td></tr>'
+          return
+        }
+        tbody.innerHTML = items.map(s => {
+          const rssKB = s.componentes && (s.componentes.mem_rss_kb || s.componentes["mem_rss_kb"])
+          const mem = rssKB ? fmtKB(rssKB) : '-'
+          const estado = (s.estado||'').toString()
+          return (
+            '<tr>'+
+              '<td>'+esc(s.nombre||s.id)+'</td>'+
+              '<td>'+esc(estado)+'</td>'+
+              '<td>'+esc(mem)+'</td>'+
+              '<td>'+esc(s.detalle||'')+'</td>'+
+            '</tr>'
+          )
+        }).join('')
+      }catch(e){
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">Error: '+esc(e.message||e)+'</td></tr>'
+      }
+    }
+
     async function loadHistory(){
       try{
         const res = await fetch(apiHistory)
@@ -135,6 +253,10 @@
       // polling de valores actuales cada 5s
       updateCurrent()
       setInterval(updateCurrent, 5000)
+      loadProcesos()
+      loadServicios()
+      const btn = document.getElementById('btnReloadProcs')
+      if(btn) btn.addEventListener('click', function(){ loadProcesos(); loadServicios() })
     })()
   </script>
 </body>

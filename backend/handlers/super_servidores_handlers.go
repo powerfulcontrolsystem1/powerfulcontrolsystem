@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -116,10 +117,138 @@ func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstad
 
 func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servicios := []ServicioEstado{buildRustDeskServiceState(dbSuper, false)}
+		servicios := []ServicioEstado{
+			buildRustDeskServiceState(dbSuper, false),
+			buildOnlyOfficeServiceState(dbSuper),
+			buildPCSBackendServiceState(dbSuper),
+			buildNginxServiceState(dbSuper),
+			buildPostgresServiceState(dbSuper),
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
 	}
+}
+
+func readLinuxProcessRSSKBByGrep(expr string) (int64, error) {
+	if runtime.GOOS == "windows" {
+		return 0, fmt.Errorf("unavailable on windows")
+	}
+	// sum RSS KB of matching processes
+	cmd := exec.Command("bash", "-lc", "ps -eo rss,args | grep -E "+shellEscapeForPOSIX(expr)+" | grep -v grep | awk '{s+=$1} END{print s+0}'")
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	v := strings.TrimSpace(string(out))
+	if v == "" {
+		return 0, nil
+	}
+	n, _ := strconv.ParseInt(v, 10, 64)
+	return n, nil
+}
+
+func buildOnlyOfficeServiceState(dbSuper *sql.DB) ServicioEstado {
+	enabled := isOnlyOfficeEnabled(dbSuper)
+	state := ServicioEstado{
+		ID:         "onlyoffice",
+		Nombre:     "OnlyOffice Document Server",
+		Estado:     "inactive",
+		Detalle:    "Editor de documentos (Docker) para el módulo Documentos.",
+		Habilitado: enabled,
+		Componentes: map[string]string{
+			"docker": "unknown",
+		},
+	}
+	if runtime.GOOS == "windows" {
+		state.Estado = "unavailable"
+		state.Detalle = "Backend en Windows: no se puede inspeccionar el contenedor OnlyOffice localmente."
+		return state
+	}
+	// Check docker container running
+	out, _ := exec.Command("bash", "-lc", "docker ps --format '{{.Names}}' 2>/dev/null | grep -x 'pcs-onlyoffice-documentserver' || true").Output()
+	if strings.TrimSpace(string(out)) != "" {
+		state.Estado = "active"
+		state.Componentes["docker"] = "active"
+		rss, _ := readLinuxProcessRSSKBByGrep("onlyoffice|documentserver|ds\\/run-document-server")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+		return state
+	}
+	state.Componentes["docker"] = "inactive"
+	return state
+}
+
+func buildPCSBackendServiceState(dbSuper *sql.DB) ServicioEstado {
+	state := ServicioEstado{
+		ID:         "pcs_backend",
+		Nombre:     "Backend PCS (systemd)",
+		Estado:     "unknown",
+		Detalle:    "Servicio principal del backend.",
+		Habilitado: true,
+		Componentes: map[string]string{
+			"powerfulcontrolsystem.service": checkSystemctlStatus(dbSuper, "powerfulcontrolsystem.service"),
+		},
+	}
+	if state.Componentes["powerfulcontrolsystem.service"] == "active" {
+		state.Estado = "active"
+	} else {
+		state.Estado = state.Componentes["powerfulcontrolsystem.service"]
+	}
+	if runtime.GOOS != "windows" {
+		rss, _ := readLinuxProcessRSSKBByGrep("server_linux_amd64|pos-backend|powerfulcontrolsystem")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+	}
+	return state
+}
+
+func buildNginxServiceState(dbSuper *sql.DB) ServicioEstado {
+	state := ServicioEstado{
+		ID:         "nginx",
+		Nombre:     "Nginx (reverse proxy)",
+		Estado:     checkSystemctlStatus(dbSuper, "nginx"),
+		Detalle:    "Proxy HTTPS y rutas públicas.",
+		Habilitado: true,
+		Componentes: map[string]string{
+			"nginx": checkSystemctlStatus(dbSuper, "nginx"),
+		},
+	}
+	if state.Componentes["nginx"] == "active" {
+		state.Estado = "active"
+	}
+	if runtime.GOOS != "windows" {
+		rss, _ := readLinuxProcessRSSKBByGrep("nginx: master|nginx: worker")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+	}
+	return state
+}
+
+func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
+	state := ServicioEstado{
+		ID:         "postgres",
+		Nombre:     "PostgreSQL",
+		Estado:     "unknown",
+		Detalle:    "Base de datos del sistema (VPS).",
+		Habilitado: true,
+		Componentes: map[string]string{},
+	}
+	if runtime.GOOS == "windows" {
+		state.Estado = "unavailable"
+		return state
+	}
+	// postgresql service name varies; try generic.
+	pgStatus := checkSystemctlStatus(dbSuper, "postgresql")
+	state.Componentes["postgresql"] = pgStatus
+	state.Estado = pgStatus
+	rss, _ := readLinuxProcessRSSKBByGrep("postgres:|postgresql")
+	if rss > 0 {
+		state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+	}
+	return state
 }
 
 func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {

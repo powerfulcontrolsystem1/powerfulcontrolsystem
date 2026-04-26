@@ -17,6 +17,11 @@
     - Descripcion: se crea la pantalla `impuestos.html` para gestionar impuestos por empresa (habilitar/deshabilitar y tasa) con detección automática del país (CO/EC/PA) y bandera; se expone API `/api/empresa/impuestos` (context + upsert) con persistencia por empresa en `empresa_impuestos_config`; se agrega un dataset de reportes `operativo_impuestos_deuda` que suma `impuesto_total` de ventas pagadas por día y un acceso directo en el menú de reportes.
     - Verificacion: `go test ./...` en `backend/`.
 
+- 2026-04-26: super administrador ? métricas VPS (procesos y servicios) + menú impuestos.
+    - Archivos: `backend/handlers/super_vps_processes.go`, `backend/main.go`, `backend/handlers/super_servidores_handlers.go`, `web/super/metricas_de_trafico_general.html`, `web/administrar_empresa.html`
+    - Descripcion: en métricas del super admin se agrega una tabla de procesos del VPS ordenada por memoria (RSS desc) vía `/super/api/vps/procesos`; además se amplía el catálogo de servicios para mostrar RustDesk/OnlyOffice/Backend/Nginx/PostgreSQL con consumo aproximado; se agrega el acceso a `Impuestos` en el menú principal de `Administrar Empresa`.
+    - Verificacion: `go test ./...` en `backend/`.
+
 - 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
     - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/super_email_templates.go`, `documentos/historial_de_cambios`
     - Descripcion: el correo de activación de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/código, valor original y código de asesor comercial cuando exista); las licencias de prueba (15 días) y la activación sin pago envían correo de bienvenida/activación usando un registro sintético en `pagos_epayco` para trazabilidad y evitar duplicados.
