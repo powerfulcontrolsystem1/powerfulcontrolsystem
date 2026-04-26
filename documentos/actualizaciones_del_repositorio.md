@@ -960,3 +960,8 @@ Archivos modificados:
 - scripts/deploy_onlyoffice_to_vps.ps1
 - web/administrar_empresa/documentos_onlyoffice.html
 - web/super/configuracion_avanzada.html
+
+2026-04-26 06:11:34 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 69077ca; PushStatus: OK
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/configuracion_de_estaciones.html
