@@ -79,6 +79,16 @@
 	- `web/administrar_empresa/configuracion_integraciones.html` : retira la configuración antigua de venta pública; queda informativa y redirige conceptualmente al nuevo módulo.
 	- `web/administrar_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `web/js/administrar_empresa.js`, `backend/main.go`, `backend/utils/utils.go` : menú/rutas públicas para `venta_publica` y `pagar_productos_de_venta_publica`.
 
+- Actualizacion 2026-04-26: OnlyOffice Document Server (documentos por empresa)
+	- `backend/handlers/onlyoffice.go` : endpoints de documentos por empresa + configuración OnlyOffice (JWT HS256) + callback de guardado; sirve archivos con token temporal sin cruce entre empresas.
+	- `web/administrar_empresa/documentos_onlyoffice.html` : UI para listar/subir documentos y abrir editor OnlyOffice embebido.
+	- `deploy/onlyoffice/docker-compose.yml` : despliegue de OnlyOffice Document Server en Docker con JWT habilitado.
+	- `web/administrar_empresa.html` : enlace de menú “Documentos (OnlyOffice)”.
+
+- Actualizacion 2026-04-26: Menú flotante: Calculadora
+	- `web/menu.js` : agrega enlace “Calculadora” al menú flotante.
+	- `web/calculadora.html` : página pública con calculadora simple (teclado y botones).
+
 - Actualizacion 2026-04-24: limitacion dispositivos GPS por empresa (super + enforcement)
 	- `backend/handlers/super_limitaciones_empresa.go` : clave `empresa.limitaciones.gps.max_dispositivos` (default 2) en `GET/PUT /super/api/config/limitaciones_empresa`; helper `MaxGPSDispositivosPorEmpresa`.
 	- `backend/db/ubicacion_gps.go` : `CountEmpresaGPSDispositivos` cuenta filas en `empresa_gps_dispositivos` por `empresa_id` (todos los estados).

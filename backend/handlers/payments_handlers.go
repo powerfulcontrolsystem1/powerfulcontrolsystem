@@ -120,6 +120,33 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
+				// Enviar correo de bienvenida/activación para pruebas.
+				// Se registra un pago sintético en pagos_epayco para trazabilidad y para evitar duplicados.
+				empresa, _ := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+				toEmail := ""
+				if empresa != nil {
+					toEmail = strings.TrimSpace(empresa.UsuarioCreador)
+				}
+				ref := fmt.Sprintf("TRIAL-LIC-%d-EMP-%d-%d", licID, empresaID, time.Now().UnixNano())
+				rawMap := map[string]interface{}{
+					"provider":       "trial",
+					"customer_email": toEmail,
+					"discount_code":  "trial15",
+					"original_value": 0,
+					"discount_value": 0,
+					"total_value":    0,
+				}
+				rawBytes, _ := json.Marshal(rawMap)
+				if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, licID, empresaID, ref, ref, "APPROVED", string(rawBytes), "trial15", ""); recErr == nil {
+					if lic, lerr := dbpkg.GetLicenciaByID(dbSuper, licID); lerr == nil && lic != nil {
+						if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
+							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "trial", ref); mailErr != nil {
+								log.Println("warning: failed to send trial licencia welcome email:", mailErr)
+							}
+						}
+					}
+				}
+
 				writeJSON(w, http.StatusCreated, map[string]interface{}{
 					"ok":         true,
 					"licencia_id": licID,
@@ -568,6 +595,39 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	if safeProvider == "" {
 		safeProvider = "la pasarela de pago"
 	}
+
+	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
+	originalValue := strings.TrimSpace(fmt.Sprint(payload["original_value"]))
+	discountValue := strings.TrimSpace(fmt.Sprint(payload["discount_value"]))
+	totalValue := strings.TrimSpace(fmt.Sprint(payload["total_value"]))
+	if totalValue == "" || totalValue == "<nil>" {
+		totalValue = strings.TrimSpace(fmt.Sprint(payload["valor_pagado"]))
+	}
+	discountCode := ""
+	if payRec.DiscountCode.Valid {
+		discountCode = strings.ToUpper(strings.TrimSpace(payRec.DiscountCode.String))
+	}
+	if discountCode == "" {
+		discountCode = strings.ToUpper(strings.TrimSpace(fmt.Sprint(payload["discount_code"])))
+	}
+	asesorID := ""
+	if payRec.AsesorID.Valid {
+		asesorID = strings.ToUpper(strings.TrimSpace(payRec.AsesorID.String))
+	}
+	if asesorID == "" {
+		asesorID = strings.ToUpper(strings.TrimSpace(fmt.Sprint(payload["asesor_id"])))
+	}
+	amountPaidLine := templateLine("Valor pagado: ", totalValue)
+	discountCodeLine := templateLine("Código de descuento: ", discountCode)
+	discountValueLine := templateLine("Descuento aplicado: ", discountValue)
+	originalValueLine := templateLine("Valor original: ", originalValue)
+	asesorIDLine := templateLine("Código asesor comercial: ", asesorID)
+
+	amountPaidLineHTML := templateLineHTML("Valor pagado: ", totalValue)
+	discountCodeLineHTML := templateLineHTML("Código de descuento: ", discountCode)
+	discountValueLineHTML := templateLineHTML("Descuento aplicado: ", discountValue)
+	originalValueLineHTML := templateLineHTML("Valor original: ", originalValue)
+	asesorIDLineHTML := templateLineHTML("Código asesor comercial: ", asesorID)
 	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
 		"company_name":      safeEmpresa,
 		"license_name":      strings.TrimSpace(lic.Nombre),
@@ -577,11 +637,21 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 		"start_date_line":   templateLine("Fecha de inicio: ", strings.TrimSpace(lic.FechaInicio)),
 		"end_date_line":     templateLine("Fecha de vencimiento: ", strings.TrimSpace(lic.FechaFin)),
 		"reference_line":    templateLine("Referencia del pago: ", strings.TrimSpace(reference)),
+		"amount_paid_line":        amountPaidLine,
+		"discount_code_line":      discountCodeLine,
+		"discount_value_line":     discountValueLine,
+		"original_value_line":     originalValueLine,
+		"asesor_id_line":          asesorIDLine,
+		"amount_paid_line_html":   amountPaidLineHTML,
+		"discount_code_line_html": discountCodeLineHTML,
+		"discount_value_line_html": discountValueLineHTML,
+		"original_value_line_html": originalValueLineHTML,
+		"asesor_id_line_html":     asesorIDLineHTML,
 	})
 	if err != nil {
 		return err
 	}
-	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q}`, provider, lic.ID, empresaID, reference)
+	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue)
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
@@ -3586,9 +3656,37 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
 
+		// Enviar correo de bienvenida/activación también para licencias gratuitas / activación sin pasarela.
+		// Se registra un pago sintético en pagos_epayco para trazabilidad y anti-duplicación.
+		ref := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		toEmail := ""
+		if empresa, eerr := dbpkg.GetEmpresaByScopeID(dbSuper, payload.EmpresaID); eerr == nil && empresa != nil {
+			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
+		}
+		rawMapWelcome := map[string]interface{}{
+			"provider":       "manual",
+			"customer_email": toEmail,
+			"discount_code":  payload.DiscountCode,
+			"asesor_id":      payload.AsesorID,
+			"original_value": summary.OriginalValue,
+			"discount_value": summary.DiscountValue,
+			"total_value":    summary.TotalValue,
+			"motivo":         payload.Motivo,
+		}
+		rawBytesWelcome, _ := json.Marshal(rawMapWelcome)
+		if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, ref, ref, "APPROVED", string(rawBytesWelcome), payload.DiscountCode, payload.AsesorID); recErr == nil {
+			if licReload, lerr := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID); lerr == nil && licReload != nil {
+				if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
+					if mailErr := trySendLicenciaActivationEmail(r, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); mailErr != nil {
+						log.Println("warning: failed to send manual licencia welcome email:", mailErr)
+					}
+				}
+			}
+		}
+
 		// Registrar la activación en pagos_wompi para trazabilidad (provider=MANUAL)
 		go func() {
-			reference := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+			reference := ref
 
 			payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
 			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}

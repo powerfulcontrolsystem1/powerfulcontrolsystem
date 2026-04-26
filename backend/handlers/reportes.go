@@ -90,6 +90,7 @@ const (
 	reporteDatasetOperativoPropinas           = "operativo_propinas_acumulado"
 	reporteDatasetOperativoComisiones         = "operativo_comisiones_lavador"
 	reporteDatasetOperativoFacturacion        = "operativo_facturacion_trazabilidad"
+	reporteDatasetOperativoImpuestos          = "operativo_impuestos_deuda"
 	reporteDatasetOperativoAuditoria          = "operativo_auditoria_acciones"
 	reporteDatasetOperativoAsistenciaNomina   = "operativo_asistencia_nomina_auditoria"
 	reporteDatasetOperativoVehiculos          = "operativo_vehiculos_permanencia"
@@ -238,6 +239,13 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Facturacion Electronica - Documentos y Trazabilidad",
 		Level:       "operativo",
 		Description: "Consolida documentos por tipo para seguimiento de emision, anulacion y trazabilidad legal.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoImpuestos,
+		Title:       "Impuestos - Deuda Estimada por Ventas",
+		Level:       "operativo",
+		Description: "Suma impuesto_total de ventas cerradas (carritos pagados) por dia dentro del rango.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -452,6 +460,70 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			return
 
+		case "enviar_email", "email", "send_email":
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			var payload struct {
+				ToEmail string `json:"to_email"`
+				Format  string `json:"format"`
+				Dataset string `json:"dataset"`
+				Subject string `json:"subject,omitempty"`
+				Message string `json:"message,omitempty"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "json invalido", http.StatusBadRequest)
+				return
+			}
+			datasetKey := strings.ToLower(strings.TrimSpace(payload.Dataset))
+			if datasetKey == "" {
+				datasetKey = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("dataset")))
+			}
+			if datasetKey == "" {
+				http.Error(w, "dataset es obligatorio", http.StatusBadRequest)
+				return
+			}
+			format := strings.ToLower(strings.TrimSpace(payload.Format))
+			if format == "" {
+				format = "pdf"
+			}
+			ds, err := builder.buildDataset(datasetKey)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			ds, err = reportesApplyTemplateFromRequest(dbEmp, empresaID, r, ds)
+			if err != nil {
+				writeReportesHTTPError(w, err)
+				return
+			}
+			fileName, contentType, content, err := reportesBuildExportBytes(ds, format)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			subject := strings.TrimSpace(payload.Subject)
+			if subject == "" {
+				subject = reportesDefaultEmailSubject("Reporte empresa", strings.TrimSpace(ds.Title), fmt.Sprintf("Empresa #%d", empresaID))
+			}
+			body := strings.TrimSpace(payload.Message)
+			if body == "" {
+				body = "Adjunto encontrarás el reporte solicitado."
+			}
+			metaJSON := fmt.Sprintf(`{"scope":"empresa_reportes","empresa_id":%d,"dataset":%q,"format":%q,"desde":%q,"hasta":%q}`, empresaID, datasetKey, format, desde, hasta)
+			if err := sendReportesEmailWithAttachment(r, dbEmp, empresaID, payload.ToEmail, subject, body, fileName, contentType, content, metaJSON); err != nil {
+				http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":       true,
+				"to_email": strings.TrimSpace(payload.ToEmail),
+				"filename": fileName,
+				"format":   format,
+			})
+			return
+
 		case "suite", "resumen":
 			if r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -570,6 +642,8 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoComisionesLavadorDataset()
 	case reporteDatasetOperativoFacturacion:
 		return b.buildOperativoFacturacionTrazabilidadDataset()
+	case reporteDatasetOperativoImpuestos:
+		return b.buildOperativoImpuestosDeudaDataset()
 	case reporteDatasetOperativoAuditoria:
 		return b.buildOperativoAuditoriaAccionesDataset()
 	case reporteDatasetOperativoAsistenciaNomina:
@@ -587,6 +661,70 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 	default:
 		return empresaReporteDataset{}, fmt.Errorf("dataset no soportado")
 	}
+}
+
+func (b *reportesBuilder) buildOperativoImpuestosDeudaDataset() (empresaReporteDataset, error) {
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(reporteDatasetOperativoImpuestos, []string{
+		"fecha",
+		"ventas",
+		"total_ventas",
+		"impuesto_total",
+	})
+
+	type agg struct {
+		ventas  int
+		total   float64
+		impuesto float64
+	}
+	m := map[string]*agg{}
+	totalVentas := 0.0
+	totalImpuestos := 0.0
+
+	for _, v := range ventas {
+		fechaPago := reportesFirstNonBlank(v.PagadoEn, v.FechaActualizacion, v.FechaCreacion)
+		fecha := reportesNormalizeDatePart(fechaPago)
+		if fecha == "" {
+			continue
+		}
+		a := m[fecha]
+		if a == nil {
+			a = &agg{}
+			m[fecha] = a
+		}
+		a.ventas++
+		total := reportesVentaTotal(v)
+		a.total += total
+		a.impuesto += v.ImpuestoTotal
+		totalVentas += total
+		totalImpuestos += v.ImpuestoTotal
+	}
+
+	fechas := make([]string, 0, len(m))
+	for k := range m {
+		fechas = append(fechas, k)
+	}
+	sort.Strings(fechas)
+	for _, f := range fechas {
+		a := m[f]
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha":         f,
+			"ventas":        a.ventas,
+			"total_ventas":  reportesRound(a.total),
+			"impuesto_total": reportesRound(a.impuesto),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["ventas"] = len(ventas)
+	ds.Summary["total_ventas"] = reportesRound(totalVentas)
+	ds.Summary["impuesto_total"] = reportesRound(totalImpuestos)
+	if totalVentas > 0 {
+		ds.Summary["tasa_efectiva_%"] = reportesRound((totalImpuestos / totalVentas) * 100)
+	}
+	return ds, nil
 }
 
 func (b *reportesBuilder) getTableroResumen() (*dbpkg.EmpresaReportesTableroResumen, error) {

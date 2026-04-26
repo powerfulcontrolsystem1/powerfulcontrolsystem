@@ -162,6 +162,115 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			return
+	case "enviar_email", "email", "send_email":
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct {
+			ToEmail string `json:"to_email"`
+			Format  string `json:"format"`
+			Dataset string `json:"dataset"`
+			Modo    string `json:"modo"`
+			Desde   string `json:"desde"`
+			Hasta   string `json:"hasta"`
+			// opcional: filtrar a empresas específicas (mismo contrato que API)
+			EmpresaID  int64  `json:"empresa_id,omitempty"`
+			EmpresaIDs string `json:"empresa_ids,omitempty"`
+			Subject    string `json:"subject,omitempty"`
+			Message    string `json:"message,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "json invalido", http.StatusBadRequest)
+			return
+		}
+		// reconstruir query con el contrato existente para reutilizar validaciones.
+		q := r.URL.Query()
+		if strings.TrimSpace(payload.Dataset) != "" {
+			q.Set("dataset", strings.TrimSpace(payload.Dataset))
+		}
+		if strings.TrimSpace(payload.Modo) != "" {
+			q.Set("modo", strings.TrimSpace(payload.Modo))
+		}
+		if strings.TrimSpace(payload.Desde) != "" {
+			q.Set("desde", strings.TrimSpace(payload.Desde))
+		}
+		if strings.TrimSpace(payload.Hasta) != "" {
+			q.Set("hasta", strings.TrimSpace(payload.Hasta))
+		}
+		if payload.EmpresaID > 0 {
+			q.Set("empresa_id", strconv.FormatInt(payload.EmpresaID, 10))
+		}
+		if strings.TrimSpace(payload.EmpresaIDs) != "" {
+			q.Set("empresa_ids", strings.TrimSpace(payload.EmpresaIDs))
+		}
+		r.URL.RawQuery = q.Encode()
+
+		datasetKey := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("dataset")))
+		if datasetKey == "" {
+			http.Error(w, "dataset es obligatorio", http.StatusBadRequest)
+			return
+		}
+		format := strings.ToLower(strings.TrimSpace(payload.Format))
+		if format == "" {
+			format = "pdf"
+		}
+		modo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("modo")))
+		if modo == "" {
+			modo = "consolidado"
+		}
+		if modo != "consolidado" && modo != "individual" {
+			http.Error(w, "modo invalido (use consolidado o individual)", http.StatusBadRequest)
+			return
+		}
+		resp, err := superReportesBuildDatasetResponse(dbEmp, adminEmail, empresasSeleccionadas, datasetKey, modo, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		empresaLabel := ""
+		if len(empresasSeleccionadas) == 1 {
+			empresaLabel = strings.TrimSpace(empresasSeleccionadas[0].Nombre)
+		}
+		subject := strings.TrimSpace(payload.Subject)
+		if subject == "" {
+			subject = reportesDefaultEmailSubject("Reporte global", strings.TrimSpace(resp.DatasetTitle), empresaLabel)
+		}
+		body := strings.TrimSpace(payload.Message)
+		if body == "" {
+			body = "Adjunto encontrarás el reporte solicitado desde Reportes globales."
+		}
+
+		var fileName, contentType string
+		var content []byte
+		if modo == "individual" && strings.ToLower(format) == "json" {
+			raw, jerr := json.Marshal(resp)
+			if jerr != nil {
+				http.Error(w, "no se pudo serializar el reporte", http.StatusInternalServerError)
+				return
+			}
+			fileName = "reportes_globales_" + datasetKey + "_admin_" + superReportesSafeFileLabel(adminEmail) + "_" + time.Now().Format("20060102_150405") + ".json"
+			contentType = "application/json"
+			content = raw
+		} else {
+			fileName, contentType, content, err = reportesBuildExportBytes(resp.Combinado, format)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		metaJSON := fmt.Sprintf(`{"scope":"super_reportes_globales","modo":%q,"dataset":%q,"format":%q,"desde":%q,"hasta":%q,"empresa_ids":%q}`, modo, datasetKey, format, strings.TrimSpace(payload.Desde), strings.TrimSpace(payload.Hasta), strings.TrimSpace(payload.EmpresaIDs))
+		if err := sendReportesEmailWithAttachment(r, dbSuper, 0, payload.ToEmail, subject, body, fileName, contentType, content, metaJSON); err != nil {
+			http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":       true,
+			"to_email": strings.TrimSpace(payload.ToEmail),
+			"filename": fileName,
+			"format":   format,
+		})
+		return
 		default:
 			http.Error(w, "action invalida (use catalogo, tablero, dataset o export)", http.StatusBadRequest)
 			return

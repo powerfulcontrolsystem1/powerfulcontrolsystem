@@ -48,8 +48,12 @@
           <option value="json.gz">JSON (.gz)</option>
           <option value="csv">CSV (resumen)</option>
           <option value="xls">Excel (resumen)</option>
+          <option value="txt">TXT (resumen)</option>
+          <option value="pdf">PDF (resumen)</option>
         </select>
         <button id="btnDescargarDatosEmpresa" type="button" class="btn" style="margin-left:8px">Descargar datos</button>
+        <input id="bkEmailTo" class="form-input" type="email" placeholder="Enviar a correo@dominio.com" style="width:260px;max-width:45%;margin-left:8px">
+        <button id="btnEnviarBackupEmail" type="button" class="btn secondary" style="margin-left:8px">Enviar por correo</button>
         <button id="btnRefrescarBackups" type="button" class="btn secondary">Refrescar</button>
       </div>
       <div id="crearBackupMsg" class="form-help"></div>
@@ -221,6 +225,20 @@
         return url.toString();
       }
 
+      async function enviarBackupPorCorreo(id, format) {
+        var email = String((document.getElementById('bkEmailTo') && document.getElementById('bkEmailTo').value) || '').trim();
+        if (!email) throw new Error('Ingrese el correo de destino.');
+        var fmt = String(format || 'pdf').trim().toLowerCase();
+        if (!id || id <= 0) throw new Error('Seleccione un backup para enviar.');
+        var data = await requestJSON('POST', 'enviar_email', null, {
+          empresa_id: empresaId,
+          id: Number(id),
+          to_email: email,
+          format: fmt
+        });
+        return data;
+      }
+
       function getDownloadFilename(response, fallbackName) {
         var disposition = String(response.headers.get('Content-Disposition') || '');
         var utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
@@ -326,6 +344,7 @@
           var estadoRow = String(row.estado || 'activo').toLowerCase();
           var toggleAction = estadoRow === 'inactivo' ? 'activar' : 'desactivar';
           var toggleLabel = estadoRow === 'inactivo' ? 'Activar' : 'Desactivar';
+          var badge = estadoRow === 'inactivo' ? '<span class="backups-badge backups-badge--off">Inactivo</span>' : '<span class="backups-badge backups-badge--on">Activo</span>';
           return '' +
             '<tr>' +
               '<td>' + id + '</td>' +
@@ -334,13 +353,15 @@
               '<td>' + Number(row.total_tablas || 0) + '</td>' +
               '<td>' + Number(row.total_registros || 0) + '</td>' +
               '<td>' + formatBytes(row.tamano_bytes) + '</td>' +
-              '<td>' + (row.estado || '-') + '</td>' +
+              '<td>' + badge + '</td>' +
               '<td>' + formatDateTime(row.fecha_creacion) + '</td>' +
               '<td>' + (row.restaurado_en ? (formatDateTime(row.restaurado_en) + ' / ' + (row.restaurado_por || '-')) : '-') + '</td>' +
               '<td class="backups-actions-cell">' +
                 '<button type="button" class="btn secondary" data-action="detalle" data-id="' + id + '">Detalle</button>' +
                 '<button type="button" class="btn secondary" data-action="json" data-id="' + id + '">JSON</button>' +
                 '<button type="button" class="btn secondary" data-action="csv" data-id="' + id + '">CSV</button>' +
+                '<button type="button" class="btn secondary" data-action="pdf" data-id="' + id + '">PDF</button>' +
+                '<button type="button" class="btn secondary" data-action="email" data-id="' + id + '">Email</button>' +
                 '<button type="button" class="btn secondary" data-action="restaurar" data-id="' + id + '">Restaurar</button>' +
                 '<button type="button" class="btn secondary" data-action="toggle" data-id="' + id + '" data-toggle="' + toggleAction + '">' + toggleLabel + '</button>' +
               '</td>' +
@@ -500,6 +521,17 @@
             await downloadInBackground(buildExportURL(id, 'csv'), 'backup_empresa_' + empresaId + '_' + id + '.csv');
             return;
           }
+          if (action === 'pdf') {
+            await downloadInBackground(buildExportURL(id, 'pdf'), 'backup_empresa_' + empresaId + '_' + id + '.pdf');
+            return;
+          }
+          if (action === 'email') {
+            var fmt = (document.getElementById('bkDownloadFormat') && document.getElementById('bkDownloadFormat').value) || 'pdf';
+            var exportFormat = (fmt === 'json.gz') ? 'json' : fmt;
+            await enviarBackupPorCorreo(id, exportFormat);
+            setMsg(listaMsgEl, 'Backup enviado por correo.', 'success');
+            return;
+          }
           if (action === 'restaurar') {
             await restaurarBackup(id);
             return;
@@ -593,6 +625,23 @@
             setMsg(crearMsgEl, 'Error: ' + (err && err.message ? err.message : err), 'error');
           }
         });
+
+        var btnEnviar = document.getElementById('btnEnviarBackupEmail');
+        if (btnEnviar) {
+          btnEnviar.addEventListener('click', async function () {
+            try {
+              setMsg(crearMsgEl, '', '');
+              var fmt = (document.getElementById('bkDownloadFormat') && document.getElementById('bkDownloadFormat').value) || 'pdf';
+              var exportFormat = (fmt === 'json.gz') ? 'json' : fmt;
+              var id = Number(estado && estado.detalleId ? estado.detalleId : 0);
+              if (!id) throw new Error('Primero abre el detalle de un backup o usa el botón Email en la tabla.');
+              await enviarBackupPorCorreo(id, exportFormat);
+              setMsg(crearMsgEl, 'Backup enviado por correo.', 'success');
+            } catch (err) {
+              setMsg(crearMsgEl, 'Error enviando correo: ' + (err && err.message ? err.message : err), 'error');
+            }
+          });
+        }
 
         document.getElementById('btnExportarConfiguracionEmpresa').addEventListener('click', async function () {
           try {

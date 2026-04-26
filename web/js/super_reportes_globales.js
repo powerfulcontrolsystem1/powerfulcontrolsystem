@@ -596,6 +596,38 @@
     setTimeout(function () { URL.revokeObjectURL(link.href); }, 0);
   }
 
+  async function sendDatasetByEmail() {
+    syncSelectedFromDOM();
+    if (!state.selectedEmpresaIDs.length) {
+      throw new Error('Seleccione al menos una empresa para enviar el reporte.');
+    }
+    var toEmail = normalize(byId('rgEmailTo') && byId('rgEmailTo').value);
+    if (!toEmail) {
+      throw new Error('Ingrese el correo de destino.');
+    }
+    var params = buildBaseParams('enviar_email');
+    var format = normalize(byId('rgFormato') && byId('rgFormato').value) || 'pdf';
+    var body = {
+      to_email: toEmail,
+      format: format,
+      dataset: normalize(byId('rgDataset') && byId('rgDataset').value),
+      modo: normalize(byId('rgModo') && byId('rgModo').value) || 'consolidado',
+      desde: normalize(byId('rgFechaDesde') && byId('rgFechaDesde').value),
+      hasta: normalize(byId('rgFechaHasta') && byId('rgFechaHasta').value)
+    };
+    var res = await fetch('/super/api/reportes_globales?' + params.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      throw new Error(errText || 'No se pudo enviar el reporte por correo.');
+    }
+    return res.json();
+  }
+
   function applyDateDefaults() {
     var today = new Date();
     var from = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -718,6 +750,16 @@
           setMsg('Exportación generada correctamente.', false);
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el dataset.', true);
+        }
+      });
+    }
+    if (byId('rgEnviarEmail')) {
+      byId('rgEnviarEmail').addEventListener('click', async function () {
+        try {
+          var resp = await sendDatasetByEmail();
+          setMsg('Reporte enviado a ' + normalize(resp.to_email) + ' (' + normalize(resp.filename) + ').', false);
+        } catch (err) {
+          setMsg(err.message || 'No se pudo enviar el reporte por correo.', true);
         }
       });
     }

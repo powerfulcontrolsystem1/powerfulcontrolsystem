@@ -286,10 +286,26 @@
 
       function buildRenewURL(item){
         const params = new URLSearchParams();
-        params.set('empresa_id', item.empresa_id);
-        params.set('id', item.empresa_id);
-        if (item.tipo_id) params.set('tipo_id', item.tipo_id);
-        if (item.tipo_nombre) params.set('tipo_nombre', item.tipo_nombre);
+        if (item && item.id) params.set('licencia_id', item.id);
+        if (item && item.empresa_id) {
+          params.set('empresa_id', item.empresa_id);
+          params.set('id', item.empresa_id);
+        }
+        if (item && item.tipo_id) params.set('tipo_id', item.tipo_id);
+        if (item && item.tipo_nombre) params.set('tipo_nombre', item.tipo_nombre);
+        return '/pagar_licencia.html?' + params.toString();
+      }
+
+      function buildChangeURL(item){
+        const params = new URLSearchParams();
+        if (item && item.empresa_id) {
+          params.set('empresa_id', item.empresa_id);
+          params.set('id', item.empresa_id);
+        }
+        if (item && item.tipo_id) params.set('tipo_id', item.tipo_id);
+        if (item && item.tipo_nombre) params.set('tipo_nombre', item.tipo_nombre);
+        // UX: dejar rastro del contexto actual.
+        if (item && item.id) params.set('current_licencia_id', item.id);
         return '/elegir_licencia.html?' + params.toString();
       }
 
@@ -354,7 +370,7 @@
         renderHistorySummary(filtered);
 
         if (!filtered.length) {
-          list.innerHTML = '<div class="lic-history-empty">No hay licencias pagadas o vencidas para mostrar en este alcance. Cuando una empresa tenga historial de pago, esta vista mostrara su estado y fecha de vencimiento.</div>';
+          list.innerHTML = '<div class="lic-history-empty">No hay licencias asociadas a tus empresas para mostrar en este alcance.</div>';
           return;
         }
 
@@ -383,7 +399,8 @@
             '<div class="lic-history-foot">' +
               '<div class="lic-history-meta">Modulos: ' + escapeHTML(modulosToLabel(item.modulos_habilitados || '')) + '</div>' +
               '<div class="lic-history-actions">' +
-                (meta.renew ? ('<a class="btn" href="' + buildRenewURL(item) + '">Pagar nueva licencia</a>') : '') +
+                '<a class="btn" href="' + buildRenewURL(item) + '">Renovar licencia</a>' +
+                '<a class="btn secondary" href="' + buildChangeURL(item) + '">Cambiar licencia</a>' +
                 '<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>' +
               '</div>' +
             '</div>';
@@ -393,7 +410,7 @@
 
       async function loadHistory(){
         pageTitle.textContent = 'Estado e historial de licencias';
-        pageLead.textContent = 'Aqui solo se muestran licencias ya pagadas o activadas para tus empresas, incluyendo las vencidas, con su fecha de vencimiento y acceso rapido a renovacion.';
+        pageLead.textContent = 'Aquí se muestran todas las licencias asociadas a tus empresas (vigentes o vencidas). Puedes renovar la licencia actual o cambiar a una nueva.';
         addBtn.style.display = 'none';
         form.style.display = 'none';
         historyToolbar.hidden = false;

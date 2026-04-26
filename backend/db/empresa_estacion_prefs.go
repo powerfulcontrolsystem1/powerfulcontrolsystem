@@ -1,8 +1,8 @@
 package db
 
 import (
-	"encoding/json"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -48,13 +48,13 @@ func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_estacion_prefs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa_id INTEGER NOT NULL,
-            estacion_id INTEGER NOT NULL,
+            id BIGSERIAL PRIMARY KEY,
+            empresa_id BIGINT NOT NULL,
+            estacion_id BIGINT NOT NULL,
             clave TEXT NOT NULL,
             valor TEXT,
-            fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-            fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             usuario_creador TEXT,
             estado TEXT DEFAULT 'activo',
             observaciones TEXT
@@ -64,7 +64,7 @@ func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
 	}
 
 	for _, s := range stmts {
-		if _, err := dbConn.Exec(s); err != nil {
+		if _, err := execSQLCompat(dbConn, s); err != nil {
 			return err
 		}
 	}
@@ -107,7 +107,7 @@ func ListEmpresaEstacionPrefs(dbConn *sql.DB, empresaID int64, estacionID int64,
 
 	q := "SELECT id, empresa_id, estacion_id, COALESCE(clave, ''), COALESCE(valor, ''), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(NULLIF(TRIM(estado), ''), 'activo'), COALESCE(observaciones, '') FROM empresa_estacion_prefs " + where + " ORDER BY estacion_id, clave"
 
-	rows, err := dbConn.Query(q, args...)
+	rows, err := querySQLCompat(dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func GetEmpresaEstacionPref(dbConn *sql.DB, empresaID int64, estacionID int64, c
 		return nil, errors.New("clave es obligatoria")
 	}
 
-	row := dbConn.QueryRow(`SELECT id, empresa_id, estacion_id, COALESCE(clave,''), COALESCE(valor,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(NULLIF(TRIM(estado), ''),'activo'), COALESCE(observaciones,'') FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave = ? LIMIT 1`, empresaID, estacionID, clave)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, estacion_id, COALESCE(clave,''), COALESCE(valor,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(NULLIF(TRIM(estado), ''),'activo'), COALESCE(observaciones,'') FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave = ? LIMIT 1`, empresaID, estacionID, clave)
 	var p EmpresaEstacionPref
 	if err := row.Scan(&p.ID, &p.EmpresaID, &p.EstacionID, &p.Clave, &p.Valor, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones); err != nil {
 		if err == sql.ErrNoRows {
@@ -168,32 +168,22 @@ func UpsertEmpresaEstacionPref(dbConn *sql.DB, p EmpresaEstacionPref) (int64, er
 		p.Estado = "activo"
 	}
 
-	// Use upsert via ON CONFLICT on unique index
-	res, err := dbConn.Exec(`INSERT INTO empresa_estacion_prefs (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_estacion_prefs (
         empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
     ) VALUES (
-        ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?
+        ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?
     ) ON CONFLICT(empresa_id, estacion_id, clave) DO UPDATE SET
         valor = excluded.valor,
-        fecha_actualizacion = datetime('now','localtime'),
+        fecha_actualizacion = CURRENT_TIMESTAMP,
         usuario_creador = CASE WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador ELSE empresa_estacion_prefs.usuario_creador END,
 		estado = COALESCE(NULLIF(TRIM(excluded.estado), ''), 'activo'),
-        observaciones = excluded.observaciones`,
+        observaciones = excluded.observaciones
+	RETURNING id`,
 		p.EmpresaID, p.EstacionID, p.Clave, strings.TrimSpace(p.Valor), strings.TrimSpace(p.UsuarioCreador), p.Estado, strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, fmt.Errorf("upsert error: %w", err)
 	}
-
-	id, err := res.LastInsertId()
-	if err == nil && id > 0 {
-		return id, nil
-	}
-	// If no new insert id, try to fetch existing id
-	var existing int64
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave = ? LIMIT 1`, p.EmpresaID, p.EstacionID, p.Clave).Scan(&existing); err != nil {
-		return 0, err
-	}
-	return existing, nil
+	return id, nil
 }
 
 func parseEmpresaEstacionesConfig(raw string) (*empresaEstacionesConfig, error) {

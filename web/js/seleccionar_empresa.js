@@ -98,7 +98,7 @@
     panel.style.display = "";
     panel.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
-      '<div><strong>Invitaciones de empresas pendientes</strong><div class="muted" style="margin-top:4px;">Acepta para que aparezcan en tu lista y se abran automáticamente.</div></div>' +
+      '<div><strong>Invitaciones de empresas pendientes</strong><div class="muted" style="margin-top:4px;">Acepta para que aparezcan en tu lista y se abran autom?ticamente.</div></div>' +
       '<button type="button" class="btn secondary" data-action="refresh-share-invites">Actualizar</button>' +
       "</div>" +
       '<div style="margin-top:10px;display:grid;gap:10px;">' +
@@ -503,7 +503,7 @@
   function buildEmpresaShareButton(empresa) {
     var disabled = isSharedEmpresa(empresa);
     var title = disabled
-      ? "Solo el administrador propietario puede compartir una empresa que recibió por invitación"
+      ? "Solo el administrador propietario puede compartir una empresa que recibi? por invitaci?n"
       : "Compartir empresa con otro administrador";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
@@ -549,7 +549,7 @@
     if (!panel) return;
     var feedback = panel.querySelector('[data-share-feedback]');
     if (!feedback) return;
-    // limpiar acciones previas (ej. botón reenviar)
+    // limpiar acciones previas (ej. bot?n reenviar)
     Array.prototype.forEach.call(feedback.querySelectorAll('button.empresa-share-resend'), function (btn) {
       try { btn.remove(); } catch (e) {}
     });
@@ -563,7 +563,7 @@
     if (!panel) return;
     var feedback = panel.querySelector('[data-share-feedback]');
     if (!feedback) return;
-    // asegurar separación visual si ya hay texto
+    // asegurar separaci?n visual si ya hay texto
     if (feedback.textContent) {
       feedback.textContent = String(feedback.textContent).trim() + ' ';
     }
@@ -571,7 +571,7 @@
     btn.type = 'button';
     btn.className = 'btn secondary empresa-share-resend';
     btn.style.marginLeft = '8px';
-    btn.textContent = 'Reenviar invitación';
+    btn.textContent = 'Reenviar invitaci?n';
     btn.setAttribute('data-empresa-id', String(empresaId || ''));
     btn.setAttribute('data-invitation-id', String(invitationId || ''));
     feedback.appendChild(btn);
@@ -618,14 +618,14 @@
       setEmpresaShareFeedback(empresaId, 'Debes escribir el correo del otro administrador.', true);
       return;
     }
-    setEmpresaShareFeedback(empresaId, 'Enviando invitación...', false);
+    setEmpresaShareFeedback(empresaId, 'Enviando invitaci?n...', false);
     try {
       var data = await fetchJSON('/super/api/empresas/compartidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empresa_id: empresaId, email: email, mensaje: '' })
       });
-      var message = data && data.message ? data.message : 'Invitación enviada correctamente.';
+      var message = data && data.message ? data.message : 'Invitaci?n enviada correctamente.';
       setEmpresaShareFeedback(empresaId, message, false);
       setShareNotice(message, false);
       if (emailInput) {
@@ -634,13 +634,13 @@
     } catch (err) {
       var payload = err && err.payload ? err.payload : null;
       if (payload && String(payload.code || '') === 'invitation_pending' && payload.invitation_id) {
-        var pendingMsg = (payload.error || err.message || 'Ya existe una invitación pendiente para ese administrador.') + ' ';
+        var pendingMsg = (payload.error || err.message || 'Ya existe una invitaci?n pendiente para ese administrador.') + ' ';
         setEmpresaShareFeedback(empresaId, pendingMsg + 'Puedes reenviarla.', true);
         showEmpresaShareResendAction(empresaId, payload.invitation_id);
         setShareNotice(pendingMsg + 'Puedes reenviarla.', true);
         return;
       }
-      var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitación.';
+      var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitaci?n.';
       setEmpresaShareFeedback(empresaId, errorMessage, true);
       setShareNotice(errorMessage, true);
     }
@@ -727,6 +727,32 @@
       dlCell.appendChild(dlBtn);
     }
 
+    var editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "license-indicator active edit-empresa";
+    editBtn.setAttribute("data-empresa-id", String(empresa.id || ""));
+    editBtn.setAttribute("aria-label", "Editar empresa " + String(empresa.nombre || ""));
+    editBtn.setAttribute("title", "Editar empresa");
+    editBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l9.06-9.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>';
+    editBtn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var empresaId = Number(empresa && empresa.id ? empresa.id : 0);
+      if (!empresaId) {
+        window.alert("Primero crea o selecciona una empresa para editarla.");
+        return;
+      }
+      if (empresa && String(empresa.access_source || "owner").toLowerCase() === "shared") {
+        window.alert("Solo el administrador propietario puede editar o eliminar la ficha de una empresa compartida.");
+        return;
+      }
+      persistEmpresaContext(empresaId);
+      window.location.href = "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId));
+    });
+    if (dlCell) {
+      dlCell.appendChild(editBtn);
+    }
+
     cardLink.appendChild(div);
     return cardLink;
   }
@@ -744,7 +770,7 @@
       data = null;
     }
     if (!res.ok) {
-      throw new Error((data && (data.error || data.message)) || raw || "No se pudo obtener impacto de desactivación");
+      throw new Error((data && (data.error || data.message)) || raw || "No se pudo obtener impacto de desactivaci?n");
     }
     return data && data.impacto ? data.impacto : null;
   }
@@ -762,7 +788,7 @@
   async function setEmpresaEstado(empresa, estadoObjetivo) {
     var empresaId = Number(empresa && empresa.id ? empresa.id : 0);
     if (!empresaId) {
-      throw new Error("empresa_id inválido");
+      throw new Error("empresa_id inv?lido");
     }
 
     if (estadoObjetivo === "inactivo") {
@@ -772,13 +798,13 @@
 
       if (resumen) {
         force = window.confirm(
-          "La empresa tiene impacto operativo activo:\n" + resumen + "\n\n¿Deseas desactivarla de todas formas?"
+          "La empresa tiene impacto operativo activo:\n" + resumen + "\n\n?Deseas desactivarla de todas formas?"
         );
         if (!force) {
           return;
         }
       } else {
-        var confirmar = window.confirm("¿Confirmas desactivar la empresa '" + (empresa.nombre || "") + "'?");
+        var confirmar = window.confirm("?Confirmas desactivar la empresa '" + (empresa.nombre || "") + "'?");
         if (!confirmar) {
           return;
         }
@@ -994,7 +1020,39 @@
     var view = readView();
     var linkAgregar = document.getElementById("linkAgregarEmpresa");
 
+    // Si el usuario volvi? con bot?n "atr?s" desde otra p?gina (bfcache / back-forward),
+    // priorizamos mostrar la lista de empresas. Esto evita que quede oculta por un view
+    // previo en modo "frame" (licencias/reportes) y parezca que "desaparecieron" las tarjetas.
+    var forceEmpresas = false;
+    try {
+      var nav = performance && performance.getEntriesByType ? performance.getEntriesByType('navigation') : [];
+      var navType = nav && nav[0] ? String(nav[0].type || '') : '';
+      if (navType === 'back_forward') {
+        forceEmpresas = true;
+      }
+    } catch (e) {}
+    try {
+      if (!forceEmpresas) {
+        var ref = String(document.referrer || '').trim();
+        if (ref && ref.indexOf(window.location.origin) === 0) {
+          // si venimos desde otra p?gina del mismo sitio (no desde seleccionar_empresa),
+          // mostramos tarjetas por defecto.
+          var refPath = '';
+          try { refPath = (new URL(ref)).pathname || ''; } catch (e) { refPath = ''; }
+          if (refPath && refPath !== window.location.pathname) {
+            forceEmpresas = true;
+          }
+        }
+      }
+    } catch (e) {}
+
     if (!view || !view.mode) {
+      showEmpresasPanel();
+      setActiveNav(linkAgregar);
+      return;
+    }
+
+    if (forceEmpresas) {
       showEmpresasPanel();
       setActiveNav(linkAgregar);
       return;
@@ -1024,7 +1082,6 @@
 
   function wireSidebarFrameLinks() {
     var linkAgregar = document.getElementById("linkAgregarEmpresa");
-    var linkEditarEmpresaMenu = document.getElementById("linkEditarEmpresaMenu");
     var linkLicencias = document.getElementById("linkLicencias");
     var linkAdministradores = document.getElementById("linkAdministradores");
     var linkReportes = document.getElementById("linkReportesGlobales");
@@ -1034,25 +1091,6 @@
         ev.preventDefault();
         showEmpresasPanel();
         setActiveNav(linkAgregar);
-      });
-    }
-
-    if (linkEditarEmpresaMenu) {
-      linkEditarEmpresaMenu.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        var empresaId = resolveEmpresaIdForMenu();
-        if (!empresaId) {
-          window.alert("Primero crea o selecciona una empresa para editarla.");
-          return;
-        }
-        var empresa = getEmpresaFromCurrentList(empresaId);
-        if (empresa && String(empresa.access_source || "owner").toLowerCase() === "shared") {
-          window.alert("Solo el administrador propietario puede editar o eliminar la ficha de una empresa compartida.");
-          return;
-        }
-        persistEmpresaContext(empresaId);
-        setActiveNav(linkEditarEmpresaMenu);
-        window.location.href = "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId));
       });
     }
 
@@ -1085,16 +1123,16 @@
         data = null;
       }
       if (!res.ok) {
-        throw new Error((data && (data.message || data.error)) || raw || "No se pudo aceptar la invitación compartida.");
+        throw new Error((data && (data.message || data.error)) || raw || "No se pudo aceptar la invitaci?n compartida.");
       }
       if (data && data.empresa_id) {
         persistEmpresaContext(data.empresa_id);
       }
-      setShareNotice((data && data.message) || "La empresa compartida ya está disponible en tu selector.", false);
+      setShareNotice((data && data.message) || "La empresa compartida ya est? disponible en tu selector.", false);
       clearQueryParam("shared_invitation_token");
       showEmpresasPanel();
     } catch (err) {
-      setShareNotice(err && err.message ? err.message : "No se pudo aceptar la invitación compartida.", true);
+      setShareNotice(err && err.message ? err.message : "No se pudo aceptar la invitaci?n compartida.", true);
       clearQueryParam("shared_invitation_token");
     }
   }
@@ -1107,7 +1145,7 @@
     if (Number.isFinite(empresaId) && empresaId > 0) {
       persistEmpresaContext(empresaId);
     }
-    setShareNotice("Invitación aceptada correctamente. La empresa compartida ya aparece en tu lista.", false);
+    setShareNotice("Invitaci?n aceptada correctamente. La empresa compartida ya aparece en tu lista.", false);
     clearQueryParam("shared_invitation_accepted");
   }
 
@@ -1121,6 +1159,17 @@
       await loadPendingShareInvites();
       processSharedInvitationAcceptedNotice();
       restoreLastView();
+    });
+
+    // Cuando el navegador restaura la p?gina desde el cache de "atr?s/adelante",
+    // aseguramos que el panel de empresas quede visible y el listado se refresque.
+    window.addEventListener('pageshow', function (ev) {
+      try {
+        if (ev && ev.persisted) {
+          showEmpresasPanel();
+          render();
+        }
+      } catch (e) {}
     });
 
     var form = document.getElementById("form");
@@ -1210,16 +1259,16 @@
       if (!empresaIdResend || !invitationId) {
         return;
       }
-      setEmpresaShareFeedback(empresaIdResend, 'Reenviando invitación...', false);
+      setEmpresaShareFeedback(empresaIdResend, 'Reenviando invitaci?n...', false);
       fetchJSON('/super/api/empresas/compartidos?id=' + encodeURIComponent(invitationId) + '&action=reenviar', {
         method: 'PUT',
         credentials: 'same-origin'
       }).then(function (data) {
-        var msg = data && data.message ? data.message : 'Invitación reenviada.';
+        var msg = data && data.message ? data.message : 'Invitaci?n reenviada.';
         setEmpresaShareFeedback(empresaIdResend, msg, false);
         setShareNotice(msg, false);
       }).catch(function (err) {
-        var msg = err && err.message ? err.message : 'No se pudo reenviar la invitación.';
+        var msg = err && err.message ? err.message : 'No se pudo reenviar la invitaci?n.';
         setEmpresaShareFeedback(empresaIdResend, msg, true);
         setShareNotice(msg, true);
       });
@@ -1235,7 +1284,7 @@
       if (!invitationIdAccept || !empresaIdAccept) {
         return;
       }
-      setShareNotice("Aceptando invitación...", false);
+      setShareNotice("Aceptando invitaci?n...", false);
       fetchJSON("/super/api/empresas/compartidos?id=" + encodeURIComponent(invitationIdAccept) + "&action=aceptar", {
         method: "PUT",
         credentials: "same-origin",
@@ -1252,9 +1301,9 @@
           navigateToEmpresa(empresa, hasLicense);
           return;
         }
-        setShareNotice("Invitación aceptada. La empresa ya está en tu lista.", false);
+        setShareNotice("Invitaci?n aceptada. La empresa ya est? en tu lista.", false);
       }).catch(function (err) {
-        var msg = err && err.message ? err.message : "No se pudo aceptar la invitación.";
+        var msg = err && err.message ? err.message : "No se pudo aceptar la invitaci?n.";
         setShareNotice(msg, true);
       });
       return;

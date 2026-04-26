@@ -135,82 +135,82 @@ type ChatCita struct {
 	Observaciones         string `json:"observaciones,omitempty"`
 }
 
-// EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en empresas.db.
+// EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en la base operativa por empresa.
 func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS chat_tareas_conversaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
 			titulo TEXT NOT NULL,
 			descripcion TEXT,
 			prioridad TEXT DEFAULT 'media',
 			estado_conversacion TEXT DEFAULT 'abierta',
 			ultimo_mensaje_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS chat_tareas_participantes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			conversacion_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			conversacion_id BIGINT NOT NULL,
 			participante_tipo TEXT DEFAULT 'usuario',
-			participante_ref_id INTEGER,
+			participante_ref_id BIGINT,
 			nombre TEXT,
 			email TEXT,
 			activo_chat INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, conversacion_id, participante_tipo, participante_ref_id, email)
 		);`,
 		`CREATE TABLE IF NOT EXISTS chat_tareas_mensajes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			conversacion_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			conversacion_id BIGINT NOT NULL,
 			autor_tipo TEXT DEFAULT 'admin',
-			autor_ref_id INTEGER,
+			autor_ref_id BIGINT,
 			autor_nombre TEXT,
 			autor_email TEXT,
 			contenido TEXT,
 			tipo_mensaje TEXT DEFAULT 'texto',
-			fecha_envio TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_envio TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS chat_tareas_adjuntos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			mensaje_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			mensaje_id BIGINT NOT NULL,
 			tipo_archivo TEXT DEFAULT 'otro',
 			nombre_archivo TEXT,
 			mime_type TEXT,
 			file_url TEXT NOT NULL,
-			tamano_bytes INTEGER DEFAULT 0,
-			duracion_segundos REAL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			tamano_bytes BIGINT DEFAULT 0,
+			duracion_segundos DOUBLE PRECISION DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS chat_tareas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			conversacion_id INTEGER,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			conversacion_id BIGINT,
 			titulo TEXT NOT NULL,
 			descripcion TEXT,
 			prioridad TEXT DEFAULT 'media',
 			fecha_limite TEXT,
 			asignado_tipo TEXT DEFAULT 'usuario',
-			asignado_ref_id INTEGER,
+			asignado_ref_id BIGINT,
 			asignado_nombre TEXT,
 			asignado_email TEXT,
 			creado_por_tipo TEXT DEFAULT 'admin',
@@ -220,18 +220,18 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 			completada_en TEXT,
 			nota_voz_url TEXT,
 			nota_voz_mime_type TEXT,
-			nota_voz_tamano_bytes INTEGER DEFAULT 0,
-			nota_voz_duracion_segundos REAL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			nota_voz_tamano_bytes BIGINT DEFAULT 0,
+			nota_voz_duracion_segundos DOUBLE PRECISION DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS chat_tareas_citas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			conversacion_id INTEGER,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			conversacion_id BIGINT,
 			titulo TEXT NOT NULL,
 			descripcion TEXT,
 			tipo_cita TEXT DEFAULT 'reunion',
@@ -240,15 +240,15 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 			ubicacion TEXT,
 			notificar_minutos_antes INTEGER DEFAULT 30,
 			creado_por_tipo TEXT DEFAULT 'admin',
-			creado_por_ref_id INTEGER,
+			creado_por_ref_id BIGINT,
 			creado_por_nombre TEXT,
 			creado_por_email TEXT,
 			estado_cita TEXT DEFAULT 'programada',
 			recordatorio_enviado INTEGER DEFAULT 0,
 			recordatorio_enviado_en TEXT,
 			visibilidad TEXT DEFAULT 'empresa',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -263,7 +263,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_chat_citas_empresa_conv ON chat_tareas_citas(empresa_id, conversacion_id);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -749,7 +749,7 @@ func GetChatConversaciones(dbConn *sql.DB, empresaID int64, includeInactive bool
 
 // UpdateChatConversacion actualiza metadata de una conversacion.
 func UpdateChatConversacion(dbConn *sql.DB, payload ChatConversacion) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_conversaciones
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET titulo = ?,
 		descripcion = ?,
 		prioridad = ?,
@@ -770,7 +770,7 @@ func UpdateChatConversacion(dbConn *sql.DB, payload ChatConversacion) error {
 
 // SetChatConversacionEstado activa/desactiva una conversacion.
 func SetChatConversacionEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_conversaciones
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET estado = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
@@ -779,7 +779,7 @@ func SetChatConversacionEstado(dbConn *sql.DB, empresaID, id int64, estado strin
 
 // SetChatConversacionOperacionEstado abre/cierra una conversacion.
 func SetChatConversacionOperacionEstado(dbConn *sql.DB, empresaID, id int64, estadoConversacion string) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_conversaciones
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET estado_conversacion = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`, normalizeConversacionEstado(estadoConversacion), empresaID, id)
@@ -794,23 +794,23 @@ func DeleteChatConversacion(dbConn *sql.DB, empresaID, id int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_adjuntos
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_adjuntos
 		WHERE empresa_id = ?
 			AND mensaje_id IN (
 				SELECT id FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?
 			)`, empresaID, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM chat_tareas WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ?`, empresaID, id); err != nil {
 		return err
 	}
 
@@ -821,7 +821,8 @@ func DeleteChatConversacion(dbConn *sql.DB, empresaID, id int64) error {
 func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, error) {
 	email := strings.ToLower(strings.TrimSpace(payload.Email))
 	tipo := normalizeParticipanteTipo(payload.ParticipanteTipo)
-	res, err := dbConn.Exec(`INSERT OR IGNORE INTO chat_tareas_participantes (
+	// PostgreSQL: ON CONFLICT DO NOTHING equivale a INSERT OR IGNORE.
+	_, err := execSQLCompat(dbConn, `INSERT INTO chat_tareas_participantes (
 		empresa_id,
 		conversacion_id,
 		participante_tipo,
@@ -834,7 +835,8 @@ func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, er
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	ON CONFLICT (empresa_id, conversacion_id, participante_tipo, participante_ref_id, email) DO NOTHING`,
 		payload.EmpresaID,
 		payload.ConversacionID,
 		tipo,
@@ -850,11 +852,7 @@ func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, er
 		return 0, err
 	}
 
-	if id, err := res.LastInsertId(); err == nil && id > 0 {
-		return id, nil
-	}
-
-	row := dbConn.QueryRow(`SELECT id FROM chat_tareas_participantes
+	row := queryRowSQLCompat(dbConn, `SELECT id FROM chat_tareas_participantes
 	WHERE empresa_id = ?
 		AND conversacion_id = ?
 		AND participante_tipo = ?
@@ -866,7 +864,7 @@ func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, er
 		return 0, err
 	}
 
-	_, _ = dbConn.Exec(`UPDATE chat_tareas_participantes
+	_, _ = execSQLCompat(dbConn, `UPDATE chat_tareas_participantes
 	SET nombre = ?,
 		estado = 'activo',
 		activo_chat = 1,
@@ -901,7 +899,7 @@ func GetChatParticipantes(dbConn *sql.DB, empresaID, conversacionID int64, inclu
 	}
 	query += ` ORDER BY id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -934,7 +932,7 @@ func GetChatParticipantes(dbConn *sql.DB, empresaID, conversacionID int64, inclu
 
 // UpdateChatParticipante actualiza datos de un participante.
 func UpdateChatParticipante(dbConn *sql.DB, payload ChatParticipante) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_participantes
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_participantes
 	SET participante_tipo = ?,
 		participante_ref_id = ?,
 		nombre = ?,
@@ -962,7 +960,7 @@ func SetChatParticipanteEstado(dbConn *sql.DB, empresaID, conversacionID, id int
 	if normalizeChatEstado(estado) == "activo" {
 		activoChat = 1
 	}
-	_, err := dbConn.Exec(`UPDATE chat_tareas_participantes
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_participantes
 	SET estado = ?,
 		activo_chat = ?,
 		fecha_actualizacion = datetime('now','localtime')
@@ -972,7 +970,7 @@ func SetChatParticipanteEstado(dbConn *sql.DB, empresaID, conversacionID, id int
 
 // DeleteChatParticipante elimina un participante.
 func DeleteChatParticipante(dbConn *sql.DB, empresaID, conversacionID, id int64) error {
-	_, err := dbConn.Exec(`DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id)
+	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id)
 	return err
 }
 
@@ -1017,7 +1015,7 @@ func CreateChatMensaje(dbConn *sql.DB, payload ChatMensaje) (int64, error) {
 }
 
 func refreshConversacionUltimoMensaje(dbConn *sql.DB, empresaID, conversacionID int64) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_conversaciones
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET ultimo_mensaje_en = (
 		SELECT COALESCE(MAX(fecha_envio), '')
 		FROM chat_tareas_mensajes
@@ -1070,7 +1068,7 @@ func GetChatMensajes(dbConn *sql.DB, empresaID, conversacionID int64, includeIna
 	query += ` ORDER BY id ASC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1151,7 +1149,7 @@ func getChatAdjuntosByMensajeIDs(dbConn *sql.DB, empresaID int64, mensajeIDs []i
 	}
 	query += ` ORDER BY id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1184,7 +1182,7 @@ func getChatAdjuntosByMensajeIDs(dbConn *sql.DB, empresaID int64, mensajeIDs []i
 
 // UpdateChatMensaje actualiza un mensaje existente.
 func UpdateChatMensaje(dbConn *sql.DB, payload ChatMensaje) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_mensajes
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_mensajes
 	SET contenido = ?,
 		tipo_mensaje = ?,
 		observaciones = ?,
@@ -1204,7 +1202,7 @@ func UpdateChatMensaje(dbConn *sql.DB, payload ChatMensaje) error {
 
 // SetChatMensajeEstado activa/desactiva un mensaje.
 func SetChatMensajeEstado(dbConn *sql.DB, empresaID, conversacionID, id int64, estado string) error {
-	if _, err := dbConn.Exec(`UPDATE chat_tareas_mensajes
+	if _, err := execSQLCompat(dbConn, `UPDATE chat_tareas_mensajes
 	SET estado = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, conversacionID, id); err != nil {
@@ -1221,10 +1219,10 @@ func DeleteChatMensaje(dbConn *sql.DB, empresaID, conversacionID, id int64) erro
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_adjuntos WHERE empresa_id = ? AND mensaje_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_adjuntos WHERE empresa_id = ? AND mensaje_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id); err != nil {
 		return err
 	}
 
@@ -1239,7 +1237,7 @@ func CreateChatAdjunto(dbConn *sql.DB, payload ChatAdjunto) (int64, error) {
 	if strings.TrimSpace(payload.FileURL) == "" {
 		return 0, fmt.Errorf("file_url es obligatorio")
 	}
-	res, err := dbConn.Exec(`INSERT INTO chat_tareas_adjuntos (
+	return insertSQLCompat(dbConn, `INSERT INTO chat_tareas_adjuntos (
 		empresa_id,
 		mensaje_id,
 		tipo_archivo,
@@ -1266,10 +1264,6 @@ func CreateChatAdjunto(dbConn *sql.DB, payload ChatAdjunto) (int64, error) {
 		normalizeChatEstado(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 // GetChatAdjuntosByMensaje lista adjuntos por mensaje.
@@ -1297,7 +1291,7 @@ func GetChatAdjuntosByMensaje(dbConn *sql.DB, empresaID, mensajeID int64, includ
 	}
 	query += ` ORDER BY id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1461,7 +1455,7 @@ func GetChatTareas(dbConn *sql.DB, empresaID, conversacionID int64, includeInact
 		END,
 		id DESC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1512,7 +1506,7 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 		porcentaje = 100
 	}
 
-	_, err := dbConn.Exec(`UPDATE chat_tareas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET conversacion_id = ?,
 		titulo = ?,
 		descripcion = ?,
@@ -1560,7 +1554,7 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 
 // SetChatTareaNotaVoz registra o reemplaza la nota de voz de una tarea.
 func SetChatTareaNotaVoz(dbConn *sql.DB, empresaID, id int64, fileURL, mimeType string, tamanoBytes int64, duracionSegundos float64) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET nota_voz_url = ?,
 		nota_voz_mime_type = ?,
 		nota_voz_tamano_bytes = ?,
@@ -1579,7 +1573,7 @@ func SetChatTareaNotaVoz(dbConn *sql.DB, empresaID, id int64, fileURL, mimeType 
 
 // SetChatTareaEstado activa/desactiva una tarea.
 func SetChatTareaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET estado = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
@@ -1593,7 +1587,7 @@ func SetChatTareaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoTarea
 	if est == "completada" {
 		pct = 100
 	}
-	_, err := dbConn.Exec(`UPDATE chat_tareas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET estado_tarea = ?,
 		porcentaje_avance = ?,
 		completada_en = CASE WHEN ? = 'completada' THEN datetime('now','localtime') ELSE NULL END,
@@ -1604,7 +1598,7 @@ func SetChatTareaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoTarea
 
 // DeleteChatTarea elimina una tarea.
 func DeleteChatTarea(dbConn *sql.DB, empresaID, id int64) error {
-	_, err := dbConn.Exec(`DELETE FROM chat_tareas WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	return err
 }
 
@@ -1818,7 +1812,7 @@ func UpdateChatCita(dbConn *sql.DB, payload ChatCita) error {
 		fechaFin = fechaInicio
 	}
 
-	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET conversacion_id = ?,
 		titulo = ?,
 		descripcion = ?,
@@ -1865,7 +1859,7 @@ func UpdateChatCita(dbConn *sql.DB, payload ChatCita) error {
 
 // SetChatCitaEstado activa/desactiva una cita.
 func SetChatCitaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET estado = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
@@ -1875,7 +1869,7 @@ func SetChatCitaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error
 // SetChatCitaWorkflowEstado cambia el estado operativo de la cita.
 func SetChatCitaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoCita string) error {
 	estado := normalizeEstadoCita(estadoCita)
-	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET estado_cita = ?,
 		recordatorio_enviado = CASE WHEN ? = 'programada' THEN 0 ELSE recordatorio_enviado END,
 		recordatorio_enviado_en = CASE WHEN ? = 'programada' THEN NULL ELSE recordatorio_enviado_en END,
@@ -1890,7 +1884,7 @@ func SetChatCitaReminderSent(dbConn *sql.DB, empresaID, id int64, sent bool) err
 	if sent {
 		recordatorio = 1
 	}
-	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET recordatorio_enviado = ?,
 		recordatorio_enviado_en = CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END,
 		fecha_actualizacion = datetime('now','localtime')
@@ -1900,6 +1894,6 @@ func SetChatCitaReminderSent(dbConn *sql.DB, empresaID, id int64, sent bool) err
 
 // DeleteChatCita elimina una cita.
 func DeleteChatCita(dbConn *sql.DB, empresaID, id int64) error {
-	_, err := dbConn.Exec(`DELETE FROM chat_tareas_citas WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas_citas WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	return err
 }

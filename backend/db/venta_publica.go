@@ -123,7 +123,7 @@ func CreatePaginaPublica(db *sql.DB, empresaID int64, slug, titulo, descripcion,
 	}
 	id, err := insertSQLCompat(db, `INSERT INTO paginas_publicas (
 		empresa_id, slug, titulo, descripcion, video_url, activo, creado_en, actualizado_en
-	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		empresaID, strings.TrimSpace(slug), strings.TrimSpace(titulo), strings.TrimSpace(descripcion), strings.TrimSpace(videoURL), ventaPublicaBoolToInt(activo))
 	if err != nil {
 		return 0, err
@@ -137,7 +137,7 @@ func CreateProductoPublico(db *sql.DB, paginaID int64, nombre, descripcion strin
 	}
 	id, err := insertSQLCompat(db, `INSERT INTO productos_publicos (
 		pagina_id, nombre, descripcion, precio_cents, moneda, stock, sku, youtube_url, activo, creado_en, actualizado_en
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		paginaID, strings.TrimSpace(nombre), strings.TrimSpace(descripcion), precioCents, strings.TrimSpace(moneda), nullableInt64Value(stock), strings.TrimSpace(sku), strings.TrimSpace(youtubeURL), ventaPublicaBoolToInt(activo))
 	if err != nil {
 		return 0, err
@@ -156,7 +156,7 @@ func AddImagenProductoPublico(db *sql.DB, productoID int64, url string, orden in
 	if productoID <= 0 || strings.TrimSpace(url) == "" {
 		return fmt.Errorf("producto_id y url son obligatorios")
 	}
-	_, err := db.Exec(`INSERT INTO imagenes_productos_publicos (producto_id, url, orden) VALUES (?, ?, ?)`, productoID, strings.TrimSpace(url), orden)
+	_, err := execSQLCompat(db, `INSERT INTO imagenes_productos_publicos (producto_id, url, orden) VALUES (?, ?, ?)`, productoID, strings.TrimSpace(url), orden)
 	return err
 }
 
@@ -495,7 +495,7 @@ func getEmpresaNombreByID(dbConn *sql.DB, empresaID int64) (string, error) {
 		return "", fmt.Errorf("empresa_id invalido")
 	}
 	var nombre string
-	err := dbConn.QueryRow(`SELECT COALESCE(nombre, '') FROM empresas WHERE id = ? OR COALESCE(empresa_id, 0) = ? ORDER BY id ASC LIMIT 1`, empresaID, empresaID).Scan(&nombre)
+	err := queryRowSQLCompat(dbConn, `SELECT COALESCE(nombre, '') FROM empresas WHERE id = ? OR COALESCE(empresa_id, 0) = ? ORDER BY id ASC LIMIT 1`, empresaID, empresaID).Scan(&nombre)
 	if err != nil {
 		return "", err
 	}
@@ -510,8 +510,8 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL UNIQUE,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL UNIQUE,
 			empresa_slug TEXT NOT NULL,
 			nombre_tienda TEXT,
 			descripcion_tienda TEXT,
@@ -533,32 +533,32 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			epayco_public_key TEXT,
 			epayco_private_key_ref TEXT,
 			epayco_customer_id TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_paginas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
 			slug TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
 			banner_url TEXT,
 			orden_visual INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, slug)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
-			pagina_id INTEGER DEFAULT 0,
-			producto_id INTEGER DEFAULT 0,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			pagina_id BIGINT DEFAULT 0,
+			producto_id BIGINT DEFAULT 0,
 			codigo_publico TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
@@ -568,16 +568,16 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			stock_publicado REAL DEFAULT 0,
 			orden_visual INTEGER DEFAULT 0,
 			destacado INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo_publico)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_ordenes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			empresa_id INTEGER NOT NULL,
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
 			codigo_orden TEXT NOT NULL,
 			comprador_nombre TEXT,
 			comprador_email TEXT,
@@ -594,8 +594,8 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			items_json TEXT,
 			pasarela_payload_json TEXT,
 			pagado_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -604,7 +604,7 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	}
 
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -741,25 +741,25 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_venta_publica_cfg_slug ON empresa_venta_publica_configuracion(empresa_slug)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_venta_publica_cfg_slug ON empresa_venta_publica_configuracion(empresa_slug)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_cfg_empresa_estado ON empresa_venta_publica_configuracion(empresa_id, estado)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_cfg_empresa_estado ON empresa_venta_publica_configuracion(empresa_id, estado)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_estado ON empresa_venta_publica_items(empresa_id, estado, orden_visual, id)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_estado ON empresa_venta_publica_items(empresa_id, estado, orden_visual, id)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_pagina ON empresa_venta_publica_items(empresa_id, pagina_id, estado)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_pagina ON empresa_venta_publica_items(empresa_id, pagina_id, estado)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_paginas_empresa_estado ON empresa_venta_publica_paginas(empresa_id, estado, orden_visual, id)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_paginas_empresa_estado ON empresa_venta_publica_paginas(empresa_id, estado, orden_visual, id)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_empresa_estado ON empresa_venta_publica_ordenes(empresa_id, estado_pago, fecha_creacion DESC)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_empresa_estado ON empresa_venta_publica_ordenes(empresa_id, estado_pago, fecha_creacion DESC)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id)`); err != nil {
 		return err
 	}
 
@@ -782,7 +782,7 @@ func ListEmpresaVentaPublicaPaginas(dbConn *sql.DB, empresaID int64, includeInac
 	if !includeInactive {
 		where += ` AND COALESCE(estado, 'activo') <> 'inactivo'`
 	}
-	rows, err := dbConn.Query(`SELECT
+	rows, err := querySQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
 		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
@@ -831,15 +831,15 @@ func UpsertEmpresaVentaPublicaPagina(dbConn *sql.DB, page EmpresaVentaPublicaPag
 	page.Estado = ventaPublicaNormalizeEstado(page.Estado)
 	var existingID int64
 	if page.ID > 0 {
-		_ = dbConn.QueryRow(`SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND id = ? LIMIT 1`, page.EmpresaID, page.ID).Scan(&existingID)
+		_ = queryRowSQLCompat(dbConn, `SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND id = ? LIMIT 1`, page.EmpresaID, page.ID).Scan(&existingID)
 	}
 	if existingID <= 0 {
-		_ = dbConn.QueryRow(`SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND slug = ? LIMIT 1`, page.EmpresaID, page.Slug).Scan(&existingID)
+		_ = queryRowSQLCompat(dbConn, `SELECT id FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND slug = ? LIMIT 1`, page.EmpresaID, page.Slug).Scan(&existingID)
 	}
 	if existingID > 0 {
-		_, err := dbConn.Exec(`UPDATE empresa_venta_publica_paginas
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_paginas
 			SET slug = ?, nombre = ?, descripcion = ?, banner_url = ?, orden_visual = ?,
-				usuario_creador = ?, estado = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+				usuario_creador = ?, estado = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE empresa_id = ? AND id = ?`,
 			page.Slug, page.Nombre, strings.TrimSpace(page.Descripcion), strings.TrimSpace(page.BannerURL), page.OrdenVisual,
 			strings.TrimSpace(page.UsuarioCreador), page.Estado, strings.TrimSpace(page.Observaciones), page.EmpresaID, existingID)
@@ -858,7 +858,7 @@ func GetEmpresaVentaPublicaPaginaByID(dbConn *sql.DB, empresaID, pageID int64) (
 		return EmpresaVentaPublicaPagina{}, errors.New("db connection is nil")
 	}
 	var p EmpresaVentaPublicaPagina
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
 		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
@@ -878,7 +878,7 @@ func GetEmpresaVentaPublicaPaginaBySlug(dbConn *sql.DB, empresaID int64, slug st
 	}
 	slug = NormalizeEmpresaPublicSlug(slug)
 	var p EmpresaVentaPublicaPagina
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
 		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
@@ -898,7 +898,7 @@ func SetEmpresaVentaPublicaPaginaEstadoByID(dbConn *sql.DB, empresaID, pageID in
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_paginas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, ventaPublicaNormalizeEstado(estado), empresaID, pageID)
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_paginas SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, ventaPublicaNormalizeEstado(estado), empresaID, pageID)
 	if err != nil {
 		return err
 	}
@@ -925,7 +925,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	var mostrarStock sql.NullInt64
 	var wompiActivo sql.NullInt64
 	var epaycoActivo sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(empresa_slug, ''),
@@ -1086,7 +1086,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 	}
 
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_venta_publica_configuracion
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_venta_publica_configuracion
 			SET empresa_slug = ?,
 				nombre_tienda = ?,
 				descripcion_tienda = ?,
@@ -1111,7 +1111,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 				usuario_creador = ?,
 				estado = ?,
 				observaciones = ?,
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE empresa_id = ?`,
 			cfg.EmpresaSlug,
 			cfg.NombreTienda,
@@ -1215,7 +1215,7 @@ func ResolveEmpresaIDByVentaPublicaSlug(dbConn *sql.DB, slug string) (int64, err
 	}
 
 	var empresaID int64
-	err := dbConn.QueryRow(`SELECT empresa_id FROM empresa_venta_publica_configuracion WHERE empresa_slug = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, slug).Scan(&empresaID)
+	err := queryRowSQLCompat(dbConn, `SELECT empresa_id FROM empresa_venta_publica_configuracion WHERE empresa_slug = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, slug).Scan(&empresaID)
 	if err == nil && empresaID > 0 {
 		return empresaID, nil
 	}
@@ -1223,7 +1223,7 @@ func ResolveEmpresaIDByVentaPublicaSlug(dbConn *sql.DB, slug string) (int64, err
 		return 0, err
 	}
 
-	rows, err := dbConn.Query(`SELECT id, COALESCE(empresa_id, id), COALESCE(nombre, '') FROM empresas WHERE COALESCE(estado, 'activo') <> 'inactivo' ORDER BY id ASC`)
+	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(empresa_id, id), COALESCE(nombre, '') FROM empresas WHERE COALESCE(estado, 'activo') <> 'inactivo' ORDER BY id ASC`)
 	if err != nil {
 		return 0, err
 	}
@@ -1263,7 +1263,7 @@ func hydrateEmpresaVentaPublicaItemFromProducto(dbConn *sql.DB, item *EmpresaVen
 	var imagenURL string
 	var codigoBarras string
 	var sku string
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(nombre, ''),
 		COALESCE(descripcion, ''),
 		COALESCE(precio, 0),
@@ -1422,7 +1422,7 @@ func UpdateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 	item.Moneda = ventaPublicaNormalizeMoneda(item.Moneda)
 	item.Estado = ventaPublicaNormalizeEstado(item.Estado)
 
-	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_items
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_items
 		SET pagina_id = ?,
 			producto_id = ?,
 			codigo_publico = ?,
@@ -1437,7 +1437,7 @@ func UpdateEmpresaVentaPublicaItem(dbConn *sql.DB, item EmpresaVentaPublicaItem)
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`,
 		item.PaginaID,
 		item.ProductoID,
@@ -1478,7 +1478,7 @@ func SetEmpresaVentaPublicaItemEstadoByID(dbConn *sql.DB, empresaID, itemID int6
 		return fmt.Errorf("empresa_id/id invalidos")
 	}
 	estado = ventaPublicaNormalizeEstado(estado)
-	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_items SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, estado, empresaID, itemID)
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_items SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, itemID)
 	if err != nil {
 		return err
 	}
@@ -1503,7 +1503,7 @@ func GetEmpresaVentaPublicaItemByID(dbConn *sql.DB, empresaID, itemID int64) (Em
 
 	var out EmpresaVentaPublicaItem
 	var destacado sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		i.id,
 		i.empresa_id,
 		COALESCE(i.pagina_id, 0),
@@ -1776,14 +1776,14 @@ func UpdateEmpresaVentaPublicaOrderPayment(dbConn *sql.DB, empresaID int64, codi
 	if strings.TrimSpace(estadoPago) == "" {
 		estadoPago = "pendiente"
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_venta_publica_ordenes
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
 		SET estado_pago = ?,
 			transaction_id = ?,
 			referencia_externa = ?,
 			pasarela_payload_json = CASE WHEN ? = '' THEN pasarela_payload_json ELSE ? END,
 			pagado_en = CASE WHEN ? = '' THEN pagado_en ELSE ? END,
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND codigo_orden = ?`,
 		strings.TrimSpace(estadoPago),
 		strings.TrimSpace(transactionID),
@@ -1824,7 +1824,7 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 	}
 
 	var out EmpresaVentaPublicaOrder
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo_orden, ''),
@@ -1898,7 +1898,7 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 	}
 
 	var out EmpresaVentaPublicaOrder
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo_orden, ''),
@@ -1992,7 +1992,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 	}
 
 	var total int64
-	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM empresa_venta_publica_ordenes `+where, args...).Scan(&total); err != nil {
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_venta_publica_ordenes `+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 

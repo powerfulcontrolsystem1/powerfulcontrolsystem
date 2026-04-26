@@ -27,11 +27,10 @@
 <body class="ai-gemini-body ai-gemini-app-body">
   <div class="ai-gemini-app">
     <aside class="ai-gemini-sidebar" aria-label="Conversaciones">
+      <button type="button" id="btnServerHistory" class="ai-gemini-new-chat ai-gemini-new-chat--secondary">Historial del servidor</button>
       <button type="button" id="btnNewChat" class="ai-gemini-new-chat">+ Nuevo chat</button>
       <div class="ai-gemini-sidebar-section-title">En este dispositivo</div>
       <div id="conversationList" class="ai-gemini-conv-list"></div>
-      <div class="ai-gemini-sidebar-section-title">Historial en servidor</div>
-      <div id="serverHistoryList" class="ai-gemini-conv-list ai-gemini-conv-list--server"></div>
     </aside>
     <main class="ai-gemini-main">
       <header class="ai-gemini-topbar">
@@ -391,14 +390,44 @@
     }
 
     function renderServerHistorySidebar() {
-      const box = document.getElementById("serverHistoryList");
-      if (!box) return;
-      const items = state.serverHistoryItems || [];
+      // Historial del servidor ya no se muestra en el sidebar.
+      return;
+    }
+
+    function ensureServerHistoryModal() {
+      let modal = document.getElementById("serverHistoryModal");
+      if (modal) return modal;
+      modal = document.createElement("div");
+      modal.id = "serverHistoryModal";
+      modal.className = "ai-gemini-modal";
+      modal.innerHTML = '' +
+        '<div class="ai-gemini-modal__backdrop" data-close="1"></div>' +
+        '<div class="ai-gemini-modal__panel">' +
+          '<div class="ai-gemini-modal__head">' +
+            '<strong>Historial del servidor</strong>' +
+            '<button type="button" class="btn secondary" data-close="1">Cerrar</button>' +
+          '</div>' +
+          '<div id="serverHistoryModalBody" class="ai-gemini-modal__body"></div>' +
+        '</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener("click", function (ev) {
+        const t = ev && ev.target ? ev.target : null;
+        if (t && t.getAttribute && t.getAttribute("data-close") === "1") {
+          modal.remove();
+        }
+      });
+      return modal;
+    }
+
+    function renderServerHistoryModalBody() {
+      const body = document.getElementById("serverHistoryModalBody");
+      if (!body) return;
+      const items = Array.isArray(state.serverHistoryItems) ? state.serverHistoryItems : [];
       if (!items.length) {
-        box.innerHTML = '<div class="ai-gemini-conv-empty">Sin registros</div>';
+        body.innerHTML = '<div class="ai-gemini-conv-empty">Sin registros</div>';
         return;
       }
-      box.innerHTML = items.map(function (item, idx) {
+      body.innerHTML = items.map(function (item, idx) {
         const pregunta = normalize(item.pregunta);
         const title = pregunta.length > 56 ? (pregunta.slice(0, 56) + "…") : pregunta;
         const fecha = normalize(item.fecha_consulta);
@@ -406,6 +435,15 @@
           "<span class=\"ai-gemini-conv-item-title\">" + escapeHtml(title || "Consulta") + "</span>" +
           "<span class=\"ai-gemini-conv-item-meta\">" + escapeHtml(fecha) + "</span></button>";
       }).join("");
+      body.querySelectorAll("[data-srv-idx]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const idx = parseInt(btn.getAttribute("data-srv-idx"), 10);
+          if (Number.isNaN(idx)) return;
+          openServerHistoryItem(idx);
+          const modal = document.getElementById("serverHistoryModal");
+          if (modal) modal.remove();
+        });
+      });
     }
 
     async function shareAssistantText(text) {
@@ -728,7 +766,7 @@
         const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=30");
         clearAIDisabledState();
         state.serverHistoryItems = Array.isArray(data.items) ? data.items : [];
-        renderServerHistorySidebar();
+        renderServerHistoryModalBody();
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
         if (err && err.status === 401) {
@@ -738,11 +776,11 @@
         if (normalize(payload.code) === "ai_disabled") {
           setAIDisabledState(payload.error);
           state.serverHistoryItems = [];
-          renderServerHistorySidebar();
+          renderServerHistoryModalBody();
           return;
         }
         state.serverHistoryItems = [];
-        renderServerHistorySidebar();
+        renderServerHistoryModalBody();
       }
     }
 
@@ -950,13 +988,14 @@
         openConversation(btn.getAttribute("data-conv-id"));
       });
 
-      document.getElementById("serverHistoryList").addEventListener("click", function (ev) {
-        const btn = ev.target && ev.target.closest ? ev.target.closest("[data-srv-idx]") : null;
-        if (!btn) return;
-        const idx = parseInt(btn.getAttribute("data-srv-idx"), 10);
-        if (Number.isNaN(idx)) return;
-        openServerHistoryItem(idx);
-      });
+      const btnServerHistory = document.getElementById("btnServerHistory");
+      if (btnServerHistory) {
+        btnServerHistory.addEventListener("click", function () {
+          ensureServerHistoryModal();
+          renderServerHistoryModalBody();
+          loadHistorial();
+        });
+      }
 
       document.getElementById("messagesList").addEventListener("click", function (ev) {
         const b = ev.target && ev.target.closest ? ev.target.closest(".ai-gemini-share-btn") : null;

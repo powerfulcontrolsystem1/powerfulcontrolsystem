@@ -50,6 +50,15 @@ type empresaBackupImportPayload struct {
 	Payload        *dbpkg.EmpresaBackupPayload `json:"payload"`
 }
 
+type empresaBackupSendEmailPayload struct {
+	EmpresaID int64  `json:"empresa_id"`
+	ID        int64  `json:"id"`
+	ToEmail   string `json:"to_email"`
+	Format    string `json:"format"`
+	Subject   string `json:"subject,omitempty"`
+	Message   string `json:"message,omitempty"`
+}
+
 func empresaBackupsNormalizeAction(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "listar", "list":
@@ -68,6 +77,8 @@ func empresaBackupsNormalizeAction(raw string) string {
 		return "importar_configuracion"
 	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
 		return "depurar_fecha"
+	case "enviar_email", "email", "send_email":
+		return "enviar_email"
 	case "activar":
 		return "activar"
 	case "desactivar", "eliminar", "delete":
@@ -156,7 +167,7 @@ func parseCSVStrings(raw string) []string {
 }
 
 // EmpresaBackupsHandler gestiona snapshots y restauraciones de datos empresariales.
-func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaBackupsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := empresaBackupsNormalizeAction(r.URL.Query().Get("action"))
 		if action == "" {
@@ -199,6 +210,9 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "depurar_fecha":
 				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
 				return
+			case "enviar_email":
+				empresaBackupsHandleSendEmail(w, r, dbEmp, dbSuper)
+				return
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 				return
@@ -226,6 +240,128 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func empresaBackupsHandleSendEmail(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if dbSuper == nil {
+		http.Error(w, "configuracion de correo no disponible", http.StatusInternalServerError)
+		return
+	}
+
+	var payload empresaBackupSendEmailPayload
+	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID > 0 && payload.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+	if payload.ID <= 0 {
+		http.Error(w, "id es obligatorio", http.StatusBadRequest)
+		return
+	}
+
+	format := strings.ToLower(strings.TrimSpace(payload.Format))
+	if format == "" {
+		format = "pdf"
+	}
+	if format == "json.gz" || format == "gz" || format == "gzip" {
+		http.Error(w, "format invalido para correo (use json, csv, txt, xls o pdf)", http.StatusBadRequest)
+		return
+	}
+
+	backupMeta, exportPayload, err := dbpkg.GetEmpresaBackupPayloadByID(dbEmp, empresaID, payload.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "backup no encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "No se pudo consultar export del backup", http.StatusInternalServerError)
+		return
+	}
+
+	subject := strings.TrimSpace(payload.Subject)
+	if subject == "" {
+		subject = fmt.Sprintf("Backup empresa %d: %s", empresaID, strings.TrimSpace(backupMeta.Codigo))
+	}
+	body := strings.TrimSpace(payload.Message)
+	if body == "" {
+		body = "Adjunto encontrarás el respaldo solicitado."
+	}
+
+	var fileName, contentType string
+	var content []byte
+
+	if format == "json" {
+		fileName = fmt.Sprintf("backup_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
+		raw, jerr := json.Marshal(exportPayload)
+		if jerr != nil {
+			http.Error(w, "no se pudo serializar el backup", http.StatusInternalServerError)
+			return
+		}
+		contentType = "application/json"
+		content = raw
+	} else {
+		// Reusar el dataset resumen (mismo que export) para formatos tabulares/PDF/TXT.
+		rows := make([]map[string]interface{}, 0, len(exportPayload.Tables))
+		for _, table := range exportPayload.Tables {
+			rows = append(rows, map[string]interface{}{
+				"tabla":            table.Table,
+				"columnas":         len(table.Columns),
+				"registros":        len(table.Rows),
+				"columnas_detalle": strings.Join(table.Columns, ","),
+			})
+		}
+		ds := empresaReporteDataset{
+			Key:         "seguridad_backups_empresariales",
+			Title:       "Backups empresariales",
+			Level:       "seguridad",
+			Description: "Resumen de tablas incluidas en snapshot empresarial para respaldo y restauracion.",
+			EmpresaID:   empresaID,
+			GeneratedAt: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
+			Columns: []string{
+				"tabla",
+				"columnas",
+				"registros",
+				"columnas_detalle",
+			},
+			Rows:     rows,
+			RowCount: len(rows),
+			Summary: map[string]interface{}{
+				"backup_id":     payload.ID,
+				"codigo_backup": backupMeta.Codigo,
+				"version":       exportPayload.Version,
+				"tablas":        exportPayload.TotalTables,
+				"registros":     exportPayload.TotalRows,
+				"creado_en":     exportPayload.CreatedAt,
+				"creado_por":    exportPayload.CreatedBy,
+			},
+		}
+		fileName, contentType, content, err = reportesBuildExportBytes(ds, format)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	metaJSON := fmt.Sprintf(`{"scope":"empresa_backups","empresa_id":%d,"backup_id":%d,"backup_code":%q,"format":%q}`, empresaID, payload.ID, strings.TrimSpace(backupMeta.Codigo), format)
+	if err := sendReportesEmailWithAttachment(r, dbSuper, empresaID, payload.ToEmail, subject, body, fileName, contentType, content, metaJSON); err != nil {
+		http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":       true,
+		"to_email": strings.TrimSpace(payload.ToEmail),
+		"filename": fileName,
+		"format":   format,
+	})
 }
 
 func empresaBackupsHandleList(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {

@@ -35,7 +35,7 @@ func chatConversacionExists(dbEmp *sql.DB, empresaID, conversacionID int64) (boo
 		return false, nil
 	}
 	var id int64
-	err := dbEmp.QueryRow(`SELECT id FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, conversacionID).Scan(&id)
+	err := dbpkg.QueryRowCompat(dbEmp, `SELECT id FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, conversacionID).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -50,7 +50,7 @@ func chatTareaExists(dbEmp *sql.DB, empresaID, tareaID int64) (bool, error) {
 		return false, nil
 	}
 	var id int64
-	err := dbEmp.QueryRow(`SELECT id FROM chat_tareas WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, tareaID).Scan(&id)
+	err := dbpkg.QueryRowCompat(dbEmp, `SELECT id FROM chat_tareas WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, tareaID).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}

@@ -395,6 +395,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html">Red social comercial</a>' +
+        '<a class="fm-item" href="/calculadora.html">Calculadora</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +

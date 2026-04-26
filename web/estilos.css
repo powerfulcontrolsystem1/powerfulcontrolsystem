@@ -4904,6 +4904,13 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   flex-wrap:wrap;
   margin-bottom:10px;
 }
+.empresa-section-header > h2{
+  margin:0;
+  font-size:0.9rem;
+  font-weight:800;
+  color:var(--muted);
+  letter-spacing:.01em;
+}
 .empresa-inline-actions{
   display:flex;
   align-items:center;
@@ -6185,6 +6192,27 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
+  align-items:center;
+}
+
+.chat-dashboard-actions .btn{
+  padding:8px 10px;
+  font-size:0.82rem;
+  line-height:1.05;
+}
+
+.chat-mini-form .form-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+.chat-search-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
   align-items:center;
 }
 
@@ -7671,7 +7699,13 @@ html.theme-light .task-item{
   display:flex;
   align-items:center;
   justify-content:center;
+  gap:6px;
   flex:0 0 auto;
+}
+
+.empresas-grid .portal-card.empresa-card .edit-empresa{
+  background:linear-gradient(135deg, #2c74d9, #144a9f);
+  box-shadow:0 10px 20px rgba(20,74,159,0.22);
 }
 .empresas-grid .portal-card.empresa-card .empresa-card-footer-bar__cell--share .empresa-card-icon-action{
   margin:0;
@@ -8336,6 +8370,10 @@ html.theme-light .task-item{
   font-weight:600;
   cursor:pointer;
 }
+.ai-gemini-new-chat--secondary{
+  background:color-mix(in srgb, var(--surface) 92%, var(--text) 8%);
+  opacity:.95;
+}
 
 .ai-gemini-new-chat:hover{
   border-color:color-mix(in srgb, var(--accent) 50%, var(--border));
@@ -8361,6 +8399,12 @@ html.theme-light .task-item{
 .ai-gemini-conv-list--server{
   max-height:28vh;
 }
+
+.ai-gemini-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
+.ai-gemini-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.55)}
+.ai-gemini-modal__panel{position:relative;width:min(760px, calc(100% - 24px));max-height:min(80vh, 680px);overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)), var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,0.38)}
+.ai-gemini-modal__head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px;border-bottom:1px solid var(--border)}
+.ai-gemini-modal__body{padding:10px 10px;overflow:auto;max-height:calc(80vh - 60px)}
 
 .ai-gemini-conv-empty{
   color:var(--muted);
@@ -9061,6 +9105,26 @@ html.theme-light .ai-gemini-inline-alert{
   display:flex;
   flex-wrap:wrap;
   gap:6px;
+}
+
+.backups-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+.backups-badge--on{
+  background:rgba(14, 165, 164, 0.16);
+  color:color-mix(in srgb, var(--accent-yellow-light) 40%, var(--text));
+}
+.backups-badge--off{
+  background:rgba(239, 83, 80, 0.14);
+  color:color-mix(in srgb, #ef5350 55%, var(--text));
 }
 
 .backups-summary-grid{

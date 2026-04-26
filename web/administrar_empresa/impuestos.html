@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Impuestos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 class="empresa-section-title">Impuestos</h1>
+        <div class="empresa-inline-actions">
+          <div id="impuestosPaisBadge" class="form-help"></div>
+          <button id="btnImpuestosRefrescar" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnImpuestosSembrar" class="btn" type="button">Cargar catálogo base</button>
+        </div>
+      </div>
+      <p class="form-help">Administra los impuestos por empresa (habilitar/deshabilitar y tasa). El país se detecta automáticamente.</p>
+      <div id="impuestosMsg" class="form-help"></div>
+
+      <div class="table-wrap">
+        <table class="table table-compact" id="impuestosTable">
+          <thead>
+            <tr>
+              <th>Habil.</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Aplica</th>
+              <th>Tasa %</th>
+              <th>Guardar</th>
+            </tr>
+          </thead>
+          <tbody id="impuestosTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/administrar_empresa.js"></script>
+  <script>
+  (function(){
+    var empresaId = (window.__resolveEmpresaIdContext ? window.__resolveEmpresaIdContext() : "") || "";
+    var msg = document.getElementById('impuestosMsg');
+    var badge = document.getElementById('impuestosPaisBadge');
+    var tbody = document.getElementById('impuestosTbody');
+    var btnRefresh = document.getElementById('btnImpuestosRefrescar');
+    var btnSembrar = document.getElementById('btnImpuestosSembrar');
+
+    function setMsg(t, isErr){
+      if (!msg) return;
+      msg.textContent = t || "";
+      msg.style.color = isErr ? "#b00020" : "";
+    }
+
+    function byKey(arr, key){
+      var map = {};
+      (arr || []).forEach(function(it){
+        if (!it) return;
+        var k = String(it[key] || "").toUpperCase().trim();
+        if (!k) return;
+        map[k] = it;
+      });
+      return map;
+    }
+
+    function fmtPais(resp){
+      if (!resp) return "";
+      var flag = String(resp.bandera || "").trim();
+      var code = String(resp.pais_codigo || "").trim();
+      var name = String(resp.pais_nombre || "").trim();
+      var moneda = String(resp.moneda || "").trim();
+      var parts = [];
+      if (flag) parts.push(flag);
+      if (name || code) parts.push((name || code) + (code && name ? " (" + code + ")" : ""));
+      if (moneda) parts.push("Moneda: " + moneda);
+      return parts.join(" · ");
+    }
+
+    function buildRow(it){
+      var tr = document.createElement('tr');
+
+      var tdOn = document.createElement('td');
+      var chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = Number(it.habilitado || 0) === 1;
+      tdOn.appendChild(chk);
+
+      var tdCodigo = document.createElement('td');
+      tdCodigo.textContent = String(it.codigo || '').toUpperCase();
+
+      var tdNombre = document.createElement('td');
+      var nombre = document.createElement('input');
+      nombre.type = 'text';
+      nombre.className = 'form-input';
+      nombre.value = String(it.nombre || '');
+      tdNombre.appendChild(nombre);
+
+      var tdTipo = document.createElement('td');
+      var tipo = document.createElement('select');
+      tipo.className = 'form-input';
+      ['impuesto','retencion'].forEach(function(v){
+        var opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        if (String(it.tipo || 'impuesto').toLowerCase() === v) opt.selected = true;
+        tipo.appendChild(opt);
+      });
+      tdTipo.appendChild(tipo);
+
+      var tdAplica = document.createElement('td');
+      var aplica = document.createElement('select');
+      aplica.className = 'form-input';
+      ['ventas','compras','ambos'].forEach(function(v){
+        var opt2 = document.createElement('option');
+        opt2.value = v;
+        opt2.textContent = v;
+        if (String(it.aplica_en || 'ventas').toLowerCase() === v) opt2.selected = true;
+        aplica.appendChild(opt2);
+      });
+      tdAplica.appendChild(aplica);
+
+      var tdTasa = document.createElement('td');
+      var tasa = document.createElement('input');
+      tasa.type = 'number';
+      tasa.step = '0.01';
+      tasa.min = '0';
+      tasa.className = 'form-input';
+      tasa.value = String(it.tasa_porcentaje != null ? it.tasa_porcentaje : 0);
+      tdTasa.appendChild(tasa);
+
+      var tdSave = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn secondary';
+      btn.textContent = 'Guardar';
+      tdSave.appendChild(btn);
+
+      btn.addEventListener('click', async function(){
+        try {
+          setMsg('Guardando...', false);
+          var payload = {
+            codigo: String(it.codigo || '').toUpperCase().trim(),
+            nombre: String(nombre.value || '').trim(),
+            tipo: String(tipo.value || 'impuesto'),
+            aplica_en: String(aplica.value || 'ventas'),
+            tasa_porcentaje: Number(tasa.value || 0),
+            habilitado: chk.checked ? 1 : 0,
+            pais_codigo: String(it.pais_codigo || '').toUpperCase().trim()
+          };
+          var url = '/api/empresa/impuestos?action=upsert';
+          if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
+          var res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          var txt = await res.text();
+          if (!res.ok) throw new Error(txt || 'error');
+          setMsg('Guardado.', false);
+        } catch (e) {
+          setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
+        }
+      });
+
+      [tdOn, tdCodigo, tdNombre, tdTipo, tdAplica, tdTasa, tdSave].forEach(function(td){ tr.appendChild(td); });
+      return tr;
+    }
+
+    async function load(){
+      try {
+        setMsg('Cargando...', false);
+        if (tbody) tbody.innerHTML = '';
+        var url = '/api/empresa/impuestos?action=context';
+        if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
+        var res = await fetch(url, { method: 'GET' });
+        var txt = await res.text();
+        var data = {};
+        try { data = txt ? JSON.parse(txt) : {}; } catch(e) { data = {}; }
+        if (!res.ok) throw new Error(txt || 'error');
+        if (badge) badge.textContent = fmtPais(data);
+
+        var cfgMap = byKey(data.configurados || [], 'codigo');
+        var base = (data.catalogo_base || []).map(function(it){
+          var code = String(it.codigo || '').toUpperCase().trim();
+          var merged = Object.assign({}, it);
+          if (cfgMap[code]) merged = Object.assign({}, merged, cfgMap[code]);
+          merged.codigo = code;
+          merged.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
+          return merged;
+        });
+
+        // incluir configurados que no estén en catálogo base
+        (data.configurados || []).forEach(function(it){
+          var code2 = String(it.codigo || '').toUpperCase().trim();
+          if (!code2) return;
+          if (base.some(function(x){ return String(x.codigo||'').toUpperCase().trim() === code2; })) return;
+          var extra = Object.assign({}, it);
+          extra.codigo = code2;
+          extra.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
+          base.push(extra);
+        });
+
+        base.sort(function(a,b){
+          var ta = String(a.tipo||'impuesto'); var tb = String(b.tipo||'impuesto');
+          if (ta !== tb) return ta < tb ? -1 : 1;
+          var ca = String(a.codigo||''); var cb = String(b.codigo||'');
+          return ca < cb ? -1 : (ca > cb ? 1 : 0);
+        });
+
+        base.forEach(function(it){
+          if (!tbody) return;
+          tbody.appendChild(buildRow(it));
+        });
+        setMsg('', false);
+      } catch(e) {
+        setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
+      }
+    }
+
+    async function sembrar(){
+      try {
+        setMsg('Sembrando catálogo base...', false);
+        var url = '/api/empresa/impuestos?action=context';
+        if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
+        var res = await fetch(url, { method: 'GET' });
+        var txt = await res.text();
+        var data = {};
+        try { data = txt ? JSON.parse(txt) : {}; } catch(e) { data = {}; }
+        if (!res.ok) throw new Error(txt || 'error');
+        var base = data.catalogo_base || [];
+        for (var i=0; i<base.length; i++){
+          var it = base[i] || {};
+          var up = Object.assign({}, it);
+          up.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
+          var postUrl = '/api/empresa/impuestos?action=upsert';
+          if (empresaId) postUrl += '&empresa_id=' + encodeURIComponent(empresaId);
+          var r2 = await fetch(postUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(up) });
+          if (!r2.ok) {
+            var t2 = await r2.text();
+            throw new Error(t2 || 'error');
+          }
+        }
+        await load();
+        setMsg('Catálogo base cargado.', false);
+      } catch(e) {
+        setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
+      }
+    }
+
+    if (btnRefresh) btnRefresh.addEventListener('click', load);
+    if (btnSembrar) btnSembrar.addEventListener('click', sembrar);
+    load();
+  })();
+  </script>
+</body>
+</html>
+

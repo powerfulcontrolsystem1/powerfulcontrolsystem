@@ -31,6 +31,23 @@
       <p id="feVistaDianWrap" class="is-hidden"><a id="feVistaDianLink" class="btn secondary" href="#" rel="noopener">Abrir módulo DIAN / documental (solo Colombia)</a></p>
     </div>
 
+    <div id="feFirmaCard" class="card is-hidden">
+      <h2>Cargar firma electrónica (Colombia / DIAN)</h2>
+      <p class="form-help">
+        Sube el archivo de firma privada en formato <code>.pem</code>. Se guarda en la carpeta aislada de esta empresa y se registra como referencia segura.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="feFirmaFile">Archivo de firma (.pem)</label>
+          <input id="feFirmaFile" class="form-input" type="file" accept=".pem,text/plain,application/x-pem-file">
+        </div>
+        <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px;">
+          <button id="feFirmaUploadBtn" class="btn" type="button">Cargar firma</button>
+        </div>
+      </div>
+      <div id="feFirmaMsg" class="form-help"></div>
+    </div>
+
     <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
       <h3>Campos estructurados — Ecuador (SRI)</h3>
       <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>establecimiento</code>, <code>punto_emision</code>, <code>ambiente_sri</code>). No interfiere con Colombia ni con la DIAN.</p>
@@ -673,6 +690,10 @@
             dwrap.classList.add("is-hidden");
           }
         }
+        var firmaCard = document.getElementById("feFirmaCard");
+        if (firmaCard) {
+          firmaCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
         if (vista.label_identificador) {
           var li = document.getElementById("labelIdentificador");
           if (li) li.textContent = vista.label_identificador;
@@ -711,6 +732,58 @@
         if (op && !txt(op.value)) op.value = "COP";
       }
     }
+
+    (function initFirmaUpload() {
+      var btn = document.getElementById("feFirmaUploadBtn");
+      var input = document.getElementById("feFirmaFile");
+      var msg = document.getElementById("feFirmaMsg");
+      if (!btn || !input) return;
+
+      function setMsg(text, isErr) {
+        if (!msg) return;
+        msg.textContent = text || "";
+        msg.className = isErr ? "form-help error" : "form-help";
+      }
+
+      btn.addEventListener("click", async function () {
+        try {
+          setMsg("", false);
+          if (!state.empresaID) {
+            setMsg("empresa_id no está listo todavía.", true);
+            return;
+          }
+          var file = input.files && input.files[0];
+          if (!file) {
+            setMsg("Selecciona un archivo .pem.", true);
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = "Cargando...";
+
+          var fd = new FormData();
+          fd.append("empresa_id", String(state.empresaID));
+          fd.append("archivo_firma", file, file.name);
+
+          var res = await fetch("/api/empresa/facturacion_electronica/dian?action=subir_firma&empresa_id=" + encodeURIComponent(state.empresaID), {
+            method: "POST",
+            body: fd,
+            credentials: "same-origin"
+          });
+          var data = null;
+          try { data = await res.json(); } catch (e) { data = null; }
+          if (!res.ok) {
+            var err = (data && (data.error || data.message)) ? String(data.error || data.message) : ("HTTP " + res.status);
+            throw new Error(err);
+          }
+          setMsg("Firma cargada y guardada correctamente.", false);
+        } catch (e) {
+          setMsg(e && e.message ? e.message : "No se pudo cargar la firma.", true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Cargar firma";
+        }
+      });
+    })();
 
     function mergeEstructuradoToJson() {
       var code = txt(document.getElementById("pais_codigo").value).toUpperCase();

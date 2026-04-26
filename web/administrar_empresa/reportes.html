@@ -33,6 +33,8 @@
         </select>
         <button id="btnCargarDataset" class="btn secondary" type="button">Ver dataset</button>
         <button id="btnExportarDataset" class="btn secondary" type="button">Exportar dataset</button>
+        <input id="datasetEmailTo" type="email" class="form-input reportes-filter-mid" placeholder="Enviar a correo@dominio.com">
+        <button id="btnEnviarDatasetEmail" class="btn secondary" type="button">Enviar por email</button>
         <button id="btnExportarSuite" class="btn secondary" type="button">Exportar suite JSON</button>
       </div>
       <div class="empresa-inline-actions" >
@@ -340,6 +342,17 @@
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
+    }
+
+    // Permite abrir esta página con un dataset preseleccionado, ej:
+    // /administrar_empresa/reportes.html?dataset=operativo_impuestos_deuda
+    try {
+      const pre = String(getQueryParam('dataset') || '').trim();
+      if (pre) {
+        state.datasetActivo = pre;
+      }
+    } catch (e) {
+      // no-op
     }
 
     function normalize(value) {
@@ -759,6 +772,37 @@
       const fallback = dataset + '_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
       const filename = resolveDownloadFilenameFromHeader(res.headers.get('Content-Disposition'), fallback);
       downloadBlobFile(blob, filename);
+    }
+
+    async function enviarDatasetPorEmail() {
+      const selectDataset = document.getElementById('datasetSelect');
+      const selectFormato = document.getElementById('datasetFormato');
+      const inputEmail = document.getElementById('datasetEmailTo');
+      const dataset = normalize(selectDataset && selectDataset.value);
+      const formato = normalize(selectFormato && selectFormato.value).toLowerCase() || 'pdf';
+      const toEmail = normalize(inputEmail && inputEmail.value);
+      if (!dataset) {
+        throw new Error('Seleccione un dataset para enviar.');
+      }
+      if (!toEmail) {
+        throw new Error('Ingrese el correo de destino.');
+      }
+      const params = buildReportesQueryParams('enviar_email');
+      params.set('dataset', dataset);
+      const res = await fetch('/api/empresa/reportes?' + params.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_email: toEmail,
+          format: formato,
+          dataset: dataset
+        })
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || 'No se pudo enviar el reporte por email.');
+      }
+      return await res.json();
     }
 
     async function exportarSuiteReportesJSON() {
@@ -1313,6 +1357,15 @@
           setMsg('Exportación del dataset generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el dataset.', 'error');
+        }
+      });
+
+      document.getElementById('btnEnviarDatasetEmail').addEventListener('click', async () => {
+        try {
+          const resp = await enviarDatasetPorEmail();
+          setMsg('Reporte enviado a ' + normalize(resp && resp.to_email) + '.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo enviar el reporte por email.', 'error');
         }
       });
 

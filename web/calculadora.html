@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Calculadora</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .calc-page{min-height:100vh;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text)}
+    .calc-shell{width:min(560px, calc(100% - 24px));margin:0 auto;padding:22px 0 56px;display:grid;gap:12px}
+    .calc-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:0 18px 48px rgba(0,0,0,0.16);padding:16px}
+    .calc-title{margin:0 0 8px;font-size:1.3rem}
+    .calc-display{
+      width:100%;
+      border:1px solid var(--border);
+      background:color-mix(in srgb, var(--surface-soft) 55%, transparent);
+      border-radius:16px;
+      padding:14px 14px;
+      display:grid;
+      gap:6px;
+      box-sizing:border-box;
+    }
+    .calc-display .calc-expr{min-height:18px;color:var(--muted);font-weight:700;letter-spacing:0.02em}
+    .calc-display .calc-value{font-size:2rem;font-weight:900;line-height:1.05;word-break:break-word}
+    .calc-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .calc-btn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.04);
+      color:var(--text);
+      border-radius:16px;
+      padding:14px 12px;
+      font-weight:900;
+      font-size:1.05rem;
+      cursor:pointer;
+      transition:transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .calc-btn:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border) 45%);background:rgba(31,142,241,0.12)}
+    .calc-btn:active{transform:scale(0.98)}
+    .calc-btn.op{background:rgba(14,165,164,0.14)}
+    .calc-btn.danger{background:rgba(239,83,80,0.14)}
+    .calc-btn.eq{background:color-mix(in srgb, var(--accent) 60%, transparent);color:#fff;border-color:color-mix(in srgb, var(--accent) 70%, var(--border) 30%)}
+    .calc-btn.wide{grid-column:span 2}
+    .calc-help{margin:0;color:var(--muted);font-size:0.95rem}
+  </style>
+</head>
+<body class="calc-page">
+  <main class="calc-shell">
+    <section class="calc-card">
+      <h1 class="calc-title">Calculadora</h1>
+      <p class="calc-help">Escribe con el teclado o usa los botones. Enter = igual, Esc = limpiar.</p>
+
+      <div class="calc-display" aria-live="polite">
+        <div id="calcExpr" class="calc-expr"></div>
+        <div id="calcValue" class="calc-value">0</div>
+      </div>
+
+      <div class="calc-grid" role="group" aria-label="Teclado de calculadora">
+        <button class="calc-btn danger" data-act="clear">C</button>
+        <button class="calc-btn danger" data-act="back">⌫</button>
+        <button class="calc-btn op" data-act="op" data-val="%">%</button>
+        <button class="calc-btn op" data-act="op" data-val="/">÷</button>
+
+        <button class="calc-btn" data-act="digit" data-val="7">7</button>
+        <button class="calc-btn" data-act="digit" data-val="8">8</button>
+        <button class="calc-btn" data-act="digit" data-val="9">9</button>
+        <button class="calc-btn op" data-act="op" data-val="*">×</button>
+
+        <button class="calc-btn" data-act="digit" data-val="4">4</button>
+        <button class="calc-btn" data-act="digit" data-val="5">5</button>
+        <button class="calc-btn" data-act="digit" data-val="6">6</button>
+        <button class="calc-btn op" data-act="op" data-val="-">−</button>
+
+        <button class="calc-btn" data-act="digit" data-val="1">1</button>
+        <button class="calc-btn" data-act="digit" data-val="2">2</button>
+        <button class="calc-btn" data-act="digit" data-val="3">3</button>
+        <button class="calc-btn op" data-act="op" data-val="+">+</button>
+
+        <button class="calc-btn wide" data-act="digit" data-val="0">0</button>
+        <button class="calc-btn" data-act="dot" data-val=".">.</button>
+        <button class="calc-btn eq" data-act="eq">=</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var exprEl = document.getElementById('calcExpr');
+      var valueEl = document.getElementById('calcValue');
+
+      var current = '0';     // número en edición
+      var prev = null;       // número previo
+      var op = null;         // operador actual
+      var justEvaluated = false;
+
+      function isFiniteNumber(n){ return typeof n === 'number' && Number.isFinite(n); }
+      function toNumber(s){
+        var n = Number(String(s || '').replace(',', '.'));
+        return Number.isFinite(n) ? n : NaN;
+      }
+      function formatNumber(n){
+        if (!isFiniteNumber(n)) return 'Error';
+        // Limitar decimales sin forzar formato
+        var s = String(n);
+        if (s.indexOf('e') >= 0) return s;
+        if (s.indexOf('.') >= 0) {
+          s = n.toFixed(10).replace(/\.?0+$/,'');
+        }
+        return s;
+      }
+      function setDisplay(){
+        var expr = '';
+        if (prev != null && op) expr = formatNumber(prev) + ' ' + op;
+        exprEl.textContent = expr;
+        valueEl.textContent = current === '' ? '0' : current;
+      }
+      function resetAll(){
+        current = '0';
+        prev = null;
+        op = null;
+        justEvaluated = false;
+        setDisplay();
+      }
+      function backspace(){
+        if (justEvaluated) return;
+        if (current.length <= 1) current = '0';
+        else current = current.slice(0, -1);
+        if (current === '-' || current === '') current = '0';
+        setDisplay();
+      }
+      function inputDigit(d){
+        if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
+        if (current === '0') current = String(d);
+        else current += String(d);
+        setDisplay();
+      }
+      function inputDot(){
+        if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
+        if (current.indexOf('.') >= 0) return;
+        current = current + '.';
+        setDisplay();
+      }
+      function applyOp(nextOp){
+        if (nextOp === '%' ) {
+          var n = toNumber(current);
+          if (!Number.isFinite(n)) { current = 'Error'; setDisplay(); return; }
+          current = formatNumber(n / 100);
+          justEvaluated = false;
+          setDisplay();
+          return;
+        }
+        var ncur = toNumber(current);
+        if (!Number.isFinite(ncur)) { current = 'Error'; setDisplay(); return; }
+        if (prev == null) {
+          prev = ncur;
+        } else if (op && !justEvaluated) {
+          var r = compute(prev, ncur, op);
+          if (!Number.isFinite(r)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
+          prev = r;
+          current = formatNumber(r);
+        }
+        op = nextOp;
+        justEvaluated = true;
+        current = formatNumber(prev);
+        setDisplay();
+      }
+      function compute(a,b,op){
+        switch(op){
+          case '+': return a + b;
+          case '-': return a - b;
+          case '*': return a * b;
+          case '/': return b === 0 ? NaN : a / b;
+          default: return b;
+        }
+      }
+      function evaluate(){
+        if (op == null || prev == null) return;
+        var ncur = toNumber(current);
+        if (!Number.isFinite(ncur)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
+        var r = compute(prev, ncur, op);
+        if (!Number.isFinite(r)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
+        current = formatNumber(r);
+        prev = null;
+        op = null;
+        justEvaluated = true;
+        setDisplay();
+      }
+
+      document.querySelectorAll('[data-act]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var act = btn.getAttribute('data-act');
+          var val = btn.getAttribute('data-val');
+          if (act === 'clear') return resetAll();
+          if (act === 'back') return backspace();
+          if (act === 'digit') return inputDigit(val);
+          if (act === 'dot') return inputDot();
+          if (act === 'op') return applyOp(val);
+          if (act === 'eq') return evaluate();
+        });
+      });
+
+      document.addEventListener('keydown', function(e){
+        var k = e.key;
+        if (k === 'Escape') { e.preventDefault(); resetAll(); return; }
+        if (k === 'Backspace') { e.preventDefault(); backspace(); return; }
+        if (k === 'Enter' || k === '=') { e.preventDefault(); evaluate(); return; }
+        if (k >= '0' && k <= '9') { e.preventDefault(); inputDigit(k); return; }
+        if (k === '.' || k === ',') { e.preventDefault(); inputDot(); return; }
+        if (k === '+' || k === '-' || k === '*' || k === '/') { e.preventDefault(); applyOp(k); return; }
+        if (k === '%') { e.preventDefault(); applyOp('%'); return; }
+      });
+
+      setDisplay();
+    })();
+  </script>
+</body>
+</html>
+

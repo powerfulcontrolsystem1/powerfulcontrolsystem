@@ -535,6 +535,12 @@ func queryRowSQLCompat(dbConn *sql.DB, query string, args ...interface{}) *sql.R
 	return dbConn.QueryRow(rebindCompatQuery(query), args...)
 }
 
+// QueryRowCompat expone QueryRow con rebind ? -> $n para PostgreSQL.
+// Se usa desde handlers legacy que aún construyen SQL con placeholders '?'.
+func QueryRowCompat(dbConn *sql.DB, query string, args ...interface{}) *sql.Row {
+	return queryRowSQLCompat(dbConn, query, args...)
+}
+
 func queryRowTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) *sql.Row {
 	return tx.QueryRow(rebindCompatQuery(query), args...)
 }

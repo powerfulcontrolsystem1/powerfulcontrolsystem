@@ -2,6 +2,34 @@
     - Archivos: `Pendiente Notas`, `backend/tools/inspect_admin_login/main.go`, `documentos/estructura_bd.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`
     - Descripcion: se eliminan credenciales en texto plano del backlog y de un tool interno; se corrige una seccion con escapes/encoding roto en estructura BD; se actualizan fragmentos de documentacion para reflejar PostgreSQL como runtime canonico y mejorar legibilidad (acentos, guiones, comillas).
 
+- 2026-04-26: chat y tareas + facturacion electronica ? firma y estabilidad.
+    - Archivos: `web/administrar_empresa/facturacion_electronica.html`, `backend/handlers/modulos_faltantes.go`, `backend/handlers/chat_tareas.go`, `backend/db/chat_tareas.go`, `backend/db/sql_compat.go`, `web/estilos.css`
+    - Descripcion: se expone en la UI de facturacion electronica la carga de firma DIAN (multipart) con guardado aislado por empresa en `web/uploads/dian/empresa_<id>/` y referencia segura; se corrige el modulo chat_y_tareas para funcionar en PostgreSQL (DDL compatible + SQL compat `? -> $n`), evitando fallos al crear citas/tareas; se compactan controles (botones en fila y estilos tipo tabla).
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: red social comercial ? feed compacto, multimedia y scroll infinito.
+    - Archivos: `web/red_social_comercial.html`, `web/administrar_empresa/publicar_red_social.html`, `backend/handlers/red_social.go`, `backend/db/red_social.go`
+    - Descripcion: la red social pública se renombra a **Red Social Comercial**, reduce tamaño visual de posts, agrega barra superior tipo portal, soporta YouTube (URL -> embed), carga incremental por `limit/offset` al hacer scroll y permite publicar fotos desde archivo (celular/PC) o por URL mediante `action=upload_media` guardando en `web/uploads/red_social/empresa_<id>/`.
+    - Verificacion: revisión estática HTML/JS + `go test ./...` en `backend/`.
+
+- 2026-04-26: administrar empresa ? impuestos (CO/EC/PA) + reporte de deuda estimada.
+    - Archivos: `web/administrar_empresa/impuestos.html`, `web/administrar_empresa/configuracion_menu.html`, `backend/handlers/impuestos.go`, `backend/db/impuestos.go`, `backend/main.go`, `backend/handlers/reportes.go`, `web/administrar_empresa/reportes_menu.html`, `web/administrar_empresa/reportes.html`
+    - Descripcion: se crea la pantalla `impuestos.html` para gestionar impuestos por empresa (habilitar/deshabilitar y tasa) con detección automática del país (CO/EC/PA) y bandera; se expone API `/api/empresa/impuestos` (context + upsert) con persistencia por empresa en `empresa_impuestos_config`; se agrega un dataset de reportes `operativo_impuestos_deuda` que suma `impuesto_total` de ventas pagadas por día y un acceso directo en el menú de reportes.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
+    - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/super_email_templates.go`, `documentos/historial_de_cambios`
+    - Descripcion: el correo de activación de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/código, valor original y código de asesor comercial cuando exista); las licencias de prueba (15 días) y la activación sin pago envían correo de bienvenida/activación usando un registro sintético en `pagos_epayco` para trazabilidad y evitar duplicados.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: seleccionar empresa ? licencias (mostrar vencidas) + renovar/cambiar.
+    - Archivos: `web/super/licencias.html`, `documentos/historial_de_cambios`
+    - Descripcion: en el modo historial (`scope=mine&con_empresa=1`) se muestran licencias asociadas a todas las empresas del administrador, incluso vencidas, y se agregan acciones directas **Renovar licencia** (abre `pagar_licencia.html` con `licencia_id`/`empresa_id`) y **Cambiar licencia** (abre `elegir_licencia.html` para seleccionar una nueva).
+
+- 2026-04-26: seleccionar empresa ? tarjetas desaparecían al volver (back).
+    - Archivos: `web/js/seleccionar_empresa.js`, `documentos/historial_de_cambios`
+    - Descripcion: se ajusta la restauración de vista para que al volver con "atrás/adelante" se priorice mostrar el panel de empresas y refrescar el render, evitando quedar atrapado en modo iframe (licencias/reportes) que ocultaba las tarjetas.
+
 - 2026-04-25: scripts ? config unificada Git+VPS (pcs_deployment) y publicar_git_y_vps.ps1.
     - Archivos: `scripts/pcs_deployment.local.ps1.example`, `scripts/publicar_git_y_vps.ps1`, `scripts/actualizar_repositorio.ps1`, `scripts/sync_to_vps.ps1`, `.gitignore`, `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: un solo archivo local opcional define URL de Git e IP/ruta/SSH del VPS; sync y actualizar repositorio lo leen; wrapper encadena push y despliegue.
@@ -14886,3 +14914,61 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/index.html
+
+2026-04-26: Reportes: envio por email + robustez exportaciones (global y empresa)
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/reportes.go
+- backend/handlers/reportes_globales.go
+- backend/handlers/reportes_email.go
+- web/super/reportes_globales.html
+- web/js/super_reportes_globales.js
+- web/administrar_empresa/reportes.html
+- documentos/historial_de_cambios
+
+2026-04-26: Estaciones: reparar carga/guardado de configuracion (checks Caja/YouTube/IA/Notas)
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/db/empresa_estacion_prefs.go
+- documentos/historial_de_cambios
+
+2026-04-26: Chat IA empresa: quitar historial del servidor del sidebar (solo boton arriba)
+PushStatus: PENDIENTE
+Archivos modificados:
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/estilos.css
+- documentos/historial_de_cambios
+
+2026-04-26: Backups empresariales: export multiformato + envio por correo + UI mejorada
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/backups_empresariales.go
+- backend/main.go
+- web/administrar_empresa/backups.html
+- web/estilos.css
+- documentos/historial_de_cambios
+
+2026-04-26: Venta publica (administrar empresa): reparar esquema PostgreSQL + compat SQL (config/paginas/items/ordenes)
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/db/venta_publica.go
+- documentos/historial_de_cambios
+
+2026-04-26: OnlyOffice: documentos por empresa + editor embebido + callback guardado + docker
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- backend/main.go
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/administrar_empresa.html
+- deploy/onlyoffice/docker-compose.yml
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+
+2026-04-26: Menú flotante: agregar Calculadora + nueva página calculadora.html
+PushStatus: PENDIENTE
+Archivos modificados:
+- web/menu.js
+- web/calculadora.html
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
