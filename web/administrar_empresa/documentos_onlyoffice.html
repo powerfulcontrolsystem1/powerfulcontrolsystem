@@ -12,6 +12,9 @@
     .oo-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surface-soft)}
     .oo-meta{display:flex;flex-direction:column;gap:2px}
     .oo-meta small{color:var(--muted)}
+    .oo-kind{display:inline-flex;align-items:center;gap:8px}
+    .oo-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-weight:800;font-size:0.82rem}
+    .oo-pill small{font-weight:800;color:var(--muted)}
     #editorFrame{width:100%;min-height:74vh;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden}
     @media(max-width:900px){.oo-grid{grid-template-columns:1fr} #editorFrame{min-height:68vh}}
   </style>
@@ -21,6 +24,12 @@
     <div class="empresa-section-header">
       <h1 class="empresa-section-title">Documentos</h1>
       <div class="empresa-inline-actions">
+        <select id="newDocType" class="form-input" style="max-width:240px">
+          <option value="word">Nuevo documento (Word)</option>
+          <option value="excel">Nueva hoja (Excel)</option>
+          <option value="powerpoint">Nueva presentación (PowerPoint)</option>
+        </select>
+        <button id="btnNewDoc" class="btn secondary" type="button">Crear</button>
         <input id="fileInput" class="form-input" type="file" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx">
         <button id="btnUpload" class="btn secondary" type="button">Subir</button>
         <button id="btnReload" class="btn" type="button">Actualizar</button>
@@ -57,6 +66,18 @@
       function txt(v){ return String(v==null?'':v).trim(); }
       function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
       function setMsg(m,e){ var el=document.getElementById('msg'); el.textContent=m||''; el.style.color=e?'#ef5350':''; }
+      function extOf(name){
+        var s = String(name||'');
+        var i = s.lastIndexOf('.');
+        return i >= 0 ? s.slice(i+1).toLowerCase() : '';
+      }
+      function onlyOfficeKindLabelByExt(ext){
+        ext = String(ext||'').toLowerCase();
+        if(ext === 'doc' || ext === 'docx' || ext === 'odt' || ext === 'rtf' || ext === 'txt') return 'Documento (Word)';
+        if(ext === 'xls' || ext === 'xlsx' || ext === 'ods' || ext === 'csv') return 'Hoja (Excel)';
+        if(ext === 'ppt' || ext === 'pptx' || ext === 'odp') return 'Presentación (PowerPoint)';
+        return 'Documento';
+      }
 
       var empresaId = n(q('empresa_id')||q('id'));
       if(!empresaId){
@@ -90,14 +111,19 @@
           return;
         }
         host.innerHTML = items.map(function(it){
+          var ext = txt(it.ext) || extOf(it.name);
+          var kind = onlyOfficeKindLabelByExt(ext);
           return ''+
             '<div class="oo-item">'+
               '<div class="oo-meta">'+
                 '<strong>'+esc(it.name)+'</strong>'+
-                '<small>'+esc(it.ext||'')+' · '+esc(it.updated_at||'')+'</small>'+
+                '<div class="oo-kind">'+
+                  '<span class="oo-pill">'+esc(kind)+'</span>'+
+                  '<small>'+esc(ext||'')+' · '+esc(it.updated_at||'')+'</small>'+
+                '</div>'+
               '</div>'+
               '<div class="empresa-inline-actions" style="min-width:auto">'+
-                '<button class="btn secondary" data-open="'+esc(it.name)+'">Abrir</button>'+
+                '<button class="btn secondary" data-open="'+esc(it.name)+'" data-kind="'+esc(kind)+'">Abrir ('+esc(kind)+')</button>'+
                 '<a class="btn secondary" href="/api/empresa/documentos?empresa_id='+encodeURIComponent(empresaId)+'&action=editor_config&mode=view&file='+encodeURIComponent(it.name)+'" target="_blank" rel="noopener">Config</a>'+
               '</div>'+
             '</div>';
@@ -152,11 +178,39 @@
         await loadList();
       }
 
+      async function createNew(tipo, defaultName){
+        tipo = txt(tipo);
+        var suggested = txt(defaultName);
+        var name = '';
+        try {
+          name = txt(window.prompt('Nombre del archivo (opcional):', suggested));
+        } catch (e) {
+          name = suggested;
+        }
+        setMsg('Creando documento...', false);
+        var url = buildBase('create').toString();
+        var payload = { tipo: tipo };
+        if(name) payload.nombre = name;
+        var data = await api(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        await loadList();
+        if(data && data.name){
+          openDoc(data.name).catch(function(e){ setMsg(e.message||String(e), true); });
+        }
+      }
+
       document.getElementById('btnReload').addEventListener('click', function(){
         loadList().catch(function(e){ setMsg(e.message||String(e), true); });
       });
       document.getElementById('btnUpload').addEventListener('click', function(){
         upload().catch(function(e){ setMsg(e.message||String(e), true); });
+      });
+      document.getElementById('btnNewDoc').addEventListener('click', function(){
+        var sel = document.getElementById('newDocType');
+        var tipo = sel ? txt(sel.value) : 'word';
+        var suggested = 'Documento.docx';
+        if (tipo === 'excel') suggested = 'Hoja.xlsx';
+        if (tipo === 'powerpoint') suggested = 'Presentacion.pptx';
+        createNew(tipo, suggested).catch(function(e){ setMsg(e.message||String(e), true); });
       });
 
       if(!empresaId){

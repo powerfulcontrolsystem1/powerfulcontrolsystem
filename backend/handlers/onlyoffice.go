@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"archive/zip"
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
@@ -61,6 +63,11 @@ type onlyOfficeCallbackPayload struct {
 	URL    string `json:"url"`
 	Key    string `json:"key"`
 	Error  int    `json:"error"`
+}
+
+type onlyOfficeCreateDocRequest struct {
+	Tipo   string `json:"tipo"`             // word|excel|powerpoint|docx|xlsx|pptx
+	Nombre string `json:"nombre,omitempty"` // opcional, sin path
 }
 
 func onlyOfficeDataRoot() string {
@@ -251,8 +258,179 @@ func onlyOfficeMIMEByExt(name string) string {
 	}
 }
 
+func onlyOfficeZipBytes(files map[string]string) ([]byte, error) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for name, content := range files {
+		w, err := zw.Create(name)
+		if err != nil {
+			_ = zw.Close()
+			return nil, err
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			_ = zw.Close()
+			return nil, err
+		}
+	}
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func onlyOfficeBuildEmptyDOCX() ([]byte, error) {
+	// OOXML mínimo para un documento vacío.
+	return onlyOfficeZipBytes(map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`,
+		"word/document.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t></w:t></w:r></w:p>
+    <w:sectPr/>
+  </w:body>
+</w:document>`,
+	})
+}
+
+func onlyOfficeBuildEmptyXLSX() ([]byte, error) {
+	// OOXML mínimo con una hoja Sheet1.
+	return onlyOfficeZipBytes(map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`,
+		"xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`,
+		"xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`,
+		"xl/worksheets/sheet1.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData/>
+</worksheet>`,
+	})
+}
+
+func onlyOfficeBuildEmptyPPTX() ([]byte, error) {
+	// OOXML mínimo con una diapositiva.
+	return onlyOfficeZipBytes(map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>`,
+		"ppt/slides/slide1.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+ xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+  </p:cSld>
+</p:sld>`,
+	})
+}
+
+func onlyOfficeNormalizeCreateTipo(tipo string) (ext string) {
+	t := strings.ToLower(strings.TrimSpace(tipo))
+	switch t {
+	case "word", "docx", "documento", "doc":
+		return "docx"
+	case "excel", "xlsx", "hoja", "sheet", "xls":
+		return "xlsx"
+	case "powerpoint", "pptx", "presentacion", "presentación", "ppt":
+		return "pptx"
+	default:
+		return ""
+	}
+}
+
+func onlyOfficeDefaultNameByExt(ext string) string {
+	ts := time.Now().Format("20060102_150405")
+	switch ext {
+	case "docx":
+		return "Documento_" + ts + ".docx"
+	case "xlsx":
+		return "Hoja_" + ts + ".xlsx"
+	case "pptx":
+		return "Presentacion_" + ts + ".pptx"
+	default:
+		return "Documento_" + ts
+	}
+}
+
+func onlyOfficeEnsureUniqueName(empresaID int64, name string) (string, error) {
+	base, err := onlyOfficeSafeBaseName(name)
+	if err != nil {
+		return "", err
+	}
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	tryName := base
+	for i := 0; i < 200; i++ {
+		full, err := onlyOfficeJoinEmpresaFile(empresaID, tryName)
+		if err != nil {
+			return "", err
+		}
+		_, statErr := os.Stat(full)
+		if statErr != nil && errors.Is(statErr, os.ErrNotExist) {
+			return tryName, nil
+		}
+		tryName = fmt.Sprintf("%s_%d%s", stem, i+1, ext)
+	}
+	return "", fmt.Errorf("no se pudo reservar un nombre único")
+}
+
 func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
+			http.Error(w, "OnlyOffice está desactivado por super administrador.", http.StatusServiceUnavailable)
+			return
+		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -343,6 +521,66 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name})
 			return
 
+		case "create":
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			var req onlyOfficeCreateDocRequest
+			body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+			if len(bytes.TrimSpace(body)) > 0 {
+				_ = json.Unmarshal(body, &req)
+			}
+			ext := onlyOfficeNormalizeCreateTipo(req.Tipo)
+			if ext == "" {
+				http.Error(w, "tipo invalido (word/excel/powerpoint)", http.StatusBadRequest)
+				return
+			}
+			name := strings.TrimSpace(req.Nombre)
+			if name == "" {
+				name = onlyOfficeDefaultNameByExt(ext)
+			}
+			if filepath.Ext(name) == "" {
+				name = name + "." + ext
+			}
+			// Forzar extensión correcta
+			if strings.ToLower(strings.TrimPrefix(filepath.Ext(name), ".")) != ext {
+				name = strings.TrimSuffix(name, filepath.Ext(name)) + "." + ext
+			}
+			name, err = onlyOfficeEnsureUniqueName(empresaID, name)
+			if err != nil {
+				http.Error(w, "nombre de archivo invalido", http.StatusBadRequest)
+				return
+			}
+			full, err := onlyOfficeJoinEmpresaFile(empresaID, name)
+			if err != nil {
+				http.Error(w, "ruta invalida", http.StatusBadRequest)
+				return
+			}
+			var fileBytes []byte
+			switch ext {
+			case "docx":
+				fileBytes, err = onlyOfficeBuildEmptyDOCX()
+			case "xlsx":
+				fileBytes, err = onlyOfficeBuildEmptyXLSX()
+			case "pptx":
+				fileBytes, err = onlyOfficeBuildEmptyPPTX()
+			default:
+				err = fmt.Errorf("tipo no soportado")
+			}
+			if err != nil {
+				http.Error(w, "no se pudo crear documento", http.StatusInternalServerError)
+				return
+			}
+			tmp := full + ".new"
+			if writeErr := os.WriteFile(tmp, fileBytes, 0640); writeErr != nil {
+				http.Error(w, "no se pudo escribir el archivo", http.StatusInternalServerError)
+				return
+			}
+			_ = os.Rename(tmp, full)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name})
+			return
+
 		case "editor_config":
 			if r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -372,8 +610,8 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			dsURL, _ := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyDSURL)
-			jwtSecret, _ := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
+			dsURL, _, _ := onlyOfficeResolveDocumentServerURL(dbSuper)
+			jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
 			dsURL = strings.TrimRight(strings.TrimSpace(dsURL), "/")
 			if dsURL == "" {
 				http.Error(w, "OnlyOffice Document Server no configurado (onlyoffice.document_server_url)", http.StatusBadRequest)
@@ -470,6 +708,10 @@ func urlQueryEscape(v string) string {
 // Endpoint público: sirve el archivo a OnlyOffice (token temporal).
 func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
+			http.Error(w, "OnlyOffice disabled", http.StatusServiceUnavailable)
+			return
+		}
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -478,7 +720,7 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "db_super no disponible", http.StatusInternalServerError)
 			return
 		}
-		jwtSecret, _ := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
+		jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
 		token := strings.TrimSpace(r.URL.Query().Get("token"))
 		claims, err := onlyOfficeVerifyToken(jwtSecret, token)
 		if err != nil {
@@ -508,6 +750,10 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 // Endpoint público: callback de OnlyOffice (guardado).
 func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
+			http.Error(w, "OnlyOffice disabled", http.StatusServiceUnavailable)
+			return
+		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -516,7 +762,7 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "db_super no disponible", http.StatusInternalServerError)
 			return
 		}
-		jwtSecret, _ := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
+		jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
 		token := strings.TrimSpace(r.URL.Query().Get("token"))
 		claims, err := onlyOfficeVerifyToken(jwtSecret, token)
 		if err != nil {

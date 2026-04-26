@@ -81,9 +81,12 @@
 
 - Actualizacion 2026-04-26: OnlyOffice Document Server (documentos por empresa)
 	- `backend/handlers/onlyoffice.go` : endpoints de documentos por empresa + configuración OnlyOffice (JWT HS256) + callback de guardado; sirve archivos con token temporal sin cruce entre empresas.
+	- `backend/handlers/onlyoffice_super_config.go` : configuración super (switch enabled + URL + jwt_secret cifrado) y prueba de conexión `/healthcheck`.
 	- `web/administrar_empresa/documentos_onlyoffice.html` : UI para listar/subir documentos y abrir editor OnlyOffice embebido.
 	- `deploy/onlyoffice/docker-compose.yml` : despliegue de OnlyOffice Document Server en Docker con JWT habilitado.
 	- `web/administrar_empresa.html` : enlace de menú “Documentos (OnlyOffice)”.
+	- `web/super/configuracion_avanzada.html` : tarjeta para activar/desactivar OnlyOffice y configurar Document Server/JWT.
+	- `scripts/deploy_onlyoffice_to_vps.ps1` : script para desplegar OnlyOffice en VPS (Docker compose) con JWT.
 
 - Actualizacion 2026-04-26: Menú flotante: Calculadora
 	- `web/menu.js` : agrega enlace “Calculadora” al menú flotante.

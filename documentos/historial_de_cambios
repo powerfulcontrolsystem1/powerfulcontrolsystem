@@ -14973,6 +14973,39 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 
+2026-04-26: OnlyOffice (UI): botones Nuevo Word/Excel/Presentación (crear .docx/.xlsx/.pptx)
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- web/administrar_empresa/documentos_onlyoffice.html
+- documentos/historial_de_cambios
+
+2026-04-26: OnlyOffice (UI): compactar creación en selector “Nuevo documento” + botón Crear
+PushStatus: PENDIENTE
+Archivos modificados:
+- web/administrar_empresa/documentos_onlyoffice.html
+- documentos/historial_de_cambios
+
+2026-04-26: OnlyOffice en VPS: switch super (enabled por defecto) + config + script deploy docker
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/onlyoffice_super_config.go
+- backend/handlers/super_config_backup_handlers.go
+- backend/handlers/onlyoffice.go
+- backend/main.go
+- web/super/configuracion_avanzada.html
+- scripts/deploy_onlyoffice_to_vps.ps1
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+
+2026-04-26: OnlyOffice VPS (automatización): generar JWT secret automáticamente y persistir en DB desde ENV
+PushStatus: PENDIENTE
+Archivos modificados:
+- backend/handlers/onlyoffice_super_config.go
+- backend/handlers/onlyoffice.go
+- scripts/deploy_onlyoffice_to_vps.ps1
+- documentos/historial_de_cambios
+
 2026-04-26: Actualizacion automatica desde script: anadir/actualizar archivos
 PushStatus: OK
 Archivos modificados:

@@ -195,6 +195,45 @@
       <div id="empresaLimitacionesMsg" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="onlyofficeConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"></rect><path d="M7 8h10M7 12h10M7 16h6"></path></svg>
+        OnlyOffice Document Server
+      </h2>
+      <p class="form-help">Activa/desactiva OnlyOffice para todas las empresas y configura el Document Server (recomendado en VPS). Por defecto queda <strong>activado</strong>.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar OnlyOffice</label>
+          <label class="mode-switch-row" for="onlyofficeEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="onlyofficeEnabledToggle" type="checkbox" role="switch" aria-label="Activar OnlyOffice">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="onlyofficeEnabledHelp" class="form-help">Si está desactivado, el módulo de documentos no permitirá abrir ni guardar archivos.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="onlyofficeDSUrl">URL Document Server</label>
+          <input id="onlyofficeDSUrl" class="form-input" type="text" placeholder="https://onlyoffice.tudominio.com">
+          <div id="onlyofficeDSUrlHelp" class="form-help">Ejemplo recomendado: subdominio HTTPS. También sirve con puerto: https://tudominio.com:8088</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="onlyofficeJWTSecret">JWT Secret (secreta)</label>
+          <input id="onlyofficeJWTSecret" class="form-input" type="password" placeholder="********">
+          <div id="onlyofficeJWTHelp" class="form-help">Debe coincidir con <code>ONLYOFFICE_JWT_SECRET</code> del contenedor. Se guarda cifrada.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="onlyofficeSaveBtn" type="button" class="btn">Guardar OnlyOffice</button>
+        <button id="onlyofficeTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
+      </div>
+      <div id="onlyofficeMsg" class="form-help"></div>
+    </section>
+
     <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
@@ -928,11 +967,109 @@
         }
       }
 
+      async function loadOnlyOfficeConfig(){
+        const msgEl = document.getElementById('onlyofficeMsg');
+        const toggleEl = document.getElementById('onlyofficeEnabledToggle');
+        const dsEl = document.getElementById('onlyofficeDSUrl');
+        const secretEl = document.getElementById('onlyofficeJWTSecret');
+        if (!toggleEl || !dsEl || !secretEl) return;
+        if (msgEl) msgEl.innerText = 'Cargando OnlyOffice...';
+        try {
+          const res = await fetch('/super/api/config/onlyoffice', { method: 'GET', credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) {
+            if (msgEl) msgEl.innerText = 'Error cargando OnlyOffice: ' + (raw || res.status);
+            return;
+          }
+          const data = raw ? JSON.parse(raw) : {};
+          toggleEl.checked = !!data.enabled;
+          dsEl.value = data.document_server_url || '';
+          // No escribir secreto real en UI; solo limpiar el input para que el usuario escriba si lo desea.
+          secretEl.value = '';
+          if (msgEl) {
+            const parts = [];
+            parts.push(data.enabled ? 'OnlyOffice activo.' : 'OnlyOffice desactivado.');
+            if (!data.document_server_url_set) parts.push('Falta URL del Document Server.');
+            if (!data.jwt_secret_set) parts.push('Falta JWT Secret.');
+            if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) parts.push('ERROR: cifrado no disponible (CONFIG_ENC_KEY).');
+            msgEl.innerText = parts.join(' ');
+          }
+        } catch (err) {
+          if (msgEl) msgEl.innerText = 'Error cargando OnlyOffice: ' + (err.message || err);
+        }
+      }
+
+      async function saveOnlyOfficeConfig(){
+        const msgEl = document.getElementById('onlyofficeMsg');
+        const btn = document.getElementById('onlyofficeSaveBtn');
+        const toggleEl = document.getElementById('onlyofficeEnabledToggle');
+        const dsEl = document.getElementById('onlyofficeDSUrl');
+        const secretEl = document.getElementById('onlyofficeJWTSecret');
+        if (!btn || !toggleEl || !dsEl || !secretEl) return;
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+        try {
+          const payload = {
+            enabled: !!toggleEl.checked,
+            document_server_url: String(dsEl.value || '').trim(),
+            jwt_secret: String(secretEl.value || '').trim()
+          };
+          // Si el usuario no escribe secreto, no lo enviamos (para no resetearlo).
+          if (!payload.jwt_secret) delete payload.jwt_secret;
+          if (!payload.document_server_url) delete payload.document_server_url;
+          const res = await fetch('/super/api/config/onlyoffice', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          const raw = await res.text();
+          if (!res.ok) {
+            if (msgEl) msgEl.innerText = 'Error guardando OnlyOffice: ' + (raw || res.status);
+            return;
+          }
+          if (msgEl) msgEl.innerText = 'OnlyOffice guardado correctamente.';
+          await loadOnlyOfficeConfig();
+        } catch (err) {
+          if (msgEl) msgEl.innerText = 'Error guardando OnlyOffice: ' + (err.message || err);
+        } finally {
+          btn.disabled = false;
+          btn.innerText = 'Guardar OnlyOffice';
+        }
+      }
+
+      async function testOnlyOfficeConfig(){
+        const msgEl = document.getElementById('onlyofficeMsg');
+        const btn = document.getElementById('onlyofficeTestBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = 'Probando...';
+        }
+        try {
+          const res = await fetch('/super/api/config/onlyoffice?action=test', { method: 'POST', credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) {
+            if (msgEl) msgEl.innerText = 'Error probando OnlyOffice: ' + (raw || res.status);
+            return;
+          }
+          const data = raw ? JSON.parse(raw) : {};
+          if (msgEl) msgEl.innerText = data.ok ? ('OK: OnlyOffice responde (' + (data.health_url || '') + ').') : 'OnlyOffice no respondió OK.';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = 'Error probando OnlyOffice: ' + (err.message || err);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Probar conexión';
+          }
+        }
+      }
+
       async function load(){
         await loadRustDeskSshConfig();
         await loadRustDeskCard();
         await loadEmpresaLimitacionesConfig();
         await loadMantenimientoConfig();
+        await loadOnlyOfficeConfig();
         // cargar estado Wompi
         try {
           const rw = await fetch('/super/api/config/wompi');
@@ -2063,6 +2200,8 @@
       document.getElementById('rustdeskProbeBtn').addEventListener('click', probeRustDeskCard);
       document.getElementById('rustdeskSaveSshBtn').addEventListener('click', saveRustDeskSshConfig);
       document.getElementById('saveEmpresaLimitacionesBtn').addEventListener('click', saveEmpresaLimitacionesConfig);
+      document.getElementById('onlyofficeSaveBtn').addEventListener('click', saveOnlyOfficeConfig);
+      document.getElementById('onlyofficeTestBtn').addEventListener('click', testOnlyOfficeConfig);
       document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
         if (rustdeskActiveToggleBusy) return;
         toggleRustDeskService(this.checked ? 'start' : 'stop');
@@ -2093,6 +2232,9 @@
 		refreshRecaptchaEnabledHint();
 		document.getElementById('saveRecaptchaBtn').disabled = false;
 	  });
+      document.getElementById('onlyofficeEnabledToggle').addEventListener('change', function(){
+        document.getElementById('onlyofficeSaveBtn').disabled = false;
+      });
       document.getElementById('recaptchaSiteKey').addEventListener('input', function(){
   		document.getElementById('saveRecaptchaBtn').disabled = false;
       });

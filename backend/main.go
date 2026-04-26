@@ -869,6 +869,7 @@ func main() {
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
 	// Endpoint para configuración de modo mantenimiento global
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema
