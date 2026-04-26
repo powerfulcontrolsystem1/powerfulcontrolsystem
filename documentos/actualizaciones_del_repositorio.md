@@ -981,3 +981,18 @@ Archivos modificados:
 - backend/handlers/onlyoffice_super_config.go
 - documentos/historial_de_cambios
 - web/administrar_empresa/documentos_onlyoffice.html
+
+2026-04-26 07:06:24 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 4a5fa3a; PushStatus: OK
+Archivos modificados:
+- backend/db/nextcloud.go
+- backend/handlers/nextcloud_empresa.go
+- backend/handlers/nextcloud_super_config.go
+- backend/handlers/super_limitaciones_empresa.go
+- backend/handlers/super_servidores_handlers.go
+- backend/main.go
+- deploy/nextcloud/docker-compose.yml
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/nextcloud.html
+- web/super/configuracion_avanzada.html
