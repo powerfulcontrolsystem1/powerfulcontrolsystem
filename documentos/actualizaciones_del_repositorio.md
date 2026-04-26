@@ -906,3 +906,45 @@ Archivos modificados:
 2026-04-26 02:25:05 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 8a98d87; PushStatus: OK
 Archivos modificados:
 - web/index.html
+
+2026-04-26 04:54:58 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b448c11; PushStatus: OK
+Archivos modificados:
+- backend/db/chat_tareas.go
+- backend/db/empresa_estacion_prefs.go
+- backend/db/impuestos.go
+- backend/db/red_social.go
+- backend/db/sql_compat.go
+- backend/db/venta_publica.go
+- backend/handlers/backups_empresariales.go
+- backend/handlers/chat_tareas.go
+- backend/handlers/impuestos.go
+- backend/handlers/onlyoffice.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/red_social.go
+- backend/handlers/reportes.go
+- backend/handlers/reportes_email.go
+- backend/handlers/reportes_globales.go
+- backend/handlers/super_email_templates.go
+- backend/main.go
+- deploy/onlyoffice/docker-compose.yml
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/backups.html
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/impuestos.html
+- web/administrar_empresa/publicar_red_social.html
+- web/administrar_empresa/reportes.html
+- web/administrar_empresa/reportes_menu.html
+- web/calculadora.html
+- web/estilos.css
+- web/js/seleccionar_empresa.js
+- web/js/super_reportes_globales.js
+- web/menu.js
+- web/red_social_comercial.html
+- web/seleccionar_empresa.html
+- web/super/licencias.html
+- web/super/reportes_globales.html
