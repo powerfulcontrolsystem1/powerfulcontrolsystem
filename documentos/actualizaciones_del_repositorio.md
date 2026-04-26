@@ -965,3 +965,12 @@ Archivos modificados:
 Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/configuracion_de_estaciones.html
+
+2026-04-26 06:25:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: fc0b3d6; PushStatus: OK
+Archivos modificados:
+- backend/handlers/super_servidores_handlers.go
+- backend/handlers/super_vps_processes.go
+- backend/main.go
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/super/metricas_de_trafico_general.html
