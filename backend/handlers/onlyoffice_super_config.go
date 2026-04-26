@@ -39,9 +39,22 @@ func isOnlyOfficeEnabled(dbSuper *sql.DB) bool {
 
 func onlyOfficeResolveJWTSecret(dbSuper *sql.DB) (string, bool, error) {
 	// Prioridad:
-	// 1) DB (cifrado)
-	// 2) ENV ONLYOFFICE_JWT_SECRET (para automatizar despliegue VPS)
-	// Si viene de ENV y encryption está disponible, se persiste en DB en el primer uso.
+	// 1) ENV ONLYOFFICE_JWT_SECRET (para automatizar despliegue VPS)
+	// 2) DB (cifrado)
+	// Si viene de ENV y encryption está disponible, se persiste/actualiza en DB para evitar desalineación (DS vs backend).
+	env := strings.TrimSpace(os.Getenv("ONLYOFFICE_JWT_SECRET"))
+	if env != "" {
+		if dbSuper != nil && utils.EncryptionAvailable() {
+			dbVal, err := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
+			if err != nil || strings.TrimSpace(dbVal) == "" || strings.TrimSpace(dbVal) != env {
+				if encVal, encErr := utils.EncryptString(env); encErr == nil {
+					_ = dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyJWT, encVal, true)
+				}
+			}
+		}
+		return env, false, nil
+	}
+
 	if dbSuper != nil {
 		v, err := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
 		if err == nil && strings.TrimSpace(v) != "" {
@@ -49,18 +62,7 @@ func onlyOfficeResolveJWTSecret(dbSuper *sql.DB) (string, bool, error) {
 		}
 	}
 
-	env := strings.TrimSpace(os.Getenv("ONLYOFFICE_JWT_SECRET"))
-	if env == "" {
-		return "", false, nil
-	}
-
-	if dbSuper != nil && utils.EncryptionAvailable() {
-		encVal, err := utils.EncryptString(env)
-		if err == nil {
-			_ = dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyJWT, encVal, true)
-		}
-	}
-	return env, false, nil
+	return "", false, nil
 }
 
 func onlyOfficeResolveDocumentServerURL(dbSuper *sql.DB) (string, bool, error) {

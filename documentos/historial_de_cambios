@@ -22,6 +22,11 @@
     - Descripcion: en métricas del super admin se agrega una tabla de procesos del VPS ordenada por memoria (RSS desc) vía `/super/api/vps/procesos`; además se amplía el catálogo de servicios para mostrar RustDesk/OnlyOffice/Backend/Nginx/PostgreSQL con consumo aproximado; se agrega el acceso a `Impuestos` en el menú principal de `Administrar Empresa`.
     - Verificacion: `go test ./...` en `backend/`.
 
+- 2026-04-26: OnlyOffice ? editor full-width, logos y JWT estable (guardar Excel/Word/PPT).
+    - Archivos: `web/administrar_empresa/documentos_onlyoffice.html`, `backend/handlers/onlyoffice.go`, `backend/handlers/onlyoffice_super_config.go`, `documentos/historial_de_cambios`
+    - Descripcion: el editor de OnlyOffice ahora se muestra debajo del listado de archivos ocupando todo el ancho; se agregan íconos tipo Word/Excel/PowerPoint en la lista; se corrige la firma/compatibilidad de token agregando `documentType`, duplicando `token` en `document/editorConfig` y priorizando `ONLYOFFICE_JWT_SECRET` (ENV) para evitar desalineación con el Document Server; el callback descarga el archivo editado usando `Authorization: Bearer <JWT>` cuando aplica, asegurando que los cambios se guarden en `/data/empresas/<empresa_id>/documentos/`.
+    - Verificacion: `go test ./...` en `backend/`.
+
 - 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
     - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/super_email_templates.go`, `documentos/historial_de_cambios`
     - Descripcion: el correo de activación de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/código, valor original y código de asesor comercial cuando exista); las licencias de prueba (15 días) y la activación sin pago envían correo de bienvenida/activación usando un registro sintético en `pagos_epayco` para trazabilidad y evitar duplicados.

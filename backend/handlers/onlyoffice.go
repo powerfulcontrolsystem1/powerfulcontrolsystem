@@ -238,6 +238,20 @@ func onlyOfficeGuessFileType(name string) string {
 	}
 }
 
+func onlyOfficeDocumentTypeByExt(name string) string {
+	ext := strings.ToLower(filepath.Ext(name))
+	switch ext {
+	case ".doc", ".docx", ".odt", ".rtf", ".txt":
+		return "word"
+	case ".xls", ".xlsx", ".ods", ".csv":
+		return "cell"
+	case ".ppt", ".pptx", ".odp":
+		return "slide"
+	default:
+		return "word"
+	}
+}
+
 func onlyOfficeMIMEByExt(name string) string {
 	ext := strings.ToLower(filepath.Ext(name))
 	switch ext {
@@ -654,6 +668,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			docKey := fmt.Sprintf("pcs-%x", sum[:16])
 
 			ooCfg := map[string]any{
+				"documentType": onlyOfficeDocumentTypeByExt(base),
 				"document": map[string]any{
 					"fileType": onlyOfficeGuessFileType(base),
 					"key":      docKey,
@@ -686,6 +701,12 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			ooCfg["token"] = jwt
+			if doc, ok := ooCfg["document"].(map[string]any); ok {
+				doc["token"] = jwt
+			}
+			if ed, ok := ooCfg["editorConfig"].(map[string]any); ok {
+				ed["token"] = jwt
+			}
 			writeJSON(w, http.StatusOK, map[string]any{
 				"ok":            true,
 				"empresa_id":    empresaID,
@@ -800,8 +821,14 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 		// Descargar el archivo desde OnlyOffice y reemplazar el local (atomic).
 		client := &http.Client{Timeout: 45 * time.Second}
 		req, _ := http.NewRequest(http.MethodGet, strings.TrimSpace(payload.URL), nil)
-		// Algunos deployments requieren el JWT como header. (Best-effort)
-		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
+		// Algunos deployments requieren JWT en header para descargas desde Document Server.
+		if jwtSecret != "" {
+			if dlJWT, err := onlyOfficeJWTSignHS256(jwtSecret, map[string]any{
+				"payload": map[string]any{"url": strings.TrimSpace(payload.URL)},
+			}); err == nil && strings.TrimSpace(dlJWT) != "" {
+				req.Header.Set("Authorization", "Bearer "+dlJWT)
+			}
+		}
 
 		res, err := client.Do(req)
 		if err != nil || res == nil {
