@@ -112,7 +112,7 @@ que cada empresa tenga una cantidad de espacio disponible, para su base de datos
 - reparar los textos los titulos
 - reparar los cambios de modo oscuro a modo claro, en alguas paginas los textos ty demas no constranstan ocn el color. por ejemplo en modo claro algunas paginas tienen el texto de color blanco
 
-- repara los textos de todo el proycto que ahora cuando hay tilde pone un caracter raro,  repara los modo oscuro y claro , revisa todas las pagnas, agunas el texto no cambia de color, y ahora  repara los pagos con epayco,,  sale error al pagar licencia, luego comruebas todas las funcionalidades del sistema a traves de motel calipso. usuario powerfulcontrolsystem@gmail.com clave:Azz19861986#.  agrega priductos   agrega provedores, agrega bodegas ,  has cierres de cajas, has ventas, imprime factura,  agrega usuarios , loguea usuarios de las empresa, asignale roles, testealos, testea todas las funciones y modulos en la empresa motel calipso, que todo qued eguardado en la base de datos que yo pueda, ver reportes, ver todos los documentos,  pagos, compras etc, de estremo a estremo todo tiene que funcionar bien,  agrega una publicacion con foto nueva en la red social comercial etc.
+- repara los textos de todo el proycto que ahora cuando hay tilde pone un caracter raro, repara los modo oscuro y claro, revisa todas las paginas (contraste). Repara los pagos con epayco (error al pagar licencia). Luego compruebas funcionalidades end-to-end con una empresa de prueba (credenciales: **NO documentar aquí**; usar variables de entorno/gestor seguro).
 
 
 - habilitar la clave ssh en conf avanzada
@@ -122,8 +122,8 @@ que cada empresa tenga una cantidad de espacio disponible, para su base de datos
 todo es una venta, pero todo  no es una factura electronica. modulo chan.
 - colocar modulo de limitaciones por empresa en restdesk y en consultas IA
 
-apikey de open ai 
-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
+apikey de open ai
+[REDACTED] (no guardar credenciales en este archivo; usar `env:` o un gestor seguro)
 
 - mofigivar el panel de super administrador para que muetre ademas de las licencias activas, tambien la cantidad de empresas registradas, colocas un boton que muestre las empresas que no muestran uso del sistema, que ningun usuario ha hecho login, y colocas una casilla para elegir los dias, los predeterminas en 180 dias, este valor quedara guardado en la base de datos
 

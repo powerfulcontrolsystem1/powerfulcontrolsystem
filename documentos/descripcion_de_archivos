@@ -8335,15 +8335,16 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 
 
 
-- backend/main.go: Código fuente principal del backend en Go; sirve archivos estáticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a la base de datos SQLite.
+- backend/main.go: Código fuente principal del backend en Go; sirve archivos estáticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a PostgreSQL (bases `pcs_superadministrador` y `pcs_empresas`) en VPS o local según DSN/variables.
 - backend/go.mod, backend/go.sum: Módulos y dependencias de Go del backend (nota: la política del proyecto prefiere Go stdlib; cualquier dependencia debe ser autorizada).
-- backend/.env.example: Plantilla de variables de entorno para el backend (ej. `DB_PATH`, `PORT`, `GOOGLE_CLIENT_ID`).
-- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicaci�n. Los archivos empresas.db y superadministrador.db deben residir aqu�. Se eliminaron duplicados fuera de ackend/.\r\n- backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecución).
+- backend/.env.example: Plantilla de variables de entorno para el backend (ej. `DB_EMPRESAS_DSN`, `DB_SUPERADMIN_DSN`, `PORT`, `GOOGLE_CLIENT_ID`).
+- backend/db/: Carpeta de acceso a datos (consultas, helpers y regularización ligera de esquema) para PostgreSQL. No contiene bases SQLite operativas en el runtime vigente.
+- backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecución).
 - backend/server.exe, backend/server.exe~: Binarios generados por compilación local; el `~` indica una copia temporal. No incluir binarios en el control de versiones por defecto.
 
 - backend/handlers/: Carpeta para controladores HTTP y manejo de rutas (por ejemplo `handlers.go` o archivos por dominio). Contiene la lógica que responde a las rutas del servidor.
 - backend/auth/: Carpeta para lógica de autenticación y autorización (intercambio de tokens, validación, utilidades relacionadas con OAuth). Aquí van archivos como `auth.go`.
-- backend/db/: Carpeta para acceso a la base de datos y abstracciones (migraciones ligeras, consultas, upsert de usuarios). Ej.: `db.go`.
+- backend/db/: Carpeta para acceso a la base de datos y abstracciones (migraciones ligeras, consultas, upsert). Ej.: `db.go`.
 - backend/utils/: Carpeta para utilidades y helpers reutilizables (logging middleware, funciones auxiliares). Ej.: `utils.go`.
 
 Nota: La regla del agente obliga a que cada nuevo archivo creado en el repositorio sea añadido y descrito en este documento. Si se mueven archivos a estas subcarpetas, documentar el cambio en `documentos/historial_de_cambios`.
@@ -8379,7 +8380,7 @@ Notas:
 Fecha de creación: 2026-03-26
 
 
-- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicaci�n. Los archivos empresas.db y superadministrador.db deben residir aqu�. Se eliminaron duplicados fuera de backend/.
+- backend/db/: Carpeta de acceso a datos (PostgreSQL). SQLite queda retirado del runtime operativo.
 
  - UI/menu flotante: Menú flotante en esquina superior derecha disponible en las páginas principales; contiene enlaces a `Portal`, `Ayuda` y un enlace de sesión que muestra dinámicamente "Iniciar sesión" o "Cerrar sesión" según el estado de la cookie `session_token`. Estilos en `web/estilos.css`.
 
@@ -8519,9 +8520,11 @@ Actualizacion 2026-04-17: Facturacion DIAN fase 1 base
 	- agrega cobertura para la nueva fase base DIAN (`TestEmpresaDIANColombiaHandlerGenerarXMLUBLBase`, `TestEmpresaDIANColombiaHandlerFirmarXMLXAdESBase`, `TestEmpresaDIANColombiaHandlerDiagnosticoOficial`).
 - `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto` y `documentos/diagramas/estructura_del_codigo.md`:
 	- sincronizados para reflejar las nuevas acciones DIAN de preparacion tecnica base y su alcance no oficial.
-\r\n- backend/db/super_juegos.go: Capa DB para creaci�n de tabla y persistencia de r�cords globales de juegos (superadministrador).\r\n- backend/handlers/super_juegos.go: Handlers \GET\ y \POST\ en \/api/public/juegos/records\ para consultar y agregar r�cords.
 
-[19/04/2026] Archivos HTML eliminados por ser p�ginas hu�rfanas sin uso ni referencias en el c�digo:
+- backend/db/super_juegos.go: Capa DB para creación de tabla y persistencia de récords globales de juegos (superadministrador).
+- backend/handlers/super_juegos.go: Handlers `GET` y `POST` en `/api/public/juegos/records` para consultar y agregar récords.
+
+[19/04/2026] Archivos HTML eliminados por ser páginas huérfanas sin uso ni referencias en el código:
 - web/administrar_empresa/bodegas.html
 - web/administrar_empresa/productos/bodegas.html
 - web/administrar_empresa/sensor_puertas_mensajes.html
@@ -8531,16 +8534,16 @@ Actualizacion 2026-04-17: Facturacion DIAN fase 1 base
 - web/super/vendedor_config_avanzado.html
 - web/ultimas_mejoras.html
 
-web/administrar_empresa/compras_menu.html - Men� de navegaci�n principal para el m�dulo de Compras.
-web/administrar_empresa/historial_productos.html - Subp�gina para visualizar el historial de cambios de precios y caracter�sticas de los productos.
+web/administrar_empresa/compras_menu.html - Menú de navegación principal para el módulo de Compras.
+web/administrar_empresa/historial_productos.html - Subpágina para visualizar el historial de cambios de precios y características de los productos.
 
-- backend/db/compras_y_proveedores.go: Modelo de Base de datos para modulo ERP Compras y Proveedores.
+- backend/db/compras_y_proveedores.go: Modelo de base de datos para módulo ERP Compras y Proveedores.
 - backend/db/compras_y_proveedores_test.go: Pruebas del modelo de BD de compras.
 backend/db/compras_y_proveedores.go: Funciones de acceso a datos para Proveedores del m�dulo de Compras ERP.
 backend/handlers/erp_compras_proveedores.go: Handlers REST para gestionar el ciclo de vida de los Proveedores (CRUD).
 
- -   w e b / a d m i n i s t r a r _ e m p r e s a / p u b l i c a r _ r e d _ s o c i a l . h t m l :   p a n e l   d e   a d m i n i s t r a c i o n   C R U D   r e d   s o c i a l   d e   l a   e m p r e s a . 
- -   w e b / r e d _ s o c i a l _ c o m e r c i a l . h t m l :   v i s t a   p u b l i c a   d e l   f e e d   d e   t o d a s   l a s   e m p r e s a s . 
+- web/administrar_empresa/publicar_red_social.html: panel de administración CRUD de la red social de la empresa.
+- web/red_social_comercial.html: vista pública del feed de publicaciones de todas las empresas.
  -   b a c k e n d / d b / r e d _ s o c i a l . g o :   A c c e s o   a   d a t o s   p a r a   p u b l i c a c i o n e s   d e   l a   r e d   s o c i a l . 
  -   b a c k e n d / h a n d l e r s / r e d _ s o c i a l . g o :   R u t a s   p u b l i c a s   y   p r o t e g i d a s   p a r a   p u b l i c a c i o n e s . 
  

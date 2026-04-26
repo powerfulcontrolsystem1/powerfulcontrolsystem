@@ -1,3 +1,7 @@
+- 2026-04-26: documentacion ? saneamiento de secretos y correccion de encoding.
+    - Archivos: `Pendiente Notas`, `backend/tools/inspect_admin_login/main.go`, `documentos/estructura_bd.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`
+    - Descripcion: se eliminan credenciales en texto plano del backlog y de un tool interno; se corrige una seccion con escapes/encoding roto en estructura BD; se actualizan fragmentos de documentacion para reflejar PostgreSQL como runtime canonico y mejorar legibilidad (acentos, guiones, comillas).
+
 - 2026-04-25: scripts ? config unificada Git+VPS (pcs_deployment) y publicar_git_y_vps.ps1.
     - Archivos: `scripts/pcs_deployment.local.ps1.example`, `scripts/publicar_git_y_vps.ps1`, `scripts/actualizar_repositorio.ps1`, `scripts/sync_to_vps.ps1`, `.gitignore`, `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: un solo archivo local opcional define URL de Git e IP/ruta/SSH del VPS; sync y actualizar repositorio lo leen; wrapper encadena push y despliegue.
@@ -33,65 +37,65 @@
     - Descripcion: catalogo CO/EC/PA con metadatos `vista` y `ListFacturacionPaisesConVista`; deteccion `licencia_activa`; bloques EC (SRI) y PA (DGI) que se guardan en `campos_pais_json`; Colombia enlaza al modulo DIAN ERP sin mezclar otros paises; moneda por defecto en dispatch al proveedor si payload vacio.
     - Verificacion: `go build` en `backend/`.
 
-- 2026-04-25: portal / index ? orden de contenido en tarjetas (logo+t?tulo, imagen, descripci?n).
+- 2026-04-25: portal / index ‚Äî orden de contenido en tarjetas (logo+t√≠tulo, imagen, descripci√≥n).
     - Archivos: `web/index.html`, `documentos/historial_de_cambios`
-    - Descripcion: en `index` las tarjetas de ofertas muestran arriba logo peque?o y titulo, debajo la imagen secundaria centrada, luego el texto; estilos locales ajustan cabecera e ilustraci?n sin perder CTA.
+    - Descripcion: en `index` las tarjetas de ofertas muestran arriba logo peque√±o y t√≠tulo, debajo la imagen secundaria centrada, luego el texto; estilos locales ajustan cabecera e ilustraci√≥n sin perder CTA.
     - Verificacion: revision estatica HTML/CSS.
 
-- 2026-04-25: super ? consola de permisos por rol y cobertura de licencia (UI + cat?logo).
+- 2026-04-25: super ‚Äî consola de permisos por rol y cobertura de licencia (UI + cat√°logo).
     - Archivos: `web/super/permisos_rol.html`, `web/super/licencias.html`, `web/estilos.css`, `backend/handlers/empresa_permisos.go`, `backend/handlers/roles_tipos_usuario.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`
-    - Descripcion: pantalla de permisos con resumen, tarjetas por m?dulo (acciones R/C/U/D/A con etiquetas), funciones del men? agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por funci?n; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de m?dulos, rol = matriz y overrides de men?.
+    - Descripcion: pantalla de permisos con resumen, tarjetas por m√≥dulo (acciones R/C/U/D/A con etiquetas), funciones del men√∫ agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por funci√≥n; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de m√≥dulos, rol = matriz y overrides de men√∫.
     - Verificacion: `go build` en `backend/`.
 
-- 2026-04-24: chat IA ? UI tipo Gemini (sidebar, modelo visible, compartir, limites).
+- 2026-04-24: chat IA ‚Äî UI tipo Gemini (sidebar, modelo visible, compartir, l√≠mites).
     - Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: conversaciones locales en barra izquierda mas historial API; encabezado con selector de modelo y pastilla de uso; boton Compartir en respuestas del asistente; mensajes claros al superar limite diario (429 y codigos conocidos); eliminacion de titulo descriptivo largo y tarjeta de contexto en chat empresarial; ajustes de contraste en modo claro para burbujas y banners.
     - Verificacion: revision estatica HTML/CSS/JS.
 
-- 2026-04-25: chat IA ? acciones operativas confirmables (productos, precios, finanzas, tarifas).
+- 2026-04-25: chat IA ‚Äî acciones operativas confirmables (productos, precios, finanzas, tarifas).
     - Archivos: `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/auditoria_empresa.go`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: el asistente puede proponer cambios como bloque `PCS_ACTION` (JSON) y el usuario confirma en UI; el frontend ejecuta contra endpoints reales del sistema y la auditoria critica registra la fuente `chat_ia` y el id de conversacion en metadata.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: super ? panel inicial, contador empresas y fix CRUD frecuencia_fp.
+- 2026-04-25: super ‚Äî panel inicial, contador empresas y fix CRUD frecuencia_fp.
     - Archivos: `web/super_administrador.html`, `web/super/licencias_resumen.html`, `backend/handlers/administradores_frecuencia_fe_handlers.go`, `web/super/administradores_frecuencia_fe.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: agrega bot?n superior `Panel` en el men? super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesi?n/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
+    - Descripcion: agrega bot√≥n superior `Panel` en el men√∫ super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesi√≥n/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: pagos/licencias ? registrar codigo asesor en pago de licencia.
+- 2026-04-25: pagos/licencias ‚Äî registrar codigo asesor en pago de licencia.
     - Archivos: `backend/handlers/payments_handlers.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo env?a). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
+    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo env√≠a). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: pedidos VIP pùblicos por estaciùn (cùdigo temporal) ù PushStatus: PENDIENTE
+- 2026-04-25: pedidos VIP p√∫blicos por estaci√≥n (c√≥digo temporal) ‚Äî PushStatus: PENDIENTE
     - Archivos: `backend/db/estacion_vip_codigos.go`, `backend/handlers/public_estacion_vip.go`, `backend/handlers/carritos_compras.go`, `backend/main.go`, `backend/utils/utils.go`, `web/productos_estacion_clientes_publico.html`, `web/administrar_empresa/carrito_de_compras.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega un flujo pùblico para clientes VIP por estaciùn: el administrador genera un cùdigo temporal desde el carrito de estaciùn, el cliente entra a `productos_estacion_clientes_publico.html` y puede pedir productos (con nota) que se agregan al carrito de la estaciùn. Al pagar la cuenta, los cùdigos asociados se inactivan automùticamente en backend.
+    - Descripcion: se agrega un flujo p√∫blico para clientes VIP por estaci√≥n: el administrador genera un c√≥digo temporal desde el carrito de estaci√≥n, el cliente entra a `productos_estacion_clientes_publico.html` y puede pedir productos (con nota) que se agregan al carrito de la estaci√≥n. Al pagar la cuenta, los c√≥digos asociados se inactivan autom√°ticamente en backend.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: chat IA (empresa) ù CRUD de base de datos por empresa con confirmaciùn y auditorùa ù PushStatus: PENDIENTE
+- 2026-04-25: chat IA (empresa) ‚Äî CRUD de base de datos por empresa con confirmaci√≥n y auditor√≠a ‚Äî PushStatus: PENDIENTE
     - Archivos: `backend/db/db_admin_crud.go`, `backend/handlers/empresa_db_admin.go`, `backend/main.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se habilita que el chat IA empresarial proponga consultas y operaciones CRUD sobre tablas con `empresa_id` mediante `/api/empresa/db_admin` (solo rol administrador). La ejecuciùn siempre requiere confirmaciùn; `DELETE` exige confirmaciùn adicional (ùELIMINARù). Toda operaciùn queda registrada en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
+    - Descripcion: se habilita que el chat IA empresarial proponga consultas y operaciones CRUD sobre tablas con `empresa_id` mediante `/api/empresa/db_admin` (solo rol administrador). La ejecuci√≥n siempre requiere confirmaci√≥n; `DELETE` exige confirmaci√≥n adicional (‚ÄúELIMINAR‚Äù). Toda operaci√≥n queda registrada en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: permisos por rol ù opciones Chat IA (empresa y global) + rol administrador total ù PushStatus: PENDIENTE
+- 2026-04-25: permisos por rol ‚Äî opciones Chat IA (empresa y global) + rol administrador total ‚Äî PushStatus: PENDIENTE
     - Archivos: `backend/handlers/empresa_permisos.go`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega al catùlogo de permisos por rol las opciones `Asistente IA (chat empresarial)` y `Chat IA global (super)` para control de visibilidad/habilitaciùn en la consola de permisos. Se agrega el rol `administrador_total` con acceso completo a todos los mùdulos y acciones (R/C/U/D/A), sujeto a restricciones por licencia.
+    - Descripcion: se agrega al cat√°logo de permisos por rol las opciones `Asistente IA (chat empresarial)` y `Chat IA global (super)` para control de visibilidad/habilitaci√≥n en la consola de permisos. Se agrega el rol `administrador_total` con acceso completo a todos los m√≥dulos y acciones (R/C/U/D/A), sujeto a restricciones por licencia.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: chats IA ù botùn Ayuda y guùa de uso ù PushStatus: PENDIENTE
+- 2026-04-25: chats IA ‚Äî bot√≥n Ayuda y gu√≠a de uso ‚Äî PushStatus: PENDIENTE
     - Archivos: `web/ayuda/chat_ia.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega un botùn **Ayuda** en ambos chats IA (empresa y global) que abre una pùgina corta explicando cùmo usar el chat, cùmo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con ùELIMINARù), y ejemplos de consultas/acciones.
-    - Verificacion: revisiùn estùtica HTML/JS.
+    - Descripcion: se agrega un bot√≥n **Ayuda** en ambos chats IA (empresa y global) que abre una p√°gina corta explicando c√≥mo usar el chat, c√≥mo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con ‚ÄúELIMINAR‚Äù), y ejemplos de consultas/acciones.
+    - Verificacion: revisiÔøΩn estÔøΩtica HTML/JS.
 
-- 2026-04-25: inventario ù documento/imprimir/exportar formatos comunes ù PushStatus: PENDIENTE
+- 2026-04-25: inventario ‚Äî documento/imprimir/exportar formatos comunes ‚Äî PushStatus: PENDIENTE
     - Archivos: `web/administrar_empresa/reportes_inventario.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vùa PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
-    - Verificacion: revisiùn estùtica HTML/JS.
+    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (v√≠a PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
+    - Verificacion: revisiÔøΩn estÔøΩtica HTML/JS.
 
-- 2026-04-25: portal pùblico ù texto del footer actualizado ù PushStatus: PENDIENTE
+- 2026-04-25: portal p√∫blico ‚Äî texto del footer actualizado ‚Äî PushStatus: PENDIENTE
     - Archivos: `web/index.html`, `documentos/historial_de_cambios`
-    - Descripcion: se actualiza el texto del pie de pùgina del portal para reflejar ùPlataforma SaaS POS Multiempresaù, derechos reservados y el correo `powerfulcontrolsystem@gmail.com`.
-    - Verificacion: revisiùn estùtica HTML.
+    - Descripcion: se actualiza el texto del pie de p√°gina del portal para reflejar ‚ÄúPlataforma SaaS POS Multiempresa‚Äù, derechos reservados y el correo `powerfulcontrolsystem@gmail.com`.
+    - Verificacion: revisiÔøΩn estÔøΩtica HTML.
 
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
@@ -14662,15 +14666,15 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
-- Descripcion: Se endurece el mùdulo de chat IA para que las acciones sugeridas/ejecutadas desde `PCS_ACTION` **no permitan `DELETE`**. Se bloquea `DELETE` en UI (antes de ejecutar `fetch`) y se instruye al modelo en los prompts del backend para proponer solo `GET/OPEN/POST/PUT`. El chat de empresa conserva aislamiento por `empresa_id` y el chat global aplica la misma polùtica de no eliminaciùn.
-- Nota: Se habilita `PCS_ACTION` con mùtodo `OPEN` (abrir URL relativa en nueva pestaùa) para que la IA pueda ejecutar funciones del sistema que son vistas/pantallas (por ejemplo abrir `facturas_electronicas.html`). En `facturas_electronicas.html` se agrega `auto_print=1` para que al abrir la vista con `documento=...` se dispare la visualizaciùn/impresiùn del documento automùticamente.
+- Descripcion: Se endurece el mÔøΩdulo de chat IA para que las acciones sugeridas/ejecutadas desde `PCS_ACTION` **no permitan `DELETE`**. Se bloquea `DELETE` en UI (antes de ejecutar `fetch`) y se instruye al modelo en los prompts del backend para proponer solo `GET/OPEN/POST/PUT`. El chat de empresa conserva aislamiento por `empresa_id` y el chat global aplica la misma polÔøΩtica de no eliminaciÔøΩn.
+- Nota: Se habilita `PCS_ACTION` con mÔøΩtodo `OPEN` (abrir URL relativa en nueva pestaÔøΩa) para que la IA pueda ejecutar funciones del sistema que son vistas/pantallas (por ejemplo abrir `facturas_electronicas.html`). En `facturas_electronicas.html` se agrega `auto_print=1` para que al abrir la vista con `documento=...` se dispare la visualizaciÔøΩn/impresiÔøΩn del documento automÔøΩticamente.
 
-2026-04-25: Administrar empresa: mostrar Frecuencia FP cuando el admin estù autorizado
+2026-04-25: Administrar empresa: mostrar Frecuencia FP cuando el admin estÔøΩ autorizado
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/configuracion_menu.html
 - documentos/historial_de_cambios
-- Descripcion: El check de visibilidad del enlace `Frecuencia FP` ahora llama `/api/empresa/frecuencia_fp/permitido` incluyendo `empresa_id` en querystring, para que el wrapper de permisos por empresa valide el alcance y el menù no quede oculto por falta de contexto.
+- Descripcion: El check de visibilidad del enlace `Frecuencia FP` ahora llama `/api/empresa/frecuencia_fp/permitido` incluyendo `empresa_id` en querystring, para que el wrapper de permisos por empresa valide el alcance y el menÔøΩ no quede oculto por falta de contexto.
 
 2026-04-25: Administrar empresa: renombrar Frecuencia FP a Frecuencia FE
 PushStatus: PENDIENTE
@@ -14682,15 +14686,15 @@ Archivos modificados:
 - backend/handlers/administradores_frecuencia_fe_handlers.go
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: La pùgina empresarial de frecuencia se renombra a `frecuencia_fe.html` (visible para administradores incluidos en la lista de super). Se conserva `frecuencia_fp.html` como redirecciùn de compatibilidad. El menù de Configuraciùn ahora muestra ùFrecuencia FEù y apunta a la nueva ruta, manteniendo el check `/api/empresa/frecuencia_fp/permitido`.
+- Descripcion: La pÔøΩgina empresarial de frecuencia se renombra a `frecuencia_fe.html` (visible para administradores incluidos en la lista de super). Se conserva `frecuencia_fp.html` como redirecciÔøΩn de compatibilidad. El menÔøΩ de ConfiguraciÔøΩn ahora muestra ÔøΩFrecuencia FEÔøΩ y apunta a la nueva ruta, manteniendo el check `/api/empresa/frecuencia_fp/permitido`.
 
-2026-04-25: Administrar empresa: soporte remoto sin cùdigo visible
+2026-04-25: Administrar empresa: soporte remoto sin cÔøΩdigo visible
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/soporte_remoto.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se reconstruye `soporte_remoto.html` para eliminar un bloque de JavaScript que habùa quedado pegado despuùs del cierre `</html>` y se renderizaba como texto/cùdigo en la pùgina. La vista queda en modo operativo (descargas RustDesk + guùa corta).
+- Descripcion: Se reconstruye `soporte_remoto.html` para eliminar un bloque de JavaScript que habÔøΩa quedado pegado despuÔøΩs del cierre `</html>` y se renderizaba como texto/cÔøΩdigo en la pÔøΩgina. La vista queda en modo operativo (descargas RustDesk + guÔøΩa corta).
 
 2026-04-25: Super: crear roles desde Permisos por rol
 PushStatus: PENDIENTE
@@ -14698,7 +14702,7 @@ Archivos modificados:
 - web/super/permisos_rol.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: En `Permisos por rol` se agrega un bloque para crear un rol nuevo (nombre + descripciùn) desde la misma pùgina. Al crear, se llama `POST /super/api/roles_de_usuario`, se recarga el selector y se abre el rol reciùn creado para configurar sus permisos sin salir de la vista.
+- Descripcion: En `Permisos por rol` se agrega un bloque para crear un rol nuevo (nombre + descripciÔøΩn) desde la misma pÔøΩgina. Al crear, se llama `POST /super/api/roles_de_usuario`, se recarga el selector y se abre el rol reciÔøΩn creado para configurar sus permisos sin salir de la vista.
 
 2026-04-25: Index: tarjetas inferiores iguales a las superiores
 PushStatus: PENDIENTE
@@ -14707,28 +14711,28 @@ Archivos modificados:
 - web/super/pagina_principal.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Las tarjetas tipo banner renderizadas debajo de las tarjetas principales del `index.html` ahora usan el mismo grid y estilo (`portal-grid` + `home-offer-card`). Se eliminan los controles de ancho/alto fijo de banner en el editor super (`pagina_principal.html`) para que la secciùn inferior herede el tamaùo elegido para las tarjetas superiores.
+- Descripcion: Las tarjetas tipo banner renderizadas debajo de las tarjetas principales del `index.html` ahora usan el mismo grid y estilo (`portal-grid` + `home-offer-card`). Se eliminan los controles de ancho/alto fijo de banner en el editor super (`pagina_principal.html`) para que la secciÔøΩn inferior herede el tamaÔøΩo elegido para las tarjetas superiores.
 
-2026-04-25: Configuraciùn de estaciones: corregir carga de checks
+2026-04-25: ConfiguraciÔøΩn de estaciones: corregir carga de checks
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/configuracion_de_estaciones.html
 - documentos/historial_de_cambios
-- Descripcion: Se corrige un bug en `renderRows()` donde se usaba una variable inexistente (`body`) al renderizar la tabla sin estaciones, lo que rompùa el JavaScript y evitaba que los checks se cargaran. Ahora se usa `tbody.innerHTML` correctamente.
+- Descripcion: Se corrige un bug en `renderRows()` donde se usaba una variable inexistente (`body`) al renderizar la tabla sin estaciones, lo que rompÔøΩa el JavaScript y evitaba que los checks se cargaran. Ahora se usa `tbody.innerHTML` correctamente.
 
-2026-04-25: Tarifas por minutos: secciùn visible de tarifas configuradas por estaciùn
+2026-04-25: Tarifas por minutos: secciÔøΩn visible de tarifas configuradas por estaciÔøΩn
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/tarifas_por_minutos.html
 - documentos/historial_de_cambios
-- Descripcion: En la vista `tarifas_por_minutos.html` se agrega una secciùn ùTarifas configuradasù y se mejora el listado para mostrar de forma explùcita la estaciùn objetivo (nombre, ID y cùdigo) para cada regla de tarifa por minutos.
+- Descripcion: En la vista `tarifas_por_minutos.html` se agrega una secciÔøΩn ÔøΩTarifas configuradasÔøΩ y se mejora el listado para mostrar de forma explÔøΩcita la estaciÔøΩn objetivo (nombre, ID y cÔøΩdigo) para cada regla de tarifa por minutos.
 
-2026-04-25: Tarifas por dùa: secciùn visible de tarifas configuradas por estaciùn
+2026-04-25: Tarifas por dÔøΩa: secciÔøΩn visible de tarifas configuradas por estaciÔøΩn
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/tarifas_por_dia.html
 - documentos/historial_de_cambios
-- Descripcion: En `tarifas_por_dia.html` se agrega la secciùn ùTarifas configuradasù y se mejora el listado para que cada regla muestre claramente la estaciùn objetivo (nombre, ID y cùdigo), junto con prioridad y estado.
+- Descripcion: En `tarifas_por_dia.html` se agrega la secciÔøΩn ÔøΩTarifas configuradasÔøΩ y se mejora el listado para que cada regla muestre claramente la estaciÔøΩn objetivo (nombre, ID y cÔøΩdigo), junto con prioridad y estado.
 
 2026-04-25: Estaciones: estados visuales ampliados (disponible/ocupada/sucia/alerta) + opciones por config
 PushStatus: PENDIENTE
@@ -14738,22 +14742,22 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/administrar_empresa/carrito_de_compras.html
 - documentos/historial_de_cambios
-- Descripcion: Se amplùa la configuraciùn de colores por empresa para manejar 4 estados de estaciones (limpia/disponible, activa/ocupada, sucia, alerta de tiempo) y se agregan checks en Configuraciùn de estaciones para mostrar cliente, resumen de tarifa, hora extra y activar alerta 10 minutos. Al pagar una estaciùn (si estù habilitado) se marca como sucia y al hacer clic en una estaciùn sucia se limpia sin abrir el carrito.
+- Descripcion: Se amplÔøΩa la configuraciÔøΩn de colores por empresa para manejar 4 estados de estaciones (limpia/disponible, activa/ocupada, sucia, alerta de tiempo) y se agregan checks en ConfiguraciÔøΩn de estaciones para mostrar cliente, resumen de tarifa, hora extra y activar alerta 10 minutos. Al pagar una estaciÔøΩn (si estÔøΩ habilitado) se marca como sucia y al hacer clic en una estaciÔøΩn sucia se limpia sin abrir el carrito.
 
-2026-04-25: Licencias: endpoint para crear licencia de prueba 15 dùas (valor 0)
+2026-04-25: Licencias: endpoint para crear licencia de prueba 15 dÔøΩas (valor 0)
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/payments_handlers.go
 - documentos/historial_de_cambios
-- Descripcion: Se agrega acciùn `POST /super/api/licencias?action=crear_prueba_15_dias&empresa_id=...` que crea una licencia de prueba por 15 dùas (valor 0) y la activa para la empresa indicada, registrando la activaciùn gratis.
+- Descripcion: Se agrega acciÔøΩn `POST /super/api/licencias?action=crear_prueba_15_dias&empresa_id=...` que crea una licencia de prueba por 15 dÔøΩas (valor 0) y la activa para la empresa indicada, registrando la activaciÔøΩn gratis.
 
-2026-04-25: Seed Motel Calipso: herramienta para registrar tarifas por minutos y por dùa
+2026-04-25: Seed Motel Calipso: herramienta para registrar tarifas por minutos y por dÔøΩa
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/tools/seed_motel_calipso_tarifas/main.go
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega una herramienta `go run backend/tools/seed_motel_calipso_tarifas/main.go` que crea/actualiza tarifas por minutos y por dùa para todas las estaciones de la empresa (por defecto `empresa_id=7`), leyendo la cantidad de estaciones desde `estaciones_config`. Requiere configurar `DB_EMPRESAS_DSN` para apuntar a PostgreSQL.
+- Descripcion: Se agrega una herramienta `go run backend/tools/seed_motel_calipso_tarifas/main.go` que crea/actualiza tarifas por minutos y por dÔøΩa para todas las estaciones de la empresa (por defecto `empresa_id=7`), leyendo la cantidad de estaciones desde `estaciones_config`. Requiere configurar `DB_EMPRESAS_DSN` para apuntar a PostgreSQL.
 
 2026-04-25: Actualizacion automatica desde script: anadir/actualizar archivos
 PushStatus: OK
@@ -14785,7 +14789,7 @@ PushStatus: OK
 Archivos modificados:
 - web/index.html
 
-2026-04-25: Portal pùblico: chat IA comercial en index (10 consultas / 5 min)
+2026-04-25: Portal pÔøΩblico: chat IA comercial en index (10 consultas / 5 min)
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/chat_con_inteligencia_artificial_controller.go
@@ -14810,7 +14814,7 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega un chat IA pùblico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mùdulos, planes/precios, contrataciùn). El backend expone `POST /api/public/chat_portal` con limitaciùn por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el lùmite. El chat no ejecuta acciones ni expone datos sensibles.
+- Descripcion: Se agrega un chat IA pÔøΩblico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mÔøΩdulos, planes/precios, contrataciÔøΩn). El backend expone `POST /api/public/chat_portal` con limitaciÔøΩn por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el lÔøΩmite. El chat no ejecuta acciones ni expone datos sensibles.
 
 2026-04-25: Chat IA (empresa y super): streaming (respuesta en vivo) configurable
 PushStatus: PENDIENTE
@@ -14825,9 +14829,9 @@ Archivos modificados:
 - web/super/configuracion_logica_del_chat_con_ia.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega modo streaming (SSE) para mostrar la respuesta en vivo en los chats de empresa y super cuando se usa OpenAI chat completions. Se controla desde Super por switches `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled`. Si el streaming est· apagado, el chat opera en modo normal.
+- Descripcion: Se agrega modo streaming (SSE) para mostrar la respuesta en vivo en los chats de empresa y super cuando se usa OpenAI chat completions. Se controla desde Super por switches `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled`. Si el streaming estÔøΩ apagado, el chat opera en modo normal.
 
-2026-04-25: Portal: chat IA pùblico index + switch; mensajes privados; eliminar banners; mejorar tùtulo
+2026-04-25: Portal: chat IA pÔøΩblico index + switch; mensajes privados; eliminar banners; mejorar tÔøΩtulo
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/pagina_principal_handlers.go

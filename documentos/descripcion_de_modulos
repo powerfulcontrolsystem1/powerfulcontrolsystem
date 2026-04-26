@@ -823,8 +823,8 @@ Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciud
 - El estado pendiente por confirmacion de correo se mantiene como requisito antes de iniciar sesion y seguir hacia `seleccionar_empresa.html`.
 - Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplía datos de registro del mismo flujo administrativo existente.
 
-Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable entre SQLite y PostgreSQL):
-- Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo de SQLite.
+Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable en PostgreSQL; SQLite retirado del runtime):
+- Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo ni de un motor legado.
 - `backend/db/db.go` centraliza `EnsureAdministradoresAuthSchema` y permite regularizar en PostgreSQL las columnas de contrato, confirmacion y password usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 - `backend/main.go` deja de mantener un bloque inline basado en `PRAGMA` y reutiliza la misma funcion de base de datos al arrancar el backend.
 - `backend/db/administradores_auth_schema_test.go` cubre la autocorreccion del esquema y el caso real de `SetAdministradorPassword` sobre una tabla incompleta.
