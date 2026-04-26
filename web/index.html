@@ -46,8 +46,10 @@
     .home-offer-card:hover::before { opacity: 1; }
     /* Arriba: logo pequeño + título */
     .home-offer-head {
-      display: flex; align-items: center; justify-content: center; gap: 10px 14px;
-      flex-wrap: wrap; margin-bottom: 16px; text-align: center;
+      display: flex; align-items: center; justify-content: flex-start; gap: 10px 12px;
+      flex-wrap: nowrap; margin-bottom: 16px; text-align: left;
+      /* Reserva un bloque uniforme para que la imagen empiece alineada */
+      min-height: 64px;
     }
     .home-offer-card .home-offer-head .card-logo {
       width: 36px; height: 36px; min-width: 36px; min-height: 36px;
@@ -56,7 +58,13 @@
     }
     .home-offer-head h3 {
       font-size: 1.45rem; font-family: 'Montserrat', sans-serif; margin: 0;
-      color: var(--text); line-height: 1.2; text-align: center;
+      color: var(--text); line-height: 1.2; text-align: left;
+      /* Limitar altura del título para mantener simetría entre tarjetas */
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      flex: 1 1 auto;
     }
     /* Imagen principal debajo del título, centrada (mismo tamaño en todas las tarjetas) */
     .home-offer-figure {
@@ -81,6 +89,7 @@
     }
     @media (max-width: 520px) {
       .home-offer-figure { height: 158px; } /* +12.5% vs 140px (≈157.5px) */
+      .home-offer-head { min-height: 58px; }
     }
     .home-offer-card .home-offer-body { text-align: center; }
     .home-offer-card p { font-size: 1rem; color: var(--muted); margin: 0 0 20px; line-height: 1.6; padding: 0; }
@@ -268,12 +277,6 @@
       <div class="portal-hero-title">
         <h1 class="portal-cards-heading">Sistema de Facturación Electrónica</h1>
         <div class="portal-cards-subheading portal-ai-subheading">
-          <span class="portal-ai-badge" aria-hidden="true" title="Chat IA integrado">
-            <!-- Icono estilo ChatGPT (genérico) -->
-            <svg viewBox="0 0 24 24" role="img" focusable="false">
-              <path fill="currentColor" d="M12 2.2c2.06 0 3.92.85 5.26 2.22 1.4 1.43 2.17 3.28 2.17 5.33 0 1.06-.2 2.07-.64 3.03.47.74.72 1.6.72 2.56 0 2.6-2.1 4.74-4.7 4.74-.62 0-1.22-.1-1.78-.34-.93.6-2.03.92-3.23.92-2.58 0-4.71-1.94-4.96-4.44-.94-.86-1.54-2.1-1.54-3.48 0-1.2.45-2.3 1.18-3.14-.18-.6-.27-1.24-.27-1.9 0-3.56 2.9-6.53 6.49-6.53Zm0 1.8a4.74 4.74 0 0 0-4.7 4.73c0 .46.07.9.2 1.32l.2.64-.48.47a3.01 3.01 0 0 0-.88 2.14c0 .93.42 1.78 1.08 2.34l.6.5.03.77c.08 1.79 1.54 3.22 3.33 3.22.92 0 1.76-.37 2.36-.97l.78-.78.98.5c.36.19.75.27 1.16.27 1.6 0 2.9-1.32 2.9-2.94 0-.64-.2-1.2-.58-1.66l-.52-.63.35-.74c.33-.7.48-1.42.48-2.17 0-1.55-.58-2.9-1.6-3.93A4.92 4.92 0 0 0 12 4Z"/>
-            </svg>
-          </span>
           <span>Habla con tu empresa — <strong>Inteligencia artificial integrada</strong></span>
         </div>
       </div>
