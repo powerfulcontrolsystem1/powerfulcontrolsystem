@@ -88,6 +88,15 @@
 	- `web/super/configuracion_avanzada.html` : tarjeta para activar/desactivar OnlyOffice y configurar Document Server/JWT.
 	- `scripts/deploy_onlyoffice_to_vps.ps1` : script para desplegar OnlyOffice en VPS (Docker compose) con JWT.
 
+- Actualizacion 2026-04-26: Nextcloud (VPS) — almacenamiento por empresa con cuota
+	- `backend/handlers/nextcloud_super_config.go` : configuración super de Nextcloud (enabled, base_url, admin_user, admin_secret cifrado) + prueba `/status.php`.
+	- `backend/handlers/nextcloud_empresa.go` : API por empresa `/api/empresa/nextcloud` para contexto y aprovisionamiento de usuario (OCS) con cuota global por empresa.
+	- `backend/db/nextcloud.go` : tabla `empresa_nextcloud_accounts` (usuario + contraseña cifrada por empresa) en `pcs_empresas`.
+	- `backend/handlers/super_limitaciones_empresa.go` y `web/super/configuracion_avanzada.html` : nueva limitación `nextcloud_max_gb` (default 1 GB) editable desde super.
+	- `web/administrar_empresa/nextcloud.html` (nuevo) : página empresarial para aprovisionar/resetear credenciales y abrir Nextcloud.
+	- `web/administrar_empresa.html` : enlace de menú “Nextcloud”.
+	- `deploy/nextcloud/docker-compose.yml` (nuevo) : compose base para desplegar Nextcloud + MariaDB + Redis en VPS.
+
 - Actualizacion 2026-04-26: Menú flotante: Calculadora
 	- `web/menu.js` : agrega enlace “Calculadora” al menú flotante.
 	- `web/calculadora.html` : página pública con calculadora simple (teclado y botones).

@@ -14,12 +14,14 @@ const (
 	superEmpresaLimitRustDeskMinutesKey = "empresa.limitaciones.rustdesk.max_minutos"
 	superEmpresaLimitAIConsultasKey     = "empresa.limitaciones.ai.max_consultas"
 	superEmpresaLimitGPSDispositivosKey = "empresa.limitaciones.gps.max_dispositivos"
+	superEmpresaLimitNextcloudMaxGBKey  = "empresa.limitaciones.nextcloud.max_gb"
 
 	superEmpresaLimitUpdatedByKeySuffix = ".updated_by"
 
 	defaultEmpresaRustDeskMaxMinutos   = int64(30)
 	defaultEmpresaAIMaxConsultas       = int64(10)
 	defaultEmpresaGPSMaxDispositivos   = int64(2)
+	defaultEmpresaNextcloudMaxGB       = int64(1)
 )
 
 func parsePositiveInt64OrDefault(raw string, fallback int64) int64 {
@@ -76,12 +78,18 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			nextcloudGB, nextcloudUpdatedAt, nextcloudUpdatedBy, err := getLimitacionInt64(dbSuper, superEmpresaLimitNextcloudMaxGBKey, defaultEmpresaNextcloudMaxGB)
+			if err != nil {
+				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"defaults": map[string]int64{
 					"rustdesk_max_minutos":    defaultEmpresaRustDeskMaxMinutos,
 					"ai_max_consultas":        defaultEmpresaAIMaxConsultas,
 					"gps_max_dispositivos":    defaultEmpresaGPSMaxDispositivos,
+					"nextcloud_max_gb":        defaultEmpresaNextcloudMaxGB,
 				},
 				"values": map[string]interface{}{
 					"rustdesk_max_minutos": map[string]interface{}{
@@ -102,6 +110,12 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 						"updated_by": gpsUpdatedBy,
 						"config_key": superEmpresaLimitGPSDispositivosKey,
 					},
+					"nextcloud_max_gb": map[string]interface{}{
+						"value":      nextcloudGB,
+						"updated_at": nextcloudUpdatedAt,
+						"updated_by": nextcloudUpdatedBy,
+						"config_key": superEmpresaLimitNextcloudMaxGBKey,
+					},
 				},
 			})
 			return
@@ -111,6 +125,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				RustDeskMaxMinutos *int64 `json:"rustdesk_max_minutos"`
 				AIMaxConsultas     *int64 `json:"ai_max_consultas"`
 				GPSMaxDispositivos *int64 `json:"gps_max_dispositivos"`
+				NextcloudMaxGB     *int64 `json:"nextcloud_max_gb"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -139,6 +154,13 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if gps < 0 {
 				gps = 0
 			}
+			nextcloudGB := defaultEmpresaNextcloudMaxGB
+			if payload.NextcloudMaxGB != nil {
+				nextcloudGB = *payload.NextcloudMaxGB
+			}
+			if nextcloudGB < 0 {
+				nextcloudGB = 0
+			}
 
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
 			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitRustDeskMinutesKey, strconv.FormatInt(rustdesk, 10), false); err != nil {
@@ -159,12 +181,19 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitGPSDispositivosKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
 
+			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitNextcloudMaxGBKey, strconv.FormatInt(nextcloudGB, 10), false); err != nil {
+				http.Error(w, "error guardando limite nextcloud: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitNextcloudMaxGBKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
+
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok": true,
 				"saved": map[string]int64{
 					"rustdesk_max_minutos": rustdesk,
 					"ai_max_consultas":     ai,
 					"gps_max_dispositivos": gps,
+					"nextcloud_max_gb":     nextcloudGB,
 				},
 			})
 			return

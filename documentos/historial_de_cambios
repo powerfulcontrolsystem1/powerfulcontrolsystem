@@ -27,6 +27,11 @@
     - Descripcion: el editor de OnlyOffice ahora se muestra debajo del listado de archivos ocupando todo el ancho; se agregan íconos tipo Word/Excel/PowerPoint en la lista; se corrige la firma/compatibilidad de token agregando `documentType`, duplicando `token` en `document/editorConfig` y priorizando `ONLYOFFICE_JWT_SECRET` (ENV) para evitar desalineación con el Document Server; el callback descarga el archivo editado usando `Authorization: Bearer <JWT>` cuando aplica, asegurando que los cambios se guarden en `/data/empresas/<empresa_id>/documentos/`.
     - Verificacion: `go test ./...` en `backend/`.
 
+- 2026-04-26: Nextcloud ? servicio VPS configurable + cuota por empresa (default 1GB) + módulo empresa.
+    - Archivos: `backend/handlers/nextcloud_super_config.go`, `backend/handlers/nextcloud_empresa.go`, `backend/db/nextcloud.go`, `backend/handlers/super_limitaciones_empresa.go`, `web/super/configuracion_avanzada.html`, `web/administrar_empresa/nextcloud.html`, `web/administrar_empresa.html`, `deploy/nextcloud/docker-compose.yml`, `backend/main.go`
+    - Descripcion: se agrega Nextcloud como servicio del VPS configurable desde configuración avanzada (enabled, URL, credenciales admin cifradas) con prueba `/status.php`; se implementa aprovisionamiento por empresa vía OCS (usuario `empresa_<id>`) y guardado de credenciales cifradas en `pcs_empresas`; se agrega limitación global editable `empresa.limitaciones.nextcloud.max_gb` (default 1 GB) usada para cuota por empresa; se integra el acceso en el menú de administrar empresa y una página dedicada para aprovisionar/resetear y abrir Nextcloud.
+    - Verificacion: `go test ./...` en `backend/`.
+
 - 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
     - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/super_email_templates.go`, `documentos/historial_de_cambios`
     - Descripcion: el correo de activación de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/código, valor original y código de asesor comercial cuando exista); las licencias de prueba (15 días) y la activación sin pago envían correo de bienvenida/activación usando un registro sintético en `pagos_epayco` para trazabilidad y evitar duplicados.

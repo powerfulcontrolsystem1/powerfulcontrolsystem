@@ -627,6 +627,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure nextcloud schema in empresas db: %v", err)
+	}
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
 			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
@@ -797,6 +800,7 @@ func main() {
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
+	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
 
 	// OnlyOffice public endpoints (token temporal)
 	http.HandleFunc("/api/onlyoffice/file", handlers.OnlyOfficeFilePublicHandler(dbSuper))
@@ -859,6 +863,8 @@ func main() {
 	http.HandleFunc("/super/api/config/chat_ia_logica", handlers.SuperChatIALogicaConfigHandler(dbEmpresas, dbSuper))
 	// Endpoint para configurar gestion RustDesk en el VPS (GET/PUT)
 	http.HandleFunc("/super/api/config/rustdesk", handlers.RustDeskConfigHandler(dbSuper))
+	// Endpoint para configurar Nextcloud en el VPS (GET/PUT)
+	http.HandleFunc("/super/api/config/nextcloud", handlers.NextcloudConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)

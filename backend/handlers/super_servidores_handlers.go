@@ -120,6 +120,7 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 		servicios := []ServicioEstado{
 			buildRustDeskServiceState(dbSuper, false),
 			buildOnlyOfficeServiceState(dbSuper),
+			buildNextcloudServiceState(dbSuper),
 			buildPCSBackendServiceState(dbSuper),
 			buildNginxServiceState(dbSuper),
 			buildPostgresServiceState(dbSuper),
@@ -127,6 +128,37 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
 	}
+}
+
+func buildNextcloudServiceState(dbSuper *sql.DB) ServicioEstado {
+	enabled := isNextcloudEnabled(dbSuper)
+	state := ServicioEstado{
+		ID:         "nextcloud",
+		Nombre:     "Nextcloud (Archivos/Drive)",
+		Estado:     "inactive",
+		Detalle:    "Servicio Nextcloud en VPS (Docker) para almacenamiento por empresa.",
+		Habilitado: enabled,
+		Componentes: map[string]string{
+			"docker": "unknown",
+		},
+	}
+	if runtime.GOOS == "windows" {
+		state.Estado = "unavailable"
+		state.Detalle = "Backend en Windows: no se puede inspeccionar Nextcloud localmente."
+		return state
+	}
+	out, _ := exec.Command("bash", "-lc", "docker ps --format '{{.Names}}' 2>/dev/null | grep -E '^(pcs-nextcloud|nextcloud)$' || true").Output()
+	if strings.TrimSpace(string(out)) != "" {
+		state.Estado = "active"
+		state.Componentes["docker"] = "active"
+		rss, _ := readLinuxProcessRSSKBByGrep("nextcloud|apache2|php-fpm")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+		return state
+	}
+	state.Componentes["docker"] = "inactive"
+	return state
 }
 
 func readLinuxProcessRSSKBByGrep(expr string) (int64, error) {
