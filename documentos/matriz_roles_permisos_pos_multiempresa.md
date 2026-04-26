@@ -3,6 +3,21 @@
 - La **licencia** (`licencias.modulos_habilitados` en `web/super/licencias.html`) define el **techo** de módulos contratados: lista vacía = sin restricción de módulo; lista con valores = solo esos módulos para la empresa, aplicada antes de la matriz de rol.
 - No se agrega un tercer sistema “universal” paralelo: la combinación licencia + rol + reglas de página del catálogo `permissionPagesCatalogOrdered` en `empresa_permisos.go` es el modelo soportado.
 
+2026-04-26: Nota operativa para `inventario`, `finanzas`, `asistencia` y `usuarios`
+- El nuevo acceso `linkGeneradorCodigosBarras` queda bajo modulo `inventario` con accion `U` porque actualiza `productos.codigo_barras`; no crea wrapper nuevo ni ruta publica.
+- La vinculacion de asistencia con usuarios internos reutiliza `/api/empresa/usuarios` y `/api/empresa/asistencia_empleados`, manteniendo `empresa_id` y permisos ya existentes de seguridad.
+- Las nuevas opciones de integracion contable en finanzas son valores de configuracion, no conexiones externas automaticas; no agregan permisos ni secretos.
+
+2026-04-26: Nota operativa para `reportes`, `finanzas` y `chat IA`
+- `linkReportesIAChat` queda bajo modulo `finanzas` con accion `R`; permite consultar y generar enlaces de exportacion de reportes existentes, no modifica datos transaccionales.
+- `POST /api/empresa/reportes_ia_chat` reutiliza permisos de finanzas/reportes y limita el consumo por empresa: 10 preguntas texto con GPT-5.4 mini y 2 reportes/exportes con GPT-5.5 al dia.
+- La exportacion generada sigue pasando por `/api/empresa/reportes?action=export`, por lo que conserva los filtros, formatos y controles existentes del modulo de reportes.
+
+2026-04-26: Nota operativa para `finanzas` ERP MVP
+- Plan de cuentas, CxC, CxP, abonos/pagos de cartera y conciliacion bancaria por extractos quedan dentro del mismo modulo `finanzas`; reutilizan `WithEmpresaFinanzasPermissions` y no agregan nuevos wrappers publicos.
+- Las acciones de abono/pago crean movimientos financieros y actualizan saldos de cartera dentro del mismo `empresa_id`; siguen bloqueadas por periodo contable cerrado cuando aplica.
+- Los nuevos datasets contables (`contable_plan_cuentas`, `contable_cuentas_por_cobrar`, `contable_cuentas_por_pagar`, `contable_conciliacion_bancaria`) se consultan desde reportes con permisos financieros existentes.
+
 2026-04-24: Nota operativa para `asesor comercial`, `licencias`, `pagos`, `super` y `seleccionar_empresa`
 - `super_administrador` administra `web/super/asesor_comercial.html`: invita administradores registrados, configura porcentaje/plazo, desactiva asesores y marca comisiones pagadas mediante `/super/api/asesor_comercial`.
 - `administrador` invitado solo obtiene la vista `Mis clientes` tras aceptar la invitacion por correo; no recibe permisos super ni acceso a empresas ajenas. La vista consume `/api/asesor_comercial/mis_clientes` y filtra por el email de la sesion.

@@ -876,6 +876,16 @@
       return value;
     }
 
+    function normalizeNotesRepeatMinutes(raw) {
+      // Permite 0 = no repetir
+      var value = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(value)) return 0;
+      value = Math.trunc(value);
+      if (value < 0) return 0;
+      if (value > 1440) return 1440;
+      return value;
+    }
+
     function parseStationConfigValue(raw) {
       // Algunos despliegues legacy guardaron el JSON doble-serializado varias veces.
       // Intentamos desempaquetar más capas para recuperar el objeto real.

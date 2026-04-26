@@ -2002,11 +2002,11 @@ func normalizeEmpresaFinanzasConfiguracion(cfg EmpresaFinanzasConfiguracion) Emp
 	}
 	cfg.CategoriasIngreso = strings.TrimSpace(cfg.CategoriasIngreso)
 	if cfg.CategoriasIngreso == "" {
-		cfg.CategoriasIngreso = "ventas\nservicios\notros ingresos"
+		cfg.CategoriasIngreso = "ventas\nservicios\nhabitaciones\nrestaurante\nbar\nlavanderia\npropinas\notros ingresos"
 	}
 	cfg.CategoriasEgreso = strings.TrimSpace(cfg.CategoriasEgreso)
 	if cfg.CategoriasEgreso == "" {
-		cfg.CategoriasEgreso = "compras\nnomina\nservicios\narriendo\notros gastos"
+		cfg.CategoriasEgreso = "compras\nnomina\nservicios publicos\narriendo\nmantenimiento\naseo y lavanderia\ncomisiones\nimpuestos\nbancos\notros gastos"
 	}
 	cfg.PrefijoIngreso = sanitizeFinancialCode(cfg.PrefijoIngreso)
 	if cfg.PrefijoIngreso == "" {
@@ -2066,8 +2066,8 @@ func defaultEmpresaFinanzasConfiguracion(empresaID int64) *EmpresaFinanzasConfig
 		HabilitarIngresos:          true,
 		HabilitarEgresos:           true,
 		Moneda:                     "COP",
-		CategoriasIngreso:          "ventas\nservicios\notros ingresos",
-		CategoriasEgreso:           "compras\nnomina\nservicios\narriendo\notros gastos",
+		CategoriasIngreso:          "ventas\nservicios\nhabitaciones\nrestaurante\nbar\nlavanderia\npropinas\notros ingresos",
+		CategoriasEgreso:           "compras\nnomina\nservicios publicos\narriendo\nmantenimiento\naseo y lavanderia\ncomisiones\nimpuestos\nbancos\notros gastos",
 		PrefijoIngreso:             "ING",
 		PrefijoEgreso:              "EGR",
 		FormatoImpresion:           "carta",
@@ -2080,8 +2080,8 @@ func defaultEmpresaFinanzasConfiguracion(empresaID int64) *EmpresaFinanzasConfig
 		CuentaIVADescontable:       "240810",
 		CuentaRetencionesCobrar:    "135595",
 		CuentaRetencionesPagar:     "236595",
-		CuentasIngresoCategoria:    "ventas=413595\nservicios=417595\notros ingresos=429595",
-		CuentasEgresoCategoria:     "compras=613595\nnomina=510506\nservicios=513595\narriendo=512001\notros gastos=519595",
+		CuentasIngresoCategoria:    "ventas=413595\nservicios=417595\nhabitaciones=414095\nrestaurante=413595\nbar=413595\nlavanderia=417595\npropinas=429595\notros ingresos=429595",
+		CuentasEgresoCategoria:     "compras=613595\nnomina=510506\nservicios publicos=513595\narriendo=512001\nmantenimiento=514525\naseo y lavanderia=519595\ncomisiones=519520\nimpuestos=511505\nbancos=530505\notros gastos=519595",
 		Estado:                     "activo",
 	}
 }
@@ -2089,7 +2089,7 @@ func defaultEmpresaFinanzasConfiguracion(empresaID int64) *EmpresaFinanzasConfig
 func normalizeIntegracionContableDestino(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
 	switch v {
-	case "siigo", "world_office", "alegra":
+	case "siigo", "world_office", "alegra", "helisa", "loggro", "contapyme":
 		return v
 	default:
 		return "generico"

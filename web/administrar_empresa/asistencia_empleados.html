@@ -102,6 +102,13 @@
 
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label">Usuario interno vinculado</label>
+          <select id="usuario_empresa_id" class="form-input">
+            <option value="">Sin vincular / registro manual</option>
+          </select>
+          <div class="form-help">Selecciona un usuario creado en esta empresa para rellenar nombre, documento y rol.</div>
+        </div>
+        <div class="form-col">
           <label class="form-label">Codigo empleado</label>
           <input id="empleado_codigo" class="form-input" placeholder="Ej: EMP-001">
         </div>
@@ -228,6 +235,7 @@
     const state = {
       empresaID: 0,
       items: [],
+      users: [],
       q: '',
       desde: '',
       hasta: '',
@@ -323,6 +331,7 @@
       return {
         id: Number(document.getElementById('itemId').value || 0),
         empresa_id: Number(state.empresaID),
+        empleado_id: Number(document.getElementById('usuario_empresa_id').value || 0),
         empleado_codigo: normalize(document.getElementById('empleado_codigo').value),
         empleado_nombre: normalize(document.getElementById('empleado_nombre').value),
         empleado_documento: normalize(document.getElementById('empleado_documento').value),
@@ -340,6 +349,7 @@
 
     function resetForm() {
       document.getElementById('itemId').value = '';
+      document.getElementById('usuario_empresa_id').value = '';
       document.getElementById('empleado_codigo').value = '';
       document.getElementById('empleado_nombre').value = '';
       document.getElementById('empleado_documento').value = '';
@@ -357,6 +367,40 @@
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById('fecha_asistencia').value = yyyy + '-' + mm + '-' + dd;
       setMessage('', false);
+    }
+
+    function renderUsersSelect() {
+      const select = document.getElementById('usuario_empresa_id');
+      if (!select) return;
+      select.innerHTML = '<option value="">Sin vincular / registro manual</option>';
+      (state.users || []).forEach(function(user) {
+        if (normalize(user.estado).toLowerCase() && normalize(user.estado).toLowerCase() !== 'activo') return;
+        const opt = document.createElement('option');
+        opt.value = String(Number(user.id || 0));
+        opt.textContent = normalize(user.nombre || user.name || user.email) + ' · ' + normalize(user.rol_nombre || user.role || 'sin rol');
+        select.appendChild(opt);
+      });
+    }
+
+    function applyUserToForm(userID) {
+      const user = (state.users || []).find(function(item) { return Number(item.id || 0) === Number(userID || 0); });
+      if (!user) return;
+      document.getElementById('empleado_codigo').value = normalize(user.email);
+      document.getElementById('empleado_nombre').value = normalize(user.nombre || user.name || user.email);
+      document.getElementById('empleado_documento').value = normalize(user.documento_identidad);
+      if (!normalize(document.getElementById('cargo').value)) {
+        document.getElementById('cargo').value = normalize(user.rol_nombre || user.role || 'Usuario empresa');
+      }
+    }
+
+    async function loadUsers() {
+      const resp = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(String(state.empresaID)), {
+        credentials: 'same-origin'
+      });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.users = Array.isArray(rows) ? rows : [];
+      renderUsersSelect();
     }
 
     function applyFilters() {
@@ -608,6 +652,7 @@
     function fillForm(item) {
       document.getElementById('itemId').value = Number(item.id || 0);
       document.getElementById('empresa_id').value = Number(item.empresa_id || state.empresaID);
+      document.getElementById('usuario_empresa_id').value = item.empleado_id ? String(Number(item.empleado_id || 0)) : '';
       document.getElementById('empleado_codigo').value = normalize(item.empleado_codigo);
       document.getElementById('empleado_nombre').value = normalize(item.empleado_nombre);
       document.getElementById('empleado_documento').value = normalize(item.empleado_documento);
@@ -704,6 +749,9 @@
 
     function bindEvents() {
       document.getElementById('form').addEventListener('submit', saveForm);
+      document.getElementById('usuario_empresa_id').addEventListener('change', function(ev) {
+        applyUserToForm(ev.target.value);
+      });
       document.getElementById('cancelBtn').addEventListener('click', resetForm);
       document.getElementById('addBtn').addEventListener('click', function() {
         resetForm();
@@ -802,6 +850,7 @@
       bindEvents();
 
       try {
+        await loadUsers();
         await loadAsistenciaConfig();
         await loadPeriodosCerrados();
         await loadItems();

@@ -68,8 +68,8 @@
           <div class="form-row compact-row" style="margin-top:8px;">
             <div class="form-col">
               <label class="form-label" for="attachFile">Adjuntar foto o documento (GPT-5.5)</label>
-              <input id="attachFile" class="form-input" type="file" accept="image/*,.pdf,.txt,.csv,.json,.xml,.doc,.docx,.xls,.xlsx">
-              <div class="form-help">Las consultas con adjuntos o usando GPT-5.5 cuentan contra el límite diario configurado en Super.</div>
+              <input id="attachFile" class="form-input" type="file" accept="image/*,.pdf,.txt,.csv,.json,.xml,.doc,.docx,.xls,.xlsx" capture="environment">
+              <div class="form-help">En celular puedes tomar una foto de la carta/lista de precios. Las consultas con adjuntos o usando GPT-5.5 cuentan contra el límite diario configurado en Super.</div>
             </div>
             <div class="form-col" style="min-width:260px;">
               <label class="form-label">Modo</label>
@@ -83,6 +83,7 @@
           </div>
           <div class="ai-chat-actions">
             <button id="micBtn" class="btn secondary" type="button" title="Dictar">Dictar</button>
+            <button id="photoBtn" class="btn secondary" type="button" title="Tomar foto o elegir imagen">Foto</button>
             <button id="sendBtn" class="btn" type="submit">Enviar</button>
             <button id="clearBtn" class="btn secondary" type="button">Limpiar vista</button>
           </div>
@@ -1042,8 +1043,16 @@
     function setupSpeechToText() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const btn = document.getElementById("micBtn");
+      const photoBtn = document.getElementById("photoBtn");
+      const attachEl = document.getElementById("attachFile");
       const input = document.getElementById("promptInput");
       if (!btn || !input) return;
+
+      if (photoBtn && attachEl) {
+        photoBtn.addEventListener("click", function () {
+          try { attachEl.click(); } catch (e) {}
+        });
+      }
 
       if (!SpeechRecognition) {
         btn.disabled = true;

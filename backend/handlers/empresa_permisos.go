@@ -109,6 +109,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pública (e‑commerce)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de códigos de barras", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
@@ -137,6 +138,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkReportesIAChat", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Gráficos y estadísticas", Grupo: "Finanzas y reportes"},
 }

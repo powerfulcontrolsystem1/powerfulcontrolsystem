@@ -90,10 +90,29 @@
         web.href = ctx.web_url || '#';
         web.textContent = ctx.web_url || '-';
         document.getElementById('ncWebdav').textContent = ctx.webdav_url || '-';
-        document.getElementById('ncState').textContent = ctx.has_credentials ? 'Aprovisionado' : 'Pendiente de aprovisionar';
+        var enabled = (ctx && ctx.enabled !== false);
+        var configured = (ctx && ctx.configured !== false);
+        var state = '-';
+        if(!enabled){
+          state = 'Desactivado por super administrador';
+        } else if(!configured){
+          state = 'Pendiente: falta configurar en super (base_url/admin_user/admin_secret)';
+        } else {
+          state = ctx.has_credentials ? 'Aprovisionado' : 'Pendiente de aprovisionar';
+        }
+        document.getElementById('ncState').textContent = state;
+
+        // Botones: solo permitir provision/reset si está enabled+configured
+        var canProvision = enabled && configured;
+        document.getElementById('btnProvision').disabled = !canProvision;
+        document.getElementById('btnReset').disabled = !canProvision;
+        document.getElementById('btnOpen').disabled = !enabled || !ctx.web_url;
+
         var frame = document.getElementById('ncFrame');
-        if(ctx.web_url && frame){
+        if(enabled && ctx.web_url && frame){
           frame.src = ctx.web_url;
+        } else if(frame){
+          frame.src = 'about:blank';
         }
       }
 
@@ -120,6 +139,12 @@
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ reset_password: !!reset })
           });
+          if(resp && resp.ok === false){
+            // backend devuelve 200 con ok:false para estados "desactivado/no configurado"
+            render(resp);
+            setMsg(resp.error || 'No se pudo aprovisionar.', true);
+            return;
+          }
           render(resp);
           if(resp.password){
             setMsg('Aprovisionado. Contraseña (guárdala): ' + resp.password, false);

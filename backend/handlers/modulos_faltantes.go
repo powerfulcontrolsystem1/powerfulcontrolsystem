@@ -2510,6 +2510,14 @@ func empresaFinanzasCarteraHandler(dbEmp *sql.DB, cfg empresaModuloGenericConfig
 			handleConciliarCarteraPagosAction(dbEmp, cfg, tipoMovimiento, terceroField, modulo, w, r)
 			return
 
+		case "registrar_pago", "abonar", "registrar_abono":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			handleRegistrarPagoCarteraAction(dbEmp, cfg, tipoMovimiento, terceroField, modulo, w, r)
+			return
+
 		case "validar_cierre_periodo":
 			if r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -2978,6 +2986,182 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 		"total_pagado":           reportesRound(totalPagado),
 		"total_saldo":            reportesRound(totalSaldo),
 		"items":                  detalles,
+	})
+}
+
+func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericConfig, tipoMovimiento, terceroField, modulo string, w http.ResponseWriter, r *http.Request) {
+	payload, err := decodeGenericBodyMapOptional(r)
+	if err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+
+	empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	id := resolveIDFromPayloadOrQuery(payload, r)
+	if id <= 0 {
+		http.Error(w, "id es obligatorio", http.StatusBadRequest)
+		return
+	}
+
+	item, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "registro de cartera no encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "No se pudo consultar cartera", http.StatusInternalServerError)
+		return
+	}
+
+	periodo := normalizePeriodoContableInput(finanzasFirstNonBlank(genericStringValue(item["periodo_contable"]), genericStringValue(item["fecha_emision"])))
+	if raw := normalizePeriodoContableInput(finanzasFirstNonBlank(genericStringValue(payload["periodo_contable"]), strings.TrimSpace(r.URL.Query().Get("periodo")))); raw != "" {
+		periodo = raw
+	}
+	if periodo == "" {
+		periodo = time.Now().In(time.Local).Format("2006-01")
+	}
+	cerrado, err := dbpkg.IsEmpresaFinanzasPeriodoCerrado(dbEmp, empresaID, periodo)
+	if err != nil {
+		http.Error(w, "No se pudo validar el periodo contable", http.StatusInternalServerError)
+		return
+	}
+	if cerrado {
+		http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
+		return
+	}
+
+	abono := ventasAnyToFloat64(payload["monto"])
+	if abono <= 0 {
+		abono = ventasAnyToFloat64(payload["valor_pagado"])
+	}
+	if abono <= 0 {
+		http.Error(w, "monto del abono debe ser mayor que cero", http.StatusBadRequest)
+		return
+	}
+
+	valorOriginal := ventasAnyToFloat64(item["valor_original"])
+	if valorOriginal <= 0 {
+		valorOriginal = ventasAnyToFloat64(item["saldo"]) + ventasAnyToFloat64(item["valor_pagado"])
+	}
+	valorPagadoActual := ventasAnyToFloat64(item["valor_pagado"])
+	saldoActual := ventasAnyToFloat64(item["saldo"])
+	if saldoActual <= 0 && valorOriginal > 0 {
+		saldoActual = valorOriginal - valorPagadoActual
+	}
+	if saldoActual < 0 {
+		saldoActual = 0
+	}
+	if abono > saldoActual && saldoActual > 0 {
+		abono = saldoActual
+	}
+	if abono <= 0 {
+		http.Error(w, "la cartera ya no tiene saldo por aplicar", http.StatusBadRequest)
+		return
+	}
+
+	actor := strings.TrimSpace(adminEmailFromRequest(r))
+	if actor == "" {
+		actor = "sistema"
+	}
+	now := time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	documentoCodigo := genericStringValue(item["documento_codigo"])
+	terceroNombre := genericStringValue(item[terceroField])
+	metodoPago := finanzasFirstNonBlank(genericStringValue(payload["metodo_pago"]), strings.TrimSpace(r.URL.Query().Get("metodo_pago")), "efectivo")
+	referenciaExterna := finanzasFirstNonBlank(genericStringValue(payload["referencia_externa"]), documentoCodigo, genericStringValue(item["codigo"]))
+	concepto := finanzasFirstNonBlank(genericStringValue(payload["concepto"]), "Abono cartera "+genericStringValue(item["codigo"]))
+	moneda := finanzasFirstNonBlank(genericStringValue(payload["moneda"]), genericStringValue(item["moneda"]), "COP")
+
+	movID, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, dbpkg.EmpresaFinanzasMovimiento{
+		EmpresaID:         empresaID,
+		TipoMovimiento:    tipoMovimiento,
+		PeriodoContable:   periodo,
+		FechaMovimiento:   now,
+		Categoria:         modulo,
+		Subcategoria:      "abono_cartera",
+		Concepto:          concepto,
+		Descripcion:       "Abono aplicado a " + modulo + " " + genericStringValue(item["codigo"]),
+		MetodoPago:        metodoPago,
+		Moneda:            moneda,
+		Monto:             abono,
+		Total:             abono,
+		TotalNeto:         abono,
+		TerceroNombre:     terceroNombre,
+		TerceroDocumento:  "",
+		TipoComprobante:   "recibo_interno",
+		NumeroComprobante: finanzasFirstNonBlank(genericStringValue(payload["numero_comprobante"]), referenciaExterna),
+		ReferenciaExterna: referenciaExterna,
+		UsuarioCreador:    actor,
+		Estado:            "activo",
+		Observaciones:     appendGenericObservation(genericStringValue(payload["observaciones"]), "pago aplicado desde cartera "+modulo),
+	})
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+			http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	valorPagadoNuevo := valorPagadoActual + abono
+	if valorOriginal > 0 && valorPagadoNuevo > valorOriginal {
+		valorPagadoNuevo = valorOriginal
+	}
+	saldoNuevo := valorOriginal - valorPagadoNuevo
+	if saldoNuevo < 0 {
+		saldoNuevo = 0
+	}
+	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
+	pagosRelacionados = append(pagosRelacionados, carteraPagoRelacionado{
+		MovimientoID:      movID,
+		FechaMovimiento:   now,
+		MontoAplicado:     abono,
+		ReferenciaExterna: referenciaExterna,
+		NumeroComprobante: finanzasFirstNonBlank(genericStringValue(payload["numero_comprobante"]), referenciaExterna),
+	})
+	referenciaPagosJSON := "[]"
+	if len(pagosRelacionados) > 0 {
+		encoded, _ := json.Marshal(pagosRelacionados)
+		referenciaPagosJSON = string(encoded)
+	}
+
+	update := map[string]interface{}{
+		"valor_original":        valorOriginal,
+		"valor_pagado":          valorPagadoNuevo,
+		"saldo":                 saldoNuevo,
+		"estado_cartera":        finanzasCarteraEstado(saldoNuevo, valorPagadoNuevo, genericStringValue(item["fecha_vencimiento"])),
+		"dias_mora":             finanzasCarteraDiasMora(genericStringValue(item["fecha_vencimiento"]), saldoNuevo),
+		"periodo_contable":      periodo,
+		"referencia_pagos_json": referenciaPagosJSON,
+		"fecha_ultimo_pago":     now,
+		"conciliado_en":         now,
+		"conciliado_por":        actor,
+		"observaciones":         appendGenericObservation(genericStringValue(item["observaciones"]), "abono registrado: "+strconv.FormatFloat(abono, 'f', 2, 64)),
+	}
+	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfg.Table, empresaID, id, update, cfg.AllowedColumns); err != nil {
+		if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+			http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
+			return
+		}
+		http.Error(w, "No se pudo actualizar cartera con el abono", http.StatusInternalServerError)
+		return
+	}
+	itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":                     true,
+		"empresa_id":             empresaID,
+		"modulo":                 modulo,
+		"cartera_id":             id,
+		"movimiento_finanzas_id": movID,
+		"monto_aplicado":         reportesRound(abono),
+		"saldo":                  reportesRound(saldoNuevo),
+		"estado_cartera":         update["estado_cartera"],
+		"item":                   itemActualizado,
 	})
 }
 
@@ -7530,21 +7714,21 @@ func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload m
 	xmlFirmado := dianInjectSignatureIntoXML(xmlPayload, signatureData["signature_xml"])
 
 	return map[string]interface{}{
-		"ok":                                true,
-		"empresa_id":                        empresaID,
-		"documento_codigo":                  dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405")),
-		"nivel_firma":                       "xades_base_no_oficial",
-		"algoritmo":                         "RSA-SHA256",
-		"certificate_included":              certificateIncluded,
-		"warnings":                          warnings,
-		"digest_documento_base64":           signatureData["document_digest_base64"],
-		"digest_signed_properties_base64":   signatureData["signed_properties_digest_base64"],
-		"signature_value_base64":            signatureData["signature_value_base64"],
-		"xml_signature":                     signatureData["signature_xml"],
-		"xml_firmado":                       xmlFirmado,
-		"signing_time":                      signatureData["signing_time"],
-		"advertencia_oficialidad":           "Firma XAdES base interna; aun requiere ajuste de canonicalizacion/UBL/politicas para certificacion oficial DIAN.",
-		"gestion_secreto":                   "certificado_clave_ref y certificado_pem/certificado_ref admiten env:/file:/base64: o valor inline controlado",
+		"ok":                              true,
+		"empresa_id":                      empresaID,
+		"documento_codigo":                dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405")),
+		"nivel_firma":                     "xades_base_no_oficial",
+		"algoritmo":                       "RSA-SHA256",
+		"certificate_included":            certificateIncluded,
+		"warnings":                        warnings,
+		"digest_documento_base64":         signatureData["document_digest_base64"],
+		"digest_signed_properties_base64": signatureData["signed_properties_digest_base64"],
+		"signature_value_base64":          signatureData["signature_value_base64"],
+		"xml_signature":                   signatureData["signature_xml"],
+		"xml_firmado":                     xmlFirmado,
+		"signing_time":                    signatureData["signing_time"],
+		"advertencia_oficialidad":         "Firma XAdES base interna; aun requiere ajuste de canonicalizacion/UBL/politicas para certificacion oficial DIAN.",
+		"gestion_secreto":                 "certificado_clave_ref y certificado_pem/certificado_ref admiten env:/file:/base64: o valor inline controlado",
 	}, http.StatusOK, nil
 }
 
@@ -7583,16 +7767,16 @@ func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int6
 	}
 
 	return map[string]interface{}{
-		"ok":                     true,
-		"empresa_id":             empresaID,
-		"configurada":            configured,
-		"estado_preparacion":     readiness,
-		"ambiente":               chooseDIANAmbiente(cfg),
-		"faltantes_configuracion": missingConfig,
-		"brechas_tecnicas":       technicalGaps,
+		"ok":                        true,
+		"empresa_id":                empresaID,
+		"configurada":               configured,
+		"estado_preparacion":        readiness,
+		"ambiente":                  chooseDIANAmbiente(cfg),
+		"faltantes_configuracion":   missingConfig,
+		"brechas_tecnicas":          technicalGaps,
 		"wsdl_operaciones_objetivo": []string{"SendBillAsync", "SendBillSync", "SendTestSetAsync", "GetStatusZip", "GetNumberingRange"},
-		"acciones_fase_1_base":   []string{"generar_xml_ubl_base", "firmar_xml_xades_base", "diagnostico_oficial"},
-		"siguiente_fase":         "implementar cliente SOAP/WSDL DIAN y conectar el flujo normal de facturacion al transporte oficial",
+		"acciones_fase_1_base":      []string{"generar_xml_ubl_base", "firmar_xml_xades_base", "diagnostico_oficial"},
+		"siguiente_fase":            "implementar cliente SOAP/WSDL DIAN y conectar el flujo normal de facturacion al transporte oficial",
 	}, http.StatusOK, nil
 }
 
@@ -8318,10 +8502,10 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		"firmar_xml_xades_base": map[string]interface{}{
 			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=firmar_xml_xades_base",
 			"body": map[string]interface{}{
-				"empresa_id":        empresaID,
-				"documento_codigo":  "SETP990000001",
-				"xml_ubl_base":      "<Invoice>...</Invoice>",
-				"certificado_ref":   "file:/ruta/segura/certificado_empresa.pem",
+				"empresa_id":       empresaID,
+				"documento_codigo": "SETP990000001",
+				"xml_ubl_base":     "<Invoice>...</Invoice>",
+				"certificado_ref":  "file:/ruta/segura/certificado_empresa.pem",
 			},
 		},
 		"diagnostico_oficial": map[string]interface{}{

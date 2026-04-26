@@ -78,10 +78,13 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				syncResult, syncErr := dbpkg.SyncEmpresaEstacionCarritos(dbEmp, empresaID, p.Valor, p.UsuarioCreador)
 				if syncErr != nil {
 					log.Printf("[estacion_prefs] sync carritos empresa_id=%d clave=%s error: %v", empresaID, p.Clave, syncErr)
-					http.Error(w, "No se pudieron sincronizar los carritos de estaciones", http.StatusInternalServerError)
-					return
+					// La preferencia ya quedó guardada. No bloqueamos el guardado por un fallo de sincronización,
+					// para evitar que la UI revierta checks/flags por un error de carritos (que es un paso secundario).
+					response["sync_error"] = "No se pudieron sincronizar los carritos de estaciones"
+					response["sync_error_detail"] = syncErr.Error()
+				} else {
+					response["sync"] = syncResult
 				}
-				response["sync"] = syncResult
 			}
 			writeJSON(w, http.StatusOK, response)
 			return

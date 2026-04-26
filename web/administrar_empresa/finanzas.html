@@ -77,6 +77,9 @@
               <option value="siigo">SIIGO</option>
               <option value="world_office">World Office</option>
               <option value="alegra">Alegra</option>
+              <option value="helisa">Helisa</option>
+              <option value="loggro">Loggro</option>
+              <option value="contapyme">ContaPyme</option>
             </select>
           </div>
           <div class="form-col">
@@ -465,6 +468,294 @@
 
     <section class="card empresa-section" >
       <div class="empresa-section-header">
+        <h2 class="empresa-section-title">Plan de cuentas operativo</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnAplicarPlanMotel" class="btn secondary" type="button">Aplicar plantilla Motel</button>
+          <button id="btnBuscarPlanCuentas" class="btn secondary" type="button">Buscar cuentas</button>
+        </div>
+      </div>
+      <p class="form-help">Administra el PUC operativo de la empresa y valida cuentas reales antes de usarlas en asientos, reportes o integraciones.</p>
+
+      <form id="planCuentaForm" class="form">
+        <input id="planCuentaId" type="hidden">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="planCodigo">Código cuenta</label>
+            <input id="planCodigo" class="form-input" placeholder="110505" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="planNombre">Nombre</label>
+            <input id="planNombre" class="form-input" placeholder="Caja general" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="planTipo">Tipo</label>
+            <select id="planTipo" class="form-input">
+              <option value="activo">Activo</option>
+              <option value="pasivo">Pasivo</option>
+              <option value="patrimonio">Patrimonio</option>
+              <option value="ingreso">Ingreso</option>
+              <option value="gasto">Gasto</option>
+              <option value="costo">Costo</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="planNaturaleza">Naturaleza</label>
+            <select id="planNaturaleza" class="form-input">
+              <option value="debito">Débito</option>
+              <option value="credito">Crédito</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="planNivel">Nivel</label>
+            <input id="planNivel" class="form-input" type="number" min="1" max="9" value="1">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="planPadre">Cuenta padre</label>
+            <input id="planPadre" class="form-input" placeholder="Opcional">
+          </div>
+          <div class="form-col">
+            <label class="empresa-config-check" for="planAdmiteMovimiento">
+              <input id="planAdmiteMovimiento" type="checkbox" checked>
+              <span>Admite movimiento</span>
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="empresa-config-check" for="planAplicaImpuesto">
+              <input id="planAplicaImpuesto" type="checkbox">
+              <span>Aplica impuesto</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="planClave">Clave operativa</label>
+            <input id="planClave" class="form-input" placeholder="caja, bancos, ingresos_motel...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="planObs">Observaciones</label>
+            <input id="planObs" class="form-input" placeholder="Uso operativo o restricción">
+          </div>
+          <div class="form-col actions-bottom-220">
+            <button id="btnGuardarPlanCuenta" class="btn btn-block" type="submit">Guardar cuenta</button>
+          </div>
+          <div class="form-col actions-bottom-220">
+            <button id="btnNuevoPlanCuenta" class="btn secondary btn-block" type="button">Nueva cuenta</button>
+          </div>
+        </div>
+        <div id="planMsg" class="form-help"></div>
+      </form>
+
+      <div class="form">
+        <div class="form-row no-bottom-margin">
+          <div class="form-col">
+            <label class="form-label" for="filtroPlanQ">Buscar cuenta</label>
+            <input id="filtroPlanQ" class="form-input" placeholder="Código, nombre o tipo">
+          </div>
+          <div class="form-col">
+            <label class="empresa-config-check" for="filtroPlanInactivos">
+              <input id="filtroPlanInactivos" type="checkbox">
+              <span>Incluir inactivas</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="tablaPlanCuentas">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Naturaleza</th>
+              <th>Nivel</th>
+              <th>Movimiento</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section" >
+      <div class="empresa-section-header">
+        <h2 class="empresa-section-title">Cartera CxC / CxP</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnBuscarCartera" class="btn secondary" type="button">Buscar cartera</button>
+          <button id="btnConciliarCartera" class="btn secondary" type="button">Conciliar pagos</button>
+        </div>
+      </div>
+      <p class="form-help">Gestiona cuentas por cobrar y pagar con saldos, mora, abonos y trazabilidad contra movimientos financieros.</p>
+
+      <form id="carteraForm" class="form">
+        <input id="carteraId" type="hidden">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="carteraTipo">Tipo cartera</label>
+            <select id="carteraTipo" class="form-input">
+              <option value="cxc">Cuenta por cobrar</option>
+              <option value="cxp">Cuenta por pagar</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraTercero">Cliente / proveedor</label>
+            <input id="carteraTercero" class="form-input" placeholder="Tercero" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraDocumento">Documento origen</label>
+            <input id="carteraDocumento" class="form-input" placeholder="FACT-001" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraValor">Valor original</label>
+            <input id="carteraValor" class="form-input" type="number" min="0.01" step="0.01" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="carteraFechaEmision">Fecha emisión</label>
+            <input id="carteraFechaEmision" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraFechaVencimiento">Vencimiento</label>
+            <input id="carteraFechaVencimiento" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraObs">Notas / gestión</label>
+            <input id="carteraObs" class="form-input" placeholder="Notas de cobranza o pago">
+          </div>
+          <div class="form-col actions-bottom-220">
+            <button id="btnGuardarCartera" class="btn btn-block" type="submit">Guardar cartera</button>
+          </div>
+        </div>
+        <div id="carteraMsg" class="form-help"></div>
+      </form>
+
+      <div class="form">
+        <div class="form-row no-bottom-margin">
+          <div class="form-col">
+            <label class="form-label" for="filtroCarteraTipo">Vista</label>
+            <select id="filtroCarteraTipo" class="form-input">
+              <option value="cxc">CxC</option>
+              <option value="cxp">CxP</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroCarteraQ">Buscar</label>
+            <input id="filtroCarteraQ" class="form-input" placeholder="Documento, tercero, estado">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraAbonoMonto">Monto abono / pago</label>
+            <input id="carteraAbonoMonto" class="form-input" type="number" min="0.01" step="0.01" placeholder="Seleccione una fila">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carteraAbonoMetodo">Método</label>
+            <select id="carteraAbonoMetodo" class="form-input">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-box"><span class="kpi-label">Cartera total</span><strong id="kpiCarteraTotal">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Pagado</span><strong id="kpiCarteraPagado">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Saldo</span><strong id="kpiCarteraSaldo">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Vencidas</span><strong id="kpiCarteraVencidas">0</strong></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="tablaCartera">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Tercero</th>
+              <th>Documento</th>
+              <th>Vencimiento</th>
+              <th>Original</th>
+              <th>Pagado</th>
+              <th>Saldo</th>
+              <th>Mora</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section" >
+      <div class="empresa-section-header">
+        <h2 class="empresa-section-title">Conciliación bancaria con extractos</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnPrevisualizarExtracto" class="btn secondary" type="button">Previsualizar extracto</button>
+          <button id="btnImportarExtracto" class="btn" type="button">Importar y conciliar</button>
+          <button id="btnBuscarExtractos" class="btn secondary" type="button">Buscar extractos</button>
+        </div>
+      </div>
+      <p class="form-help">Pega un CSV simple con columnas fecha,tipo,descripcion,referencia,monto para importar extractos y conciliarlos contra movimientos.</p>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="extractoBanco">Banco</label>
+            <input id="extractoBanco" class="form-input" placeholder="Banco QA">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="extractoCuenta">Cuenta bancaria</label>
+            <input id="extractoCuenta" class="form-input" placeholder="000-000">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="extractoPeriodo">Periodo</label>
+            <input id="extractoPeriodo" class="form-input" placeholder="2026-04">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="extractoEstado">Estado</label>
+            <select id="extractoEstado" class="form-input">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="conciliado">Conciliado</option>
+              <option value="con_desviacion">Con desviación</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="extractoCSV">CSV extracto</label>
+            <textarea id="extractoCSV" class="form-textarea empresa-textarea-lg" placeholder="fecha,tipo,descripcion,referencia,monto&#10;2026-04-26,ingreso,Abono cliente,QA-CXC-001,100000"></textarea>
+          </div>
+        </div>
+        <div id="extractoMsg" class="form-help"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="tablaExtractos">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Banco</th>
+              <th>Tipo</th>
+              <th>Descripción</th>
+              <th>Referencia</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Movimiento</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section" >
+      <div class="empresa-section-header">
         <h2 class="empresa-section-title">Movimientos registrados</h2>
         <div class="empresa-inline-actions">
           <button id="btnBuscar" class="btn secondary" type="button">Buscar</button>
@@ -639,6 +930,9 @@
       config: null,
       movimientos: [],
       cierresCaja: [],
+      planCuentas: [],
+      cartera: [],
+      extractos: [],
       periodos: [],
       conciliacion: null,
       activeTab: 'todos'
@@ -1433,6 +1727,454 @@
       setMsg('movMsg', '', false);
       syncTotalesContables();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function planCuentaPayload() {
+      const id = Number(document.getElementById('planCuentaId').value || 0);
+      return {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        codigo: normalize(document.getElementById('planCodigo').value).toUpperCase(),
+        nombre: normalize(document.getElementById('planNombre').value),
+        tipo_cuenta: normalize(document.getElementById('planTipo').value) || 'activo',
+        naturaleza: normalize(document.getElementById('planNaturaleza').value) || 'debito',
+        nivel: Math.max(1, Math.trunc(toNumber(document.getElementById('planNivel').value, 1))),
+        cuenta_padre_codigo: normalize(document.getElementById('planPadre').value).toUpperCase(),
+        admite_movimiento: document.getElementById('planAdmiteMovimiento').checked,
+        aplica_impuesto: document.getElementById('planAplicaImpuesto').checked,
+        cuenta_clave: normalize(document.getElementById('planClave').value),
+        estado: 'activo',
+        observaciones: normalize(document.getElementById('planObs').value)
+      };
+    }
+
+    function resetPlanCuentaForm() {
+      document.getElementById('planCuentaId').value = '';
+      document.getElementById('planCodigo').value = '';
+      document.getElementById('planNombre').value = '';
+      document.getElementById('planTipo').value = 'activo';
+      document.getElementById('planNaturaleza').value = 'debito';
+      document.getElementById('planNivel').value = '1';
+      document.getElementById('planPadre').value = '';
+      document.getElementById('planAdmiteMovimiento').checked = true;
+      document.getElementById('planAplicaImpuesto').checked = false;
+      document.getElementById('planClave').value = '';
+      document.getElementById('planObs').value = '';
+      document.getElementById('btnGuardarPlanCuenta').textContent = 'Guardar cuenta';
+    }
+
+    function setPlanCuentaForm(item) {
+      document.getElementById('planCuentaId').value = String(item.id || '');
+      document.getElementById('planCodigo').value = normalize(item.codigo);
+      document.getElementById('planNombre').value = normalize(item.nombre);
+      document.getElementById('planTipo').value = normalize(item.tipo_cuenta) || 'activo';
+      document.getElementById('planNaturaleza').value = normalize(item.naturaleza) || 'debito';
+      document.getElementById('planNivel').value = String(toNumber(item.nivel, 1));
+      document.getElementById('planPadre').value = normalize(item.cuenta_padre_codigo);
+      document.getElementById('planAdmiteMovimiento').checked = String(item.admite_movimiento) !== '0' && item.admite_movimiento !== false;
+      document.getElementById('planAplicaImpuesto').checked = String(item.aplica_impuesto) === '1' || item.aplica_impuesto === true;
+      document.getElementById('planClave').value = normalize(item.cuenta_clave);
+      document.getElementById('planObs').value = normalize(item.observaciones);
+      document.getElementById('btnGuardarPlanCuenta').textContent = 'Actualizar cuenta';
+      setMsg('planMsg', '', false);
+    }
+
+    async function loadPlanCuentas() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('limit', '1000');
+      const q = normalize(document.getElementById('filtroPlanQ').value);
+      if (q) params.set('q', q);
+      if (document.getElementById('filtroPlanInactivos').checked) params.set('include_inactive', '1');
+      const res = await fetch('/api/empresa/finanzas/plan_cuentas?' + params.toString());
+      await ensureOk(res);
+      state.planCuentas = await res.json();
+      renderPlanCuentas();
+      setMsg('planMsg', 'Cuentas cargadas: ' + state.planCuentas.length, false);
+    }
+
+    function renderPlanCuentas() {
+      const tbody = document.querySelector('#tablaPlanCuentas tbody');
+      const rows = Array.isArray(state.planCuentas) ? state.planCuentas : [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay cuentas para el filtro actual.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function(item) {
+        const estado = normalize(item.estado || 'activo');
+        const admite = String(item.admite_movimiento) !== '0' && item.admite_movimiento !== false;
+        return '<tr>' +
+          '<td>' + sanitize(item.codigo || '') + '</td>' +
+          '<td>' + sanitize(item.nombre || '') + '</td>' +
+          '<td>' + sanitize(item.tipo_cuenta || '') + '</td>' +
+          '<td>' + sanitize(item.naturaleza || '') + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.nivel, 1))) + '</td>' +
+          '<td>' + (admite ? 'Sí' : 'No') + '</td>' +
+          '<td>' + sanitize(estado) + '</td>' +
+          '<td class="actions">' +
+            '<button class="btn secondary plan-edit" data-id="' + item.id + '">Editar</button> ' +
+            '<button class="btn secondary plan-toggle" data-id="' + item.id + '" data-estado="' + estado + '">' + (estado === 'activo' ? 'Desactivar' : 'Activar') + '</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+      document.querySelectorAll('.plan-edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const item = state.planCuentas.find(x => Number(x.id) === Number(btn.getAttribute('data-id')));
+          if (item) setPlanCuentaForm(item);
+        };
+      });
+      document.querySelectorAll('.plan-toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const action = normalize(btn.getAttribute('data-estado')) === 'activo' ? 'desactivar' : 'activar';
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/finanzas/plan_cuentas?action=' + action + '&empresa_id=' + state.empresaID + '&id=' + id, { method: 'PUT' });
+            await ensureOk(res);
+            await loadPlanCuentas();
+          } catch (err) {
+            setMsg('planMsg', err.message || 'No se pudo cambiar estado de la cuenta.', true);
+          }
+        };
+      });
+    }
+
+    async function savePlanCuenta(ev) {
+      ev.preventDefault();
+      try {
+        const payload = planCuentaPayload();
+        if (!payload.codigo || !payload.nombre) throw new Error('Código y nombre son obligatorios.');
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/finanzas/plan_cuentas', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        resetPlanCuentaForm();
+        await loadPlanCuentas();
+        setMsg('planMsg', 'Cuenta guardada correctamente.', false);
+      } catch (err) {
+        setMsg('planMsg', err.message || 'No se pudo guardar la cuenta.', true);
+      }
+    }
+
+    async function aplicarPlanMotel() {
+      if (!confirm('¿Aplicar plantilla PUC para motel? No sobrescribe cuentas existentes.')) return;
+      try {
+        const res = await fetch('/api/empresa/finanzas/plan_cuentas?action=aplicar_plantilla', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID), tipo_empresa: 'motel', sobrescribir: false })
+        });
+        await ensureOk(res);
+        const out = await res.json();
+        await loadPlanCuentas();
+        setMsg('planMsg', 'Plantilla aplicada. Creadas: ' + toNumber(out.creadas, 0) + ', omitidas: ' + toNumber(out.omitidas, 0) + '.', false);
+      } catch (err) {
+        setMsg('planMsg', err.message || 'No se pudo aplicar plantilla.', true);
+      }
+    }
+
+    function carteraEndpoint(tipo) {
+      return tipo === 'cxp' ? '/api/empresa/finanzas/cuentas_pagar' : '/api/empresa/finanzas/cuentas_cobrar';
+    }
+
+    function carteraTerceroField(tipo) {
+      return tipo === 'cxp' ? 'proveedor_nombre' : 'cliente_nombre';
+    }
+
+    function carteraPayload() {
+      const tipo = normalize(document.getElementById('carteraTipo').value) === 'cxp' ? 'cxp' : 'cxc';
+      const valorOriginal = Math.max(0, toNumber(document.getElementById('carteraValor').value, 0));
+      const id = Number(document.getElementById('carteraId').value || 0);
+      const current = id > 0 ? (state.cartera || []).find(x => Number(x.id) === id) : null;
+      const valorPagado = current ? Math.max(0, toNumber(current.valor_pagado, 0)) : 0;
+      const payload = {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        documento_tipo: tipo === 'cxp' ? 'cuenta_por_pagar' : 'cuenta_por_cobrar',
+        documento_codigo: normalize(document.getElementById('carteraDocumento').value),
+        fecha_emision: normalize(document.getElementById('carteraFechaEmision').value) || new Date().toISOString().slice(0, 10),
+        fecha_vencimiento: normalize(document.getElementById('carteraFechaVencimiento').value),
+        valor_original: valorOriginal,
+        valor_pagado: valorPagado,
+        saldo: Math.max(0, valorOriginal - valorPagado),
+        estado_cartera: current ? normalize(current.estado_cartera || 'pendiente') : 'pendiente',
+        moneda: normalize(document.getElementById('moneda').value || 'COP').toUpperCase(),
+        periodo_contable: normalizePeriodoContableInput(document.getElementById('carteraFechaEmision').value || defaultDateTimeLocal()),
+        estado: 'activo',
+        observaciones: normalize(document.getElementById('carteraObs').value)
+      };
+      payload[carteraTerceroField(tipo)] = normalize(document.getElementById('carteraTercero').value);
+      return { tipo: tipo, payload: payload };
+    }
+
+    function resetCarteraForm() {
+      document.getElementById('carteraId').value = '';
+      document.getElementById('carteraTercero').value = '';
+      document.getElementById('carteraDocumento').value = '';
+      document.getElementById('carteraValor').value = '';
+      document.getElementById('carteraFechaEmision').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('carteraFechaVencimiento').value = '';
+      document.getElementById('carteraObs').value = '';
+      document.getElementById('btnGuardarCartera').textContent = 'Guardar cartera';
+    }
+
+    function setCarteraForm(item, tipo) {
+      tipo = tipo || normalize(document.getElementById('filtroCarteraTipo').value) || 'cxc';
+      document.getElementById('carteraTipo').value = tipo;
+      document.getElementById('carteraId').value = String(item.id || '');
+      document.getElementById('carteraTercero').value = normalize(item[carteraTerceroField(tipo)]);
+      document.getElementById('carteraDocumento').value = normalize(item.documento_codigo);
+      document.getElementById('carteraValor').value = String(toNumber(item.valor_original, 0));
+      document.getElementById('carteraFechaEmision').value = dateOnlyFromInput(item.fecha_emision);
+      document.getElementById('carteraFechaVencimiento').value = dateOnlyFromInput(item.fecha_vencimiento);
+      document.getElementById('carteraObs').value = normalize(item.observaciones);
+      document.getElementById('btnGuardarCartera').textContent = 'Actualizar cartera';
+    }
+
+    async function loadCartera() {
+      const tipo = normalize(document.getElementById('filtroCarteraTipo').value) === 'cxp' ? 'cxp' : 'cxc';
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('limit', '500');
+      const q = normalize(document.getElementById('filtroCarteraQ').value);
+      if (q) params.set('q', q);
+      const res = await fetch(carteraEndpoint(tipo) + '?' + params.toString());
+      await ensureOk(res);
+      state.cartera = await res.json();
+      renderCartera(tipo);
+      setMsg('carteraMsg', 'Cartera cargada: ' + state.cartera.length, false);
+    }
+
+    function renderCartera(tipo) {
+      const tbody = document.querySelector('#tablaCartera tbody');
+      const rows = Array.isArray(state.cartera) ? state.cartera : [];
+      const terceroField = carteraTerceroField(tipo);
+      const total = rows.reduce((a, x) => a + toNumber(x.valor_original, 0), 0);
+      const pagado = rows.reduce((a, x) => a + toNumber(x.valor_pagado, 0), 0);
+      const saldo = rows.reduce((a, x) => a + toNumber(x.saldo, 0), 0);
+      const vencidas = rows.filter(x => normalize(x.estado_cartera) === 'vencida' || toNumber(x.dias_mora, 0) > 0).length;
+      document.getElementById('kpiCarteraTotal').textContent = fmtMoney(total);
+      document.getElementById('kpiCarteraPagado').textContent = fmtMoney(pagado);
+      document.getElementById('kpiCarteraSaldo').textContent = fmtMoney(saldo);
+      document.getElementById('kpiCarteraVencidas').textContent = String(vencidas);
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="10">No hay registros de cartera para el filtro actual.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function(item) {
+        return '<tr>' +
+          '<td>' + sanitize(item.codigo || '') + '</td>' +
+          '<td>' + sanitize(item[terceroField] || '') + '</td>' +
+          '<td>' + sanitize(item.documento_codigo || '') + '</td>' +
+          '<td>' + sanitize(dateOnlyFromInput(item.fecha_vencimiento) || '-') + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.valor_original)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.valor_pagado)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.saldo)) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.dias_mora, 0))) + '</td>' +
+          '<td>' + sanitize(item.estado_cartera || '') + '</td>' +
+          '<td class="actions">' +
+            '<button class="btn secondary cartera-edit" data-id="' + item.id + '">Editar</button> ' +
+            '<button class="btn cartera-pay" data-id="' + item.id + '">Abonar/Pagar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+      document.querySelectorAll('.cartera-edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const item = state.cartera.find(x => Number(x.id) === Number(btn.getAttribute('data-id')));
+          if (item) setCarteraForm(item, tipo);
+        };
+      });
+      document.querySelectorAll('.cartera-pay').forEach(function(btn) {
+        btn.onclick = function() {
+          registrarPagoCartera(Number(btn.getAttribute('data-id')), tipo);
+        };
+      });
+    }
+
+    async function saveCartera(ev) {
+      ev.preventDefault();
+      try {
+        const built = carteraPayload();
+        if (!built.payload.documento_codigo || !built.payload[carteraTerceroField(built.tipo)] || built.payload.valor_original <= 0) {
+          throw new Error('Tercero, documento y valor original son obligatorios.');
+        }
+        const method = built.payload.id > 0 ? 'PUT' : 'POST';
+        const res = await fetch(carteraEndpoint(built.tipo), {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(built.payload)
+        });
+        await ensureOk(res);
+        document.getElementById('filtroCarteraTipo').value = built.tipo;
+        resetCarteraForm();
+        await loadCartera();
+        setMsg('carteraMsg', 'Cartera guardada correctamente.', false);
+      } catch (err) {
+        setMsg('carteraMsg', err.message || 'No se pudo guardar cartera.', true);
+      }
+    }
+
+    async function registrarPagoCartera(id, tipo) {
+      const item = state.cartera.find(x => Number(x.id) === Number(id));
+      if (!item) return;
+      let monto = toNumber(document.getElementById('carteraAbonoMonto').value, 0);
+      if (monto <= 0) {
+        const raw = window.prompt('Monto a aplicar a ' + normalize(item.documento_codigo) + ':', String(toNumber(item.saldo, 0)));
+        if (raw == null) return;
+        monto = Number(String(raw).replace(',', '.'));
+      }
+      if (!Number.isFinite(monto) || monto <= 0) {
+        setMsg('carteraMsg', 'Monto de abono inválido.', true);
+        return;
+      }
+      try {
+        const res = await fetch(carteraEndpoint(tipo) + '?action=registrar_pago', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            id: id,
+            monto: monto,
+            metodo_pago: normalize(document.getElementById('carteraAbonoMetodo').value),
+            referencia_externa: normalize(item.documento_codigo),
+            concepto: 'Abono cartera ' + normalize(item.documento_codigo),
+            observaciones: 'Abono registrado desde finanzas'
+          })
+        });
+        await ensureOk(res);
+        await loadCartera();
+        await loadMovimientos();
+        setMsg('carteraMsg', 'Abono aplicado correctamente.', false);
+      } catch (err) {
+        setMsg('carteraMsg', err.message || 'No se pudo aplicar el abono.', true);
+      }
+    }
+
+    async function conciliarCartera() {
+      const tipo = normalize(document.getElementById('filtroCarteraTipo').value) === 'cxp' ? 'cxp' : 'cxc';
+      try {
+        const res = await fetch(carteraEndpoint(tipo) + '?action=conciliar_pagos&empresa_id=' + state.empresaID, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID) })
+        });
+        await ensureOk(res);
+        const out = await res.json();
+        await loadCartera();
+        setMsg('carteraMsg', 'Conciliación cartera OK. Registros conciliados: ' + toNumber(out.conciliados, 0) + '.', false);
+      } catch (err) {
+        setMsg('carteraMsg', err.message || 'No se pudo conciliar cartera.', true);
+      }
+    }
+
+    function parseExtractoCSV() {
+      const raw = normalize(document.getElementById('extractoCSV').value);
+      if (!raw) return [];
+      const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      if (!lines.length) return [];
+      const hasHeader = /fecha/i.test(lines[0]) && /monto/i.test(lines[0]);
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      const periodo = normalizePeriodoContableInput(document.getElementById('extractoPeriodo').value || defaultDateTimeLocal());
+      return dataLines.map(function(line) {
+        const cols = line.split(',').map(x => x.trim());
+        const fecha = cols[0] || new Date().toISOString().slice(0, 10);
+        const tipo = normalize(cols[1]).toLowerCase() === 'egreso' ? 'egreso' : 'ingreso';
+        const descripcion = cols[2] || 'Extracto importado';
+        const referencia = cols[3] || '';
+        const monto = Math.abs(Number(String(cols[4] || cols[3] || '0').replace(',', '.')));
+        return {
+          empresa_id: Number(state.empresaID),
+          periodo_contable: periodo,
+          fecha_movimiento: fecha,
+          fecha_valor: fecha,
+          cuenta_bancaria: normalize(document.getElementById('extractoCuenta').value) || 'QA',
+          banco_nombre: normalize(document.getElementById('extractoBanco').value) || 'Banco QA',
+          tipo_movimiento: tipo,
+          descripcion: descripcion,
+          referencia_bancaria: referencia,
+          documento_codigo: referencia,
+          moneda: normalize(document.getElementById('moneda').value || 'COP').toUpperCase(),
+          monto: monto,
+          total: monto,
+          origen: 'csv_ui',
+          estado: 'activo',
+          observaciones: 'Importado desde UI finanzas'
+        };
+      }).filter(x => x.monto > 0);
+    }
+
+    function renderExtractos() {
+      const tbody = document.querySelector('#tablaExtractos tbody');
+      const rows = Array.isArray(state.extractos) ? state.extractos : [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay extractos para mostrar.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function(item) {
+        return '<tr>' +
+          '<td>' + sanitize(dateOnlyFromInput(item.fecha_movimiento) || item.fecha_movimiento || '') + '</td>' +
+          '<td>' + sanitize(item.banco_nombre || '') + '</td>' +
+          '<td>' + sanitize(item.tipo_movimiento || '') + '</td>' +
+          '<td>' + sanitize(item.descripcion || '') + '</td>' +
+          '<td>' + sanitize(item.referencia_bancaria || item.documento_codigo || '') + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.total || item.monto)) + '</td>' +
+          '<td>' + sanitize(item.estado_conciliacion || 'pendiente') + '</td>' +
+          '<td>' + sanitize(item.movimiento_finanzas_id || '-') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function previsualizarExtracto() {
+      state.extractos = parseExtractoCSV();
+      renderExtractos();
+      setMsg('extractoMsg', 'Previsualización: ' + state.extractos.length + ' líneas válidas.', state.extractos.length === 0);
+    }
+
+    async function importarExtracto() {
+      const movimientos = parseExtractoCSV();
+      if (!movimientos.length) {
+        setMsg('extractoMsg', 'No hay líneas válidas para importar.', true);
+        return;
+      }
+      try {
+        const res = await fetch('/api/empresa/finanzas/movimientos?action=importar_extractos_bancarios&auto_conciliar=1&empresa_id=' + state.empresaID, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            cuenta_bancaria: normalize(document.getElementById('extractoCuenta').value),
+            banco_nombre: normalize(document.getElementById('extractoBanco').value),
+            origen: 'csv_ui',
+            auto_conciliar: true,
+            movimientos: movimientos
+          })
+        });
+        await ensureOk(res);
+        const out = await res.json();
+        await loadExtractos();
+        setMsg('extractoMsg', 'Importación OK. Creados: ' + toNumber(out.importacion && out.importacion.creados, 0) + ', actualizados: ' + toNumber(out.importacion && out.importacion.actualizados, 0) + '.', false);
+      } catch (err) {
+        setMsg('extractoMsg', err.message || 'No se pudo importar extracto.', true);
+      }
+    }
+
+    async function loadExtractos() {
+      const params = new URLSearchParams();
+      params.set('action', 'extractos_bancarios');
+      params.set('empresa_id', String(state.empresaID));
+      params.set('limit', '300');
+      const periodo = normalizePeriodoContableInput(document.getElementById('extractoPeriodo').value);
+      const estado = normalize(document.getElementById('extractoEstado').value);
+      if (periodo) params.set('periodo', periodo);
+      if (estado) params.set('estado_conciliacion', estado);
+      const res = await fetch('/api/empresa/finanzas/movimientos?' + params.toString());
+      await ensureOk(res);
+      state.extractos = await res.json();
+      renderExtractos();
+      setMsg('extractoMsg', 'Extractos cargados: ' + state.extractos.length, false);
     }
 
     function filtroQuery() {
@@ -2700,6 +3442,44 @@
         }
       });
 
+      document.getElementById('planCuentaForm').addEventListener('submit', savePlanCuenta);
+      document.getElementById('btnNuevoPlanCuenta').addEventListener('click', resetPlanCuentaForm);
+      document.getElementById('btnBuscarPlanCuentas').addEventListener('click', async function() {
+        try {
+          await loadPlanCuentas();
+        } catch (err) {
+          setMsg('planMsg', err.message || 'No se pudo consultar el plan de cuentas.', true);
+        }
+      });
+      document.getElementById('btnAplicarPlanMotel').addEventListener('click', aplicarPlanMotel);
+
+      document.getElementById('carteraForm').addEventListener('submit', saveCartera);
+      document.getElementById('btnBuscarCartera').addEventListener('click', async function() {
+        try {
+          await loadCartera();
+        } catch (err) {
+          setMsg('carteraMsg', err.message || 'No se pudo consultar cartera.', true);
+        }
+      });
+      document.getElementById('btnConciliarCartera').addEventListener('click', conciliarCartera);
+      document.getElementById('filtroCarteraTipo').addEventListener('change', async function() {
+        try {
+          await loadCartera();
+        } catch (err) {
+          setMsg('carteraMsg', err.message || 'No se pudo cambiar vista de cartera.', true);
+        }
+      });
+
+      document.getElementById('btnPrevisualizarExtracto').addEventListener('click', previsualizarExtracto);
+      document.getElementById('btnImportarExtracto').addEventListener('click', importarExtracto);
+      document.getElementById('btnBuscarExtractos').addEventListener('click', async function() {
+        try {
+          await loadExtractos();
+        } catch (err) {
+          setMsg('extractoMsg', err.message || 'No se pudieron consultar extractos.', true);
+        }
+      });
+
       document.getElementById('btnBuscar').addEventListener('click', async function() {
         try {
           await loadMovimientos();
@@ -2798,6 +3578,11 @@
       await loadConfig();
       await loadPeriodos();
       await loadCierresCaja();
+      await loadPlanCuentas();
+      resetCarteraForm();
+      await loadCartera();
+      document.getElementById('extractoPeriodo').value = normalizePeriodoContableInput(defaultDateTimeLocal());
+      await loadExtractos();
       await loadMovimientos();
       try {
         await loadConciliacionContable();

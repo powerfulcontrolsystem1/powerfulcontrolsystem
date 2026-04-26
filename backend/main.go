@@ -807,6 +807,7 @@ func main() {
 	http.HandleFunc("/api/onlyoffice/callback", handlers.OnlyOfficeCallbackPublicHandler(dbSuper))
 	http.HandleFunc("/api/empresa/soporte_remoto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSoporteRemotoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/reportes", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/reportes_ia_chat", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesIAChatHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	// Endpoint empresa: verificar acceso a la página frecuencia_fe.html (alias legacy frecuencia_fp.html)
@@ -881,6 +882,9 @@ func main() {
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema
 	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
+	// Endpoint super para consumos (OpenAI/Hostinger/Cursor) y contador de errores
+	http.HandleFunc("/super/api/consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.SuperPortalChatIAInfoHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacciÃ³n y consultar estado

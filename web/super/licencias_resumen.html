@@ -10,7 +10,16 @@
     .summary-card{padding:28px;text-align:center}
     .big-number{font-size:3.2rem;font-weight:800;color:var(--text)}
     .muted{color:var(--muted)}
+    .ops-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+    .ops-card{padding:18px}
+    .ops-kpi{font-size:1.65rem;font-weight:900;color:var(--text);margin-top:6px}
+    .ops-sub{margin-top:6px}
+    .ops-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .ops-form .form-col{min-width:0}
+    @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:900px){.summary-grid{grid-template-columns:1fr}}
+    @media (max-width:680px){.ops-grid{grid-template-columns:1fr}.ops-form{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page">
@@ -34,6 +43,103 @@
         <div class="form-help muted">Total de empresas creadas en el sistema (panel super).</div>
       </div>
     </div>
+
+    <section class="ops-grid" aria-label="Consumos y salud del sistema">
+      <div class="card ops-card">
+        <div class="muted">Errores del sistema (total)</div>
+        <div id="errTotal" class="ops-kpi">-</div>
+        <div class="form-help muted ops-sub">Solo contador. Detalle en “Errores del sistema”.</div>
+      </div>
+      <div class="card ops-card">
+        <div class="muted">OpenAI (hoy) — Super</div>
+        <div id="openaiSuper" class="ops-kpi">-</div>
+        <div id="openaiSuperCost" class="form-help muted ops-sub"></div>
+      </div>
+      <div class="card ops-card">
+        <div class="muted">OpenAI (hoy) — Empresas</div>
+        <div id="openaiEmp" class="ops-kpi">-</div>
+        <div id="openaiEmpCost" class="form-help muted ops-sub"></div>
+      </div>
+      <div class="card ops-card">
+        <div class="muted">Hostinger (manual)</div>
+        <div id="hostingerSummary" class="ops-kpi">-</div>
+        <div id="hostingerCost" class="form-help muted ops-sub"></div>
+      </div>
+    </section>
+
+    <section class="card empresa-section" style="margin-top:12px">
+      <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Configurar consumos (Hostinger / Cursor / costos OpenAI)</h2>
+        <div class="ops-row">
+          <button id="btnReloadConsumos" class="btn secondary" type="button">Actualizar consumos</button>
+          <button id="btnSaveConsumos" class="btn" type="button">Guardar</button>
+        </div>
+      </div>
+      <div class="form-help muted" style="margin-top:6px">
+        Hostinger/Cursor: por ahora captura manual. Se deja campo de API token/key para habilitar consulta automática cuando exista API estable.
+      </div>
+
+      <div class="ops-form">
+        <div class="form-col">
+          <label class="form-label">OpenAI: costo por 1M tokens (USD)</label>
+          <input id="openaiCostPer1M" class="form-input" placeholder="ej: 0.25">
+          <div class="form-help muted">Opcional. Si lo configuras, se estima costo en USD según tokens diarios.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: habilitado</label>
+          <label class="form-help" style="display:flex;align-items:center;gap:8px">
+            <input id="hostingerEnabled" type="checkbox"> Mostrar Hostinger en el panel
+          </label>
+        </div>
+
+        <div class="form-col">
+          <label class="form-label">Hostinger: ancho de banda usado (GB)</label>
+          <input id="hostBwUsed" class="form-input" placeholder="ej: 120">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: ancho de banda límite (GB)</label>
+          <input id="hostBwLimit" class="form-input" placeholder="ej: 1000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: disco usado (GB)</label>
+          <input id="hostDiskUsed" class="form-input" placeholder="ej: 28">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: disco límite (GB)</label>
+          <input id="hostDiskLimit" class="form-input" placeholder="ej: 200">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: costo mensual (USD)</label>
+          <input id="hostCostMonth" class="form-input" placeholder="ej: 19.99">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hostinger: API token (opcional)</label>
+          <input id="hostApiToken" class="form-input" placeholder="(se guardará cifrado)">
+          <div class="form-help muted">No se muestra luego; solo marca “token configurado”.</div>
+        </div>
+
+        <div class="form-col">
+          <label class="form-label">Cursor: habilitado</label>
+          <label class="form-help" style="display:flex;align-items:center;gap:8px">
+            <input id="cursorEnabled" type="checkbox"> Mostrar Cursor en el panel
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Cursor: costo mensual (USD)</label>
+          <input id="cursorCostMonth" class="form-input" placeholder="ej: 20">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Cursor: API key (opcional)</label>
+          <input id="cursorApiKey" class="form-input" placeholder="(se guardará cifrado)">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Cursor: notas (opcional)</label>
+          <input id="cursorNotes" class="form-input" placeholder="ej: plan Pro, 2 seats…">
+        </div>
+      </div>
+
+      <div id="consumosMsg" class="form-help" style="margin-top:10px"></div>
+    </section>
   </div>
 
   <script>
@@ -67,11 +173,120 @@
         document.getElementById('empresasCount').textContent = 'Error';
       }
     }
+
+    function esc(v){
+      return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function toNum(v){
+      const n = Number(String(v==null?'':v).trim());
+      return Number.isFinite(n) ? n : 0;
+    }
+    function fmtUSD(v){
+      const n = Number(v||0);
+      if(!Number.isFinite(n) || n<=0) return '';
+      return '≈ $' + n.toFixed(2) + ' USD';
+    }
+    function setMsg(text, isErr){
+      const el = document.getElementById('consumosMsg');
+      if(!el) return;
+      el.textContent = text || '';
+      el.className = isErr ? 'form-help error' : 'form-help muted';
+    }
+
+    async function loadConsumos(){
+      try{
+        const res = await fetch('/super/api/consumos', { credentials:'same-origin' });
+        const data = await res.json().catch(()=>null);
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP '+res.status));
+
+        document.getElementById('errTotal').textContent = String(data.errores_total ?? '-');
+
+        const oa = data.openai || {};
+        const oaSuper = oa.super || {};
+        const oaEmp = oa.empresas || {};
+        document.getElementById('openaiSuper').textContent = (oaSuper.consultas||0) + ' consultas / ' + (oaSuper.tokens||0) + ' tokens';
+        document.getElementById('openaiEmp').textContent = (oaEmp.consultas||0) + ' consultas / ' + (oaEmp.tokens||0) + ' tokens';
+        document.getElementById('openaiSuperCost').textContent = oaSuper.cost_usd_est ? ('Costo ' + fmtUSD(oaSuper.cost_usd_est)) : '';
+        document.getElementById('openaiEmpCost').textContent = oaEmp.cost_usd_est ? ('Costo ' + fmtUSD(oaEmp.cost_usd_est)) : '';
+
+        const host = data.hostinger || {};
+        const bw = (host.bandwidth_used_gb||0) + ' / ' + (host.bandwidth_limit_gb||0) + ' GB';
+        const disk = (host.disk_used_gb||0) + ' / ' + (host.disk_limit_gb||0) + ' GB';
+        document.getElementById('hostingerSummary').textContent = 'BW ' + bw + ' | Disco ' + disk;
+        document.getElementById('hostingerCost').textContent = host.cost_usd_month ? ('Costo mensual ' + fmtUSD(host.cost_usd_month)) : '';
+
+        // Rellenar formulario
+        document.getElementById('openaiCostPer1M').value = oa.cost_per_1m_tokens_usd ? String(oa.cost_per_1m_tokens_usd) : '';
+
+        document.getElementById('hostingerEnabled').checked = !!host.enabled;
+        document.getElementById('hostBwUsed').value = host.bandwidth_used_gb ? String(host.bandwidth_used_gb) : '';
+        document.getElementById('hostBwLimit').value = host.bandwidth_limit_gb ? String(host.bandwidth_limit_gb) : '';
+        document.getElementById('hostDiskUsed').value = host.disk_used_gb ? String(host.disk_used_gb) : '';
+        document.getElementById('hostDiskLimit').value = host.disk_limit_gb ? String(host.disk_limit_gb) : '';
+        document.getElementById('hostCostMonth').value = host.cost_usd_month ? String(host.cost_usd_month) : '';
+        document.getElementById('hostApiToken').value = '';
+
+        const cur = data.cursor || {};
+        document.getElementById('cursorEnabled').checked = !!cur.enabled;
+        document.getElementById('cursorCostMonth').value = cur.cost_usd_month ? String(cur.cost_usd_month) : '';
+        document.getElementById('cursorApiKey').value = '';
+        document.getElementById('cursorNotes').value = cur.notes ? String(cur.notes) : '';
+
+        setMsg('Consumos cargados.', false);
+      }catch(e){
+        setMsg(e.message || 'No se pudieron cargar consumos.', true);
+      }
+    }
+
+    async function saveConsumos(){
+      try{
+        const payload = {
+          openai_cost_per_1m_tokens_usd: (document.getElementById('openaiCostPer1M').value||'').trim() === '' ? null : toNum(document.getElementById('openaiCostPer1M').value),
+          hostinger: {
+            enabled: !!document.getElementById('hostingerEnabled').checked,
+            api_token: String(document.getElementById('hostApiToken').value||'').trim(),
+            bandwidth_used_gb: (document.getElementById('hostBwUsed').value||'').trim()==='' ? null : toNum(document.getElementById('hostBwUsed').value),
+            bandwidth_limit_gb: (document.getElementById('hostBwLimit').value||'').trim()==='' ? null : toNum(document.getElementById('hostBwLimit').value),
+            disk_used_gb: (document.getElementById('hostDiskUsed').value||'').trim()==='' ? null : toNum(document.getElementById('hostDiskUsed').value),
+            disk_limit_gb: (document.getElementById('hostDiskLimit').value||'').trim()==='' ? null : toNum(document.getElementById('hostDiskLimit').value),
+            cost_usd_month: (document.getElementById('hostCostMonth').value||'').trim()==='' ? null : toNum(document.getElementById('hostCostMonth').value)
+          },
+          cursor: {
+            enabled: !!document.getElementById('cursorEnabled').checked,
+            api_key: String(document.getElementById('cursorApiKey').value||'').trim(),
+            cost_usd_month: (document.getElementById('cursorCostMonth').value||'').trim()==='' ? null : toNum(document.getElementById('cursorCostMonth').value),
+            notes: String(document.getElementById('cursorNotes').value||'').trim()
+          }
+        };
+
+        // No enviar null explícito para openai si está vacío
+        if(payload.openai_cost_per_1m_tokens_usd === null) delete payload.openai_cost_per_1m_tokens_usd;
+
+        const res = await fetch('/super/api/consumos', {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(()=>null);
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP '+res.status));
+        setMsg('Guardado correctamente.', false);
+        await loadConsumos();
+      }catch(e){
+        setMsg(e.message || 'No se pudo guardar.', true);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function(){
       const btn = document.getElementById('refreshBtn');
       if (btn) btn.addEventListener('click', function(){ loadActiveCount(); loadEmpresasCount(); });
+      const btnReloadC = document.getElementById('btnReloadConsumos');
+      if (btnReloadC) btnReloadC.addEventListener('click', function(){ loadConsumos(); });
+      const btnSaveC = document.getElementById('btnSaveConsumos');
+      if (btnSaveC) btnSaveC.addEventListener('click', function(){ saveConsumos(); });
       loadActiveCount();
       loadEmpresasCount();
+      loadConsumos();
     });
   </script>
 </body>

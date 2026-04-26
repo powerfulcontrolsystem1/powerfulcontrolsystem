@@ -10,6 +10,22 @@
 	- `scripts/actualizar_repositorio.repo_url.example` : plantilla comentada; el archivo real `actualizar_repositorio.repo_url` va en `.gitignore`.
 	- `.gitignore` : ignora `scripts/actualizar_repositorio.repo_url`.
 
+- Actualizacion 2026-04-26: inventario/finanzas/asistencia — profesionalizacion operativa
+	- `web/administrar_empresa/generador_codigos_barras.html` : pagina empresarial para generar, guardar e imprimir etiquetas Code 128 de productos sin dependencias externas; usa `productos.codigo_barras` y queda enlazada al lector del carrito.
+	- `web/administrar_empresa/asistencia_empleados.html` : el formulario de asistencia permite seleccionar usuarios internos de la empresa y autocompletar codigo, nombre, documento y cargo/rol.
+	- `backend/db/finanzas.go` : defaults contables para Colombia ampliados con categorias operativas y destinos SIIGO, World Office, Alegra, Helisa, Loggro y ContaPyme.
+	- `backend/tools/pruebas_finanzas_motel_calipso/main.go` : runner CLI de pruebas operativas automatizables para finanzas sobre PostgreSQL (configuración, movimientos con retenciones, cierre/reapertura de periodo y cierres de caja). Requiere `DB_EMPRESAS_DSN`.
+	- `web/administrar_empresa/finanzas.html` : consola financiera ERP MVP con plan de cuentas, CxC/CxP, abonos/pagos trazables, importacion de extractos y conciliacion bancaria.
+	- `backend/handlers/reportes.go` : datasets contables exportables para plan de cuentas, CxC, CxP y conciliacion bancaria.
+	- `backend/handlers/modulos_faltantes.go` : acciones de cartera para registrar abonos/pagos y crear el movimiento financiero asociado.
+
+- Actualizacion 2026-04-26: reportes — chat IA compacto y exportacion
+	- `backend/handlers/reportes_ia_chat.go` : endpoint `POST /api/empresa/reportes_ia_chat` para preguntas de reportes (GPT-5.4 mini, 10/dia) y generacion/exportacion asistida (GPT-5.5, 2/dia), con conteo diario por empresa.
+	- `web/administrar_empresa/reportes_ia_chat.html` : chat compacto del modulo reportes con modo texto, modo reporte, selector de dataset/formato/rango y apertura del enlace exportado.
+
+- Actualizacion 2026-04-26: documento raiz de resumen ejecutivo
+	- `RESUMEN_DEL_PROYECTO.md` : resumen maximo y ejecutivo del proyecto, tecnologias, integraciones, modulos principales, arquitectura operativa, seguridad y trazabilidad.
+
 - Actualizacion 2026-04-25: chat global super — confirmación antes de PCS_ACTION
 	- `backend/handlers/chat_con_ia_global_super.go` : `buildSuperAISystemPrompt` exige turno de aclaración y confirmación antes de incluir `PCS_ACTION` (salvo modo solo lectura empresas, donde no aplica escritura).
 	- `web/super/chat_con_ia_global.html` : mensaje vacío/bienvenida menciona el flujo confirmar → ejecutar.
@@ -35,6 +51,12 @@
 	- `web/red_social_comercial.html`, `web/venta_publica.html`, `web/pagar_productos_de_venta_publica.html` : botón/enlace "Mensaje privado" para enviar consultas a la empresa y continuar el seguimiento desde `administrar_empresa/chat_y_tareas.html`.
 
 - Actualizacion 2026-04-24: super — pagina principal, tema claro/oscuro
+- Actualizacion 2026-04-26: super — información editable para IA del portal
+	- `web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html` : página del super administrador para editar texto persistente que se inyecta al prompt del chat público del index.
+	- `backend/handlers/super_portal_chat_ia_info.go` : API `/super/api/config/portal_chat_ia_info` (GET/PUT) para guardar/cargar el texto en `configuraciones` (dbSuper).
+
+- Actualizacion 2026-04-26: chat IA empresa — importación desde foto (admin-only)
+	- `backend/handlers/empresa_ia_importar_desde_foto.go` : endpoint `POST /api/empresa/ia/importar_desde_foto` que crea productos y/o egresos en lote a partir de una propuesta confirmada desde el chat IA, restringido a administrador autenticado.
 	- `web/super/pagina_principal.html` : script inicial que aplica `data-theme`, `theme-light` / `theme-dark` desde cookie `pcs_theme` y `localStorage` (coherente con iframe del panel super).
 	- `web/estilos.css` : `body.super-page` con `background`/`color` por variables; titulo `.super-page .page-header h1` sin gradiente ilegible en temas claros; `pagina_principal` usa `.pp-main-card` (en vez de `mp-card`) para evitar gradientes rosados en temas oscuros; `.pp-image-preview-wrap` con `color-mix` por tema.
 
@@ -8607,6 +8629,24 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 [2026-04-25] Index: banners con mismo tamaño que tarjetas
 - `web/index.html`: las tarjetas tipo banner (sección inferior) ahora usan el mismo grid y estilo de tarjetas principales; se elimina el tamaño fijo por ancho/alto de banner y se reutilizan los ajustes de tamaño de tarjeta del index.
 - `web/super/pagina_principal.html`: se eliminan los campos “Ancho fijo tarjetas tipo baner (px)” y “Alto fijo tarjetas tipo baner (px)” porque ya no aplican.
+
+[2026-04-26] Iconografía UI (SVG)
+- `web/img/gear-red.svg`: ícono de tuerca roja para configuración (no invertible en modo oscuro).
+- `web/img/excel.svg`: ícono estilo Excel (para OnlyOffice en menú).
+- `web/img/google-drive.svg`: ícono estilo Drive (para Nextcloud en menú).
+- `web/img/gpt.svg`: ícono estilo GPT/OpenAI (para Chat con IA).
+- `web/img/door.svg`: ícono de puerta (para Estaciones).
+- `web/img/invoice.svg`: ícono de recibo/factura (para Facturación electrónica).
+- `web/img/money.svg`: ícono de dinero (para Finanzas).
+- `web/img/backup.svg`: ícono de backup (para Backups).
+- `web/img/taxes.svg`: ícono de impuestos (para Impuestos).
+- `web/img/gps.svg`: ícono GPS (para Ubicación GPS).
+- `web/img/report.svg`: ícono de reporte (para Reportes).
+- `web/img/gift-card.svg`: ícono tarjeta regalo (para Códigos de descuento).
+- `web/img/audit.svg`: ícono auditoría (para Auditoría).
+- `web/img/customer.svg`: ícono cliente (para Clientes).
+- `web/img/social.svg`: ícono red social (para Red social empresarial).
+- `web/img/ecommerce.svg`: ícono e-commerce (para Venta pública).
 
 [2026-04-25] Seed operativo: tarifas Motel Calipso
 - `backend/tools/seed_motel_calipso_tarifas/main.go`: herramienta CLI para sembrar/actualizar tarifas por minutos y por día para todas las estaciones de una empresa (pensado para Motel Calipso, `empresa_id=7`) leyendo `estaciones_config` desde `empresa_estacion_prefs`. Requiere `DB_EMPRESAS_DSN`.

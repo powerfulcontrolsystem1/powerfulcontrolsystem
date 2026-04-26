@@ -95,6 +95,10 @@ const (
 	reporteDatasetOperativoAsistenciaNomina   = "operativo_asistencia_nomina_auditoria"
 	reporteDatasetOperativoVehiculos          = "operativo_vehiculos_permanencia"
 	reporteDatasetContableMovFin              = "contable_movimientos_financieros"
+	reporteDatasetContablePlanCuentas         = "contable_plan_cuentas"
+	reporteDatasetContableCxC                 = "contable_cuentas_por_cobrar"
+	reporteDatasetContableCxP                 = "contable_cuentas_por_pagar"
+	reporteDatasetContableConciliacionBanco   = "contable_conciliacion_bancaria"
 	reporteDatasetContableEventos             = "contable_eventos_contables"
 	reporteDatasetContableAsientos            = "contable_asientos_contables"
 	reporteDatasetContableNomina              = "contable_nomina_liquidaciones"
@@ -274,6 +278,34 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Movimientos Financieros",
 		Level:       "contable",
 		Description: "Libro de ingresos/egresos con totales y netos.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContablePlanCuentas,
+		Title:       "Plan de Cuentas",
+		Level:       "contable",
+		Description: "PUC operativo por empresa con naturaleza, nivel y admisión de movimiento.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableCxC,
+		Title:       "Cuentas por Cobrar",
+		Level:       "contable",
+		Description: "Cartera por cobrar con saldos, pagos, mora y estado de gestión.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableCxP,
+		Title:       "Cuentas por Pagar",
+		Level:       "contable",
+		Description: "Cartera por pagar con saldos, pagos, mora y estado de gestión.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableConciliacionBanco,
+		Title:       "Conciliación Bancaria",
+		Level:       "contable",
+		Description: "Resumen de extractos bancarios conciliados, pendientes y con desviación por periodo.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -652,6 +684,14 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoVehiculosPermanenciaDataset()
 	case reporteDatasetContableMovFin:
 		return b.buildContableMovimientosFinancierosDataset()
+	case reporteDatasetContablePlanCuentas:
+		return b.buildContablePlanCuentasDataset()
+	case reporteDatasetContableCxC:
+		return b.buildContableCarteraDataset(reporteDatasetContableCxC, "empresa_cuentas_por_cobrar", "cliente_nombre")
+	case reporteDatasetContableCxP:
+		return b.buildContableCarteraDataset(reporteDatasetContableCxP, "empresa_cuentas_por_pagar", "proveedor_nombre")
+	case reporteDatasetContableConciliacionBanco:
+		return b.buildContableConciliacionBancariaDataset()
 	case reporteDatasetContableEventos:
 		return b.buildContableEventosDataset()
 	case reporteDatasetContableAsientos:
@@ -676,8 +716,8 @@ func (b *reportesBuilder) buildOperativoImpuestosDeudaDataset() (empresaReporteD
 	})
 
 	type agg struct {
-		ventas  int
-		total   float64
+		ventas   int
+		total    float64
 		impuesto float64
 	}
 	m := map[string]*agg{}
@@ -711,9 +751,9 @@ func (b *reportesBuilder) buildOperativoImpuestosDeudaDataset() (empresaReporteD
 	for _, f := range fechas {
 		a := m[f]
 		ds.Rows = append(ds.Rows, map[string]interface{}{
-			"fecha":         f,
-			"ventas":        a.ventas,
-			"total_ventas":  reportesRound(a.total),
+			"fecha":          f,
+			"ventas":         a.ventas,
+			"total_ventas":   reportesRound(a.total),
 			"impuesto_total": reportesRound(a.impuesto),
 		})
 	}
@@ -4674,6 +4714,169 @@ func (b *reportesBuilder) buildContableMovimientosFinancierosDataset() (empresaR
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildContablePlanCuentasDataset() (empresaReporteDataset, error) {
+	rows, err := dbpkg.ListEmpresaGenericRows(b.db, "empresa_plan_cuentas", b.empresaID, dbpkg.EmpresaGenericListFilter{
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+		SearchColumns:   []string{"codigo", "nombre", "tipo_cuenta", "cuenta_clave"},
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(reporteDatasetContablePlanCuentas, []string{
+		"codigo",
+		"nombre",
+		"tipo_cuenta",
+		"naturaleza",
+		"nivel",
+		"cuenta_padre_codigo",
+		"admite_movimiento",
+		"aplica_impuesto",
+		"cuenta_clave",
+		"estado",
+	})
+	movimiento := int64(0)
+	requeridas := int64(0)
+	for _, row := range rows {
+		if reportesAnyBool(row["admite_movimiento"]) {
+			movimiento++
+		}
+		if reportesAnyBool(row["requerida"]) {
+			requeridas++
+		}
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"codigo":              reportesAnyString(row["codigo"]),
+			"nombre":              reportesAnyString(row["nombre"]),
+			"tipo_cuenta":         reportesAnyString(row["tipo_cuenta"]),
+			"naturaleza":          reportesAnyString(row["naturaleza"]),
+			"nivel":               reportesAnyFloat(row["nivel"]),
+			"cuenta_padre_codigo": reportesAnyString(row["cuenta_padre_codigo"]),
+			"admite_movimiento":   reportesAnyBool(row["admite_movimiento"]),
+			"aplica_impuesto":     reportesAnyBool(row["aplica_impuesto"]),
+			"cuenta_clave":        reportesAnyString(row["cuenta_clave"]),
+			"estado":              reportesAnyString(row["estado"]),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["cuentas_total"] = ds.RowCount
+	ds.Summary["cuentas_movimiento"] = movimiento
+	ds.Summary["cuentas_requeridas"] = requeridas
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildContableCarteraDataset(key, table, terceroCol string) (empresaReporteDataset, error) {
+	rows, err := dbpkg.ListEmpresaGenericRows(b.db, table, b.empresaID, dbpkg.EmpresaGenericListFilter{
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+		SearchColumns:   []string{"codigo", terceroCol, "documento_codigo", "estado_cartera"},
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(key, []string{
+		"codigo",
+		"tercero",
+		"documento_tipo",
+		"documento_codigo",
+		"fecha_emision",
+		"fecha_vencimiento",
+		"dias_mora",
+		"valor_original",
+		"valor_pagado",
+		"saldo",
+		"estado_cartera",
+		"periodo_contable",
+	})
+	totalOriginal := 0.0
+	totalPagado := 0.0
+	totalSaldo := 0.0
+	vencidas := int64(0)
+	for _, row := range rows {
+		fechaEmision := reportesAnyString(row["fecha_emision"])
+		if !reportesDateWithinRange(fechaEmision, b.desde, b.hasta) {
+			continue
+		}
+		saldo := reportesAnyFloat(row["saldo"])
+		diasMora := int64(reportesAnyFloat(row["dias_mora"]))
+		if diasMora > 0 || strings.EqualFold(reportesAnyString(row["estado_cartera"]), "vencida") {
+			vencidas++
+		}
+		valorOriginal := reportesAnyFloat(row["valor_original"])
+		valorPagado := reportesAnyFloat(row["valor_pagado"])
+		totalOriginal += valorOriginal
+		totalPagado += valorPagado
+		totalSaldo += saldo
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"codigo":            reportesAnyString(row["codigo"]),
+			"tercero":           reportesAnyString(row[terceroCol]),
+			"documento_tipo":    reportesAnyString(row["documento_tipo"]),
+			"documento_codigo":  reportesAnyString(row["documento_codigo"]),
+			"fecha_emision":     fechaEmision,
+			"fecha_vencimiento": reportesAnyString(row["fecha_vencimiento"]),
+			"dias_mora":         diasMora,
+			"valor_original":    reportesRound(valorOriginal),
+			"valor_pagado":      reportesRound(valorPagado),
+			"saldo":             reportesRound(saldo),
+			"estado_cartera":    reportesAnyString(row["estado_cartera"]),
+			"periodo_contable":  reportesAnyString(row["periodo_contable"]),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["valor_original"] = reportesRound(totalOriginal)
+	ds.Summary["valor_pagado"] = reportesRound(totalPagado)
+	ds.Summary["saldo"] = reportesRound(totalSaldo)
+	ds.Summary["vencidas"] = vencidas
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildContableConciliacionBancariaDataset() (empresaReporteDataset, error) {
+	resumen, err := dbpkg.GetEmpresaConciliacionBancariaPorPeriodo(b.db, b.empresaID, dbpkg.EmpresaConciliacionBancariaFilter{
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(reporteDatasetContableConciliacionBanco, []string{
+		"periodo_contable",
+		"extractos_total",
+		"extractos_conciliados",
+		"extractos_pendientes",
+		"extractos_con_desviacion",
+		"extractos_monto_total",
+		"extractos_monto_conciliado",
+		"movimientos_internos_total",
+		"movimientos_internos_monto",
+		"desfase_registros",
+		"desfase_monto",
+		"estado_conciliacion",
+	})
+	for _, row := range resumen.Filas {
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"periodo_contable":           row.PeriodoContable,
+			"extractos_total":            row.ExtractosTotal,
+			"extractos_conciliados":      row.ExtractosConciliados,
+			"extractos_pendientes":       row.ExtractosPendientes,
+			"extractos_con_desviacion":   row.ExtractosConDesviacion,
+			"extractos_monto_total":      reportesRound(row.ExtractosMontoTotal),
+			"extractos_monto_conciliado": reportesRound(row.ExtractosMontoConciliado),
+			"movimientos_internos_total": row.MovimientosInternosTotal,
+			"movimientos_internos_monto": reportesRound(row.MovimientosInternosMonto),
+			"desfase_registros":          row.DesfaseRegistros,
+			"desfase_monto":              reportesRound(row.DesfaseMonto),
+			"estado_conciliacion":        row.EstadoConciliacion,
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["periodos_total"] = resumen.TotalPeriodos
+	ds.Summary["periodos_conciliados"] = resumen.PeriodosConciliados
+	ds.Summary["periodos_con_pendientes"] = resumen.PeriodosConPendientes
+	ds.Summary["periodos_con_descuadre"] = resumen.PeriodosConDescuadre
+	return ds, nil
+}
+
 func (b *reportesBuilder) buildContableEventosDataset() (empresaReporteDataset, error) {
 	eventos, err := dbpkg.ListEmpresaEventosContables(b.db, b.empresaID, dbpkg.EmpresaEventoContableFilter{
 		IncludeInactive: b.includeInactive,
@@ -5172,6 +5375,64 @@ func reportesEstadoActivo(estado string) bool {
 
 func reportesRound(v float64) float64 {
 	return math.Round(v*100) / 100
+}
+
+func reportesAnyString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case []byte:
+		return strings.TrimSpace(string(t))
+	default:
+		return strings.TrimSpace(fmt.Sprintf("%v", t))
+	}
+}
+
+func reportesAnyFloat(v interface{}) float64 {
+	switch t := v.(type) {
+	case float64:
+		return t
+	case float32:
+		return float64(t)
+	case int:
+		return float64(t)
+	case int32:
+		return float64(t)
+	case int64:
+		return float64(t)
+	case []byte:
+		f, _ := strconv.ParseFloat(strings.TrimSpace(string(t)), 64)
+		return f
+	case string:
+		f, _ := strconv.ParseFloat(strings.TrimSpace(t), 64)
+		return f
+	default:
+		return 0
+	}
+}
+
+func reportesAnyBool(v interface{}) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case int:
+		return t != 0
+	case int64:
+		return t != 0
+	case float64:
+		return t != 0
+	case []byte:
+		s := strings.ToLower(strings.TrimSpace(string(t)))
+		return s == "1" || s == "true" || s == "si" || s == "sí"
+	case string:
+		s := strings.ToLower(strings.TrimSpace(t))
+		return s == "1" || s == "true" || s == "si" || s == "sí"
+	default:
+		return false
+	}
 }
 
 func reportesNormalizeMetodoPagoFinanzas(v string) string {

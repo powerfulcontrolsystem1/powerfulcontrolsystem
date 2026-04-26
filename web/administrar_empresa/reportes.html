@@ -1190,7 +1190,27 @@
       const cfg = state.config || {};
       const venta = sample.sale;
       const items = sample.items.filter(it => normalize(it.estado || 'activo').toLowerCase() === 'activo');
-      const empresa = 'Empresa #' + state.empresaID;
+      const empresa = normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ('Empresa #' + state.empresaID);
+      const showLogo = cfg.mostrar_logo !== false;
+      const logoUrl = (function(){
+        const v = normalize(cfg.logo_url);
+        const lower = v.toLowerCase();
+        if (!v) return '';
+        if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || v.indexOf('/') === 0) return v;
+        return '';
+      })();
+      const legalLines = (function(){
+        const out = [];
+        const nit = normalize(cfg.nit);
+        if (nit) out.push('NIT: ' + nit + (normalize(cfg.digito_verificacion) ? ('-' + normalize(cfg.digito_verificacion)) : ''));
+        const dir = normalize(cfg.direccion_fiscal);
+        if (dir) out.push('Dirección: ' + dir);
+        const tel = normalize(cfg.telefono_facturacion);
+        if (tel) out.push('Tel: ' + tel);
+        const mail = normalize(cfg.email_facturacion);
+        if (mail) out.push('Email: ' + mail);
+        return out;
+      })();
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
@@ -1199,13 +1219,17 @@
         const itemsHtml = items.map(it =>
           '<tr><td>' + sanitize(it.descripcion || '') + '</td><td style="text-align:center;">' + Number(it.cantidad || 0).toFixed(2) + '</td><td style="text-align:right;">' + fmtMoney(it.total_linea || 0) + '</td></tr>'
         ).join('');
-        return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa POS</title><style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;border-bottom:1px dashed #ccc}small{color:#666}</style></head><body>' +
+        return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa POS</title><style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;border-bottom:1px dashed #ccc}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}</style></head><body>' +
+          (showLogo && logoUrl ? ('<img src="'+sanitize(logoUrl)+'" alt="Logo">') : '') +
           '<h1>Tiquete POS</h1>' +
-          '<p><strong>' + sanitize(empresa) + '</strong><br>Carrito: ' + sanitize(venta.codigo || venta.id) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
+          '<p><strong>' + sanitize(empresa) + '</strong>' +
+          (legalLines.length ? ('<br><small>' + sanitize(legalLines.join(' | ')) + '</small>') : '') +
+          '<br>Carrito: ' + sanitize(venta.codigo || venta.id) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
           '<table><tbody>' + itemsHtml + '</tbody></table>' +
           '<p><strong>Total: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
             '<small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small><br>' +
           '<small>Formato configurado: ' + sanitize(normalize(cfg.formato_impresion) || 'carta') + ' | Copia: ' + (cfg.imprimir_copia_factura === true ? 'Sí' : 'No') + '</small>' +
+          (normalize(cfg.notas_legales) ? ('<hr><small>' + sanitize(cfg.notas_legales) + '</small>') : '') +
           (normalize(cfg.pie_factura) ? ('<p><small>' + sanitize(cfg.pie_factura) + '</small></p>') : '') +
           '</body></html>';
       }

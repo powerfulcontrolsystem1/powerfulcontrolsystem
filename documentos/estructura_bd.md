@@ -28,6 +28,15 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 - Regla operativa de almacenamiento:
   - los comprobantes físicos de compras y finanzas se guardan en el filesystem bajo `web/uploads/comprobantes/empresa_<empresa_id>/compras/` y `web/uploads/comprobantes/empresa_<empresa_id>/finanzas/`, manteniendo aislamiento por `empresa_id`.
 
+Actualizacion 2026-04-26 (finanzas/inventario/asistencia: integracion operativa)
+- empresa_finanzas_configuracion:
+  - `integracion_contable_destino` acepta valores operativos `generico`, `siigo`, `world_office`, `alegra`, `helisa`, `loggro`, `contapyme`.
+  - Las categorias/cuentas por defecto se amplian para operación Colombia (ventas, habitaciones, restaurante, bar, lavanderia, propinas, compras, nomina, servicios publicos, arriendo, mantenimiento, impuestos, bancos).
+- productos:
+  - `codigo_barras` se usa como destino persistente del generador de etiquetas Code 128 por empresa y como fuente prioritaria del lector en carritos.
+- empresa_asistencia_empleados:
+  - `empleado_id` puede vincular el registro de asistencia al usuario interno de la empresa (`users.id`) para mantener trazabilidad operativa de llegada/salida por cuenta creada.
+
 ## 1) Base: pcs_empresas
 
 
@@ -432,6 +441,11 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
   - conciliado_en, conciliado_por
   - origen, hash_movimiento
   - UNIQUE(empresa_id, hash_movimiento)
+- empresa_plan_cuentas:
+  - se usa como plan de cuentas operativo del modulo financiero; la UI permite plantilla PUC por tipo de empresa, alta/edicion/inactivacion y validacion de `admite_movimiento`.
+- empresa_cuentas_por_cobrar / empresa_cuentas_por_pagar:
+  - gestionan cartera operativa con valor original, valor pagado, saldo, estado_cartera, dias_mora, referencia_pagos_json y notas.
+  - los abonos/pagos se registran como `empresa_finanzas_movimientos` y actualizan saldo/estado para mantener trazabilidad financiera por `empresa_id`.
 
 ### Tabla de eventos contables empresariales
 - empresa_eventos_contables:

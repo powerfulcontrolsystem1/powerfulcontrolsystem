@@ -102,6 +102,51 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, rows)
 				return
 
+			case "pagos", "pagos_nomina":
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				empleadoNominaID, err := parseInt64QueryOptional(r, "empleado_nomina_id")
+				if err != nil {
+					http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+					return
+				}
+				rows, err := dbpkg.ListEmpresaNominaPagos(dbEmp, empresaID, dbpkg.EmpresaNominaPagoFilter{
+					PeriodoDesde:     strings.TrimSpace(r.URL.Query().Get("periodo_desde")),
+					PeriodoHasta:     strings.TrimSpace(r.URL.Query().Get("periodo_hasta")),
+					EmpleadoNominaID: empleadoNominaID,
+					IncludeInactive:  queryBool(r, "include_inactive"),
+					Limit:            limit,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo listar pagos de nomina", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "provisiones", "resumen_empresarial", "aportes":
+				empleadoNominaID, err := parseInt64QueryOptional(r, "empleado_nomina_id")
+				if err != nil {
+					http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+					return
+				}
+				resumen, err := dbpkg.GetEmpresaNominaProvisionesResumen(
+					dbEmp,
+					empresaID,
+					strings.TrimSpace(r.URL.Query().Get("periodo_desde")),
+					strings.TrimSpace(r.URL.Query().Get("periodo_hasta")),
+					empleadoNominaID,
+				)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, resumen)
+				return
+
 			case "desprendible", "desprendible_nomina":
 				empleadoNominaID, err := parseInt64Query(r, "empleado_nomina_id")
 				if err != nil {
@@ -293,6 +338,58 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				req.AutoRecalcular = req.AutoRecalcular || queryBool(r, "auto_recalcular") || queryBool(r, "recalcular")
 				req.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 				result, err := dbpkg.ConciliarEmpresaNominaAsistencia(dbEmp, req)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, result)
+				return
+
+			case "generar_pagos", "pagar_nomina":
+				var payload struct {
+					EmpresaID         int64  `json:"empresa_id"`
+					PeriodoDesde      string `json:"periodo_desde"`
+					PeriodoHasta      string `json:"periodo_hasta"`
+					EmpleadoNominaID  int64  `json:"empleado_nomina_id"`
+					MetodoPago        string `json:"metodo_pago"`
+					CuentaBancaria    string `json:"cuenta_bancaria"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.PeriodoDesde) == "" {
+					payload.PeriodoDesde = strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				}
+				if strings.TrimSpace(payload.PeriodoHasta) == "" {
+					payload.PeriodoHasta = strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				}
+				if payload.EmpleadoNominaID <= 0 {
+					if id, err := parseInt64QueryOptional(r, "empleado_nomina_id"); err == nil && id > 0 {
+						payload.EmpleadoNominaID = id
+					}
+				}
+				result, err := dbpkg.GenerateEmpresaNominaPagos(
+					dbEmp,
+					payload.EmpresaID,
+					strings.TrimSpace(payload.PeriodoDesde),
+					strings.TrimSpace(payload.PeriodoHasta),
+					payload.EmpleadoNominaID,
+					strings.TrimSpace(payload.MetodoPago),
+					strings.TrimSpace(payload.CuentaBancaria),
+					strings.TrimSpace(adminEmailFromRequest(r)),
+				)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return

@@ -2,6 +2,24 @@
     - Archivos: `Pendiente Notas`, `backend/tools/inspect_admin_login/main.go`, `documentos/estructura_bd.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`
     - Descripcion: se eliminan credenciales en texto plano del backlog y de un tool interno; se corrige una seccion con escapes/encoding roto en estructura BD; se actualizan fragmentos de documentacion para reflejar PostgreSQL como runtime canonico y mejorar legibilidad (acentos, guiones, comillas).
 
+- 2026-04-26: reportes ? chat IA compacto con exportacion asistida.
+    - Archivos: `backend/handlers/reportes_ia_chat.go`, `backend/handlers/empresa_permisos.go`, `backend/main.go`, `web/administrar_empresa/reportes_ia_chat.html`, `web/administrar_empresa/reportes_menu.html`, `web/js/administrar_empresa.js`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`
+    - Descripcion: se agrega un chat IA dentro del menu de reportes. El modo texto usa GPT-5.4 mini con limite de 10 preguntas diarias por empresa; el modo reporte usa GPT-5.5 con limite de 2 reportes diarios por empresa, interpreta la solicitud, elige dataset/formato y devuelve enlace de exportacion usando el motor existente de reportes.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: portal publico ? descripciones de tarjetas como parrafo compacto.
+    - Archivos: `web/index.html`, `documentos/historial_de_cambios`
+    - Descripcion: las descripciones de las tarjetas del index dejan de centrarse y pasan a mostrarse como parrafos compactos justificados/alineados a la izquierda para mejorar legibilidad.
+
+- 2026-04-26: finanzas/inventario/asistencia ? base contable Colombia + codigos de barras + usuarios vinculados.
+    - Archivos: `backend/db/finanzas.go`, `backend/handlers/empresa_permisos.go`, `web/administrar_empresa/finanzas.html`, `web/administrar_empresa/generador_codigos_barras.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`
+    - Descripcion: se amplian defaults contables para Colombia (categorias/cuentas e integraciones SIIGO, World Office, Alegra, Helisa, Loggro y ContaPyme); se agrega modulo de generacion/impresion de codigos de barras Code 128 sin dependencias, persistiendo en `productos.codigo_barras`; asistencia ahora permite vincular registros con usuarios internos de empresa para autocompletar datos y rol/cargo.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: documentacion raiz ? resumen ejecutivo del proyecto.
+    - Archivos: `RESUMEN_DEL_PROYECTO.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
+    - Descripcion: se crea un documento raiz breve con resumen del proyecto, tecnologias utilizadas, integraciones principales, modulos, arquitectura operacional, seguridad y trazabilidad, pensado para lectura rapida en maximo cuatro paginas.
+
 - 2026-04-26: chat y tareas + facturacion electronica ? firma y estabilidad.
     - Archivos: `web/administrar_empresa/facturacion_electronica.html`, `backend/handlers/modulos_faltantes.go`, `backend/handlers/chat_tareas.go`, `backend/db/chat_tareas.go`, `backend/db/sql_compat.go`, `web/estilos.css`
     - Descripcion: se expone en la UI de facturacion electronica la carga de firma DIAN (multipart) con guardado aislado por empresa en `web/uploads/dian/empresa_<id>/` y referencia segura; se corrige el modulo chat_y_tareas para funcionar en PostgreSQL (DDL compatible + SQL compat `? -> $n`), evitando fallos al crear citas/tareas; se compactan controles (botones en fila y estilos tipo tabla).
@@ -30,6 +48,25 @@
 - 2026-04-26: Nextcloud ? servicio VPS configurable + cuota por empresa (default 1GB) + módulo empresa.
     - Archivos: `backend/handlers/nextcloud_super_config.go`, `backend/handlers/nextcloud_empresa.go`, `backend/db/nextcloud.go`, `backend/handlers/super_limitaciones_empresa.go`, `web/super/configuracion_avanzada.html`, `web/administrar_empresa/nextcloud.html`, `web/administrar_empresa.html`, `deploy/nextcloud/docker-compose.yml`, `backend/main.go`
     - Descripcion: se agrega Nextcloud como servicio del VPS configurable desde configuración avanzada (enabled, URL, credenciales admin cifradas) con prueba `/status.php`; se implementa aprovisionamiento por empresa vía OCS (usuario `empresa_<id>`) y guardado de credenciales cifradas en `pcs_empresas`; se agrega limitación global editable `empresa.limitaciones.nextcloud.max_gb` (default 1 GB) usada para cuota por empresa; se integra el acceso en el menú de administrar empresa y una página dedicada para aprovisionar/resetear y abrir Nextcloud.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: estaciones ? evitar que checks especiales se reviertan por sync de carritos.
+    - Archivos: `backend/handlers/empresa_estacion_prefs.go`
+    - Descripcion: al guardar `estaciones_config`, si la sincronización automática de carritos falla, el endpoint ya no devuelve 500 (lo que hacía que la UI revirtiera checks como Caja/YouTube/Notas/IA). Ahora responde `ok=true` y reporta `sync_error` para diagnóstico, manteniendo el guardado de preferencias.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: super ? información editable para IA del portal + precios de licencias en prompt.
+    - Archivos: `web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`, `web/super_administrador.html`, `backend/handlers/super_portal_chat_ia_info.go`, `backend/handlers/public_chat_portal.go`, `backend/main.go`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
+    - Descripcion: se agrega una página en el panel super para editar y persistir información “oficial” que alimenta el chat público del index; se expone API super para guardar/cargar el texto (configuraciones); el chat del portal inyecta ese texto al system prompt y además agrega un resumen automático de precios de licencias desde la base de datos.
+
+- 2026-04-26: chat IA empresa ? importar productos/egresos desde foto (admin-only).
+    - Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `backend/handlers/empresa_ia_importar_desde_foto.go`, `backend/handlers/chat_con_inteligencia_artificial_router.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `documentos/historial_de_cambios`
+    - Descripcion: se habilita en el chat empresarial adjuntar/tomar foto (cámara) y se agrega un endpoint admin-only para aplicar importaciones masivas de productos y/o egresos sugeridas por IA desde una imagen, usando flujo PCS_ACTION con confirmación humana.
+    - Verificacion: `go test ./...` en `backend/`.
+
+- 2026-04-26: OnlyOffice ? autogeneración/persistencia de JWT secret al abrir editor.
+    - Archivos: `backend/handlers/onlyoffice.go`
+    - Descripcion: al solicitar `action=editor_config`, el backend asegura que exista `onlyoffice.jwt_secret` (si hay cifrado disponible) para que el editor no falle con el mensaje de que el token de seguridad no está configurado.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
@@ -15122,3 +15159,113 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/administrar_empresa/nextcloud.html
 - web/super/configuracion_avanzada.html
+
+2026-04-26: Manejo robusto de desactivado/desconfigurado para OnlyOffice y Nextcloud
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- backend/handlers/nextcloud_empresa.go
+- web/administrar_empresa/nextcloud.html
+Descripcion:
+- Nextcloud: `context` ahora expone `enabled`/`configured` y `provision` devuelve `ok:false` con mensaje claro cuando el servicio está desactivado o incompleto, evitando errores genéricos en UI.
+- OnlyOffice: endpoints devuelven JSON consistente cuando está desactivado o falta `onlyoffice.jwt_secret` / `onlyoffice.document_server_url`, evitando 401/500 engañosos.
+
+2026-04-26: Fix checks especiales en configuración de estaciones (Caja/YouTube/Notas/IA)
+Archivos modificados:
+- web/administrar_empresa/configuracion_de_estaciones.html
+Descripcion:
+- Se añadió `normalizeNotesRepeatMinutes()` (faltante) para evitar excepción en `normalizeConfig()`, que disparaba el `catch` y revertía automáticamente los toggles al intentar guardarlos.
+
+2026-04-26: Tarjetas del index sin "..." en títulos
+Archivos modificados:
+- web/index.html
+Descripcion:
+- Se removió el line-clamp/ellipsis del título y se implementó auto-ajuste de tamaño de fuente para que el texto quepa en 2 líneas sin cambiar el tamaño uniforme de las tarjetas.
+
+2026-04-26: Títulos de tarjetas del index hasta 3 líneas
+Archivos modificados:
+- web/index.html
+Descripcion:
+- Se amplió el alto permitido de los títulos de tarjetas públicas a 3 líneas y se ajustó el cálculo de reducción de fuente para evitar puntos suspensivos manteniendo tarjetas uniformes.
+
+2026-04-26: Panel super — consumos OpenAI/Hostinger/Cursor + contador de errores + gráficas en curva
+Archivos modificados:
+- backend/handlers/super_consumos_handlers.go
+- backend/main.go
+- web/super/licencias_resumen.html
+- web/super/metricas_de_trafico_general.html
+Descripcion:
+- Se agregó `/super/api/consumos` (protegido) que expone tokens/consultas OpenAI del día (super y empresas), estimación opcional en USD por costo/1M tokens, consumos manuales de Hostinger (ancho de banda y disco) y Cursor, y el contador total de errores del sistema.
+- Se añadieron tarjetas en el panel del super (`licencias_resumen`) para visualizar estos consumos y un formulario para configurar valores/tokens (guardados cifrados si aplica).
+- Se ajustaron las gráficas de métricas a curva (tension + interpolación monotone).
+
+2026-04-26: UI — OnlyOffice tipo Office 365 + íconos de menú + ajustes visuales super/index/selector
+Archivos modificados:
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/administrar_empresa.html
+- web/super_administrador.html
+- web/index.html
+- web/estilos.css
+- web/img/gear-red.svg
+- web/img/excel.svg
+- web/img/google-drive.svg
+- web/img/gpt.svg
+- web/img/door.svg
+- web/img/invoice.svg
+- web/img/money.svg
+- web/img/backup.svg
+- web/img/taxes.svg
+- web/img/gps.svg
+- web/img/report.svg
+- web/img/gift-card.svg
+- web/img/audit.svg
+- web/img/customer.svg
+- web/img/social.svg
+- web/img/ecommerce.svg
+Descripcion:
+- OnlyOffice: se agregaron tiles de creación (Word/Excel/PowerPoint) y se aumentó el tamaño de iconos para una experiencia tipo Office 365 en la nube.
+- Menú administrar empresa: se actualizaron íconos y etiquetas (OnlyOffice, Nextcloud, Chat con IA, Configuración, Estaciones, Facturación, Finanzas, Backups, Impuestos, GPS, Reportes, Códigos, Auditoría, Clientes, Red social, Venta pública).
+- Super admin: el botón “Seleccionar empresa” ahora es verde; “Configuración avanzada” usa tuerca roja (sin inversión en modo oscuro).
+- Index: el título del header en tema oscuro se fuerza a color claro.
+- Selector de empresa: tarjetas más compactas verticalmente.
+
+2026-04-26: Formato legal empresarial para recibos/facturas (POS y Carta) por empresa
+Archivos modificados:
+- web/estilos.css
+- web/administrar_empresa/ventas.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/reportes.html
+Descripcion:
+- Ventas y Facturas: ahora cargan `configuracion_avanzada` por empresa y aplican logo (`logo_url` + `mostrar_logo`), datos fiscales y textos (`notas_legales`, `pie_factura`) en la vista previa y en la impresión.
+- Se soporta automáticamente el formato según `formato_impresion` (`pos` para impresora pequeña / `carta` para impresora grande).
+- Reportes: la vista previa POS incorpora header legal y notas/pie configurables por empresa.
+
+2026-04-26: QA — runner de pruebas operativas automatizables de finanzas (Motel Calipso)
+Archivos agregados:
+- backend/tools/pruebas_finanzas_motel_calipso/main.go
+Descripcion:
+- Se agregó un runner CLI que valida sobre PostgreSQL: configuración finanzas, creación de ingresos/egresos con retenciones y total neto, cierre/reapertura de periodo contable (bloqueo de movimientos en periodo cerrado) y transiciones/bloqueos de cierres de caja.
+- Requiere `DB_EMPRESAS_DSN` (no se ejecuta sin DSN definido; no imprime secretos).
+
+2026-04-26: Finanzas ERP MVP — plan de cuentas, cartera, extractos y reportes
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/reportes.go
+- backend/tools/pruebas_finanzas_motel_calipso/main.go
+- web/administrar_empresa/finanzas.html
+- documentos/estructura_bd.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_de_archivos
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/historial_de_cambios
+Descripcion:
+- Finanzas integra plan de cuentas operativo, CxC/CxP, abonos/pagos trazables contra movimientos financieros, importacion/previsualizacion de extractos y conciliacion bancaria desde la misma pantalla.
+- Reportes agrega datasets contables exportables para plan de cuentas, cartera por cobrar/pagar y conciliacion bancaria, evitando depender solo de datos cargados en navegador.
+- El runner QA de Motel Calipso se amplio para cubrir plan de cuentas, cartera, abonos, extractos y conciliacion bancaria. `go test ./...` pasa; la ejecucion contra DB real queda bloqueada si las credenciales locales de PostgreSQL no autentican.
+
+2026-04-26: Tarifas estaciones — 2 horas $35.000 y hora extra/fracción $20.000 (tarifa por minutos)
+Archivos modificados:
+- backend/tools/seed_motel_calipso_tarifas/main.go
+- web/administrar_empresa/tarifas_por_minutos.html
+Descripcion:
+- Se ajustó el preset por defecto para tarifa por minutos a: `minutos_base=120`, `valor_base=35000`, `minutos_extra=60`, `valor_extra=20000`.
+- La lógica de “fracción” ya queda cubierta porque el cálculo usa `ceil` para los bloques extra cuando se excede el tiempo base.

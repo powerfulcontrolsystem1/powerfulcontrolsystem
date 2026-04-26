@@ -35,6 +35,16 @@ type EmpresaNominaConfiguracion struct {
 	DeduccionSaludPorcentaje             float64 `json:"deduccion_salud_porcentaje"`
 	DeduccionPensionPorcentaje           float64 `json:"deduccion_pension_porcentaje"`
 	DeduccionFondoSolidaridadPorcentaje  float64 `json:"deduccion_fondo_solidaridad_porcentaje"`
+	AporteSaludEmpleadorPorcentaje       float64 `json:"aporte_salud_empleador_porcentaje"`
+	AportePensionEmpleadorPorcentaje     float64 `json:"aporte_pension_empleador_porcentaje"`
+	AporteARLPorcentaje                  float64 `json:"aporte_arl_porcentaje"`
+	AporteCajaCompensacionPorcentaje     float64 `json:"aporte_caja_compensacion_porcentaje"`
+	AporteICBFPorcentaje                 float64 `json:"aporte_icbf_porcentaje"`
+	AporteSENAPorcentaje                 float64 `json:"aporte_sena_porcentaje"`
+	ProvisionCesantiasPorcentaje         float64 `json:"provision_cesantias_porcentaje"`
+	ProvisionInteresesCesantiasPorcentaje float64 `json:"provision_intereses_cesantias_porcentaje"`
+	ProvisionPrimaPorcentaje             float64 `json:"provision_prima_porcentaje"`
+	ProvisionVacacionesPorcentaje        float64 `json:"provision_vacaciones_porcentaje"`
 	FechaCreacion                        string  `json:"fecha_creacion,omitempty"`
 	FechaActualizacion                   string  `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador                       string  `json:"usuario_creador,omitempty"`
@@ -143,6 +153,69 @@ type EmpresaNominaLiquidacionFilter struct {
 	EmpleadoNominaID int64
 	IncludeInactive  bool
 	Limit            int
+}
+
+type EmpresaNominaPago struct {
+	ID                  int64   `json:"id"`
+	EmpresaID           int64   `json:"empresa_id"`
+	LiquidacionID       int64   `json:"liquidacion_id"`
+	EmpleadoNominaID    int64   `json:"empleado_nomina_id"`
+	EmpleadoNombre      string  `json:"empleado_nombre"`
+	EmpleadoDocumento   string  `json:"empleado_documento,omitempty"`
+	PeriodoDesde        string  `json:"periodo_desde"`
+	PeriodoHasta        string  `json:"periodo_hasta"`
+	FechaPago           string  `json:"fecha_pago"`
+	MetodoPago          string  `json:"metodo_pago"`
+	CuentaBancaria      string  `json:"cuenta_bancaria,omitempty"`
+	ReferenciaPago      string  `json:"referencia_pago,omitempty"`
+	DevengadoTotal      float64 `json:"devengado_total"`
+	DeduccionTotal      float64 `json:"deduccion_total"`
+	NetoPagado          float64 `json:"neto_pagado"`
+	EstadoPago          string  `json:"estado_pago"`
+	FechaCreacion       string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion  string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador      string  `json:"usuario_creador,omitempty"`
+	Estado              string  `json:"estado,omitempty"`
+	Observaciones       string  `json:"observaciones,omitempty"`
+}
+
+type EmpresaNominaPagoFilter struct {
+	PeriodoDesde     string
+	PeriodoHasta     string
+	EmpleadoNominaID int64
+	IncludeInactive  bool
+	Limit            int
+}
+
+type EmpresaNominaPagosResult struct {
+	EmpresaID       int64               `json:"empresa_id"`
+	PeriodoDesde    string              `json:"periodo_desde"`
+	PeriodoHasta    string              `json:"periodo_hasta"`
+	Generados       int                 `json:"generados"`
+	Omitidos        int                 `json:"omitidos"`
+	TotalNetoPagado float64             `json:"total_neto_pagado"`
+	Pagos           []EmpresaNominaPago `json:"pagos"`
+}
+
+type EmpresaNominaProvisionesResumen struct {
+	EmpresaID                   int64   `json:"empresa_id"`
+	PeriodoDesde                string  `json:"periodo_desde"`
+	PeriodoHasta                string  `json:"periodo_hasta"`
+	Liquidaciones               int     `json:"liquidaciones"`
+	TotalDevengado              float64 `json:"total_devengado"`
+	TotalIBC                    float64 `json:"total_ibc"`
+	TotalNetoPagar              float64 `json:"total_neto_pagar"`
+	AporteSaludEmpleador        float64 `json:"aporte_salud_empleador"`
+	AportePensionEmpleador      float64 `json:"aporte_pension_empleador"`
+	AporteARL                   float64 `json:"aporte_arl"`
+	AporteCajaCompensacion      float64 `json:"aporte_caja_compensacion"`
+	AporteICBF                  float64 `json:"aporte_icbf"`
+	AporteSENA                  float64 `json:"aporte_sena"`
+	ProvisionCesantias          float64 `json:"provision_cesantias"`
+	ProvisionInteresesCesantias float64 `json:"provision_intereses_cesantias"`
+	ProvisionPrima              float64 `json:"provision_prima"`
+	ProvisionVacaciones         float64 `json:"provision_vacaciones"`
+	CostoEmpresaEstimado        float64 `json:"costo_empresa_estimado"`
 }
 
 // EmpresaNominaCalculoRequest representa una solicitud de calculo de nomina por periodo.
@@ -321,6 +394,16 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			deduccion_salud_porcentaje REAL DEFAULT 4,
 			deduccion_pension_porcentaje REAL DEFAULT 4,
 			deduccion_fondo_solidaridad_porcentaje REAL DEFAULT 0,
+			aporte_salud_empleador_porcentaje REAL DEFAULT 8.5,
+			aporte_pension_empleador_porcentaje REAL DEFAULT 12,
+			aporte_arl_porcentaje REAL DEFAULT 0.522,
+			aporte_caja_compensacion_porcentaje REAL DEFAULT 4,
+			aporte_icbf_porcentaje REAL DEFAULT 3,
+			aporte_sena_porcentaje REAL DEFAULT 2,
+			provision_cesantias_porcentaje REAL DEFAULT 8.33,
+			provision_intereses_cesantias_porcentaje REAL DEFAULT 1,
+			provision_prima_porcentaje REAL DEFAULT 8.33,
+			provision_vacaciones_porcentaje REAL DEFAULT 4.17,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -423,6 +506,31 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_liquidaciones_empresa_periodo ON empresa_nomina_liquidaciones(empresa_id, periodo_desde DESC, periodo_hasta DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_liquidaciones_empresa_empleado ON empresa_nomina_liquidaciones(empresa_id, empleado_nomina_id, empleado_documento);`,
+		`CREATE TABLE IF NOT EXISTS empresa_nomina_pagos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			liquidacion_id INTEGER NOT NULL,
+			empleado_nomina_id INTEGER NOT NULL,
+			empleado_nombre TEXT NOT NULL,
+			empleado_documento TEXT,
+			periodo_desde TEXT NOT NULL,
+			periodo_hasta TEXT NOT NULL,
+			fecha_pago TEXT DEFAULT (datetime('now','localtime')),
+			metodo_pago TEXT DEFAULT 'transferencia_bancaria',
+			cuenta_bancaria TEXT,
+			referencia_pago TEXT,
+			devengado_total REAL DEFAULT 0,
+			deduccion_total REAL DEFAULT 0,
+			neto_pagado REAL DEFAULT 0,
+			estado_pago TEXT DEFAULT 'pagado',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, liquidacion_id)
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_pagos_empresa_periodo ON empresa_nomina_pagos(empresa_id, periodo_desde DESC, periodo_hasta DESC, id DESC);`,
 	}
 
 	for _, stmt := range stmts {
@@ -432,6 +540,36 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_salud_empleador_porcentaje", "REAL DEFAULT 8.5"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_pension_empleador_porcentaje", "REAL DEFAULT 12"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_arl_porcentaje", "REAL DEFAULT 0.522"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_caja_compensacion_porcentaje", "REAL DEFAULT 4"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_icbf_porcentaje", "REAL DEFAULT 3"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_sena_porcentaje", "REAL DEFAULT 2"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "provision_cesantias_porcentaje", "REAL DEFAULT 8.33"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "provision_intereses_cesantias_porcentaje", "REAL DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "provision_prima_porcentaje", "REAL DEFAULT 8.33"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "provision_vacaciones_porcentaje", "REAL DEFAULT 4.17"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_empleados", "incluir_auxilio_transporte", "INTEGER DEFAULT 1"); err != nil {
@@ -476,6 +614,16 @@ func defaultEmpresaNominaConfiguracion(empresaID int64) EmpresaNominaConfiguraci
 		DeduccionSaludPorcentaje:             4,
 		DeduccionPensionPorcentaje:           4,
 		DeduccionFondoSolidaridadPorcentaje:  0,
+		AporteSaludEmpleadorPorcentaje:       8.5,
+		AportePensionEmpleadorPorcentaje:     12,
+		AporteARLPorcentaje:                  0.522,
+		AporteCajaCompensacionPorcentaje:     4,
+		AporteICBFPorcentaje:                 3,
+		AporteSENAPorcentaje:                 2,
+		ProvisionCesantiasPorcentaje:         8.33,
+		ProvisionInteresesCesantiasPorcentaje: 1,
+		ProvisionPrimaPorcentaje:             8.33,
+		ProvisionVacacionesPorcentaje:        4.17,
 		Estado:                               nominaEstadoActivo,
 	}
 	cfg.DivisorHoraOrdinaria = recommendedNominaHourDivisor(cfg.HorasOrdinariasSemana)
@@ -597,6 +745,16 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		COALESCE(deduccion_salud_porcentaje, 4),
 		COALESCE(deduccion_pension_porcentaje, 4),
 		COALESCE(deduccion_fondo_solidaridad_porcentaje, 0),
+		COALESCE(aporte_salud_empleador_porcentaje, 8.5),
+		COALESCE(aporte_pension_empleador_porcentaje, 12),
+		COALESCE(aporte_arl_porcentaje, 0.522),
+		COALESCE(aporte_caja_compensacion_porcentaje, 4),
+		COALESCE(aporte_icbf_porcentaje, 3),
+		COALESCE(aporte_sena_porcentaje, 2),
+		COALESCE(provision_cesantias_porcentaje, 8.33),
+		COALESCE(provision_intereses_cesantias_porcentaje, 1),
+		COALESCE(provision_prima_porcentaje, 8.33),
+		COALESCE(provision_vacaciones_porcentaje, 4.17),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -627,6 +785,16 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		&cfg.DeduccionSaludPorcentaje,
 		&cfg.DeduccionPensionPorcentaje,
 		&cfg.DeduccionFondoSolidaridadPorcentaje,
+		&cfg.AporteSaludEmpleadorPorcentaje,
+		&cfg.AportePensionEmpleadorPorcentaje,
+		&cfg.AporteARLPorcentaje,
+		&cfg.AporteCajaCompensacionPorcentaje,
+		&cfg.AporteICBFPorcentaje,
+		&cfg.AporteSENAPorcentaje,
+		&cfg.ProvisionCesantiasPorcentaje,
+		&cfg.ProvisionInteresesCesantiasPorcentaje,
+		&cfg.ProvisionPrimaPorcentaje,
+		&cfg.ProvisionVacacionesPorcentaje,
 		&cfg.FechaCreacion,
 		&cfg.FechaActualizacion,
 		&cfg.UsuarioCreador,
@@ -669,6 +837,16 @@ func normalizeEmpresaNominaConfiguracion(cfg EmpresaNominaConfiguracion) *Empres
 	cfg.DeduccionSaludPorcentaje = normalizeNominaPorcentaje(cfg.DeduccionSaludPorcentaje)
 	cfg.DeduccionPensionPorcentaje = normalizeNominaPorcentaje(cfg.DeduccionPensionPorcentaje)
 	cfg.DeduccionFondoSolidaridadPorcentaje = normalizeNominaPorcentaje(cfg.DeduccionFondoSolidaridadPorcentaje)
+	cfg.AporteSaludEmpleadorPorcentaje = normalizeNominaPorcentaje(cfg.AporteSaludEmpleadorPorcentaje)
+	cfg.AportePensionEmpleadorPorcentaje = normalizeNominaPorcentaje(cfg.AportePensionEmpleadorPorcentaje)
+	cfg.AporteARLPorcentaje = normalizeNominaPorcentaje(cfg.AporteARLPorcentaje)
+	cfg.AporteCajaCompensacionPorcentaje = normalizeNominaPorcentaje(cfg.AporteCajaCompensacionPorcentaje)
+	cfg.AporteICBFPorcentaje = normalizeNominaPorcentaje(cfg.AporteICBFPorcentaje)
+	cfg.AporteSENAPorcentaje = normalizeNominaPorcentaje(cfg.AporteSENAPorcentaje)
+	cfg.ProvisionCesantiasPorcentaje = normalizeNominaPorcentaje(cfg.ProvisionCesantiasPorcentaje)
+	cfg.ProvisionInteresesCesantiasPorcentaje = normalizeNominaPorcentaje(cfg.ProvisionInteresesCesantiasPorcentaje)
+	cfg.ProvisionPrimaPorcentaje = normalizeNominaPorcentaje(cfg.ProvisionPrimaPorcentaje)
+	cfg.ProvisionVacacionesPorcentaje = normalizeNominaPorcentaje(cfg.ProvisionVacacionesPorcentaje)
 	cfg.Estado = normalizeNominaEstado(cfg.Estado)
 	return &cfg
 }
@@ -707,6 +885,16 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 			deduccion_salud_porcentaje = ?,
 			deduccion_pension_porcentaje = ?,
 			deduccion_fondo_solidaridad_porcentaje = ?,
+			aporte_salud_empleador_porcentaje = ?,
+			aporte_pension_empleador_porcentaje = ?,
+			aporte_arl_porcentaje = ?,
+			aporte_caja_compensacion_porcentaje = ?,
+			aporte_icbf_porcentaje = ?,
+			aporte_sena_porcentaje = ?,
+			provision_cesantias_porcentaje = ?,
+			provision_intereses_cesantias_porcentaje = ?,
+			provision_prima_porcentaje = ?,
+			provision_vacaciones_porcentaje = ?,
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
@@ -730,6 +918,16 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 			cfg.DeduccionSaludPorcentaje,
 			cfg.DeduccionPensionPorcentaje,
 			cfg.DeduccionFondoSolidaridadPorcentaje,
+			cfg.AporteSaludEmpleadorPorcentaje,
+			cfg.AportePensionEmpleadorPorcentaje,
+			cfg.AporteARLPorcentaje,
+			cfg.AporteCajaCompensacionPorcentaje,
+			cfg.AporteICBFPorcentaje,
+			cfg.AporteSENAPorcentaje,
+			cfg.ProvisionCesantiasPorcentaje,
+			cfg.ProvisionInteresesCesantiasPorcentaje,
+			cfg.ProvisionPrimaPorcentaje,
+			cfg.ProvisionVacacionesPorcentaje,
 			strings.TrimSpace(cfg.UsuarioCreador),
 			cfg.Estado,
 			strings.TrimSpace(cfg.Observaciones),
@@ -761,12 +959,22 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		deduccion_salud_porcentaje,
 		deduccion_pension_porcentaje,
 		deduccion_fondo_solidaridad_porcentaje,
+		aporte_salud_empleador_porcentaje,
+		aporte_pension_empleador_porcentaje,
+		aporte_arl_porcentaje,
+		aporte_caja_compensacion_porcentaje,
+		aporte_icbf_porcentaje,
+		aporte_sena_porcentaje,
+		provision_cesantias_porcentaje,
+		provision_intereses_cesantias_porcentaje,
+		provision_prima_porcentaje,
+		provision_vacaciones_porcentaje,
 		usuario_creador,
 		estado,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		cfg.EmpresaID,
 		cfg.PaisCodigo,
 		cfg.Moneda,
@@ -786,6 +994,16 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		cfg.DeduccionSaludPorcentaje,
 		cfg.DeduccionPensionPorcentaje,
 		cfg.DeduccionFondoSolidaridadPorcentaje,
+		cfg.AporteSaludEmpleadorPorcentaje,
+		cfg.AportePensionEmpleadorPorcentaje,
+		cfg.AporteARLPorcentaje,
+		cfg.AporteCajaCompensacionPorcentaje,
+		cfg.AporteICBFPorcentaje,
+		cfg.AporteSENAPorcentaje,
+		cfg.ProvisionCesantiasPorcentaje,
+		cfg.ProvisionInteresesCesantiasPorcentaje,
+		cfg.ProvisionPrimaPorcentaje,
+		cfg.ProvisionVacacionesPorcentaje,
 		strings.TrimSpace(cfg.UsuarioCreador),
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
@@ -2025,6 +2243,202 @@ func ListEmpresaNominaLiquidaciones(dbConn *sql.DB, empresaID int64, filter Empr
 		out = append(out, item)
 	}
 	return out, rows.Err()
+}
+
+func CreateEmpresaNominaPago(dbConn *sql.DB, payload EmpresaNominaPago) (int64, error) {
+	if payload.EmpresaID <= 0 || payload.LiquidacionID <= 0 {
+		return 0, fmt.Errorf("empresa_id y liquidacion_id son obligatorios")
+	}
+	if strings.TrimSpace(payload.FechaPago) == "" {
+		payload.FechaPago = time.Now().Format("2006-01-02 15:04:05")
+	}
+	payload.MetodoPago = strings.ToLower(strings.TrimSpace(payload.MetodoPago))
+	if payload.MetodoPago == "" {
+		payload.MetodoPago = "transferencia_bancaria"
+	}
+	payload.EstadoPago = strings.ToLower(strings.TrimSpace(payload.EstadoPago))
+	if payload.EstadoPago == "" {
+		payload.EstadoPago = "pagado"
+	}
+	payload.Estado = normalizeNominaEstado(payload.Estado)
+	if payload.UsuarioCreador == "" {
+		payload.UsuarioCreador = "sistema"
+	}
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_pagos (
+		empresa_id, liquidacion_id, empleado_nomina_id, empleado_nombre, empleado_documento,
+		periodo_desde, periodo_hasta, fecha_pago, metodo_pago, cuenta_bancaria, referencia_pago,
+		devengado_total, deduccion_total, neto_pagado, estado_pago,
+		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		payload.EmpresaID,
+		payload.LiquidacionID,
+		payload.EmpleadoNominaID,
+		strings.TrimSpace(payload.EmpleadoNombre),
+		strings.TrimSpace(payload.EmpleadoDocumento),
+		strings.TrimSpace(payload.PeriodoDesde),
+		strings.TrimSpace(payload.PeriodoHasta),
+		strings.TrimSpace(payload.FechaPago),
+		payload.MetodoPago,
+		strings.TrimSpace(payload.CuentaBancaria),
+		strings.TrimSpace(payload.ReferenciaPago),
+		payload.DevengadoTotal,
+		payload.DeduccionTotal,
+		payload.NetoPagado,
+		payload.EstadoPago,
+		strings.TrimSpace(payload.UsuarioCreador),
+		payload.Estado,
+		strings.TrimSpace(payload.Observaciones),
+	)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func ListEmpresaNominaPagos(dbConn *sql.DB, empresaID int64, filter EmpresaNominaPagoFilter) ([]EmpresaNominaPago, error) {
+	query := `SELECT
+		id, empresa_id, COALESCE(liquidacion_id,0), COALESCE(empleado_nomina_id,0),
+		COALESCE(empleado_nombre,''), COALESCE(empleado_documento,''),
+		COALESCE(periodo_desde,''), COALESCE(periodo_hasta,''), COALESCE(fecha_pago,''),
+		COALESCE(metodo_pago,''), COALESCE(cuenta_bancaria,''), COALESCE(referencia_pago,''),
+		COALESCE(devengado_total,0), COALESCE(deduccion_total,0), COALESCE(neto_pagado,0),
+		COALESCE(estado_pago,'pagado'), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''),
+		COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'')
+	FROM empresa_nomina_pagos WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+	if !filter.IncludeInactive {
+		query += ` AND estado = 'activo'`
+	}
+	if strings.TrimSpace(filter.PeriodoDesde) != "" {
+		query += ` AND periodo_desde >= ?`
+		args = append(args, strings.TrimSpace(filter.PeriodoDesde))
+	}
+	if strings.TrimSpace(filter.PeriodoHasta) != "" {
+		query += ` AND periodo_hasta <= ?`
+		args = append(args, strings.TrimSpace(filter.PeriodoHasta))
+	}
+	if filter.EmpleadoNominaID > 0 {
+		query += ` AND empleado_nomina_id = ?`
+		args = append(args, filter.EmpleadoNominaID)
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 300
+	}
+	if filter.Limit > 3000 {
+		filter.Limit = 3000
+	}
+	query += ` ORDER BY fecha_pago DESC, id DESC LIMIT ?`
+	args = append(args, filter.Limit)
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]EmpresaNominaPago, 0)
+	for rows.Next() {
+		var p EmpresaNominaPago
+		if err := rows.Scan(
+			&p.ID, &p.EmpresaID, &p.LiquidacionID, &p.EmpleadoNominaID,
+			&p.EmpleadoNombre, &p.EmpleadoDocumento, &p.PeriodoDesde, &p.PeriodoHasta,
+			&p.FechaPago, &p.MetodoPago, &p.CuentaBancaria, &p.ReferenciaPago,
+			&p.DevengadoTotal, &p.DeduccionTotal, &p.NetoPagado, &p.EstadoPago,
+			&p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func GenerateEmpresaNominaPagos(dbConn *sql.DB, empresaID int64, periodoDesde, periodoHasta string, empleadoNominaID int64, metodoPago, cuentaBancaria, usuario string) (*EmpresaNominaPagosResult, error) {
+	liqs, err := ListEmpresaNominaLiquidaciones(dbConn, empresaID, EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     periodoDesde,
+		PeriodoHasta:     periodoHasta,
+		EmpleadoNominaID: empleadoNominaID,
+		IncludeInactive:  false,
+		Limit:            3000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	res := &EmpresaNominaPagosResult{EmpresaID: empresaID, PeriodoDesde: periodoDesde, PeriodoHasta: periodoHasta, Pagos: make([]EmpresaNominaPago, 0)}
+	for _, liq := range liqs {
+		var exists int64
+		err := dbConn.QueryRow(`SELECT id FROM empresa_nomina_pagos WHERE empresa_id = ? AND liquidacion_id = ? AND estado = 'activo' LIMIT 1`, empresaID, liq.ID).Scan(&exists)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		if exists > 0 {
+			res.Omitidos++
+			continue
+		}
+		ref := fmt.Sprintf("NOM-%d-%s-%s", liq.ID, strings.ReplaceAll(liq.PeriodoDesde, "-", ""), strings.ReplaceAll(liq.PeriodoHasta, "-", ""))
+		pago := EmpresaNominaPago{
+			EmpresaID:         empresaID,
+			LiquidacionID:     liq.ID,
+			EmpleadoNominaID:  liq.EmpleadoNominaID,
+			EmpleadoNombre:    liq.EmpleadoNombre,
+			EmpleadoDocumento: liq.EmpleadoDocumento,
+			PeriodoDesde:      liq.PeriodoDesde,
+			PeriodoHasta:      liq.PeriodoHasta,
+			MetodoPago:        metodoPago,
+			CuentaBancaria:    cuentaBancaria,
+			ReferenciaPago:    ref,
+			DevengadoTotal:    liq.DevengadoTotal,
+			DeduccionTotal:    liq.DeduccionTotal,
+			NetoPagado:        liq.NetoPagar,
+			EstadoPago:        "pagado",
+			UsuarioCreador:    usuario,
+			Estado:            "activo",
+			Observaciones:     "pago de nomina generado desde liquidacion",
+		}
+		id, err := CreateEmpresaNominaPago(dbConn, pago)
+		if err != nil {
+			return nil, err
+		}
+		pago.ID = id
+		res.Generados++
+		res.TotalNetoPagado += pago.NetoPagado
+		res.Pagos = append(res.Pagos, pago)
+	}
+	return res, nil
+}
+
+func GetEmpresaNominaProvisionesResumen(dbConn *sql.DB, empresaID int64, periodoDesde, periodoHasta string, empleadoNominaID int64) (*EmpresaNominaProvisionesResumen, error) {
+	cfg, err := GetEmpresaNominaConfiguracion(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	liqs, err := ListEmpresaNominaLiquidaciones(dbConn, empresaID, EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     periodoDesde,
+		PeriodoHasta:     periodoHasta,
+		EmpleadoNominaID: empleadoNominaID,
+		IncludeInactive:  false,
+		Limit:            3000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	res := &EmpresaNominaProvisionesResumen{EmpresaID: empresaID, PeriodoDesde: periodoDesde, PeriodoHasta: periodoHasta, Liquidaciones: len(liqs)}
+	for _, liq := range liqs {
+		res.TotalDevengado += liq.DevengadoTotal
+		res.TotalIBC += liq.IngresoBaseCotizacion
+		res.TotalNetoPagar += liq.NetoPagar
+		base := liq.IngresoBaseCotizacion
+		res.AporteSaludEmpleador += base * cfg.AporteSaludEmpleadorPorcentaje / 100
+		res.AportePensionEmpleador += base * cfg.AportePensionEmpleadorPorcentaje / 100
+		res.AporteARL += base * cfg.AporteARLPorcentaje / 100
+		res.AporteCajaCompensacion += base * cfg.AporteCajaCompensacionPorcentaje / 100
+		res.AporteICBF += base * cfg.AporteICBFPorcentaje / 100
+		res.AporteSENA += base * cfg.AporteSENAPorcentaje / 100
+		res.ProvisionCesantias += liq.DevengadoTotal * cfg.ProvisionCesantiasPorcentaje / 100
+		res.ProvisionInteresesCesantias += liq.DevengadoTotal * cfg.ProvisionInteresesCesantiasPorcentaje / 100
+		res.ProvisionPrima += liq.DevengadoTotal * cfg.ProvisionPrimaPorcentaje / 100
+		res.ProvisionVacaciones += liq.BaseSalarioProporcional * cfg.ProvisionVacacionesPorcentaje / 100
+	}
+	res.CostoEmpresaEstimado = res.TotalDevengado + res.AporteSaludEmpleador + res.AportePensionEmpleador + res.AporteARL + res.AporteCajaCompensacion + res.AporteICBF + res.AporteSENA + res.ProvisionCesantias + res.ProvisionInteresesCesantias + res.ProvisionPrima + res.ProvisionVacaciones
+	return res, nil
 }
 
 // GenerateEmpresaNominaLiquidaciones calcula y guarda liquidaciones de nomina integradas con asistencia.

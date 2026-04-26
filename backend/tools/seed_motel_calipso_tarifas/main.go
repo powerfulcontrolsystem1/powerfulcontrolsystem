@@ -61,7 +61,7 @@ func main() {
 		empresaID         = flag.Int64("empresa_id", 7, "empresa_id (Calipso=7)")
 		moneda            = flag.String("moneda", "COP", "moneda")
 		minBase           = flag.Int("min_base", 120, "minutos_base")
-		valBase           = flag.Float64("valor_base", 70000, "valor_base")
+		valBase           = flag.Float64("valor_base", 35000, "valor_base")
 		minExtra          = flag.Int("min_extra", 60, "minutos_extra")
 		valExtra          = flag.Float64("valor_extra", 20000, "valor_extra")
 		valDia            = flag.Float64("valor_dia", 150000, "valor_dia")

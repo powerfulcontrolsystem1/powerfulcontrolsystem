@@ -133,6 +133,52 @@
           </div>
         </div>
 
+        <h3>Aportes patronales y provisiones</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgAporteSaludEmp">Salud empleador (%)</label>
+            <input id="cfgAporteSaludEmp" class="form-input" type="number" min="0" step="0.001" value="8.5">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAportePensionEmp">Pensión empleador (%)</label>
+            <input id="cfgAportePensionEmp" class="form-input" type="number" min="0" step="0.001" value="12">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAporteARL">ARL (%)</label>
+            <input id="cfgAporteARL" class="form-input" type="number" min="0" step="0.001" value="0.522">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgCajaComp">Caja compensación (%)</label>
+            <input id="cfgCajaComp" class="form-input" type="number" min="0" step="0.001" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgICBF">ICBF (%)</label>
+            <input id="cfgICBF" class="form-input" type="number" min="0" step="0.001" value="3">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgSENA">SENA (%)</label>
+            <input id="cfgSENA" class="form-input" type="number" min="0" step="0.001" value="2">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgCesantias">Cesantías (%)</label>
+            <input id="cfgCesantias" class="form-input" type="number" min="0" step="0.001" value="8.33">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgIntCesantias">Intereses cesantías (%)</label>
+            <input id="cfgIntCesantias" class="form-input" type="number" min="0" step="0.001" value="1">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgPrima">Prima (%)</label>
+            <input id="cfgPrima" class="form-input" type="number" min="0" step="0.001" value="8.33">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgVacaciones">Vacaciones (%)</label>
+            <input id="cfgVacaciones" class="form-input" type="number" min="0" step="0.001" value="4.17">
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn">Guardar configuracion</button>
         </div>
@@ -531,6 +577,16 @@
         document.getElementById('cfgDedSalud').value = toNumber(item.deduccion_salud_porcentaje, 4);
         document.getElementById('cfgDedPension').value = toNumber(item.deduccion_pension_porcentaje, 4);
         document.getElementById('cfgDedSolidaridad').value = toNumber(item.deduccion_fondo_solidaridad_porcentaje, 0);
+        document.getElementById('cfgAporteSaludEmp').value = toNumber(item.aporte_salud_empleador_porcentaje, 8.5);
+        document.getElementById('cfgAportePensionEmp').value = toNumber(item.aporte_pension_empleador_porcentaje, 12);
+        document.getElementById('cfgAporteARL').value = toNumber(item.aporte_arl_porcentaje, 0.522);
+        document.getElementById('cfgCajaComp').value = toNumber(item.aporte_caja_compensacion_porcentaje, 4);
+        document.getElementById('cfgICBF').value = toNumber(item.aporte_icbf_porcentaje, 3);
+        document.getElementById('cfgSENA').value = toNumber(item.aporte_sena_porcentaje, 2);
+        document.getElementById('cfgCesantias').value = toNumber(item.provision_cesantias_porcentaje, 8.33);
+        document.getElementById('cfgIntCesantias').value = toNumber(item.provision_intereses_cesantias_porcentaje, 1);
+        document.getElementById('cfgPrima').value = toNumber(item.provision_prima_porcentaje, 8.33);
+        document.getElementById('cfgVacaciones').value = toNumber(item.provision_vacaciones_porcentaje, 4.17);
         document.getElementById('cfgObservaciones').value = normalize(item.observaciones);
       }
 
@@ -555,6 +611,16 @@
           deduccion_salud_porcentaje: toNumber(document.getElementById('cfgDedSalud').value, 4),
           deduccion_pension_porcentaje: toNumber(document.getElementById('cfgDedPension').value, 4),
           deduccion_fondo_solidaridad_porcentaje: toNumber(document.getElementById('cfgDedSolidaridad').value, 0),
+          aporte_salud_empleador_porcentaje: toNumber(document.getElementById('cfgAporteSaludEmp').value, 8.5),
+          aporte_pension_empleador_porcentaje: toNumber(document.getElementById('cfgAportePensionEmp').value, 12),
+          aporte_arl_porcentaje: toNumber(document.getElementById('cfgAporteARL').value, 0.522),
+          aporte_caja_compensacion_porcentaje: toNumber(document.getElementById('cfgCajaComp').value, 4),
+          aporte_icbf_porcentaje: toNumber(document.getElementById('cfgICBF').value, 3),
+          aporte_sena_porcentaje: toNumber(document.getElementById('cfgSENA').value, 2),
+          provision_cesantias_porcentaje: toNumber(document.getElementById('cfgCesantias').value, 8.33),
+          provision_intereses_cesantias_porcentaje: toNumber(document.getElementById('cfgIntCesantias').value, 1),
+          provision_prima_porcentaje: toNumber(document.getElementById('cfgPrima').value, 8.33),
+          provision_vacaciones_porcentaje: toNumber(document.getElementById('cfgVacaciones').value, 4.17),
           observaciones: normalize(document.getElementById('cfgObservaciones').value)
         };
       }

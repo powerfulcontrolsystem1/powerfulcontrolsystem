@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 type publicPortalChatLimiter struct {
@@ -109,6 +112,36 @@ func buildPortalCompanySystemPrompt() string {
 		"Responde en español, breve, con bullets cuando convenga y siempre puedes sugerir WhatsApp o email para atención personalizada. " +
 		"Regla obligatoria de cierre: termina tu respuesta con esta frase exacta: " +
 		"\"No olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte.\""
+}
+
+func portalChatLoadExtraInfo(dbSuper *sql.DB) string {
+	if dbSuper == nil {
+		return ""
+	}
+	raw, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, superPortalChatIAInfoKey)
+	return strings.TrimSpace(raw)
+}
+
+func portalChatBuildLicenciasPriceSummary(dbSuper *sql.DB) string {
+	if dbSuper == nil {
+		return ""
+	}
+	// Usamos licencias activas (catálogo) sin empresa asignada.
+	lics, err := dbpkg.GetLicenciasFilteredByPais(dbSuper, true, "", false, "")
+	if err != nil || len(lics) == 0 {
+		return ""
+	}
+	// Resumen simple (evita inventar): nombre + duración + valor + país
+	lines := make([]string, 0, len(lics))
+	lines = append(lines, "Precios de licencias (según base de datos del sistema):")
+	for _, l := range lics {
+		pais := strings.ToUpper(strings.TrimSpace(l.PaisCodigo))
+		if pais == "" {
+			pais = "CO"
+		}
+		lines = append(lines, "- "+strings.TrimSpace(l.Nombre)+" ("+pais+") — "+strconv.Itoa(l.DuracionDias)+" días — valor: "+fmt.Sprintf("%.2f", l.Valor))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func isPortalPublicChatEnabled(dbSuper *sql.DB) bool {
@@ -226,6 +259,13 @@ func PublicPortalCompanyChatHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		ctrl := &EmpresaAIChatController{dbSuper: dbSuper, client: &http.Client{Timeout: 35 * time.Second}}
 		systemPrompt := buildPortalCompanySystemPrompt()
+		// Inyectar info editable + precios de licencias del catálogo.
+		if extra := portalChatLoadExtraInfo(dbSuper); extra != "" {
+			systemPrompt += "\n\n=== Información oficial editable (super administrador) ===\n" + extra
+		}
+		if pricing := portalChatBuildLicenciasPriceSummary(dbSuper); pricing != "" {
+			systemPrompt += "\n\n=== Precios/planes desde base de datos ===\n" + pricing
+		}
 		h := sanitizeHistorial(body.Historial, 6)
 
 		answer, _, _, err := ctrl.generateResponseWithSystemPrompt(model, p, h, systemPrompt)

@@ -2879,6 +2879,21 @@ body.has-floating-menu .header .form-actions{
   box-shadow:0 10px 18px rgba(7,30,57,0.38);
 }
 
+/* Super: Seleccionar empresa en verde */
+#superSidebarNav a.select-company{
+  background:linear-gradient(180deg,#22c55e,#16a34a);
+  border-color:rgba(34,197,94,0.38);
+}
+#superSidebarNav a.select-company:hover{
+  background:linear-gradient(180deg,#2dd36a,#1bb556);
+  box-shadow:0 10px 18px rgba(16,58,34,0.38);
+}
+
+/* Permitir íconos que no deben invertirse (ej: tuerca roja) */
+.admin-sidebar .nav a img.icon.no-invert{
+  filter:none !important;
+}
+
 /* Tablas CRUD en contenedores #list: ajustar ancho por contenido y permitir scroll horizontal */
 #list { overflow-x: auto; }
 #list .table th, #list .table td { white-space: nowrap; }
@@ -5115,6 +5130,30 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   font-size:.86rem;
 }
 
+.factura-print-logo{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+.factura-print-logo img{
+  width:auto;
+  max-width:120px;
+  max-height:56px;
+  object-fit:contain;
+  border-radius:10px;
+  border:1px solid rgba(17,33,49,0.10);
+  background:rgba(255,255,255,0.7);
+}
+.factura-print-legal{
+  margin-top:14px;
+  padding:14px 18px;
+  border-top:1px dashed rgba(17,33,49,0.18);
+  color:#4e6479;
+  font-size:.88rem;
+  line-height:1.45;
+  white-space:pre-wrap;
+}
+
 .factura-print-strip{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -7211,7 +7250,7 @@ html.theme-light .task-item{
 }
 .empresas-grid .portal-card{
   width:100%;
-  height:220px; /* altura fija para uniformidad */
+  height:200px; /* más compactas verticalmente */
   aspect-ratio: auto;
   padding:14px;
   border-radius:10px;
@@ -7239,7 +7278,7 @@ html.theme-light .task-item{
     min-height:190px;
   }
   .empresas-grid .portal-card{
-    height:190px;
+    height:176px;
   }
 }
 

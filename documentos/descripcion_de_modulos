@@ -132,6 +132,16 @@
 - Cambio funcional: `backend/db/productos.go` deja portables para PostgreSQL las consultas de tendencia, proyeccion de quiebre, plan de reposicion y resumen por proveedor. La salida de inventario con politica PEPS deja de fallar al consumir lotes con wrappers SQL compatibles y cerrar el cursor antes de actualizar existencias/lotes en la misma transaccion. `backend/db/finanzas.go` deja de construir el tablero y su exporte con consultas sensibles a SQLite y pasa a usar lectura compatible para el resumen financiero, contable y operativo.
 - Impacto operativo: en la empresa 7 de Motel Calipso ya responden por API los paneles `tendencia`, `proyeccion_quiebre`, `plan_reposicion`, `plan_reposicion_resumen`, `tablero financiero`, `tablero_export` y el dataset `empresarial_tablero`; ademas se valida el ciclo real de emitir, recepcionar y contabilizar reposicion, y el cierre de caja puede crear, cerrar y aprobar sobre PostgreSQL sin cambiar frontend ni permisos.
 
+2026-04-26: Finanzas, inventario y asistencia reciben base operativa contable profesional
+- Modulos afectados: `finanzas`, `inventario`, `asistencia`, `usuarios`, `permisos`
+- Cambio funcional: la configuracion financiera por empresa amplia categorias/cuentas base para Colombia e incluye destinos contables comunes (`siigo`, `world_office`, `alegra`, `helisa`, `loggro`, `contapyme`). Se agrega `generador_codigos_barras.html` para crear, persistir e imprimir codigos Code 128 personales por empresa sobre `productos.codigo_barras`, reutilizando el lector ya integrado en carritos. La asistencia de empleados ahora puede vincular un registro al usuario interno creado en la empresa para autocompletar nombre, documento y rol/cargo.
+- Impacto operativo: el modulo de productos queda mejor integrado con ventas por lector de barras; asistencia queda alineada con usuarios/roles empresariales; finanzas conserva las mismas rutas protegidas, pero parte de un catalogo contable mas cercano a sistemas usados en Colombia.
+
+2026-04-26: Reportes agrega chat IA compacto con exportacion asistida
+- Modulos afectados: `reportes`, `finanzas`, `chat IA`, `permisos`
+- Cambio funcional: `reportes_menu.html` incluye `Chat IA reportes`. La nueva pantalla permite hacer preguntas sobre datos/reportes con GPT-5.4 mini (10 consultas diarias por empresa) y pedir exportes con GPT-5.5 (2 reportes diarios por empresa). El backend interpreta la solicitud, selecciona dataset/formato y retorna un enlace de exportacion sobre `/api/empresa/reportes?action=export`.
+- Impacto operativo: se reutiliza el catalogo de datasets y el motor de exportacion existente; no se agregan dependencias ni conectores externos nuevos. El acceso queda bajo permisos de lectura de finanzas/reportes.
+
 2026-04-20: Creditos y chat/tareas quedan validados en PostgreSQL sobre runtime real de Motel Calipso
 - Modulos afectados: `creditos`, `chat_y_tareas`, `administrar_empresa`
 - Cambio funcional: `backend/db/creditos.go` reordena el flujo de abono para leer primero las cuotas pendientes y actualizar despues, evitando desconexion del driver PostgreSQL cuando la transaccion mezcla lectura abierta y escrituras sobre la misma tabla. `backend/db/chat_tareas.go` autorrepara `chat_tareas_citas` si la tabla o columnas faltan en PostgreSQL legacy y usa lectura compatible para el listado; `backend/handlers/chat_tareas.go` deja trazabilidad puntual del error real de creacion.
@@ -1294,7 +1304,8 @@ Criterio de esta guia:
 - Cobro rapido por estacion, operacion offline y metricas de atencion/rendimiento.
 
 28) Finanzas y contabilidad
-- Movimientos, periodos, cierres de caja, asientos y conciliacion bancaria automatica.
+- Movimientos, periodos, cierres de caja, asientos, plan de cuentas operativo, cartera CxC/CxP, abonos/pagos trazables y conciliacion bancaria por extractos importados.
+- Actualizacion 2026-04-26: `web/administrar_empresa/finanzas.html` consolida plan de cuentas, CxC/CxP y conciliacion bancaria con extractos dentro del flujo diario; `/api/empresa/reportes` expone datasets contables para plan de cuentas, cartera y conciliacion bancaria.
 
 29) Auditoria empresarial
 - Eventos trazables por modulo/usuario, busqueda avanzada y exportacion forense.

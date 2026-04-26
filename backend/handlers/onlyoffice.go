@@ -442,7 +442,11 @@ func onlyOfficeEnsureUniqueName(empresaID int64, name string) (string, error) {
 func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
-			http.Error(w, "OnlyOffice está desactivado por super administrador.", http.StatusServiceUnavailable)
+			writeJSON(w, http.StatusOK, map[string]any{
+				"ok":      false,
+				"enabled": false,
+				"error":   "OnlyOffice está desactivado por super administrador.",
+			})
 			return
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
@@ -604,6 +608,9 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "db_super no disponible", http.StatusInternalServerError)
 				return
 			}
+			// Asegurar que exista un JWT secret persistido (si hay cifrado disponible).
+			// Esto evita que el editor falle con "token de seguridad no está configurado" cuando el super aún no lo ha guardado.
+			_, _ = onlyOfficeEnsureJWTSecret(dbSuper)
 			fileName := strings.TrimSpace(r.URL.Query().Get("file"))
 			base, err := onlyOfficeSafeBaseName(fileName)
 			if err != nil {
@@ -628,11 +635,21 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
 			dsURL = strings.TrimRight(strings.TrimSpace(dsURL), "/")
 			if dsURL == "" {
-				http.Error(w, "OnlyOffice Document Server no configurado (onlyoffice.document_server_url)", http.StatusBadRequest)
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok":         false,
+					"enabled":    true,
+					"configured": false,
+					"error":      "OnlyOffice Document Server no configurado (onlyoffice.document_server_url)",
+				})
 				return
 			}
 			if strings.TrimSpace(jwtSecret) == "" {
-				http.Error(w, "OnlyOffice JWT no configurado (onlyoffice.jwt_secret)", http.StatusBadRequest)
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok":         false,
+					"enabled":    true,
+					"configured": false,
+					"error":      "OnlyOffice JWT no configurado (onlyoffice.jwt_secret)",
+				})
 				return
 			}
 
@@ -730,7 +747,7 @@ func urlQueryEscape(v string) string {
 func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
-			http.Error(w, "OnlyOffice disabled", http.StatusServiceUnavailable)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return
 		}
 		if r.Method != http.MethodGet {
@@ -742,10 +759,14 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
+		if strings.TrimSpace(jwtSecret) == "" {
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": true, "configured": false, "error": "OnlyOffice JWT no configurado (onlyoffice.jwt_secret)"})
+			return
+		}
 		token := strings.TrimSpace(r.URL.Query().Get("token"))
 		claims, err := onlyOfficeVerifyToken(jwtSecret, token)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": "unauthorized"})
 			return
 		}
 		if claims.Action != "file" {
@@ -772,7 +793,7 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
-			http.Error(w, "OnlyOffice disabled", http.StatusServiceUnavailable)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return
 		}
 		if r.Method != http.MethodPost {
@@ -784,10 +805,14 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		jwtSecret, _, _ := onlyOfficeResolveJWTSecret(dbSuper)
+		if strings.TrimSpace(jwtSecret) == "" {
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": true, "configured": false, "error": "OnlyOffice JWT no configurado (onlyoffice.jwt_secret)"})
+			return
+		}
 		token := strings.TrimSpace(r.URL.Query().Get("token"))
 		claims, err := onlyOfficeVerifyToken(jwtSecret, token)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": "unauthorized"})
 			return
 		}
 		if claims.Action != "callback" {

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Generador de códigos de barras</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .barcode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+    .barcode-label{background:#fff;color:#111;border:1px solid #d1d5db;border-radius:12px;padding:12px;break-inside:avoid}
+    .barcode-label svg{width:100%;height:auto;display:block}
+    .barcode-code{font-family:ui-monospace,Menlo,Consolas,monospace;text-align:center;font-size:12px;margin-top:4px;letter-spacing:.08em}
+    .barcode-product{font-weight:700;text-align:center;margin-top:6px;font-size:13px}
+    @media print{body{background:#fff}.no-print,.admin-menu-visibility-item{display:none!important}.barcode-grid{grid-template-columns:repeat(2,1fr)}.barcode-label{box-shadow:none;border:1px solid #999}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section no-print">
+      <div class="empresa-section-header">
+        <h1 class="empresa-section-title">Generador de códigos de barras</h1>
+        <div class="empresa-inline-actions">
+          <button id="btnLoad" class="btn secondary" type="button">Recargar productos</button>
+          <button id="btnPrint" class="btn" type="button">Imprimir etiquetas</button>
+        </div>
+      </div>
+      <p class="form-help">Genera códigos internos personales por empresa en formato Code 128. Al guardarlos quedan en <code>productos.codigo_barras</code> y funcionan con el lector del carrito.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="q">Buscar producto</label>
+          <input id="q" class="form-input" placeholder="Nombre, SKU o código de barras">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="prefix">Prefijo personalizado</label>
+          <input id="prefix" class="form-input" value="PCS" maxlength="12">
+        </div>
+        <div class="form-col maxw-240 flex-end">
+          <button id="btnGenerateMissing" class="btn secondary w-full" type="button">Generar faltantes</button>
+        </div>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div id="labels" class="barcode-grid">Cargando productos...</div>
+    </section>
+  </div>
+
+  <script>
+    const state = { empresaID: 0, productos: [] };
+    const CODE128_PATTERNS = [
+      "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"
+    ];
+
+    function qp(name){ return new URLSearchParams(location.search).get(name) || ''; }
+    function esc(s){ return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function setMsg(t, err){ const el=document.getElementById('msg'); el.textContent=t||''; el.classList.toggle('value-negative', !!err); }
+    function normalizeCode(raw){ return String(raw || '').trim().toUpperCase().replace(/[^A-Z0-9._-]/g, ''); }
+    function defaultCode(p){
+      const pref = normalizeCode(document.getElementById('prefix').value || 'PCS') || 'PCS';
+      return pref + '-' + String(state.empresaID).padStart(3,'0') + '-' + String(p.id || 0).padStart(6,'0');
+    }
+
+    function code128Svg(value){
+      const text = String(value || '').trim();
+      if (!text) return '';
+      const codes = [104]; // Start B
+      for (let i=0;i<text.length;i++){
+        const cc = text.charCodeAt(i);
+        if (cc < 32 || cc > 126) throw new Error('Code 128B solo admite ASCII imprimible.');
+        codes.push(cc - 32);
+      }
+      let checksum = codes[0];
+      for (let i=1;i<codes.length;i++) checksum += codes[i] * i;
+      codes.push(checksum % 103, 106);
+      let x = 10;
+      const h = 74;
+      let bars = '';
+      codes.forEach(code => {
+        const pattern = CODE128_PATTERNS[code];
+        for (let i=0;i<pattern.length;i++){
+          const w = Number(pattern[i]) * 2;
+          if (i % 2 === 0) bars += '<rect x="'+x+'" y="10" width="'+w+'" height="'+h+'" fill="#111"/>';
+          x += w;
+        }
+      });
+      return '<svg viewBox="0 0 '+(x+10)+' 104" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+esc(text)+'">'+bars+'<text x="'+((x+10)/2)+'" y="99" text-anchor="middle" font-family="monospace" font-size="12">'+esc(text)+'</text></svg>';
+    }
+
+    async function api(url, opts){
+      const res = await fetch(url, Object.assign({ credentials:'same-origin' }, opts || {}));
+      if (!res.ok) throw new Error(await res.text() || ('HTTP ' + res.status));
+      if (res.status === 204) return null;
+      const ct = res.headers.get('content-type') || '';
+      return ct.includes('json') ? res.json() : res.text();
+    }
+
+    async function load(){
+      setMsg('Cargando productos...', false);
+      const q = document.getElementById('q').value.trim();
+      const url = '/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&estado=activo&limit=500' + (q ? '&q=' + encodeURIComponent(q) : '');
+      state.productos = await api(url);
+      render();
+      setMsg('Productos cargados: ' + state.productos.length, false);
+    }
+
+    function render(){
+      const html = state.productos.map(p => {
+        const code = normalizeCode(p.codigo_barras) || normalizeCode(p.sku) || defaultCode(p);
+        let svg = '';
+        try { svg = code128Svg(code); } catch(e) { svg = '<div class="form-help value-negative">'+esc(e.message)+'</div>'; }
+        const saved = normalizeCode(p.codigo_barras) ? 'Guardado' : 'Pendiente de guardar';
+        return '<article class="barcode-label" data-id="'+Number(p.id)+'">' +
+          svg +
+          '<div class="barcode-code">'+esc(code)+'</div>' +
+          '<div class="barcode-product">'+esc(p.nombre)+'</div>' +
+          '<div class="form-actions no-print" style="justify-content:center;margin-top:8px">' +
+            '<button class="btn secondary btn-save-code" type="button" data-id="'+Number(p.id)+'" data-code="'+esc(code)+'">'+saved+'</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+      document.getElementById('labels').innerHTML = html || 'No hay productos activos.';
+      document.querySelectorAll('.btn-save-code').forEach(btn => {
+        btn.addEventListener('click', () => saveCode(Number(btn.dataset.id), btn.dataset.code));
+      });
+    }
+
+    async function saveCode(id, code){
+      const p = state.productos.find(x => Number(x.id) === Number(id));
+      if (!p) return;
+      const payload = Object.assign({}, p, { empresa_id: state.empresaID, codigo_barras: normalizeCode(code), motivo_precio: 'asignacion_codigo_barras', referencia_precio: 'generador_codigos_barras' });
+      await api('/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID), {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      p.codigo_barras = payload.codigo_barras;
+      render();
+      setMsg('Código guardado para: ' + (p.nombre || id), false);
+    }
+
+    async function generateMissing(){
+      const missing = state.productos.filter(p => !normalizeCode(p.codigo_barras));
+      if (!missing.length) { setMsg('Todos los productos visibles ya tienen código de barras.', false); return; }
+      if (!confirm('Se guardarán códigos de barras para ' + missing.length + ' productos visibles. ¿Continuar?')) return;
+      for (const p of missing) await saveCode(Number(p.id), defaultCode(p));
+      await load();
+    }
+
+    state.empresaID = Number(qp('empresa_id') || qp('id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('empresa_id') || 0);
+    if (!state.empresaID) document.getElementById('labels').textContent = 'Falta empresa_id.';
+    else load().catch(e => setMsg(e.message || 'Error cargando productos', true));
+    document.getElementById('btnLoad').addEventListener('click', () => load().catch(e => setMsg(e.message, true)));
+    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') load().catch(err => setMsg(err.message, true)); });
+    document.getElementById('btnGenerateMissing').addEventListener('click', () => generateMissing().catch(e => setMsg(e.message, true)));
+    document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>

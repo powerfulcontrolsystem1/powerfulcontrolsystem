@@ -118,15 +118,18 @@ func EmpresaNextcloudHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFu
 			action = "context"
 		}
 
-		if dbSuper != nil && !isNextcloudEnabled(dbSuper) {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "error": "Nextcloud está desactivado por super administrador."})
-			return
+		enabled := true
+		if dbSuper != nil {
+			enabled = isNextcloudEnabled(dbSuper)
 		}
 
 		baseURL, _ := nextcloudResolveBaseURL(dbSuper)
 		adminUser, _ := nextcloudResolveAdminUser(dbSuper)
 		adminSecret, _ := nextcloudResolveAdminSecret(dbSuper)
 		quotaGB := nextcloudQuotaGBForEmpresa(dbSuper)
+
+		// "configured" para la operación real (provision); el context puede funcionar parcial.
+		configured := strings.TrimSpace(baseURL) != "" && strings.TrimSpace(adminUser) != "" && strings.TrimSpace(adminSecret) != ""
 
 		switch action {
 		case "context":
@@ -137,7 +140,8 @@ func EmpresaNextcloudHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFu
 			}
 			writeJSON(w, http.StatusOK, map[string]any{
 				"ok": true,
-				"enabled": true,
+				"enabled": enabled,
+				"configured": configured,
 				"empresa_id": empresaID,
 				"base_url": baseURL,
 				"nextcloud_user": userID,
@@ -154,12 +158,31 @@ func EmpresaNextcloudHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFu
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
+			if !enabled {
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok": false,
+					"enabled": false,
+					"configured": configured,
+					"error": "Nextcloud está desactivado por super administrador.",
+				})
+				return
+			}
 			if baseURL == "" || adminUser == "" || adminSecret == "" {
-				writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "Nextcloud no está configurado en super (base_url/admin_user/admin_secret)."})
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok": false,
+					"enabled": enabled,
+					"configured": false,
+					"error": "Nextcloud no está configurado en super (base_url/admin_user/admin_secret).",
+				})
 				return
 			}
 			if !utils.EncryptionAvailable() {
-				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "Cifrado requerido: CONFIG_ENC_KEY no está disponible."})
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok": false,
+					"enabled": enabled,
+					"configured": configured,
+					"error": "Cifrado requerido: CONFIG_ENC_KEY no está disponible.",
+				})
 				return
 			}
 
@@ -196,7 +219,12 @@ func EmpresaNextcloudHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFu
 			}
 
 			if err := nextcloudEnsureUserAndQuota(dbSuper, baseURL, adminUser, adminSecret, userID, passForCreate, quotaGB); err != nil {
-				writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": err.Error()})
+				writeJSON(w, http.StatusOK, map[string]any{
+					"ok": false,
+					"enabled": enabled,
+					"configured": configured,
+					"error": err.Error(),
+				})
 				return
 			}
 
@@ -204,12 +232,22 @@ func EmpresaNextcloudHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFu
 			if plainPass != "" {
 				enc, encErr := utils.EncryptString(plainPass)
 				if encErr != nil {
-					writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "No se pudo cifrar la contraseña."})
+					writeJSON(w, http.StatusOK, map[string]any{
+						"ok": false,
+						"enabled": enabled,
+						"configured": configured,
+						"error": "No se pudo cifrar la contraseña.",
+					})
 					return
 				}
 				acc2, err := dbpkg.UpsertEmpresaNextcloudAccount(dbEmpresas, empresaID, userID, enc)
 				if err != nil {
-					writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "No se pudo guardar credenciales de Nextcloud."})
+					writeJSON(w, http.StatusOK, map[string]any{
+						"ok": false,
+						"enabled": enabled,
+						"configured": configured,
+						"error": "No se pudo guardar credenciales de Nextcloud.",
+					})
 					return
 				}
 				updatedAt = acc2.UpdatedAt

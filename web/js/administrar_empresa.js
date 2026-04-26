@@ -121,6 +121,7 @@ try {
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
     document.getElementById("linkCodigosDescuento"),
+    document.getElementById("linkGeneradorCodigosBarras"),
     document.getElementById("linkAsistenciaEmpleados"),
     document.getElementById("linkVehiculosRegistro"),
     document.getElementById("linkAuditoria"),
@@ -147,6 +148,7 @@ try {
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
+    linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
@@ -176,6 +178,7 @@ try {
     
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
+    linkReportesIAChat: { module: permModuleFinanzas, action: permActionRead },
     linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
 

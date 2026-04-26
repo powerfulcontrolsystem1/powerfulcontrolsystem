@@ -19,6 +19,11 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     .portal-header .brand-logo { font-size: 1.4rem; font-weight: 800; font-family: 'Montserrat', sans-serif; color: var(--accent); display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    html[data-theme="dark"] .portal-header .brand-logo,
+    html[data-theme="dark-violet"] .portal-header .brand-logo,
+    html[data-theme="dark-emerald"] .portal-header .brand-logo{
+      color: rgba(255,255,255,0.92);
+    }
     .portal-header-btn { text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; background: var(--accent); color: #fff; transition: opacity 0.3s; }
     .portal-header-btn:hover { opacity: 0.9; }
     .portal-intro { text-align: center; margin: 80px 20px; }
@@ -59,10 +64,9 @@
     .home-offer-head h3 {
       font-size: 1.45rem; font-family: 'Montserrat', sans-serif; margin: 0;
       color: var(--text); line-height: 1.2; text-align: left;
-      /* Limitar altura del título para mantener simetría entre tarjetas */
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      /* Mantener simetría entre tarjetas sin recortar con "..." */
+      line-height: 1.15;
+      max-height: calc(1.15em * 3);
       overflow: hidden;
       flex: 1 1 auto;
     }
@@ -91,11 +95,19 @@
       .home-offer-figure { height: 158px; } /* +12.5% vs 140px (≈157.5px) */
       .home-offer-head { min-height: 58px; }
     }
-    .home-offer-card .home-offer-body { text-align: center; }
-    .home-offer-card p { font-size: 1rem; color: var(--muted); margin: 0 0 20px; line-height: 1.6; padding: 0; }
+    .home-offer-card .home-offer-body { text-align: left; }
+    .home-offer-card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin: 0 0 18px;
+      line-height: 1.45;
+      padding: 0;
+      text-align: justify;
+      text-align-last: left;
+    }
     /* Sobre-escribir reglas globales de estilos.css para h3/p dentro de la nueva estructura */
     .home-offer-card .home-offer-head h3 { padding: 0; }
-    .home-offer-body p { margin: 0 0 20px; }
+    .home-offer-body p { margin: 0 0 18px; }
     .home-offer-btn {
       display: inline-block; padding: 10px 20px; width: 100%;
       background: transparent; color: var(--text); border: 1px solid var(--accent);
@@ -491,7 +503,7 @@
             '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
             '  <div class="home-offer-head">' +
             '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Logo: ' + escapeHTML(card.titulo) + '" class="card-logo" width="36" height="36">' +
-            '    <h3>' + escapeHTML(card.titulo) + '</h3>' +
+            '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
             '  </div>' +
             '  <div class="home-offer-figure">' +
             '    <img class="card-figure-img" src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
@@ -505,6 +517,57 @@
             '</article>';
         }).join('');
         gridEl.innerHTML = html;
+        fitHomeOfferTitles();
+      }
+
+      var __homeOfferTitleFitScheduled = false;
+      function scheduleFitHomeOfferTitles() {
+        if (__homeOfferTitleFitScheduled) return;
+        __homeOfferTitleFitScheduled = true;
+        window.requestAnimationFrame(function () {
+          __homeOfferTitleFitScheduled = false;
+          fitHomeOfferTitles();
+        });
+      }
+
+      function fitHomeOfferTitles() {
+        if (!gridEl) return;
+        var titles = gridEl.querySelectorAll('.home-offer-title');
+        if (!titles || !titles.length) return;
+
+        for (var i = 0; i < titles.length; i += 1) {
+          var el = titles[i];
+          if (!el) continue;
+
+          // Reset a tamaño base antes de ajustar.
+          el.style.fontSize = '';
+          var cs = window.getComputedStyle(el);
+
+          // Base en px
+          var basePx = parseFloat(cs.fontSize) || 16;
+          var minPx = Math.max(12, Math.round(basePx * 0.78)); // ~1.13rem desde 1.45rem
+          var stepPx = Math.max(0.5, Math.round(basePx * 0.04)); // ajuste fino
+
+          var lh = cs.lineHeight;
+          var lineHeightPx = 0;
+          if (lh && lh !== 'normal') {
+            lineHeightPx = parseFloat(lh) || 0;
+          }
+          if (!lineHeightPx) {
+            // fallback coherente con el CSS (1.15)
+            lineHeightPx = basePx * 1.15;
+          }
+          var maxHeightPx = Math.ceil(lineHeightPx * 3 + 0.5);
+
+          // Reducir hasta que quepa en 3 líneas (sin recorte con "...")
+          var current = basePx;
+          var guard = 0;
+          while (el.scrollHeight > maxHeightPx && current > minPx && guard < 40) {
+            current = current - stepPx;
+            el.style.fontSize = current.toFixed(2) + 'px';
+            guard += 1;
+          }
+        }
       }
 
       async function loadCards() {
@@ -648,6 +711,11 @@
       })();
 
       loadCards();
+
+      // Reajustar títulos si cambia el ancho (móvil/desktop)
+      try {
+        window.addEventListener('resize', scheduleFitHomeOfferTitles);
+      } catch (e) {}
     })();
   </script>
 

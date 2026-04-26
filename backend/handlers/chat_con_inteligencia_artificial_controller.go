@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/base64"
 	"bufio"
+	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -331,12 +331,12 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 	streamingEnabled, _, _, _ := getChatIAEmpresaStreamingEnabled(c.dbSuper)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":               true,
-		"empresa_id":       empresaID,
-		"google_account":   googleAccount,
-		"modelo_preferido": modeloPreferido,
+		"ok":                true,
+		"empresa_id":        empresaID,
+		"google_account":    googleAccount,
+		"modelo_preferido":  modeloPreferido,
 		"streaming_enabled": streamingEnabled,
-		"modelos":          items,
+		"modelos":           items,
 	})
 }
 
@@ -1341,6 +1341,9 @@ func buildEmpresaAISystemPrompt(contexto string) string {
 		"En su lugar, debes proponer una accion como una sugerencia estructurada para que el usuario la confirme. " +
 		"Regla de seguridad: puedes proponer acciones GET/OPEN/POST/PUT/DELETE, pero TODA accion debe pedir confirmacion previa; y si es DELETE o afecta muchos datos, pide confirmacion adicional. " +
 		"Para operaciones de base de datos genericas, usa el endpoint protegido /api/empresa/db_admin con action=schema|columns|select|insert|update|delete (siempre aislado por empresa_id). " +
+		"Importante (foto de carta/lista de precios y egresos): cuando el usuario adjunte una foto y pida registrar productos o egresos, primero extrae y presenta una lista estructurada para revision humana. " +
+		"Solo tras una confirmacion explicita del usuario (por ejemplo: 'si, confirma y guarda'), genera UNA sola accion PCS_ACTION que llame a POST /api/empresa/ia/importar_desde_foto con empresa_id y un arreglo de productos y/o egresos. " +
+		"Usa ese endpoint (no llames directamente /api/empresa/productos ni /api/empresa/finanzas/movimientos) para que el servidor aplique la importacion solo si el usuario es administrador. " +
 		"Solo cuando tengas TODOS los datos obligatorios, incluye al FINAL de tu respuesta un bloque literal con el prefijo EXACTO `PCS_ACTION` en una linea aparte, seguido por un JSON valido. " +
 		"Formato requerido:\n" +
 		"PCS_ACTION\n" +
