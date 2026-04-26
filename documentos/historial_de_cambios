@@ -14865,3 +14865,19 @@ Archivos modificados:
 - web/administrar_empresa/chat_con_inteligencia_artificial.html
 - web/super/chat_con_ia_global.html
 - web/super/configuracion_logica_del_chat_con_ia.html
+
+2026-04-26: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- backend/tools/inspect_admin_login/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- web/img/Sistema redes sociales.png
+- web/img/sistema bar.png
+- web/img/sistema independiente.png
+- web/img/sistema restaurante.png
+- web/img/sistema sensor.png
+- web/index.html
