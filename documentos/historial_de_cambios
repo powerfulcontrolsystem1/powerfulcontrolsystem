@@ -14881,3 +14881,8 @@ Archivos modificados:
 - web/img/sistema restaurante.png
 - web/img/sistema sensor.png
 - web/index.html
+
+2026-04-26: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- web/index.html
