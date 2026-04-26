@@ -15006,6 +15006,12 @@ Archivos modificados:
 - scripts/deploy_onlyoffice_to_vps.ps1
 - documentos/historial_de_cambios
 
+2026-04-26: Estaciones (Motel Calipso): reparar carga de estaciones_config y habilitar checks de Caja/YouTube/Notas/IA
+PushStatus: PENDIENTE
+Archivos modificados:
+- web/administrar_empresa/configuracion_de_estaciones.html
+- documentos/historial_de_cambios
+
 2026-04-26: Actualizacion automatica desde script: anadir/actualizar archivos
 PushStatus: OK
 Archivos modificados:

@@ -877,8 +877,10 @@
     }
 
     function parseStationConfigValue(raw) {
+      // Algunos despliegues legacy guardaron el JSON doble-serializado varias veces.
+      // Intentamos desempaquetar más capas para recuperar el objeto real.
       var current = raw;
-      for (var i = 0; i < 3; i += 1) {
+      for (var i = 0; i < 8; i += 1) {
         if (typeof current !== 'string') break;
         var trimmed = current.trim();
         if (!trimmed) return null;
@@ -890,6 +892,30 @@
       }
       if (!current || typeof current !== 'object') return null;
       return current;
+    }
+
+    function setSpecialTogglesDisabled(disabled) {
+      [
+        'cajaToggle',
+        'youtubeToggle',
+        'notasToggle',
+        'iaPedidosToggle',
+        'cajaPlacementSelect',
+        'youtubePlacementSelect',
+        'notasPlacementSelect',
+        'iaPedidosPlacementSelect',
+        'youtubeReferenceInput',
+        'saveYoutubeReferenceBtn',
+        'notasDefaultTextInput',
+        'notasDefaultMinutesInput',
+        'notasRepeatMinutesInput',
+        'notasBeepToggle',
+        'notasBlinkToggle',
+        'saveNotasConfigBtn'
+      ].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.disabled = !!disabled;
+      });
     }
 
     async function getConfigFromServer() {
@@ -1830,6 +1856,10 @@
       if (!empresaId) {
         showMessage('No se encontró empresa_id en la URL.', 'error');
         setEstadoCarritoMessage('No se puede editar colores sin empresa seleccionada.', 'error');
+        setSpecialTogglesDisabled(true);
+      } else {
+        // Asegurar que los checks especiales estén habilitados en UI.
+        setSpecialTogglesDisabled(false);
       }
 
       wireEvents();
