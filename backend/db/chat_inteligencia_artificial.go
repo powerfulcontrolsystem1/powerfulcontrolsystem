@@ -719,19 +719,19 @@ func GetEmpresaAIUsoDiario(dbConn *sql.DB, empresaID int64, provider, modelID, f
 
 		var out EmpresaAIUsoDiario
 		err := row.Scan(
-		&out.ID,
-		&out.EmpresaID,
-		&out.Provider,
-		&out.ModelID,
-		&out.FechaUso,
-		&out.Consultas,
-		&out.TokensTotal,
-		&out.PlanActual,
-		&out.FechaCreacion,
-		&out.FechaActualiz,
-		&out.UsuarioCread,
-		&out.Estado,
-		&out.Observaciones,
+			&out.ID,
+			&out.EmpresaID,
+			&out.Provider,
+			&out.ModelID,
+			&out.FechaUso,
+			&out.Consultas,
+			&out.TokensTotal,
+			&out.PlanActual,
+			&out.FechaCreacion,
+			&out.FechaActualiz,
+			&out.UsuarioCread,
+			&out.Estado,
+			&out.Observaciones,
 		)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -800,20 +800,20 @@ func GetSuperAIUsoDiario(dbConn *sql.DB, adminEmail, provider, modelID, fechaUso
 	FROM super_ai_uso_diario
 	WHERE admin_email = ? AND provider = ? AND model_id = ? AND fecha_uso = ?
 	LIMIT 1`, adminEmail, provider, modelID, fechaUso).Scan(
-		&item.ID,
-		&item.AdminEmail,
-		&item.Provider,
-		&item.ModelID,
-		&item.FechaUso,
-		&item.Consultas,
-		&item.TokensTotal,
-		&item.PlanActual,
-		&item.FechaCreacion,
-		&item.FechaActualiz,
-		&item.UsuarioCread,
-		&item.Estado,
-		&item.Observaciones,
-	)
+			&item.ID,
+			&item.AdminEmail,
+			&item.Provider,
+			&item.ModelID,
+			&item.FechaUso,
+			&item.Consultas,
+			&item.TokensTotal,
+			&item.PlanActual,
+			&item.FechaCreacion,
+			&item.FechaActualiz,
+			&item.UsuarioCread,
+			&item.Estado,
+			&item.Observaciones,
+		)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return item, nil
@@ -908,20 +908,20 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `)`,
-		in.EmpresaID,
-		in.Provider,
-		in.ModelID,
-		in.Pregunta,
-		strings.TrimSpace(in.Respuesta),
-		in.PromptTokens,
-		in.CompletionTokens,
-		in.TotalTokens,
-		in.FechaConsulta,
-		in.PlanActual,
-		in.UsuarioCreador,
-		in.Estado,
-		strings.TrimSpace(in.Observaciones),
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`)`,
+			in.EmpresaID,
+			in.Provider,
+			in.ModelID,
+			in.Pregunta,
+			strings.TrimSpace(in.Respuesta),
+			in.PromptTokens,
+			in.CompletionTokens,
+			in.TotalTokens,
+			in.FechaConsulta,
+			in.PlanActual,
+			in.UsuarioCreador,
+			in.Estado,
+			strings.TrimSpace(in.Observaciones),
 		)
 		if err != nil {
 			return 0, err
@@ -940,22 +940,22 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'activo', ?, ` + nowExpr + `, ` + nowExpr + `)
+	) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'activo', ?, `+nowExpr+`, `+nowExpr+`)
 	ON CONFLICT(empresa_id, provider, model_id, fecha_uso) DO UPDATE SET
 		consultas_total = empresa_ai_uso_diario.consultas_total + 1,
 		tokens_total = empresa_ai_uso_diario.tokens_total + excluded.tokens_total,
 		plan_actual = excluded.plan_actual,
 		usuario_creador = excluded.usuario_creador,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = ` + nowExpr,
-		in.EmpresaID,
-		in.Provider,
-		in.ModelID,
-		fechaUso,
-		in.TotalTokens,
-		in.PlanActual,
-		in.UsuarioCreador,
-		strings.TrimSpace(in.Observaciones),
+		fecha_actualizacion = `+nowExpr,
+			in.EmpresaID,
+			in.Provider,
+			in.ModelID,
+			fechaUso,
+			in.TotalTokens,
+			in.PlanActual,
+			in.UsuarioCreador,
+			strings.TrimSpace(in.Observaciones),
 		)
 		if err != nil {
 			return 0, err
@@ -1035,20 +1035,20 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `, ?, ?, ?)`,
-		input.AdminEmail,
-		input.Provider,
-		input.ModelID,
-		input.Pregunta,
-		input.Respuesta,
-		input.PromptTokens,
-		input.CompletionTokens,
-		input.TotalTokens,
-		input.FechaConsulta,
-		input.PlanActual,
-		strings.TrimSpace(input.UsuarioCreador),
-		strings.TrimSpace(input.Estado),
-		strings.TrimSpace(input.Observaciones),
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)`,
+			input.AdminEmail,
+			input.Provider,
+			input.ModelID,
+			input.Pregunta,
+			input.Respuesta,
+			input.PromptTokens,
+			input.CompletionTokens,
+			input.TotalTokens,
+			input.FechaConsulta,
+			input.PlanActual,
+			strings.TrimSpace(input.UsuarioCreador),
+			strings.TrimSpace(input.Estado),
+			strings.TrimSpace(input.Observaciones),
 		)
 		if err != nil {
 			return 0, err
@@ -1074,21 +1074,21 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, 1, ?, ?, ` + nowExpr + `, ` + nowExpr + `, ?, 'activo', 'uso diario chat IA global super')
+	) VALUES (?, ?, ?, ?, 1, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, 'activo', 'uso diario chat IA global super')
 	ON CONFLICT(admin_email, provider, model_id, fecha_uso) DO UPDATE SET
 		consultas_total = COALESCE(super_ai_uso_diario.consultas_total, 0) + 1,
 		tokens_total = COALESCE(super_ai_uso_diario.tokens_total, 0) + excluded.tokens_total,
 		plan_actual = excluded.plan_actual,
-		fecha_actualizacion = ` + nowExpr + `,
+		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = excluded.usuario_creador,
 		estado = 'activo'`,
-		input.AdminEmail,
-		input.Provider,
-		input.ModelID,
-		fechaUso,
-		input.TotalTokens,
-		input.PlanActual,
-		strings.TrimSpace(input.UsuarioCreador),
+			input.AdminEmail,
+			input.Provider,
+			input.ModelID,
+			fechaUso,
+			input.TotalTokens,
+			input.PlanActual,
+			strings.TrimSpace(input.UsuarioCreador),
 		)
 		if err != nil {
 			return consultaID, err
@@ -1157,22 +1157,22 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 		for rows.Next() {
 			var it EmpresaAIConsulta
 			if err := rows.Scan(
-			&it.ID,
-			&it.EmpresaID,
-			&it.Provider,
-			&it.ModelID,
-			&it.Pregunta,
-			&it.Respuesta,
-			&it.PromptTokens,
-			&it.CompletionTokens,
-			&it.TotalTokens,
-			&it.FechaConsulta,
-			&it.PlanActual,
-			&it.FechaCreacion,
-			&it.FechaActualiz,
-			&it.UsuarioCreador,
-			&it.Estado,
-			&it.Observaciones,
+				&it.ID,
+				&it.EmpresaID,
+				&it.Provider,
+				&it.ModelID,
+				&it.Pregunta,
+				&it.Respuesta,
+				&it.PromptTokens,
+				&it.CompletionTokens,
+				&it.TotalTokens,
+				&it.FechaConsulta,
+				&it.PlanActual,
+				&it.FechaCreacion,
+				&it.FechaActualiz,
+				&it.UsuarioCreador,
+				&it.Estado,
+				&it.Observaciones,
 			); err != nil {
 				return nil, err
 			}
@@ -1238,22 +1238,22 @@ func ListSuperAIConsultasRecientes(dbConn *sql.DB, adminEmail string, limit int)
 		for rows.Next() {
 			var item SuperAIConsulta
 			if err := rows.Scan(
-			&item.ID,
-			&item.AdminEmail,
-			&item.Provider,
-			&item.ModelID,
-			&item.Pregunta,
-			&item.Respuesta,
-			&item.PromptTokens,
-			&item.CompletionTokens,
-			&item.TotalTokens,
-			&item.FechaConsulta,
-			&item.PlanActual,
-			&item.FechaCreacion,
-			&item.FechaActualiz,
-			&item.UsuarioCreador,
-			&item.Estado,
-			&item.Observaciones,
+				&item.ID,
+				&item.AdminEmail,
+				&item.Provider,
+				&item.ModelID,
+				&item.Pregunta,
+				&item.Respuesta,
+				&item.PromptTokens,
+				&item.CompletionTokens,
+				&item.TotalTokens,
+				&item.FechaConsulta,
+				&item.PlanActual,
+				&item.FechaCreacion,
+				&item.FechaActualiz,
+				&item.UsuarioCreador,
+				&item.Estado,
+				&item.Observaciones,
 			); err != nil {
 				return nil, err
 			}
@@ -1353,7 +1353,7 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 
 // BuildEmpresaAIContextoForQuestion amplía el contexto base con resultados de consultas seguras
 // resueltas por intención, sin permitir SQL libre generado por IA.
-func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string) (string, error) {
+func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string) (string, error) {
 	base, err := BuildEmpresaAIContexto(dbConn, empresaID)
 	if err != nil {
 		return "", err
@@ -1361,6 +1361,12 @@ func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta
 	safeContext, err := buildEmpresaAISafeIntentContext(dbConn, empresaID, pregunta, usuarioCreador)
 	if err != nil {
 		return "", err
+	}
+	if paginaContexto = strings.TrimSpace(paginaContexto); paginaContexto != "" {
+		if safeContext != "" {
+			safeContext += "\n"
+		}
+		safeContext += "PAGINA_CONTEXTO: " + paginaContexto
 	}
 	if safeContext == "" {
 		return base, nil
@@ -2207,35 +2213,35 @@ func empresaAISafeUpdateProductoPrecio(dbConn *sql.DB, empresaID int64, pregunta
 	}
 	ref := truncateText(strings.TrimSpace(pregunta), 180)
 	_ = insertProductoPrecioHistorialTx(tx, ProductoPrecioHistorial{
-		EmpresaID:         empresaID,
-		ProductoID:        productoID,
-		CostoAnterior:     costoAnterior,
-		CostoNuevo:        costoAnterior,
-		PrecioAnterior:    precioAnterior,
-		PrecioNuevo:       val,
-		ImpuestoAnterior:  impuestoAnterior,
-		ImpuestoNuevo:     impuestoAnterior,
-		Motivo:            "ia_update_precio",
-		Referencia:        ref,
-		UsuarioCreador:    u,
-		Estado:            "activo",
-		Observaciones:     "Cambio ejecutado desde chat IA con confirmación explícita.",
+		EmpresaID:        empresaID,
+		ProductoID:       productoID,
+		CostoAnterior:    costoAnterior,
+		CostoNuevo:       costoAnterior,
+		PrecioAnterior:   precioAnterior,
+		PrecioNuevo:      val,
+		ImpuestoAnterior: impuestoAnterior,
+		ImpuestoNuevo:    impuestoAnterior,
+		Motivo:           "ia_update_precio",
+		Referencia:       ref,
+		UsuarioCreador:   u,
+		Estado:           "activo",
+		Observaciones:    "Cambio ejecutado desde chat IA con confirmación explícita.",
 	})
 
 	// Auditoría empresarial: registrar el cambio como evento forense.
 	metadataObj := map[string]interface{}{
-		"origen":              "chat_ia",
-		"motivo":              "ia_update_precio",
-		"producto":            productoNombre,
-		"producto_id":         productoID,
-		"precio_anterior":     precioAnterior,
-		"precio_nuevo":        val,
-		"confirmacion":        true,
-		"prompt_referencia":   ref,
-		"usuario_creador":     u,
-		"tabla_afectada":      "productos",
-		"campo_actualizado":   "precio",
-		"empresa_id":          empresaID,
+		"origen":            "chat_ia",
+		"motivo":            "ia_update_precio",
+		"producto":          productoNombre,
+		"producto_id":       productoID,
+		"precio_anterior":   precioAnterior,
+		"precio_nuevo":      val,
+		"confirmacion":      true,
+		"prompt_referencia": ref,
+		"usuario_creador":   u,
+		"tabla_afectada":    "productos",
+		"campo_actualizado": "precio",
+		"empresa_id":        empresaID,
 	}
 	if metaRaw, merr := json.Marshal(metadataObj); merr == nil && json.Valid(metaRaw) {
 		_, _ = insertTxSQLCompat(tx, `INSERT INTO empresa_auditoria_eventos (

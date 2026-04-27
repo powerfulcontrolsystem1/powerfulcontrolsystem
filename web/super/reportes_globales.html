@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Reportes globales</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .reportes-globales-ai-chat { min-height: 260px; border: 1px solid #d6d8db; border-radius: 12px; padding: 14px; background: #fafbfd; overflow-y: auto; max-height: 340px; }
+    .reportes-globales-ai-message { margin-bottom: 12px; }
+    .reportes-globales-ai-message.user { text-align: right; }
+    .reportes-globales-ai-message.assistant { text-align: left; }
+    .reportes-globales-ai-message .ai-bubble { display: inline-block; padding: 10px 14px; border-radius: 14px; max-width: 88%; white-space: pre-wrap; word-break: break-word; }
+    .reportes-globales-ai-message.user .ai-bubble { background: #e8f3ff; color: #0e2b5a; }
+    .reportes-globales-ai-message.assistant .ai-bubble { background: #ffffff; color: #202124; border: 1px solid #dde1e6; }
+    .reportes-globales-ai-chat-footer { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+    .reportes-globales-ai-chat-footer .form-input { flex: 1 1 auto; min-width: 220px; }
+    .reportes-globales-ai-chat-info { font-size: 0.95rem; color: #5f6368; margin-bottom: 10px; }
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -23,6 +35,25 @@
       </div>
 
       <div id="rgMsg" class="form-help mt-10"></div>
+
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2 class="m-0">Chat IA global</h2>
+        </div>
+        <div class="empresa-inline-actions actions-wrap-gap-10 mt-10">
+          <label class="form-group">
+            <span class="form-label">Modelo IA</span>
+            <select id="rgAiModelSelect" class="form-input"></select>
+          </label>
+        </div>
+        <p class="reportes-globales-ai-chat-info">Usa datos consolidados de todas las empresas creadas por este administrador. Pregunta por ventas, ingresos, balances o comparativos globales.</p>
+        <div id="rgAiChatMessages" class="reportes-globales-ai-chat"></div>
+        <form id="rgAiChatForm" class="reportes-globales-ai-chat-footer mt-12">
+          <input id="rgAiPrompt" class="form-input" type="text" placeholder="Escribe tu consulta al asistente global...">
+          <button id="rgAiSend" class="btn" type="submit">Enviar</button>
+        </form>
+        <div id="rgAiChatMsg" class="form-help mt-8"></div>
+      </section>
 
       <div class="reportes-globales-grid mt-14">
         <section class="reportes-globales-panel">

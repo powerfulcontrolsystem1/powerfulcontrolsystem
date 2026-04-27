@@ -1,3 +1,11 @@
+- 2026-04-27: integración IA para super administrador.
+    - Archivos: `web/super/integracion_ia.html`, `web/super_administrador.html`, `documentos/historial_de_cambios`
+    - Descripcion: se crea una página central de Integración IA en el panel super administrador con estado global de IA, gestión de proveedores OpenAI, edición de credenciales y accesos directos a las configuraciones de lógica de chat y contenido para portal. Se enlaza al menú principal de super administrador.
+
+- 2026-04-27: estaciones YouTube ? IA musical y busqueda inteligente.
+    - Archivos: `web/administrar_empresa/estaciones.html`, `RESUMEN_DEL_PROYECTO.md`, `documentos/historial_de_cambios`
+    - Descripcion: se agrega una seccion de IA en la tarjeta YouTube de estaciones que sugiere playlists y videos actuales mediante el chat IA empresarial. La UI permite solicitar recomendaciones de musica con IA, aplicar el resultado y abrir busquedas inteligentes en YouTube. Se actualiza la documentacion del proyecto con una nueva seccion de funciones IA y la integracion profesional de OpenAI.
+
 - 2026-04-26: documentacion ? saneamiento de secretos y correccion de encoding.
     - Archivos: `Pendiente Notas`, `backend/tools/inspect_admin_login/main.go`, `documentos/estructura_bd.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`
     - Descripcion: se eliminan credenciales en texto plano del backlog y de un tool interno; se corrige una seccion con escapes/encoding roto en estructura BD; se actualizan fragmentos de documentacion para reflejar PostgreSQL como runtime canonico y mejorar legibilidad (acentos, guiones, comillas).

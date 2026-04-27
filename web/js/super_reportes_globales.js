@@ -7,7 +7,11 @@
     selectionMode: 'multiple',
     selectedEmpresaIDs: [],
     tablero: null,
-    dataset: null
+    dataset: null,
+    aiModels: [],
+    aiModelID: '',
+    aiMessages: [],
+    aiLoading: false
   };
 
   function toNumber(value) {
@@ -155,6 +159,169 @@
     } catch (err) {
       setMsg(err.message || 'No se pudo refrescar la empresa seleccionada.', true);
     }
+  }
+
+  function setAIChatMsg(text, isError) {
+    var el = byId('rgAiChatMsg');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = isError ? '#ef5350' : '';
+  }
+
+  function renderAIModelOptions() {
+    var select = byId('rgAiModelSelect');
+    if (!select) return;
+    if (!state.aiModels.length) {
+      select.innerHTML = '<option value="">No hay modelos IA disponibles</option>';
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    select.innerHTML = state.aiModels.map(function (item) {
+      return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(item.display_name) + '</option>';
+    }).join('');
+    if (state.aiModelID && state.aiModels.some(function (item) { return item.id === state.aiModelID; })) {
+      select.value = state.aiModelID;
+    } else if (state.aiModels.length) {
+      state.aiModelID = state.aiModels[0].id;
+      select.value = state.aiModelID;
+    }
+  }
+
+  function renderAIChatMessages() {
+    var wrap = byId('rgAiChatMessages');
+    if (!wrap) return;
+    if (!state.aiMessages.length) {
+      wrap.innerHTML = '<div class="reportes-globales-empty">Escribe una consulta para recibir análisis global de tus empresas.</div>';
+      return;
+    }
+    wrap.innerHTML = state.aiMessages.map(function (message) {
+      var role = normalize(message.role).toLowerCase();
+      var label = role === 'assistant' ? 'Asistente' : 'Tú';
+      return '' +
+        '<div class="reportes-globales-ai-message ' + escapeHtml(role) + '">' +
+          '<div class="ai-bubble"><strong>' + escapeHtml(label) + '</strong><br>' + escapeHtml(message.content) + '</div>' +
+        '</div>';
+    }).join('');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function buildAIChatHistoryPayload() {
+    return state.aiMessages
+      .filter(function (item) {
+        var role = normalize(item.role).toLowerCase();
+        return role === 'user' || role === 'assistant';
+      })
+      .slice(-8)
+      .map(function (item) {
+        return {
+          rol: normalize(item.role).toLowerCase(),
+          contenido: normalize(item.content)
+        };
+      });
+  }
+
+  function appendAIMessage(role, content) {
+    state.aiMessages.push({ role: role, content: content || '' });
+    if (state.aiMessages.length > 30) {
+      state.aiMessages = state.aiMessages.slice(-30);
+    }
+    renderAIChatMessages();
+  }
+
+  async function loadAIChatModels() {
+    var select = byId('rgAiModelSelect');
+    if (!select) return;
+    try {
+      var data = await requestJSON('/super/api/chat_con_ia_global/modelos');
+      state.aiModels = Array.isArray(data.modelos) ? data.modelos : [];
+      state.aiModelID = normalize(data.modelo_preferido) || (state.aiModels[0] && state.aiModels[0].id) || '';
+      renderAIModelOptions();
+      setAIChatMsg('', false);
+    } catch (err) {
+      state.aiModels = [];
+      state.aiModelID = '';
+      renderAIModelOptions();
+      setAIChatMsg(err.message || 'No se pudo cargar el chat IA global.', true);
+    }
+  }
+
+  async function onSendAIChat(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (state.aiLoading) return;
+    var prompt = normalize(byId('rgAiPrompt') && byId('rgAiPrompt').value);
+    if (!prompt) {
+      setAIChatMsg('Escribe una pregunta para el asistente global.', true);
+      return;
+    }
+    if (!state.aiModelID) {
+      setAIChatMsg('Selecciona un modelo IA disponible.', true);
+      return;
+    }
+    if (prompt.length > 2500) {
+      setAIChatMsg('La pregunta es demasiado larga. Reduce el texto a menos de 2500 caracteres.', true);
+      return;
+    }
+
+    state.aiLoading = true;
+    setAIChatMsg('Enviando consulta al asistente global...', false);
+    appendAIMessage('user', prompt);
+    if (byId('rgAiPrompt')) byId('rgAiPrompt').value = '';
+
+    try {
+      var payload = {
+        model_id: state.aiModelID,
+        pregunta: prompt,
+        historial: buildAIChatHistoryPayload(),
+        temperatura: 0.2
+      };
+      var res = await fetch('/super/api/chat_con_ia_global/consultar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        var text = await res.text();
+        throw new Error(text || ('HTTP ' + res.status));
+      }
+      var data = await res.json();
+      var answer = normalize(data.respuesta || 'No se recibió respuesta del asistente.');
+      appendAIMessage('assistant', answer);
+      setAIChatMsg('', false);
+    } catch (err) {
+      setAIChatMsg(err.message || 'No se pudo enviar la consulta al chat IA global.', true);
+      appendAIMessage('assistant', 'Error: ' + normalize(err.message || 'Fallo en la consulta.'));
+    } finally {
+      state.aiLoading = false;
+    }
+  }
+
+  function onAiModelChange(ev) {
+    if (!ev || !ev.target) return;
+    var newModel = normalize(ev.target.value);
+    if (!newModel) return;
+    state.aiModelID = newModel;
+  }
+
+  function bindAIChatEvents() {
+    var form = byId('rgAiChatForm');
+    if (form) {
+      form.addEventListener('submit', onSendAIChat);
+    }
+    var modelSelect = byId('rgAiModelSelect');
+    if (modelSelect) {
+      modelSelect.addEventListener('change', onAiModelChange);
+    }
+    var prompt = byId('rgAiPrompt');
+    if (prompt) {
+      prompt.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter' || ev.shiftKey) return;
+        ev.preventDefault();
+        onSendAIChat(ev);
+      });
+    }
+    renderAIChatMessages();
   }
 
   function buildBaseParams(action) {
@@ -680,6 +847,12 @@
 
   document.addEventListener('DOMContentLoaded', async function () {
     applyDateDefaults();
+    bindAIChatEvents();
+    try {
+      await loadAIChatModels();
+    } catch (err) {
+      setAIChatMsg(err.message || 'No se pudo cargar el chat IA global.', true);
+    }
     try {
       await loadCatalog();
       await refreshAll();

@@ -60,6 +60,13 @@ Asistencia registra entrada, salida, estado, novedades, horas trabajadas y cierr
 
 La IA empresarial puede responder preguntas de operacion, analizar adjuntos, proponer acciones confirmables y registrar productos o egresos desde una foto cuando el administrador confirma. El chat global de super ayuda con diagnostico y contexto del sistema. OnlyOffice permite gestionar documentos por empresa, y Nextcloud puede aprovisionar almacenamiento por empresa cuando esta configurado.
 
+#### Funciones con inteligencia artificial
+
+- Chat IA empresarial con contexto de `empresa_id`, restricciones de modelo y uso, y soporte para adjuntos/fotos en consultas avanzadas.
+- Chat IA global para super administrador con consolidacion multinivel de datos entre empresas, vision holistica y capacidades de diagnostico de sistema.
+- Descubrimiento de musica YouTube asistido por IA en la tarjeta de estaciones: sugiere playlists y videos actuales, permite cargar enlaces validos y ofrece busquedas inteligentes cuando no hay fuente directa.
+- Integracion profesional con OpenAI/GPT gestionando modelo preferido, limites diarios, registro de consumo y configuracion centralizada desde super administrador.
+
 ### Soporte remoto, backups y VPS
 
 El sistema incluye soporte remoto empresarial con RustDesk, backups por empresa, exportacion/importacion de configuracion, monitoreo de errores, seguridad VPS, metricas de trafico, procesos y servicios. Los scripts operativos permiten iniciar el servidor local, actualizar repositorio y sincronizar al VPS sin documentar secretos.

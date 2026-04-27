@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Integración IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Integración IA</h1>
+      <p class="form-help">Panel central de configuración profesional de inteligencia artificial. Aquí puedes administrar la disponibilidad global, proveedores, credenciales y las reglas de chat que impactan a todo el sistema.</p>
+    </div>
+
+    <section class="card form advanced-card" id="aiIntegrationStatusCard">
+      <h2>Estado global de IA</h2>
+      <p class="form-help">Activa o desactiva la IA para el sistema completo, revisa el estado de servicio y prueba la conexión con OpenAI.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">IA global habilitada</label>
+          <label class="mode-switch-row" for="aiGlobalEnabled">
+            <span class="mode-label">Off</span>
+            <input id="aiGlobalEnabled" type="checkbox" role="switch" aria-label="Habilitar IA global">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="aiGlobalStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Servicio de IA</label>
+          <div id="aiServiceStatus" class="form-help">Esperando datos del servicio...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="aiGlobalSaveBtn" class="btn" type="button">Guardar configuración</button>
+        <button id="aiGlobalTestBtn" class="btn secondary" type="button">Probar conexión</button>
+      </div>
+      <div id="aiGlobalMessage" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" id="aiProvidersCard">
+      <h2>Proveedores y credenciales</h2>
+      <p class="form-help">Administra los proveedores IA disponibles y los modelos configurados. Para cada modelo puedes actualizar la clave sensible sin exponerla en la interfaz.</p>
+      <div id="aiProvidersHelp" class="form-help">Cargando proveedores...</div>
+
+      <div id="aiProvidersList"></div>
+      <div id="aiProviderToggles" class="form-row"></div>
+
+      <div class="form-actions">
+        <button id="aiProvidersSaveBtn" class="btn" type="button">Guardar credenciales y proveedores</button>
+      </div>
+      <div id="aiProvidersMessage" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" id="aiQuickLinksCard">
+      <h2>Accesos rápidos</h2>
+      <p class="form-help">Estas páginas complementan la configuración central de IA y permiten ajustar la lógica de chat y los contenidos del portal.</p>
+      <ul class="form-help" style="padding-left:18px; margin-top:0;">
+        <li><a href="/super/configuracion_logica_del_chat_con_ia.html" target="_blank">Configuración lógica del chat IA</a></li>
+        <li><a href="/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html" target="_blank">Información para IA (Portal)</a></li>
+        <li><a href="/super/chat_con_ia_global.html" target="_blank">Chat IA global</a></li>
+        <li><a href="/super/configuracion_avanzada.html" target="_blank">Configuración avanzada del sistema</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function normalize(value) {
+        return value == null ? '' : String(value).trim();
+      }
+
+      function apiFetch(url, options) {
+        return fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, options || {}))
+          .then(async function(response) {
+            var text = await response.text();
+            var data = null;
+            try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }
+            if (!response.ok) {
+              var err = new Error(data && (data.error || data.message) ? (data.error || data.message) : ('HTTP ' + response.status));
+              err.payload = data;
+              throw err;
+            }
+            return data;
+          });
+      }
+
+      function setMessage(id, text, isError) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = normalize(text);
+        el.style.color = isError ? '#ef5350' : '';
+      }
+
+      function renderProviders(data) {
+        var list = document.getElementById('aiProvidersList');
+        var toggles = document.getElementById('aiProviderToggles');
+        if (!list || !toggles) return;
+        list.innerHTML = '';
+        toggles.innerHTML = '';
+
+        var providersSeen = {};
+        if (!Array.isArray(data.modelos)) {
+          list.innerHTML = '<p class="form-help">No se detectaron modelos IA.</p>';
+          return;
+        }
+
+        data.modelos.forEach(function(model) {
+          var row = document.createElement('div');
+          row.className = 'form-row';
+          row.style.alignItems = 'flex-end';
+          row.style.marginBottom = '16px';
+
+          var colLeft = document.createElement('div');
+          colLeft.className = 'form-col';
+          colLeft.style.flex = '1 1 320px';
+          colLeft.innerHTML = '<label class="form-label">' + escapeHtml(model.display_name || model.model_id) + '</label>' +
+            '<div class="form-help">Proveedor: ' + escapeHtml(model.provider || 'desconocido') + ' · Configurado: ' + (model.configured ? 'Sí' : 'No') + ' · Fuente: ' + escapeHtml(model.source || '—') + '</div>' +
+            '<div class="form-help">' + escapeHtml(model.free_plan_note || '') + '</div>';
+
+          var colRight = document.createElement('div');
+          colRight.className = 'form-col';
+          colRight.style.flex = '1 1 280px';
+          var inputId = 'aiKey_' + escapeHtml(model.model_id);
+          colRight.innerHTML = '<label class="form-label" for="' + inputId + '">Nueva clave para ' + escapeHtml(model.model_id) + '</label>' +
+            '<input id="' + inputId + '" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservar la actual">' +
+            '<div class="form-help">La clave actual está enmascarada. Solo ingresa una nueva si deseas actualizarla.</div>';
+
+          row.appendChild(colLeft);
+          row.appendChild(colRight);
+          list.appendChild(row);
+
+          if (!providersSeen[model.provider]) {
+            providersSeen[model.provider] = true;
+            var providerRow = document.createElement('div');
+            providerRow.className = 'form-col';
+            providerRow.style.flex = '1 1 240px';
+            providerRow.innerHTML = '<label class="form-label">Habilitar proveedor ' + escapeHtml(model.provider) + '</label>' +
+              '<label class="mode-switch-row" for="providerToggle_' + escapeHtml(model.provider) + '">' +
+              '<span class="mode-label">Off</span>' +
+              '<input id="providerToggle_' + escapeHtml(model.provider) + '" type="checkbox" role="switch" aria-label="Habilitar proveedor ' + escapeHtml(model.provider) + '">' +
+              '<span class="mode-label">On</span>' +
+              '</label>';
+            toggles.appendChild(providerRow);
+          }
+        });
+
+        toggles.querySelectorAll('input[type="checkbox"]').forEach(function(chk) {
+          var provider = chk.id.replace('providerToggle_', '');
+          if (typeof data.provider_enabled === 'object' && data.provider_enabled !== null) {
+            chk.checked = !!data.provider_enabled[provider];
+          }
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function gatherPayload() {
+        var enabled = document.getElementById('aiGlobalEnabled') && document.getElementById('aiGlobalEnabled').checked;
+        var payload = { enabled: enabled, provider_enabled: {}, credentials: [] };
+        document.querySelectorAll('[id^="providerToggle_"]').forEach(function(chk) {
+          var provider = chk.id.replace('providerToggle_', '');
+          payload.provider_enabled[provider] = !!chk.checked;
+        });
+        document.querySelectorAll('[id^="aiKey_"]').forEach(function(input) {
+          var modelId = input.id.replace('aiKey_', '');
+          var value = normalize(input.value);
+          if (value) {
+            payload.credentials.push({ model_id: modelId, api_key: value });
+          }
+        });
+        return payload;
+      }
+
+      async function loadAIConfig() {
+        setMessage('aiGlobalMessage', 'Cargando configuración IA...', false);
+        setMessage('aiProvidersMessage', '', false);
+        try {
+          var data = await apiFetch('/super/api/config/ai');
+          var enabled = data && data.service_status && data.service_status.enabled;
+          if (document.getElementById('aiGlobalEnabled')) {
+            document.getElementById('aiGlobalEnabled').checked = !!enabled;
+          }
+          setMessage('aiGlobalStatus', data && data.service_status && data.service_status.message ? data.service_status.message : 'Estado no disponible.', false);
+          document.getElementById('aiServiceStatus').textContent = data && data.service_status && data.service_status.message ? data.service_status.message : 'Sin información de servicio.';
+          renderProviders(data);
+          setMessage('aiGlobalMessage', 'Configuración IA cargada.', false);
+          if (data.modelos && data.modelos.length > 0) {
+            var providerEnabled = {};
+            data.modelos.forEach(function(model) {
+              if (typeof model.enabled === 'boolean' && model.provider) {
+                providerEnabled[model.provider] = model.enabled;
+              }
+            });
+            Object.keys(providerEnabled).forEach(function(provider) {
+              var chk = document.getElementById('providerToggle_' + provider);
+              if (chk) chk.checked = providerEnabled[provider];
+            });
+          }
+        } catch (err) {
+          console.error('Error cargando configuración IA:', err);
+          setMessage('aiGlobalMessage', err.message || 'No se pudo cargar la configuración IA.', true);
+          setMessage('aiProvidersHelp', 'Error al cargar proveedores.', true);
+        }
+      }
+
+      async function saveAIConfig() {
+        setMessage('aiGlobalMessage', 'Guardando configuración IA...', false);
+        setMessage('aiProvidersMessage', 'Guardando proveedores y credenciales...', false);
+        try {
+          var payload = gatherPayload();
+          await apiFetch('/super/api/config/ai', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+          });
+          setMessage('aiGlobalMessage', 'Configuración IA guardada correctamente.', false);
+          setMessage('aiProvidersMessage', 'Ajustes guardados.', false);
+          await loadAIConfig();
+        } catch (err) {
+          console.error('Error guardando IA:', err);
+          setMessage('aiGlobalMessage', err.message || 'Error al guardar configuración IA.', true);
+          setMessage('aiProvidersMessage', err.message || 'Error al guardar proveedores.', true);
+        }
+      }
+
+      async function testAIConnection() {
+        setMessage('aiGlobalMessage', 'Ejecutando prueba de IA...', false);
+        try {
+          var data = await apiFetch('/super/api/config/ai?action=test');
+          if (data && data.ok) {
+            setMessage('aiGlobalMessage', 'Prueba OK: ' + (data.response || 'Conexión establecida'), false);
+            if (document.getElementById('aiServiceStatus')) {
+              document.getElementById('aiServiceStatus').textContent = 'OK - ' + (data.response || 'Conexión establecida');
+            }
+          } else {
+            throw new Error((data && data.error) ? data.error : 'La prueba no devolvió respuesta válida.');
+          }
+        } catch (err) {
+          console.error('Error en prueba de IA:', err);
+          setMessage('aiGlobalMessage', err.message || 'Fallo en prueba de IA.', true);
+        }
+      }
+
+      document.getElementById('aiGlobalSaveBtn').addEventListener('click', function() {
+        saveAIConfig();
+      });
+      document.getElementById('aiProvidersSaveBtn').addEventListener('click', function() {
+        saveAIConfig();
+      });
+      document.getElementById('aiGlobalTestBtn').addEventListener('click', function() {
+        testAIConnection();
+      });
+
+      loadAIConfig();
+    })();
+  </script>
+</body>
+</html>

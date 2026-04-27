@@ -886,6 +886,15 @@
             '<a class="btn secondary youtube-station-open-link" id="youtubeStationOpenLinkBtn" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir en YouTube</a>' +
           '</div>' +
           '<p class="form-help youtube-station-editor-help">Puedes pegar una URL normal de YouTube, una playlist o un enlace de Shorts. Si escribes texto libre, la búsqueda se abrirá fuera del sistema.</p>' +
+          '<div class="youtube-station-ia-actions">' +
+            '<button type="button" class="btn secondary youtube-station-ia-search" id="youtubeStationIASearchBtn">Buscar música con IA</button>' +
+            '<button type="button" class="btn secondary youtube-station-ia-load" id="youtubeStationIALoadBtn" hidden>Cargar sugerencia</button>' +
+          '</div>' +
+          '<div id="youtubeStationIARecommendations" class="youtube-station-ia-recommendations">' +
+            '<strong>Recomendaciones de música</strong>' +
+            '<ul id="youtubeStationIAList" class="youtube-station-ia-list"></ul>' +
+            '<p id="youtubeStationIAStatus" class="form-help youtube-station-ia-status">La IA puede sugerir una playlist actualizada con enlaces de YouTube para esta estación.</p>' +
+          '</div>' +
           '<div id="youtubeStationInlineMessage" class="form-help youtube-station-inline-message"></div>' +
         '</div>' +
       '</article>';
@@ -1182,6 +1191,157 @@
         if (nextSaveBtn) {
           nextSaveBtn.disabled = false;
         }
+      }
+    }
+
+    function setYouTubeIAStatus(text, type) {
+      const status = document.getElementById('youtubeStationIAStatus');
+      if (!status) return;
+      status.textContent = String(text || '').trim();
+      status.className = type === 'error'
+        ? 'error youtube-station-ia-status'
+        : (type === 'success' ? 'success youtube-station-ia-status' : 'form-help youtube-station-ia-status');
+    }
+
+    function setYouTubeIASuggestions(items) {
+      const list = document.getElementById('youtubeStationIAList');
+      const loadBtn = document.getElementById('youtubeStationIALoadBtn');
+      if (!list) return;
+      list.innerHTML = '';
+      if (!Array.isArray(items) || items.length === 0) {
+        if (loadBtn) loadBtn.hidden = true;
+        return;
+      }
+      items.forEach(item => {
+        const label = String(item.label || item.text || 'Sugerencia de YouTube').trim();
+        const url = String(item.url || item.value || '').trim();
+        const li = document.createElement('li');
+        if (url) {
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.textContent = label;
+          anchor.target = '_blank';
+          anchor.rel = 'noopener noreferrer';
+          li.appendChild(anchor);
+        } else {
+          li.textContent = label;
+        }
+        list.appendChild(li);
+      });
+      if (loadBtn) {
+        loadBtn.hidden = false;
+        loadBtn.disabled = false;
+      }
+    }
+
+    function parseYouTubeReferenceFromText(text) {
+      const raw = String(text || '').trim();
+      const urlMatch = raw.match(/(https?:\/\/[^\s]+)/i);
+      if (urlMatch) {
+        return urlMatch[1];
+      }
+      const idMatch = raw.match(/([A-Za-z0-9_-]{11})/);
+      if (idMatch) {
+        return idMatch[1];
+      }
+      const playlistMatch = raw.match(/(PL|UU|LL|FL|RD|OLAK5uy_|UL)[A-Za-z0-9_-]{8,}/i);
+      if (playlistMatch) {
+        return playlistMatch[0];
+      }
+      return '';
+    }
+
+    function updateYouTubePreviewFromInput(value) {
+      const preview = document.querySelector('iframe.youtube-station-preview-frame');
+      if (!preview) return;
+      const cfg = { youtube_query: String(value || '').trim() };
+      preview.src = buildYouTubeStationBrowserURL(cfg, true);
+      syncYouTubeOpenLinkFromValue(value);
+    }
+
+    async function requestYouTubeIARecommendations() {
+      if (!empresaId) {
+        setYouTubeIAStatus('No se encontró empresa activa para IA.', 'error');
+        return;
+      }
+      const prompt = 'Eres un asistente de operaciones de estaciones. Sugiere una lista de reproducción de música actual y amigable para clientes en una estación empresarial. Responde con un enlace de YouTube o un ID de video/playlist válido y una breve explicación.';
+      setYouTubeIAStatus('Consultando IA para sugerencias de música...', 'help');
+      const recommendations = [];
+      try {
+        const payload = {
+          empresa_id: empresaId,
+          pregunta: prompt,
+          historial: []
+        };
+        const data = await requestJSON('/api/empresa/chat_con_inteligencia_artificial/consultar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const answer = String(data && data.respuesta ? data.respuesta : '').trim();
+        if (!answer) {
+          throw new Error('La IA no devolvió sugerencias válidas.');
+        }
+        const reference = parseYouTubeReferenceFromText(answer);
+        if (reference) {
+          let targetUrl = reference;
+          if (!/^https?:\/\//i.test(targetUrl)) {
+            if (/^[A-Za-z0-9_-]{11}$/.test(targetUrl)) {
+              targetUrl = 'https://www.youtube.com/watch?v=' + encodeURIComponent(targetUrl);
+            } else if (/^(PL|UU|LL|FL|RD|OLAK5uy_|UL)/i.test(targetUrl)) {
+              targetUrl = 'https://www.youtube.com/playlist?list=' + encodeURIComponent(targetUrl);
+            }
+          }
+          recommendations.push({ label: answer.split('\n')[0] || 'Playlist de YouTube sugerida', url: targetUrl, value: targetUrl });
+          setYouTubeIAStatus('Sugerencia IA lista. Puedes cargarla en la estación.', 'success');
+        } else {
+          recommendations.push({ label: answer, url: '', value: '' });
+          setYouTubeIAStatus('La IA respondió, pero no se pudo extraer un enlace o ID de YouTube automáticamente.', 'error');
+        }
+      } catch (err) {
+        console.error('Error solicitando recomendaciones IA para YouTube:', err);
+        setYouTubeIAStatus('Error consultando IA: ' + (err && err.message ? err.message : 'falló la petición'), 'error');
+      }
+      setYouTubeIASuggestions(recommendations);
+    }
+
+    function applyYouTubeIASuggestion() {
+      const list = document.getElementById('youtubeStationIAList');
+      if (!list || !list.firstChild) {
+        setYouTubeIAStatus('No hay sugerencia IA disponible para cargar.', 'error');
+        return;
+      }
+      const item = list.firstChild;
+      const anchor = item.querySelector('a');
+      const rawValue = anchor ? anchor.href : item.textContent || '';
+      const parsed = parseYouTubeReferenceFromText(rawValue);
+      if (!parsed) {
+        setYouTubeIAStatus('La sugerencia IA no contiene un identificador de YouTube válido.', 'error');
+        return;
+      }
+      const input = document.getElementById('youtubeStationSourceInput');
+      if (!input) return;
+      input.value = parsed;
+      updateYouTubePreviewFromInput(parsed);
+      setYouTubeIAStatus('Sugerencia IA aplicada en el campo. Presiona Guardar para persistirla.', 'success');
+    }
+
+    function initializeYouTubeIAButtons() {
+      const searchBtn = document.getElementById('youtubeStationIASearchBtn');
+      if (searchBtn) {
+        searchBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          requestYouTubeIARecommendations();
+        });
+      }
+      const loadBtn = document.getElementById('youtubeStationIALoadBtn');
+      if (loadBtn) {
+        loadBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          applyYouTubeIASuggestion();
+        });
       }
     }
 
@@ -1514,6 +1674,7 @@
           saveYouTubeSourceFromCard();
         });
       }
+      initializeYouTubeIAButtons();
 
       const openLinkBtn = document.getElementById('youtubeStationOpenLinkBtn');
       if (openLinkBtn) {

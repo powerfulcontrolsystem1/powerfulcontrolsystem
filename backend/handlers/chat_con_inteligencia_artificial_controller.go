@@ -169,11 +169,12 @@ type empresaAIChatMensaje struct {
 }
 
 type empresaAIChatRequest struct {
-	EmpresaID   int64                  `json:"empresa_id"`
-	ModelID     string                 `json:"model_id"`
-	Pregunta    string                 `json:"pregunta"`
-	Historial   []empresaAIChatMensaje `json:"historial"`
-	Temperatura float64                `json:"temperatura"`
+	EmpresaID      int64                  `json:"empresa_id"`
+	ModelID        string                 `json:"model_id"`
+	Pregunta       string                 `json:"pregunta"`
+	Historial      []empresaAIChatMensaje `json:"historial"`
+	Temperatura    float64                `json:"temperatura"`
+	PaginaContexto string                 `json:"pagina_contexto,omitempty"`
 }
 
 type aiAttachment struct {
@@ -560,7 +561,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -937,7 +938,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return

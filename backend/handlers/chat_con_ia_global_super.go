@@ -11,10 +11,11 @@ import (
 )
 
 type superAIChatRequest struct {
-	ModelID     string                 `json:"model_id"`
-	Pregunta    string                 `json:"pregunta"`
-	Historial   []empresaAIChatMensaje `json:"historial"`
-	Temperatura float64                `json:"temperatura"`
+	ModelID        string                 `json:"model_id"`
+	Pregunta       string                 `json:"pregunta"`
+	Historial      []empresaAIChatMensaje `json:"historial"`
+	Temperatura    float64                `json:"temperatura"`
+	PaginaContexto string                 `json:"pagina_contexto,omitempty"`
 }
 
 type superAIModeloPreferidoPayload struct {
@@ -86,12 +87,12 @@ func (c *SuperAIChatController) ModelosHandler(w http.ResponseWriter, r *http.Re
 	streamingEnabled, _, _, _ := getChatIASuperStreamingEnabled(c.base.dbSuper)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":               true,
-		"admin_email":      adminEmail,
-		"scope":            "global_superadministrador",
-		"modelo_preferido": modeloPreferido,
+		"ok":                true,
+		"admin_email":       adminEmail,
+		"scope":             "global_superadministrador",
+		"modelo_preferido":  modeloPreferido,
 		"streaming_enabled": streamingEnabled,
-		"modelos":          items,
+		"modelos":           items,
 	})
 }
 

@@ -77,7 +77,40 @@
     </main>
   </div>
 
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon" src="/img/gpt.svg" alt="">Asistente IA
+  </button>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-header">
+      <div>
+        <h2 id="aiChatTitle">Asistente IA</h2>
+        <p>Accede al asistente IA global para soporte, reportes y decisiones administrativas.</p>
+      </div>
+      <div class="ai-chat-header-actions">
+        <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+        <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
+      </div>
+    </div>
+    <div id="aiChatNotice" class="ai-chat-notice"></div>
+    <div id="aiChatMessages" class="ai-chat-messages"></div>
+    <div id="aiChatHints" class="ai-chat-hints is-hidden">
+      <p>Ejemplos de consultas rápidas:</p>
+      <ul>
+        <li>Muéstrame el estado de licencias y empresas.</li>
+        <li>Asigna una tarea a un usuario para revisar productos próximos a vencer.</li>
+        <li>Envía un mensaje a un administrador sobre permisos o roles faltantes.</li>
+        <li>Haz un pedido de inventario o sugiere cerrar una venta pendiente.</li>
+      </ul>
+    </div>
+    <form id="aiChatForm" class="ai-chat-form">
+      <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+      <button type="submit" class="btn primary">Enviar</button>
+    </form>
+  </section>
+
   <script src="/js/seleccionar_empresa.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
 
   </body>
 </html>

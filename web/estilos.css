@@ -957,7 +957,35 @@ p{color:var(--muted);line-height:1.5}
 .admin-menu-visibility-toggle:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}
 .admin-menu-visibility-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:1rem;line-height:1}
 .admin-content{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
-/* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
+.ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1600;display:inline-flex;align-items:center;gap:8px;padding:12px 16px;font-weight:800;border:none;border-radius:999px;background:var(--accent);color:var(--btn-primary-text);cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.18);transition:transform .18s ease,box-shadow .18s ease}
+.ai-chat-toggle-button:hover{transform:translateY(-1px);box-shadow:0 24px 58px rgba(0,0,0,.22)}
+.ai-chat-toggle-button img.icon{width:18px;height:18px;margin:0;filter:none}
+.ai-chat-drawer{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);max-width:380px;transform:translateX(100%);transition:transform .28s ease;background:var(--surface);box-shadow:-10px 0 48px rgba(3,10,20,.24);z-index:1650;display:flex;flex-direction:column;overflow:hidden}
+.ai-chat-drawer.open{transform:translateX(0)}
+.ai-chat-header{padding:18px 18px 12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(180deg,var(--surface-soft),var(--surface))}
+.ai-chat-header h2{margin:0;font-size:1rem;line-height:1.2;font-weight:800}
+.ai-chat-header p{margin:8px 0 0;color:var(--muted);font-size:.92rem;max-width:220px}
+.ai-chat-header-actions{display:flex;align-items:center;gap:10px}
+.ai-chat-close{border:none;background:transparent;color:var(--text);font-size:1.6rem;line-height:1;width:40px;height:40px;border-radius:12px;cursor:pointer;transition:background .15s ease}
+.ai-chat-close:hover{background:rgba(0,0,0,.06)}
+.ai-chat-notice{display:block;padding:12px 14px;margin:0 14px 10px;border-radius:14px;border-left:4px solid #ffb300;background:rgba(255,243,224,.95);color:#6b4a00;font-size:.93rem;line-height:1.4}
+.ai-chat-notice.ai-chat-notice-warning{border-color:#d97706;background:rgba(254,226,200,.96);color:#7a341a}
+.ai-chat-notice.is-hidden{display:none}
+.ai-chat-messages{flex:1;overflow:auto;padding:0 14px 10px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.ai-chat-message{max-width:100%;border-radius:18px;padding:14px 16px;line-height:1.5;word-break:break-word;white-space:pre-wrap;box-shadow:0 10px 20px rgba(0,0,0,.06)}
+.ai-chat-message.user{align-self:flex-end;background:var(--btn-primary);color:var(--btn-primary-text)}
+.ai-chat-message.assistant{align-self:flex-start;background:var(--surface-soft);color:var(--text)}
+.ai-chat-message.error{border:1px solid #d97706;background:rgba(254,226,200,.92);color:#7a341a}
+.ai-chat-hints{padding:0 14px 14px;color:var(--muted);font-size:.92rem;line-height:1.5}
+.ai-chat-hints.is-hidden{display:none}
+.ai-chat-hints p{margin:0 0 8px}
+.ai-chat-hints ul{margin:0;padding-left:20px}
+.ai-chat-hints li{margin:6px 0}
+.ai-chat-form{display:flex;align-items:flex-end;gap:10px;padding:14px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--surface-soft))}
+.ai-chat-form textarea{flex:1;min-height:72px;max-height:140px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;font-size:.95rem}
+.ai-chat-form textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(96,165,250,.18)}
+.ai-chat-form button{min-width:100px;white-space:nowrap}
+@media (max-width: 860px){.ai-chat-drawer{max-width:100%;width:100%;}}/* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
 .admin-content .btn{
   padding:10px 14px;
   min-height:44px;

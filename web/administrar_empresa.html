@@ -21,11 +21,9 @@
 
         <li><a id="linkCompras" href="/administrar_empresa/compras_menu.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Compras</a></li>
 
-        <li><a id="linkConfiguracion" href="/administrar_empresa/configuracion_menu.html" target="contentFrame"><img class="icon no-invert" src="/img/gear-red.svg" alt="">Configuración</a></li>
+        <li><a id="linkConfiguracion" href="/administrar_empresa/configuracion_menu.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración</a></li>
 
         <li><a id="linkFacturacionElectronica" href="/administrar_empresa/facturacion_electronica_menu.html" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Facturación electrónica</a></li>
-
-        <li><a id="linkChatIA" href="/administrar_empresa/chat_con_inteligencia_artificial.html" target="contentFrame"><img class="icon" src="/img/gpt.svg" alt="">Chat con IA</a></li>
 
         <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Finanzas</a></li>
 
@@ -65,6 +63,40 @@
       <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame"></iframe>
     </main>
   </div>
+
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon" src="/img/gpt.svg" alt="">Asistente IA
+  </button>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-header">
+      <div>
+        <h2 id="aiChatTitle">Asistente IA</h2>
+        <p>Consulta y administra empresas, productos, reportes y configuraciones desde un asistente contextual.</p>
+      </div>
+      <div class="ai-chat-header-actions">
+        <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+        <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
+      </div>
+    </div>
+    <div id="aiChatNotice" class="ai-chat-notice"></div>
+    <div id="aiChatMessages" class="ai-chat-messages"></div>
+    <div id="aiChatHints" class="ai-chat-hints is-hidden">
+      <p>Ejemplos de comandos útiles:</p>
+      <ul>
+        <li>Genera un informe de ventas del día pasado.</li>
+        <li>Asigna una tarea a un empleado y notifícale por mensaje.</li>
+        <li>Realiza un pedido de productos o cierra una venta pendiente.</li>
+        <li>Identifica productos próximos a vencer y crea una alerta.</li>
+      </ul>
+    </div>
+    <form id="aiChatForm" class="ai-chat-form">
+      <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+      <button type="submit" class="btn primary">Enviar</button>
+    </form>
+  </section>
+
   <script src="/js/administrar_empresa.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
