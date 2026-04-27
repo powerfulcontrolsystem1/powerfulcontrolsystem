@@ -16,6 +16,7 @@ type superAIChatRequest struct {
 	Historial      []empresaAIChatMensaje `json:"historial"`
 	Temperatura    float64                `json:"temperatura"`
 	PaginaContexto string                 `json:"pagina_contexto,omitempty"`
+	ModoAsistente  string                 `json:"modo_asistente,omitempty"`
 }
 
 type superAIModeloPreferidoPayload struct {
@@ -281,7 +282,11 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, payload.Pregunta, dbpkg.SuperAIContextoOpts{
+	preguntaContexto := payload.Pregunta
+	if strings.TrimSpace(payload.PaginaContexto) != "" {
+		preguntaContexto = payload.Pregunta + "\n\n[PAGINA_CONTEXTO_ACTUAL]\n" + strings.TrimSpace(payload.PaginaContexto)
+	}
+	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
 	})
 	if err != nil {
@@ -290,7 +295,8 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 	}
 
 	superMeta := c.base.dbSuper != nil
-	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO))
+	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
+	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente))
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, model, usoActual.Consultas)
@@ -420,6 +426,8 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	if raw := strings.TrimSpace(r.FormValue("historial")); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &historial)
 	}
+	paginaContexto := strings.TrimSpace(r.FormValue("pagina_contexto"))
+	modoAsistente := normalizeAIAssistantMode(r.FormValue("modo_asistente"))
 
 	catalog := availableEmpresaAIModelMap(c.base.dbSuper)
 	model, okModel := catalog["openai:gpt-5.5"]
@@ -438,7 +446,11 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 		return
 	}
 
-	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, pregunta, dbpkg.SuperAIContextoOpts{
+	preguntaContexto := pregunta
+	if paginaContexto != "" {
+		preguntaContexto = pregunta + "\n\n[PAGINA_CONTEXTO_ACTUAL]\n" + paginaContexto
+	}
+	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
 	})
 	if err != nil {
@@ -452,7 +464,7 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	}
 
 	superMeta := c.base.dbSuper != nil
-	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO), att)
+	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente), att)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
@@ -585,7 +597,11 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 		http.Error(w, "No se pudo consultar configuración de contexto IA", http.StatusInternalServerError)
 		return
 	}
-	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, payload.Pregunta, dbpkg.SuperAIContextoOpts{
+	preguntaContexto := payload.Pregunta
+	if strings.TrimSpace(payload.PaginaContexto) != "" {
+		preguntaContexto = payload.Pregunta + "\n\n[PAGINA_CONTEXTO_ACTUAL]\n" + strings.TrimSpace(payload.PaginaContexto)
+	}
+	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
 	})
 	if err != nil {
@@ -593,7 +609,8 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 		return
 	}
 	superMeta := c.base.dbSuper != nil
-	systemPrompt := buildSuperAISystemPrompt(contexto, superMeta, empresaRO)
+	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
+	systemPrompt := buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente)
 
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -683,8 +700,9 @@ func (c *SuperAIChatController) HistorialHandler(w http.ResponseWriter, r *http.
 	})
 }
 
-func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSoloLectura bool) string {
+func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSoloLectura bool, modoAsistente string) string {
 	extra := ""
+	assistantInstruction := buildAIAssistantModeInstruction(modoAsistente)
 	if superEsquemaCompleto {
 		extra += "El contexto incluye inventario de la base superadministrador (conteos por tabla, columnas nombre:tipo, reparto de administradores por rol). No se inyectan valores de fila ni secretos. No asumas que puedes ejecutar SQL ni acceder fuera de lo resumido. "
 	}
@@ -705,6 +723,7 @@ func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSolo
 		"Responde en espanol claro y accionable. Usa solo el contexto agregado validado del sistema completo. " +
 		"No reveles secretos, credenciales, hashes, tokens, llaves privadas ni datos sensibles. " +
 		extra + "\n\n" +
+		assistantInstruction + "\n\n" +
 		"Si existe la seccion CONSULTAS_SEGURAS_GLOBALES_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
 		"Si faltan datos, dilo explicitamente y sugiere el siguiente reporte o consulta a revisar.\n\nCONTEXTO_GLOBAL_VALIDADO:\n" + contexto
 }

@@ -981,10 +981,20 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-hints p{margin:0 0 8px}
 .ai-chat-hints ul{margin:0;padding-left:20px}
 .ai-chat-hints li{margin:6px 0}
-.ai-chat-form{display:flex;align-items:flex-end;gap:10px;padding:14px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--surface-soft))}
-.ai-chat-form textarea{flex:1;min-height:72px;max-height:140px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;font-size:.95rem}
+.ai-chat-form{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:14px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--surface-soft))}
+.ai-chat-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ai-chat-control-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ai-chat-control-field > span{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ai-chat-attachment-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ai-chat-file-input{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
+.ai-chat-attachment-name{font-size:.82rem;color:var(--muted);word-break:break-word}
+.ai-chat-form textarea{width:100%;min-height:84px;max-height:170px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;font-size:.95rem}
 .ai-chat-form textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(96,165,250,.18)}
-.ai-chat-form button{min-width:100px;white-space:nowrap}
+.ai-chat-form > button[type="submit"]{align-self:flex-end;min-width:120px;white-space:nowrap}
+@media (max-width: 540px){
+  .ai-chat-controls{grid-template-columns:1fr}
+  .ai-chat-form > button[type="submit"]{width:100%;align-self:stretch}
+}
 @media (max-width: 860px){.ai-chat-drawer{max-width:100%;width:100%;}}/* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
 .admin-content .btn{
   padding:10px 14px;

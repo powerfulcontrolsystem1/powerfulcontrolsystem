@@ -33,6 +33,7 @@
       <div class="vp-actions">
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
         <button id="openPublicBtn" class="btn" type="button">Abrir venta pública</button>
+        <button id="previewPublicBtn" class="btn secondary" type="button">Ver como cliente público</button>
       </div>
       <div id="msg" class="form-help"></div>
     </section>
@@ -144,7 +145,7 @@
     function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
     async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); }
     async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
-    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ location.href=pageUrl(state.selectedPage); };
+    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ location.href=pageUrl(state.selectedPage); }; previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
     init();
   </script>
 </body>

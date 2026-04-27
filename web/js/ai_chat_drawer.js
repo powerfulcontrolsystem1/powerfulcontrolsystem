@@ -1,17 +1,24 @@
-(function () {
+﻿(function () {
   var DRAWER_ID = 'aiChatDrawer';
   var TOGGLE_ID = 'openAIDrawer';
   var CLOSE_ID = 'closeAIDrawer';
   var FORM_ID = 'aiChatForm';
   var INPUT_ID = 'aiChatInput';
+  var MODE_ID = 'aiChatMode';
+  var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
+  var ATTACH_BTN_ID = 'aiChatAttachBtn';
+  var CLEAR_ATTACHMENT_ID = 'aiChatClearAttachment';
+  var ATTACHMENT_NAME_ID = 'aiChatAttachmentName';
   var MESSAGES_ID = 'aiChatMessages';
   var NOTICE_ID = 'aiChatNotice';
   var HINT_TOGGLE_ID = 'aiChatHintToggle';
   var HINTS_ID = 'aiChatHints';
+  var MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
   var state = {
     proposals: [],
-    loading: false
+    loading: false,
+    selectedAttachment: null
   };
 
   function parsePositiveInt(raw) {
@@ -68,11 +75,18 @@
     return path.indexOf('/seleccionar_empresa.html') >= 0 || path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
   }
 
-  function buildEndpoint() {
+  function buildTextEndpoint() {
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar';
     }
     return '/api/empresa/chat_con_inteligencia_artificial/consultar';
+  }
+
+  function buildAttachmentEndpoint() {
+    if (isSuperContext()) {
+      return '/super/api/chat_con_ia_global/consultar_con_adjunto';
+    }
+    return '/api/empresa/chat_con_inteligencia_artificial/consultar_con_adjunto';
   }
 
   function getEndpointLabel() {
@@ -81,6 +95,50 @@
 
   function normalize(text) {
     return String(text || '').trim();
+  }
+
+  function getAssistantMode() {
+    var modeEl = document.getElementById(MODE_ID);
+    var value = normalize(modeEl && modeEl.value);
+    return value === 'ayudante' ? 'ayudante' : 'operativo';
+  }
+
+  function getCurrentAttachment() {
+    return state.selectedAttachment || null;
+  }
+
+  function describeAttachment(file) {
+    if (!file) return '';
+    var kb = Math.max(1, Math.round((Number(file.size) || 0) / 1024));
+    return String(file.name || 'archivo') + ' (' + kb + ' KB)';
+  }
+
+  function renderAttachmentState() {
+    var labelEl = document.getElementById(ATTACHMENT_NAME_ID);
+    var clearBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
+    var file = getCurrentAttachment();
+
+    if (labelEl) {
+      if (file) {
+        labelEl.textContent = 'Adjunto listo: ' + describeAttachment(file);
+        labelEl.classList.remove('is-hidden');
+      } else {
+        labelEl.textContent = '';
+        labelEl.classList.add('is-hidden');
+      }
+    }
+    if (clearBtn) {
+      clearBtn.classList.toggle('is-hidden', !file);
+    }
+  }
+
+  function clearAttachmentSelection() {
+    state.selectedAttachment = null;
+    var input = document.getElementById(ATTACHMENT_INPUT_ID);
+    if (input) {
+      input.value = '';
+    }
+    renderAttachmentState();
   }
 
   function extractPCSActionBlock(text) {
@@ -116,7 +174,7 @@
 
     var title = document.createElement('div');
     title.className = 'ai-action-title';
-    title.textContent = 'Acciones sugeridas (requieren confirmación)';
+    title.textContent = 'Acciones sugeridas (requieren confirmacion)';
     section.appendChild(title);
 
     if (proposal.note) {
@@ -134,7 +192,7 @@
       head.className = 'ai-action-head';
 
       var titleText = document.createElement('b');
-      titleText.textContent = normalize(act.title) || ('Acción ' + (index + 1));
+      titleText.textContent = normalize(act.title) || ('Accion ' + (index + 1));
       head.appendChild(titleText);
 
       var mini = document.createElement('span');
@@ -240,39 +298,79 @@
     setNotice(info + ' ' + hint);
   }
 
-  function sendQuery(query) {
-    var endpoint = buildEndpoint();
-    var body = { pregunta: query };
+  function parseErrorResponse(resp) {
+    return resp.text().then(function (text) {
+      var msg = normalize(text);
+      if (msg) {
+        try {
+          var data = JSON.parse(msg);
+          if (data && typeof data === 'object' && normalize(data.error)) {
+            msg = normalize(data.error);
+          }
+        } catch (error) {
+          // Mensaje plano.
+        }
+      }
+      if (!msg) {
+        msg = resp.statusText || 'Error desconocido';
+      }
+      if (resp.status === 401 || resp.status === 403) {
+        msg = 'No tienes permiso para usar el asistente IA. Pidele a un administrador que habilite el acceso de rol para este usuario.';
+      }
+      throw new Error(msg);
+    });
+  }
+
+  function sendQuery(query, attachment) {
+    var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
+    var mode = getAssistantMode();
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
+    var body = {
+      pregunta: query,
+      modo_asistente: mode
+    };
+
     if (pageContext) {
       body.pagina_contexto = pageContext;
     }
     if (!isSuperContext()) {
       var empresaId = getCurrentEmpresaId();
       if (!empresaId) {
-        throw new Error('No se encontró una empresa activa. Ingresa desde el contexto de una empresa para usar el chat IA empresarial.');
+        throw new Error('No se encontro una empresa activa. Ingresa desde el contexto de una empresa para usar el chat IA empresarial.');
       }
       body.empresa_id = parsePositiveInt(empresaId);
     }
 
-    return fetch(endpoint, {
+    var options = {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        'Content-Type': 'application/json',
         'X-PCS-Source': 'ai_drawer'
-      },
-      body: JSON.stringify(body)
-    })
+      }
+    };
+
+    if (attachment) {
+      var formData = new FormData();
+      formData.set('pregunta', query);
+      formData.set('modo_asistente', mode);
+      if (pageContext) {
+        formData.set('pagina_contexto', pageContext);
+      }
+      if (!isSuperContext()) {
+        formData.set('empresa_id', String(body.empresa_id));
+        formData.set('use_gpt55', '1');
+      }
+      formData.set('file', attachment, attachment.name || 'adjunto');
+      options.body = formData;
+    } else {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(body);
+    }
+
+    return fetch(endpoint, options)
       .then(function (resp) {
         if (!resp.ok) {
-          return resp.json().catch(function () { return null; }).then(function (data) {
-            var errorMessage = (data && data.error) ? String(data.error) : resp.statusText || 'Error desconocido';
-            if (resp.status === 401 || resp.status === 403) {
-              errorMessage = 'No tienes permiso para usar el asistente IA. Pídele a un administrador que habilite el acceso de rol para este usuario.';
-            }
-            throw new Error(errorMessage);
-          });
+          return parseErrorResponse(resp);
         }
         return resp.json();
       })
@@ -281,7 +379,7 @@
           var detail = (data && data.error) ? String(data.error) : 'No se pudo obtener respuesta de IA.';
           throw new Error(detail);
         }
-        var answer = String(data.respuesta || data.answer || data.message || 'La IA respondió sin contenido.');
+        var answer = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
         return extractPCSActionBlock(answer);
       });
   }
@@ -291,15 +389,20 @@
     if (state.loading) return;
     var input = document.getElementById(INPUT_ID);
     if (!input) return;
+
     var query = String(input.value || '').trim();
+    var attachment = getCurrentAttachment();
     if (!query) return;
+
     input.value = '';
-    appendMessage('user', query);
-    setNotice('Procesando tu consulta…');
+    appendMessage('user', attachment ? (query + '\n\n[Adjunto: ' + describeAttachment(attachment) + ']') : query);
+    setNotice(attachment ? 'Procesando consulta con adjunto...' : 'Procesando tu consulta...');
     state.loading = true;
-    sendQuery(query).then(function (result) {
+
+    sendQuery(query, attachment).then(function (result) {
       appendMessage('assistant', result.clean, null, result.proposal);
       setNotice('Respuesta lista. Puedes seguir escribiendo otra consulta.');
+      clearAttachmentSelection();
     }).catch(function (err) {
       appendMessage('assistant', err.message || 'Error al procesar la consulta.', 'error');
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
@@ -313,7 +416,7 @@
     if (!proposal || !Array.isArray(proposal.actions) || !proposal.actions.length) return;
     if (state.loading) return;
     state.loading = true;
-    setNotice('Ejecutando acciones sugeridas…');
+    setNotice('Ejecutando acciones sugeridas...');
 
     var messagesEl = document.getElementById(MESSAGES_ID);
     var messageEl = messagesEl && messagesEl.querySelector('[data-proposal-index="' + msgIdx + '"]');
@@ -325,14 +428,14 @@
           var endpoint = normalize(act.endpoint);
           var method = normalize(act.method).toUpperCase() || 'POST';
           if (method === 'DELETE') {
-            throw new Error('Acción bloqueada: DELETE no está permitida desde el chat IA.');
+            throw new Error('Accion bloqueada: DELETE no esta permitida desde el chat IA.');
           }
           if (method === 'OPEN') {
             if (!endpoint || endpoint[0] !== '/') {
-              throw new Error('Acción OPEN bloqueada: la URL debe ser relativa.');
+              throw new Error('Accion OPEN bloqueada: la URL debe ser relativa.');
             }
             window.open(endpoint, '_blank', 'noopener,noreferrer');
-            appendMessage('assistant', 'Acción ejecutada: abrir vista ' + endpoint + '.');
+            appendMessage('assistant', 'Accion ejecutada: abrir vista ' + endpoint + '.');
             return;
           }
           var payload = act.body != null ? act.body : null;
@@ -348,9 +451,9 @@
             return res.text().then(function (text) {
               if (!res.ok) {
                 var detail = text || res.statusText || 'Error inesperado';
-                throw new Error('Fallo al ejecutar acción: HTTP ' + res.status + ' — ' + detail);
+                throw new Error('Fallo al ejecutar accion: HTTP ' + res.status + ' - ' + detail);
               }
-              appendMessage('assistant', 'Acción ejecutada: ' + normalize(act.title || act.endpoint) + '. Respuesta: ' + text);
+              appendMessage('assistant', 'Accion ejecutada: ' + normalize(act.title || act.endpoint) + '. Respuesta: ' + text);
             });
           });
         });
@@ -396,6 +499,9 @@
     var messagesEl = document.getElementById(MESSAGES_ID);
     var hintToggle = document.getElementById(HINT_TOGGLE_ID);
     var hints = document.getElementById(HINTS_ID);
+    var attachInput = document.getElementById(ATTACHMENT_INPUT_ID);
+    var attachBtn = document.getElementById(ATTACH_BTN_ID);
+    var clearAttachBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
 
@@ -424,6 +530,36 @@
       });
     }
 
+    if (attachBtn && attachInput) {
+      attachBtn.addEventListener('click', function () {
+        if (state.loading) return;
+        attachInput.click();
+      });
+      attachInput.addEventListener('change', function () {
+        var file = attachInput.files && attachInput.files[0] ? attachInput.files[0] : null;
+        if (!file) {
+          clearAttachmentSelection();
+          return;
+        }
+        if (Number(file.size) > MAX_ATTACHMENT_BYTES) {
+          clearAttachmentSelection();
+          setNotice('El archivo supera el maximo permitido de 8 MB.', true);
+          return;
+        }
+        state.selectedAttachment = file;
+        renderAttachmentState();
+        setNotice('Adjunto listo para enviar: ' + describeAttachment(file));
+      });
+    }
+
+    if (clearAttachBtn) {
+      clearAttachBtn.addEventListener('click', function () {
+        if (state.loading) return;
+        clearAttachmentSelection();
+        setNotice('Adjunto removido.');
+      });
+    }
+
     messagesEl.addEventListener('click', function (event) {
       var target = event.target;
       if (!target) return;
@@ -444,9 +580,10 @@
     });
 
     if (!messagesEl.querySelector('.ai-chat-message')) {
-      appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '. ' + (isSuperContext() ? 'Consulta datos globales de super administrador.' : 'Consulta datos de la empresa actual y solicita acciones administrativas. Puedes asignar tareas, enviar mensajes, crear pedidos y terminar ventas según tu rol.'));
+      appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '. ' + (isSuperContext() ? 'Consulta datos globales de super administrador.' : 'Consulta datos de la empresa actual y solicita acciones administrativas. Puedes asignar tareas, enviar mensajes, crear pedidos y terminar ventas segun tu rol.'));
     }
 
+    renderAttachmentState();
     getCurrentRole().then(updateAccessInfo);
   }
 

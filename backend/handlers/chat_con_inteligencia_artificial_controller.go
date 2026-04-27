@@ -175,6 +175,7 @@ type empresaAIChatRequest struct {
 	Historial      []empresaAIChatMensaje `json:"historial"`
 	Temperatura    float64                `json:"temperatura"`
 	PaginaContexto string                 `json:"pagina_contexto,omitempty"`
+	ModoAsistente  string                 `json:"modo_asistente,omitempty"`
 }
 
 type aiAttachment struct {
@@ -566,8 +567,10 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
+	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
+	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
 
-	respuesta, promptTokens, completionTokens, err := c.generateResponse(model, payload.Pregunta, payload.Historial, contexto)
+	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
@@ -694,6 +697,8 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if raw := strings.TrimSpace(r.FormValue("historial")); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &historial)
 	}
+	paginaContexto := strings.TrimSpace(r.FormValue("pagina_contexto"))
+	modoAsistente := normalizeAIAssistantMode(r.FormValue("modo_asistente"))
 
 	useGPT55 := queryBool(r, "use_gpt55") || queryBool(r, "gpt55") || queryBool(r, "premium")
 	if v := strings.TrimSpace(strings.ToLower(r.FormValue("use_gpt55"))); v == "1" || v == "true" || v == "si" || v == "sí" {
@@ -777,7 +782,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, empresaID, pregunta, googleAccount)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, empresaID, pregunta, googleAccount, paginaContexto)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -788,7 +793,8 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		preguntaFinal = "Adjunto: " + strings.TrimSpace(att.Filename) + " (" + strings.TrimSpace(att.MimeType) + ")\n\n" + pregunta
 	}
 
-	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildEmpresaAISystemPrompt(contexto), att)
+	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
+	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, systemPrompt, att)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
@@ -943,7 +949,8 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
-	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
+	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
 
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -1080,7 +1087,7 @@ func (c *EmpresaAIChatController) writeLimitReached(w http.ResponseWriter, empre
 }
 
 func (c *EmpresaAIChatController) generateResponse(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
-	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	systemPrompt := buildEmpresaAISystemPrompt(contexto, "operativo")
 	return c.generateResponseWithSystemPrompt(model, pregunta, historial, systemPrompt)
 }
 
@@ -1334,7 +1341,25 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 	return text, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens, nil
 }
 
-func buildEmpresaAISystemPrompt(contexto string) string {
+func normalizeAIAssistantMode(mode string) string {
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode == "ayudante" || mode == "helper" || mode == "pasos" || mode == "step_by_step" {
+		return "ayudante"
+	}
+	return "operativo"
+}
+
+func buildAIAssistantModeInstruction(mode string) string {
+	if normalizeAIAssistantMode(mode) != "ayudante" {
+		return ""
+	}
+	return "Modo ayudante activo: entrega la respuesta como guia ejecutiva por pasos, usando este formato: 1) Diagnostico breve, 2) Pasos recomendados en orden, 3) Checklist de validacion, 4) Riesgos/errores comunes y como evitarlos. " +
+		"Usa lenguaje claro para personal administrativo y operativo. " +
+		"Si el usuario pide ejecutar cambios, separa claramente lo que requiere confirmacion humana antes de cualquier PCS_ACTION. "
+}
+
+func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
+	assistantInstruction := buildAIAssistantModeInstruction(modoAsistente)
 	return "Eres un asistente empresarial para el sistema POS multiempresa. " +
 		"Responde en espanol claro y accionable. Usa solo el contexto validado por empresa_id. " +
 		"No inventes consultas SQL ni afirmes acceso a otras empresas. " +
@@ -1352,12 +1377,13 @@ func buildEmpresaAISystemPrompt(contexto string) string {
 		"- No incluyas Markdown dentro del JSON. - No incluyas comentarios. - El JSON debe ser parseable.\n" +
 		"Si te falta un dato (por ejemplo categoria_id, impuesto, monto, fecha, estacion_id), NO generes PCS_ACTION: pregunta lo que falta primero. " +
 		"Si la operacion es riesgosa o destructiva, pregunta confirmacion adicional.\n\n" +
+		assistantInstruction + "\n\n" +
 		"Si existe la seccion CONSULTAS_SEGURAS_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
 		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
 }
 
 func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
-	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	systemPrompt := buildEmpresaAISystemPrompt(contexto, "operativo")
 	return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
 }
 

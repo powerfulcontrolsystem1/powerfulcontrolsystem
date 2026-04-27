@@ -1227,6 +1227,97 @@ func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+func ensureMotelCalipsoPublicShowcase(dbEmp *sql.DB, empresaID int64, cfg *dbpkg.EmpresaVentaPublicaConfig) {
+	if dbEmp == nil || cfg == nil || empresaID <= 0 {
+		return
+	}
+	if dbpkg.NormalizeEmpresaPublicSlug(cfg.EmpresaSlug) != "motel-calipso" {
+		return
+	}
+
+	pageID := int64(0)
+	pages, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, empresaID, true)
+	if err == nil {
+		for _, page := range pages {
+			slug := dbpkg.NormalizeEmpresaPublicSlug(page.Slug)
+			name := strings.ToLower(strings.TrimSpace(page.Nombre))
+			if slug == "experiencias-calipso" || name == "experiencias calipso" {
+				pageID = page.ID
+				break
+			}
+		}
+	}
+	if pageID <= 0 {
+		pageID, err = dbpkg.UpsertEmpresaVentaPublicaPagina(dbEmp, dbpkg.EmpresaVentaPublicaPagina{
+			EmpresaID:      empresaID,
+			Slug:           "experiencias-calipso",
+			Nombre:         "Experiencias Calipso",
+			Descripcion:    "Servicios y ambientaciones especiales para estadias privadas en Motel Calipso.",
+			OrdenVisual:    1,
+			UsuarioCreador: "sistema",
+			Estado:         "activo",
+			Observaciones:  "Provision automatica de vitrina publica Motel Calipso",
+		})
+		if err != nil {
+			return
+		}
+	}
+
+	items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
+		IncludeInactive: true,
+		Limit:           200,
+		Offset:          0,
+	})
+	if err != nil {
+		return
+	}
+
+	var existing *dbpkg.EmpresaVentaPublicaItem
+	for i := range items {
+		name := strings.ToLower(strings.TrimSpace(items[i].Nombre))
+		code := strings.ToUpper(strings.TrimSpace(items[i].CodigoPublico))
+		if code == "CALIPSO-DECORACION-HABITACION" || name == "decoracion de la habitacion" {
+			existing = &items[i]
+			break
+		}
+	}
+
+	if existing != nil {
+		existing.PaginaID = pageID
+		existing.CodigoPublico = "CALIPSO-DECORACION-HABITACION"
+		existing.Nombre = "Decoracion de la habitacion"
+		existing.Descripcion = "Ambientacion especial de la habitacion con arreglo romantico y detalle visual para una experiencia privada."
+		existing.Precio = 120000
+		existing.Moneda = "COP"
+		existing.ImagenURL = "/img/motel_calipso_decoracion_habitacion.jpg"
+		existing.StockPublicado = 20
+		existing.OrdenVisual = 1
+		existing.Destacado = true
+		existing.UsuarioCreador = "sistema"
+		existing.Estado = "activo"
+		existing.Observaciones = "Provision automatica de vitrina publica Motel Calipso"
+		_ = dbpkg.UpdateEmpresaVentaPublicaItem(dbEmp, *existing)
+		return
+	}
+
+	_, _ = dbpkg.CreateEmpresaVentaPublicaItem(dbEmp, dbpkg.EmpresaVentaPublicaItem{
+		EmpresaID:      empresaID,
+		PaginaID:       pageID,
+		CodigoPublico:  "CALIPSO-DECORACION-HABITACION",
+		Nombre:         "Decoracion de la habitacion",
+		Descripcion:    "Ambientacion especial de la habitacion con arreglo romantico y detalle visual para una experiencia privada.",
+		Precio:         120000,
+		Moneda:         "COP",
+		ImagenURL:      "/img/motel_calipso_decoracion_habitacion.jpg",
+		StockPublicado: 20,
+		OrdenVisual:    1,
+		Destacado:      true,
+		UsuarioCreador: "sistema",
+		Estado:         "activo",
+		Observaciones:  "Provision automatica de vitrina publica Motel Calipso",
+	})
+}
+
 func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
 	empresaID, _ := parseInt64QueryOptional(r, "empresa_id")
 	slug := ventaPublicaSlugFromRequest(r)
@@ -1240,6 +1331,8 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "No se pudo cargar configuracion publica", http.StatusInternalServerError)
 		return
 	}
+	ensureMotelCalipsoPublicShowcase(dbEmp, resolvedEmpresaID, &cfg)
+	cfg, _ = dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, resolvedEmpresaID)
 	pages, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, resolvedEmpresaID, false)
 	if err != nil {
 		http.Error(w, "No se pudieron cargar paginas publicas", http.StatusInternalServerError)
