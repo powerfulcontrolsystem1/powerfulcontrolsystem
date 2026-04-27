@@ -80,6 +80,21 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarPagar" type="checkbox" checked>
+              Mostrar botón de pagar
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarTarjetasPago" type="checkbox" checked>
+              Mostrar tarjetas de pago
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgDescuentos" type="checkbox" checked>
               Mostrar descuentos en el panel de cobro
             </label>
@@ -179,7 +194,9 @@
         permitir_pago_mixto: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: true,
-        mostrar_resumen_productos: true
+        mostrar_resumen_productos: true,
+        mostrar_boton_pagar: true,
+        mostrar_tarjetas_pago: true
       };
     }
 
@@ -319,6 +336,8 @@
       document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
       document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
       document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
+      document.getElementById('carritoCfgMostrarPagar').checked = !!normalized.mostrar_boton_pagar;
+      document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!normalized.mostrar_tarjetas_pago;
       document.getElementById('carritoCfgDescuentos').checked = !!normalized.mostrar_descuentos;
       document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
       document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;

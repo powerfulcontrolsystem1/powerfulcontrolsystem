@@ -405,6 +405,21 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarPagar" type="checkbox" checked>
+              Mostrar botón de pagar
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarTarjetasPago" type="checkbox" checked>
+              Mostrar tarjetas de pago
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgDescuentos" type="checkbox" checked>
               Mostrar descuentos en el panel de cobro
             </label>
@@ -1008,6 +1023,8 @@
         'carritoCfgImpuestos',
         'carritoCfgLector',
         'carritoCfgResumenProductos',
+        'carritoCfgMostrarPagar',
+        'carritoCfgMostrarTarjetasPago',
         'carritoCfgDescuentos',
         'carritoCfgPropina',
         'carritoCfgComision',
@@ -1041,6 +1058,8 @@
       document.getElementById('carritoCfgImpuestos').checked = !!resolved.mostrar_impuestos_item;
       document.getElementById('carritoCfgLector').checked = !!resolved.mostrar_lector_codigo_barras;
       document.getElementById('carritoCfgResumenProductos').checked = !!resolved.mostrar_resumen_productos;
+      document.getElementById('carritoCfgMostrarPagar').checked = !!resolved.mostrar_boton_pagar;
+      document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!resolved.mostrar_tarjetas_pago;
       document.getElementById('carritoCfgDescuentos').checked = !!resolved.mostrar_descuentos;
       document.getElementById('carritoCfgPropina').checked = !!resolved.mostrar_propina;
       document.getElementById('carritoCfgComision').checked = !!resolved.mostrar_comision;
@@ -1059,6 +1078,8 @@
         mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
         mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
         mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
+        mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
+        mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,
         mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
         mostrar_propina: document.getElementById('carritoCfgPropina').checked,
         mostrar_comision: document.getElementById('carritoCfgComision').checked,

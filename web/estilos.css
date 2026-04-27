@@ -1079,7 +1079,13 @@ ul{padding-left:18px}
     width:auto;
     min-width:max-content;
     vertical-align:top;
+    padding:8px 6px;
+    font-size:0.88rem;
   }
+  .form-row { gap: 8px; }
+  .form-input,
+  .form-textarea { padding: 8px; }
+  .btn { padding: 8px 10px; font-size: 0.88rem; }
   .actions button{margin-bottom:6px}
   .admin-sidebar .nav{
     display:grid;
@@ -1094,6 +1100,25 @@ ul{padding-left:18px}
     flex:1 1 auto;
   }
 }
+
+@media (max-width:900px){
+  .card,
+  .form,
+  .empresa-section,
+  .empresa-module-header { padding: 12px; }
+  .form-row { gap: 10px; }
+  .form-input,
+  .form-textarea { padding: 8px; }
+  .form-actions { gap: 6px; }
+  .btn { padding: 8px 10px; font-size: 0.93rem; }
+  .table th,
+  .table td { padding: 10px 8px; font-size: 0.92rem; }
+  .table { width: 100%; }
+  .table th, .table td { white-space: normal; word-break: break-word; }
+  .actions button { margin-bottom: 4px; }
+  .section-heading { font-size: 1rem; }
+}
+
 /* Forzar menú apilado en móvil: un botón por fila, ancho completo */
 @media (max-width:640px){
   .admin-sidebar .nav{display:flex;flex-direction:column;gap:8px;overflow:visible}
@@ -5725,6 +5750,18 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 }
 
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+
+.carrito-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
+.carrito-grid-main{flex:1;min-width:0;}
+.carrito-summary-card{flex:0 0 320px;min-width:280px;max-width:360px;}
+.carrito-items-box{min-height:260px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--content-soft-bg);}
+.carrito-summary-content{display:grid;gap:12px;margin-top:12px;}
+.carrito-summary-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--content-soft-bg);border:1px solid var(--content-soft-border);}
+.carrito-payment-cards{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;}
+.carrito-payment-card{flex:1 1 calc(25% - 10px);min-width:120px;text-align:center;}
+.action-toolbar{justify-content:flex-start;align-items:flex-start;}
+.action-toolbar .btn{min-width:130px;}
+.carrito-summary-card .section-heading{margin-bottom:0;}
 
 /* Modulo ERP extendido */
 .erp-title,

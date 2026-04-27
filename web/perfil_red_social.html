@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Perfil social empresarial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;color:var(--text);min-height:100vh;background:radial-gradient(circle at 30% 0%,color-mix(in srgb,var(--accent) 18%,transparent 82%),transparent 32%),linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif}
+    .profile-shell{max-width:980px;margin:0 auto;padding:0 14px 60px}
+    .profile-topbar{position:sticky;top:0;z-index:20;padding:14px 14px 10px;margin:0 auto 18px;background:linear-gradient(135deg, rgba(31,142,241,0.12), rgba(255,255,255,0.02)), var(--surface);border:1px solid var(--border);border-radius:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;backdrop-filter:blur(10px)}
+    .profile-topbar h1{font-size:clamp(1.2rem,2.4vw,1.6rem);margin:0;font-weight:900;letter-spacing:-.03em}
+    .profile-topbar p{margin:0;color:var(--muted);font-size:.92rem;max-width:540px;line-height:1.35}
+    .profile-header{border:1px solid var(--border);border-radius:22px;overflow:hidden;background:var(--surface);box-shadow:0 12px 28px rgba(0,0,0,.1)}
+    .profile-cover{height:240px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent 82%),color-mix(in srgb,var(--accent-2) 16%,transparent 84%));background-size:cover;background-position:center;position:relative}
+    .profile-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.04),rgba(0,0,0,0.18));pointer-events:none}
+    .profile-meta{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;padding:18px 18px 20px;align-items:center}
+    .profile-avatar{width:100px;height:100px;border-radius:24px;border:4px solid var(--surface);background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;font-size:2.25rem;font-weight:900;display:grid;place-items:center;position:relative;overflow:hidden}
+    .profile-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .profile-name{margin:0;font-size:clamp(1.5rem,2.8vw,2.05rem);line-height:1.05;font-weight:900}
+    .profile-tagline{margin:.35rem 0 0;color:var(--muted);font-size:.96rem;line-height:1.5;max-width:98%}
+    .profile-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.9rem;color:var(--muted)}
+    .profile-stat{background:var(--bg-alt);border:1px solid var(--border);border-radius:14px;padding:10px 13px;min-width:120px}
+    .feed{display:flex;flex-direction:column;gap:10px;align-items:stretch;margin-top:18px}
+    .post-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 92%,var(--surface) 8%),var(--surface));border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 26px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column}
+    .post-cover{height:140px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent 82%),color-mix(in srgb,var(--accent-2) 16%,transparent 84%));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
+    .post-media{width:100%;border:0;display:block}
+    .post-body{padding:14px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .post-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.86rem}
+    .post-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;font-weight:900}
+    .post-title{font-size:1.05rem;line-height:1.3;margin:0;font-weight:900}
+    .post-desc{color:var(--text);line-height:1.45;margin:0;white-space:pre-wrap;font-size:.96rem;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .post-actions{margin-top:auto;display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;flex-wrap:wrap}
+    .post-chip{font-size:.82rem;color:var(--muted)}
+    .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:800;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 24%,transparent)}
+    .btn-private{background:transparent;color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:800}
+    .empty-state{grid-column:1/-1;text-align:center;color:var(--muted);padding:42px;border:1px dashed var(--border);border-radius:22px;background:var(--surface)}
+    .load-more{color:var(--muted);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:14px;background:var(--surface);cursor:pointer}
+    .react-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .react-btn{border:1px solid var(--border);background:transparent;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:900;cursor:pointer}
+    .react-btn.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
+    .react-mini{color:var(--muted);font-size:.85rem}
+    .comments{border-top:1px solid var(--border);padding-top:10px;margin-top:8px;display:none}
+    .comments.open{display:block}
+    .comment{padding:8px 10px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent 18%);margin-top:8px}
+    .comment .meta{color:var(--muted);font-size:.84rem}
+    .comment .txt{white-space:pre-wrap;margin-top:2px;line-height:1.35}
+    .comment-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:flex-start}
+    .comment-form input,.comment-form textarea{background:var(--input-bg-soft);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px}
+    .comment-form input{flex:1;min-width:180px}
+    .comment-form textarea{flex:1;min-width:240px;min-height:42px;resize:vertical}
+    .comment-form .btn-send{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 14px;border-radius:14px;font-weight:950;cursor:pointer}
+    @media(max-width:720px){.profile-meta{grid-template-columns:1fr;gap:14px}.profile-header{border-radius:0}.profile-cover{height:200px}.profile-avatar{width:88px;height:88px}.profile-stats{justify-content:start}.post-cover{height:120px}}
+  </style>
+</head>
+<body>
+  <div class="profile-shell">
+    <header class="profile-topbar">
+      <div>
+        <h1>Perfil social empresarial</h1>
+        <p id="headerSubtitle">Conoce a la empresa y su historial de publicaciones públicas.</p>
+      </div>
+      <a class="btn secondary" href="/red_social_comercial.html" style="text-decoration:none;">Ver feed público</a>
+    </header>
+
+    <section class="profile-header" id="profileHeader">
+      <div class="profile-cover" id="profileCover"></div>
+      <div class="profile-meta">
+        <div class="profile-avatar" id="profileAvatar">E</div>
+        <div>
+          <h1 class="profile-name" id="profileName">Empresa pública</h1>
+          <p class="profile-tagline" id="profileTagline">Publicaciones, novedades y mensajes directos para clientes.</p>
+          <div class="profile-stats" id="profileStats"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="feed" id="feedContenedor">
+      <div class="empty-state">Cargando publicaciones...</div>
+    </div>
+    <div id="feedSentinel" class="load-more" hidden>Cargando más...</div>
+  </div>
+
+  <script>
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    function initial(value) {
+      var raw = String(value || 'E').trim();
+      return escapeHtml(raw.charAt(0).toUpperCase() || 'E');
+    }
+    function formatDate(value) {
+      try { return new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }); } catch (_) { return ''; }
+    }
+    function youtubeEmbedURL(raw) {
+      var v = String(raw || '').trim();
+      if (!v) return '';
+      var m = v.match(/youtu\.be\/([A-Za-z0-9_\-]+)/i);
+      if (m && m[1]) return 'https://www.youtube.com/embed/' + m[1];
+      m = v.match(/[?&]v=([A-Za-z0-9_\-]+)/i);
+      if (m && m[1]) return 'https://www.youtube.com/embed/' + m[1];
+      m = v.match(/youtube\.com\/embed\/([A-Za-z0-9_\-]+)/i);
+      if (m && m[1]) return 'https://www.youtube.com/embed/' + m[1];
+      return '';
+    }
+
+    function getActorKey() {
+      try {
+        var key = localStorage.getItem('pcs_actor_key');
+        if (key && key.length >= 8) return key;
+        key = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (String(Date.now()) + '_' + Math.random().toString(16).slice(2));
+        localStorage.setItem('pcs_actor_key', key);
+        return key;
+      } catch (_) {
+        return String(Date.now()) + '_' + Math.random().toString(16).slice(2);
+      }
+    }
+
+    function companyStat(label, value) {
+      return '<div class="profile-stat"><strong>' + escapeHtml(value) + '</strong><br>' + escapeHtml(label) + '</div>';
+    }
+
+    function reaccionLabel(r) {
+      switch(String(r||'')) {
+        case 'me_gusta': return 'Me gusta';
+        case 'me_encanta': return 'Me encanta';
+        case 'me_importa': return 'Me importa';
+        case 'me_divierte': return 'Me divierte';
+        case 'me_asombra': return 'Me asombra';
+        case 'me_entristece': return 'Me entristece';
+        case 'me_enoja': return 'Me enoja';
+        default: return '';
+      }
+    }
+    function resumenReacciones(resumen) {
+      if (!resumen) return '';
+      var total = 0;
+      Object.keys(resumen).forEach(k => { total += Number(resumen[k]||0); });
+      if (!total) return 'Sin reacciones';
+      var top = Object.keys(resumen).sort((a,b) => Number(resumen[b]||0)-Number(resumen[a]||0)).slice(0,2);
+      return top.map(k => reaccionLabel(k) + ' ' + Number(resumen[k]||0)).join(' · ') + (Object.keys(resumen).length>2 ? ' · +' : '');
+    }
+
+    function postAvatar(name) {
+      return '<div class="post-avatar">' + initial(name || 'E') + '</div>';
+    }
+
+    function buildCompanyHeader(data) {
+      var coverEl = document.getElementById('profileCover');
+      var avatarEl = document.getElementById('profileAvatar');
+      var nameEl = document.getElementById('profileName');
+      var taglineEl = document.getElementById('profileTagline');
+      var statsEl = document.getElementById('profileStats');
+
+      var coverUrl = String(data.banner_url || data.cover_url || '').trim();
+      var logoUrl = String(data.logo_url || '').trim();
+      var name = String(data.nombre_comercial || data.razon_social || data.nombre_tienda || data.empresa_nombre || data.empresa || '').trim();
+      if (!name) {
+        name = 'Empresa pública';
+      }
+      var description = String(data.descripcion_tienda || data.descripcion || data.bio || '').trim() || 'Publicaciones recientes de la empresa.';
+      var postsCount = Number(data.posts_count || 0);
+      var reactionsCount = Number(data.reactions_count || 0);
+      var commentsCount = Number(data.comments_count || 0);
+
+      coverEl.style.backgroundImage = coverUrl ? 'url("' + escapeHtml(coverUrl) + '")' : 'linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent 82%),color-mix(in srgb,var(--accent-2) 16%,transparent 84%))';
+      if (logoUrl) {
+        avatarEl.innerHTML = '<img src="' + escapeHtml(logoUrl) + '" alt="' + escapeHtml(name) + '" loading="lazy">';
+      } else {
+        avatarEl.innerHTML = initial(name);
+      }
+      nameEl.textContent = name;
+      taglineEl.textContent = description;
+      statsEl.innerHTML = '';
+      if (postsCount > 0) {
+        statsEl.insertAdjacentHTML('beforeend', companyStat('Publicaciones', postsCount));
+      }
+      if (reactionsCount > 0) {
+        statsEl.insertAdjacentHTML('beforeend', companyStat('Reacciones', reactionsCount));
+      }
+      if (commentsCount > 0) {
+        statsEl.insertAdjacentHTML('beforeend', companyStat('Comentarios', commentsCount));
+      }
+    }
+
+    function renderPost(p) {
+      const img = String(p.foto_url || '').trim();
+      const empresa = p.empresa_nombre || ('Empresa #' + p.empresa_id);
+      const y = youtubeEmbedURL(p.youtube_url || '');
+      const cover = img ? 'style="background-image:url(\'' + escapeHtml(img) + '\')"' : '';
+      const mediaHtml = y ? '<iframe class="post-media" height="360" src="' + escapeHtml(y) + '" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>' : '';
+      const userReaction = String(p.user_reaction || '').trim();
+      const reaccionesResumen = p.reacciones_resumen || null;
+      const comentariosTotal = Number(p.comentarios_total || 0);
+      return '<article class="post-card">' +
+        (mediaHtml || '<div class="post-cover" ' + cover + '>' + (img ? '' : 'Publicación empresarial') + '</div>') +
+        '<div class="post-body">' +
+          '<div class="post-meta">' +
+            postAvatar(empresa) +
+            '<div><strong>' + escapeHtml(empresa) + '</strong><br><span>' + escapeHtml(formatDate(p.fecha_creacion)) + '</span></div>' +
+          '</div>' +
+          '<h2 class="post-title">' + escapeHtml(p.nombre) + '</h2>' +
+          '<p class="post-desc">' + escapeHtml(p.descripcion) + '</p>' +
+          '<div class="react-row">' +
+            '<button class="react-btn ' + (userReaction==='me_gusta' ? 'active' : '') + '" data-react="me_gusta" data-post="' + escapeHtml(p.id) + '" type="button">👍 Me gusta</button>' +
+            '<button class="react-btn ' + (userReaction==='me_encanta' ? 'active' : '') + '" data-react="me_encanta" data-post="' + escapeHtml(p.id) + '" type="button">❤️ Me encanta</button>' +
+            '<button class="react-btn" data-toggle-comments="1" data-post="' + escapeHtml(p.id) + '" type="button">💬 Comentarios (' + String(comentariosTotal) + ')</button>' +
+            '<span class="react-mini" data-react-resumen="' + escapeHtml(p.id) + '">' + escapeHtml(resumenReacciones(reaccionesResumen)) + '</span>' +
+          '</div>' +
+          '<div class="comments" id="comments_' + escapeHtml(p.id) + '" data-loaded="0">' +
+            '<div class="react-mini" id="comments_status_' + escapeHtml(p.id) + '">Cargando...</div>' +
+            '<div id="comments_list_' + escapeHtml(p.id) + '"></div>' +
+            '<form class="comment-form" data-comment-form="1" data-post="' + escapeHtml(p.id) + '">' +
+              '<input type="text" maxlength="120" placeholder="Tu nombre (opcional)" name="nombre">' +
+              '<textarea maxlength="1500" placeholder="Escribe un comentario..." name="contenido" required></textarea>' +
+              '<button class="btn-send" type="submit">Comentar</button>' +
+            '</form>' +
+          '</div>' +
+          '<div class="post-actions">' +
+            '<span class="post-chip">Post empresarial</span>' +
+            '<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">' +
+              '<button class="btn-private" type="button" data-empresa-id="' + escapeHtml(p.empresa_id) + '" data-post-nombre="' + escapeHtml(p.nombre || '') + '">Mensaje privado</button>' +
+              '<a href="https://api.whatsapp.com/send?text=' + encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || '')) + '" target="_blank" rel="noopener" class="btn-contact">WhatsApp</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+    }
+
+    async function apiFetch(url, opts) {
+      opts = opts || {};
+      opts.headers = opts.headers || {};
+      opts.headers['X-Actor-Key'] = getActorKey();
+      return fetch(url, opts);
+    }
+
+    function renderComment(c) {
+      var nombre = String(c.nombre || '').trim();
+      var quien = nombre ? nombre : 'Usuario';
+      return '<div class="comment">' +
+        '<div class="meta"><strong>' + escapeHtml(quien) + '</strong> · ' + escapeHtml(formatDate(c.fecha_creacion)) + '</div>' +
+        '<div class="txt">' + escapeHtml(c.contenido) + '</div>' +
+      '</div>';
+    }
+
+    async function loadComments(postId) {
+      var box = document.getElementById('comments_' + postId);
+      if (!box) return;
+      var list = document.getElementById('comments_list_' + postId);
+      var status = document.getElementById('comments_status_' + postId);
+      try {
+        status.textContent = 'Cargando...';
+        var res = await apiFetch('/api/public/publicaciones/' + encodeURIComponent(postId) + '/comentarios?limit=8&offset=0');
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : [];
+        if (!res.ok) throw new Error('No se pudo cargar comentarios');
+        list.innerHTML = '';
+        (data || []).forEach(function(c){ list.insertAdjacentHTML('beforeend', renderComment(c)); });
+        status.textContent = (data && data.length) ? '' : 'Aún no hay comentarios.';
+        box.setAttribute('data-loaded', '1');
+      } catch (e) {
+        status.textContent = e.message || 'Error cargando comentarios';
+      }
+    }
+
+    async function setReaction(postId, reaccion) {
+      var res = await apiFetch('/api/public/publicaciones/' + encodeURIComponent(postId) + '/reacciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reaccion: reaccion })
+      });
+      var text = await res.text();
+      var data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error((data && data.error) || text || 'No se pudo reaccionar');
+      return data;
+    }
+
+    var paging = { limit: 12, offset: 0, done: false, loading: false };
+    var companyContext = { empresa_id: 0, empresa_slug: '', empresa_nombre: '', posts_total: 0 };
+
+    function ensureCompanyIdentity(data) {
+      if (!data) return;
+      if (data.empresa_id && !companyContext.empresa_id) {
+        companyContext.empresa_id = Number(data.empresa_id || 0);
+      }
+      if (data.empresa_slug && !companyContext.empresa_slug) {
+        companyContext.empresa_slug = String(data.empresa_slug || '').trim();
+      }
+      if (data.empresa_nombre && !companyContext.empresa_nombre) {
+        companyContext.empresa_nombre = String(data.empresa_nombre || '').trim();
+      }
+    }
+
+    async function loadCompanyProfile() {
+      var params = new URLSearchParams(location.search);
+      var empresaId = parseInt(params.get('empresa_id'), 10) || 0;
+      var empresaSlug = String(params.get('empresa_slug') || '').trim();
+      var info = { empresa_id: empresaId, empresa_slug: empresaSlug };
+      if (!empresaId && !empresaSlug) {
+        document.getElementById('feedContenedor').innerHTML = '<div class="empty-state">Falta empresa_id o empresa_slug en la URL.</div>';
+        return info;
+      }
+      var url = '/api/public/venta_publica?action=catalogo';
+      if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
+      else url += '&empresa_slug=' + encodeURIComponent(empresaSlug);
+      try {
+        var res = await fetch(url);
+        if (!res.ok) {
+          console.warn('No se pudo cargar perfil de empresa pública:', res.statusText);
+          return info;
+        }
+        var data = await res.json();
+        if (data && data.ok) {
+          var store = data.tienda || {};
+          store.empresa_id = Number(data.empresa_id || empresaId || 0);
+          store.empresa_slug = String(data.empresa_slug || empresaSlug || '').trim();
+          store.nombre_tienda = String(data.tienda && data.tienda.nombre_tienda || '').trim();
+          store.descripcion_tienda = String(data.tienda && data.tienda.descripcion_tienda || '').trim();
+          if (!store.descripcion_tienda && data.page && data.page.descripcion) {
+            store.descripcion_tienda = String(data.page.descripcion || '').trim();
+          }
+          if (!store.nombre_tienda && data.tienda && data.tienda.empresa_nombre) {
+            store.nombre_tienda = data.tienda.empresa_nombre;
+          }
+          companyContext.empresa_id = store.empresa_id || empresaId;
+          companyContext.empresa_slug = store.empresa_slug || empresaSlug;
+          renderCompanyHeader(store);
+          return store;
+        }
+      } catch (e) {
+        console.warn('Error cargando perfil de empresa pública:', e);
+      }
+      return info;
+    }
+
+    async function loadPosts(reset) {
+      if (paging.loading) return;
+      if (reset) {
+        paging.offset = 0; paging.done = false;
+        document.getElementById('feedContenedor').innerHTML = '';
+      }
+      if (paging.done) return;
+      paging.loading = true;
+      var sentinel = document.getElementById('feedSentinel');
+      if (sentinel) { sentinel.hidden = false; sentinel.textContent = 'Cargando más...'; }
+      try {
+        var params = new URLSearchParams(location.search);
+        if (companyContext.empresa_id) {
+          var url = '/api/public/publicaciones?limit=' + encodeURIComponent(paging.limit) + '&offset=' + encodeURIComponent(paging.offset) + '&empresa_id=' + encodeURIComponent(companyContext.empresa_id);
+        } else if (params.get('empresa_id')) {
+          var url = '/api/public/publicaciones?limit=' + encodeURIComponent(paging.limit) + '&offset=' + encodeURIComponent(paging.offset) + '&empresa_id=' + encodeURIComponent(params.get('empresa_id'));
+        } else {
+          document.getElementById('feedContenedor').innerHTML = '<div class="empty-state">No se pudo identificar la empresa para cargar publicaciones.</div>';
+          paging.done = true;
+          if (sentinel) { sentinel.hidden = true; }
+          return;
+        }
+        var res = await apiFetch(url);
+        if (!res.ok) throw new Error('Error de red');
+        var data = await res.json();
+        var feed = document.getElementById('feedContenedor');
+        if (!Array.isArray(data) || data.length === 0) {
+          if (paging.offset === 0) {
+            feed.innerHTML = '<div class="empty-state">Aún no hay publicaciones disponibles para esta empresa.</div>';
+          }
+          paging.done = true;
+          if (sentinel) { sentinel.textContent = 'No hay más publicaciones.'; }
+          return;
+        }
+        if (paging.offset === 0 && data[0]) {
+          if (!companyContext.empresa_nombre) {
+            companyContext.empresa_nombre = String(data[0].empresa_nombre || '').trim();
+            if (companyContext.empresa_nombre) {
+              renderCompanyHeader({ nombre_comercial: companyContext.empresa_nombre });
+            }
+          }
+        }
+        data.forEach(function(p){ feed.insertAdjacentHTML('beforeend', renderPost(p)); });
+        paging.offset += data.length;
+        feed.querySelectorAll('button.btn-private').forEach(function(btn){
+          btn.addEventListener('click', async function(){
+            try {
+              var empresaId = Number(btn.getAttribute('data-empresa-id') || 0);
+              var postNombre = String(btn.getAttribute('data-post-nombre') || '').trim();
+              if (!empresaId && companyContext.empresa_id) {
+                empresaId = companyContext.empresa_id;
+              }
+              if (!empresaId) throw new Error('Empresa no disponible.');
+              var nombre = String(prompt('Tu nombre (opcional):') || '').trim();
+              var contacto = String(prompt('Tu WhatsApp o correo para que te respondan (opcional):') || '').trim();
+              var mensaje = String(prompt('Escribe tu mensaje:') || '').trim();
+              if (!mensaje) return;
+
+              btn.disabled = true;
+              var res = await fetch('/api/public/mensajes_privados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  empresa_id: empresaId,
+                  origen: 'red_social',
+                  origen_ref: postNombre ? ('post: ' + postNombre) : '',
+                  nombre: nombre,
+                  contacto: contacto,
+                  mensaje: mensaje
+                })
+              });
+              var text = await res.text();
+              var data = text ? JSON.parse(text) : {};
+              if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
+              alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
+            } catch (e) {
+              alert(e.message || 'No se pudo enviar el mensaje.');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
+
+        feed.querySelectorAll('button.react-btn[data-react]').forEach(function(btn){
+          btn.addEventListener('click', async function(){
+            try {
+              var postId = String(btn.getAttribute('data-post') || '').trim();
+              var reaccion = String(btn.getAttribute('data-react') || '').trim();
+              if (!postId) return;
+              btn.disabled = true;
+              var data = await setReaction(postId, reaccion);
+              var card = btn.closest('.post-card');
+              if (card) {
+                card.querySelectorAll('button.react-btn[data-react]').forEach(function(b){
+                  b.classList.toggle('active', String(b.getAttribute('data-react')) === String(data.user_reaction||''));
+                });
+                var resumenEl = card.querySelector('[data-react-resumen="' + postId + '"]');
+                if (resumenEl) resumenEl.textContent = resumenReacciones(data.reacciones_resumen);
+                var toggle = card.querySelector('button.react-btn[data-toggle-comments="1"][data-post="' + postId + '"]');
+                if (toggle) toggle.textContent = '💬 Comentarios (' + String(data.comentarios_total||0) + ')';
+              }
+            } catch (e) {
+              alert(e.message || 'No se pudo reaccionar.');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
+
+        feed.querySelectorAll('button.react-btn[data-toggle-comments="1"]').forEach(function(btn){
+          btn.addEventListener('click', async function(){
+            var postId = String(btn.getAttribute('data-post') || '').trim();
+            if (!postId) return;
+            var box = document.getElementById('comments_' + postId);
+            if (!box) return;
+            box.classList.toggle('open');
+            if (box.classList.contains('open') && box.getAttribute('data-loaded') !== '1') {
+              await loadComments(postId);
+            }
+          });
+        });
+
+        feed.querySelectorAll('form[data-comment-form="1"]').forEach(function(form){
+          form.addEventListener('submit', async function(ev){
+            ev.preventDefault();
+            var postId = String(form.getAttribute('data-post') || '').trim();
+            var fd = new FormData(form);
+            var nombre = String(fd.get('nombre') || '').trim();
+            var contenido = String(fd.get('contenido') || '').trim();
+            if (!contenido) return;
+            var btnSend = form.querySelector('button[type="submit"]');
+            try {
+              if (btnSend) btnSend.disabled = true;
+              var res = await apiFetch('/api/public/publicaciones/' + encodeURIComponent(postId) + '/comentarios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: nombre, contenido: contenido })
+              });
+              var text = await res.text();
+              var data = text ? JSON.parse(text) : {};
+              if (!res.ok) throw new Error((data && data.error) || text || 'No se pudo comentar');
+              form.reset();
+              await loadComments(postId);
+            } catch (e) {
+              alert(e.message || 'No se pudo comentar.');
+            } finally {
+              if (btnSend) btnSend.disabled = false;
+            }
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        var feed = document.getElementById('feedContenedor');
+        if (!feed || feed.children.length) return;
+        feed.innerHTML = '<div class="empty-state">Error al cargar las publicaciones.</div>';
+      } finally {
+        paging.loading = false;
+      }
+    }
+
+    function initInfinite() {
+      var sentinel = document.getElementById('feedSentinel');
+      if (!sentinel || !('IntersectionObserver' in window)) {
+        loadPosts(true);
+        return;
+      }
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if (e.isIntersecting) loadPosts(false); });
+      }, { rootMargin: '900px 0px' });
+      io.observe(sentinel);
+      loadPosts(true);
+    }
+
+    function renderCompanyHeader(data) {
+      try {
+        buildCompanyHeader(data);
+      } catch (_) {}
+    }
+
+    (async function init(){
+      var profileData = await loadCompanyProfile();
+      if (!profileData.empresa_id && !profileData.empresa_slug) {
+        return;
+      }
+      initInfinite();
+    })();
+  </script>
+</body>
+</html>

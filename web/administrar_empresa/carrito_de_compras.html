@@ -138,6 +138,20 @@
           </div>
         </div>
 
+        <div id="carritoActionToolbar" class="form-actions action-toolbar actions-wrap-gap-10 mt-10">
+          <button type="button" id="carritoBtnPagar" class="btn">Pagar</button>
+          <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
+          <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
+          <button type="button" id="carritoBtnCancelarCarrito" class="btn danger">Cancelar carrito</button>
+          <button type="button" id="carritoBtnAlerta10" class="btn secondary">Alerta 10 min</button>
+          <button type="button" id="carritoBtnTaxi" class="btn secondary">Taxi</button>
+          <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
+          <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
+          <button type="button" id="carritoBtnVehiculo" class="btn secondary">Vehículo</button>
+        </div>
+
+        <div id="carritoAlertBanner" class="alert is-hidden mt-10"></div>
+
         <div id="stationDiscountSettings" class="form-row">
           <div class="form-col">
             <label class="form-label" for="discountType">Tipo de descuento</label>
@@ -253,6 +267,13 @@
 
         <div id="stationPaymentBreakdown" class="form-help mt-8"></div>
 
+        <div id="paymentMethodsCards" class="carrito-payment-cards mt-10">
+          <button type="button" data-method="efectivo" class="btn secondary carrito-payment-card">Efectivo</button>
+          <button type="button" data-method="tarjeta_debito" class="btn secondary carrito-payment-card">Debito</button>
+          <button type="button" data-method="tarjeta_credito" class="btn secondary carrito-payment-card">Credito</button>
+          <button type="button" data-method="otro" class="btn secondary carrito-payment-card">Otro</button>
+        </div>
+
         <div class="form-actions mt-10">
           <button type="button" id="btnRecalcularCobro" class="btn secondary">Recalcular</button>
           <button type="button" id="btnActivarSesionCarrito" class="btn secondary is-hidden">Activar carrito</button>
@@ -357,13 +378,22 @@
       </form>
       <div id="itemMsg" class="form-help"></div>
 
-      <div id="itemsList" class="mt-14">Selecciona un carrito para gestionar sus items.</div>
+      <div id="carritoGrid" class="carrito-grid mt-14">
+        <div class="carrito-grid-main">
+          <div id="itemsList" class="carrito-items-box">Selecciona un carrito para gestionar sus items.</div>
 
-      <div id="productsSummaryCard" class="card empresa-section mt-12">
-        <div class="empresa-section-header">
-          <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
+          <div id="productsSummaryCard" class="card empresa-section mt-12">
+            <div class="empresa-section-header">
+              <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
+            </div>
+            <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
+          </div>
         </div>
-        <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
+
+        <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-12">
+          <h3 class="section-heading">Totales y detalles</h3>
+          <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
+        </aside>
       </div>
     </div>
   </div>
@@ -377,6 +407,7 @@
       empresaGeneralConfig: null,
       stationConfig: null,
       stationCartUI: null,
+      stationUpdateInterval: null,
       qCarrito: '',
       carritos: [],
       clientes: [],
@@ -646,7 +677,9 @@
         permitir_pago_mixto: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: true,
-        mostrar_resumen_productos: true
+        mostrar_resumen_productos: true,
+        mostrar_boton_pagar: true,
+        mostrar_tarjetas_pago: true
       };
     }
 
@@ -667,7 +700,9 @@
         permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : Boolean(src.permitir_pago_mixto),
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : Boolean(src.mostrar_resumen_totales_carrito),
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
-        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos)
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
+        mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
+        mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago)
       };
     }
 
@@ -826,6 +861,21 @@
       const stationPaymentBreakdown = document.getElementById('stationPaymentBreakdown');
       if (stationPaymentBreakdown) {
         stationPaymentBreakdown.style.display = ui.mostrar_desglose_cobro ? '' : 'none';
+      }
+
+      const carritoPayBtn = document.getElementById('carritoBtnPagar');
+      if (carritoPayBtn) {
+        carritoPayBtn.style.display = ui.mostrar_boton_pagar ? '' : 'none';
+      }
+
+      const stationPayBtn = document.getElementById('btnPagarCarrito');
+      if (stationPayBtn) {
+        stationPayBtn.style.display = ui.mostrar_boton_pagar ? '' : 'none';
+      }
+
+      const paymentMethodsCards = document.getElementById('paymentMethodsCards');
+      if (paymentMethodsCards) {
+        paymentMethodsCards.style.display = ui.mostrar_tarjetas_pago ? '' : 'none';
       }
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
@@ -2626,6 +2676,86 @@
       target.textContent = parts.join(' | ');
       syncBuscarProductosButton();
       renderScannerPanel();
+      renderCarritoSummaryPanel();
+    }
+
+    function renderCarritoSummaryPanel() {
+      const panel = document.getElementById('carritoTotalsContent');
+      if (!panel) return;
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        panel.innerHTML = '<p class="text-empty">Selecciona un carrito para ver el resumen.</p>';
+        return;
+      }
+
+      const subtotal = Number(selected.subtotal || 0);
+      const discountTotal = Number(selected.descuento_total || 0);
+      const taxTotal = Number(selected.impuesto_total || 0);
+      const total = Number(selected.total || 0);
+      const paid = Number(selected.total_pagado || 0);
+      const balance = total - paid;
+      const countItems = state.items.length;
+      const productsCount = state.items.filter(function(item) { return ['producto', 'combo'].includes(normalize(item.tipo_item)); }).length;
+      const servicesCount = state.items.filter(function(item) { return normalize(item.tipo_item) === 'servicio'; }).length;
+      const cliente = state.clientes.find(function(c) { return Number(c.id) === Number(selected.cliente_id); });
+      const clienteName = cliente ? normalize(cliente.nombre) : '-';
+      const estado = normalize(selected.estado_carrito) || 'abierto';
+      const pagoActivo = isCarritoOperativoActivo(selected) ? 'Activo' : 'Inactivo';
+      const modeLabel = state.stationMode ? 'Estación' : 'Carrito';
+
+      const rows = [
+        { label: modeLabel + ' ID', value: String(selected.id || 0) },
+        { label: 'Código', value: normalize(selected.codigo) || '-' },
+        { label: 'Estado', value: estado },
+        { label: 'Sesión', value: pagoActivo },
+        { label: 'Items totales', value: String(countItems) },
+        { label: 'Productos / combos', value: String(productsCount) },
+        { label: 'Servicios', value: String(servicesCount) },
+        { label: 'Cliente', value: clienteName },
+        { label: 'Subtotal', value: formatAmount(subtotal, selected.moneda) },
+        { label: 'Descuento', value: formatAmount(discountTotal, selected.moneda) },
+        { label: 'Impuesto', value: formatAmount(taxTotal, selected.moneda) },
+        { label: 'Total', value: formatAmount(total, selected.moneda) },
+        { label: 'Pagado', value: formatAmount(paid, selected.moneda) },
+        { label: 'Saldo', value: formatAmount(balance, selected.moneda) }
+      ];
+
+      panel.innerHTML = rows.map(function(row) {
+        return '<div class="carrito-summary-row"><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></div>';
+      }).join('');
+    }
+
+    function showCarritoAlert(message) {
+      const banner = document.getElementById('carritoAlertBanner');
+      if (!banner) return;
+      banner.className = 'alert';
+      banner.textContent = message;
+      setTimeout(function() {
+        if (banner) {
+          banner.className = 'alert is-hidden';
+          banner.textContent = '';
+        }
+      }, 12000);
+    }
+
+    function ensureStationAutoRefresh() {
+      if (!state.stationMode || state.stationUpdateInterval) return;
+      state.stationUpdateInterval = setInterval(async function() {
+        const selected = getSelectedCarrito();
+        if (!selected || !isCarritoOperativoActivo(selected)) return;
+        try {
+          await Promise.all([loadCarritos(), loadItems()]);
+        } catch (_) {
+          // ignore refresh failures
+        }
+      }, 10000);
+    }
+
+    function stopStationAutoRefresh() {
+      if (state.stationUpdateInterval) {
+        clearInterval(state.stationUpdateInterval);
+        state.stationUpdateInterval = null;
+      }
     }
 
     function renderProductosCarritoTable() {
@@ -3156,6 +3286,56 @@
       openBuscarProductosForCarrito(selected);
     });
 
+    document.getElementById('carritoBtnPagar').addEventListener('click', function() {
+      const payBtn = document.getElementById('btnPagarCarrito');
+      if (payBtn) payBtn.click();
+    });
+    document.getElementById('carritoBtnDescuentos').addEventListener('click', function() {
+      const discountTypeEl = document.getElementById('discountType');
+      if (discountTypeEl) {
+        discountTypeEl.focus();
+        setStationPaymentMessage('Selecciona el tipo de descuento y ajusta el valor o código.', false);
+      }
+    });
+    document.getElementById('carritoBtnCambiarTarifa').addEventListener('click', function() {
+      const precioEl = document.getElementById('itemPrecio');
+      if (precioEl) {
+        precioEl.focus();
+        setMessage('itemMsg', 'Edita el precio o la unidad del item para cambiar la tarifa.', false);
+      }
+    });
+    document.getElementById('carritoBtnCancelarCarrito').addEventListener('click', async function() {
+      if (!confirm('¿Deseas cancelar el carrito y reiniciar la sesión de estación?')) return;
+      await activateStationSession(true, 'activar_estacion');
+    });
+    document.getElementById('carritoBtnAlerta10').addEventListener('click', function() {
+      showCarritoAlert('Alerta visual: quedan 10 minutos para revisar este carrito.');
+    });
+    document.getElementById('carritoBtnTaxi').addEventListener('click', function() {
+      window.location.href = '/administrar_empresa/vehiculos_registro.html';
+    });
+    document.getElementById('carritoBtnClientes').addEventListener('click', function() {
+      window.location.href = '/administrar_empresa/administrar_clientes.html';
+    });
+    document.getElementById('carritoBtnAbonos').addEventListener('click', function() {
+      window.location.href = '/administrar_empresa/creditos.html';
+    });
+    document.getElementById('carritoBtnVehiculo').addEventListener('click', function() {
+      window.location.href = '/administrar_empresa/vehiculos_registro.html';
+    });
+
+    document.querySelectorAll('#paymentMethodsCards .carrito-payment-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        const method = card.getAttribute('data-method');
+        if (!method) return;
+        const paymentMethodEl = document.getElementById('paymentMethod');
+        if (paymentMethodEl) {
+          paymentMethodEl.value = method === 'otro' ? 'transferencia_bancaria' : method;
+          paymentMethodEl.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
     document.getElementById('scannerAgregarBtn').addEventListener('click', async function() {
       await processScannerInput();
     });
@@ -3279,6 +3459,9 @@
         }
         if (state.selectedCarritoID) {
           await loadItems();
+        }
+        if (state.stationMode) {
+          ensureStationAutoRefresh();
         }
       } catch (err) {
         renderInitialLoadError(err);
