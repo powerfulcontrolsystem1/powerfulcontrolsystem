@@ -1047,3 +1047,17 @@ Archivos modificados:
 - web/super/integracion_ia.html
 - web/super/reportes_globales.html
 - web/super_administrador.html
+
+2026-04-26 22:01:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 113d7f7; PushStatus: OK
+Archivos modificados:
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/public_chat_portal.go
+- backend/handlers/venta_publica.go
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/venta_publica.html
+- web/estilos.css
+- web/img/motel_calipso_decoracion_habitacion.jpg
+- web/js/ai_chat_drawer.js
+- web/seleccionar_empresa.html
