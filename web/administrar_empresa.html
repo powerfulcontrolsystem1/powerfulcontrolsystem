@@ -65,54 +65,79 @@
   </div>
 
   <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
-    <img class="icon" src="/img/gpt.svg" alt="">Asistente IA
+    <img class="icon" src="/img/gpt.svg" alt=""><span class="ai-chat-toggle-label">Asistente IA</span>
   </button>
 
+  <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
+
   <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
-    <div class="ai-chat-header">
-      <div>
-        <h2 id="aiChatTitle">Asistente IA</h2>
-        <p>Consulta y administra empresas, productos, reportes y configuraciones desde un asistente contextual.</p>
-      </div>
-      <div class="ai-chat-header-actions">
-        <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
-        <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
-      </div>
+    <div class="ai-chat-minibar" id="aiChatMinibar" hidden>
+      <span class="ai-chat-minibar-label">Asistente IA</span>
+      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>
+      </button>
     </div>
-    <div id="aiChatNotice" class="ai-chat-notice"></div>
-    <div id="aiChatMessages" class="ai-chat-messages"></div>
-    <div id="aiChatHints" class="ai-chat-hints is-hidden">
-      <p>Ejemplos de comandos útiles:</p>
-      <ul>
-        <li>Genera un informe de ventas del día pasado.</li>
-        <li>Asigna una tarea a un empleado y notifícale por mensaje.</li>
-        <li>Realiza un pedido de productos o cierra una venta pendiente.</li>
-        <li>Identifica productos próximos a vencer y crea una alerta.</li>
-      </ul>
-    </div>
-    <form id="aiChatForm" class="ai-chat-form">
-      <div class="ai-chat-controls">
-        <label class="ai-chat-control-field" for="aiChatMode">
-          <span>Modo</span>
-          <select id="aiChatMode" class="form-input" aria-label="Modo del asistente IA">
-            <option value="operativo">Operativo</option>
-            <option value="ayudante">Ayudante por pasos</option>
-            <option value="reportes">Reportes y exportaciones</option>
-          </select>
-        </label>
-        <div class="ai-chat-control-field">
-          <span>Adjunto</span>
-          <div class="ai-chat-attachment-row">
-            <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
-            <button id="aiChatAttachBtn" type="button" class="btn secondary small">Adjuntar</button>
-            <button id="aiChatClearAttachment" type="button" class="btn secondary small is-hidden">Quitar</button>
+    <div class="ai-chat-drawer-surface">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-title-row">
+          <span class="ai-chat-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          </span>
+          <div>
+            <h2 id="aiChatTitle">Asistente IA</h2>
+            <p>Consulta y administra empresas, productos, reportes y configuraciones desde un asistente contextual.</p>
           </div>
-          <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+        </div>
+        <div class="ai-chat-header-actions">
+          <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+          <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
+          </button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
         </div>
       </div>
-      <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
-      <button type="submit" class="btn primary">Enviar</button>
-    </form>
+      <div id="aiChatNotice" class="ai-chat-notice"></div>
+      <div class="ai-chat-body-scroll">
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div id="aiChatHints" class="ai-chat-hints is-hidden">
+          <p>Ejemplos de comandos útiles:</p>
+          <ul>
+            <li>Genera un informe de ventas del día pasado.</li>
+            <li>Asigna una tarea a un empleado y notifícale por mensaje.</li>
+            <li>Realiza un pedido de productos o cierra una venta pendiente.</li>
+            <li>Identifica productos próximos a vencer y crea una alerta.</li>
+          </ul>
+        </div>
+      </div>
+      <form id="aiChatForm" class="ai-chat-form">
+        <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
+          <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
+          <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
+          <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
+        </div>
+        <div class="ai-chat-controls">
+          <label class="ai-chat-control-field" for="aiChatMode">
+            <span>Modo</span>
+            <select id="aiChatMode" class="form-input" aria-label="Modo del asistente IA">
+              <option value="operativo">Operativo</option>
+              <option value="ayudante">Ayudante por pasos</option>
+              <option value="reportes">Reportes y exportaciones</option>
+            </select>
+          </label>
+          <div class="ai-chat-control-field">
+            <span>Adjunto</span>
+            <div class="ai-chat-attachment-row">
+              <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
+              <button id="aiChatAttachBtn" type="button" class="btn secondary small">Adjuntar</button>
+              <button id="aiChatClearAttachment" type="button" class="btn secondary small is-hidden">Quitar</button>
+            </div>
+            <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+          </div>
+        </div>
+        <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+        <button type="submit" class="btn primary">Enviar</button>
+      </form>
+    </div>
   </section>
 
   <script src="/js/administrar_empresa.js"></script>

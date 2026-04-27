@@ -1,3 +1,8 @@
+2026-04-27: Carrito de estación — panel de cobro (toolbar, tabla fija, totales, montos por método)
+- Módulos afectados: `carritos`, `estaciones`
+- Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/combo, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
+- Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`
+
 2026-04-25: Facturación electrónica — Ecuador y Panamá (perfiles independientes de Colombia)
 - Módulos afectados: `facturación electrónica`, `licencias`, `administrar_empresa`
 - Cambio funcional: el catálogo por país (CO, EC, PA) expone metadatos `vista` para textos legales, etiquetas de formulario y enlace al módulo DIAN/documental **solo para Colombia**. Ecuador (SRI) y Panamá (DGI) tienen bloques de captura estructurada que se fusionan con `campos_pais_json` sin tocar `empresa_dian` ni flujos DIAN. La detección automática considera `empresa_configuracion_avanzada`, `facturacion_electronica_pais`, **licencia activa** (`pais_codigo`), zona horaria e idioma.

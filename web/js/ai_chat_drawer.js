@@ -11,6 +11,11 @@
   var ATTACHMENT_NAME_ID = 'aiChatAttachmentName';
   var MIC_ID = 'aiChatMicBtn';
   var VOICE_ID = 'aiChatVoiceBtn';
+  var CONV_ID = 'aiChatConvBtn';
+  var BACKDROP_ID = 'aiChatBackdrop';
+  var MINIMIZE_ID = 'aiChatMinimize';
+  var MINIBAR_ID = 'aiChatMinibar';
+  var MINIBAR_EXPAND_ID = 'aiChatMinibarExpand';
   var MESSAGES_ID = 'aiChatMessages';
   var NOTICE_ID = 'aiChatNotice';
   var HINT_TOGGLE_ID = 'aiChatHintToggle';
@@ -22,8 +27,31 @@
     loading: false,
     selectedAttachment: null,
     voiceEnabled: false,
-    listening: false
+    listening: false,
+    conversationMode: false
   };
+
+  var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
+  var ICON_SPK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+  var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
+
+  function isMobileChatViewport() {
+    try {
+      return window.matchMedia('(max-width: 860px)').matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function scrollChatToBottom() {
+    var messagesEl = document.getElementById(MESSAGES_ID);
+    var host = messagesEl && messagesEl.closest('.ai-chat-body-scroll');
+    if (host) {
+      host.scrollTop = host.scrollHeight;
+    } else if (messagesEl) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  }
 
   function parsePositiveInt(raw) {
     var value = Number(String(raw || '').trim());
@@ -153,27 +181,38 @@
     return !!(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function');
   }
 
-  function updateVoiceButtons(micBtn, voiceBtn) {
+  function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
     if (micBtn) {
-      micBtn.textContent = state.listening ? 'Detener dictado' : '🎤 Dictar';
+      micBtn.innerHTML = ICON_MIC;
+      micBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrófono';
+      micBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje');
       micBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
       micBtn.disabled = state.loading || !isSpeechRecognitionSupported();
       if (!isSpeechRecognitionSupported()) {
-        micBtn.title = 'Dictado no soportado en este navegador';
+        micBtn.title = 'Dictado no disponible en este navegador';
       }
     }
     if (voiceBtn) {
-      voiceBtn.textContent = state.voiceEnabled ? '🔊 Voz ON' : '🔇 Voz OFF';
+      voiceBtn.innerHTML = ICON_SPK;
+      voiceBtn.title = state.voiceEnabled ? 'Desactivar voz del asistente' : 'Activar voz del asistente';
+      voiceBtn.setAttribute('aria-label', state.voiceEnabled ? 'Voz del asistente activada' : 'Activar voz del asistente');
       voiceBtn.setAttribute('aria-pressed', state.voiceEnabled ? 'true' : 'false');
       voiceBtn.disabled = state.loading || !isSpeechSynthesisSupported();
       if (!isSpeechSynthesisSupported()) {
-        voiceBtn.title = 'Texto a voz no soportado en este navegador';
+        voiceBtn.title = 'Texto a voz no disponible en este navegador';
       }
+    }
+    if (convBtn) {
+      convBtn.innerHTML = ICON_CONV;
+      convBtn.title = state.conversationMode ? 'Modo conversación activo' : 'Modo conversación (dictado y voz del asistente)';
+      convBtn.setAttribute('aria-label', 'Modo conversación');
+      convBtn.setAttribute('aria-pressed', state.conversationMode ? 'true' : 'false');
     }
   }
 
   function speakAssistantText(text) {
-    if (!state.voiceEnabled || !isSpeechSynthesisSupported() || !text) return;
+    var readAloud = state.voiceEnabled || state.conversationMode;
+    if (!readAloud || !isSpeechSynthesisSupported() || !text) return;
     try {
       window.speechSynthesis.cancel();
       var utterance = new SpeechSynthesisUtterance(String(text));
@@ -186,7 +225,7 @@
     }
   }
 
-  function setupSpeechRecognition(input, micBtn) {
+  function setupSpeechRecognition(input, micBtn, voiceBtn, convBtn) {
     if (!micBtn || !input || !isSpeechRecognitionSupported()) return;
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     var recognition = new SpeechRecognition();
@@ -197,7 +236,7 @@
 
     function setListening(on) {
       state.listening = !!on;
-      updateVoiceButtons(micBtn, document.getElementById(VOICE_ID));
+      updateVoiceButtons(micBtn, voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
     }
 
     recognition.onresult = function (event) {
@@ -243,17 +282,33 @@
     });
   }
 
-  function setupSpeechControls(input, micBtn, voiceBtn) {
-    updateVoiceButtons(micBtn, voiceBtn);
+  function setupSpeechControls(input, micBtn, voiceBtn, convBtn) {
+    updateVoiceButtons(micBtn, voiceBtn, convBtn);
     if (voiceBtn) {
       voiceBtn.addEventListener('click', function () {
         if (state.loading) return;
         state.voiceEnabled = !state.voiceEnabled;
-        updateVoiceButtons(micBtn, voiceBtn);
-        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas.' : 'Respuestas de voz desactivadas.');
+        if (!state.voiceEnabled) {
+          state.conversationMode = false;
+        }
+        updateVoiceButtons(micBtn, voiceBtn, convBtn);
+        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: síntesis).' : 'Respuestas de voz desactivadas.');
       });
     }
-    setupSpeechRecognition(input, micBtn);
+    if (convBtn) {
+      convBtn.addEventListener('click', function () {
+        if (state.loading) return;
+        state.conversationMode = !state.conversationMode;
+        if (state.conversationMode) {
+          state.voiceEnabled = true;
+          setNotice('Modo conversación: lectura automática de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
+        } else {
+          setNotice('Modo conversación desactivado.');
+        }
+        updateVoiceButtons(micBtn, voiceBtn, convBtn);
+      });
+    }
+    setupSpeechRecognition(input, micBtn, voiceBtn, convBtn);
   }
 
   function syncModeUI() {
@@ -417,7 +472,7 @@
     }
 
     messagesEl.appendChild(item);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    scrollChatToBottom();
   }
 
   function setNotice(message, isWarning) {
@@ -600,6 +655,7 @@
     appendMessage('user', attachment ? (query + '\n\n[Adjunto: ' + describeAttachment(attachment) + ']') : query);
     setNotice(attachment ? 'Procesando consulta con adjunto...' : 'Procesando tu consulta...');
     state.loading = true;
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
     sendQuery(query, attachment).then(function (result) {
       appendMessage('assistant', result.clean, null, result.proposal);
@@ -611,6 +667,7 @@
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
     }).finally(function () {
       state.loading = false;
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     });
   }
 
@@ -619,6 +676,7 @@
     if (!proposal || !Array.isArray(proposal.actions) || !proposal.actions.length) return;
     if (state.loading) return;
     state.loading = true;
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     setNotice('Ejecutando acciones sugeridas...');
 
     var messagesEl = document.getElementById(MESSAGES_ID);
@@ -676,6 +734,7 @@
       setNotice('Error al ejecutar acciones: ' + String(err.message || ''), true);
     }).finally(function () {
       state.loading = false;
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     });
   }
 
@@ -694,10 +753,76 @@
     setNotice('Acciones canceladas.');
   }
 
+  function setChatBackdropVisible(on) {
+    var el = document.getElementById(BACKDROP_ID);
+    if (!el) return;
+    el.classList.toggle('is-visible', !!on);
+    el.setAttribute('aria-hidden', on ? 'false' : 'true');
+  }
+
+  function setChatBodyScrollLock(on) {
+    if (isMobileChatViewport()) {
+      document.body.style.overflow = on ? 'hidden' : '';
+    }
+  }
+
+  function closeChatDrawerFully() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var toggle = document.getElementById(TOGGLE_ID);
+    var minibar = document.getElementById(MINIBAR_ID);
+    if (!drawer || !toggle) return;
+    drawer.classList.remove('open');
+    drawer.classList.remove('minimized');
+    if (minibar) minibar.hidden = true;
+    toggle.classList.remove('is-drawer-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    setChatBackdropVisible(false);
+    setChatBodyScrollLock(false);
+  }
+
+  function openChatDrawerFromUser() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var toggle = document.getElementById(TOGGLE_ID);
+    var minibar = document.getElementById(MINIBAR_ID);
+    if (!drawer || !toggle) return;
+    drawer.classList.remove('minimized');
+    if (minibar) minibar.hidden = true;
+    drawer.classList.add('open');
+    toggle.classList.add('is-drawer-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    setChatBackdropVisible(true);
+    setChatBodyScrollLock(true);
+    window.setTimeout(function () {
+      var inp = document.getElementById(INPUT_ID);
+      if (inp) inp.focus();
+    }, 50);
+  }
+
+  function minimizeChatDrawer() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var toggle = document.getElementById(TOGGLE_ID);
+    var minibar = document.getElementById(MINIBAR_ID);
+    if (!drawer || !toggle) return;
+    if (isMobileChatViewport()) {
+      closeChatDrawerFully();
+      return;
+    }
+    drawer.classList.remove('open');
+    drawer.classList.add('minimized');
+    if (minibar) minibar.hidden = false;
+    toggle.classList.remove('is-drawer-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    setChatBackdropVisible(false);
+    setChatBodyScrollLock(false);
+  }
+
   function initDrawer() {
     var toggle = document.getElementById(TOGGLE_ID);
     var drawer = document.getElementById(DRAWER_ID);
     var closeBtn = document.getElementById(CLOSE_ID);
+    var minimizeBtn = document.getElementById(MINIMIZE_ID);
+    var minibarExpand = document.getElementById(MINIBAR_EXPAND_ID);
+    var backdrop = document.getElementById(BACKDROP_ID);
     var form = document.getElementById(FORM_ID);
     var messagesEl = document.getElementById(MESSAGES_ID);
     var hintToggle = document.getElementById(HINT_TOGGLE_ID);
@@ -711,21 +836,34 @@
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
 
     toggle.addEventListener('click', function () {
-      var expanded = !drawer.classList.contains('open');
-      drawer.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      if (expanded) {
-        window.setTimeout(function () {
-          var input = document.getElementById(INPUT_ID);
-          if (input) input.focus();
-        }, 50);
+      if (drawer.classList.contains('open')) {
+        closeChatDrawerFully();
+        return;
       }
+      openChatDrawerFromUser();
     });
 
     closeBtn.addEventListener('click', function () {
-      drawer.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
+      closeChatDrawerFully();
     });
+
+    if (minimizeBtn) {
+      minimizeBtn.addEventListener('click', function () {
+        minimizeChatDrawer();
+      });
+    }
+
+    if (minibarExpand) {
+      minibarExpand.addEventListener('click', function () {
+        openChatDrawerFromUser();
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', function () {
+        closeChatDrawerFully();
+      });
+    }
 
     form.addEventListener('submit', handleSubmit);
     if (modeEl) {
@@ -777,7 +915,7 @@
       });
     }
 
-    setupSpeechControls(input, document.getElementById(MIC_ID), document.getElementById(VOICE_ID));
+    setupSpeechControls(input, document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
     messagesEl.addEventListener('click', function (event) {
       var target = event.target;
@@ -792,10 +930,10 @@
     });
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && drawer.classList.contains('open')) {
-        drawer.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
+      if (event.key !== 'Escape') return;
+      var d = document.getElementById(DRAWER_ID);
+      if (!d || (!d.classList.contains('open') && !d.classList.contains('minimized'))) return;
+      closeChatDrawerFully();
     });
     if (input) {
       input.addEventListener('keydown', function (event) {
@@ -809,8 +947,7 @@
     window.addEventListener('message', function (event) {
       var data = event && event.data;
       if (!data || data.type !== 'pcs-ai-drawer-open') return;
-      drawer.classList.add('open');
-      toggle.setAttribute('aria-expanded', 'true');
+      openChatDrawerFromUser();
       if (modeEl && normalize(data.mode)) {
         modeEl.value = normalize(data.mode);
         syncModeUI();

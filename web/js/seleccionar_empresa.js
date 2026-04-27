@@ -98,7 +98,7 @@
     panel.style.display = "";
     panel.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
-      '<div><strong>Invitaciones de empresas pendientes</strong><div class="muted" style="margin-top:4px;">Acepta para que aparezcan en tu lista y se abran autom?ticamente.</div></div>' +
+      '<div><strong>Invitaciones de empresas pendientes</strong><div class="muted" style="margin-top:4px;">Acepta para que aparezcan en tu lista y se abran automáticamente.</div></div>' +
       '<button type="button" class="btn secondary" data-action="refresh-share-invites">Actualizar</button>' +
       "</div>" +
       '<div style="margin-top:10px;display:grid;gap:10px;">' +
@@ -503,8 +503,8 @@
   function buildEmpresaShareButton(empresa) {
     var disabled = isSharedEmpresa(empresa);
     var title = disabled
-      ? "Solo el administrador propietario puede compartir una empresa que recibi? por invitaci?n"
-      : "Compartir empresa con otro administrador";
+      ? "Solo el administrador propietario puede compartir una empresa que recibió por invitación"
+      : "Compartir empresa con otro administrador (correo)";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
@@ -520,18 +520,18 @@
     if (isSharedEmpresa(empresa)) {
       return '' +
         '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
-        '<p class="empresa-card-share-feedback is-error">Solo el administrador propietario puede enviar nuevas invitaciones para esta empresa.</p>' +
+        '<div class="empresa-card-share-feedback is-error">Solo el administrador propietario puede enviar nuevas invitaciones para esta empresa.</div>' +
         '</div>';
     }
     return '' +
       '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
       '<form class="empresa-card-share-form" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '">' +
-      '<label class="empresa-card-share-label" for="share-email-' + escapeHtml(String(empresa.id || '')) + '">Compartir con otro administrador</label>' +
+      '<label class="empresa-card-share-label" for="share-email-' + escapeHtml(String(empresa.id || '')) + '">Enviar correo para compartir empresa</label>' +
       '<div class="empresa-card-share-row">' +
       '<input id="share-email-' + escapeHtml(String(empresa.id || '')) + '" class="form-input empresa-card-share-input" data-share-email type="email" placeholder="correo@ejemplo.com" required>' +
       '<button type="submit" class="btn empresa-card-share-submit">Enviar</button>' +
       '</div>' +
-      '<p class="empresa-card-share-feedback" data-share-feedback></p>' +
+      '<div class="empresa-card-share-feedback" data-share-feedback role="status"></div>' +
       '</form>' +
       '</div>';
   }
@@ -570,11 +570,17 @@
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn secondary empresa-share-resend';
-    btn.style.marginLeft = '8px';
-    btn.textContent = 'Reenviar invitaci?n';
+    btn.textContent = 'Reenviar invitación';
     btn.setAttribute('data-empresa-id', String(empresaId || ''));
     btn.setAttribute('data-invitation-id', String(invitationId || ''));
     feedback.appendChild(btn);
+  }
+
+  function setEmpresaCardShareOpen(panelEl, open) {
+    var card = panelEl && panelEl.closest ? panelEl.closest('.portal-card.empresa-card') : null;
+    if (card) {
+      card.classList.toggle('empresa-card--share-open', !!open);
+    }
   }
 
   function closeAllEmpresaSharePanels(exceptEmpresaId) {
@@ -582,6 +588,7 @@
       var panelEmpresaId = parseInt(panel.getAttribute('data-empresa-id') || '0', 10);
       var shouldKeepOpen = exceptEmpresaId > 0 && panelEmpresaId === exceptEmpresaId;
       panel.hidden = !shouldKeepOpen;
+      setEmpresaCardShareOpen(panel, shouldKeepOpen);
       var btn = findEmpresaShareButton(panelEmpresaId);
       if (btn) {
         btn.classList.toggle('is-open', shouldKeepOpen);
@@ -618,14 +625,14 @@
       setEmpresaShareFeedback(empresaId, 'Debes escribir el correo del otro administrador.', true);
       return;
     }
-    setEmpresaShareFeedback(empresaId, 'Enviando invitaci?n...', false);
+    setEmpresaShareFeedback(empresaId, 'Enviando invitación...', false);
     try {
       var data = await fetchJSON('/super/api/empresas/compartidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empresa_id: empresaId, email: email, mensaje: '' })
       });
-      var message = data && data.message ? data.message : 'Invitaci?n enviada correctamente.';
+      var message = data && data.message ? data.message : 'Invitación enviada correctamente.';
       setEmpresaShareFeedback(empresaId, message, false);
       setShareNotice(message, false);
       if (emailInput) {
@@ -634,13 +641,13 @@
     } catch (err) {
       var payload = err && err.payload ? err.payload : null;
       if (payload && String(payload.code || '') === 'invitation_pending' && payload.invitation_id) {
-        var pendingMsg = (payload.error || err.message || 'Ya existe una invitaci?n pendiente para ese administrador.') + ' ';
+        var pendingMsg = (payload.error || err.message || 'Ya existe una invitación pendiente para ese administrador.') + ' ';
         setEmpresaShareFeedback(empresaId, pendingMsg + 'Puedes reenviarla.', true);
         showEmpresaShareResendAction(empresaId, payload.invitation_id);
         setShareNotice(pendingMsg + 'Puedes reenviarla.', true);
         return;
       }
-      var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitaci?n.';
+      var errorMessage = err && err.message ? err.message : 'No se pudo enviar la invitación.';
       setEmpresaShareFeedback(empresaId, errorMessage, true);
       setShareNotice(errorMessage, true);
     }
@@ -1123,16 +1130,16 @@
         data = null;
       }
       if (!res.ok) {
-        throw new Error((data && (data.message || data.error)) || raw || "No se pudo aceptar la invitaci?n compartida.");
+        throw new Error((data && (data.message || data.error)) || raw || "No se pudo aceptar la invitación compartida.");
       }
       if (data && data.empresa_id) {
         persistEmpresaContext(data.empresa_id);
       }
-      setShareNotice((data && data.message) || "La empresa compartida ya est? disponible en tu selector.", false);
+      setShareNotice((data && data.message) || "La empresa compartida ya está disponible en tu selector.", false);
       clearQueryParam("shared_invitation_token");
       showEmpresasPanel();
     } catch (err) {
-      setShareNotice(err && err.message ? err.message : "No se pudo aceptar la invitaci?n compartida.", true);
+      setShareNotice(err && err.message ? err.message : "No se pudo aceptar la invitación compartida.", true);
       clearQueryParam("shared_invitation_token");
     }
   }
@@ -1145,7 +1152,7 @@
     if (Number.isFinite(empresaId) && empresaId > 0) {
       persistEmpresaContext(empresaId);
     }
-    setShareNotice("Invitaci?n aceptada correctamente. La empresa compartida ya aparece en tu lista.", false);
+    setShareNotice("Invitación aceptada correctamente. La empresa compartida ya aparece en tu lista.", false);
     clearQueryParam("shared_invitation_accepted");
   }
 
@@ -1259,16 +1266,16 @@
       if (!empresaIdResend || !invitationId) {
         return;
       }
-      setEmpresaShareFeedback(empresaIdResend, 'Reenviando invitaci?n...', false);
+      setEmpresaShareFeedback(empresaIdResend, 'Reenviando invitación...', false);
       fetchJSON('/super/api/empresas/compartidos?id=' + encodeURIComponent(invitationId) + '&action=reenviar', {
         method: 'PUT',
         credentials: 'same-origin'
       }).then(function (data) {
-        var msg = data && data.message ? data.message : 'Invitaci?n reenviada.';
+        var msg = data && data.message ? data.message : 'Invitación reenviada.';
         setEmpresaShareFeedback(empresaIdResend, msg, false);
         setShareNotice(msg, false);
       }).catch(function (err) {
-        var msg = err && err.message ? err.message : 'No se pudo reenviar la invitaci?n.';
+        var msg = err && err.message ? err.message : 'No se pudo reenviar la invitación.';
         setEmpresaShareFeedback(empresaIdResend, msg, true);
         setShareNotice(msg, true);
       });
@@ -1284,7 +1291,7 @@
       if (!invitationIdAccept || !empresaIdAccept) {
         return;
       }
-      setShareNotice("Aceptando invitaci?n...", false);
+      setShareNotice("Aceptando invitación...", false);
       fetchJSON("/super/api/empresas/compartidos?id=" + encodeURIComponent(invitationIdAccept) + "&action=aceptar", {
         method: "PUT",
         credentials: "same-origin",
@@ -1301,9 +1308,9 @@
           navigateToEmpresa(empresa, hasLicense);
           return;
         }
-        setShareNotice("Invitaci?n aceptada. La empresa ya est? en tu lista.", false);
+        setShareNotice("Invitación aceptada. La empresa ya está en tu lista.", false);
       }).catch(function (err) {
-        var msg = err && err.message ? err.message : "No se pudo aceptar la invitaci?n.";
+        var msg = err && err.message ? err.message : "No se pudo aceptar la invitación.";
         setShareNotice(msg, true);
       });
       return;

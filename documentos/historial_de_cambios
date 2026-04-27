@@ -1,3 +1,19 @@
+- 2026-04-27: carrito de compras — panel estación (layout cobro).
+    - Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
+    - Descripcion: barra superior con acciones en una sola fila mas checkbox para activar/desactivar la alerta visual cada 10 min; tabla de items de altura fija y tarjeta de totales en la misma fila (entrada/salida, descuentos implicitos en lineas, horas extras desde tarifa tiempo, montos por servicios vs productos); cuatro inputs de solo lectura por forma de pago (efectivo, debito, credito, otro) sincronizados con el desglose de cobro; en modo estacion se oculta la rejilla inferior duplicada; auto-refresco mas frecuente con carrito activo en estacion (y 3s si viene `tarifa_por_minutos` con consumo en el JSON).
+
+- 2026-04-27: seleccionar empresa — panel compartir por correo (apariencia).
+    - Archivos: `web/estilos.css`, `web/js/seleccionar_empresa.js`, `documentos/historial_de_cambios`
+    - Descripcion: el formulario de invitacion deja de posicionarse con `position:absolute` (recortado por el `overflow` de la tarjeta) y pasa a flujo normal bajo la barra de acciones; estilos para avisos globales de comparticion; clase `empresa-card--share-open` para stacking; textos UTF-8 corregidos; feedback en `div` para admitir boton Reenviar.
+
+- 2026-04-27: carrito de compras (estación) — búsqueda rápida, botones e impresión al pagar.
+    - Archivos: `web/administrar_empresa/carrito_de_compras.html`, `documentos/historial_de_cambios`
+    - Descripcion: en el bloque de cobro se añade una fila con campo de código/SKU (Enter reutiliza el flujo del lector) y boton "Buscar (botones)" hacia `buscar_producto_botones.html`. Tras un pago exitoso (`pagar_estacion`), si en configuracion general de empresa está activo **Imprimir orden de servicio**, se abre el dialogo de impresion con un recibo resumido del cobro (impresora objetivo opcional por funcionalidad `ticket_cobro`).
+
+- 2026-04-27: chat flotante IA — layout responsive, minimizar, voz (Web Speech API).
+    - Archivos: `web/estilos.css`, `web/js/ai_chat_drawer.js`, `web/administrar_empresa.html`, `web/super_administrador.html`, `web/seleccionar_empresa.html`, `documentos/historial_de_cambios`
+    - Descripcion: en escritorio el panel es una tarjeta con bordes redondeados menor que la pantalla, boton minimizar (barra compacta) y cierre, fondo semitransparente al abrir; el boton flotante se atenua ligeramente cuando el chat esta cerrado. En movil el chat ocupa pantalla completa con scroll solo en el area de mensajes y controles inferiores fijos; iconos para modo conversacion, dictado y lectura de respuestas usando la Web Speech API del navegador (sin dependencias nuevas).
+
 - 2026-04-27: integración IA para super administrador.
     - Archivos: `web/super/integracion_ia.html`, `web/super_administrador.html`, `documentos/historial_de_cambios`
     - Descripcion: se crea una página central de Integración IA en el panel super administrador con estado global de IA, gestión de proveedores OpenAI, edición de credenciales y accesos directos a las configuraciones de lógica de chat y contenido para portal. Se enlaza al menú principal de super administrador.
