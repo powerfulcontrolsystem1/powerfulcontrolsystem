@@ -12,6 +12,8 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		return fmt.Errorf("db connection is nil")
 	}
 
+	isPostgres := isPostgresDialect()
+
 	createProgramaciones := `CREATE TABLE IF NOT EXISTS empresa_reportes_programaciones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER NOT NULL,
@@ -37,6 +39,33 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
+	if isPostgres {
+		createProgramaciones = `CREATE TABLE IF NOT EXISTS empresa_reportes_programaciones (
+		id SERIAL PRIMARY KEY,
+		empresa_id INTEGER NOT NULL,
+		nombre TEXT NOT NULL,
+		dataset_key TEXT NOT NULL,
+		nivel TEXT DEFAULT 'operativo',
+		formatos TEXT DEFAULT '["json"]',
+		parametros_json TEXT DEFAULT '{}',
+		template_codigo TEXT,
+		template_version INTEGER DEFAULT 0,
+		frecuencia TEXT DEFAULT 'diario',
+		hora_envio TEXT DEFAULT '08:00',
+		timezone TEXT DEFAULT 'America/Bogota',
+		destinatarios TEXT,
+		ultimo_ejecutado_en TEXT,
+		proximo_ejecutado_en TEXT,
+		activa INTEGER DEFAULT 1,
+		validacion_consistencia INTEGER DEFAULT 1,
+		hash_ultima_ejecucion TEXT,
+		fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	}
 	if _, err := dbConn.Exec(createProgramaciones); err != nil {
 		return fmt.Errorf("create empresa_reportes_programaciones: %w", err)
 	}
@@ -59,6 +88,26 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
+	if isPostgres {
+		createPlantillas = `CREATE TABLE IF NOT EXISTS empresa_reportes_plantillas (
+		id SERIAL PRIMARY KEY,
+		empresa_id INTEGER NOT NULL,
+		codigo TEXT NOT NULL,
+		nombre TEXT NOT NULL,
+		dataset_key TEXT NOT NULL,
+		version INTEGER NOT NULL DEFAULT 1,
+		formato TEXT DEFAULT 'json',
+		columnas_json TEXT DEFAULT '[]',
+		config_json TEXT DEFAULT '{}',
+		vigente INTEGER DEFAULT 1,
+		hash_contenido TEXT,
+		fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	}
 	if _, err := dbConn.Exec(createPlantillas); err != nil {
 		return fmt.Errorf("create empresa_reportes_plantillas: %w", err)
 	}
@@ -83,6 +132,28 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
+	if isPostgres {
+		createEjecuciones = `CREATE TABLE IF NOT EXISTS empresa_reportes_ejecuciones (
+		id SERIAL PRIMARY KEY,
+		empresa_id INTEGER NOT NULL,
+		programacion_id INTEGER,
+		dataset_key TEXT NOT NULL,
+		referencia TEXT,
+		formato_principal TEXT DEFAULT 'json',
+		formatos_json TEXT DEFAULT '["json"]',
+		estado_ejecucion TEXT DEFAULT 'completado',
+		ejecutado_en TEXT DEFAULT CURRENT_TIMESTAMP,
+		consistencia_estado TEXT DEFAULT 'pendiente',
+		consistencia_detalle_json TEXT,
+		salida_resumen_json TEXT,
+		error_detalle TEXT,
+		fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	}
 	if _, err := dbConn.Exec(createEjecuciones); err != nil {
 		return fmt.Errorf("create empresa_reportes_ejecuciones: %w", err)
 	}

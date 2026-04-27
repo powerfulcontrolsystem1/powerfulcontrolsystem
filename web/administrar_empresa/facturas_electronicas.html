@@ -468,7 +468,7 @@
             '<p><strong>Total:</strong> ' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</p>' +
             (notas ? ('<hr><small>' + escapeHtml(notas) + '</small>') : '') +
             (pie ? ('<p><small>' + escapeHtml(pie) + '</small></p>') : '') +
-            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)</script>' +
+            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)<\/script>' +
             '</body></html>';
         }
 

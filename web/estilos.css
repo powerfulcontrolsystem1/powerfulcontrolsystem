@@ -986,6 +986,8 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-control-field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ai-chat-control-field > span{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .ai-chat-attachment-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ai-chat-voice-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.ai-chat-voice-controls .btn{min-width:124px}
 .ai-chat-file-input{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .ai-chat-attachment-name{font-size:.82rem;color:var(--muted);word-break:break-word}
 .ai-chat-form textarea{width:100%;min-height:84px;max-height:170px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;font-size:.95rem}

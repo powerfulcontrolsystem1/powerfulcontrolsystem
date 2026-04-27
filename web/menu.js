@@ -255,6 +255,7 @@
         applySidebarState(false);
       }
 
+      toggleBtn.dataset.pcsBound = '1';
       toggleBtn.addEventListener('click', function(){
         if (!isMobile()) return;
         applySidebarState(!sidebar.classList.contains('is-collapsed'));

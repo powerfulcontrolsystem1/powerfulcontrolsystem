@@ -9,6 +9,8 @@
   var ATTACH_BTN_ID = 'aiChatAttachBtn';
   var CLEAR_ATTACHMENT_ID = 'aiChatClearAttachment';
   var ATTACHMENT_NAME_ID = 'aiChatAttachmentName';
+  var MIC_ID = 'aiChatMicBtn';
+  var VOICE_ID = 'aiChatVoiceBtn';
   var MESSAGES_ID = 'aiChatMessages';
   var NOTICE_ID = 'aiChatNotice';
   var HINT_TOGGLE_ID = 'aiChatHintToggle';
@@ -18,7 +20,9 @@
   var state = {
     proposals: [],
     loading: false,
-    selectedAttachment: null
+    selectedAttachment: null,
+    voiceEnabled: false,
+    listening: false
   };
 
   function parsePositiveInt(raw) {
@@ -139,6 +143,117 @@
     if (clearBtn) {
       clearBtn.classList.toggle('is-hidden', !file);
     }
+  }
+
+  function isSpeechRecognitionSupported() {
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+
+  function isSpeechSynthesisSupported() {
+    return !!(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function');
+  }
+
+  function updateVoiceButtons(micBtn, voiceBtn) {
+    if (micBtn) {
+      micBtn.textContent = state.listening ? 'Detener dictado' : '🎤 Dictar';
+      micBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
+      micBtn.disabled = state.loading || !isSpeechRecognitionSupported();
+      if (!isSpeechRecognitionSupported()) {
+        micBtn.title = 'Dictado no soportado en este navegador';
+      }
+    }
+    if (voiceBtn) {
+      voiceBtn.textContent = state.voiceEnabled ? '🔊 Voz ON' : '🔇 Voz OFF';
+      voiceBtn.setAttribute('aria-pressed', state.voiceEnabled ? 'true' : 'false');
+      voiceBtn.disabled = state.loading || !isSpeechSynthesisSupported();
+      if (!isSpeechSynthesisSupported()) {
+        voiceBtn.title = 'Texto a voz no soportado en este navegador';
+      }
+    }
+  }
+
+  function speakAssistantText(text) {
+    if (!state.voiceEnabled || !isSpeechSynthesisSupported() || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      var utterance = new SpeechSynthesisUtterance(String(text));
+      utterance.lang = 'es-CO';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('No se pudo reproducir voz:', err);
+    }
+  }
+
+  function setupSpeechRecognition(input, micBtn) {
+    if (!micBtn || !input || !isSpeechRecognitionSupported()) return;
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'es-CO';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    var finalText = '';
+
+    function setListening(on) {
+      state.listening = !!on;
+      updateVoiceButtons(micBtn, document.getElementById(VOICE_ID));
+    }
+
+    recognition.onresult = function (event) {
+      var interimText = '';
+      for (var i = event.resultIndex; i < event.results.length; i += 1) {
+        var result = event.results[i];
+        var transcript = String((result[0] && result[0].transcript) || '');
+        if (result.isFinal) {
+          finalText += transcript;
+        } else {
+          interimText += transcript;
+        }
+      }
+      var current = String(input.value || '').trim();
+      input.value = (current ? current + ' ' : '') + String(finalText + interimText).trim();
+    };
+
+    recognition.onerror = function () {
+      setListening(false);
+      setNotice('Error de micrófono.');
+    };
+
+    recognition.onend = function () {
+      setListening(false);
+      finalText = '';
+    };
+
+    micBtn.addEventListener('click', function () {
+      if (state.loading) return;
+      if (state.listening) {
+        try { recognition.stop(); } catch (e) { }
+        setListening(false);
+        return;
+      }
+      finalText = '';
+      try {
+        recognition.start();
+        setListening(true);
+      } catch (err) {
+        setListening(false);
+        setNotice('No se pudo iniciar dictado.');
+      }
+    });
+  }
+
+  function setupSpeechControls(input, micBtn, voiceBtn) {
+    updateVoiceButtons(micBtn, voiceBtn);
+    if (voiceBtn) {
+      voiceBtn.addEventListener('click', function () {
+        if (state.loading) return;
+        state.voiceEnabled = !state.voiceEnabled;
+        updateVoiceButtons(micBtn, voiceBtn);
+        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas.' : 'Respuestas de voz desactivadas.');
+      });
+    }
+    setupSpeechRecognition(input, micBtn);
   }
 
   function syncModeUI() {
@@ -488,6 +603,7 @@
 
     sendQuery(query, attachment).then(function (result) {
       appendMessage('assistant', result.clean, null, result.proposal);
+      speakAssistantText(result.clean);
       setNotice('Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
@@ -660,6 +776,8 @@
         setNotice('Adjunto removido.');
       });
     }
+
+    setupSpeechControls(input, document.getElementById(MIC_ID), document.getElementById(VOICE_ID));
 
     messagesEl.addEventListener('click', function (event) {
       var target = event.target;

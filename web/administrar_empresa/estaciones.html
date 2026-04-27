@@ -782,6 +782,40 @@
     });
     }
 
+    async function refreshStationPageState() {
+      if (!empresaId) return;
+      try {
+        const cfg = await getConfigFromServer();
+        if (cfg) {
+          stationConfig = cfg;
+          applyCardSize(stationConfig);
+          renderEstaciones(stationConfig);
+        }
+        await Promise.all([
+          loadColoresEstadoCarrito(),
+          loadEstadoCarritosEstacion()
+        ]);
+        refreshStationCardSummaries();
+      } catch (err) {
+        console.warn('No se pudo refrescar estado de estaciones:', err);
+      }
+    }
+
+    function setupStationPageRefresh() {
+      function refreshIfVisible() {
+        if (document.visibilityState === 'visible') {
+          refreshStationPageState();
+        }
+      }
+      window.addEventListener('pageshow', function (event) {
+        if (event.persisted || document.visibilityState === 'visible') {
+          refreshStationPageState();
+        }
+      });
+      window.addEventListener('focus', refreshIfVisible);
+      document.addEventListener('visibilitychange', refreshIfVisible);
+    }
+
     async function clearDirtyState(stationID) {
       const id = Number(stationID || 0);
       if (!empresaId || id <= 0) return;
@@ -1858,6 +1892,7 @@
         ]);
         renderEstaciones(stationConfig);
         wireEstacionesMobileThumbToggle();
+        setupStationPageRefresh();
     window.setInterval(async function () {
       try {
       await loadEstadoCarritosEstacion();
