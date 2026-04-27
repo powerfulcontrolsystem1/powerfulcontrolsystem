@@ -100,7 +100,16 @@
   function getAssistantMode() {
     var modeEl = document.getElementById(MODE_ID);
     var value = normalize(modeEl && modeEl.value);
+    if (value === 'reportes') return 'reportes';
     return value === 'ayudante' ? 'ayudante' : 'operativo';
+  }
+
+  function isReportMode() {
+    return getAssistantMode() === 'reportes';
+  }
+
+  function buildReportesEndpoint() {
+    return '/api/empresa/reportes_ia_chat';
   }
 
   function getCurrentAttachment() {
@@ -129,6 +138,40 @@
     }
     if (clearBtn) {
       clearBtn.classList.toggle('is-hidden', !file);
+    }
+  }
+
+  function syncModeUI() {
+    var modeEl = document.getElementById(MODE_ID);
+    var attachBtn = document.getElementById(ATTACH_BTN_ID);
+    var clearBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
+    var attachName = document.getElementById(ATTACHMENT_NAME_ID);
+    var reportOption = modeEl && modeEl.querySelector('option[value="reportes"]');
+    var reportMode = isReportMode();
+    var superContext = isSuperContext();
+
+    if (reportOption) {
+      reportOption.hidden = superContext;
+      reportOption.disabled = superContext;
+      if (superContext && normalize(modeEl.value) === 'reportes') {
+        modeEl.value = 'operativo';
+        reportMode = false;
+      }
+    }
+
+    if (attachBtn) attachBtn.disabled = reportMode;
+    if (clearBtn) clearBtn.disabled = reportMode;
+    if (attachName) {
+      if (reportMode) {
+        attachName.textContent = 'Modo reportes: el asistente usara el flujo centralizado de reportes y exportaciones.';
+        attachName.classList.remove('is-hidden');
+      } else if (!getCurrentAttachment()) {
+        attachName.textContent = '';
+        attachName.classList.add('is-hidden');
+      }
+    }
+    if (reportMode && getCurrentAttachment()) {
+      clearAttachmentSelection();
     }
   }
 
@@ -322,6 +365,50 @@
   }
 
   function sendQuery(query, attachment) {
+    if (isReportMode()) {
+      if (isSuperContext()) {
+        throw new Error('El modo reportes centralizado aplica al contexto de empresa. En super administrador usa el asistente global en modo operativo o ayudante.');
+      }
+      var empresaIdForReports = getCurrentEmpresaId();
+      if (!empresaIdForReports) {
+        throw new Error('No se encontro una empresa activa para generar reportes.');
+      }
+      return fetch(buildReportesEndpoint(), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PCS-Source': 'ai_drawer'
+        },
+        body: JSON.stringify({
+          empresa_id: parsePositiveInt(empresaIdForReports),
+          modo: 'reporte',
+          pregunta: query,
+          historial: []
+        })
+      }).then(function (resp) {
+        if (!resp.ok) {
+          return parseErrorResponse(resp);
+        }
+        return resp.json();
+      }).then(function (data) {
+        if (!data || data.ok === false) {
+          throw new Error((data && data.error) ? String(data.error) : 'No se pudo obtener respuesta de reportes IA.');
+        }
+        var text = normalize(data.respuesta || 'Reporte listo.');
+        if (normalize(data.title)) {
+          text += '\n\nReporte: ' + normalize(data.title);
+        }
+        if (normalize(data.format)) {
+          text += '\nFormato: ' + String(data.format).toUpperCase();
+        }
+        if (normalize(data.export_url)) {
+          text += '\nEnlace: ' + normalize(data.export_url);
+        }
+        return { clean: text, proposal: null };
+      });
+    }
+
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
@@ -502,6 +589,8 @@
     var attachInput = document.getElementById(ATTACHMENT_INPUT_ID);
     var attachBtn = document.getElementById(ATTACH_BTN_ID);
     var clearAttachBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
+    var modeEl = document.getElementById(MODE_ID);
+    var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
 
@@ -523,6 +612,14 @@
     });
 
     form.addEventListener('submit', handleSubmit);
+    if (modeEl) {
+      modeEl.addEventListener('change', function () {
+        syncModeUI();
+        setNotice(isReportMode()
+          ? 'Modo reportes activo. Este chat central usara el flujo de reportes y exportaciones de la empresa.'
+          : 'Modo actualizado. Puedes seguir consultando normalmente.');
+      });
+    }
     if (hintToggle && hints) {
       hintToggle.addEventListener('click', function () {
         hints.classList.toggle('is-hidden');
@@ -533,6 +630,10 @@
     if (attachBtn && attachInput) {
       attachBtn.addEventListener('click', function () {
         if (state.loading) return;
+        if (isReportMode()) {
+          setNotice('El modo reportes no admite adjuntos en este flujo.', true);
+          return;
+        }
         attachInput.click();
       });
       attachInput.addEventListener('change', function () {
@@ -578,12 +679,38 @@
         toggle.setAttribute('aria-expanded', 'false');
       }
     });
+    if (input) {
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+    }
+
+    window.addEventListener('message', function (event) {
+      var data = event && event.data;
+      if (!data || data.type !== 'pcs-ai-drawer-open') return;
+      drawer.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      if (modeEl && normalize(data.mode)) {
+        modeEl.value = normalize(data.mode);
+        syncModeUI();
+      }
+      if (input && normalize(data.prompt)) {
+        input.value = normalize(data.prompt);
+      }
+      window.setTimeout(function () {
+        if (input) input.focus();
+      }, 50);
+    });
 
     if (!messagesEl.querySelector('.ai-chat-message')) {
       appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '. ' + (isSuperContext() ? 'Consulta datos globales de super administrador.' : 'Consulta datos de la empresa actual y solicita acciones administrativas. Puedes asignar tareas, enviar mensajes, crear pedidos y terminar ventas segun tu rol.'));
     }
 
     renderAttachmentState();
+    syncModeUI();
     getCurrentRole().then(updateAccessInfo);
   }
 

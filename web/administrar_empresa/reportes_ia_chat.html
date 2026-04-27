@@ -3,177 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Chat IA de reportes</title>
+  <title>Chat IA centralizado</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .ria-shell{max-width:980px;margin:0 auto}
-    .ria-messages{min-height:280px;max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:10px;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:rgba(15,23,42,.18)}
-    .ria-msg{padding:10px 12px;border-radius:14px;white-space:pre-wrap;line-height:1.35}
-    .ria-msg.user{align-self:flex-end;max-width:82%;background:#2563eb;color:#fff}
-    .ria-msg.ai,.ria-msg.system{align-self:flex-start;max-width:88%;background:rgba(255,255,255,.08)}
-    .ria-usage{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-    .ria-pill{font-size:12px;border:1px solid rgba(148,163,184,.35);border-radius:999px;padding:4px 8px}
-  </style>
 </head>
 <body class="empresa-subpage">
-  <div class="container ria-shell">
+  <div class="container">
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h1 class="empresa-section-title">Chat IA de reportes</h1>
-        <button id="btnClear" class="btn secondary" type="button">Limpiar</button>
+        <h1 class="empresa-section-title">Chat IA centralizado</h1>
       </div>
-      <p class="form-help">Modo texto: GPT-5.4 mini (10 preguntas/dia). Modo reporte: GPT-5.5 (2 reportes/dia) y devuelve enlace de exportacion.</p>
-      <div class="ria-usage">
-        <span id="usageText" class="ria-pill">Texto: 10/dia</span>
-        <span id="usageReport" class="ria-pill">Reportes: 2/dia</span>
+      <p class="form-help">El proyecto ahora usa un solo chat de IA central para toda la plataforma.</p>
+      <p class="form-help">Abriremos el asistente central en modo reportes para que continúes desde ahí.</p>
+      <div class="form-actions">
+        <button id="openCentralAI" class="btn" type="button">Abrir asistente IA central</button>
       </div>
-      <div id="messages" class="ria-messages" aria-live="polite"></div>
-      <form id="form" class="form" style="margin-top:12px">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="modo">Modo</label>
-            <select id="modo" class="form-input">
-              <option value="texto">Pregunta texto (GPT-5.4 mini)</option>
-              <option value="reporte">Generar reporte/exportar (GPT-5.5)</option>
-            </select>
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="dataset">Dataset sugerido</label>
-            <select id="dataset" class="form-input">
-              <option value="">Que la IA elija</option>
-            </select>
-          </div>
-          <div class="form-col maxw-180">
-            <label class="form-label" for="format">Formato</label>
-            <select id="format" class="form-input">
-              <option value="">Auto</option>
-              <option value="pdf">PDF</option>
-              <option value="xls">Excel (XLS)</option>
-              <option value="csv">CSV</option>
-              <option value="json">JSON</option>
-              <option value="txt">TXT</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="desde">Desde</label>
-            <input id="desde" class="form-input" type="date">
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="hasta">Hasta</label>
-            <input id="hasta" class="form-input" type="date">
-          </div>
-        </div>
-        <label class="form-label" for="pregunta">Pregunta o solicitud</label>
-        <textarea id="pregunta" class="form-textarea" rows="4" maxlength="2500" placeholder="Ej: Hazme un reporte de ventas cerradas de este mes en PDF."></textarea>
-        <div class="form-actions">
-          <button id="btnSend" class="btn" type="submit">Enviar</button>
-        </div>
-        <div id="msg" class="form-help"></div>
-      </form>
+      <div id="msg" class="form-help"></div>
     </section>
   </div>
 
   <script>
-    const state = { empresaID: 0, history: [], datasets: [] };
-    function qp(n){ return new URLSearchParams(location.search).get(n) || ''; }
-    function norm(v){ return (v == null ? '' : String(v)).trim(); }
-    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function setMsg(t, err){ const el=document.getElementById('msg'); el.textContent=t||''; el.classList.toggle('value-negative', !!err); }
-    function add(role, text){
-      state.history.push({ rol: role === 'user' ? 'user' : 'assistant', contenido: norm(text) });
-      render();
-    }
-    function render(){
-      const root = document.getElementById('messages');
-      if (!state.history.length) {
-        root.innerHTML = '<div class="ria-msg system">Pregunta por tus reportes o pide: "genera reporte de flujo de caja en PDF".</div>';
-        return;
+    (function(){
+      function notifyParentOpenDrawer() {
+        try {
+          var payload = {
+            type: 'pcs-ai-drawer-open',
+            mode: 'reportes',
+            prompt: 'Genera un reporte o responde una pregunta de reportes para la empresa actual.'
+          };
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage(payload, '*');
+            return true;
+          }
+        } catch (error) {}
+        return false;
       }
-      root.innerHTML = state.history.map(m => '<div class="ria-msg '+(m.rol === 'user' ? 'user' : 'ai')+'">'+esc(m.contenido)+'</div>').join('');
-      root.scrollTop = root.scrollHeight;
-    }
-    async function api(url, opts){
-      const res = await fetch(url, Object.assign({ credentials:'same-origin' }, opts || {}));
-      const text = await res.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch(_) {}
-      if (!res.ok) {
-        const e = new Error((data && data.error) || text || ('HTTP ' + res.status));
-        e.payload = data || {};
-        e.status = res.status;
-        throw e;
+
+      function setMsg(text, isError) {
+        var el = document.getElementById('msg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.toggle('value-negative', !!isError);
       }
-      return data;
-    }
-    function setDefaultDates(){
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const day = String(d.getDate()).padStart(2,'0');
-      document.getElementById('desde').value = y + '-' + m + '-01';
-      document.getElementById('hasta').value = y + '-' + m + '-' + day;
-    }
-    async function loadCatalog(){
-      const data = await api('/api/empresa/reportes?action=catalogo&empresa_id=' + encodeURIComponent(state.empresaID));
-      state.datasets = Array.isArray(data.datasets) ? data.datasets : [];
-      const sel = document.getElementById('dataset');
-      sel.innerHTML = '<option value="">Que la IA elija</option>' + state.datasets.map(d => '<option value="'+esc(d.key)+'">'+esc(d.title || d.key)+'</option>').join('');
-    }
-    function updateUsage(data, modo){
-      const u = data && data.usage ? data.usage : null;
-      if (!u) return;
-      const label = String(u.daily_used || 0) + '/' + String(u.daily_limit || 0) + ' usados, quedan ' + String(u.daily_remaining || 0);
-      if (modo === 'reporte') document.getElementById('usageReport').textContent = 'Reportes IA: ' + label;
-      else document.getElementById('usageText').textContent = 'Texto IA: ' + label;
-    }
-    async function submit(ev){
-      ev.preventDefault();
-      const pregunta = norm(document.getElementById('pregunta').value);
-      if (!pregunta) { setMsg('Escribe una pregunta o solicitud.', true); return; }
-      const modo = norm(document.getElementById('modo').value) || 'texto';
-      add('user', pregunta);
-      document.getElementById('pregunta').value = '';
-      setMsg('Procesando...', false);
-      document.getElementById('btnSend').disabled = true;
-      try {
-        const data = await api('/api/empresa/reportes_ia_chat', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-            empresa_id: state.empresaID,
-            modo: modo,
-            pregunta: pregunta,
-            dataset: document.getElementById('dataset').value,
-            format: document.getElementById('format').value,
-            desde: document.getElementById('desde').value,
-            hasta: document.getElementById('hasta').value,
-            historial: state.history.slice(-8)
-          })
-        });
-        let respuesta = norm(data.respuesta || 'Listo.');
-        if (data.export_url) {
-          respuesta += '\n\nReporte: ' + norm(data.title || data.dataset) + '\nFormato: ' + norm(data.format).toUpperCase() + '\nEnlace: ' + data.export_url;
-          setTimeout(() => { window.open(data.export_url, '_blank', 'noopener,noreferrer'); }, 250);
+
+      function openCentral() {
+        if (notifyParentOpenDrawer()) {
+          setMsg('Solicitud enviada al asistente central.', false);
+          return;
         }
-        add('assistant', respuesta);
-        updateUsage(data, modo);
-        setMsg('', false);
-      } catch(e) {
-        add('assistant', 'Error: ' + (e.message || 'No se pudo procesar.'));
-        setMsg(e.message || 'No se pudo procesar.', true);
-      } finally {
-        document.getElementById('btnSend').disabled = false;
+        setMsg('No se pudo abrir el asistente central desde esta vista. Vuelve al panel principal y usa el botón flotante de IA.', true);
       }
-    }
-    state.empresaID = Number(qp('empresa_id') || qp('id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('empresa_id') || 0);
-    setDefaultDates();
-    render();
-    document.getElementById('form').addEventListener('submit', submit);
-    document.getElementById('btnClear').addEventListener('click', () => { state.history = []; render(); setMsg('', false); });
-    if (!state.empresaID) setMsg('Falta empresa_id.', true);
-    else loadCatalog().catch(e => setMsg(e.message || 'No se pudo cargar catalogo.', true));
+
+      document.getElementById('openCentralAI').addEventListener('click', openCentral);
+      window.setTimeout(openCentral, 250);
+    })();
   </script>
 </body>
 </html>

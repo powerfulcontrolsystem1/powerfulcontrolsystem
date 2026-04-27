@@ -302,6 +302,15 @@ func isApprovedPaymentStatus(status string) bool {
 	return status == "approved" || status == "accredited"
 }
 
+func isRejectedPaymentStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "declined", "rejected", "failed", "failure", "voided", "canceled", "cancelled", "error":
+		return true
+	default:
+		return false
+	}
+}
+
 func parsePaymentPayloadMap(raw string) map[string]interface{} {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -479,11 +488,32 @@ func extractCustomerEmailFromPaymentPayload(payload map[string]interface{}) stri
 	return ""
 }
 
-func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec *dbpkg.EpaycoPaymentRecord) (string, error) {
-	if payRec == nil || !payRec.RawPayload.Valid {
-		return "", fmt.Errorf("payload del pago no disponible para notificar activacion de licencia")
+func paymentPayloadFlagIsTrue(rawPayload, key string) bool {
+	payload := parsePaymentPayloadMap(rawPayload)
+	if len(payload) == 0 {
+		return false
 	}
-	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
+	raw := strings.TrimSpace(fmt.Sprint(payload[key]))
+	switch strings.ToLower(raw) {
+	case "1", "true", "si", "yes":
+		return true
+	default:
+		return false
+	}
+}
+
+func buildPaymentPayloadFlagPatch(flagKey, recipientKey, referenceKey, recipient, reference string) string {
+	patchBytes, _ := json.Marshal(map[string]interface{}{
+		flagKey:                      true,
+		recipientKey:                 strings.TrimSpace(recipient),
+		flagKey + "_at":             time.Now().Format(time.RFC3339),
+		referenceKey:                 strings.TrimSpace(reference),
+	})
+	return string(patchBytes)
+}
+
+func resolveLicenciaPaymentRecipient(dbSuper *sql.DB, empresaID int64, rawPayload string) (string, error) {
+	payload := parsePaymentPayloadMap(rawPayload)
 	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
 	if toEmail == "" && empresaID > 0 {
 		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
@@ -492,7 +522,7 @@ func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec
 		}
 	}
 	if toEmail == "" {
-		return "", fmt.Errorf("correo del cliente no disponible para notificar activacion de licencia")
+		return "", fmt.Errorf("correo del cliente no disponible")
 	}
 	if _, err := mail.ParseAddress(toEmail); err != nil {
 		return "", fmt.Errorf("correo del cliente invalido: %w", err)
@@ -500,21 +530,43 @@ func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec
 	return toEmail, nil
 }
 
+func buildLicenciaRetryURL(r *http.Request, dbSuper *sql.DB, licenciaID, empresaID int64) string {
+	if licenciaID <= 0 {
+		return ""
+	}
+	baseURL, err := resolvePaymentBaseURL(r, dbSuper)
+	if err != nil || strings.TrimSpace(baseURL) == "" {
+		scheme := "https"
+		host := ""
+		if r != nil {
+			scheme = resolveRequestScheme(r)
+			host = resolveRequestHost(r)
+		}
+		if strings.TrimSpace(host) == "" {
+			baseURL = canonicalPaymentPublicBaseURL
+		} else {
+			baseURL = scheme + "://" + host
+		}
+	}
+	target := strings.TrimRight(strings.TrimSpace(baseURL), "/") + "/pagar_licencia.html?licencia_id=" + strconv.FormatInt(licenciaID, 10)
+	if empresaID > 0 {
+		target += "&empresa_id=" + strconv.FormatInt(empresaID, 10)
+	}
+	return target
+}
+
+func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec *dbpkg.EpaycoPaymentRecord) (string, error) {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return "", fmt.Errorf("payload del pago no disponible para notificar activacion de licencia")
+	}
+	return resolveLicenciaPaymentRecipient(dbSuper, empresaID, payRec.RawPayload.String)
+}
+
 func epaycoActivationEmailAlreadySent(payRec *dbpkg.EpaycoPaymentRecord) bool {
 	if payRec == nil || !payRec.RawPayload.Valid {
 		return false
 	}
-	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
-	if len(payload) == 0 {
-		return false
-	}
-	raw := strings.TrimSpace(fmt.Sprint(payload["licencia_activation_email_sent"]))
-	switch strings.ToLower(raw) {
-	case "1", "true", "si", "yes":
-		return true
-	default:
-		return false
-	}
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent")
 }
 
 func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentRecord, recipient, reference string) error {
@@ -525,16 +577,13 @@ func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentR
 	if status == "" {
 		status = "APPROVED"
 	}
-	markerRawBytes, err := json.Marshal(map[string]interface{}{
-		"licencia_activation_email_sent":    true,
-		"licencia_activation_email_to":      strings.TrimSpace(recipient),
-		"licencia_activation_email_sent_at": time.Now().Format(time.RFC3339),
-		"licencia_activation_email_ref":     strings.TrimSpace(reference),
-	})
-	if err != nil {
-		return err
-	}
-	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, string(markerRawBytes))
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildPaymentPayloadFlagPatch(
+		"licencia_activation_email_sent",
+		"licencia_activation_email_to",
+		"licencia_activation_email_ref",
+		recipient,
+		reference,
+	))
 	transactionID := strings.TrimSpace(payRec.TransactionID.String)
 	recordReference := strings.TrimSpace(payRec.Reference.String)
 	if transactionID != "" {
@@ -544,6 +593,44 @@ func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentR
 	}
 	if recordReference != "" {
 		if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func wompiActivationEmailAlreadySent(payRec *dbpkg.WompiPaymentRecord) bool {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return false
+	}
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent")
+}
+
+func markWompiActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRecord, recipient, reference string) error {
+	if dbSuper == nil || payRec == nil {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildPaymentPayloadFlagPatch(
+		"licencia_activation_email_sent",
+		"licencia_activation_email_to",
+		"licencia_activation_email_ref",
+		recipient,
+		reference,
+	))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
 			return err
 		}
 	}
@@ -568,6 +655,194 @@ func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID 
 	if err := markEpaycoActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
 		return err
 	}
+	return nil
+}
+
+func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.WompiPaymentRecord, provider, reference string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if wompiActivationEmailAlreadySent(payRec) {
+		return nil
+	}
+	recipient, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, payRec.RawPayload.String)
+	if err != nil {
+		return err
+	}
+	epaycoLike := &dbpkg.EpaycoPaymentRecord{
+		RawPayload: payRec.RawPayload,
+	}
+	if err := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, epaycoLike, provider, reference); err != nil {
+		return err
+	}
+	if err := markWompiActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
+		return err
+	}
+	return nil
+}
+
+func sendLicenciaPaymentRejectedEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, provider, reference, status, rawPayload string) error {
+	if dbSuper == nil || lic == nil {
+		return nil
+	}
+	toEmail, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, rawPayload)
+	if err != nil {
+		return err
+	}
+	empresaNombre := ""
+	if empresaID > 0 {
+		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+		if err == nil && empresa != nil {
+			empresaNombre = strings.TrimSpace(empresa.Nombre)
+		}
+	}
+	safeEmpresa := strings.TrimSpace(empresaNombre)
+	if safeEmpresa == "" {
+		safeEmpresa = "tu empresa"
+	}
+	safeProvider := strings.Title(strings.ToLower(strings.TrimSpace(provider)))
+	if safeProvider == "" {
+		safeProvider = "la pasarela de pago"
+	}
+	retryURL := buildLicenciaRetryURL(r, dbSuper, lic.ID, empresaID)
+	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaPaymentRejected, map[string]string{
+		"company_name":      safeEmpresa,
+		"license_name":      strings.TrimSpace(lic.Nombre),
+		"provider":          safeProvider,
+		"reference":         strings.TrimSpace(reference),
+		"status":            strings.ToUpper(strings.TrimSpace(status)),
+		"retry_url":         retryURL,
+		"license_name_line": templateLine("Licencia: ", strings.TrimSpace(lic.Nombre)),
+		"reference_line":    templateLine("Referencia del pago: ", strings.TrimSpace(reference)),
+	})
+	if err != nil {
+		return err
+	}
+	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"status":%q,"retry_url":%q}`, provider, lic.ID, empresaID, reference, status, retryURL)
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_pago_rechazado", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
+	}
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" {
+		return fmt.Errorf("gmail.smtp_email no configurado")
+	}
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return err
+	}
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" {
+		return fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+	smtpHost = strings.TrimSpace(smtpHost)
+	smtpPort = strings.TrimSpace(smtpPort)
+	fromName = strings.TrimSpace(fromName)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+	mailHostForAuth := smtpHost
+	if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
+		mailHostForAuth = h
+	}
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	addr := net.JoinHostPort(smtpHost, smtpPort)
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + asunto + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		cuerpo
+	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+}
+
+func trySendLicenciaPaymentRejectedEmailForEpayco(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference, status string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_rejected_email_sent") {
+		return nil
+	}
+	recipient, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, payRec.RawPayload.String)
+	if err != nil {
+		return err
+	}
+	if err := sendLicenciaPaymentRejectedEmail(r, dbSuper, empresaID, lic, provider, reference, status, payRec.RawPayload.String); err != nil {
+		return err
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildPaymentPayloadFlagPatch(
+		"licencia_rejected_email_sent",
+		"licencia_rejected_email_to",
+		"licencia_rejected_email_ref",
+		recipient,
+		reference,
+	))
+	recordStatus := strings.TrimSpace(payRec.Status.String)
+	if recordStatus == "" {
+		recordStatus = status
+	}
+	if txID := strings.TrimSpace(payRec.TransactionID.String); txID != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, txID, recordStatus, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if refID := strings.TrimSpace(payRec.Reference.String); refID != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, refID, recordStatus, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func trySendLicenciaPaymentRejectedEmailForWompi(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.WompiPaymentRecord, provider, reference, status string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_rejected_email_sent") {
+		return nil
+	}
+	recipient, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, payRec.RawPayload.String)
+	if err != nil {
+		return err
+	}
+	if err := sendLicenciaPaymentRejectedEmail(r, dbSuper, empresaID, lic, provider, reference, status, payRec.RawPayload.String); err != nil {
+		return err
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildPaymentPayloadFlagPatch(
+		"licencia_rejected_email_sent",
+		"licencia_rejected_email_to",
+		"licencia_rejected_email_ref",
+		recipient,
+		reference,
+	))
+	recordStatus := strings.TrimSpace(payRec.Status.String)
+	if recordStatus == "" {
+		recordStatus = status
+	}
+	if txID := strings.TrimSpace(payRec.TransactionID.String); txID != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, txID, recordStatus, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if refID := strings.TrimSpace(payRec.Reference.String); refID != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, refID, recordStatus, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
 	return nil
 }
 
@@ -1288,6 +1563,8 @@ type licenciaPaymentMethodStatus struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
+var paymentCountryConfigCatalog = []string{"CO", "EC", "PA", "MX", "US", "ES"}
+
 func normalizePaisCodigo(raw string) string {
 	code := strings.ToUpper(strings.TrimSpace(raw))
 	if code == "" {
@@ -1384,6 +1661,35 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 			SortOrder:   2,
 		},
 	}, nil
+}
+
+func loadCountryProviderOverrides(dbSuper *sql.DB, providerID string) map[string]bool {
+	result := make(map[string]bool, len(paymentCountryConfigCatalog))
+	for _, countryCode := range paymentCountryConfigCatalog {
+		result[countryCode] = resolveCountryProviderEnabled(dbSuper, countryCode, providerID, true)
+	}
+	return result
+}
+
+func saveCountryProviderOverrides(dbSuper *sql.DB, providerID string, overrides map[string]bool) error {
+	for countryCode, enabled := range overrides {
+		normalizedCountry := normalizePaisCodigo(countryCode)
+		if normalizedCountry == "" {
+			continue
+		}
+		key := countryProviderEnabledKey(normalizedCountry, providerID)
+		if key == "" {
+			continue
+		}
+		value := "0"
+		if enabled {
+			value = "1"
+		}
+		if err := dbpkg.SetConfigValue(dbSuper, key, value, false); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaPaymentMethodStatus, error) {
@@ -1929,6 +2235,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"mode_set":              configuredMode != "",
 				"mode_source":           modeSource,
 				"mode_updated":          modeUpdated,
+				"country_overrides":     loadCountryProviderOverrides(dbSuper, "wompi"),
 			})
 			return
 
@@ -1937,6 +2244,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				PublicKey    string `json:"public_key"`
 				PrivateKey   string `json:"private_key"`
 				IntegrityKey string `json:"integrity_key"`
+				CountryOverrides map[string]bool `json:"country_overrides"`
 				Enabled      *bool  `json:"enabled"`
 				Mode         string `json:"mode"`
 				Encrypt      bool   `json:"encrypt"`
@@ -2011,6 +2319,12 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", v, false); err != nil {
 					http.Error(w, "failed to save wompi.enabled: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if len(payload.CountryOverrides) > 0 {
+				if err := saveCountryProviderOverrides(dbSuper, "wompi", payload.CountryOverrides); err != nil {
+					http.Error(w, "failed to save wompi country overrides: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}
@@ -2130,6 +2444,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"mode_set":             configuredMode != "",
 				"mode_source":          modeSource,
 				"mode_updated":         modeUpdated,
+				"country_overrides":    loadCountryProviderOverrides(dbSuper, "epayco"),
 			})
 			return
 
@@ -2140,6 +2455,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				PrivateKey string `json:"private_key"`
 				CustID     string `json:"cust_id"`
 				Key        string `json:"key"`
+				CountryOverrides map[string]bool `json:"country_overrides"`
 				Enabled    *bool  `json:"enabled"`
 				Mode       string `json:"mode"`
 				Encrypt    bool   `json:"encrypt"`
@@ -2236,6 +2552,12 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if normalizedMode != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.mode", normalizedMode, false); err != nil {
 					http.Error(w, "failed to save epayco.mode: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if len(payload.CountryOverrides) > 0 {
+				if err := saveCountryProviderOverrides(dbSuper, "epayco", payload.CountryOverrides); err != nil {
+					http.Error(w, "failed to save epayco country overrides: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}
@@ -2902,25 +3224,55 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		activated := false
-		if strings.EqualFold(status, "APPROVED") && hasContext {
-			lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-			if err == nil && lic != nil {
-				now := time.Now()
-				fechaInicio := now.Format("2006-01-02 15:04:05")
-				fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-				if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
-					log.Println("failed to activate licencia from Wompi:", err)
-				} else {
-					activated = true
-				}
-
-				// Registrar comisiones para asesor comercial si aplica.
-				go func(txID string, licID, empID int64) {
-					if txID == "" {
-						return
+		if hasContext {
+			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+			if licErr != nil {
+				log.Println("warning: failed to load licencia from Wompi status:", licErr)
+			} else if lic != nil {
+				if isApprovedPaymentStatus(status) {
+					act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+					if actErr != nil {
+						log.Println("warning: failed to activate licencia from Wompi:", actErr)
+					} else {
+						activated = act
+						if payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payErr != nil {
+							log.Println("warning: failed to reload Wompi payment for activation email:", payErr)
+						} else if payRec == nil && strings.TrimSpace(reference) != "" {
+							if payRecByRef, payRefErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference); payRefErr != nil {
+								log.Println("warning: failed to reload Wompi payment by reference for activation email:", payRefErr)
+							} else {
+								payRec = payRecByRef
+							}
+							if payRec != nil {
+								if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
+									log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
+								}
+							}
+						}
 					}
-					recordAsesorComercialComision(dbSuper, "wompi", txID, "", licID, empID)
-				}(transactionID, licenciaID, empresaID)
+
+					go func(txID string, licID, empID int64) {
+						if txID == "" {
+							return
+						}
+						recordAsesorComercialComision(dbSuper, "wompi", txID, "", licID, empID)
+					}(transactionID, licenciaID, empresaID)
+				} else if isRejectedPaymentStatus(status) {
+					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+					if payErr != nil {
+						log.Println("warning: failed to reload Wompi payment for rejected email:", payErr)
+					} else if payRec == nil && strings.TrimSpace(reference) != "" {
+						payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+						if payErr != nil {
+							log.Println("warning: failed to reload Wompi payment by reference for rejected email:", payErr)
+						}
+					}
+					if payRec != nil {
+						if mailErr := trySendLicenciaPaymentRejectedEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference, status); mailErr != nil {
+							log.Println("warning: failed to send licencia rejected email for Wompi status:", mailErr)
+						}
+					}
+				}
 			}
 		}
 
@@ -2997,12 +3349,51 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 			} else {
 				activated = act
+				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+				if licErr != nil {
+					log.Println("warning: failed to reload licencia after Wompi webhook activation:", licErr)
+				} else {
+					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+					if payErr != nil {
+						log.Println("warning: failed to reload Wompi payment for webhook activation email:", payErr)
+					} else if payRec == nil && strings.TrimSpace(reference) != "" {
+						payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+						if payErr != nil {
+							log.Println("warning: failed to reload Wompi payment by reference for webhook activation email:", payErr)
+						}
+					}
+					if payRec != nil {
+						if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
+							log.Println("warning: failed to send licencia activation email for Wompi webhook:", mailErr)
+						}
+					}
+				}
 			}
 
 			// Registrar comisiones para asesor comercial si aplica (webhook puede venir solo con referencia).
 			go func(txID, ref string, licID, empID int64) {
 				recordAsesorComercialComision(dbSuper, "wompi", txID, ref, licID, empID)
 			}(transactionID, reference, licenciaID, empresaID)
+		} else if isRejectedPaymentStatus(status) && hasContext {
+			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+			if licErr != nil {
+				log.Println("warning: failed to reload licencia for Wompi rejected email:", licErr)
+			} else {
+				payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+				if payErr != nil {
+					log.Println("warning: failed to reload Wompi payment for rejected webhook email:", payErr)
+				} else if payRec == nil && strings.TrimSpace(reference) != "" {
+					payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+					if payErr != nil {
+						log.Println("warning: failed to reload Wompi payment by reference for rejected webhook email:", payErr)
+					}
+				}
+				if payRec != nil {
+					if mailErr := trySendLicenciaPaymentRejectedEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference, status); mailErr != nil {
+						log.Println("warning: failed to send licencia rejected email for Wompi webhook:", mailErr)
+					}
+				}
+			}
 		}
 
 		ventaDigitalContextFound := false
@@ -3486,6 +3877,20 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			go func(txID, ref string, licID, empID int64) {
 				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
 			}(firstNonEmptyString(recordTransactionID, transactionID), firstNonEmptyString(recordReference, invoiceReference, reference), licenciaID, empresaID)
+		} else if isRejectedPaymentStatus(status) && hasContext {
+			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+			if licErr != nil {
+				log.Println("warning: failed to reload licencia for Epayco rejected email:", licErr)
+			} else {
+				payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+				if recErr != nil {
+					log.Println("warning: failed to reload Epayco payment for rejected email:", recErr)
+				} else if payRec != nil {
+					if mailErr := trySendLicenciaPaymentRejectedEmailForEpayco(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference), status); mailErr != nil {
+						log.Println("warning: failed to send licencia rejected email for Epayco status:", mailErr)
+					}
+				}
+			}
 		}
 
 		publicKey, _, privateKey, _ := resolveEpaycoCredentials(dbSuper)
@@ -3617,6 +4022,20 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			go func(txID, ref string, licID, empID int64) {
 				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
 			}(transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
+		} else if isRejectedPaymentStatus(status) && hasContext {
+			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+			if licErr != nil {
+				log.Println("warning: failed to reload licencia for Epayco webhook rejected email:", licErr)
+			} else {
+				payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+				if payErr != nil {
+					log.Println("warning: failed to reload Epayco payment for rejected webhook email:", payErr)
+				} else if payRec != nil {
+					if mailErr := trySendLicenciaPaymentRejectedEmailForEpayco(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference), status); mailErr != nil {
+						log.Println("warning: failed to send licencia rejected email for Epayco webhook:", mailErr)
+					}
+				}
+			}
 		}
 		if len(dbEmp) > 0 && dbEmp[0] != nil {
 			foundVP, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), status, payloadToSave)

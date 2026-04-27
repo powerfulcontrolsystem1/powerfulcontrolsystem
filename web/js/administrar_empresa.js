@@ -178,7 +178,6 @@ try {
     
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
-    linkReportesIAChat: { module: permModuleFinanzas, action: permActionRead },
     linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
 

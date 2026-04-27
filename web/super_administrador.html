@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -8,7 +8,6 @@
   <script src="/menu.js"></script>
 </head>
 <body class="admin-empresa-shell">
-  
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Super Administrador</h2>
@@ -24,7 +23,6 @@
         <li><a href="/super/pagina_principal.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Página principal</a></li>
         <li><a href="/super/contrato.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Contrato</a></li>
         <li><a href="/super/errores.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Errores del sistema</a></li>
-        <li><a href="/super/chat_con_ia_global.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Chat con IA global</a></li>
         <li><a href="/super/integracion_ia.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Integración IA</a></li>
         <li><a href="/super/configuracion_logica_del_chat_con_ia.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración lógica chat IA</a></li>
         <li><a href="/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Información para IA (Portal)</a></li>
@@ -47,7 +45,57 @@
       <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" class="admin-empresa-frame"></iframe>
     </main>
   </div>
-  
+
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon" src="/img/gpt.svg" alt="">Asistente IA
+  </button>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-header">
+      <div>
+        <h2 id="aiChatTitle">Asistente IA</h2>
+        <p>Usa el único asistente IA central del proyecto para consultas globales, análisis y tareas administrativas del superadministrador.</p>
+      </div>
+      <div class="ai-chat-header-actions">
+        <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+        <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
+      </div>
+    </div>
+    <div id="aiChatNotice" class="ai-chat-notice"></div>
+    <div id="aiChatMessages" class="ai-chat-messages"></div>
+    <div id="aiChatHints" class="ai-chat-hints is-hidden">
+      <p>Ejemplos de consultas rápidas:</p>
+      <ul>
+        <li>Muéstrame el estado global de licencias, empresas y administradores.</li>
+        <li>Resume los riesgos operativos o financieros detectados hoy.</li>
+        <li>Indícame qué configuraciones de IA, pagos o correo requieren revisión.</li>
+      </ul>
+    </div>
+    <form id="aiChatForm" class="ai-chat-form">
+      <div class="ai-chat-controls">
+        <label class="ai-chat-control-field" for="aiChatMode">
+          <span>Modo</span>
+          <select id="aiChatMode" class="form-input" aria-label="Modo del asistente IA">
+            <option value="operativo">Operativo</option>
+            <option value="ayudante">Ayudante por pasos</option>
+          </select>
+        </label>
+        <div class="ai-chat-control-field">
+          <span>Adjunto</span>
+          <div class="ai-chat-attachment-row">
+            <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
+            <button id="aiChatAttachBtn" type="button" class="btn secondary small">Adjuntar</button>
+            <button id="aiChatClearAttachment" type="button" class="btn secondary small is-hidden">Quitar</button>
+          </div>
+          <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+        </div>
+      </div>
+      <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+      <button type="submit" class="btn primary">Enviar</button>
+    </form>
+  </section>
+
   <script src="/js/super_administrador.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

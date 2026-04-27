@@ -331,6 +331,21 @@
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Países habilitados</label>
+          <label><input id="epaycoCountryCO" type="checkbox"> Colombia</label><br>
+          <label><input id="epaycoCountryEC" type="checkbox"> Ecuador</label><br>
+          <label><input id="epaycoCountryPA" type="checkbox"> Panamá</label>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Más países</label>
+          <label><input id="epaycoCountryMX" type="checkbox"> México</label><br>
+          <label><input id="epaycoCountryUS" type="checkbox"> Estados Unidos</label><br>
+          <label><input id="epaycoCountryES" type="checkbox"> España</label>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button id="saveEpaycoBtn" class="btn" style="display:none;">Guardar Epayco</button>
         <button id="editEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
@@ -402,6 +417,21 @@
           <label class="form-label">Opciones</label>
           <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
           <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pégalas cuando te las entregue Wompi.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Países habilitados</label>
+          <label><input id="wompiCountryCO" type="checkbox"> Colombia</label><br>
+          <label><input id="wompiCountryEC" type="checkbox"> Ecuador</label><br>
+          <label><input id="wompiCountryPA" type="checkbox"> Panamá</label>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Más países</label>
+          <label><input id="wompiCountryMX" type="checkbox"> México</label><br>
+          <label><input id="wompiCountryUS" type="checkbox"> Estados Unidos</label><br>
+          <label><input id="wompiCountryES" type="checkbox"> España</label>
         </div>
       </div>
 
@@ -1270,6 +1300,7 @@
             const hasWompiConfig = !!(wompi.public_key_set || wompi.private_key_set || wompi.integrity_key_set || wompi.mode_set);
             const enabledEl = document.getElementById('wompiEnabledToggle');
             if (enabledEl) enabledEl.checked = !!wompi.enabled;
+            applyPaymentCountryOverrides('wompi', wompi.country_overrides);
             refreshWompiEnabledHint();
             if (hasWompiConfig) {
               document.getElementById('wompiPublicKey').disabled = true;
@@ -1340,6 +1371,31 @@
         helpEl.innerText = enabledEl.checked
           ? 'Epayco activado: disponible en el portal de pago cuando tenga al menos la Public Key configurada.'
           : 'Epayco desactivado: no se mostrará como opción de pago en el portal público.';
+      }
+
+      const paymentCountryCatalog = ['CO', 'EC', 'PA', 'MX', 'US', 'ES'];
+
+      function paymentCountryToggleId(provider, countryCode){
+        return provider + 'Country' + String(countryCode || '').toUpperCase();
+      }
+
+      function applyPaymentCountryOverrides(provider, overrides){
+        const source = overrides && typeof overrides === 'object' ? overrides : {};
+        paymentCountryCatalog.forEach(function(countryCode){
+          const el = document.getElementById(paymentCountryToggleId(provider, countryCode));
+          if (!el) return;
+          el.checked = Object.prototype.hasOwnProperty.call(source, countryCode) ? !!source[countryCode] : true;
+        });
+      }
+
+      function readPaymentCountryOverrides(provider){
+        const payload = {};
+        paymentCountryCatalog.forEach(function(countryCode){
+          const el = document.getElementById(paymentCountryToggleId(provider, countryCode));
+          if (!el) return;
+          payload[countryCode] = !!el.checked;
+        });
+        return payload;
       }
 
       function refreshGmailRestartAlertHint(){
@@ -1791,7 +1847,7 @@
         const integrity = document.getElementById('wompiIntegrityKey').value.trim();
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
         const enabled = !!document.getElementById('wompiEnabledToggle').checked;
-        const payload = { encrypt: true, mode: mode, enabled: enabled };
+        const payload = { encrypt: true, mode: mode, enabled: enabled, country_overrides: readPaymentCountryOverrides('wompi') };
         if (pub) payload.public_key = pub;
         if (prv) payload.private_key = prv;
         if (integrity) payload.integrity_key = integrity;
@@ -1804,7 +1860,7 @@
       }
 
       async function persistEpaycoConfig(){
-        const payload = { encrypt: true, enabled: !!document.getElementById('epaycoEnabledToggle').checked };
+        const payload = { encrypt: true, enabled: !!document.getElementById('epaycoEnabledToggle').checked, country_overrides: readPaymentCountryOverrides('epayco') };
         const publicKey = (document.getElementById('epaycoPublicKey').value || '').trim();
         const customerId = (document.getElementById('epaycoCustomerId').value || '').trim();
         const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
@@ -2085,6 +2141,7 @@
           const cfg = await res.json();
           const enabledEl = document.getElementById('epaycoEnabledToggle');
           if (enabledEl) enabledEl.checked = !!cfg.enabled;
+          applyPaymentCountryOverrides('epayco', cfg.country_overrides);
           refreshEpaycoEnabledHint();
 
         if (cfg.public_key_set) {
@@ -2139,7 +2196,7 @@
           if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
         }
 
-        const payload = { encrypt: true, enabled: enabled };
+        const payload = { encrypt: true, enabled: enabled, country_overrides: readPaymentCountryOverrides('epayco') };
 	      if (publicKey) payload.public_key = publicKey;
 	      if (customerId) payload.customer_id = customerId;
 	      if (privateKey) payload.private_key = privateKey;
@@ -2405,6 +2462,20 @@
       document.getElementById('aiProviderOpenAIEnabled').addEventListener('change', function(){
     document.getElementById('saveAiConfigBtn').disabled = false;
     });
+      paymentCountryCatalog.forEach(function(countryCode){
+        const wompiEl = document.getElementById(paymentCountryToggleId('wompi', countryCode));
+        if (wompiEl) {
+          wompiEl.addEventListener('change', function(){
+            document.getElementById('saveWompiBtn').disabled = false;
+          });
+        }
+        const epaycoEl = document.getElementById(paymentCountryToggleId('epayco', countryCode));
+        if (epaycoEl) {
+          epaycoEl.addEventListener('change', function(){
+            document.getElementById('saveEpaycoBtn').disabled = false;
+          });
+        }
+      });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);
@@ -2433,5 +2504,3 @@
   </script>
 </body>
 </html>
-
-

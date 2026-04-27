@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -38,20 +38,12 @@
 
       <section class="card empresa-section">
         <div class="empresa-section-header">
-          <h2 class="m-0">Chat IA global</h2>
+          <h2 class="m-0">Asistente IA centralizado</h2>
         </div>
-        <div class="empresa-inline-actions actions-wrap-gap-10 mt-10">
-          <label class="form-group">
-            <span class="form-label">Modelo IA</span>
-            <select id="rgAiModelSelect" class="form-input"></select>
-          </label>
+        <p class="reportes-globales-ai-chat-info">Los reportes globales ahora usan el único asistente IA central del proyecto. Ábrelo desde el botón inferior para continuar tus consultas globales.</p>
+        <div class="form-actions">
+          <button id="rgOpenCentralAI" class="btn" type="button">Abrir asistente IA central</button>
         </div>
-        <p class="reportes-globales-ai-chat-info">Usa datos consolidados de todas las empresas creadas por este administrador. Pregunta por ventas, ingresos, balances o comparativos globales.</p>
-        <div id="rgAiChatMessages" class="reportes-globales-ai-chat"></div>
-        <form id="rgAiChatForm" class="reportes-globales-ai-chat-footer mt-12">
-          <input id="rgAiPrompt" class="form-input" type="text" placeholder="Escribe tu consulta al asistente global...">
-          <button id="rgAiSend" class="btn" type="submit">Enviar</button>
-        </form>
         <div id="rgAiChatMsg" class="form-help mt-8"></div>
       </section>
 
@@ -60,7 +52,7 @@
           <h2 class="m-0">Empresas del administrador</h2>
           <div class="empresa-inline-actions reportes-globales-selection-toolbar mb-10 actions-wrap-gap-10-end">
             <label class="reportes-globales-selection-field">
-              <span class="form-label">Modo de elección</span>
+              <span class="form-label">Modo de elecciÃ³n</span>
               <select id="rgTipoSeleccion" class="form-input">
                 <option value="multiple">Varias empresas</option>
                 <option value="single">Una empresa</option>
@@ -71,7 +63,7 @@
               <select id="rgEmpresaUnica" class="form-input"></select>
             </label>
             <div class="reportes-globales-selection-resume">
-              <span class="form-label">Selección actual</span>
+              <span class="form-label">SelecciÃ³n actual</span>
               <strong id="rgSeleccionResumen">0 empresas</strong>
             </div>
           </div>
@@ -129,17 +121,17 @@
       </div>
       <div class="reportes-globales-executive mt-14">
         <article class="reportes-globales-executive-card executive-primary">
-          <span class="reportes-globales-chip">Empresa líder</span>
+          <span class="reportes-globales-chip">Empresa lÃ­der</span>
           <h3 id="rgExecutiveTopEmpresa">Sin datos</h3>
           <p id="rgExecutiveTopEmpresaMeta" class="form-help m-0"></p>
         </article>
         <article class="reportes-globales-executive-card">
-          <span class="reportes-globales-chip">Mayor presión</span>
+          <span class="reportes-globales-chip">Mayor presiÃ³n</span>
           <h3 id="rgExecutiveRiskEmpresa">Sin datos</h3>
           <p id="rgExecutiveRiskEmpresaMeta" class="form-help m-0"></p>
         </article>
         <article class="reportes-globales-executive-card">
-          <span class="reportes-globales-chip">Concentración</span>
+          <span class="reportes-globales-chip">ConcentraciÃ³n</span>
           <h3 id="rgExecutiveConcentration">0%</h3>
           <p id="rgExecutiveConcentrationMeta" class="form-help m-0"></p>
         </article>
@@ -171,7 +163,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 class="m-0">Gráficos globales</h2>
+        <h2 class="m-0">GrÃ¡ficos globales</h2>
       </div>
       <div class="reportes-globales-chart-grid mt-14">
         <article class="reportes-globales-chart-card">
@@ -219,5 +211,28 @@
     </section>
   </div>
   <script src="/js/super_reportes_globales.js"></script>
+  <script>
+    (function(){
+      var btn = document.getElementById('rgOpenCentralAI');
+      var msg = document.getElementById('rgAiChatMsg');
+      if (!btn) return;
+      btn.addEventListener('click', function(){
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'pcs-ai-drawer-open',
+              mode: 'operativo',
+              prompt: 'Analiza los reportes globales y responde con hallazgos clave.'
+            }, '*');
+            if (msg) msg.textContent = 'Solicitud enviada al asistente IA central.';
+            return;
+          }
+        } catch (error) {}
+        if (msg) msg.textContent = 'No se pudo abrir el asistente central desde esta vista.';
+      });
+    })();
+  </script>
 </body>
 </html>
+
+
