@@ -22,7 +22,11 @@
     html[data-theme="dark"] .portal-header .brand-logo,
     html[data-theme="dark-violet"] .portal-header .brand-logo,
     html[data-theme="dark-emerald"] .portal-header .brand-logo{
-      color: rgba(255,255,255,0.92);
+      /* Más claro en modo oscuro: mejor contraste y legibilidad */
+      color: rgba(255,255,255,0.985);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,0.35),
+        0 10px 26px rgba(0,0,0,0.55);
     }
     .portal-header-btn { text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; background: var(--accent); color: #fff; transition: opacity 0.3s; }
     .portal-header-btn:hover { opacity: 0.9; }
@@ -247,19 +251,35 @@
       padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid var(--border);
-      line-height: 1.35;
+      line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
       background: rgba(255,255,255,0.04);
       color: var(--text);
+      font-family: "Google Sans Flex","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+      font-size: 1.02rem;
     }
     .ai-chat-bubble.user { justify-content: flex-end; }
     .ai-chat-bubble.user .ai-chat-content {
       background: rgba(31, 142, 241, 0.18);
       border-color: rgba(31, 142, 241, 0.35);
+      color: color-mix(in srgb, var(--text) 92%, var(--accent) 8%);
     }
     .ai-chat-bubble.assistant { justify-content: flex-start; }
+    .ai-chat-bubble.assistant .ai-chat-content{
+      color: color-mix(in srgb, var(--text) 92%, var(--success) 8%);
+    }
     .error { color: #ff9b9b; }
+
+    /* Chat (Index): input del mismo ancho del panel y tipografía más grande */
+    #pcsPublicChatForm { width: 100%; }
+    #pcsPublicChatInput{
+      width: 100%;
+      box-sizing: border-box;
+      font-family: "Google Sans Flex","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>

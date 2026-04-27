@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Papelera — Chat y tareas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+  <style>
+    body{margin:0;padding:18px}
+    .cta-nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .cta-nav a{padding:10px 14px;border-radius:999px;border:1px solid var(--border);text-decoration:none;font-weight:900;color:var(--text);background:var(--surface-soft)}
+    .cta-nav a.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+    .trash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
+    .trash-item{border:1px solid var(--border);border-radius:14px;padding:12px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 14px 30px rgba(0,0,0,.12)}
+    .trash-item .mini{color:var(--muted);font-size:.86rem}
+    .trash-item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}
+  </style>
+</head>
+<body class="super-page">
+  <div class="container" style="max-width:1100px;margin:0 auto;">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0;">Papelera temporal</h1>
+        <p class="form-help" style="margin:6px 0 0 0;">Aquí aparecen los elementos eliminados del módulo (conversaciones, mensajes, tareas y citas) para restaurarlos.</p>
+      </div>
+      <div class="cta-nav" aria-label="Menú de módulo">
+        <a href="/administrar_empresa/chat_tareas_chats.html">Chats</a>
+        <a href="/administrar_empresa/chat_tareas_agenda.html">Agenda</a>
+        <a href="/administrar_empresa/chat_tareas_tareas.html">Tareas</a>
+        <a class="active" href="/administrar_empresa/chat_tareas_papelera.html">Papelera</a>
+      </div>
+    </div>
+
+    <div class="form-row compact-row" style="margin-top:12px;">
+      <div class="form-col" style="min-width:220px;">
+        <label class="form-label" for="tipo">Tipo</label>
+        <select id="tipo" class="form-input">
+          <option value="conversacion">Conversaciones</option>
+          <option value="mensaje">Mensajes</option>
+          <option value="tarea">Tareas</option>
+          <option value="cita">Agenda / Citas</option>
+        </select>
+      </div>
+      <div class="form-col form-col-end">
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+      </div>
+    </div>
+    <div id="msg" class="form-help"></div>
+    <div id="list" class="trash-grid"></div>
+  </div>
+
+  <script>
+    function n(v){ const x=Number(String(v||'').trim()); return Number.isFinite(x) && x>0 ? Math.trunc(x) : 0; }
+    function txt(v){ return String(v==null?'':v).trim(); }
+    function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function resolveEmpresaId(){ try{ const p=new URLSearchParams(location.search); const id=n(p.get('empresa_id')||p.get('id')); if(id) return id; }catch(_){} try{ if(parent&&parent.__resolveEmpresaIdContext) return n(parent.__resolveEmpresaIdContext()); }catch(_){} return n(sessionStorage.getItem('empresa_id')||localStorage.getItem('empresa_id')); }
+    async function api(path, opts){ const res=await fetch(path, Object.assign({credentials:'same-origin'}, opts||{})); const text=await res.text(); let data={}; try{ data=text?JSON.parse(text):{}; }catch(_){ data={raw:text}; } if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status)); return data; }
+    const state={empresaId:0};
+
+    function setMsg(m,e){ msg.textContent=m||''; msg.style.color=e?'#ef5350':''; }
+
+    function render(rows){
+      list.innerHTML='';
+      if(!rows || !rows.length){
+        list.innerHTML='<div class="empty">La papelera está vacía.</div>';
+        return;
+      }
+      rows.forEach(function(it){
+        const div=document.createElement('article');
+        div.className='trash-item';
+        const title = it.titulo || (it.contenido ? (String(it.contenido).slice(0,80)+'…') : ('Item #'+it.id));
+        div.innerHTML =
+          '<strong>'+esc(title)+'</strong>'+
+          (it.descripcion ? '<div class="mini">'+esc(it.descripcion)+'</div>' : '')+
+          (it.eliminado_en ? '<div class="mini">Eliminado: '+esc(it.eliminado_en)+'</div>' : '')+
+          '<div class="actions">'+
+            '<button class="btn" data-restore="1" data-id="'+esc(it.id)+'">Restaurar</button>'+
+          '</div>';
+        list.appendChild(div);
+      });
+      list.querySelectorAll('button[data-restore="1"]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          try{
+            const id=n(b.getAttribute('data-id'));
+            b.disabled=true;
+            await api('/api/empresa/chat_tareas/papelera?action=restaurar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({empresa_id:state.empresaId, tipo:tipo.value, id:id})});
+            await load();
+          }catch(e){ setMsg(e.message||String(e), true); }
+          finally{ b.disabled=false; }
+        });
+      });
+    }
+
+    async function load(){
+      try{
+        setMsg('Cargando papelera...', false);
+        const data = await api('/api/empresa/chat_tareas/papelera?empresa_id='+state.empresaId+'&tipo='+encodeURIComponent(tipo.value)+'&limit=80&offset=0');
+        render(data.rows||[]);
+        setMsg('', false);
+      }catch(e){
+        setMsg(e.message||String(e), true);
+        list.innerHTML='<div class="empty">No se pudo cargar la papelera.</div>';
+      }
+    }
+
+    state.empresaId = resolveEmpresaId();
+    reloadBtn.onclick=load;
+    tipo.onchange=load;
+    if(!state.empresaId){ setMsg('No se encontró empresa_id.', true); }
+    else load();
+  </script>
+</body>
+</html>
+

@@ -292,6 +292,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_conversaciones", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas_conversaciones", "eliminado_en", "TEXT")
 
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_participantes", "participante_tipo", "TEXT DEFAULT 'usuario'"); err != nil {
 		return err
@@ -320,6 +321,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_participantes", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas_participantes", "eliminado_en", "TEXT")
 
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "autor_tipo", "TEXT DEFAULT 'admin'"); err != nil {
 		return err
@@ -354,6 +356,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "eliminado_en", "TEXT")
 
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_adjuntos", "tipo_archivo", "TEXT DEFAULT 'otro'"); err != nil {
 		return err
@@ -367,6 +370,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_adjuntos", "tamano_bytes", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas_adjuntos", "eliminado_en", "TEXT")
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_adjuntos", "duracion_segundos", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
@@ -446,6 +450,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas", "eliminado_en", "TEXT")
 
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "conversacion_id", "INTEGER"); err != nil {
 		return err
@@ -504,6 +509,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	_ = ensureColumnIfMissing(dbConn, "chat_tareas_citas", "eliminado_en", "TEXT")
 
 	return nil
 }
@@ -786,7 +792,7 @@ func SetChatConversacionOperacionEstado(dbConn *sql.DB, empresaID, id int64, est
 	return err
 }
 
-// DeleteChatConversacion elimina una conversacion y sus dependencias.
+// DeleteChatConversacion mueve a papelera (soft-delete) una conversacion y sus dependencias.
 func DeleteChatConversacion(dbConn *sql.DB, empresaID, id int64) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -794,23 +800,43 @@ func DeleteChatConversacion(dbConn *sql.DB, empresaID, id int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_adjuntos
+	// Marca adjuntos/mensajes/participantes/tareas/citas como eliminados (con timestamp).
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_adjuntos
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
 		WHERE empresa_id = ?
-			AND mensaje_id IN (
-				SELECT id FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?
-			)`, empresaID, empresaID, id); err != nil {
+		  AND mensaje_id IN (
+		    SELECT id FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?
+		  )`, empresaID, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_mensajes
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_participantes
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ?`, empresaID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_citas
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ?`, empresaID, id); err != nil {
+		return err
+	}
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_conversaciones
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND id = ?`, empresaID, id); err != nil {
 		return err
 	}
 
@@ -968,9 +994,17 @@ func SetChatParticipanteEstado(dbConn *sql.DB, empresaID, conversacionID, id int
 	return err
 }
 
-// DeleteChatParticipante elimina un participante.
+// DeleteChatParticipante mueve a papelera (soft-delete) un participante.
 func DeleteChatParticipante(dbConn *sql.DB, empresaID, conversacionID, id int64) error {
-	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas_participantes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id)
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_participantes
+		SET estado = 'eliminado',
+		    eliminado_en = `+now+`,
+		    fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id)
 	return err
 }
 
@@ -1211,7 +1245,7 @@ func SetChatMensajeEstado(dbConn *sql.DB, empresaID, conversacionID, id int64, e
 	return refreshConversacionUltimoMensaje(dbConn, empresaID, conversacionID)
 }
 
-// DeleteChatMensaje elimina un mensaje y sus adjuntos.
+// DeleteChatMensaje mueve a papelera (soft-delete) un mensaje y sus adjuntos.
 func DeleteChatMensaje(dbConn *sql.DB, empresaID, conversacionID, id int64) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -1219,10 +1253,18 @@ func DeleteChatMensaje(dbConn *sql.DB, empresaID, conversacionID, id int64) erro
 	}
 	defer tx.Rollback()
 
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_adjuntos WHERE empresa_id = ? AND mensaje_id = ?`, empresaID, id); err != nil {
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_adjuntos
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND mensaje_id = ?`, empresaID, id); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM chat_tareas_mensajes WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_mensajes
+		SET estado = 'eliminado', eliminado_en = `+now+`, fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, empresaID, conversacionID, id); err != nil {
 		return err
 	}
 
@@ -1596,9 +1638,17 @@ func SetChatTareaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoTarea
 	return err
 }
 
-// DeleteChatTarea elimina una tarea.
+// DeleteChatTarea mueve a papelera (soft-delete) una tarea.
 func DeleteChatTarea(dbConn *sql.DB, empresaID, id int64) error {
-	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
+		SET estado = 'eliminado',
+		    eliminado_en = `+now+`,
+		    fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	return err
 }
 
@@ -1892,8 +1942,135 @@ func SetChatCitaReminderSent(dbConn *sql.DB, empresaID, id int64, sent bool) err
 	return err
 }
 
-// DeleteChatCita elimina una cita.
+// DeleteChatCita mueve a papelera (soft-delete) una cita.
 func DeleteChatCita(dbConn *sql.DB, empresaID, id int64) error {
-	_, err := execSQLCompat(dbConn, `DELETE FROM chat_tareas_citas WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
+		SET estado = 'eliminado',
+		    eliminado_en = `+now+`,
+		    fecha_actualizacion = `+now+`
+		WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	return err
+}
+
+// RestoreChatEntity restaura (saca de papelera) entidades del módulo chat/tareas.
+// Nota: para conversacion, restaura también dependencias asociadas.
+func RestoreChatEntity(dbConn *sql.DB, empresaID int64, tipo string, id int64) error {
+	tipo = strings.ToLower(strings.TrimSpace(tipo))
+	if dbConn == nil || empresaID <= 0 || id <= 0 {
+		return fmt.Errorf("parametros invalidos")
+	}
+	now := "datetime('now','localtime')"
+	if shouldUsePostgresCompat(dbConn) {
+		now = "CURRENT_TIMESTAMP"
+	}
+	switch tipo {
+	case "conversacion":
+		tx, err := dbConn.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_conversaciones SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND id=?`, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_participantes SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND conversacion_id=?`, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_mensajes SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND conversacion_id=?`, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_adjuntos SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND mensaje_id IN (SELECT id FROM chat_tareas_mensajes WHERE empresa_id=? AND conversacion_id=?)`, empresaID, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND conversacion_id=?`, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_citas SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND conversacion_id=?`, empresaID, id); err != nil {
+			return err
+		}
+		return tx.Commit()
+	case "mensaje":
+		tx, err := dbConn.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_mensajes SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND id=?`, empresaID, id); err != nil {
+			return err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE chat_tareas_adjuntos SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND mensaje_id=?`, empresaID, id); err != nil {
+			return err
+		}
+		return tx.Commit()
+	case "tarea":
+		_, err := execSQLCompat(dbConn, `UPDATE chat_tareas SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND id=?`, empresaID, id)
+		return err
+	case "cita":
+		_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND id=?`, empresaID, id)
+		return err
+	case "participante":
+		_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_participantes SET estado='activo', eliminado_en=NULL, fecha_actualizacion=`+now+` WHERE empresa_id=? AND id=?`, empresaID, id)
+		return err
+	default:
+		return fmt.Errorf("tipo invalido")
+	}
+}
+
+// ListChatTrash lista elementos eliminados recientemente. "tipo" soportado: conversacion, mensaje, tarea, cita.
+func ListChatTrash(dbConn *sql.DB, empresaID int64, tipo string, limit, offset int) ([]map[string]interface{}, error) {
+	tipo = strings.ToLower(strings.TrimSpace(tipo))
+	if empresaID <= 0 {
+		return []map[string]interface{}{}, nil
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var query string
+	switch tipo {
+	case "conversacion":
+		query = `SELECT id, titulo, COALESCE(descripcion,''), COALESCE(eliminado_en,''), COALESCE(estado,'') FROM chat_tareas_conversaciones WHERE empresa_id=? AND COALESCE(estado,'')='eliminado' ORDER BY eliminado_en DESC LIMIT ? OFFSET ?`
+	case "mensaje":
+		query = `SELECT id, COALESCE(contenido,''), COALESCE(eliminado_en,''), COALESCE(estado,'') FROM chat_tareas_mensajes WHERE empresa_id=? AND COALESCE(estado,'')='eliminado' ORDER BY eliminado_en DESC LIMIT ? OFFSET ?`
+	case "tarea":
+		query = `SELECT id, titulo, COALESCE(descripcion,''), COALESCE(eliminado_en,''), COALESCE(estado,'') FROM chat_tareas WHERE empresa_id=? AND COALESCE(estado,'')='eliminado' ORDER BY eliminado_en DESC LIMIT ? OFFSET ?`
+	case "cita":
+		query = `SELECT id, titulo, COALESCE(descripcion,''), COALESCE(eliminado_en,''), COALESCE(estado,'') FROM chat_tareas_citas WHERE empresa_id=? AND COALESCE(estado,'')='eliminado' ORDER BY eliminado_en DESC LIMIT ? OFFSET ?`
+	default:
+		return []map[string]interface{}{}, fmt.Errorf("tipo invalido")
+	}
+	rows, err := querySQLCompat(dbConn, query, empresaID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		switch tipo {
+		case "mensaje":
+			var id int64
+			var contenido, eliminadoEn, estado string
+			if err := rows.Scan(&id, &contenido, &eliminadoEn, &estado); err != nil {
+				return nil, err
+			}
+			out = append(out, map[string]interface{}{"id": id, "contenido": contenido, "eliminado_en": eliminadoEn, "estado": estado, "tipo": tipo})
+		default:
+			var id int64
+			var titulo, desc, eliminadoEn, estado string
+			if err := rows.Scan(&id, &titulo, &desc, &eliminadoEn, &estado); err != nil {
+				return nil, err
+			}
+			out = append(out, map[string]interface{}{"id": id, "titulo": titulo, "descripcion": desc, "eliminado_en": eliminadoEn, "estado": estado, "tipo": tipo})
+		}
+	}
+	return out, nil
 }

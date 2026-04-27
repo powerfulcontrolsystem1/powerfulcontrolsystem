@@ -8650,3 +8650,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 
 [2026-04-25] Seed operativo: tarifas Motel Calipso
 - `backend/tools/seed_motel_calipso_tarifas/main.go`: herramienta CLI para sembrar/actualizar tarifas por minutos y por día para todas las estaciones de una empresa (pensado para Motel Calipso, `empresa_id=7`) leyendo `estaciones_config` desde `empresa_estacion_prefs`. Requiere `DB_EMPRESAS_DSN`.
+
+[2026-04-26] Chat y tareas — subpáginas + papelera temporal
+- `web/administrar_empresa/chat_tareas_chats.html`: subpágina del módulo “Chat y tareas” enfocada en chats (mensajes con adjuntos) mediante vista embebida.
+- `web/administrar_empresa/chat_tareas_tareas.html`: subpágina del módulo enfocada en tareas asignadas y su workflow mediante vista embebida.
+- `web/administrar_empresa/chat_tareas_agenda.html`: subpágina del módulo enfocada en agenda/reuniones y calendario mediante vista embebida.
+- `web/administrar_empresa/chat_tareas_papelera.html`: UI de papelera temporal (restaurar) para conversaciones/mensajes/tareas/citas.

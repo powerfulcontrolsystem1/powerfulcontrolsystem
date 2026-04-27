@@ -693,7 +693,7 @@ try {
     var chatLink = document.getElementById("linkChatTareas");
     var href = chatLink
       ? withEmpresaParam(chatLink.getAttribute("href"), empresaId)
-      : withEmpresaParam("/administrar_empresa/chat_y_tareas.html", empresaId);
+      : withEmpresaParam("/administrar_empresa/chat_tareas_agenda.html", empresaId);
     if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
       return href;
     }

@@ -248,9 +248,35 @@
           summaryParams.set('licencia_id', String(licenciaId));
           if (empresaId) summaryParams.set('empresa_id', String(empresaId));
 
+          function resolveCountryFromBrowser(){
+            try {
+              const lang = String((navigator.languages && navigator.languages[0]) || navigator.language || '').trim();
+              const match = /-([A-Za-z]{2})\b/.exec(lang);
+              if (match && match[1]) return match[1].toUpperCase();
+            } catch (e) {}
+            return '';
+          }
+          function countryName(code){
+            const c = String(code || '').toUpperCase();
+            if (c === 'CO') return 'Colombia';
+            if (c === 'MX') return 'México';
+            if (c === 'US') return 'Estados Unidos';
+            if (c === 'ES') return 'España';
+            return c || 'No detectado';
+          }
+          function countryFlag(code){
+            const c = String(code || '').toUpperCase();
+            if (!/^[A-Z]{2}$/.test(c)) return '🏳️';
+            const A = 0x1F1E6;
+            const cc = c.charCodeAt(0) - 65;
+            const dd = c.charCodeAt(1) - 65;
+            return String.fromCodePoint(A + cc, A + dd);
+          }
+          const paisCodigo = resolveCountryFromBrowser() || 'CO';
+
           const [summaryRes, methodsRes] = await Promise.all([
             fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
-            fetch('/api/public/licencias/payment_methods', { credentials: 'same-origin' })
+            fetch('/api/public/licencias/payment_methods?pais_codigo=' + encodeURIComponent(paisCodigo), { credentials: 'same-origin' })
           ]);
           if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen público de la licencia'; return }
           if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
@@ -318,6 +344,9 @@
                   '<p class="checkout-eyebrow">Checkout de licencia</p>'+
                   '<h2 class="brand-title checkout-brand-title"><span>Confirma tu licencia</span><span>y completa el pago</span></h2>'+
                   '<p class="brand-subtitle checkout-brand-subtitle">Revisa los datos de la licencia, agrega descuentos si aplica y continúa con la pasarela disponible.</p>'+
+                  '<div class="checkout-mini-pills" style="margin-top:10px;">' +
+                    '<span class="checkout-mini-pill">País detectado: ' + escapeHtml(countryName(paisCodigo)) + ' ' + escapeHtml(countryFlag(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
+                  '</div>' +
                 '</div>'+
               '</section>'+
               '<div class="portal-grid portal-home-grid checkout-summary-grid">'+

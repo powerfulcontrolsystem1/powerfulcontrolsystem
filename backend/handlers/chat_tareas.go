@@ -1407,3 +1407,57 @@ func EmpresaChatTareasCitasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
 }
+
+// EmpresaChatTareasPapeleraHandler permite listar y restaurar elementos eliminados (papelera temporal).
+// GET  /api/empresa/chat_tareas/papelera?empresa_id=1&tipo=conversacion|mensaje|tarea|cita&limit&offset
+// POST /api/empresa/chat_tareas/papelera?action=restaurar  { empresa_id, tipo, id }
+func EmpresaChatTareasPapeleraHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			tipo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("tipo")))
+			limit, _ := parseIntQueryOptional(r, "limit")
+			offset, _ := parseIntQueryOptional(r, "offset")
+			rows, err := dbpkg.ListChatTrash(dbEmp, empresaID, tipo, limit, offset)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "rows": rows})
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action != "restaurar" {
+				http.Error(w, "action invalida", http.StatusBadRequest)
+				return
+			}
+			var payload struct {
+				EmpresaID int64  `json:"empresa_id"`
+				Tipo     string `json:"tipo"`
+				ID       int64  `json:"id"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 || payload.ID <= 0 {
+				http.Error(w, "empresa_id e id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.RestoreChatEntity(dbEmp, payload.EmpresaID, payload.Tipo, payload.ID); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+			return
+		}
+
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}

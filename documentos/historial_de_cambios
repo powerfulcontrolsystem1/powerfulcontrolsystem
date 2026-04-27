@@ -15269,3 +15269,39 @@ Archivos modificados:
 Descripcion:
 - Se ajustó el preset por defecto para tarifa por minutos a: `minutos_base=120`, `valor_base=35000`, `minutos_extra=60`, `valor_extra=20000`.
 - La lógica de “fracción” ya queda cubierta porque el cálculo usa `ceil` para los bloques extra cuando se excede el tiempo base.
+
+2026-04-26: Red social comercial — comentarios, reacciones y feed más profesional
+Archivos modificados:
+- backend/db/red_social.go
+- backend/handlers/red_social.go
+- backend/main.go
+- web/red_social_comercial.html
+Descripcion:
+- Se agregaron interacciones tipo “Facebook”: comentarios por publicación y reacciones con varios estados (me gusta, me encanta, etc.).
+- El feed público ahora muestra conteos/resumen de reacciones, total de comentarios y permite comentar/reaccionar sin autenticación (identidad anónima por `actor_key` local).
+- UI más compacta y carga por lotes mantiene navegación fluida.
+
+2026-04-26: Venta pública — experiencia tipo tienda (carrito, búsqueda y paginación)
+Archivos modificados:
+- web/venta_publica.html
+- web/pagar_productos_de_venta_publica.html
+Descripcion:
+- Catálogo público con búsqueda, carga incremental (limit/offset) y carrito lateral.
+- Checkout soporta pago por carrito (múltiples ítems) además del pago individual.
+
+2026-04-26: Chat y tareas — subpáginas (Chats/Tareas/Agenda) + papelera temporal
+Archivos modificados:
+- backend/db/chat_tareas.go
+- backend/handlers/chat_tareas.go
+- backend/main.go
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa.html
+- web/js/administrar_empresa.js
+Archivos agregados:
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_papelera.html
+Descripcion:
+- Se subdividió el módulo en tres entradas con menú: Chats, Tareas y Agenda (cada una carga la vista correspondiente).
+- Se cambió la eliminación a “papelera” (soft-delete) para conservar temporalmente conversaciones, mensajes, tareas y citas, y se agregó endpoint y UI para restaurar desde papelera.

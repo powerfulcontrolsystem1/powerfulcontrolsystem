@@ -89,6 +89,14 @@
           </div>
           <div id="chatMsg" class="form-help ai-gemini-form-msg"></div>
         </form>
+
+        <section id="inlineHistory" class="ai-gemini-inline-history" hidden>
+          <div class="ai-gemini-inline-history-head">
+            <div class="ai-gemini-inline-history-title">Conversaciones anteriores</div>
+            <button type="button" id="btnServerHistoryInline" class="btn secondary" hidden>Historial del servidor</button>
+          </div>
+          <div id="inlineConversationList"></div>
+        </section>
       </div>
     </main>
   </div>
@@ -111,6 +119,35 @@
       serverHistoryItems: [],
       viewingServerReadOnly: false
     };
+
+    // Modo solicitado: chat limpio arriba + historial abajo (sin sidebar).
+    (function initInlineHistoryMode(){
+      try {
+        document.body.classList.add("ai-gemini-inline-history-mode");
+        const inline = document.getElementById("inlineHistory");
+        const list = document.getElementById("conversationList");
+        const btnNew = document.getElementById("btnNewChat");
+        const topMeta = document.querySelector(".ai-gemini-topmeta");
+        const inlineListHost = document.getElementById("inlineConversationList");
+        if (btnNew && topMeta) {
+          topMeta.insertBefore(btnNew, topMeta.firstChild);
+        }
+        if (list && inlineListHost) {
+          inlineListHost.appendChild(list);
+        }
+        if (inline) {
+          inline.hidden = false;
+        }
+        // Ocultar botón de historial del servidor si existía en sidebar (empresa: lo mostramos abajo si aplica)
+        const btnServer = document.getElementById("btnServerHistory");
+        const btnInline = document.getElementById("btnServerHistoryInline");
+        if (btnServer && btnInline) {
+          btnInline.hidden = false;
+          btnInline.addEventListener("click", function(){ btnServer.click(); });
+          btnServer.style.display = "none";
+        }
+      } catch (e) {}
+    })();
 
     // Flags opcionales desde super (si no existe, queda desactivado).
     window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };

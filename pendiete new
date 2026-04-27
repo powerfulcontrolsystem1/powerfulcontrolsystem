@@ -1,0 +1,51 @@
+Pendiente (post-reinicio) — Pagos ePayco/Wompi + Licencias + País
+Fecha: 2026-04-26
+
+Estado actual
+- El backend ya tiene endpoints y webhooks para Wompi y ePayco en backend/handlers/payments_handlers.go.
+- El frontend de licencias ya tiene checkout en web/pagar_licencia.html y retorno ePayco en web/epayco/respuesta.html.
+- Se agregó detección de país (por navegador) y se consulta /api/public/licencias/payment_methods?pais_codigo=XX.
+- Se agregó un template nuevo de correo: licencia_payment_rejected (pendiente de usar en el flujo real).
+- Compila: go test ./... en backend pasa.
+
+Pendiente por implementar (funcional)
+1) Pago rechazado (PRO)
+   - En webhooks y/o transaction_status (Wompi/Epayco), cuando el estado sea DECLINED/REJECTED/FAILED/VOIDED/CANCELED:
+     - Persistir estado final y motivo.
+     - Enviar correo al cliente con mensaje claro + enlace para reintentar (retry_url apuntando a /pagar_licencia.html?licencia_id=...&empresa_id=...).
+     - Evitar duplicar correos: marcar en payload/raw_payload un flag “rejected_email_sent”.
+
+2) Activación de licencia solo con pago efectivo (PRO)
+   - Confirmar que ActivateLicenciaForEmpresa solo se llama con estados aprobados reales.
+   - Asegurar idempotencia: si webhook llega varias veces, no duplicar activación ni correos.
+
+3) Clasificación de pasarelas por país (PRO)
+   - Falta exponer en configuración avanzada (super) un bloque “Pasarelas por país”.
+   - Guardar claves tipo:
+       payments.country.CO.epayco_enabled
+       payments.country.CO.wompi_enabled
+     (y soportar más países después).
+   - Para Colombia: habilitar ePayco + Wompi por defecto (si están activos globalmente).
+
+4) UI de pasarelas con bandera (PRO)
+   - En pagar_licencia.html ya se muestra país y bandera (por navegador), pero falta:
+     - fallback si el país no se detecta (mantener CO).
+     - opción de “cambiar país” manual si el usuario está en VPN o detecta mal.
+
+5) Pruebas sandbox end-to-end
+   - Wompi sandbox: probar pago aprobado y declinado (Nequi).
+   - ePayco sandbox: probar estados y retorno + webhook.
+   - Verificar que al “aprobado” se activa licencia y llega correo de activación.
+   - Verificar que al “rechazado” NO se activa licencia y llega correo de rechazo con reintento.
+
+6) Documentación/trazabilidad
+   - Actualizar documentos/historial_de_cambios con:
+     - cambios en pagos (country gating, correos rechazado, UX bandera),
+     - comandos de prueba sandbox,
+     - checklist para pasar a producción.
+
+Pendiente (del archivo “Pendiente Notas”)
+- “en las licencias que las separe o agrupe por pais.”
+- “la pagina configuracion avanzada hacerle subpaginas”
+- (otros ítems del archivo Pendiente Notas siguen sin ejecutar; no se han abordado en este bloque de pagos)
+

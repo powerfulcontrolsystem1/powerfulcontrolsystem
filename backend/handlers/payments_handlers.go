@@ -1288,7 +1288,47 @@ type licenciaPaymentMethodStatus struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
-func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethodStatus, error) {
+func normalizePaisCodigo(raw string) string {
+	code := strings.ToUpper(strings.TrimSpace(raw))
+	if code == "" {
+		return ""
+	}
+	if len(code) > 2 {
+		code = code[:2]
+	}
+	for _, ch := range code {
+		if ch < 'A' || ch > 'Z' {
+			return ""
+		}
+	}
+	return code
+}
+
+func countryProviderEnabledKey(paisCodigo, providerID string) string {
+	paisCodigo = normalizePaisCodigo(paisCodigo)
+	providerID = strings.ToLower(strings.TrimSpace(providerID))
+	if paisCodigo == "" || providerID == "" {
+		return ""
+	}
+	return "payments.country." + paisCodigo + "." + providerID + "_enabled"
+}
+
+func resolveCountryProviderEnabled(dbSuper *sql.DB, paisCodigo, providerID string, defaultValue bool) bool {
+	key := countryProviderEnabledKey(paisCodigo, providerID)
+	if key == "" || dbSuper == nil {
+		return defaultValue
+	}
+	val, _, err := dbpkg.GetConfigValue(dbSuper, key)
+	if err != nil {
+		return defaultValue
+	}
+	if strings.TrimSpace(val) == "" {
+		return defaultValue
+	}
+	return parseBoolConfigValue(val)
+}
+
+func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]licenciaPaymentMethodStatus, error) {
 	epaycoPublicKey, _, epaycoPrivateKey, err := resolveEpaycoCredentials(dbSuper)
 	if err != nil {
 		return nil, err
@@ -1318,6 +1358,12 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethod
 		return nil, err
 	}
 
+	paisCodigo = normalizePaisCodigo(paisCodigo)
+	if paisCodigo != "" {
+		epaycoEnabled = epaycoEnabled && resolveCountryProviderEnabled(dbSuper, paisCodigo, "epayco", true)
+		wompiEnabled = wompiEnabled && resolveCountryProviderEnabled(dbSuper, paisCodigo, "wompi", true)
+	}
+
 	return []licenciaPaymentMethodStatus{
 		{
 			ID:          "epayco",
@@ -1341,7 +1387,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethod
 }
 
 func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaPaymentMethodStatus, error) {
-	statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper)
+	statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper, "")
 	if err != nil {
 		return licenciaPaymentMethodStatus{}, err
 	}
@@ -1360,7 +1406,8 @@ func PublicLicenciasPaymentMethodsHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper)
+		paisCodigo := normalizePaisCodigo(r.URL.Query().Get("pais_codigo"))
+		statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper, paisCodigo)
 		if err != nil {
 			http.Error(w, "failed to load payment methods: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -1376,6 +1423,7 @@ func PublicLicenciasPaymentMethodsHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
+			"pais_codigo":    paisCodigo,
 			"providers":      statuses,
 			"default_method": defaultMethod,
 		})

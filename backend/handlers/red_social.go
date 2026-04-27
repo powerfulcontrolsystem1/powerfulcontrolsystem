@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +16,23 @@ import (
 
 	"github.com/you/pos-backend/db"
 )
+
+func redSocialActorKeyFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if v := strings.TrimSpace(r.Header.Get("X-Actor-Key")); v != "" {
+		sum := sha256.Sum256([]byte(v))
+		return hex.EncodeToString(sum[:])
+	}
+	if c, err := r.Cookie("pcs_actor_key"); err == nil && c != nil {
+		if v := strings.TrimSpace(c.Value); v != "" {
+			sum := sha256.Sum256([]byte(v))
+			return hex.EncodeToString(sum[:])
+		}
+	}
+	return ""
+}
 
 func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -34,11 +53,143 @@ func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			actorKey := redSocialActorKeyFromRequest(r)
+			if actorKey != "" {
+				for i := range pubs {
+					if pubs[i].ID > 0 {
+						if reaction, rerr := db.GetUserReaction(dbEmpresas, pubs[i].ID, actorKey); rerr == nil {
+							pubs[i].UserReaction = reaction
+						}
+					}
+				}
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(pubs)
 			return
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+// PublicRedSocialInteraccionesHandler maneja comentarios y reacciones de publicaciones (estilo Facebook) en modo público.
+// Rutas:
+// - GET  /api/public/publicaciones/{id}/comentarios?limit&offset
+// - POST /api/public/publicaciones/{id}/comentarios
+// - POST /api/public/publicaciones/{id}/reacciones
+// - DELETE /api/public/publicaciones/{id}/reacciones
+func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimSpace(r.URL.Path)
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		// expected: api public publicaciones {id} comentarios|reacciones
+		if len(parts) < 5 {
+			http.Error(w, "ruta invalida", http.StatusBadRequest)
+			return
+		}
+		idStr := parts[3]
+		action := parts[4]
+		publicacionID, _ := strconv.Atoi(idStr)
+		if publicacionID <= 0 {
+			http.Error(w, "publicacion_id invalido", http.StatusBadRequest)
+			return
+		}
+
+		switch strings.ToLower(strings.TrimSpace(action)) {
+		case "comentarios":
+			if r.Method == http.MethodGet {
+				limit, _ := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("limit")))
+				offset, _ := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("offset")))
+				rows, err := db.ListPublicacionComentarios(dbEmpresas, publicacionID, limit, offset)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(rows)
+				return
+			}
+			if r.Method == http.MethodPost {
+				var payload struct {
+					Nombre    string `json:"nombre,omitempty"`
+					Contenido string `json:"contenido"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				actorKey := redSocialActorKeyFromRequest(r)
+				id, err := db.CreatePublicacionComentario(dbEmpresas, db.PublicacionRedSocialComentario{
+					PublicacionID: publicacionID,
+					ActorKey:      actorKey,
+					Nombre:        payload.Nombre,
+					Contenido:     payload.Contenido,
+					Estado:        "activo",
+				})
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "id": id})
+				return
+			}
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+
+		case "reacciones":
+			actorKey := redSocialActorKeyFromRequest(r)
+			if actorKey == "" {
+				http.Error(w, "actor_key requerido", http.StatusBadRequest)
+				return
+			}
+			if r.Method == http.MethodPost {
+				var payload struct {
+					Reaccion string `json:"reaccion"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if err := db.UpsertPublicacionReaccion(dbEmpresas, publicacionID, 0, actorKey, payload.Reaccion); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				resumen, _ := db.GetPublicacionReaccionesResumen(dbEmpresas, publicacionID)
+				totalComentarios, _ := db.GetPublicacionComentariosTotal(dbEmpresas, publicacionID)
+				userReaction, _ := db.GetUserReaction(dbEmpresas, publicacionID, actorKey)
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"ok":                 true,
+					"publicacion_id":     publicacionID,
+					"reacciones_resumen": resumen,
+					"comentarios_total":  totalComentarios,
+					"user_reaction":      userReaction,
+				})
+				return
+			}
+			if r.Method == http.MethodDelete {
+				if err := db.DeletePublicacionReaccion(dbEmpresas, publicacionID, actorKey); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				resumen, _ := db.GetPublicacionReaccionesResumen(dbEmpresas, publicacionID)
+				totalComentarios, _ := db.GetPublicacionComentariosTotal(dbEmpresas, publicacionID)
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"ok":                 true,
+					"publicacion_id":     publicacionID,
+					"reacciones_resumen": resumen,
+					"comentarios_total":  totalComentarios,
+					"user_reaction":      "",
+				})
+				return
+			}
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		default:
+			http.Error(w, "accion invalida", http.StatusBadRequest)
+			return
+		}
 	}
 }
 

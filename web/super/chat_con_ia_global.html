@@ -80,6 +80,17 @@
           </div>
           <div id="chatMsg" class="form-help ai-gemini-form-msg"></div>
         </form>
+
+        <section id="inlineHistory" class="ai-gemini-inline-history" hidden>
+          <div class="ai-gemini-inline-history-head">
+            <div class="ai-gemini-inline-history-title">Conversaciones anteriores</div>
+          </div>
+          <div id="inlineConversationList"></div>
+          <div style="margin-top:10px;">
+            <div class="ai-gemini-sidebar-section-title" style="margin:0 0 6px 0;">Historial en servidor</div>
+            <div id="inlineServerHistoryList"></div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
@@ -99,6 +110,32 @@
       serverHistoryItems: [],
       viewingServerReadOnly: false
     };
+
+    // Modo solicitado: chat limpio arriba + historial abajo (sin sidebar).
+    (function initInlineHistoryMode(){
+      try {
+        document.body.classList.add("ai-gemini-inline-history-mode");
+        const inline = document.getElementById("inlineHistory");
+        const list = document.getElementById("conversationList");
+        const serverList = document.getElementById("serverHistoryList");
+        const btnNew = document.getElementById("btnNewChat");
+        const topMeta = document.querySelector(".ai-gemini-topmeta");
+        const inlineListHost = document.getElementById("inlineConversationList");
+        const inlineServerHost = document.getElementById("inlineServerHistoryList");
+        if (btnNew && topMeta) {
+          topMeta.insertBefore(btnNew, topMeta.firstChild);
+        }
+        if (list && inlineListHost) {
+          inlineListHost.appendChild(list);
+        }
+        if (serverList && inlineServerHost) {
+          inlineServerHost.appendChild(serverList);
+        }
+        if (inline) {
+          inline.hidden = false;
+        }
+      } catch (e) {}
+    })();
 
     window.PCS_CHAT_STREAMING = window.PCS_CHAT_STREAMING || { empresa: false, super: false };
     // Nota: si quieres activar streaming, se controla desde Super en Configuración lógica del chat IA.

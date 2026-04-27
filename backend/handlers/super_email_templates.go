@@ -17,6 +17,7 @@ const (
 	superEmailTemplateKeyEmpresaConfirmation     = "empresa_user_confirmation"
 	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
 	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
+	superEmailTemplateKeyLicenciaPaymentRejected = "licencia_payment_rejected"
 	superEmailTemplateKeyAdminPasswordRecovery   = "admin_password_recovery"
 	superEmailTemplateKeyEmpresaPasswordRecovery = "empresa_user_password_recovery"
 	superEmailTemplateKeyServerRestartAlert      = "server_restart_alert"
@@ -87,6 +88,16 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject:  "Tu licencia ya quedó activa",
 		DefaultBodyText: "Hola,\n\nTu pago fue confirmado correctamente y la licencia ya quedó activa en Powerful Control System.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}Pasarela: {{provider}}\n{{amount_paid_line}}{{discount_code_line}}{{discount_value_line}}{{original_value_line}}{{asesor_id_line}}\n\nYa puedes ingresar al sistema y continuar con la operación normal de tu empresa.\n\nSi no reconoces este movimiento o necesitas ayuda, responde este correo.\n\nPowerful Control System\n",
 		DefaultBodyHTML: "<html><body><p>Hola,</p><p>Tu pago fue confirmado correctamente y la licencia ya quedó activa en <strong>Powerful Control System</strong>.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}<br/>{{amount_paid_line_html}}{{discount_code_line_html}}{{discount_value_line_html}}{{original_value_line_html}}{{asesor_id_line_html}}</p><p>Ya puedes ingresar al sistema y continuar con la operación normal de tu empresa.</p><p>Si no reconoces este movimiento o necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>",
+	},
+	{
+		Key:             superEmailTemplateKeyLicenciaPaymentRejected,
+		Label:           "Pago de licencia rechazado",
+		Category:        "licencias",
+		Description:     "Notificación enviada cuando la pasarela reporta un pago rechazado/declinado y se ofrece reintentar.",
+		Variables:       []string{"company_name", "license_name", "provider", "reference", "status", "retry_url", "reference_line", "license_name_line"},
+		DefaultSubject:  "Tu pago fue rechazado (puedes reintentar)",
+		DefaultBodyText: "Hola,\n\nLa pasarela reportó que el pago de tu licencia no se completó.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{reference_line}}Pasarela: {{provider}}\nEstado: {{status}}\n\nPuedes reintentar el pago más tarde desde este enlace:\n{{retry_url}}\n\nSi necesitas ayuda, responde este correo.\n\nPowerful Control System\n",
+		DefaultBodyHTML: "<html><body><p>Hola,</p><p>La pasarela reportó que el pago de tu licencia no se completó.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}<br/><strong>Estado:</strong> {{status}}</p><p><a href=\"{{retry_url}}\" style=\"display:inline-block;padding:12px 18px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;\">Reintentar pago</a></p><p>Si el botón no abre correctamente, usa este enlace:</p><p><a href=\"{{retry_url}}\">{{retry_url}}</a></p><p>Si necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>",
 	},
 	{
 		Key:             superEmailTemplateKeyAdminPasswordRecovery,

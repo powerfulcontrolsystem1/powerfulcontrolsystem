@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tareas — Chat y tareas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+  <style>
+    .cta-nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .cta-nav a{padding:10px 14px;border-radius:999px;border:1px solid var(--border);text-decoration:none;font-weight:900;color:var(--text);background:var(--surface-soft)}
+    .cta-nav a.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+  </style>
+</head>
+<body class="super-page chat-tareas-shell">
+  <div class="container chat-tareas-page">
+    <div class="page-header chat-tareas-page-header">
+      <div class="chat-tareas-page-headcopy">
+        <h1 id="pageTitle">Tareas</h1>
+        <p class="form-help" style="margin:6px 0 0 0;">Tareas asignadas, seguimiento, estados y notas de voz.</p>
+      </div>
+      <div class="cta-nav" aria-label="Menú de módulo">
+        <a href="/administrar_empresa/chat_tareas_chats.html">Chats</a>
+        <a href="/administrar_empresa/chat_tareas_agenda.html">Agenda</a>
+        <a class="active" href="/administrar_empresa/chat_tareas_tareas.html">Tareas</a>
+        <a class="btn secondary" href="/administrar_empresa/chat_tareas_papelera.html" style="border-radius:999px;">Papelera</a>
+      </div>
+    </div>
+    <iframe class="iframe-remote" src="/administrar_empresa/chat_y_tareas.html?view=tareas" title="Tareas"></iframe>
+  </div>
+</body>
+</html>
+

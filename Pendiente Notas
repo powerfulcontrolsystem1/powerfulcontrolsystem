@@ -151,6 +151,20 @@ agregrar el logo de open AI o chat gtp
 angelica codigo de barras
 firma electronica
 factura electronica sin nombre
+comparlectorde codigo de barras
+
+- un solo chat para todo el sistema, 
+la pagina configuracion avanzada hacerle subpaginas
+
+- modulo de integracion telefonica
+- que en panel de administrar empresa(pagina nueva panel_empresas.html en esta daras las bienvenida al administrador y le mostraras como estara el clima hoy, la temperatura etc). en el panel debe mostrar segun la apariencie un estilo moderno del estado del tiempo cargado entiempo real a traves de gpt.5.4 mini o 5.5
+
+- Un agente a cada empresa
+
+- pagos reales
+reporte de cierre deturno. opcion de guardar reportes que hace la ia,a traves de especiesde botones
+
+
 
 
 

@@ -8288,6 +8288,44 @@ html.theme-light .task-item{
   line-height:1.48;
 }
 
+/* Tipografía y contraste mejorados para TODOS los chats */
+.ai-chat-messages,
+.ai-chat-content,
+.ai-chat-form textarea,
+.ai-gemini-input{
+  font-family:"Google Sans Flex","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  font-size:1.02rem;
+}
+.ai-chat-bubble.user .ai-chat-content{color:color-mix(in srgb, var(--text) 92%, var(--accent) 8%);}
+.ai-chat-bubble.assistant .ai-chat-content{color:color-mix(in srgb, var(--text) 92%, var(--success) 8%);}
+
+/* Modo chat limpio (empresa/super): solo botón nuevo + chat arriba, historial abajo */
+body.ai-gemini-inline-history-mode .ai-gemini-app{grid-template-columns:1fr;}
+body.ai-gemini-inline-history-mode .ai-gemini-sidebar{display:none;}
+body.ai-gemini-inline-history-mode .ai-gemini-topmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+body.ai-gemini-inline-history-mode .ai-gemini-model-select,
+body.ai-gemini-inline-history-mode .ai-gemini-meta-pill,
+body.ai-gemini-inline-history-mode .ai-gemini-meta-pill--soft{display:none !important;}
+body.ai-gemini-inline-history-mode .ai-gemini-new-chat{width:auto;text-align:center}
+.ai-gemini-inline-history{
+  margin-top:14px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  background:linear-gradient(180deg, var(--surface-soft), var(--surface));
+}
+.ai-gemini-inline-history-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:8px;
+}
+.ai-gemini-inline-history-title{
+  font-weight:900;
+}
+
 /* Chat IA: acciones confirmables desde el chat (registro via auditoria) */
 .ai-action-card{
   margin-top:10px;

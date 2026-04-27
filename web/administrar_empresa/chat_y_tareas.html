@@ -25,8 +25,42 @@
       } catch (err) {}
     })();
   </script>
+  <script>
+    // Si el usuario entra por la ruta antigua, enviarlo al nuevo módulo (Agenda).
+    // Nota: evitamos redirección cuando está embebido via iframe con ?view=...
+    (function(){
+      try{
+        var p = new URLSearchParams(location.search);
+        if (p.get('view')) return;
+        // Si se abre directamente esta página (sin view), el nuevo entrypoint es chat_tareas_agenda.html
+        if (location.pathname && location.pathname.indexOf('chat_y_tareas.html') >= 0) {
+          location.replace('/administrar_empresa/chat_tareas_agenda.html' + (location.search || ''));
+        }
+      }catch(e){}
+    })();
+  </script>
 </head>
 <body class="super-page chat-tareas-shell">
+  <script>
+    // Vista embebida por subpáginas: ?view=chats|tareas|agenda
+    (function(){
+      try{
+        var p = new URLSearchParams(location.search);
+        var view = String(p.get('view')||'').trim().toLowerCase();
+        if(view) document.body.setAttribute('data-view', view);
+      }catch(e){}
+    })();
+  </script>
+  <style>
+    body[data-view="chats"] .chat-calendar-card,
+    body[data-view="chats"] .tareas-panel{display:none !important;}
+    body[data-view="tareas"] .chat-calendar-card,
+    body[data-view="tareas"] .conversaciones-panel,
+    body[data-view="tareas"] .mensajes-panel{display:none !important;}
+    body[data-view="agenda"] .conversaciones-panel,
+    body[data-view="agenda"] .mensajes-panel,
+    body[data-view="agenda"] .tareas-panel{display:none !important;}
+  </style>
   <div class="container chat-tareas-page">
     <div class="page-header chat-tareas-page-header">
       <div class="chat-tareas-page-headcopy">
