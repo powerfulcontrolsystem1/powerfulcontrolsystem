@@ -1061,3 +1061,19 @@ Archivos modificados:
 - web/img/motel_calipso_decoracion_habitacion.jpg
 - web/js/ai_chat_drawer.js
 - web/seleccionar_empresa.html
+
+2026-04-26 22:35:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b47ce2b; PushStatus: OK
+Archivos modificados:
+- backend/handlers/payments_handlers.go
+- scripts/publicar_git_y_vps.ps1
+- web/administrar_empresa.html
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/administrar_empresa/reportes_ia_chat.html
+- web/administrar_empresa/reportes_menu.html
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/seleccionar_empresa.html
+- web/super/chat_con_ia_global.html
+- web/super/configuracion_avanzada.html
+- web/super/reportes_globales.html
+- web/super_administrador.html
