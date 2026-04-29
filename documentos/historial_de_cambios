@@ -15493,3 +15493,71 @@ Archivos modificados:
     - Archivos: `web/pagar_licencia.html`, `web/estilos.css`, `backend/db/tipo_empresa_preconfiguracion.go`, `backend/handlers/empresa_preconfiguracion.go`, `backend/db/empresa_estacion_prefs.go`, `backend/db/productos.go`, `backend/handlers/system_empresas_handlers.go`, `backend/main.go`, `web/super/preconfiguracion_tipos_empresa.html`, `web/js/seleccionar_empresa.js`, `web/super_administrador.html`, `Pendiente Notas`.
     - Descripcion: el checkout de licencias usa tarjetas mas profesionales de venta y coloca el codigo de asesor comercial debajo del codigo de descuento. Super Administrador suma la pagina "Preconfiguracion de tipos de empresa"; las empresas nuevas pueden recibir estaciones/productos guia por tipo y el creador decide conservar o limpiar esa preconfiguracion.
     - Verificacion: `go test ./db`, `go test ./handlers`; validacion Node de `web/pagar_licencia.html`, `web/js/seleccionar_empresa.js` y `web/super/preconfiguracion_tipos_empresa.html`.
+
+2026-04-29: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- RESUMEN_DEL_PROYECTO.md
+- backend/db/auditoria_empresa.go
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/empresa_estacion_prefs.go
+- backend/db/productos.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/handlers/auditoria_empresa.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/pagina_principal_handlers.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/public_chat_portal.go
+- backend/handlers/reportes_globales.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/handlers/super_config_backup_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/handlers/voice_stream_config.go
+- backend/main.go
+- backend/utils/utils.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- scripts/install_voice_stream_server_vps.sh
+- services/voice_stream_server/README.md
+- services/voice_stream_server/__pycache__/app.cpython-314.pyc
+- services/voice_stream_server/app.py
+- services/voice_stream_server/requirements.txt
+- web/administrar_empresa.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_papelera.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_chat_flotante.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
+- web/index.html
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/js/seleccionar_empresa.js
+- web/js/super_reportes_globales.js
+- web/login.html
+- web/menu.js
+- web/pagar_licencia.html
+- web/registrar_contrasena_usuario_de_google.html
+- web/registrar_nuevo_usuario_administrador.html
+- web/seleccionar_empresa.html
+- web/super/configuracion_avanzada.html
+- web/super/configuracion_logica_del_chat_con_ia.html
+- web/super/pagina_principal.html
+- web/super/preconfiguracion_tipos_empresa.html
+- web/super/reportes_globales.html
+- web/super/voz_streaming_ia.html
+- web/super_administrador.html
