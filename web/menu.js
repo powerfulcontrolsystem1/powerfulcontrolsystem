@@ -7,7 +7,6 @@
     dark: true,
     'dark-violet': true,
     'dark-emerald': true,
-    'dark-protect': true,
     light: true,
     'light-rose': true,
     'light-gold': true
@@ -24,6 +23,9 @@
 
   function normalizeTheme(theme){
     var value = String(theme || '').trim().toLowerCase();
+    if (value === 'dark-protect') {
+      return 'dark';
+    }
     return THEME_VALUES[value] ? value : 'light';
   }
 
@@ -407,7 +409,6 @@
             '<button class="theme-option" type="button" data-theme-value="dark">Azul Elegante</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-violet">Morado Midnight</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-emerald">Negro Esmeralda</button>' +
-            '<button class="theme-option" type="button" data-theme-value="dark-protect">Proteccion de la vista</button>' +
             '<div class="theme-opt-group mt-1">Claros</div>' +
             '<button class="theme-option" type="button" data-theme-value="light">Blanco Corporativo</button>' +
             '<button class="theme-option" type="button" data-theme-value="light-rose">Rosa Pastel</button>' +
