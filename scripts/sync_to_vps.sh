@@ -37,14 +37,68 @@ EXCLUDE_FILE=""
 
 EXCLUDES=(
   ".git"
+  ".git/*"
   ".gitignore"
+  ".codex"
+  ".codex/*"
+  ".agents"
+  ".agents/*"
+  ".cache"
+  ".cache/*"
+  ".cursor"
+  ".cursor/*"
+  ".github"
+  ".github/*"
+  ".vscode"
+  ".vscode/*"
+  "backup"
+  "backup/*"
+  "descargas"
+  "descargas/*"
   "node_modules"
+  "*/node_modules"
+  "*/*/node_modules"
   "logs"
+  "logs/*"
+  "scripts/logs"
+  "scripts/logs/*"
+  "tmp"
+  "tmp/*"
   "test_runs"
+  "test_runs/*"
+  "coverage"
+  "coverage/*"
+  "dist"
+  "dist/*"
+  "build"
+  "build/*"
+  ".pytest_cache"
+  ".pytest_cache/*"
+  "__pycache__"
+  "*/__pycache__"
+  "*/*/__pycache__"
   "*.db"
+  "*.sqlite"
+  "*.sqlite3"
+  "*.log"
   "*.exe"
+  "*.vsix"
+  "*.tmp"
+  "*.bak"
   "backend/.env.local"
+  "backend/.env"
+  "backend/server_linux_amd64"
+  "backend/tools"
+  "backend/tools/*"
+  "backend/tmp"
+  "backend/tmp/*"
+  "backend/server.log"
   "backend/server.err"
+  "herramientas"
+  "herramientas/*"
+  "*.ppk"
+  "*.pem"
+  "*.key"
 )
 
 CURRENT_STEP="inicio"
@@ -297,7 +351,7 @@ fi
 REMOTE_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
 
 if [[ "$SSH_CLIENT" == "ssh" ]]; then
-  SSH_ARGS=(-p "$REMOTE_PORT" -o BatchMode=yes -o "StrictHostKeyChecking=$SSH_STRICT_HOSTKEY" -o LogLevel=ERROR)
+  SSH_ARGS=(-p "$REMOTE_PORT" -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o "StrictHostKeyChecking=$SSH_STRICT_HOSTKEY" -o LogLevel=ERROR)
   if [[ -n "$SSH_KEY" ]]; then
     SSH_ARGS=(-i "$SSH_KEY" "${SSH_ARGS[@]}")
   fi
@@ -335,7 +389,7 @@ fi
 set_step "asegurando directorio remoto"
 run_remote "mkdir -p '$REMOTE_DIR'"
 
-RSYNC_ARGS=(-az --delete --partial --human-readable --progress)
+RSYNC_ARGS=(-az --delete --partial --human-readable --progress --stats --timeout=180)
 if (( DRY_RUN == 1 )); then
   RSYNC_ARGS+=(--dry-run --itemize-changes)
 fi
@@ -347,9 +401,9 @@ if [[ -n "$EXCLUDE_FILE" ]]; then
 fi
 
 if [[ "$SSH_CLIENT" == "ssh" ]]; then
-  RSYNC_SSH="ssh -p $REMOTE_PORT -o BatchMode=yes -o StrictHostKeyChecking=$SSH_STRICT_HOSTKEY -o LogLevel=ERROR"
+  RSYNC_SSH="ssh -p $REMOTE_PORT -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=$SSH_STRICT_HOSTKEY -o LogLevel=ERROR"
   if [[ -n "$SSH_KEY" ]]; then
-    RSYNC_SSH="ssh -i '$SSH_KEY' -p $REMOTE_PORT -o BatchMode=yes -o StrictHostKeyChecking=$SSH_STRICT_HOSTKEY -o LogLevel=ERROR"
+    RSYNC_SSH="ssh -i '$SSH_KEY' -p $REMOTE_PORT -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=$SSH_STRICT_HOSTKEY -o LogLevel=ERROR"
   fi
 else
   RSYNC_SSH="\"$PLINK_EXE\" -batch -P $REMOTE_PORT -i \"$PLINK_KEY_WIN\""

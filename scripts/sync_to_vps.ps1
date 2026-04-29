@@ -24,6 +24,8 @@ param(
   [int]$Port = 22,
   [string]$IdentityFile = "",
   [string]$ExcludeFile = "",
+  [bool]$CompressPackage = $true,
+  [int]$LargeTransferWarningMB = 200,
   [string]$BuildWorkingDir = "backend",
   [string]$BuildPackage = ".",
   [string]$BuildOutput = "backend/bin/server_linux_amd64",
@@ -1084,6 +1086,24 @@ function Parse-IntOrDefault {
   return $DefaultValue
 }
 
+function Format-ByteSize {
+  param([long]$Bytes)
+
+  if ($Bytes -lt 1024) {
+    return "$Bytes B"
+  }
+
+  $units = @("KB", "MB", "GB", "TB")
+  $value = [double]$Bytes
+  $unitIndex = -1
+  do {
+    $value = $value / 1024
+    $unitIndex += 1
+  } while ($value -ge 1024 -and $unitIndex -lt ($units.Count - 1))
+
+  return ("{0:N1} {1}" -f $value, $units[$unitIndex])
+}
+
 function Normalize-PostgresDsnForVps {
   param(
     [AllowEmptyString()][string]$Dsn,
@@ -1211,14 +1231,65 @@ function Get-SyncExcludePatterns {
 
   $patterns = @(
     ".git",
+    ".git/*",
     ".gitignore",
+    ".codex",
+    ".codex/*",
+    ".agents",
+    ".agents/*",
+    ".cache",
+    ".cache/*",
+    ".cursor",
+    ".cursor/*",
+    ".github",
+    ".github/*",
+    ".vscode",
+    ".vscode/*",
+    "backup",
+    "backup/*",
+    "descargas",
+    "descargas/*",
     "node_modules",
+    "*/node_modules",
+    "*/*/node_modules",
     "logs",
+    "logs/*",
+    "scripts/logs",
+    "scripts/logs/*",
+    "tmp",
+    "tmp/*",
     "test_runs",
+    "test_runs/*",
+    "coverage",
+    "coverage/*",
+    "dist",
+    "dist/*",
+    "build",
+    "build/*",
+    ".pytest_cache",
+    ".pytest_cache/*",
+    "__pycache__",
+    "*/__pycache__",
+    "*/*/__pycache__",
     "*.db",
+    "*.sqlite",
+    "*.sqlite3",
+    "*.log",
     "*.exe",
+    "*.vsix",
+    "*.tmp",
+    "*.bak",
     "backend/.env.local",
+    "backend/.env",
+    "backend/server_linux_amd64",
+    "backend/tools",
+    "backend/tools/*",
+    "backend/tmp",
+    "backend/tmp/*",
+    "backend/server.log",
     "backend/server.err",
+    "herramientas",
+    "herramientas/*",
     "*.ppk",
     "*.pem",
     "*.key"
@@ -1268,6 +1339,8 @@ function Invoke-PuttySync {
     [Parameter(Mandatory=$true)][bool]$IsDryRun,
     [Parameter(Mandatory=$true)][bool]$IsPreviewOnly,
     [AllowEmptyString()][string]$ExcludeFile,
+    [bool]$UseCompression = $true,
+    [int]$LargeTransferWarningMB = 200,
     [AllowEmptyString()][string]$ExecRelativePath = "",
     [int]$Retries = 3,
     [bool]$AutoInstallDeps = $true,
@@ -1306,17 +1379,23 @@ function Invoke-PuttySync {
   }
 
   $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-  $archivePath = Join-Path $tmpDir ("pcs_sync_" + $stamp + ".tar")
-  $remoteArchive = "/tmp/pcs_sync_$stamp.tar"
+  $archiveExtension = if ($UseCompression) { ".tar.gz" } else { ".tar" }
+  $archivePath = Join-Path $tmpDir ("pcs_sync_" + $stamp + $archiveExtension)
+  $remoteArchive = "/tmp/pcs_sync_$stamp$archiveExtension"
 
   $tarArgs = @()
   foreach ($pattern in $excludePatterns) {
     $tarArgs += "--exclude=$pattern"
   }
-  $tarArgs += @("-cf", $archivePath, "-C", $LocalResolvedPath, ".")
+  if ($UseCompression) {
+    $tarArgs += @("-czf", $archivePath, "-C", $LocalResolvedPath, ".")
+  } else {
+    $tarArgs += @("-cf", $archivePath, "-C", $LocalResolvedPath, ".")
+  }
 
   $mkdirCmd = "mkdir -p '$RemotePath'"
-  $extractCmd = "mkdir -p '$RemotePath' && tar -xf '$remoteArchive' -C '$RemotePath' && rm -f '$remoteArchive'"
+  $extractTarFlag = if ($UseCompression) { "-xzf" } else { "-xf" }
+  $extractCmd = "mkdir -p '$RemotePath' && tar $extractTarFlag '$remoteArchive' -C '$RemotePath' && rm -f '$remoteArchive'"
   if (-not [string]::IsNullOrWhiteSpace($ExecRelativePath)) {
     $remoteExecPath = ($RemotePath.TrimEnd('/') + "/" + $ExecRelativePath.TrimStart('/'))
     $extractCmd += " && if [ -f '$remoteExecPath' ]; then chmod +x '$remoteExecPath'; fi"
@@ -1359,6 +1438,8 @@ function Invoke-PuttySync {
       '-o', 'BatchMode=yes',
       '-o', 'StrictHostKeyChecking=accept-new',
       '-o', 'ConnectTimeout=15',
+      '-o', 'ServerAliveInterval=30',
+      '-o', 'ServerAliveCountMax=4',
       '-p', "$Port",
       '-i', $identityResolved
     )
@@ -1373,6 +1454,8 @@ function Invoke-PuttySync {
       '-o', 'BatchMode=yes',
       '-o', 'StrictHostKeyChecking=accept-new',
       '-o', 'ConnectTimeout=15',
+      '-o', 'ServerAliveInterval=30',
+      '-o', 'ServerAliveCountMax=4',
       '-P', "$Port",
       '-i', $identityResolved,
       $archivePath,
@@ -1392,6 +1475,8 @@ function Invoke-PuttySync {
         '-o', 'BatchMode=yes',
         '-o', 'StrictHostKeyChecking=accept-new',
         '-o', 'ConnectTimeout=15',
+        '-o', 'ServerAliveInterval=30',
+        '-o', 'ServerAliveCountMax=4',
         '-p', "$Port",
         '-i', $identityResolved,
         $remoteTarget,
@@ -1411,6 +1496,8 @@ function Invoke-PuttySync {
         '-o', 'BatchMode=yes',
         '-o', 'StrictHostKeyChecking=accept-new',
         '-o', 'ConnectTimeout=15',
+        '-o', 'ServerAliveInterval=30',
+        '-o', 'ServerAliveCountMax=4',
         '-p', "$Port",
         '-i', $identityResolved,
         $remoteTarget,
@@ -1441,10 +1528,19 @@ function Invoke-PuttySync {
       throw "Falló la creación del paquete TAR local (código $LASTEXITCODE)."
     }
 
+    $archiveInfo = Get-Item -LiteralPath $archivePath -ErrorAction Stop
+    $archiveSizeText = Format-ByteSize -Bytes ([long]$archiveInfo.Length)
+    Write-Host ("[INFO] Paquete listo para subir: " + $archivePath)
+    Write-Host ("[INFO] Tamano del paquete: " + $archiveSizeText)
+    if ($LargeTransferWarningMB -gt 0 -and $archiveInfo.Length -gt ([int64]$LargeTransferWarningMB * 1024 * 1024)) {
+      Write-Warning ("El paquete supera " + $LargeTransferWarningMB + " MB. La subida puede tardar; revisa -DryRun o agrega exclusiones con -ExcludeFile si no esperabas tantos datos.")
+    }
+
     if ($IsDryRun) {
       Write-Host "[INFO] Modo DryRun (sin cambios remotos)."
       $entries = & tar -tf $archivePath
       $count = ($entries | Measure-Object).Count
+      Write-Host ("[INFO] Tamano que se intentaria subir: " + $archiveSizeText)
       Write-Host ("[INFO] Archivos que se transferirían: " + $count)
       $entries | Select-Object -First 40 | ForEach-Object { Write-Host ("  - " + $_) }
       if ($count -gt 40) {
@@ -1454,6 +1550,7 @@ function Invoke-PuttySync {
     }
 
     Invoke-ExternalWithRetry -Label "verificación remota" -CommandPath $verifyCommandPath -Arguments $verifyArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
+    Write-Host ("[INFO] Subiendo paquete a " + $remoteTarget + ":" + $remoteArchive + " (" + $archiveSizeText + ")...")
     Invoke-ExternalWithRetry -Label "subida de paquete" -CommandPath $uploadCommandPath -Arguments $uploadArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
 
     if (-not [string]::IsNullOrWhiteSpace($ExecRelativePath)) {
@@ -1705,7 +1802,7 @@ try {
   }
 
   if (-not (Test-WslReady)) {
-    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
     if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
       $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
