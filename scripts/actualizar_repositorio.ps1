@@ -138,8 +138,14 @@ function Invoke-PushOrigin {
 
     Write-Info ("[$Context] Ejecutando: git {0}" -f ($args -join ' '))
     # Convertir a cadena para evitar NativeCommandError en PowerShell al leer stderr
-    $output = (& git @args 2>&1) | ForEach-Object { $_.ToString() }
-    $code = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = (& git @args 2>&1) | ForEach-Object { $_.ToString() }
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
 
     return [pscustomobject]@{
         Code   = $code
