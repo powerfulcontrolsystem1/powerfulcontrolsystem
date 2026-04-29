@@ -3467,16 +3467,18 @@ body.has-floating-menu .header .form-actions{
 
 #estacionesGrid .portal-card h3{
   color: var(--station-card-title);
-  margin-bottom: 0.35em;
+  margin: 0 0 0.2em 0;
   font-size: clamp(0.95em, 1.3vw, 1.05em);
+  line-height: 1.05;
   white-space: normal;
   overflow-wrap: break-word;
 }
 
 #estacionesGrid .portal-card p{
   color: var(--station-card-copy);
-  margin-bottom: 0.6em;
+  margin: 0 0 0.25em 0;
   font-size: clamp(0.85em, 1.25vw, 0.95em);
+  line-height: 1.1;
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -3485,7 +3487,8 @@ body.has-floating-menu .header .form-actions{
   width: 100%;
   display: block;
   font-size: clamp(0.82em, 1.15vw, 0.95em);
-  line-height: 1.2;
+  margin: 0 0 0.2em 0;
+  line-height: 1.05;
   white-space: normal;
   overflow-wrap: anywhere;
 }
