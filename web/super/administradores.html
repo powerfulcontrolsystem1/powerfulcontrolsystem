@@ -51,7 +51,7 @@
         if(!res.ok) throw new Error('failed to query administradores');
         const data = await res.json();
         const table = document.createElement('table');
-        table.className = 'table';
+        table.className = 'table table-compact';
         table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>';
         const tbody = document.createElement('tbody');
         data.forEach(i=>{

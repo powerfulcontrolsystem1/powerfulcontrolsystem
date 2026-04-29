@@ -979,9 +979,9 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-drawer-surface{display:flex;flex-direction:column;min-height:0;flex:1;background:var(--surface);overflow:hidden}
 @media (min-width: 861px){
   .ai-chat-drawer{
-    right:24px;bottom:24px;left:auto;top:auto;
-    width:min(400px,calc(100vw - 48px));
-    height:min(72vh,640px);max-height:min(72vh,640px);
+    right:24px;bottom:24px;left:auto;top:24px;
+    width:min(420px,calc(100vw - 48px));
+    height:auto;max-height:calc(100vh - 48px);
     border-radius:20px;
     border:1px solid var(--border);
     box-shadow:0 24px 60px rgba(3,10,20,.35);
@@ -1014,9 +1014,11 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-header-icon-btn:hover{background:var(--focus)}
 .ai-chat-close{border:none;background:transparent;color:var(--text);font-size:1.6rem;line-height:1;width:40px;height:40px;border-radius:12px;cursor:pointer;transition:background .15s ease}
 .ai-chat-close:hover{background:rgba(0,0,0,.06)}
-.ai-chat-notice{display:block;padding:12px 14px;margin:0;border-radius:0;border-left:4px solid #ffb300;background:rgba(255,243,224,.95);color:#6b4a00;font-size:.93rem;line-height:1.4;flex-shrink:0}
-.ai-chat-notice.ai-chat-notice-warning{border-color:#d97706;background:rgba(254,226,200,.96);color:#7a341a}
+.ai-chat-notice{display:none !important;padding:0;margin:0;border:none;background:transparent;color:inherit;font-size:inherit;line-height:inherit;flex-shrink:0}
+.ai-chat-notice.ai-chat-notice-warning{display:none !important}
 .ai-chat-notice.is-hidden{display:none}
+#aiChatHintToggle,
+.ai-chat-hints{display:none !important}
 .ai-chat-body-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 14px 8px;display:flex;flex-direction:column;gap:12px}
 .ai-chat-messages{display:flex;flex-direction:column;gap:12px;flex-shrink:0;padding:0;overflow:visible;min-height:min-content}
 .ai-chat-message{max-width:100%;border-radius:18px;padding:14px 16px;line-height:1.5;word-break:break-word;white-space:pre-wrap;box-shadow:0 10px 20px rgba(0,0,0,.06)}
