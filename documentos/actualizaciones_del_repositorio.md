@@ -1194,3 +1194,8 @@ Archivos modificados:
 - web/super/reportes_globales.html
 - web/super/voz_streaming_ia.html
 - web/super_administrador.html
+
+2026-04-29 16:19:04 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 2c00723; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh

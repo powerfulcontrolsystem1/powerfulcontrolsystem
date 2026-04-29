@@ -15561,3 +15561,9 @@ Archivos modificados:
 - web/super/reportes_globales.html
 - web/super/voz_streaming_ia.html
 - web/super_administrador.html
+
+2026-04-29: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
