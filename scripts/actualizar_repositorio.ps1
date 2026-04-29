@@ -55,7 +55,13 @@ function Invoke-GitAddQuietLineEndingAdvice {
         [string[]]$Paths
     )
 
-    $raw = @(& git add @Paths 2>&1 | ForEach-Object { $_.ToString() })
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $raw = @(& git add @Paths 2>&1 | ForEach-Object { $_.ToString() })
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     if ($LASTEXITCODE -ne 0) {
         if ($raw.Count -gt 0) {
             $raw | ForEach-Object { Write-Host $_ }

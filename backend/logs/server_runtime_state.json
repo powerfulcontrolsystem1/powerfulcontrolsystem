@@ -1,14 +1,12 @@
 {
-  "status": "stopped",
+  "status": "running",
   "hostname": "NITRO",
-  "process_id": 5600,
+  "process_id": 18044,
   "listen_addr": ":8080",
-  "last_start_at": "2026-04-27 15:52:10",
+  "last_start_at": "2026-04-29 16:31:31",
   "last_start_reason": "inicio_script_iniciar_servidor",
-  "last_start_reason_detail": "Motivo reportado por entorno/sistema de arranque. Ultimo indicio en server.err: 2026/04/27 15:52:10 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
-  "last_stop_at": "2026-04-27 15:55:04",
-  "last_stop_reason": "signal_terminated",
+  "last_start_reason_detail": "Motivo reportado por entorno/sistema de arranque. Ultimo indicio en server.err: 2026/04/29 16:31:31 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
   "last_unexpected_restart": false,
-  "last_known_server_err": "2026/04/27 15:52:10 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
-  "last_event_id": 8826
+  "last_known_server_err": "2026/04/29 16:31:31 index.html encontrado en D:\\powerfulcontrolsystem\\web\\index.html",
+  "last_event_id": 8835
 }
