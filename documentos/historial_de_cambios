@@ -15586,3 +15586,38 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - scripts/actualizar_repositorio.ps1
+
+2026-04-29: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- Pendiente Notas
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/codigos_descuento.go
+- backend/db/empresa_permisos_finos.go
+- backend/db/licencias_gratis.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/chat_flotante_config.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/payments_handlers.go
+- backend/logs/empresa_global.log
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_chat_flotante.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion_permisos.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/modulos_erp_dominio.html
+- web/administrar_empresa/nextcloud.html
+- web/administrar_empresa/panel.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/js/modulos_erp_extendido.js
+- web/js/seleccionar_empresa.js
+- web/menu.js
+- web/super/preconfiguracion_tipos_empresa.html
