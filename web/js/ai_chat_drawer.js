@@ -503,14 +503,6 @@
       });
   }
 
-  function updateAccessInfo(role) {
-    var info = role ? 'Rol actual: ' + role + '.' : 'Rol no detectado.';
-    var hint = isSuperContext()
-      ? 'Usa el asistente IA para preguntas globales, reportes y tareas administrativas del super administrador.'
-      : 'Usa el asistente IA para reportes, productos, configuraciones y acciones de la empresa actual.';
-    setNotice(info + ' ' + hint);
-  }
-
   function parseErrorResponse(resp) {
     return resp.text().then(function (text) {
       var msg = normalize(text);
@@ -961,12 +953,11 @@
     });
 
     if (!messagesEl.querySelector('.ai-chat-message')) {
-      appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '. ' + (isSuperContext() ? 'Consulta datos globales de super administrador.' : 'Consulta datos de la empresa actual y solicita acciones administrativas. Puedes asignar tareas, enviar mensajes, crear pedidos y terminar ventas segun tu rol.'));
+      appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '.');
     }
 
     renderAttachmentState();
     syncModeUI();
-    getCurrentRole().then(updateAccessInfo);
   }
 
   document.addEventListener('DOMContentLoaded', initDrawer);

@@ -1029,6 +1029,7 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-hints ul{margin:0;padding-left:20px}
 .ai-chat-hints li{margin:6px 0}
 .ai-chat-form{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:14px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--surface-soft));flex-shrink:0}
+.ai-chat-toolbar-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 .ai-chat-voice-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px}
 .ai-chat-icon-btn{width:44px;height:44px;border-radius:14px;border:1px solid var(--border);background:var(--surface-soft);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:background .15s ease,box-shadow .15s ease}
 .ai-chat-icon-btn:hover{background:var(--focus)}
@@ -1047,7 +1048,10 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-form textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(96,165,250,.18)}
 .ai-chat-form > button[type="submit"]{align-self:flex-end;min-width:120px;white-space:nowrap}
 @media (max-width: 540px){
-  .ai-chat-controls{grid-template-columns:1fr}
+  .ai-chat-toolbar-row{justify-content:flex-start}
+  .ai-chat-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .ai-chat-control-field{flex:1 1 160px;min-width:120px}
+  .ai-chat-attachment-row{flex:1 1 160px;min-width:120px}
   .ai-chat-form > button[type="submit"]{width:100%;align-self:stretch}
 }
 /* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
@@ -3464,13 +3468,26 @@ body.has-floating-menu .header .form-actions{
 #estacionesGrid .portal-card h3{
   color: var(--station-card-title);
   margin-bottom: 0.35em;
-  font-size: 1.05em;
+  font-size: clamp(0.95em, 1.3vw, 1.05em);
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 #estacionesGrid .portal-card p{
   color: var(--station-card-copy);
   margin-bottom: 0.6em;
-  font-size: 0.95em;
+  font-size: clamp(0.85em, 1.25vw, 0.95em);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#estacionesGrid .station-entry-time{
+  width: 100%;
+  display: block;
+  font-size: clamp(0.82em, 1.15vw, 0.95em);
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #estacionesGrid .youtube-station-card{
