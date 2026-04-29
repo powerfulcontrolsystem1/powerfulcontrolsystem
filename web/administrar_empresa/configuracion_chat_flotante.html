@@ -3,83 +3,238 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración chat flotante</title>
+  <title>Configuracion chat flotante</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .chat-appearance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    body.admin-empresa-config-page {
+      margin: 0;
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding: 12px;
+      background: var(--bg, #f8fafc);
+    }
+    .admin-empresa-config-page .container {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    .chat-appearance-option {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 16px;
+      border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent, #0ea5e9) 6%);
+      cursor: pointer;
+    }
+    .chat-appearance-option:has(input:checked) {
+      border-color: var(--accent, #0ea5e9);
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.14);
+    }
+    .chat-appearance-option input {
+      margin-top: 4px;
+    }
+    .chat-appearance-title {
+      display: block;
+      font-weight: 800;
+      color: var(--text, #162033);
+    }
+    .chat-appearance-copy {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-muted, #64748b);
+      line-height: 1.45;
+    }
+    .chat-voice-toggle {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent-2, #14b8a6) 6%);
+    }
+    .chat-voice-toggle input {
+      margin-top: 4px;
+    }
+    .chat-voice-select-card {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent, #0ea5e9) 6%);
+    }
+    .chat-voice-select-card .form-label {
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="admin-empresa-config-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Configuración del chat flotante</h1>
-      <p class="form-help">Selecciona el modo del asistente IA que usarás en el chat flotante. El modo <strong>normal</strong> conserva la experiencia actual. El modo <strong>ejecutivo</strong> cambia el estilo visual a un avatar corporativo y modifica el tono inicial del asistente.</p>
+      <h1>Configuracion del chat flotante</h1>
+      <p class="form-help">Elige como se abre el asistente IA en Administrar Empresa: ventana cuadrada tradicional o robot 3D conversacional.</p>
     </div>
 
     <section class="card form advanced-card">
-      <div class="form-row" style="gap:18px;">
-        <div class="form-col" style="flex:1;min-width:260px;">
-          <label class="form-label" for="chatMode">Modo del asistente</label>
-          <select id="chatMode" class="form-input" aria-label="Modo del chat flotante">
-            <option value="normal">Normal</option>
-            <option value="robot">Ejecutivo de empresa</option>
-          </select>
-          <div class="form-help">El modo ejecutivo aplica un estilo animado más corporativo y profesional.</div>
-        </div>
+      <label class="chat-voice-toggle" for="chatEnabled">
+        <input id="chatEnabled" type="checkbox">
+        <span>
+          <span class="chat-appearance-title">Activar chat flotante con IA</span>
+          <span class="chat-appearance-copy">Control principal para mostrar u ocultar el asistente IA flotante en la empresa.</span>
+        </span>
+      </label>
+
+      <label class="chat-voice-toggle" for="robotEnabled">
+        <input id="robotEnabled" type="checkbox">
+        <span>
+          <span class="chat-appearance-title">Activar robot IA</span>
+          <span class="chat-appearance-copy">Permite usar el avatar 3D, los globos del robot, la guia inicial y los avisos hablados de recordatorios.</span>
+        </span>
+      </label>
+
+      <label class="form-label">Apariencia del chat con IA</label>
+      <div class="chat-appearance-grid" role="radiogroup" aria-label="Apariencia del chat flotante">
+        <label class="chat-appearance-option" for="chatModeNormal">
+          <input id="chatModeNormal" type="radio" name="chatMode" value="normal">
+          <span>
+            <span class="chat-appearance-title">Chat cuadrado</span>
+            <span class="chat-appearance-copy">Usa la ventana lateral tradicional con historial, adjuntos, modos y controles completos.</span>
+          </span>
+        </label>
+        <label class="chat-appearance-option" for="chatModeRobot">
+          <input id="chatModeRobot" type="radio" name="chatMode" value="robot">
+          <span>
+            <span class="chat-appearance-title">Robot IA</span>
+            <span class="chat-appearance-copy">Usa el avatar 3D con globos de conversacion integrados en el mismo robot.</span>
+          </span>
+        </label>
       </div>
+
+      <label class="chat-voice-toggle" for="chatVoiceEnabled">
+        <input id="chatVoiceEnabled" type="checkbox">
+        <span>
+          <span class="chat-appearance-title">Activar modo voz del chat</span>
+          <span class="chat-appearance-copy">Cuando esta activo, las respuestas del asistente se leen en voz alta usando el servicio de voz configurado o la voz del navegador como respaldo.</span>
+        </span>
+      </label>
+
+      <div class="chat-voice-select-card">
+        <label class="form-label" for="chatRobotVoice">Voz del robot</label>
+        <select id="chatRobotVoice" class="form-input">
+          <option value="es-CO">Colombiana natural (predeterminada)</option>
+          <option value="es-CO-female">Colombiana femenina</option>
+          <option value="es-CO-male">Colombiana masculina</option>
+          <option value="es-MX">Español latino</option>
+          <option value="es-ES">Español castellano</option>
+        </select>
+        <div class="form-help">Se usa para la voz del robot IA. Si el servidor de voz no tiene ese modelo, el navegador usara la voz en español mas cercana.</div>
+      </div>
+
       <div class="form-actions" style="margin-top:16px;">
-        <button id="saveChatModeBtn" class="btn" type="button">Guardar modo</button>
-        <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer normal</button>
+        <button id="saveChatModeBtn" class="btn" type="button">Guardar configuracion</button>
+        <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer chat cuadrado</button>
         <a href="/administrar_empresa.html" class="btn secondary" style="text-decoration:none;">Volver al panel</a>
       </div>
-      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Guardado localmente en el navegador.</div>
+      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Cargando configuracion...</div>
     </section>
   </div>
 
   <script>
     (function () {
       var STORAGE_KEY = 'pcs_ai_chat_personality';
-      var modeSelect = document.getElementById('chatMode');
+      var CHAT_ENABLED_STORAGE_KEY = 'pcs_ai_chat_enabled';
+      var ROBOT_ENABLED_STORAGE_KEY = 'pcs_ai_robot_enabled';
+      var VOICE_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
+      var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
+      var PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
+      var modeInputs = Array.prototype.slice.call(document.querySelectorAll('input[name="chatMode"]'));
+      var chatEnabledCheckbox = document.getElementById('chatEnabled');
+      var robotEnabledCheckbox = document.getElementById('robotEnabled');
+      var voiceCheckbox = document.getElementById('chatVoiceEnabled');
+      var robotVoiceSelect = document.getElementById('chatRobotVoice');
       var saveBtn = document.getElementById('saveChatModeBtn');
       var resetBtn = document.getElementById('resetChatModeBtn');
       var status = document.getElementById('chatModeStatus');
+      var currentChatEnabled = true;
+      var currentRobotEnabled = true;
 
       function normalize(value) {
-        return String(value || '').trim().toLowerCase();
+        return String(value || '').trim().toLowerCase() === 'robot' && currentRobotEnabled ? 'robot' : 'normal';
       }
 
-      function loadMode() {
-        var current = 'normal';
-        try {
-          current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
-        } catch (err) {
-          current = 'normal';
-        }
-        if (current !== 'robot') {
-          current = 'normal';
-        }
-        if (modeSelect) {
-          modeSelect.value = current;
-        }
-        updateStatus('Modo actual: ' + (current === 'robot' ? 'Ejecutivo de empresa' : 'Normal') + '.');
+      function labelFor(value) {
+        return normalize(value) === 'robot' ? 'Robot IA' : 'Chat cuadrado';
       }
 
-      function saveMode() {
-        if (!modeSelect) return;
-        var value = normalize(modeSelect.value) === 'robot' ? 'robot' : 'normal';
-        try {
-          window.localStorage.setItem(STORAGE_KEY, value);
-          updateStatus('Modo guardado: ' + (value === 'robot' ? 'Ejecutivo de empresa' : 'Normal') + '.');
-        } catch (err) {
-          updateStatus('No se pudo guardar la configuración en el navegador.', true);
+      function normalizeRobotVoice(value) {
+        var raw = String(value || '').trim();
+        var lower = raw.toLowerCase();
+        if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
+        if (lower === 'es-co-male' || lower === 'masculina' || lower === 'hombre') return 'es-CO-male';
+        if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
+        if (lower === 'es-es' || lower === 'espana' || lower === 'españa' || lower === 'castellano') return 'es-ES';
+        return 'es-CO';
+      }
+
+      function labelForRobotVoice(value) {
+        switch (normalizeRobotVoice(value)) {
+          case 'es-CO-female': return 'Colombiana femenina';
+          case 'es-CO-male': return 'Colombiana masculina';
+          case 'es-MX': return 'Español latino';
+          case 'es-ES': return 'Español castellano';
+          default: return 'Colombiana natural';
         }
       }
 
-      function resetMode() {
-        try {
-          window.localStorage.removeItem(STORAGE_KEY);
-          loadMode();
-          updateStatus('Modo restablecido a normal.');
-        } catch (err) {
-          updateStatus('No se pudo restablecer la configuración.', true);
+      function getSelectedMode() {
+        var checked = modeInputs.find(function (input) { return input && input.checked; });
+        return normalize(checked && checked.value);
+      }
+
+      function getSelectedRobotVoice() {
+        return normalizeRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+      }
+
+      function setSelectedMode(value) {
+        var mode = normalize(value);
+        modeInputs.forEach(function (input) {
+          input.checked = input.value === mode;
+        });
+        return mode;
+      }
+
+      function updateControlAvailability() {
+        var chatOn = !!currentChatEnabled;
+        var robotOn = !!currentRobotEnabled;
+        modeInputs.forEach(function (input) {
+          input.disabled = !chatOn || (input.value === 'robot' && !robotOn);
+        });
+        if (!robotOn && getSelectedMode() === 'robot') {
+          setSelectedMode('normal');
         }
+        if (voiceCheckbox) voiceCheckbox.disabled = !chatOn;
+        if (robotVoiceSelect) robotVoiceSelect.disabled = !chatOn || !robotOn;
+        if (robotEnabledCheckbox) robotEnabledCheckbox.disabled = !chatOn;
+      }
+
+      function setSelectedRobotVoice(value) {
+        var voice = normalizeRobotVoice(value);
+        if (robotVoiceSelect) {
+          robotVoiceSelect.value = voice;
+        }
+        storeLocalRobotVoice(voice);
+        return voice;
       }
 
       function updateStatus(message, isError) {
@@ -88,11 +243,241 @@
         status.style.color = isError ? '#b91c1c' : '';
       }
 
-      if (saveBtn) {
-        saveBtn.addEventListener('click', saveMode);
+      function storeLocalMode(value) {
+        var mode = normalize(value);
+        try {
+          window.localStorage.setItem(STORAGE_KEY, mode);
+        } catch (err) {}
+        return mode;
       }
-      if (resetBtn) {
-        resetBtn.addEventListener('click', resetMode);
+
+      function storeLocalEnabled(key, enabled) {
+        var value = !!enabled;
+        try {
+          window.localStorage.setItem(key, value ? '1' : '0');
+        } catch (err) {}
+        return value;
+      }
+
+      function readLocalEnabled(key, fallback) {
+        try {
+          var raw = window.localStorage.getItem(key);
+          if (raw === null || raw === '') return !!fallback;
+          return raw !== '0' && raw !== 'false';
+        } catch (err) {
+          return !!fallback;
+        }
+      }
+
+      function setChatEnabled(enabled) {
+        currentChatEnabled = storeLocalEnabled(CHAT_ENABLED_STORAGE_KEY, enabled);
+        if (chatEnabledCheckbox) chatEnabledCheckbox.checked = currentChatEnabled;
+        if (!currentChatEnabled) {
+          setSelectedMode('normal');
+        }
+        updateControlAvailability();
+        return currentChatEnabled;
+      }
+
+      function setRobotEnabled(enabled) {
+        currentRobotEnabled = storeLocalEnabled(ROBOT_ENABLED_STORAGE_KEY, enabled);
+        if (robotEnabledCheckbox) robotEnabledCheckbox.checked = currentRobotEnabled;
+        if (!currentRobotEnabled) {
+          setSelectedMode('normal');
+        }
+        updateControlAvailability();
+        return currentRobotEnabled;
+      }
+
+      function storeLocalVoice(enabled) {
+        var value = !!enabled;
+        try {
+          window.localStorage.setItem(VOICE_STORAGE_KEY, value ? '1' : '0');
+        } catch (err) {}
+        return value;
+      }
+
+      function storeLocalRobotVoice(value) {
+        var voice = normalizeRobotVoice(value);
+        try {
+          window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, voice);
+        } catch (err) {}
+        return voice;
+      }
+
+      function setVoiceEnabled(enabled) {
+        var value = storeLocalVoice(enabled);
+        if (voiceCheckbox) {
+          voiceCheckbox.checked = value;
+        }
+        return value;
+      }
+
+      function notifyChatMode(value) {
+        var mode = normalize(value);
+        var message = { type: 'pcs-ai-chat-personality-updated', mode: mode };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
+      function notifyChatEnabled(enabled) {
+        var message = { type: 'pcs-ai-chat-enabled-updated', enabled: !!enabled };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
+      function notifyRobotEnabled(enabled) {
+        var message = { type: 'pcs-ai-robot-enabled-updated', enabled: !!enabled };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
+      function notifyChatVoice(enabled) {
+        var message = { type: 'pcs-ai-chat-voice-updated', enabled: !!enabled };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
+      function notifyRobotVoice(value) {
+        var voice = normalizeRobotVoice(value);
+        var message = { type: 'pcs-ai-chat-robot-voice-updated', voice: voice };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
+      function loadMode() {
+        var current = 'normal';
+        var currentChat = true;
+        var currentRobot = true;
+        var currentVoice = false;
+        var currentRobotVoice = 'es-CO';
+        try {
+          currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
+          currentRobot = readLocalEnabled(ROBOT_ENABLED_STORAGE_KEY, true);
+          current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
+          currentVoice = window.localStorage.getItem(VOICE_STORAGE_KEY) === '1';
+          currentRobotVoice = normalizeRobotVoice(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || 'es-CO');
+        } catch (err) {
+          current = 'normal';
+          currentChat = true;
+          currentRobot = true;
+          currentVoice = false;
+          currentRobotVoice = 'es-CO';
+        }
+        setChatEnabled(currentChat);
+        setRobotEnabled(currentRobot);
+        setSelectedMode(current);
+        setVoiceEnabled(currentVoice);
+        setSelectedRobotVoice(currentRobotVoice);
+        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(currentRobotVoice) + '.');
+
+        fetch(PREFS_ENDPOINT, { credentials: 'same-origin' })
+          .then(function (res) {
+            if (!res.ok) return null;
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data) return;
+            var chatOn = typeof data.chat_enabled === 'boolean' ? setChatEnabled(data.chat_enabled) : currentChat;
+            var robotOn = typeof data.robot_enabled === 'boolean' ? setRobotEnabled(data.robot_enabled) : currentRobot;
+            var mode = storeLocalMode(data.personality_mode || current);
+            var voice = typeof data.voice_enabled === 'boolean' ? setVoiceEnabled(data.voice_enabled) : currentVoice;
+            var robotVoice = setSelectedRobotVoice(data.robot_voice || currentRobotVoice);
+            setSelectedMode(mode);
+            notifyChatEnabled(chatOn);
+            notifyRobotEnabled(robotOn);
+            notifyChatMode(mode);
+            notifyChatVoice(voice);
+            notifyRobotVoice(robotVoice);
+            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(robotVoice) + '.');
+          })
+          .catch(function () {
+            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
+          });
+      }
+
+      function saveMode() {
+        var chatOn = setChatEnabled(chatEnabledCheckbox ? chatEnabledCheckbox.checked : true);
+        var robotOn = setRobotEnabled(robotEnabledCheckbox ? robotEnabledCheckbox.checked : true);
+        var mode = storeLocalMode(getSelectedMode());
+        var voice = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
+        var robotVoice = setSelectedRobotVoice(getSelectedRobotVoice());
+        notifyChatEnabled(chatOn);
+        notifyRobotEnabled(robotOn);
+        notifyChatMode(mode);
+        notifyChatVoice(voice);
+        notifyRobotVoice(robotVoice);
+        updateStatus('Guardando configuracion...');
+        fetch(PREFS_ENDPOINT, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
+        }).then(function (res) {
+          if (!res.ok) throw new Error('No se pudo guardar en servidor.');
+          return res.json();
+        }).then(function (data) {
+          var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabled(data.chat_enabled) : chatOn;
+          var savedRobot = typeof (data && data.robot_enabled) === 'boolean' ? setRobotEnabled(data.robot_enabled) : robotOn;
+          var saved = storeLocalMode(data && data.personality_mode ? data.personality_mode : mode);
+          var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? setVoiceEnabled(data.voice_enabled) : voice;
+          var savedRobotVoice = setSelectedRobotVoice(data && data.robot_voice ? data.robot_voice : robotVoice);
+          setSelectedMode(saved);
+          notifyChatEnabled(savedChat);
+          notifyRobotEnabled(savedRobot);
+          notifyChatMode(saved);
+          notifyChatVoice(savedVoice);
+          notifyRobotVoice(savedRobotVoice);
+          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(savedRobotVoice) + '.');
+        }).catch(function (err) {
+          updateStatus('Configuracion aplicada localmente, pero no se pudo guardar en servidor. ' + String(err && err.message ? err.message : ''), true);
+        });
+      }
+
+      function resetMode() {
+        setChatEnabled(true);
+        setRobotEnabled(true);
+        setSelectedMode('normal');
+        saveMode();
+      }
+
+      if (saveBtn) saveBtn.addEventListener('click', saveMode);
+      if (resetBtn) resetBtn.addEventListener('click', resetMode);
+      modeInputs.forEach(function (input) {
+        input.addEventListener('change', function () {
+          var mode = storeLocalMode(getSelectedMode());
+          notifyChatMode(mode);
+          updateStatus('Vista previa aplicada: ' + labelFor(mode) + '. Presiona Guardar configuracion para persistirla.');
+        });
+      });
+      if (chatEnabledCheckbox) {
+        chatEnabledCheckbox.addEventListener('change', function () {
+          var enabled = setChatEnabled(chatEnabledCheckbox.checked);
+          notifyChatEnabled(enabled);
+          updateStatus('Vista previa aplicada: chat ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuracion para persistirla.');
+        });
+      }
+      if (robotEnabledCheckbox) {
+        robotEnabledCheckbox.addEventListener('change', function () {
+          var enabled = setRobotEnabled(robotEnabledCheckbox.checked);
+          notifyRobotEnabled(enabled);
+          notifyChatMode(getSelectedMode());
+          updateStatus('Vista previa aplicada: robot ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuracion para persistirla.');
+        });
+      }
+      if (voiceCheckbox) {
+        voiceCheckbox.addEventListener('change', function () {
+          var enabled = setVoiceEnabled(voiceCheckbox.checked);
+          notifyChatVoice(enabled);
+          updateStatus('Vista previa aplicada: voz ' + (enabled ? 'activa' : 'inactiva') + '. Presiona Guardar configuracion para persistirla.');
+        });
+      }
+      if (robotVoiceSelect) {
+        robotVoiceSelect.addEventListener('change', function () {
+          var voice = setSelectedRobotVoice(robotVoiceSelect.value);
+          notifyRobotVoice(voice);
+          updateStatus('Vista previa aplicada: voz del robot ' + labelForRobotVoice(voice) + '. Presiona Guardar configuracion para persistirla.');
+        });
       }
       loadMode();
     })();

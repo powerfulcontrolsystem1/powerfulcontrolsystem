@@ -21,6 +21,13 @@
         </li>
 
         <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Asistente IA</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionChatFlotante" href="/administrar_empresa/configuracion_chat_flotante.html" target="configuracionContentFrame"><img class="icon" src="/img/gpt.svg" alt="">Configurar chat y robot</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
           <div class="admin-nav-group-title">Ventas y cobro</div>
           <ul class="admin-nav-sublist">
             <li><a id="linkConfiguracionCarritoEmpresa" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito unificado</a></li>
@@ -68,6 +75,29 @@
   </div>
   <script src="/js/administrar_empresa.js"></script>
   <script>
+    (function openRequestedConfigSection(){
+      var frame = document.getElementById('configuracionContentFrame');
+      if (!frame) return;
+
+      function getRequestedSection() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var requested = String(params.get('open') || '').trim().toLowerCase();
+          if (requested) return requested;
+        } catch (e) {}
+        return String((window.location.hash || '').replace(/^#/, '')).trim().toLowerCase();
+      }
+
+      var requested = getRequestedSection();
+      if (requested === 'chat_flotante' || requested === 'chat-flotante' || requested === 'chat_robot' || requested === 'chat-robot') {
+        frame.src = '/administrar_empresa/configuracion_chat_flotante.html';
+        var link = document.getElementById('linkConfiguracionChatFlotante');
+        if (link) {
+          link.classList.add('active');
+        }
+      }
+    })();
+
     (function bindFrecuenciaFPMenuVisibility(){
       var item = document.getElementById('menuFrecuenciaFE');
       if (!item || item.dataset.pcsBound === '1') return;

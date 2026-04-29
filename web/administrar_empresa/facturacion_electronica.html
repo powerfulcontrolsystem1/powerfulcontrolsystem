@@ -48,6 +48,52 @@
       <div id="feFirmaMsg" class="form-help"></div>
     </div>
 
+    <div id="feDianPruebasCard" class="card is-hidden">
+      <h2>Pruebas Dian</h2>
+      <p class="form-help">
+        Ejecuta el set de habilitación con 8 facturas electrónicas, 1 nota débito y 1 nota crédito. Antes de enviar valida firma, credenciales, TestSetId, ambiente y transporte configurado.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help"><label><input id="feDianPruebasSimular" type="checkbox"> Simular sin enviar a DIAN</label></div>
+          <div class="form-help">El envío real requiere ambiente de habilitación, firma registrada y endpoint compatible.</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnóstico DIAN</button>
+        <button id="btnDianPruebas" type="button" class="btn">Pruebas Dian</button>
+      </div>
+      <div id="feDianPruebasMsg" class="form-help"></div>
+      <pre id="feDianPruebasResultado" class="form-help pre-output"></pre>
+    </div>
+
+    <div id="feDianOfflineCard" class="card is-hidden">
+      <h2>Modo offline / contingencia DIAN</h2>
+      <p class="form-help">
+        Permite continuar de forma controlada cuando no hay internet o no se detecta el servidor DIAN/proveedor. El documento queda en cola para transmitirlo cuando vuelva la conexión.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help"><label><input id="feDianOfflineActivo" type="checkbox"> Activar modo offline DIAN</label></div>
+          <div class="form-help"><label><input id="feDianOfflinePreguntar" type="checkbox" checked> Preguntar antes de continuar en offline</label></div>
+          <div class="form-help"><label><input id="feDianOfflineAuto" type="checkbox" checked> Reintentar automáticamente cuando vuelva la conexión</label></div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="feDianContingenciaTipo">Tipo de contingencia</label>
+          <select id="feDianContingenciaTipo" class="form-input">
+            <option value="servicio_dian">Servicio DIAN/proveedor no disponible</option>
+            <option value="internet_empresa">Internet o sistema de la empresa no disponible</option>
+          </select>
+          <div class="form-help">Para fallas propias usa la numeración/documentos de contingencia autorizados por DIAN.</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnDianCheckConexion" class="btn secondary" type="button">Probar conexión</button>
+        <button id="btnDianProcesarCola" class="btn" type="button">Procesar cola</button>
+      </div>
+      <div id="feDianOfflineMsg" class="form-help"></div>
+    </div>
+
     <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
       <h3>Campos estructurados — Ecuador (SRI)</h3>
       <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>establecimiento</code>, <code>punto_emision</code>, <code>ambiente_sri</code>). No interfiere con Colombia ni con la DIAN.</p>
@@ -477,6 +523,34 @@
       el.style.color = isError ? "#ef5350" : "";
     }
 
+    function setDianPruebasMessage(text, isError) {
+      const el = document.getElementById("feDianPruebasMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setDianOfflineMessage(text, isError) {
+      const el = document.getElementById("feDianOfflineMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setDianPruebasResult(data) {
+      const box = document.getElementById("feDianPruebasResultado");
+      if (!box) return;
+      if (!data) {
+        box.textContent = "";
+        return;
+      }
+      try {
+        box.textContent = JSON.stringify(data, null, 2);
+      } catch (_) {
+        box.textContent = String(data);
+      }
+    }
+
     function setOperationResult(data) {
       const box = document.getElementById("op_resultado");
       if (!box) return;
@@ -507,6 +581,25 @@
       return res.text().then(function(t) {
         throw new Error(t || ("HTTP " + res.status));
       });
+    }
+
+    async function readJSONResponse(res) {
+      const textBody = await res.text();
+      let data = null;
+      if (textBody) {
+        try {
+          data = JSON.parse(textBody);
+        } catch (_) {
+          data = { error: textBody };
+        }
+      }
+      if (!res.ok) {
+        const msg = data && (data.motivo || data.error || data.message) ? (data.motivo || data.error || data.message) : ("HTTP " + res.status);
+        const err = new Error(msg);
+        err.data = data;
+        throw err;
+      }
+      return data || {};
     }
 
     function toInt(value, fallback) {
@@ -694,6 +787,14 @@
         if (firmaCard) {
           firmaCard.classList.toggle("is-hidden", codeU !== "CO");
         }
+        var pruebasCard = document.getElementById("feDianPruebasCard");
+        if (pruebasCard) {
+          pruebasCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
+        var offlineCard = document.getElementById("feDianOfflineCard");
+        if (offlineCard) {
+          offlineCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
         if (vista.label_identificador) {
           var li = document.getElementById("labelIdentificador");
           if (li) li.textContent = vista.label_identificador;
@@ -803,6 +904,16 @@
         if (document.getElementById("fe_pa_ruc")) extra.ruc = txt(document.getElementById("fe_pa_ruc").value) || extra.ruc;
         if (document.getElementById("fe_pa_dv")) extra.dv = txt(document.getElementById("fe_pa_dv").value) || extra.dv;
       }
+      if (code === "CO") {
+        var offlineActivo = document.getElementById("feDianOfflineActivo");
+        var offlinePreguntar = document.getElementById("feDianOfflinePreguntar");
+        var offlineAuto = document.getElementById("feDianOfflineAuto");
+        var contingenciaTipo = document.getElementById("feDianContingenciaTipo");
+        if (offlineActivo) extra.modo_offline_dian_activo = !!offlineActivo.checked;
+        if (offlinePreguntar) extra.modo_offline_preguntar = !!offlinePreguntar.checked;
+        if (offlineAuto) extra.modo_offline_auto_reintentar = !!offlineAuto.checked;
+        if (contingenciaTipo) extra.dian_contingencia_tipo = txt(contingenciaTipo.value) || "servicio_dian";
+      }
       document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
     }
 
@@ -822,6 +933,14 @@
         document.getElementById("fe_pa_ruc").value = j.ruc || "";
         document.getElementById("fe_pa_dv").value = j.dv || "";
       }
+      var offlineActivo = document.getElementById("feDianOfflineActivo");
+      var offlinePreguntar = document.getElementById("feDianOfflinePreguntar");
+      var offlineAuto = document.getElementById("feDianOfflineAuto");
+      var contingenciaTipo = document.getElementById("feDianContingenciaTipo");
+      if (offlineActivo) offlineActivo.checked = !!j.modo_offline_dian_activo;
+      if (offlinePreguntar) offlinePreguntar.checked = j.modo_offline_preguntar !== false;
+      if (offlineAuto) offlineAuto.checked = j.modo_offline_auto_reintentar !== false;
+      if (contingenciaTipo) contingenciaTipo.value = j.dian_contingencia_tipo || "servicio_dian";
     }
 
     function fillCountryHint(code) {
@@ -999,6 +1118,68 @@
       renderList(data.items || []);
     }
 
+    function getDianOfflineUISettings() {
+      var activo = document.getElementById("feDianOfflineActivo");
+      var preguntar = document.getElementById("feDianOfflinePreguntar");
+      var auto = document.getElementById("feDianOfflineAuto");
+      return {
+        activo: !!(activo && activo.checked),
+        preguntar: !preguntar || !!preguntar.checked,
+        auto: !auto || !!auto.checked
+      };
+    }
+
+    async function checkDianConnection(procesarCola) {
+      if (!state.empresaID) throw new Error("empresa_id es obligatorio");
+      const url = "/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" +
+        encodeURIComponent(state.empresaID) + "&pais_codigo=CO&procesar_reintentos=" + (procesarCola ? "1" : "0");
+      const res = await fetch(url, { credentials: "same-origin" });
+      const data = await readJSONResponse(res);
+      var msg = data.mensaje || "Estado de conexión consultado.";
+      if (data.online) {
+        msg = "Conexión DIAN/proveedor disponible. " + msg;
+        if (data.retry_procesado && typeof data.retry_procesado.enviados !== "undefined") {
+          msg += " Cola procesada: " + data.retry_procesado.enviados + " enviados, " + data.retry_procesado.fallidos + " fallidos.";
+        }
+      } else if (data.modo_offline_dian_activo) {
+        msg = "Sin conexión DIAN/proveedor. Modo offline disponible.";
+      } else {
+        msg = "Sin conexión DIAN/proveedor. Modo offline desactivado.";
+      }
+      setDianOfflineMessage(msg, !data.online && !data.modo_offline_dian_activo);
+      return data;
+    }
+
+    async function preflightDianOfflineForOperation(action, payload) {
+      const code = txt(payload && payload.pais_codigo).toUpperCase();
+      const normalizedAction = txt(action).toLowerCase();
+      if (code !== "CO" || ["emitir", "anular", "nota_credito", "emitir_nota_credito"].indexOf(normalizedAction) === -1) {
+        return {};
+      }
+      const status = await checkDianConnection(false);
+      if (status.online) {
+        return {};
+      }
+      const offlineActivo = !!status.modo_offline_dian_activo;
+      const preguntar = status.modo_offline_preguntar !== false;
+      const mensaje = status.mensaje || "No hay internet o no se detecta el servidor DIAN/proveedor.";
+      if (!offlineActivo) {
+        throw new Error(mensaje + " El modo offline DIAN está desactivado; no se continuará con la facturación electrónica.");
+      }
+      if (preguntar) {
+        const seguir = window.confirm(mensaje + "\n\n¿Deseas continuar en modo offline/contingencia DIAN y dejar el documento en cola para transmitirlo cuando vuelva la conexión?");
+        if (!seguir) {
+          throw new Error("Operación cancelada. No se emitió en modo offline DIAN.");
+        }
+      }
+      return {
+        permitir_modo_offline: true,
+        confirmar_modo_offline: true,
+        origen_modo_offline: "preflight_configuracion_empresa",
+        mensaje_confirmacion_dian: mensaje
+      };
+    }
+
     async function ejecutarOperacionFacturacion(action) {
       const payload = collectOperacionPayload(action);
       if (!payload.documento_codigo) {
@@ -1006,6 +1187,7 @@
         return;
       }
       try {
+        Object.assign(payload, await preflightDianOfflineForOperation(action, payload));
         const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
         const res = await fetch(url, {
           method: "PUT",
@@ -1030,10 +1212,78 @@
             opMessage += " | Correo no enviado: " + envio.error;
           }
         }
+        if (data && data.integracion_fiscal) {
+          const integ = data.integracion_fiscal;
+          if (integ.estado_envio === "contingencia") {
+            opMessage += " | Modo offline DIAN activo: documento en cola para transmisión posterior.";
+          } else if (integ.requiere_confirmacion_offline) {
+            opMessage += " | DIAN/proveedor no disponible: se requiere confirmar modo offline.";
+          } else if (integ.estado_envio === "fallido" && integ.error) {
+            opMessage += " | Integración fiscal: " + integ.error;
+          }
+        }
         setOperationMessage(opMessage, false);
       } catch (err) {
         setOperationResult(null);
         setOperationMessage(err && err.message ? err.message : "No se pudo ejecutar la operación", true);
+      }
+    }
+
+    async function ejecutarDianDiagnostico() {
+      if (!state.empresaID) {
+        setDianPruebasMessage("empresa_id es obligatorio", true);
+        return;
+      }
+      setDianPruebasMessage("Consultando diagnóstico DIAN...", false);
+      setDianPruebasResult(null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + encodeURIComponent(state.empresaID);
+        const res = await fetch(url, { credentials: "same-origin" });
+        const data = await readJSONResponse(res);
+        setDianPruebasResult(data);
+        setDianPruebasMessage("Diagnóstico DIAN cargado.", false);
+      } catch (err) {
+        setDianPruebasResult(err && err.data ? err.data : null);
+        setDianPruebasMessage(err && err.message ? err.message : "No se pudo consultar DIAN", true);
+      }
+    }
+
+    async function ejecutarDianPruebas() {
+      if (!state.empresaID) {
+        setDianPruebasMessage("empresa_id es obligatorio", true);
+        return;
+      }
+      const simular = !!document.getElementById("feDianPruebasSimular").checked;
+      if (!simular && !window.confirm("Esto ejecutará Pruebas Dian reales en ambiente de habilitación. ¿Continuar?")) {
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        simular: simular,
+        detener_en_error: true
+      };
+      setDianPruebasMessage(simular ? "Simulando set DIAN..." : "Ejecutando Pruebas Dian...", false);
+      setDianPruebasResult(null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        });
+        const data = await readJSONResponse(res);
+        setDianPruebasResult(data);
+        if (data && data.habilitacion_aprobada) {
+          setDianPruebasMessage("Pruebas Dian aprobadas por el set configurado.", false);
+        } else if (data && data.bloqueado) {
+          setDianPruebasMessage(data.motivo || "Pruebas Dian bloqueadas por validación.", true);
+        } else {
+          setDianPruebasMessage("Pruebas Dian ejecutadas. Revisa el resultado y acuses.", !data || data.ok === false);
+        }
+      } catch (err) {
+        setDianPruebasResult(err && err.data ? err.data : null);
+        setDianPruebasMessage(err && err.message ? err.message : "No se pudo ejecutar Pruebas Dian", true);
       }
     }
 
@@ -1077,6 +1327,42 @@
     document.getElementById("btnEmitirNC").addEventListener("click", function() {
       ejecutarOperacionFacturacion("nota_credito");
     });
+
+    document.getElementById("btnDianDiagnostico").addEventListener("click", function() {
+      ejecutarDianDiagnostico();
+    });
+
+    document.getElementById("btnDianPruebas").addEventListener("click", function() {
+      ejecutarDianPruebas();
+    });
+
+    var btnDianCheckConexion = document.getElementById("btnDianCheckConexion");
+    if (btnDianCheckConexion) {
+      btnDianCheckConexion.addEventListener("click", function() {
+        setDianOfflineMessage("Probando conexión DIAN/proveedor...", false);
+        checkDianConnection(false).catch(function(err) {
+          setDianOfflineMessage(err && err.message ? err.message : "No se pudo probar la conexión DIAN.", true);
+        });
+      });
+    }
+
+    var btnDianProcesarCola = document.getElementById("btnDianProcesarCola");
+    if (btnDianProcesarCola) {
+      btnDianProcesarCola.addEventListener("click", function() {
+        setDianOfflineMessage("Validando conexión y procesando cola...", false);
+        checkDianConnection(true).catch(function(err) {
+          setDianOfflineMessage(err && err.message ? err.message : "No se pudo procesar la cola DIAN.", true);
+        });
+      });
+    }
+
+    window.setInterval(function() {
+      var code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+      var ui = getDianOfflineUISettings();
+      if (code === "CO" && ui.auto && state.empresaID) {
+        checkDianConnection(true).catch(function() {});
+      }
+    }, 60000);
 
     document.getElementById("feForm").addEventListener("submit", async function(ev) {
       ev.preventDefault();

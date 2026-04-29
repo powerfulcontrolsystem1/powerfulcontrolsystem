@@ -28,19 +28,23 @@ func parseTruthy(v string) bool {
 }
 
 type facturacionOperacionPayload struct {
-	EmpresaID       int64   `json:"empresa_id"`
-	EntidadID       int64   `json:"entidad_id"`
-	ClienteID       int64   `json:"cliente_id"`
-	TipoDocumento   string  `json:"tipo_documento"`
-	ClienteEmail    string  `json:"cliente_email"`
-	ClienteNombre   string  `json:"cliente_nombre"`
-	PaisCodigo      string  `json:"pais_codigo"`
-	DocumentoCodigo string  `json:"documento_codigo"`
-	EstadoActual    string  `json:"estado_actual"`
-	MontoTotal      float64 `json:"monto_total"`
-	Moneda          string  `json:"moneda"`
-	PeriodoContable string  `json:"periodo_contable"`
-	Observaciones   string  `json:"observaciones"`
+	EmpresaID               int64   `json:"empresa_id"`
+	EntidadID               int64   `json:"entidad_id"`
+	ClienteID               int64   `json:"cliente_id"`
+	TipoDocumento           string  `json:"tipo_documento"`
+	ClienteEmail            string  `json:"cliente_email"`
+	ClienteNombre           string  `json:"cliente_nombre"`
+	PaisCodigo              string  `json:"pais_codigo"`
+	DocumentoCodigo         string  `json:"documento_codigo"`
+	EstadoActual            string  `json:"estado_actual"`
+	MontoTotal              float64 `json:"monto_total"`
+	Moneda                  string  `json:"moneda"`
+	PeriodoContable         string  `json:"periodo_contable"`
+	Observaciones           string  `json:"observaciones"`
+	PermitirModoOffline     bool    `json:"permitir_modo_offline"`
+	ConfirmarModoOffline    bool    `json:"confirmar_modo_offline"`
+	OrigenModoOffline       string  `json:"origen_modo_offline"`
+	MensajeConfirmacionDIAN string  `json:"mensaje_confirmacion_dian"`
 }
 
 type facturaEmailResultado struct {
@@ -53,25 +57,40 @@ type facturaEmailResultado struct {
 }
 
 type facturacionIntegracionResultado struct {
-	Aplica             bool   `json:"aplica"`
-	Accion             string `json:"accion"`
-	PaisCodigo         string `json:"pais_codigo,omitempty"`
-	Proveedor          string `json:"proveedor,omitempty"`
-	Ambiente           string `json:"ambiente,omitempty"`
-	EstadoEnvio        string `json:"estado_envio"`
-	Intentos           int64  `json:"intentos"`
-	MaxIntentos        int64  `json:"max_intentos"`
-	ProximoIntento     string `json:"proximo_intento,omitempty"`
-	ContingenciaActiva bool   `json:"contingencia_activa"`
-	ReferenciaExterna  string `json:"referencia_externa,omitempty"`
-	Error              string `json:"error,omitempty"`
+	Aplica                      bool   `json:"aplica"`
+	Accion                      string `json:"accion"`
+	PaisCodigo                  string `json:"pais_codigo,omitempty"`
+	Proveedor                   string `json:"proveedor,omitempty"`
+	Ambiente                    string `json:"ambiente,omitempty"`
+	EstadoEnvio                 string `json:"estado_envio"`
+	Intentos                    int64  `json:"intentos"`
+	MaxIntentos                 int64  `json:"max_intentos"`
+	ProximoIntento              string `json:"proximo_intento,omitempty"`
+	ContingenciaActiva          bool   `json:"contingencia_activa"`
+	ReferenciaExterna           string `json:"referencia_externa,omitempty"`
+	Error                       string `json:"error,omitempty"`
+	OfflineDisponible           bool   `json:"offline_disponible,omitempty"`
+	OfflineConfirmado           bool   `json:"offline_confirmado,omitempty"`
+	RequiereConfirmacionOffline bool   `json:"requiere_confirmacion_offline,omitempty"`
+	ConexionEstado              string `json:"conexion_estado,omitempty"`
+	ConexionMensaje             string `json:"conexion_mensaje,omitempty"`
+	AccionRecomendada           string `json:"accion_recomendada,omitempty"`
 }
 
 type facturacionProveedorDispatchResult struct {
-	Success           bool
-	ReferenciaExterna string
-	RespuestaJSON     string
-	Error             string
+	Success             bool
+	ReferenciaExterna   string
+	RespuestaJSON       string
+	Error               string
+	ConnectivityFailure bool
+	HTTPStatus          int
+}
+
+type facturacionDianOfflineSettings struct {
+	Enabled           bool   `json:"modo_offline_dian_activo"`
+	AskBeforeContinue bool   `json:"modo_offline_preguntar"`
+	AutoRetry         bool   `json:"modo_offline_auto_reintentar"`
+	ContingencyType   string `json:"dian_contingencia_tipo"`
 }
 
 func isISODateYYYYMMDD(v string) bool {
@@ -193,6 +212,34 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 				writeJSON(w, http.StatusOK, resumen)
+				return
+			}
+
+			if action == "estado_conexion_dian" || action == "estado_conexion" {
+				paisCodigo := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("pais_codigo")))
+				if paisCodigo == "" {
+					paisCodigo = "CO"
+				}
+				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, paisCodigo)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar conectividad DIAN", http.StatusInternalServerError)
+					return
+				}
+				status := facturacionProveedorConnectionStatus(cfg)
+				if cfg != nil && parseTruthy(r.URL.Query().Get("procesar_reintentos")) {
+					if online, _ := status["online"].(bool); online {
+						settings := facturacionDianOfflineSettingsFromConfig(cfg)
+						if settings.AutoRetry {
+							processed, procErr := processFacturacionRetryQueue(dbEmp, empresaID, 100, strings.TrimSpace(adminEmailFromRequest(r)))
+							if procErr != nil {
+								status["retry_error"] = procErr.Error()
+							} else {
+								status["retry_procesado"] = processed
+							}
+						}
+					}
+				}
+				writeJSON(w, http.StatusOK, status)
 				return
 			}
 
@@ -376,6 +423,14 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				transition, err := resolveFacturacionTransition(action, payload.EstadoActual)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+
+				if block, preflightErr := facturacionOfflineDianPreflight(dbEmp, payload); preflightErr != nil {
+					http.Error(w, "No se pudo validar conectividad DIAN", http.StatusInternalServerError)
+					return
+				} else if block != nil {
+					writeJSON(w, http.StatusConflict, block)
 					return
 				}
 
@@ -934,6 +989,52 @@ func facturacionAnyToBool(v interface{}) bool {
 	}
 }
 
+func facturacionDianOfflineSettingsFromConfig(cfg *dbpkg.FacturacionElectronicaPaisConfig) facturacionDianOfflineSettings {
+	settings := facturacionDianOfflineSettings{
+		Enabled:           false,
+		AskBeforeContinue: true,
+		AutoRetry:         true,
+		ContingencyType:   "servicio_dian",
+	}
+	if cfg == nil {
+		return settings
+	}
+	extra := facturacionTryParseJSONMap(cfg.CamposPaisJSON)
+	if _, ok := extra["modo_offline_dian_activo"]; ok {
+		settings.Enabled = facturacionAnyToBool(extra["modo_offline_dian_activo"])
+	}
+	if _, ok := extra["modo_offline_preguntar"]; ok {
+		settings.AskBeforeContinue = facturacionAnyToBool(extra["modo_offline_preguntar"])
+	}
+	if _, ok := extra["modo_offline_auto_reintentar"]; ok {
+		settings.AutoRetry = facturacionAnyToBool(extra["modo_offline_auto_reintentar"])
+	}
+	if raw := strings.TrimSpace(fmt.Sprintf("%v", extra["dian_contingencia_tipo"])); raw != "" && raw != "<nil>" {
+		settings.ContingencyType = strings.ToLower(raw)
+	}
+	if settings.ContingencyType == "" {
+		settings.ContingencyType = "servicio_dian"
+	}
+	return settings
+}
+
+func facturacionIsConnectivityHTTPStatus(status int) bool {
+	switch status {
+	case http.StatusRequestTimeout, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+func facturacionConnectivityMessage(base string) string {
+	base = strings.TrimSpace(base)
+	if base == "" {
+		base = "no hay internet o no se detecta el servidor de la DIAN/proveedor"
+	}
+	return base
+}
+
 func facturacionTruncate(raw string, max int) string {
 	raw = strings.TrimSpace(raw)
 	if max <= 0 || len(raw) <= max {
@@ -971,7 +1072,10 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 	client := &http.Client{Timeout: 8 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return facturacionProveedorDispatchResult{Success: false, Error: "fallo de comunicacion con proveedor fiscal"}
+		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+			return facturacionProveedorDispatchResult{Success: false, Error: "timeout de comunicacion con proveedor fiscal", ConnectivityFailure: true}
+		}
+		return facturacionProveedorDispatchResult{Success: false, Error: "fallo de comunicacion con proveedor fiscal", ConnectivityFailure: true}
 	}
 	defer resp.Body.Close()
 
@@ -1001,9 +1105,11 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 		statusMsg += ": " + facturacionTruncate(rawResp, 280)
 	}
 	return facturacionProveedorDispatchResult{
-		Success:       false,
-		RespuestaJSON: rawResp,
-		Error:         statusMsg,
+		Success:             false,
+		RespuestaJSON:       rawResp,
+		Error:               statusMsg,
+		ConnectivityFailure: facturacionIsConnectivityHTTPStatus(resp.StatusCode),
+		HTTPStatus:          resp.StatusCode,
 	}
 }
 
@@ -1065,7 +1171,7 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 			raw, _ := json.Marshal(respuesta)
 			return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: referenciaLocal, RespuestaJSON: string(raw)}
 		}
-		return facturacionProveedorDispatchResult{Success: false, Error: "proveedor fiscal mock en estado de error"}
+		return facturacionProveedorDispatchResult{Success: false, Error: "proveedor fiscal mock en estado de error", ConnectivityFailure: true}
 	}
 
 	if apiBaseURL == "" {
@@ -1107,6 +1213,153 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 	}
 
 	return dispatchFacturacionProveedorHTTP(endpoint, payloadReq)
+}
+
+func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisConfig) map[string]interface{} {
+	settings := facturacionDianOfflineSettingsFromConfig(cfg)
+	out := map[string]interface{}{
+		"ok":                            true,
+		"online":                        false,
+		"estado_conexion":               "sin_configuracion",
+		"mensaje":                       "configuracion FE no disponible",
+		"modo_offline_dian_activo":      settings.Enabled,
+		"modo_offline_preguntar":        settings.AskBeforeContinue,
+		"modo_offline_auto_reintentar":  settings.AutoRetry,
+		"dian_contingencia_tipo":        settings.ContingencyType,
+		"accion_recomendada":            "bloquear_facturacion_electronica",
+		"requiere_confirmacion_offline": false,
+	}
+	if cfg == nil {
+		return out
+	}
+
+	paisCodigo := strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo))
+	ambiente := strings.ToLower(strings.TrimSpace(cfg.Ambiente))
+	proveedor := strings.ToLower(strings.TrimSpace(cfg.Proveedor))
+	apiBaseURL := strings.TrimSpace(cfg.APIBaseURL)
+	out["pais_codigo"] = paisCodigo
+	out["proveedor"] = strings.TrimSpace(cfg.Proveedor)
+	out["ambiente"] = ambiente
+
+	if paisCodigo != "CO" {
+		out["online"] = true
+		out["estado_conexion"] = "no_aplica"
+		out["mensaje"] = "modo offline DIAN solo aplica para Colombia"
+		out["accion_recomendada"] = "continuar_online"
+		return out
+	}
+	if ambiente != "produccion" || strings.ToLower(strings.TrimSpace(cfg.Estado)) == "inactivo" {
+		out["online"] = true
+		out["estado_conexion"] = "no_aplica"
+		out["mensaje"] = "la integracion DIAN no aplica fuera de produccion o esta inactiva"
+		out["accion_recomendada"] = "continuar_online"
+		return out
+	}
+	if proveedor == "" || proveedor == "manual" || proveedor == "interno" || proveedor == "local" {
+		out["online"] = true
+		out["estado_conexion"] = "online"
+		out["mensaje"] = "proveedor local disponible"
+		out["accion_recomendada"] = "continuar_online"
+		return out
+	}
+	if strings.HasPrefix(strings.ToLower(apiBaseURL), "mock://") {
+		if strings.Contains(strings.ToLower(apiBaseURL), "ok") {
+			out["online"] = true
+			out["estado_conexion"] = "online"
+			out["mensaje"] = "proveedor mock disponible"
+			out["accion_recomendada"] = "continuar_online"
+			return out
+		}
+		out["estado_conexion"] = "offline"
+		out["mensaje"] = "proveedor mock en estado de error"
+	} else if apiBaseURL == "" {
+		out["estado_conexion"] = "sin_endpoint"
+		out["mensaje"] = "api_base_url no configurado para proveedor DIAN"
+	} else {
+		endpoint := strings.TrimRight(apiBaseURL, "/")
+		client := &http.Client{Timeout: 4 * time.Second}
+		req, err := http.NewRequest(http.MethodHead, endpoint, nil)
+		if err != nil {
+			out["estado_conexion"] = "sin_endpoint"
+			out["mensaje"] = "api_base_url invalido para proveedor DIAN"
+		} else {
+			req.Header.Set("Accept", "application/json")
+			resp, err := client.Do(req)
+			if err != nil {
+				if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+					out["mensaje"] = "timeout al detectar servidor DIAN/proveedor"
+				} else {
+					out["mensaje"] = "no se detecta internet o servidor DIAN/proveedor"
+				}
+				out["estado_conexion"] = "offline"
+			} else {
+				defer resp.Body.Close()
+				out["http_status"] = resp.StatusCode
+				if resp.StatusCode < 500 || resp.StatusCode == http.StatusMethodNotAllowed {
+					out["online"] = true
+					out["estado_conexion"] = "online"
+					out["mensaje"] = "servidor DIAN/proveedor detectado"
+					out["accion_recomendada"] = "continuar_online"
+					return out
+				}
+				out["estado_conexion"] = "offline"
+				out["mensaje"] = fmt.Sprintf("servidor DIAN/proveedor respondio HTTP %d", resp.StatusCode)
+			}
+		}
+	}
+
+	if settings.Enabled {
+		out["accion_recomendada"] = "preguntar_modo_offline"
+		out["requiere_confirmacion_offline"] = settings.AskBeforeContinue
+		return out
+	}
+	out["accion_recomendada"] = "bloquear_facturacion_electronica"
+	return out
+}
+
+func facturacionOfflineDianPreflight(dbEmp *sql.DB, payload facturacionOperacionPayload) (map[string]interface{}, error) {
+	if dbEmp == nil || payload.EmpresaID <= 0 {
+		return nil, nil
+	}
+	paisCodigo := strings.ToUpper(strings.TrimSpace(payload.PaisCodigo))
+	if paisCodigo == "" {
+		paisDetectado, _, detectErr := dbpkg.DetectFacturacionPais(dbEmp, payload.EmpresaID, "", "")
+		if detectErr == nil {
+			paisCodigo = strings.ToUpper(strings.TrimSpace(paisDetectado.Codigo))
+		}
+	}
+	if paisCodigo == "" {
+		paisCodigo = "CO"
+	}
+	if paisCodigo != "CO" {
+		return nil, nil
+	}
+	cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, payload.EmpresaID, paisCodigo)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	status := facturacionProveedorConnectionStatus(cfg)
+	online, _ := status["online"].(bool)
+	if online {
+		return nil, nil
+	}
+	settings := facturacionDianOfflineSettingsFromConfig(cfg)
+	confirmed := payload.PermitirModoOffline || payload.ConfirmarModoOffline
+	if settings.Enabled && (!settings.AskBeforeContinue || confirmed) {
+		return nil, nil
+	}
+	status["ok"] = false
+	status["bloqueado"] = true
+	if settings.Enabled {
+		status["requiere_confirmacion_offline"] = true
+		status["error"] = "DIAN/proveedor no disponible; confirme modo offline para continuar"
+		return status, nil
+	}
+	status["error"] = "DIAN/proveedor no disponible y modo offline DIAN desactivado"
+	return status, nil
 }
 
 func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, usuario string) (facturacionIntegracionResultado, *dbpkg.FacturacionElectronicaRetryItem, error) {
@@ -1167,6 +1420,14 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	if cfg == nil {
 		resultado.Error = "configuracion FE no disponible"
 		return resultado, nil, nil
+	}
+	offlineSettings := facturacionDianOfflineSettingsFromConfig(cfg)
+	offlineAplicaDIAN := paisCodigo == "CO"
+	offlineConfirmado := payload.PermitirModoOffline || payload.ConfirmarModoOffline
+	if offlineAplicaDIAN {
+		resultado.OfflineDisponible = offlineSettings.Enabled
+		resultado.OfflineConfirmado = offlineConfirmado
+		resultado.ConexionEstado = "online"
 	}
 
 	resultado.Proveedor = strings.TrimSpace(cfg.Proveedor)
@@ -1264,12 +1525,49 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		resultado.EstadoEnvio = "enviado"
 		resultado.ReferenciaExterna = retryPayload.ReferenciaExterna
 		resultado.Error = ""
+		resultado.ConexionEstado = "online"
+		resultado.ConexionMensaje = "servidor DIAN/proveedor disponible"
 	} else {
 		retryPayload.UltimoError = strings.TrimSpace(dispatch.Error)
 		if retryPayload.UltimoError == "" {
 			retryPayload.UltimoError = "fallo de integracion fiscal"
 		}
-		if retryPayload.Intentos >= retryPayload.MaxIntentos {
+		if offlineAplicaDIAN && dispatch.ConnectivityFailure {
+			resultado.ConexionEstado = "offline"
+			resultado.ConexionMensaje = facturacionConnectivityMessage(dispatch.Error)
+			if offlineSettings.Enabled && (!offlineSettings.AskBeforeContinue || offlineConfirmado) {
+				retryPayload.EstadoEnvio = "contingencia"
+				retryPayload.ContingenciaActiva = true
+				if strings.TrimSpace(retryPayload.FechaContingencia) == "" {
+					retryPayload.FechaContingencia = now
+				}
+				retryPayload.ProximoIntento = ""
+				retryPayload.UltimoError = "Modo offline DIAN activo: " + facturacionConnectivityMessage(dispatch.Error)
+				resultado.EstadoEnvio = "contingencia"
+				resultado.ContingenciaActiva = true
+				resultado.OfflineConfirmado = true
+				resultado.AccionRecomendada = "reintentar_al_volver_online"
+			} else if offlineSettings.Enabled {
+				retryPayload.EstadoEnvio = "fallido"
+				retryPayload.ContingenciaActiva = false
+				retryPayload.FechaContingencia = ""
+				retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
+				retryPayload.UltimoError = "Se requiere confirmacion para continuar en modo offline DIAN: " + facturacionConnectivityMessage(dispatch.Error)
+				resultado.EstadoEnvio = "fallido"
+				resultado.ProximoIntento = retryPayload.ProximoIntento
+				resultado.RequiereConfirmacionOffline = true
+				resultado.AccionRecomendada = "confirmar_modo_offline"
+			} else {
+				retryPayload.EstadoEnvio = "fallido"
+				retryPayload.ContingenciaActiva = false
+				retryPayload.FechaContingencia = ""
+				retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
+				retryPayload.UltimoError = "No hay internet o no se detecta DIAN/proveedor y el modo offline esta desactivado"
+				resultado.EstadoEnvio = "fallido"
+				resultado.ProximoIntento = retryPayload.ProximoIntento
+				resultado.AccionRecomendada = "bloquear_facturacion_electronica"
+			}
+		} else if retryPayload.Intentos >= retryPayload.MaxIntentos {
 			retryPayload.EstadoEnvio = "contingencia"
 			retryPayload.ContingenciaActiva = true
 			retryPayload.FechaContingencia = now
@@ -1426,6 +1724,11 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 		}
 
 		payload := facturacionBuildOperacionPayloadFromDocumento(*doc)
+		if retryItem.ContingenciaActiva || normalizeFacturacionEstadoEnvio(retryItem.EstadoEnvio) == "contingencia" {
+			payload.PermitirModoOffline = true
+			payload.ConfirmarModoOffline = true
+			payload.OrigenModoOffline = "cola_reintentos"
+		}
 		accion := facturacionDeriveAccionByDocumento(*doc)
 		resultado, persistido, procErr := processFacturacionIntegracionForDocumento(dbEmp, payload, *doc, accion, usuario)
 		if procErr != nil {

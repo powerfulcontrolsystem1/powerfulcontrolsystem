@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Panel de empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --panel-text: #f8fbff;
+      --panel-muted: rgba(248,251,255,.82);
+      --panel-ink: #172235;
+      --panel-soft: rgba(255,255,255,.14);
+      --panel-soft-strong: rgba(255,255,255,.22);
+      --panel-border: rgba(255,255,255,.26);
+      --panel-shadow: rgba(9,18,32,.28);
+    }
+
+    body.empresa-home-page {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .empresa-home {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    .empresa-home-hero {
+      position: relative;
+      min-height: 420px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      background-image:
+        linear-gradient(90deg, rgba(10,23,39,.78), rgba(10,23,39,.28)),
+        url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 24px 60px var(--panel-shadow);
+      isolation: isolate;
+    }
+
+    .empresa-home-hero.weather-cloudy {
+      background-image:
+        linear-gradient(90deg, rgba(15,27,44,.8), rgba(15,27,44,.34)),
+        url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-rain {
+      background-image:
+        linear-gradient(90deg, rgba(8,20,34,.86), rgba(8,20,34,.42)),
+        url("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-storm {
+      background-image:
+        linear-gradient(90deg, rgba(8,16,30,.9), rgba(8,16,30,.45)),
+        url("https://images.unsplash.com/photo-1500674425229-f692875b0ab7?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-night {
+      background-image:
+        linear-gradient(90deg, rgba(4,12,28,.9), rgba(4,12,28,.44)),
+        url("https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 28px;
+      min-height: 420px;
+      padding: 34px;
+      box-sizing: border-box;
+      align-items: end;
+    }
+
+    .empresa-home-copy {
+      max-width: 720px;
+      color: var(--panel-text);
+    }
+
+    .empresa-home-kicker {
+      margin: 0 0 12px;
+      color: rgba(248,251,255,.78);
+      font-size: .8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-home-title {
+      margin: 0;
+      color: var(--panel-text);
+      font-size: 4rem;
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .empresa-home-subtitle {
+      margin: 16px 0 0;
+      max-width: 660px;
+      color: var(--panel-muted);
+      font-size: 1.04rem;
+      line-height: 1.55;
+    }
+
+    .empresa-weather-panel {
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.14);
+      backdrop-filter: blur(12px);
+      color: var(--panel-text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    }
+
+    .empresa-weather-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .empresa-weather-label {
+      color: rgba(248,251,255,.75);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-weather-place {
+      margin-top: 4px;
+      color: var(--panel-text);
+      font-weight: 800;
+    }
+
+    .empresa-weather-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.36);
+      color: #fff7bc;
+      font-size: 2.6rem;
+      line-height: 1;
+      box-shadow: 0 12px 30px rgba(0,0,0,.16);
+    }
+
+    .empresa-weather-temp {
+      margin: 0;
+      color: var(--panel-text);
+      font-size: 3.6rem;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .empresa-weather-desc {
+      margin: 8px 0 0;
+      color: var(--panel-muted);
+      font-weight: 700;
+    }
+
+    .empresa-weather-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .empresa-weather-stat {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.16);
+    }
+
+    .empresa-weather-stat span {
+      display: block;
+      color: rgba(248,251,255,.72);
+      font-size: .75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .empresa-weather-stat strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--panel-text);
+      font-size: 1.05rem;
+    }
+
+    .empresa-home-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .empresa-home-action {
+      display: flex;
+      align-items: center;
+      min-height: 78px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(0,0,0,.08);
+    }
+
+    .empresa-home-action:hover,
+    .empresa-home-action:focus-visible {
+      border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+      transform: translateY(-1px);
+    }
+
+    .empresa-home-action strong {
+      display: block;
+      font-size: .98rem;
+    }
+
+    .empresa-home-action span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.35;
+    }
+
+    .empresa-home-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .empresa-home-status {
+      color: var(--muted);
+    }
+
+    .empresa-home-status.error {
+      color: #d94848;
+    }
+
+    @media (max-width: 900px) {
+      .empresa-home {
+        width: min(100% - 20px, 720px);
+        padding-top: 10px;
+      }
+
+      .empresa-home-hero-inner {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        padding: 22px;
+      }
+
+      .empresa-home-copy {
+        align-self: end;
+      }
+
+      .empresa-home-title {
+        font-size: 2.8rem;
+      }
+
+      .empresa-weather-panel {
+        align-self: auto;
+      }
+
+      .empresa-home-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .empresa-home-hero {
+        min-height: 0;
+      }
+
+      .empresa-home-title {
+        font-size: 2.1rem;
+      }
+
+      .empresa-weather-temp {
+        font-size: 3rem;
+      }
+
+      .empresa-weather-grid,
+      .empresa-home-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .empresa-home-footer {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body class="empresa-home-page">
+  <main class="empresa-home">
+    <section id="homeHero" class="empresa-home-hero weather-clear">
+      <div class="empresa-home-hero-inner">
+        <div class="empresa-home-copy">
+          <p id="homeKicker" class="empresa-home-kicker">Panel de empresa</p>
+          <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
+          <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
+        </div>
+
+        <aside class="empresa-weather-panel" aria-label="Estado del tiempo">
+          <div class="empresa-weather-head">
+            <div>
+              <div class="empresa-weather-label">Clima actual</div>
+              <div id="weatherPlace" class="empresa-weather-place">Consultando...</div>
+            </div>
+            <div id="weatherIcon" class="empresa-weather-icon" aria-hidden="true">☀</div>
+          </div>
+
+          <div>
+            <p id="weatherTemp" class="empresa-weather-temp">--°</p>
+            <p id="weatherDesc" class="empresa-weather-desc">Conectando con el servicio del clima.</p>
+          </div>
+
+          <div class="empresa-weather-grid">
+            <div class="empresa-weather-stat">
+              <span>Sensacion</span>
+              <strong id="weatherFeels">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Humedad</span>
+              <strong id="weatherHumidity">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Viento</span>
+              <strong id="weatherWind">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Nubes</span>
+              <strong id="weatherClouds">--</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <nav class="empresa-home-actions" aria-label="Accesos principales">
+      <a id="homeActionEstaciones" class="empresa-home-action" href="/administrar_empresa/estaciones.html">
+        <div><strong>Estaciones</strong><span>Operación diaria y atención.</span></div>
+      </a>
+      <a id="homeActionVentas" class="empresa-home-action" href="/administrar_empresa/carrito_de_compras.html">
+        <div><strong>Ventas</strong><span>Carritos, pedidos y cobros.</span></div>
+      </a>
+      <a id="homeActionReportes" class="empresa-home-action" href="/administrar_empresa/reportes_menu.html">
+        <div><strong>Reportes</strong><span>Indicadores y seguimiento.</span></div>
+      </a>
+      <a id="homeActionConfig" class="empresa-home-action" href="/administrar_empresa/configuracion_menu.html">
+        <div><strong>Configuracion</strong><span>Ajustes empresariales.</span></div>
+      </a>
+    </nav>
+
+    <div class="empresa-home-footer">
+      <span id="homeDate"></span>
+      <span id="homeStatus" class="empresa-home-status">Clima por Open-Meteo.</span>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var hero = document.getElementById("homeHero");
+      var statusEl = document.getElementById("homeStatus");
+      var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
+      var weatherCodeMap = {
+        0: ["Soleado", "clear", "☀"],
+        1: ["Mayormente despejado", "clear", "☀"],
+        2: ["Parcialmente nublado", "cloudy", "☁"],
+        3: ["Nublado", "cloudy", "☁"],
+        45: ["Niebla", "cloudy", "☁"],
+        48: ["Niebla con escarcha", "cloudy", "☁"],
+        51: ["Llovizna ligera", "rain", "☂"],
+        53: ["Llovizna", "rain", "☂"],
+        55: ["Llovizna intensa", "rain", "☂"],
+        61: ["Lluvia ligera", "rain", "☂"],
+        63: ["Lluvia", "rain", "☂"],
+        65: ["Lluvia intensa", "rain", "☂"],
+        80: ["Lluvia pasajera", "rain", "☂"],
+        81: ["Chubascos", "rain", "☂"],
+        82: ["Chubascos fuertes", "rain", "☂"],
+        95: ["Tormenta", "storm", "⚡"],
+        96: ["Tormenta con granizo", "storm", "⚡"],
+        99: ["Tormenta fuerte", "storm", "⚡"]
+      };
+
+      function getQueryParam(name) {
+        try {
+          return new URLSearchParams(window.location.search || "").get(name) || "";
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function readEmpresaId() {
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch (e) {}
+        try { stores.push(window.localStorage); } catch (e) {}
+        for (var i = 0; i < stores.length; i += 1) {
+          var store = stores[i];
+          if (!store) continue;
+          var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = "";
+            try { value = store.getItem(keys[k]) || ""; } catch (e) {}
+            if (/^[1-9]\d*$/.test(value)) return value;
+          }
+        }
+        return "";
+      }
+
+      function fetchJSON(url) {
+        return fetch(url, { credentials: url.indexOf(window.location.origin) === 0 || url.charAt(0) === "/" ? "same-origin" : "omit" })
+          .then(function (res) {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          });
+      }
+
+      function text(value) {
+        return String(value == null ? "" : value).trim();
+      }
+
+      function firstName(fullName, email) {
+        var raw = text(fullName);
+        if (!raw) raw = text(email).split("@")[0];
+        return raw ? raw.split(/\s+/)[0] : "administrador";
+      }
+
+      function greetingByHour() {
+        var hour = new Date().getHours();
+        if (hour < 12) return "Buenos dias";
+        if (hour < 19) return "Buenas tardes";
+        return "Buenas noches";
+      }
+
+      function setDateText() {
+        var el = document.getElementById("homeDate");
+        if (!el) return;
+        try {
+          el.textContent = new Intl.DateTimeFormat("es-CO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          }).format(new Date());
+        } catch (e) {
+          el.textContent = new Date().toLocaleString();
+        }
+      }
+
+      function setStatus(message, isError) {
+        if (!statusEl) return;
+        statusEl.textContent = message || "";
+        statusEl.classList.toggle("error", !!isError);
+      }
+
+      function applyEmpresaLinks() {
+        if (!empresaId) return;
+        Array.prototype.forEach.call(document.querySelectorAll(".empresa-home-action"), function (link) {
+          try {
+            var url = new URL(link.getAttribute("href"), window.location.origin);
+            url.searchParams.set("empresa_id", empresaId);
+            link.setAttribute("href", url.pathname + url.search);
+          } catch (e) {}
+        });
+      }
+
+      function resolveWeatherLocation(admin) {
+        var ciudad = text(admin && (admin.ciudad || admin.Ciudad));
+        var pais = text(admin && (admin.pais || admin.Pais));
+        if (ciudad && pais) return ciudad + ", " + pais;
+        if (ciudad) return ciudad;
+        try {
+          var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+          var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
+          if (cityFromTZ) return cityFromTZ;
+        } catch (e) {}
+        return "Bogota, Colombia";
+      }
+
+      function weatherInfo(code, isDay) {
+        var item = weatherCodeMap[Number(code)] || ["Clima variable", "cloudy", "☁"];
+        if (!isDay && item[1] === "clear") {
+          return ["Noche despejada", "night", "☾"];
+        }
+        if (!isDay && item[1] === "cloudy") {
+          return [item[0], "night", item[2]];
+        }
+        return item;
+      }
+
+      function setHeroWeather(type) {
+        if (!hero) return;
+        hero.classList.remove("weather-clear", "weather-cloudy", "weather-rain", "weather-storm", "weather-night");
+        hero.classList.add("weather-" + (type || "clear"));
+      }
+
+      function renderWeather(place, forecast) {
+        var current = forecast && forecast.current ? forecast.current : {};
+        var info = weatherInfo(current.weather_code, Number(current.is_day) !== 0);
+        setHeroWeather(info[1]);
+        document.getElementById("weatherPlace").textContent = place;
+        document.getElementById("weatherIcon").textContent = info[2];
+        document.getElementById("weatherTemp").textContent = Math.round(Number(current.temperature_2m || 0)) + "°";
+        document.getElementById("weatherDesc").textContent = info[0];
+        document.getElementById("weatherFeels").textContent = Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "°";
+        document.getElementById("weatherHumidity").textContent = Number(current.relative_humidity_2m || 0) + "%";
+        document.getElementById("weatherWind").textContent = Math.round(Number(current.wind_speed_10m || 0)) + " km/h";
+        document.getElementById("weatherClouds").textContent = Number(current.cloud_cover || 0) + "%";
+        setStatus("Clima actualizado desde internet con Open-Meteo.", false);
+      }
+
+      function loadWeather(admin) {
+        var locationName = resolveWeatherLocation(admin);
+        document.getElementById("weatherPlace").textContent = locationName;
+        var geocodeURL = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+          encodeURIComponent(locationName) + "&count=1&language=es&format=json";
+        return fetchJSON(geocodeURL)
+          .then(function (geo) {
+            var item = geo && Array.isArray(geo.results) ? geo.results[0] : null;
+            if (!item) throw new Error("ubicacion no encontrada");
+            var place = [item.name, item.admin1, item.country].filter(Boolean).join(", ");
+            var forecastURL = "https://api.open-meteo.com/v1/forecast?latitude=" +
+              encodeURIComponent(item.latitude) + "&longitude=" + encodeURIComponent(item.longitude) +
+              "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto";
+            return fetchJSON(forecastURL).then(function (forecast) {
+              renderWeather(place || locationName, forecast);
+            });
+          })
+          .catch(function () {
+            setHeroWeather("clear");
+            document.getElementById("weatherDesc").textContent = "No se pudo consultar el clima en este momento.";
+            setStatus("No se pudo obtener el clima desde internet. La pagina sigue disponible.", true);
+          });
+      }
+
+      function renderWelcome(admin, empresa) {
+        var adminName = firstName(admin && (admin.name || admin.Name), admin && (admin.email || admin.Email));
+        var empresaName = text(empresa && (empresa.nombre || empresa.Nombre)) || "tu empresa";
+        var tipo = text(empresa && (empresa.tipo_nombre || empresa.TipoNombre));
+        document.getElementById("homeTitle").textContent = greetingByHour() + ", " + adminName + ".";
+        document.getElementById("homeKicker").textContent = "Panel de " + empresaName;
+        document.getElementById("homeSubtitle").textContent = tipo
+          ? "Bienvenido al centro operativo de " + empresaName + ". Hoy tienes a la mano el clima, los accesos principales y el contexto para empezar con orden."
+          : "Bienvenido al centro operativo de " + empresaName + ". Hoy tienes a la mano el clima, los accesos principales y el contexto para empezar con orden.";
+      }
+
+      function init() {
+        setDateText();
+        applyEmpresaLinks();
+        var adminPromise = fetchJSON("/me").catch(function () { return {}; });
+        var empresaPromise = empresaId
+          ? fetchJSON("/super/api/empresas?id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        Promise.all([adminPromise, empresaPromise]).then(function (values) {
+          var admin = values[0] || {};
+          var empresa = values[1] || {};
+          renderWelcome(admin, empresa);
+          return loadWeather(admin);
+        });
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

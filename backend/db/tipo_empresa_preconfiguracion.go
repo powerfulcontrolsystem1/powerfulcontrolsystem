@@ -24,8 +24,11 @@ type TipoEmpresaPreconfiguracion struct {
 }
 
 type TipoEmpresaPreconfigTemplate struct {
-	Estaciones TipoEmpresaPreconfigEstaciones `json:"estaciones"`
-	Productos  []TipoEmpresaPreconfigProducto `json:"productos"`
+	Estaciones TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
+	Productos  []TipoEmpresaPreconfigProducto  `json:"productos"`
+	Usuarios   []TipoEmpresaPreconfigUsuario   `json:"usuarios,omitempty"`
+	Asistente  TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia,omitempty"`
+	TareasGuia []TipoEmpresaPreconfigTareaGuia `json:"tareas_guia,omitempty"`
 }
 
 type TipoEmpresaPreconfigEstaciones struct {
@@ -48,6 +51,25 @@ type TipoEmpresaPreconfigProducto struct {
 	StockMinimo          float64 `json:"stock_minimo"`
 	StockInicial         float64 `json:"stock_inicial"`
 	ReferenciaInventario string  `json:"referencia_inventario,omitempty"`
+}
+
+type TipoEmpresaPreconfigUsuario struct {
+	Nombre        string `json:"nombre"`
+	Email         string `json:"email,omitempty"`
+	Rol           string `json:"rol"`
+	Observaciones string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigAsistenteIA struct {
+	Enabled       bool     `json:"enabled"`
+	Rol           string   `json:"rol,omitempty"`
+	Instrucciones []string `json:"instrucciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigTareaGuia struct {
+	Modulo      string `json:"modulo"`
+	Titulo      string `json:"titulo"`
+	Descripcion string `json:"descripcion,omitempty"`
 }
 
 // EnsureTipoEmpresaPreconfiguracionSchema crea/migra la tabla de plantillas por tipo de empresa.
@@ -224,11 +246,8 @@ func UpsertTipoEmpresaPreconfiguracion(dbConn *sql.DB, item TipoEmpresaPreconfig
 func DefaultTipoEmpresaPreconfiguracion(tipoEmpresaID int64, tipoNombre string) TipoEmpresaPreconfiguracion {
 	template := DefaultTipoEmpresaPreconfigTemplate(tipoNombre)
 	raw, _ := json.Marshal(template)
-	enabled := len(template.Productos) > 0 || template.Estaciones.Cantidad > 0
-	nombre := "Preconfiguracion inicial"
-	if isTipoEmpresaRestaurante(tipoNombre) {
-		nombre = "Restaurante basico"
-	}
+	enabled := len(template.Productos) > 0 || template.Estaciones.Cantidad > 0 || len(template.Usuarios) > 0 || template.Asistente.Enabled || len(template.TareasGuia) > 0
+	nombre := defaultTipoEmpresaPreconfigNombre(tipoNombre)
 	return TipoEmpresaPreconfiguracion{
 		TipoEmpresaID:     tipoEmpresaID,
 		TipoEmpresaNombre: strings.TrimSpace(tipoNombre),
@@ -259,25 +278,201 @@ func ResolveTipoEmpresaPreconfiguracion(dbConn *sql.DB, tipoEmpresaID int64, tip
 }
 
 func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfigTemplate {
-	if !isTipoEmpresaRestaurante(tipoNombre) {
-		return TipoEmpresaPreconfigTemplate{}
+	if isTipoEmpresaMotel(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
+			productoPreconfig("DEMO-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
+			productoPreconfig("DEMO-MOTEL-003", "Suite jacuzzi", "Habitaciones", "Servicio premium por turno", 42000, 110000, 0),
+			productoPreconfig("DEMO-MOTEL-004", "Hora adicional", "Adicionales", "Tiempo adicional de permanencia", 6000, 15000, 0),
+			productoPreconfig("DEMO-MOTEL-005", "Minibar gaseosa", "Minibar", "Bebida de minibar", 2500, 6000, 8),
+			productoPreconfig("DEMO-MOTEL-006", "Kit aseo personal", "Minibar", "Kit de aseo para huesped", 5000, 12000, 8),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion principal", "recepcion", "Gestiona ingresos, salidas y disponibilidad."),
+			usuarioPreconfig("Caja turno", "caja", "Registra cobros y cierres de turno."),
+			usuarioPreconfig("Limpieza habitaciones", "operacion", "Actualiza estados de limpieza y alistamiento."),
+		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion.")
 	}
+	if isTipoEmpresaHotel(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
+			productoPreconfig("DEMO-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
+			productoPreconfig("DEMO-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
+			productoPreconfig("DEMO-HOTEL-004", "Lavanderia por kilo", "Servicios", "Servicio de lavanderia", 3500, 9000, 0),
+			productoPreconfig("DEMO-HOTEL-005", "Late checkout", "Adicionales", "Salida extendida", 15000, 35000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion hotel", "recepcion", "Atiende reservas, check-in y check-out."),
+			usuarioPreconfig("Caja hotel", "caja", "Controla pagos, anticipos y facturacion."),
+			usuarioPreconfig("Ama de llaves", "operacion", "Coordina limpieza y disponibilidad."),
+		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario.")
+	}
+	if isTipoEmpresaBar(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-BAR-001", "Cerveza nacional", "Bebidas", "Botella o lata nacional", 3000, 7000, 24),
+			productoPreconfig("DEMO-BAR-002", "Coctel de la casa", "Cocteles", "Preparacion estandar del bar", 9000, 22000, 6),
+			productoPreconfig("DEMO-BAR-003", "Gaseosa personal", "Bebidas", "Bebida sin alcohol", 2200, 5000, 18),
+			productoPreconfig("DEMO-BAR-004", "Picada para compartir", "Comidas", "Picada de mesa", 18000, 42000, 3),
+			productoPreconfig("DEMO-BAR-005", "Cover evento", "Servicios", "Ingreso por evento", 0, 15000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Mesero turno", "mesero", "Toma pedidos y atiende mesas."),
+			usuarioPreconfig("Barra principal", "barra", "Prepara bebidas y controla inventario."),
+			usuarioPreconfig("Caja bar", "caja", "Cobra cuentas y cierra turno."),
+		}, "Asistente de pedidos, mesas, inventario de bebidas, promociones y cierre de caja.")
+	}
+	if isTipoEmpresaSalonBelleza(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("BELLEZA", "Silla", 6, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-BELLEZA-001", "Corte dama", "Peluqueria", "Servicio de corte para dama", 12000, 30000, 0),
+			productoPreconfig("DEMO-BELLEZA-002", "Corte caballero", "Peluqueria", "Servicio de corte para caballero", 8000, 22000, 0),
+			productoPreconfig("DEMO-BELLEZA-003", "Manicure tradicional", "Unas", "Servicio de manicure", 9000, 25000, 0),
+			productoPreconfig("DEMO-BELLEZA-004", "Tinte raiz", "Color", "Aplicacion de tinte en raiz", 35000, 85000, 0),
+			productoPreconfig("DEMO-BELLEZA-005", "Tratamiento capilar", "Tratamientos", "Hidratacion o reparacion", 18000, 45000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion salon", "recepcion", "Agenda citas y recibe clientes."),
+			usuarioPreconfig("Estilista principal", "operacion", "Atiende servicios de belleza."),
+			usuarioPreconfig("Caja salon", "caja", "Registra pagos y paquetes."),
+		}, "Asistente para agenda, servicios, recordatorios, inventario de insumos y ventas.")
+	}
+	if isTipoEmpresaLavaderoAutos(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("LAVADERO", "Bahia", 6, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-LAV-001", "Lavado basico carro", "Lavado", "Lavado exterior basico", 8000, 22000, 0),
+			productoPreconfig("DEMO-LAV-002", "Lavado premium carro", "Lavado", "Exterior, interior y aspirado", 15000, 38000, 0),
+			productoPreconfig("DEMO-LAV-003", "Lavado camioneta", "Lavado", "Servicio para camioneta", 18000, 45000, 0),
+			productoPreconfig("DEMO-LAV-004", "Lavado de motor", "Servicios", "Lavado tecnico de motor", 12000, 30000, 0),
+			productoPreconfig("DEMO-LAV-005", "Encerado", "Servicios", "Aplicacion de cera", 14000, 35000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion vehiculos", "recepcion", "Recibe vehiculos y asigna bahias."),
+			usuarioPreconfig("Operario lavado", "operacion", "Actualiza estados de lavado."),
+			usuarioPreconfig("Caja lavadero", "caja", "Cobra servicios y controla turnos."),
+		}, "Asistente para turnos, bahias, servicios por vehiculo, tiempos y facturacion.")
+	}
+	if isTipoEmpresaRestaurante(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("REST", "Mesa", 8, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-REST-001", "Hamburguesa clasica", "Comidas", "Producto guia de cocina", 9000, 18000, 5),
+			productoPreconfig("DEMO-REST-002", "Perro caliente", "Comidas", "Producto guia de cocina", 6000, 12000, 5),
+			productoPreconfig("DEMO-REST-003", "Gaseosa personal", "Bebidas", "Bebida personal", 2200, 4000, 12),
+			productoPreconfig("DEMO-REST-004", "Agua botella", "Bebidas", "Agua embotellada", 1800, 3500, 12),
+			productoPreconfig("DEMO-REST-005", "Menu del dia", "Almuerzos", "Menu diario guia", 12000, 22000, 3),
+			productoPreconfig("DEMO-REST-006", "Cafe", "Bebidas calientes", "Cafe preparado", 1200, 3500, 10),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Mesero principal", "mesero", "Toma pedidos y atiende mesas."),
+			usuarioPreconfig("Cocina", "operacion", "Gestiona preparacion y despacho."),
+			usuarioPreconfig("Caja restaurante", "caja", "Cobra cuentas y cierres."),
+		}, "Asistente para pedidos, mesas, cocina, inventario, descuentos y facturacion.")
+	}
+	if isTipoEmpresaPuntoVenta(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("PV", "Caja", 3, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-PV-001", "Producto general A", "General", "Producto de inventario inicial", 5000, 10000, 10),
+			productoPreconfig("DEMO-PV-002", "Producto general B", "General", "Producto de inventario inicial", 8000, 16000, 10),
+			productoPreconfig("DEMO-PV-003", "Servicio domicilio", "Servicios", "Cargo por domicilio", 0, 5000, 0),
+			productoPreconfig("DEMO-PV-004", "Bolsa", "Empaque", "Empaque opcional", 100, 300, 50),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Vendedor mostrador", "vendedor", "Registra ventas y clientes."),
+			usuarioPreconfig("Caja principal", "caja", "Controla pagos y cierre."),
+			usuarioPreconfig("Administrador inventario", "administrador", "Ajusta inventario y precios."),
+		}, "Asistente para ventas, inventario, alertas de stock, descuentos y reportes.")
+	}
+	if isTipoEmpresaTaller(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("TALLER", "Bahia", 5, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-TALLER-001", "Revision general", "Diagnostico", "Revision inicial del vehiculo", 12000, 30000, 0),
+			productoPreconfig("DEMO-TALLER-002", "Cambio de aceite", "Mantenimiento", "Mano de obra cambio de aceite", 10000, 25000, 0),
+			productoPreconfig("DEMO-TALLER-003", "Alineacion", "Servicios", "Servicio de alineacion", 22000, 55000, 0),
+			productoPreconfig("DEMO-TALLER-004", "Filtro de aceite", "Repuestos", "Repuesto guia", 12000, 26000, 4),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion taller", "recepcion", "Recibe vehiculos y ordenes."),
+			usuarioPreconfig("Tecnico taller", "operacion", "Ejecuta servicios y reporta avances."),
+			usuarioPreconfig("Caja taller", "caja", "Cobra ordenes y repuestos."),
+		}, "Asistente para ordenes de servicio, repuestos, tiempos, diagnosticos y cobros.")
+	}
+	if isTipoEmpresaIndependiente(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("IND", "Agenda", 3, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-IND-001", "Consulta inicial", "Servicios", "Servicio profesional inicial", 0, 50000, 0),
+			productoPreconfig("DEMO-IND-002", "Servicio especializado", "Servicios", "Servicio principal del profesional", 0, 120000, 0),
+			productoPreconfig("DEMO-IND-003", "Paquete mensual", "Paquetes", "Plan mensual de acompanamiento", 0, 350000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Administrador profesional", "administrador", "Configura agenda, clientes y servicios."),
+			usuarioPreconfig("Asistente administrativo", "operacion", "Ayuda con agenda, cobros y seguimiento."),
+		}, "Asistente para agenda, clientes, cobros, recordatorios y tareas administrativas.")
+	}
+	if isTipoEmpresaRedesSociales(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("SOCIAL", "Canal", 4, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-SOCIAL-001", "Plan publicaciones basico", "Marketing", "Gestion de publicaciones basicas", 0, 180000, 0),
+			productoPreconfig("DEMO-SOCIAL-002", "Campana pauta", "Publicidad", "Gestion inicial de pauta", 0, 300000, 0),
+			productoPreconfig("DEMO-SOCIAL-003", "Diseno pieza grafica", "Diseno", "Pieza individual para redes", 0, 45000, 0),
+			productoPreconfig("DEMO-SOCIAL-004", "Reporte mensual", "Reportes", "Informe mensual de gestion", 0, 90000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Community manager", "operacion", "Gestiona canales, tareas y publicaciones."),
+			usuarioPreconfig("Asesor comercial", "vendedor", "Cotiza planes y atiende clientes."),
+			usuarioPreconfig("Caja servicios", "caja", "Registra cobros de servicios y planes."),
+		}, "Asistente para tareas de clientes, contenidos, cotizaciones, reportes y seguimiento comercial.")
+	}
+	if isTipoEmpresaSensores(tipoNombre) {
+		return newDefaultTipoEmpresaPreconfigTemplate("SENSOR", "Acceso", 4, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-SENSOR-001", "Instalacion sensor", "Instalacion", "Servicio de instalacion inicial", 25000, 80000, 0),
+			productoPreconfig("DEMO-SENSOR-002", "Mantenimiento sensor", "Mantenimiento", "Revision tecnica programada", 15000, 45000, 0),
+			productoPreconfig("DEMO-SENSOR-003", "Sensor magnetico", "Dispositivos", "Dispositivo guia de inventario", 18000, 42000, 5),
+			productoPreconfig("DEMO-SENSOR-004", "Monitoreo mensual", "Servicios", "Servicio mensual de monitoreo", 0, 65000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Tecnico instalador", "operacion", "Instala y revisa sensores."),
+			usuarioPreconfig("Monitoreo", "operacion", "Revisa eventos y alertas."),
+			usuarioPreconfig("Caja sensores", "caja", "Registra pagos y contratos."),
+		}, "Asistente para instalaciones, alertas, mantenimientos, contratos y seguimiento tecnico.")
+	}
+	return newDefaultTipoEmpresaPreconfigTemplate("GEN", "Estacion", 4, []TipoEmpresaPreconfigProducto{
+		productoPreconfig("DEMO-GEN-001", "Producto guia", "General", "Producto inicial de ejemplo", 5000, 12000, 5),
+		productoPreconfig("DEMO-GEN-002", "Servicio guia", "Servicios", "Servicio inicial de ejemplo", 0, 25000, 0),
+	}, []TipoEmpresaPreconfigUsuario{
+		usuarioPreconfig("Administrador operativo", "administrador", "Configura la empresa y revisa reportes."),
+		usuarioPreconfig("Caja principal", "caja", "Registra ventas y pagos."),
+	}, "Asistente guia para configuracion inicial, ventas, auditoria, reportes y tareas diarias.")
+}
+
+func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, stationCount int, productos []TipoEmpresaPreconfigProducto, usuarios []TipoEmpresaPreconfigUsuario, iaRol string) TipoEmpresaPreconfigTemplate {
 	return NormalizeTipoEmpresaPreconfigTemplate(TipoEmpresaPreconfigTemplate{
 		Estaciones: TipoEmpresaPreconfigEstaciones{
-			Enabled:     true,
-			Cantidad:    5,
-			Prefijo:     "Mesa",
+			Enabled:     stationCount > 0,
+			Cantidad:    stationCount,
+			Prefijo:     stationPrefix,
 			CardSize:    "medium",
 			CajaEnabled: true,
 		},
-		Productos: []TipoEmpresaPreconfigProducto{
-			{SKU: "DEMO-REST-001", Nombre: "Hamburguesa clasica", Categoria: "Comidas", UnidadMedida: "unidad", Costo: 9000, Precio: 18000, ImpuestoPorcentaje: 0, StockMinimo: 5},
-			{SKU: "DEMO-REST-002", Nombre: "Perro caliente", Categoria: "Comidas", UnidadMedida: "unidad", Costo: 6000, Precio: 12000, ImpuestoPorcentaje: 0, StockMinimo: 5},
-			{SKU: "DEMO-REST-003", Nombre: "Gaseosa personal", Categoria: "Bebidas", UnidadMedida: "unidad", Costo: 2200, Precio: 4000, ImpuestoPorcentaje: 0, StockMinimo: 12},
-			{SKU: "DEMO-REST-004", Nombre: "Agua botella", Categoria: "Bebidas", UnidadMedida: "unidad", Costo: 1800, Precio: 3500, ImpuestoPorcentaje: 0, StockMinimo: 12},
-			{SKU: "DEMO-REST-005", Nombre: "Menu del dia", Categoria: "Almuerzos", UnidadMedida: "unidad", Costo: 12000, Precio: 22000, ImpuestoPorcentaje: 0, StockMinimo: 3},
+		Productos: productos,
+		Usuarios:  usuarios,
+		Asistente: TipoEmpresaPreconfigAsistenteIA{
+			Enabled: true,
+			Rol:     iaRol,
+			Instrucciones: []string{
+				"Usa la auditoria y la configuracion de la empresa como contexto principal antes de guiar al usuario.",
+				"Explica el siguiente paso con instrucciones cortas y accionables segun el modulo donde este trabajando el usuario.",
+				"Sugiere revisar productos, estaciones, usuarios, facturacion y reportes antes de operar en produccion.",
+				"No bloquees la operacion si el servicio de IA no responde; deja siempre continuar con el flujo normal.",
+			},
+		},
+		TareasGuia: []TipoEmpresaPreconfigTareaGuia{
+			{Modulo: "Configuracion", Titulo: "Revisar datos de la empresa", Descripcion: "Completar NIT, direccion, telefonos, regimen, resoluciones y preferencias operativas."},
+			{Modulo: "Estaciones", Titulo: "Validar nombres y capacidad", Descripcion: fmt.Sprintf("Ajustar %s, cantidad, tarjeta de caja y vista movil antes de abrir operacion.", stationPrefix)},
+			{Modulo: "Productos", Titulo: "Ajustar precios e inventario", Descripcion: "Cambiar costos, precios, stock minimo, categorias e impuestos segun la operacion real."},
+			{Modulo: "Usuarios", Titulo: "Convertir usuarios guia en usuarios reales", Descripcion: "Invitar colaboradores con correo real, rol correcto y permisos finos."},
+			{Modulo: "IA", Titulo: "Usar el asistente como guia", Descripcion: "Pedirle pasos de configuracion, revision de auditoria, reportes y ayuda operativa diaria."},
 		},
 	})
+}
+
+func productoPreconfig(sku, nombre, categoria, descripcion string, costo, precio, stockMinimo float64) TipoEmpresaPreconfigProducto {
+	return TipoEmpresaPreconfigProducto{
+		SKU:                sku,
+		Nombre:             nombre,
+		Categoria:          categoria,
+		Descripcion:        descripcion,
+		UnidadMedida:       "unidad",
+		Costo:              costo,
+		Precio:             precio,
+		ImpuestoPorcentaje: 0,
+		StockMinimo:        stockMinimo,
+		StockInicial:       stockMinimo,
+	}
+}
+
+func usuarioPreconfig(nombre, rol, observaciones string) TipoEmpresaPreconfigUsuario {
+	return TipoEmpresaPreconfigUsuario{Nombre: nombre, Rol: rol, Observaciones: observaciones}
 }
 
 func ParseTipoEmpresaPreconfigTemplate(raw string) (TipoEmpresaPreconfigTemplate, error) {
@@ -356,15 +551,163 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		productos = append(productos, p)
 	}
 	template.Productos = productos
+	usuarios := make([]TipoEmpresaPreconfigUsuario, 0, len(template.Usuarios))
+	seenEmail := map[string]bool{}
+	for _, u := range template.Usuarios {
+		u.Nombre = strings.TrimSpace(u.Nombre)
+		u.Rol = strings.ToLower(strings.TrimSpace(u.Rol))
+		u.Email = strings.ToLower(strings.TrimSpace(u.Email))
+		u.Observaciones = strings.TrimSpace(u.Observaciones)
+		if u.Nombre == "" {
+			continue
+		}
+		if u.Rol == "" {
+			u.Rol = "operacion"
+		}
+		if u.Email != "" {
+			if seenEmail[u.Email] {
+				continue
+			}
+			seenEmail[u.Email] = true
+		}
+		usuarios = append(usuarios, u)
+	}
+	template.Usuarios = usuarios
+	template.Asistente.Rol = strings.TrimSpace(template.Asistente.Rol)
+	if template.Asistente.Enabled && template.Asistente.Rol == "" {
+		template.Asistente.Rol = "Asistente guia para configuracion inicial, operacion diaria, auditoria y reportes."
+	}
+	instrucciones := make([]string, 0, len(template.Asistente.Instrucciones))
+	seenInstruction := map[string]bool{}
+	for _, instruction := range template.Asistente.Instrucciones {
+		instruction = strings.TrimSpace(instruction)
+		key := strings.ToLower(instruction)
+		if instruction == "" || seenInstruction[key] {
+			continue
+		}
+		seenInstruction[key] = true
+		instrucciones = append(instrucciones, instruction)
+	}
+	template.Asistente.Instrucciones = instrucciones
+	tareas := make([]TipoEmpresaPreconfigTareaGuia, 0, len(template.TareasGuia))
+	seenTask := map[string]bool{}
+	for _, task := range template.TareasGuia {
+		task.Modulo = strings.TrimSpace(task.Modulo)
+		task.Titulo = strings.TrimSpace(task.Titulo)
+		task.Descripcion = strings.TrimSpace(task.Descripcion)
+		if task.Titulo == "" {
+			continue
+		}
+		if task.Modulo == "" {
+			task.Modulo = "General"
+		}
+		key := strings.ToLower(task.Modulo + "|" + task.Titulo)
+		if seenTask[key] {
+			continue
+		}
+		seenTask[key] = true
+		tareas = append(tareas, task)
+	}
+	template.TareasGuia = tareas
 	return template
 }
 
 func isTipoEmpresaRestaurante(tipoNombre string) bool {
-	n := strings.ToLower(strings.TrimSpace(tipoNombre))
-	for _, token := range []string{"restaurante", "restaurant", "comida", "bar", "cafeteria", "cafetería"} {
-		if strings.Contains(n, token) {
+	return tipoEmpresaNameContains(tipoNombre, "restaurante", "restaurant", "comida", "cafeteria", "cafeteria", "panaderia", "panaderia")
+}
+
+func isTipoEmpresaMotel(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "motel", "residencia")
+}
+
+func isTipoEmpresaHotel(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "hotel", "hostal", "hospedaje")
+}
+
+func isTipoEmpresaBar(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "bar", "discoteca", "cantina", "licorera")
+}
+
+func isTipoEmpresaSalonBelleza(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "salon de belleza", "salon de belleza", "belleza", "peluqueria", "peluqueria", "spa", "barberia", "barberia")
+}
+
+func isTipoEmpresaLavaderoAutos(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "lavadero", "autolavado", "lavado de autos", "car wash")
+}
+
+func isTipoEmpresaPuntoVenta(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "tienda", "punto de venta", "retail", "minimercado", "supermercado", "miscelanea", "miscelanea", "almacen", "almacen")
+}
+
+func isTipoEmpresaTaller(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "taller", "mecanica", "mecanica", "serviteca")
+}
+
+func isTipoEmpresaIndependiente(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "independiente", "profesional", "consultor", "freelance")
+}
+
+func isTipoEmpresaRedesSociales(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "redes sociales", "social media", "marketing", "agencia digital")
+}
+
+func isTipoEmpresaSensores(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "sensor", "sensores", "acceso", "monitoreo", "alarma")
+}
+
+func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
+	switch {
+	case isTipoEmpresaMotel(tipoNombre):
+		return "Motel con habitaciones guia"
+	case isTipoEmpresaHotel(tipoNombre):
+		return "Hotel con habitaciones guia"
+	case isTipoEmpresaBar(tipoNombre):
+		return "Bar con mesas guia"
+	case isTipoEmpresaSalonBelleza(tipoNombre):
+		return "Salon de belleza con sillas guia"
+	case isTipoEmpresaLavaderoAutos(tipoNombre):
+		return "Lavadero de autos con bahias guia"
+	case isTipoEmpresaRestaurante(tipoNombre):
+		return "Restaurante con mesas guia"
+	case isTipoEmpresaPuntoVenta(tipoNombre):
+		return "Punto de venta guia"
+	case isTipoEmpresaTaller(tipoNombre):
+		return "Taller con bahias guia"
+	case isTipoEmpresaIndependiente(tipoNombre):
+		return "Independiente con agenda guia"
+	case isTipoEmpresaRedesSociales(tipoNombre):
+		return "Redes sociales con canales guia"
+	case isTipoEmpresaSensores(tipoNombre):
+		return "Sensores y accesos guia"
+	default:
+		return "Preconfiguracion inicial guia"
+	}
+}
+
+func tipoEmpresaNameContains(tipoNombre string, tokens ...string) bool {
+	n := normalizeTipoEmpresaName(tipoNombre)
+	if n == "" {
+		return false
+	}
+	for _, token := range tokens {
+		token = normalizeTipoEmpresaName(token)
+		if token != "" && strings.Contains(n, token) {
 			return true
 		}
 	}
 	return false
+}
+
+func normalizeTipoEmpresaName(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	replacer := strings.NewReplacer(
+		"á", "a", "à", "a", "ä", "a",
+		"é", "e", "è", "e", "ë", "e",
+		"í", "i", "ì", "i", "ï", "i",
+		"ó", "o", "ò", "o", "ö", "o",
+		"ú", "u", "ù", "u", "ü", "u",
+		"ñ", "n",
+	)
+	return replacer.Replace(value)
 }

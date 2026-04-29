@@ -99,6 +99,16 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					pais = "CO"
 				}
 
+				yaUsoPrueba, err := dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
+				if err != nil {
+					http.Error(w, "failed to validate trial licencia history: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if yaUsoPrueba {
+					http.Error(w, "esta empresa ya uso una licencia de prueba o gratuita", http.StatusConflict)
+					return
+				}
+
 				nombre := "Licencia de prueba (15 días)"
 				descripcion := "Licencia de prueba por 15 días, valor 0."
 				valor := 0.0
@@ -116,6 +126,10 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				fechaInicio := now.Format("2006-01-02")
 				fechaFin := now.Add(15 * 24 * time.Hour).Format("2006-01-02")
 				if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, licID, empresaID, fechaInicio, fechaFin, "trial15", "licencia_prueba_15_dias_valor_0"); err != nil {
+					if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
+						http.Error(w, "esta empresa ya uso una licencia de prueba o gratuita", http.StatusConflict)
+						return
+					}
 					http.Error(w, "failed to activate trial licencia: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -148,9 +162,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				writeJSON(w, http.StatusCreated, map[string]interface{}{
-					"ok":         true,
-					"licencia_id": licID,
-					"empresa_id":  empresaID,
+					"ok":           true,
+					"licencia_id":  licID,
+					"empresa_id":   empresaID,
 					"fecha_inicio": fechaInicio,
 					"fecha_fin":    fechaFin,
 				})
@@ -504,10 +518,10 @@ func paymentPayloadFlagIsTrue(rawPayload, key string) bool {
 
 func buildPaymentPayloadFlagPatch(flagKey, recipientKey, referenceKey, recipient, reference string) string {
 	patchBytes, _ := json.Marshal(map[string]interface{}{
-		flagKey:                      true,
-		recipientKey:                 strings.TrimSpace(recipient),
-		flagKey + "_at":             time.Now().Format(time.RFC3339),
-		referenceKey:                 strings.TrimSpace(reference),
+		flagKey:         true,
+		recipientKey:    strings.TrimSpace(recipient),
+		flagKey + "_at": time.Now().Format(time.RFC3339),
+		referenceKey:    strings.TrimSpace(reference),
 	})
 	return string(patchBytes)
 }
@@ -904,24 +918,24 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	originalValueLineHTML := templateLineHTML("Valor original: ", originalValue)
 	asesorIDLineHTML := templateLineHTML("Código asesor comercial: ", asesorID)
 	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
-		"company_name":      safeEmpresa,
-		"license_name":      strings.TrimSpace(lic.Nombre),
-		"provider":          safeProvider,
-		"reference":         strings.TrimSpace(reference),
-		"license_name_line": templateLine("Licencia: ", strings.TrimSpace(lic.Nombre)),
-		"start_date_line":   templateLine("Fecha de inicio: ", strings.TrimSpace(lic.FechaInicio)),
-		"end_date_line":     templateLine("Fecha de vencimiento: ", strings.TrimSpace(lic.FechaFin)),
-		"reference_line":    templateLine("Referencia del pago: ", strings.TrimSpace(reference)),
-		"amount_paid_line":        amountPaidLine,
-		"discount_code_line":      discountCodeLine,
-		"discount_value_line":     discountValueLine,
-		"original_value_line":     originalValueLine,
-		"asesor_id_line":          asesorIDLine,
-		"amount_paid_line_html":   amountPaidLineHTML,
-		"discount_code_line_html": discountCodeLineHTML,
+		"company_name":             safeEmpresa,
+		"license_name":             strings.TrimSpace(lic.Nombre),
+		"provider":                 safeProvider,
+		"reference":                strings.TrimSpace(reference),
+		"license_name_line":        templateLine("Licencia: ", strings.TrimSpace(lic.Nombre)),
+		"start_date_line":          templateLine("Fecha de inicio: ", strings.TrimSpace(lic.FechaInicio)),
+		"end_date_line":            templateLine("Fecha de vencimiento: ", strings.TrimSpace(lic.FechaFin)),
+		"reference_line":           templateLine("Referencia del pago: ", strings.TrimSpace(reference)),
+		"amount_paid_line":         amountPaidLine,
+		"discount_code_line":       discountCodeLine,
+		"discount_value_line":      discountValueLine,
+		"original_value_line":      originalValueLine,
+		"asesor_id_line":           asesorIDLine,
+		"amount_paid_line_html":    amountPaidLineHTML,
+		"discount_code_line_html":  discountCodeLineHTML,
 		"discount_value_line_html": discountValueLineHTML,
 		"original_value_line_html": originalValueLineHTML,
-		"asesor_id_line_html":     asesorIDLineHTML,
+		"asesor_id_line_html":      asesorIDLineHTML,
 	})
 	if err != nil {
 		return err
@@ -1106,7 +1120,7 @@ func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, emp
 	if lic.EmpresaID == empresaID && strings.TrimSpace(lic.FechaInicio) != "" {
 		return true, nil
 	}
-	return dbpkg.HasLicenciaGratisActivation(dbSuper, lic.ID, empresaID)
+	return dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
 }
 
 func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (licenciaCheckoutSummary, error) {
@@ -1118,6 +1132,15 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	discountValue, discountLabel, discountApplied, err := resolveLicenciaDiscountAmount(dbSuper, discountCode, originalValue)
 	if err != nil {
 		return summary, err
+	}
+	if discountApplied && strings.TrimSpace(discountCode) != "" {
+		used, usedErr := dbpkg.HasLicenciaDiscountCodeUsedByEmpresa(dbSuper, empresaID, discountCode)
+		if usedErr != nil {
+			return summary, usedErr
+		}
+		if used {
+			return summary, fmt.Errorf("este codigo de descuento ya fue usado por esta empresa")
+		}
 	}
 	if discountValue > originalValue {
 		discountValue = originalValue
@@ -2241,13 +2264,13 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost, http.MethodPut:
 			var payload struct {
-				PublicKey    string `json:"public_key"`
-				PrivateKey   string `json:"private_key"`
-				IntegrityKey string `json:"integrity_key"`
+				PublicKey        string          `json:"public_key"`
+				PrivateKey       string          `json:"private_key"`
+				IntegrityKey     string          `json:"integrity_key"`
 				CountryOverrides map[string]bool `json:"country_overrides"`
-				Enabled      *bool  `json:"enabled"`
-				Mode         string `json:"mode"`
-				Encrypt      bool   `json:"encrypt"`
+				Enabled          *bool           `json:"enabled"`
+				Mode             string          `json:"mode"`
+				Encrypt          bool            `json:"encrypt"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -2450,15 +2473,15 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost, http.MethodPut:
 			var payload struct {
-				PublicKey  string `json:"public_key"`
-				CustomerID string `json:"customer_id"`
-				PrivateKey string `json:"private_key"`
-				CustID     string `json:"cust_id"`
-				Key        string `json:"key"`
+				PublicKey        string          `json:"public_key"`
+				CustomerID       string          `json:"customer_id"`
+				PrivateKey       string          `json:"private_key"`
+				CustID           string          `json:"cust_id"`
+				Key              string          `json:"key"`
 				CountryOverrides map[string]bool `json:"country_overrides"`
-				Enabled    *bool  `json:"enabled"`
-				Mode       string `json:"mode"`
-				Encrypt    bool   `json:"encrypt"`
+				Enabled          *bool           `json:"enabled"`
+				Mode             string          `json:"mode"`
+				Encrypt          bool            `json:"encrypt"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -3341,30 +3364,59 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		if ctxErr != nil {
 			log.Println("warning: failed to resolve Wompi payment context:", ctxErr)
 		}
+		paymentDiscountCode := ""
+		var wompiPaymentRec *dbpkg.WompiPaymentRecord
+		if transactionID != "" {
+			wompiPaymentRec, err = dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+			if err != nil {
+				log.Println("warning: failed to load Wompi payment for discount validation:", err)
+			}
+		}
+		if wompiPaymentRec == nil && reference != "" {
+			wompiPaymentRec, err = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+			if err != nil {
+				log.Println("warning: failed to load Wompi payment by reference for discount validation:", err)
+			}
+		}
+		if wompiPaymentRec != nil && wompiPaymentRec.DiscountCode.Valid {
+			paymentDiscountCode = strings.TrimSpace(wompiPaymentRec.DiscountCode.String)
+		}
 
 		activated := false
+		discountBlocked := false
 		if isApprovedPaymentStatus(status) && hasContext {
-			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
-			if actErr != nil {
-				log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
-			} else {
-				activated = act
-				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-				if licErr != nil {
-					log.Println("warning: failed to reload licencia after Wompi webhook activation:", licErr)
+			if paymentDiscountCode != "" {
+				used, usedErr := dbpkg.HasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbSuper, empresaID, paymentDiscountCode, "wompi", transactionID, reference)
+				if usedErr != nil {
+					log.Println("warning: failed to validate Wompi discount code reuse:", usedErr)
+				} else if used {
+					discountBlocked = true
+					log.Printf("warning: blocked Wompi licencia activation because discount code %q was already used by empresa %d", paymentDiscountCode, empresaID)
+				}
+			}
+			if !discountBlocked {
+				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				if actErr != nil {
+					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
-					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
-					if payErr != nil {
-						log.Println("warning: failed to reload Wompi payment for webhook activation email:", payErr)
-					} else if payRec == nil && strings.TrimSpace(reference) != "" {
-						payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+					activated = act
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					if licErr != nil {
+						log.Println("warning: failed to reload licencia after Wompi webhook activation:", licErr)
+					} else {
+						payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
 						if payErr != nil {
-							log.Println("warning: failed to reload Wompi payment by reference for webhook activation email:", payErr)
+							log.Println("warning: failed to reload Wompi payment for webhook activation email:", payErr)
+						} else if payRec == nil && strings.TrimSpace(reference) != "" {
+							payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+							if payErr != nil {
+								log.Println("warning: failed to reload Wompi payment by reference for webhook activation email:", payErr)
+							}
 						}
-					}
-					if payRec != nil {
-						if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
-							log.Println("warning: failed to send licencia activation email for Wompi webhook:", mailErr)
+						if payRec != nil {
+							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
+								log.Println("warning: failed to send licencia activation email for Wompi webhook:", mailErr)
+							}
 						}
 					}
 				}
@@ -3431,6 +3483,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			"licencia_id":                  licenciaID,
 			"empresa_id":                   empresaID,
 			"activated":                    activated,
+			"discount_blocked":             discountBlocked,
 			"venta_digital_context_found":  ventaDigitalContextFound,
 			"venta_digital_delivery_sent":  ventaDigitalDeliverySent,
 			"venta_digital_delivery_stage": ventaDigitalDeliveryStage,
@@ -3886,21 +3939,45 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		activated := false
+		discountBlocked := false
 		if isApprovedPaymentStatus(status) && hasContext {
-			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
-			if actErr != nil {
-				log.Println("warning: failed to activate licencia from Epayco status:", actErr)
-			} else {
-				activated = act
-				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-				if licErr != nil {
-					log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
+			paymentDiscountCode := ""
+			if rec != nil && rec.DiscountCode.Valid {
+				paymentDiscountCode = strings.TrimSpace(rec.DiscountCode.String)
+			}
+			if paymentDiscountCode == "" {
+				payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+				if recErr != nil {
+					log.Println("warning: failed to reload Epayco payment for discount validation:", recErr)
+				} else if payRec != nil && payRec.DiscountCode.Valid {
+					paymentDiscountCode = strings.TrimSpace(payRec.DiscountCode.String)
+				}
+			}
+			if paymentDiscountCode != "" {
+				used, usedErr := dbpkg.HasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbSuper, empresaID, paymentDiscountCode, "epayco", firstNonEmptyString(recordTransactionID, transactionID, originalTransactionID), firstNonEmptyString(recordReference, invoiceReference, reference, originalReference))
+				if usedErr != nil {
+					log.Println("warning: failed to validate Epayco discount code reuse:", usedErr)
+				} else if used {
+					discountBlocked = true
+					log.Printf("warning: blocked Epayco licencia activation because discount code %q was already used by empresa %d", paymentDiscountCode, empresaID)
+				}
+			}
+			if !discountBlocked {
+				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				if actErr != nil {
+					log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 				} else {
-					payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
-					if recErr != nil {
-						log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
-					} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
-						log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+					activated = act
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					if licErr != nil {
+						log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
+					} else {
+						payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+						if recErr != nil {
+							log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
+						} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
+							log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+						}
 					}
 				}
 			}
@@ -3928,17 +4005,18 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"provider":       "epayco",
-			"mode":           mode,
-			"mode_source":    modeSource,
-			"transaction_id": firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
-			"reference":      firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
-			"status":         status,
-			"context_found":  hasContext,
-			"licencia_id":    licenciaID,
-			"empresa_id":     empresaID,
-			"activated":      activated,
-			"data":           validationPayload,
+			"provider":         "epayco",
+			"mode":             mode,
+			"mode_source":      modeSource,
+			"transaction_id":   firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
+			"reference":        firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
+			"status":           status,
+			"context_found":    hasContext,
+			"licencia_id":      licenciaID,
+			"empresa_id":       empresaID,
+			"activated":        activated,
+			"discount_blocked": discountBlocked,
+			"data":             validationPayload,
 		})
 	}
 }
@@ -4030,22 +4108,46 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		licenciaID, empresaID, hasContext := resolveEpaycoPaymentContextCandidates(dbSuper, [][2]string{{transactionID, reference}, {"", reference}, {"", invoiceReference}, {transactionID, invoiceReference}})
 
 		activated := false
+		discountBlocked := false
 		ventaPublicaContextFound := false
 		if isApprovedPaymentStatus(status) && hasContext {
-			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
-			if actErr != nil {
-				log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
-			} else {
-				activated = act
-				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-				if licErr != nil {
-					log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
+			paymentDiscountCode := ""
+			if rec != nil && rec.DiscountCode.Valid {
+				paymentDiscountCode = strings.TrimSpace(rec.DiscountCode.String)
+			}
+			if paymentDiscountCode == "" {
+				payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+				if payErr != nil {
+					log.Println("warning: failed to reload Epayco payment for webhook discount validation:", payErr)
+				} else if payRec != nil && payRec.DiscountCode.Valid {
+					paymentDiscountCode = strings.TrimSpace(payRec.DiscountCode.String)
+				}
+			}
+			if paymentDiscountCode != "" {
+				used, usedErr := dbpkg.HasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbSuper, empresaID, paymentDiscountCode, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference))
+				if usedErr != nil {
+					log.Println("warning: failed to validate Epayco webhook discount code reuse:", usedErr)
+				} else if used {
+					discountBlocked = true
+					log.Printf("warning: blocked Epayco webhook licencia activation because discount code %q was already used by empresa %d", paymentDiscountCode, empresaID)
+				}
+			}
+			if !discountBlocked {
+				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				if actErr != nil {
+					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {
-					payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
-					if payErr != nil {
-						log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
-					} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
-						log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+					activated = act
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					if licErr != nil {
+						log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
+					} else {
+						payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+						if payErr != nil {
+							log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
+						} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
+							log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+						}
 					}
 				}
 			}
@@ -4086,6 +4188,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			"licencia_id":                 licenciaID,
 			"empresa_id":                  empresaID,
 			"activated":                   activated,
+			"discount_blocked":            discountBlocked,
 			"venta_publica_context_found": ventaPublicaContextFound,
 		})
 	}

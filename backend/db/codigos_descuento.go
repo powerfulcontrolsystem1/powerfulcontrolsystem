@@ -537,14 +537,12 @@ func validateCodigoDescuentoPayload(payload *CodigoDescuento, requireID bool) er
 	if payload.MontoMinimoCompra < 0 {
 		return fmt.Errorf("monto_minimo_compra no puede ser negativo")
 	}
-	if payload.UsosMaximos <= 0 {
-		payload.UsosMaximos = 1
-	}
+	payload.UsosMaximos = 1
 	if payload.UsosActuales < 0 {
 		payload.UsosActuales = 0
 	}
-	if payload.UsosActuales > payload.UsosMaximos {
-		return fmt.Errorf("usos_actuales no puede superar usos_maximos")
+	if payload.UsosActuales > 1 {
+		payload.UsosActuales = 1
 	}
 	if payload.MaxUsosPorCliente < 0 {
 		return fmt.Errorf("max_usos_por_cliente no puede ser negativo")
@@ -965,6 +963,9 @@ func validateCodigoDescuentoAplicacion(item *CodigoDescuento, montoBase float64)
 	if strings.TrimSpace(strings.ToLower(item.Estado)) != "activo" {
 		return fmt.Errorf("codigo de descuento inactivo")
 	}
+	if item.UsosActuales >= 1 {
+		return fmt.Errorf("codigo de descuento ya usado por esta empresa")
+	}
 	if item.UsosMaximos > 0 && item.UsosActuales >= item.UsosMaximos {
 		return fmt.Errorf("codigo de descuento sin usos disponibles")
 	}
@@ -1087,6 +1088,22 @@ func validateCodigoDescuentoAntiFraudeContexto(dbConn *sql.DB, item *CodigoDescu
 		if reused > 0 {
 			return fmt.Errorf("el codigo de descuento ya fue aplicado en este carrito")
 		}
+	}
+
+	var usosEmpresa int64
+	err := dbConn.QueryRow(`SELECT COUNT(1)
+		FROM codigos_descuento_redenciones
+		WHERE empresa_id = ?
+			AND codigo_descuento_id = ?
+			AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+		item.EmpresaID,
+		item.ID,
+	).Scan(&usosEmpresa)
+	if err != nil {
+		return err
+	}
+	if usosEmpresa > 0 {
+		return fmt.Errorf("codigo de descuento ya usado por esta empresa")
 	}
 
 	if item.MaxUsosPorCliente > 0 {
@@ -1245,6 +1262,22 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 		}
 	}
 
+	var usosEmpresa int64
+	err := tx.QueryRow(`SELECT COUNT(1)
+		FROM codigos_descuento_redenciones
+		WHERE empresa_id = ?
+			AND codigo_descuento_id = ?
+			AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+		item.EmpresaID,
+		item.ID,
+	).Scan(&usosEmpresa)
+	if err != nil {
+		return err
+	}
+	if usosEmpresa > 0 {
+		return fmt.Errorf("codigo de descuento ya usado por esta empresa")
+	}
+
 	if item.MaxUsosPorCliente > 0 {
 		if clienteID <= 0 {
 			return fmt.Errorf("el codigo de descuento requiere cliente para control antifraude")
@@ -1368,7 +1401,7 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 	SET usos_actuales = usos_actuales + 1,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?
-		AND (? <= 0 OR usos_actuales < usos_maximos)`, empresaID, codigoID, item.UsosMaximos)
+		AND usos_actuales < 1`, empresaID, codigoID)
 	if err != nil {
 		return err
 	}

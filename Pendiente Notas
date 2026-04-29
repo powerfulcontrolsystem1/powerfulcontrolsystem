@@ -19,23 +19,14 @@ Quitado del pendiente por ya estar implementado
 - Pagina de cuenta de usuario para editar perfil y contraseña.
 - Red social comercial operativa.
 - Base DIAN con checklist, diagnostico, set de pruebas y herramientas base ya documentadas.
-
-Pendiente vigente
-
-1. Prioridad alta
-- Voz IA streaming en VPS.
-	- Instalar dependencias del servicio abierto Piper/FastAPI en el VPS usando `scripts/install_voice_stream_server_vps.sh`.
-	- Descargar y registrar un modelo Piper en espanol compatible con la voz natural requerida.
-	- Crear `/etc/powerfulcontrolsystem-voice.env` con `PIPER_BIN`, `PIPER_MODEL`, `PCS_VOICE_HOST`, `PCS_VOICE_PORT` y valores operativos sin guardar secretos en este archivo.
-	- Verificar `systemctl status pcs-voice-stream` y `curl http://127.0.0.1:8097/health`.
-	- Configurar desde Super Administrador > Voz IA streaming la URL interna del servicio, activar el interruptor y probar el endpoint.
-	- Si el servicio queda expuesto fuera del VPS, publicar solo por HTTPS/reverse proxy con firewall y autenticacion de red; preferir uso interno `127.0.0.1`.
-	- Confirmar que el chat conserva fallback a texto o voz del navegador cuando el servicio esta apagado, caido o con timeout.
-
+- Voz IA streaming en VPS con Piper/FastAPI, servicio systemd `pcs-voice-stream`, modelo espanol `es_ES-sharvard-medium`, proxy backend, configuracion desde Super Administrador y fallback de chat.
 - Depurar postmigracion PostgreSQL. Estado: completado el 2026-04-20.
 	- Resultado: se elimino el artefacto SQLite legacy restante del repositorio y se ajusto la documentacion activa para dejar PostgreSQL como unica base operativa canonica.
 	- Inventario final: SQLite queda solo como referencia historica de migracion o para pruebas puntuales fuera del repositorio activo.
 
+Pendiente vigente
+
+1. Prioridad alta
 - Exportar e importar configuracion completa por empresa.
 	- Alcance minimo: datos de configuracion, modulos, permisos, integraciones, apariencia y parametros operativos por empresa.
 	- Entregable: flujo real desde panel empresa con exporte y carga validada.
@@ -71,9 +62,10 @@ Pendiente vigente
 	- Alcance minimo: adjuntar archivos a compras/egresos con almacenamiento, consulta y trazabilidad por empresa.
 
 3. Prioridad media-baja y de arquitectura
-- Configuracion total por empresa y por rol a nivel fino.
-	- Objetivo: cada modulo, pagina, accion y componente visible debe poder activarse o desactivarse por empresa y por rol cuando tenga sentido operativo.
-	- Nota: esto debe ejecutarse por etapas, no como cambio gigante unico.
+- Configuracion total por empresa y por rol a nivel fino. Estado: fase 1 implementada.
+	- Implementado: techo fino por empresa para modulo, accion y pagina; se combina con licencia y permisos por rol existentes.
+	- Gestion: Administrar empresa > Configuracion > Permisos permite consultar el contexto real y guardar restricciones por empresa.
+	- Pendiente por etapas: agregar componentes internos especificos de cada pantalla cuando tengan sentido operativo.
 
 - Modulo universal de historial para cliente, vehiculo u otro activo trazable.
 	- Objetivo: hoja de vida operativa con eventos, servicios, alertas y reportes recurrentes.
@@ -191,9 +183,7 @@ plan de agrupacion por categorias de administrar empresas
 
 
 vps code http://194.113.195.95:11434
-ssh
-root
-Azz19861986#Azz
+- Credenciales retiradas de este archivo; usar gestor seguro o variables de entorno.
 
 - organizar por modulo: administrar empresa
 - 2000011314292025

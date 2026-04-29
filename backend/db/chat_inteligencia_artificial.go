@@ -1347,6 +1347,7 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 	writeAIContextSection(&b, "VENTAS_RECIENTES", empresaAIVentasRecientes(dbConn, empresaID, availableTables, 5))
 	writeAIContextSection(&b, "ALERTAS_INVENTARIO", empresaAIAlertasInventario(dbConn, empresaID, availableTables, 5))
 	writeAIContextSection(&b, "MOVIMIENTOS_FINANCIEROS_RECIENTES", empresaAIFinanzasRecientes(dbConn, empresaID, availableTables, 5))
+	writeAIContextSection(&b, "PRECONFIGURACION_GUIA_IA", empresaAIPreconfiguracionGuia(dbConn, empresaID))
 
 	return b.String(), nil
 }
@@ -1366,6 +1367,68 @@ func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta
 	return BuildEmpresaAIContextoForQuestionWithOptions(dbConn, empresaID, pregunta, usuarioCreador, paginaContexto, EmpresaAIContextoPreguntaOptions{
 		Modelo: aiContextModelName(modelo...),
 	})
+}
+
+func empresaAIPreconfiguracionGuia(dbConn *sql.DB, empresaID int64) []string {
+	if dbConn == nil || empresaID <= 0 {
+		return nil
+	}
+	ok, err := tableExists(dbConn, "empresa_estacion_prefs")
+	if err != nil || !ok {
+		return nil
+	}
+	var raw string
+	err = queryRowSQLCompat(dbConn, `SELECT COALESCE(valor, '')
+		FROM empresa_estacion_prefs
+		WHERE empresa_id = ?
+		  AND estacion_id = 0
+		  AND clave = 'preconfiguracion_tipo_empresa_asistente_ia'
+		  AND COALESCE(estado, 'activo') <> 'inactivo'
+		LIMIT 1`, empresaID).Scan(&raw)
+	if err != nil || strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var payload struct {
+		TipoEmpresaNombre string                          `json:"tipo_empresa_nombre"`
+		Preconfiguracion  string                          `json:"preconfiguracion"`
+		Asistente         TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia"`
+		TareasGuia        []TipoEmpresaPreconfigTareaGuia `json:"tareas_guia"`
+		UsuariosGuia      []TipoEmpresaPreconfigUsuario   `json:"usuarios_guia"`
+		Estaciones        TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
+		ProductoSKUs      []string                        `json:"producto_skus"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return []string{"estado=presente", "raw=" + truncateText(raw, 900)}
+	}
+	lines := []string{
+		"estado=presente",
+		"tipo_empresa=" + strings.TrimSpace(payload.TipoEmpresaNombre),
+		"plantilla=" + strings.TrimSpace(payload.Preconfiguracion),
+		fmt.Sprintf("estaciones=%d prefijo=%s caja=%t", payload.Estaciones.Cantidad, strings.TrimSpace(payload.Estaciones.Prefijo), payload.Estaciones.CajaEnabled),
+		fmt.Sprintf("productos_guia=%d usuarios_guia=%d tareas_guia=%d", len(payload.ProductoSKUs), len(payload.UsuariosGuia), len(payload.TareasGuia)),
+	}
+	if payload.Asistente.Enabled {
+		lines = append(lines, "asistente_ia=activo rol="+truncateText(payload.Asistente.Rol, 220))
+		for idx, instruction := range payload.Asistente.Instrucciones {
+			if idx >= 4 {
+				break
+			}
+			lines = append(lines, "instruccion_ia="+truncateText(instruction, 220))
+		}
+	}
+	for idx, task := range payload.TareasGuia {
+		if idx >= 6 {
+			break
+		}
+		lines = append(lines, fmt.Sprintf("tarea=%s | %s | %s", truncateText(task.Modulo, 80), truncateText(task.Titulo, 120), truncateText(task.Descripcion, 180)))
+	}
+	for idx, user := range payload.UsuariosGuia {
+		if idx >= 5 {
+			break
+		}
+		lines = append(lines, fmt.Sprintf("usuario_guia=%s | rol=%s | %s", truncateText(user.Nombre, 120), truncateText(user.Rol, 80), truncateText(user.Observaciones, 160)))
+	}
+	return lines
 }
 
 func BuildEmpresaAIContextoForQuestionWithOptions(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string, opts EmpresaAIContextoPreguntaOptions) (string, error) {

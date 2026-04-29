@@ -7178,6 +7178,30 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "pruebas_dian", "pruebas_habilitacion", "test_habilitacion":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			payload, err := decodeGenericBodyMapOptional(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := runDIANPruebasHabilitacion(dbEmp, cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "enviar_set_pruebas", "enviar_set_habilitacion":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -7210,6 +7234,13 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 func dianNowLocal() string {
 	return time.Now().In(time.Local).Format("2006-01-02 15:04:05")
 }
+
+const (
+	dianOfficialSetFacturas     = 8
+	dianOfficialSetNotasDebito  = 1
+	dianOfficialSetNotasCredito = 1
+	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
+)
 
 func dianFirstNonBlank(values ...string) string {
 	for _, v := range values {
@@ -7732,6 +7763,15 @@ func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload m
 	}, http.StatusOK, nil
 }
 
+func isDIANOfficialEndpoint(endpoint string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Host)
+	return strings.Contains(host, "dian.gov.co")
+}
+
 func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int64) (map[string]interface{}, int, error) {
 	if empresaID <= 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
@@ -7775,7 +7815,7 @@ func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int6
 		"faltantes_configuracion":   missingConfig,
 		"brechas_tecnicas":          technicalGaps,
 		"wsdl_operaciones_objetivo": []string{"SendBillAsync", "SendBillSync", "SendTestSetAsync", "GetStatusZip", "GetNumberingRange"},
-		"acciones_fase_1_base":      []string{"generar_xml_ubl_base", "firmar_xml_xades_base", "diagnostico_oficial"},
+		"acciones_fase_1_base":      []string{"generar_xml_ubl_base", "firmar_xml_xades_base", "diagnostico_oficial", "pruebas_dian"},
 		"siguiente_fase":            "implementar cliente SOAP/WSDL DIAN y conectar el flujo normal de facturacion al transporte oficial",
 	}, http.StatusOK, nil
 }
@@ -8218,6 +8258,92 @@ func dianBuildDocumentoXML(cfg map[string]interface{}, documentoCodigo, document
 	)
 }
 
+func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if len(cfg) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
+	}
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
+
+	ambiente := chooseDIANAmbiente(cfg)
+	if ambiente == "produccion" {
+		return map[string]interface{}{
+			"ok":         false,
+			"empresa_id": empresaID,
+			"bloqueado":  true,
+			"motivo":     "Las Pruebas Dian deben ejecutarse en ambiente de habilitacion, no en produccion.",
+			"ambiente":   ambiente,
+		}, http.StatusConflict, nil
+	}
+
+	for key, value := range map[string]interface{}{
+		"facturas_electronicas": dianOfficialSetFacturas,
+		"notas_debito":          dianOfficialSetNotasDebito,
+		"notas_credito":         dianOfficialSetNotasCredito,
+		"total_documentos":      dianOfficialSetTotal,
+	} {
+		if _, exists := payload[key]; !exists {
+			payload[key] = value
+		}
+	}
+	if _, exists := payload["detener_en_error"]; !exists {
+		payload["detener_en_error"] = true
+	}
+	if _, exists := payload["simular"]; !exists {
+		payload["simular"] = false
+	}
+
+	credenciales, _, credErr := validateDIANCredentialRefs(cfg, empresaID, payload)
+	simular := parseTruthy(genericStringValue(payload["simular"]))
+	if credErr != nil {
+		return nil, http.StatusBadRequest, credErr
+	}
+	if !simular && !parseTruthy(genericStringValue(credenciales["ok"])) {
+		return map[string]interface{}{
+			"ok":                      false,
+			"empresa_id":              empresaID,
+			"bloqueado":               true,
+			"paso":                    "validar_credenciales",
+			"motivo":                  "Faltan credenciales o firma DIAN antes de ejecutar el set real.",
+			"validacion_credenciales": credenciales,
+			"requisito_oficial_dian": map[string]interface{}{
+				"facturas_electronicas": dianOfficialSetFacturas,
+				"notas_debito":          dianOfficialSetNotasDebito,
+				"notas_credito":         dianOfficialSetNotasCredito,
+				"total_documentos":      dianOfficialSetTotal,
+			},
+		}, http.StatusConflict, nil
+	}
+
+	endpoint := dianFirstNonBlank(dianPayloadString(payload, "url_dian", "endpoint"), genericStringValue(cfg["url_dian"]))
+	if !simular && isDIANOfficialEndpoint(endpoint) && !parseTruthy(genericStringValue(payload["permitir_transporte_generico_dian"])) {
+		diagnostico, _, _ := buildDIANOfficialReadinessReport(cfg, empresaID)
+		return map[string]interface{}{
+			"ok":                      false,
+			"empresa_id":              empresaID,
+			"bloqueado":               true,
+			"paso":                    "transporte_oficial",
+			"motivo":                  "El endpoint configurado es oficial DIAN y requiere cliente SOAP/WSDL SendTestSetAsync. El envio JSON generico queda bloqueado para evitar una solicitud invalida.",
+			"endpoint":                endpoint,
+			"diagnostico":             diagnostico,
+			"validacion_credenciales": credenciales,
+			"accion_segura":           "Usa un endpoint proveedor/proxy compatible con JSON o implementa el cliente SOAP/WSDL oficial antes de quitar el bloqueo.",
+		}, http.StatusConflict, nil
+	}
+
+	result, status, err := runDIANSetPruebasEnvio(dbEmp, cfg, empresaID, payload)
+	if result != nil {
+		result["accion"] = "pruebas_dian"
+		result["validacion_credenciales"] = credenciales
+		result["fuente_requisito"] = "DIAN - instructivo de registro y habilitacion: set de prueba con 8 facturas, 1 nota debito y 1 nota credito en estado Aceptado."
+	}
+	return result, status, err
+}
+
 func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
 	if empresaID <= 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
@@ -8225,10 +8351,13 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	if len(cfg) == 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
 
-	facturas := dianPayloadPositiveInt(payload, 30, "facturas_electronicas", "facturas", "invoices_total_required")
-	notasDebito := dianPayloadPositiveInt(payload, 10, "notas_debito", "debit_notes", "total_debit_notes_required")
-	notasCredito := dianPayloadPositiveInt(payload, 10, "notas_credito", "credit_notes", "total_credit_notes_required")
+	facturas := dianPayloadPositiveInt(payload, dianOfficialSetFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadPositiveInt(payload, dianOfficialSetNotasDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadPositiveInt(payload, dianOfficialSetNotasCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
 
 	sumaBase := facturas + notasDebito + notasCredito
 	totalDocumentos := dianPayloadPositiveInt(payload, sumaBase, "total_documentos", "documentos", "total_document_required")
@@ -8246,7 +8375,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 
 	simular := parseTruthy(dianPayloadString(payload, "simular", "dry_run", "solo_plan"))
 	detenerEnError := parseTruthy(dianPayloadString(payload, "detener_en_error", "stop_on_error"))
-	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1000")
+	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1000.00")
 	prefijo := dianFirstNonBlank(dianPayloadString(payload, "prefijo"), genericStringValue(cfg["prefijo"]), "SETP")
 	softwareID, _, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
 	if err != nil {
@@ -8310,7 +8439,6 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 			documentoCodigo := dianBuildDocumentoCodigo(prefijo, siguienteConsecutivo)
 			siguienteConsecutivo++
 			fechaEmision := time.Now().Format("2006-01-02T15:04:05-07:00")
-			xmlDocumento := dianBuildDocumentoXML(cfg, documentoCodigo, target.Tipo, fechaEmision, totalPorDocumento)
 
 			detalle := map[string]interface{}{
 				"indice":           procesados + 1,
@@ -8332,11 +8460,64 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				continue
 			}
 
+			docPayload := map[string]interface{}{
+				"empresa_id":         empresaID,
+				"documento_codigo":   documentoCodigo,
+				"documento_tipo":     target.Tipo,
+				"fecha_emision":      fechaEmision,
+				"total":              totalPorDocumento,
+				"impuesto_total":     dianFirstNonBlank(dianPayloadString(payload, "impuesto_total"), "0.00"),
+				"moneda":             dianFirstNonBlank(dianPayloadString(payload, "moneda"), "COP"),
+				"cliente_nombre":     dianFirstNonBlank(dianPayloadString(payload, "cliente_nombre"), "Cliente habilitacion DIAN"),
+				"cliente_nit":        dianFirstNonBlank(dianPayloadString(payload, "cliente_nit"), "222222222222"),
+				"certificado_ref":    dianPayloadString(payload, "certificado_ref", "certificado_pem", "certificado_x509_ref"),
+				"private_key_pem":    dianPayloadString(payload, "private_key_pem"),
+				"software_id":        dianPayloadString(payload, "software_id"),
+				"software_pin":       dianPayloadString(payload, "software_pin"),
+				"test_set_id":        genericStringValue(cfg["test_set_id"]),
+				"total_documentos":   totalDocumentos,
+				"set_habilitacion":   true,
+				"requisito_set_dian": "8 facturas electronicas, 1 nota debito y 1 nota credito",
+			}
+			ublResp, _, err := generateDIANUBLBase(cfg, empresaID, docPayload)
+			if err != nil {
+				detalle["ok"] = false
+				detalle["estado_dian"] = "error"
+				detalle["error"] = dianTruncate("generar_xml_ubl_base: "+err.Error(), 240)
+				resumen["error"]++
+				detenidoPorError = detenerEnError
+				detalles = append(detalles, detalle)
+				procesados++
+				if detenidoPorError {
+					break
+				}
+				continue
+			}
+			docPayload["xml_ubl_base"] = genericStringValue(ublResp["xml_ubl_base"])
+			signResp, _, err := signDIANXMLXAdESBase(cfg, empresaID, docPayload)
+			if err != nil {
+				detalle["ok"] = false
+				detalle["estado_dian"] = "error"
+				detalle["error"] = dianTruncate("firmar_xml_xades_base: "+err.Error(), 240)
+				resumen["error"]++
+				detenidoPorError = detenerEnError
+				detalles = append(detalles, detalle)
+				procesados++
+				if detenidoPorError {
+					break
+				}
+				continue
+			}
+			detalle["digest_documento_base64"] = genericStringValue(signResp["digest_documento_base64"])
+			if warnings, ok := signResp["warnings"]; ok {
+				detalle["firma_warnings"] = warnings
+			}
+
 			envioPayload := map[string]interface{}{
 				"empresa_id":       empresaID,
 				"documento_codigo": documentoCodigo,
 				"documento_tipo":   target.Tipo,
-				"xml_firmado":      xmlDocumento,
+				"xml_firmado":      genericStringValue(signResp["xml_firmado"]),
 				"total":            totalPorDocumento,
 				"fecha_emision":    fechaEmision,
 				"test_set_id":      genericStringValue(cfg["test_set_id"]),
@@ -8404,12 +8585,20 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	}
 
 	if !simular && procesados > 0 {
+		okSet := resumen["error"] == 0 && resumen["rechazado"] == 0 && resumen["contingencia"] == 0
+		estadoSet := "pruebas_habilitacion_enviadas"
+		if resumen["aceptado"] >= totalDocumentos {
+			estadoSet = "habilitacion_aprobada"
+		} else if !okSet {
+			estadoSet = "habilitacion_observada"
+		}
 		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
 			"consecutivo_actual": siguienteConsecutivo,
+			"estado_dian":        estadoSet,
 			"observaciones": appendStateMachineObservation(
 				genericStringValue(cfg["observaciones"]),
 				genericStringValue(cfg["estado_dian"]),
-				genericStringValue(cfg["estado_dian"]),
+				estadoSet,
 				fmt.Sprintf("set_pruebas procesado=%d aceptado=%d rechazado=%d contingencia=%d", procesados, resumen["aceptado"], resumen["rechazado"], resumen["contingencia"]),
 				"dian_set_pruebas",
 			),
@@ -8422,9 +8611,18 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	}
 
 	return map[string]interface{}{
-		"ok":                    ok,
-		"empresa_id":            empresaID,
-		"simulado":              simular,
+		"ok":         ok,
+		"empresa_id": empresaID,
+		"simulado":   simular,
+		"requisito_oficial_dian": map[string]interface{}{
+			"ambiente":               "habilitacion",
+			"facturas_electronicas":  dianOfficialSetFacturas,
+			"notas_debito":           dianOfficialSetNotasDebito,
+			"notas_credito":          dianOfficialSetNotasCredito,
+			"total_documentos":       dianOfficialSetTotal,
+			"estado_requerido_final": "Aceptado",
+		},
+		"habilitacion_aprobada": !simular && resumen["aceptado"] >= totalDocumentos,
 		"software_modo":         map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
 		"software_id":           softwareID,
 		"test_set_id":           genericStringValue(cfg["test_set_id"]),
@@ -8459,7 +8657,7 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		{"paso": 4, "titulo": "Subir firma digital", "detalle": "Usar action=subir_firma (multipart) para adjuntar PEM y guardar referencia segura automaticamente."},
 		{"paso": 5, "titulo": "Generar XML base y firma base", "detalle": "Usar action=generar_xml_ubl_base y action=firmar_xml_xades_base para preparar la estructura UBL/firma antes del transporte oficial."},
 		{"paso": 6, "titulo": "Validar antes de emitir", "detalle": "Ejecutar action=checklist, action=validar, action=validar_credenciales y action=diagnostico_oficial para detectar faltantes funcionales y brechas tecnicas."},
-		{"paso": 7, "titulo": "Probar set de habilitacion", "detalle": "Ejecutar action=enviar_set_pruebas con simular=true y luego simular=false cuando credenciales esten completas."},
+		{"paso": 7, "titulo": "Probar set de habilitacion", "detalle": "Ejecutar action=pruebas_dian. El set oficial de habilitacion usa 8 facturas electronicas, 1 nota debito y 1 nota credito, todas en estado Aceptado."},
 	}
 
 	plantillas := map[string]interface{}{
@@ -8518,15 +8716,16 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 				"archivo_firma (PEM RSA)",
 			},
 		},
-		"set_pruebas_simulado": map[string]interface{}{
-			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=enviar_set_pruebas",
+		"pruebas_dian": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=pruebas_dian",
 			"body": map[string]interface{}{
 				"empresa_id":            empresaID,
-				"facturas_electronicas": 30,
-				"notas_debito":          10,
-				"notas_credito":         10,
-				"total_documentos":      50,
-				"simular":               true,
+				"facturas_electronicas": dianOfficialSetFacturas,
+				"notas_debito":          dianOfficialSetNotasDebito,
+				"notas_credito":         dianOfficialSetNotasCredito,
+				"total_documentos":      dianOfficialSetTotal,
+				"simular":               false,
+				"detener_en_error":      true,
 			},
 		},
 	}
@@ -8645,7 +8844,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"recomendaciones": []string{
 			"Mantener token_emisor_ref y certificado_clave_ref por empresa.",
 			"Usar referencias seguras env:/file:/base64: en lugar de secretos inline.",
-			"Ejecutar enviar_set_pruebas con simular=true antes de envio real.",
+			"Ejecutar pruebas_dian con simular=true antes de envio real.",
 		},
 	}, http.StatusOK, nil
 }
@@ -8741,7 +8940,7 @@ func uploadDIANCompanySignature(dbEmp *sql.DB, r *http.Request) (map[string]inte
 		"archivo_guardado":      fileName,
 		"certificado_clave_ref": ref,
 		"tamano_bytes":          len(contentBytes),
-		"siguiente_paso":        "ejecutar action=validar_credenciales y luego action=enviar_set_pruebas con simular=true",
+		"siguiente_paso":        "ejecutar action=validar_credenciales y luego action=pruebas_dian",
 	}, http.StatusOK, nil
 }
 
@@ -9012,7 +9211,7 @@ func dianChecklistSteps() []map[string]interface{} {
 		{"paso": 2, "titulo": "Definir modelo de software", "detalle": "Elegir software compartido (SaaS) o software por empresa; configurar Software ID/PIN segun el modelo."},
 		{"paso": 3, "titulo": "Solicitar numeracion", "detalle": "Solicitar prefijo, resolucion y rango autorizado en la DIAN."},
 		{"paso": 4, "titulo": "Cargar configuracion por empresa", "detalle": "Configurar NIT, razon social, ambiente, certificado/token por empresa y parametros de software (compartido o propio)."},
-		{"paso": 5, "titulo": "Ejecutar set de pruebas", "detalle": "Enviar casos de habilitacion hasta obtener aprobacion DIAN."},
+		{"paso": 5, "titulo": "Ejecutar Pruebas Dian", "detalle": "Enviar 8 facturas electronicas, 1 nota debito y 1 nota credito en habilitacion hasta que el set quede en estado Aceptado."},
 		{"paso": 6, "titulo": "Pasar a produccion", "detalle": "Activar ambiente produccion, validar consecutivos y monitorear respuestas."},
 	}
 }

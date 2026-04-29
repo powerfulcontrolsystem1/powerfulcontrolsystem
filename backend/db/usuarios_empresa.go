@@ -637,6 +637,28 @@ func DeleteEmpresaUsuario(dbConn *sql.DB, empresaID, id int64) error {
 	return err
 }
 
+// DeleteEmpresaUsuariosPreconfiguracion elimina usuarios guia creados por una preconfiguracion.
+func DeleteEmpresaUsuariosPreconfiguracion(dbConn *sql.DB, empresaID int64, marker string) (int64, error) {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return 0, err
+	}
+	marker = strings.TrimSpace(marker)
+	if marker == "" {
+		return 0, nil
+	}
+	res, err := execSQLCompat(dbConn, `DELETE FROM users
+		WHERE empresa_id = ?
+		  AND COALESCE(observaciones, '') LIKE ?`,
+		empresaID,
+		"%"+marker+"%",
+	)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
+
 // SetEmpresaUsuarioEstado activa o desactiva un usuario de empresa.
 func SetEmpresaUsuarioEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {

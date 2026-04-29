@@ -21,40 +21,75 @@
   var NOTICE_ID = 'aiChatNotice';
   var HINT_TOGGLE_ID = 'aiChatHintToggle';
   var HINTS_ID = 'aiChatHints';
+  var CONFIG_PANEL_ID = 'aiChatCompactConfig';
+  var CONFIG_CLOSE_ID = 'aiChatCompactConfigClose';
+  var CONFIG_SAVE_ID = 'aiChatCompactConfigSave';
+  var CONFIG_CHAT_ENABLED_ID = 'aiChatCompactConfigEnabled';
+  var CONFIG_ROBOT_ENABLED_ID = 'aiChatCompactConfigRobotEnabled';
+  var CONFIG_VOICE_ID = 'aiChatCompactConfigVoice';
+  var CONFIG_ROBOT_VOICE_ID = 'aiChatCompactConfigRobotVoice';
   var MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+  var CHAT_PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
 
   var state = {
     proposals: [],
     loading: false,
     selectedAttachment: null,
+    chatEnabled: true,
+    robotEnabled: true,
     voiceEnabled: false,
     listening: false,
     conversationMode: false,
     voiceServerAvailable: false,
     voiceServerChecked: false,
-    voiceServerAudio: null
+    voiceServerAudio: null,
+    voicePlaybackVersion: 0,
+    robotVoice: 'es-CO',
+    robotMoodTimer: null
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
   var ICON_SPK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
   var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
+  var ICON_STOP = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>';
   var ROBOT_PANEL_ID = 'robotInlineChatPanel';
   var ROBOT_ASSISTANT_BUBBLE_ID = 'robotAssistantBubble';
   var ROBOT_USER_BUBBLE_ID = 'robotUserBubble';
   var ROBOT_INLINE_FORM_ID = 'robotInlineForm';
   var ROBOT_INLINE_INPUT_ID = 'robotInlineInput';
   var ROBOT_INLINE_SEND_ID = 'robotInlineSend';
+  var ROBOT_INLINE_STOP_VOICE_ID = 'robotInlineStopVoice';
+  var ROBOT_INLINE_MIC_ID = 'robotInlineMic';
+  var ROBOT_ACTIONS_ID = 'robotAssistantActions';
   var ROBOT_HIDE_ID = 'robotHideBtn';
   var ROBOT_SHOW_ID = 'robotShowBtn';
-  var ROBOT_SVG = '<div id="robotAvatarGraphic" aria-hidden="true"><svg viewBox="0 0 120 140" role="img" focusable="false">' +
-    '<defs><linearGradient id="pcsRobotBody" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f8fbff"/><stop offset="1" stop-color="#b7c8df"/></linearGradient><linearGradient id="pcsRobotScreen" x1="0" x2="1"><stop offset="0" stop-color="#0ea5e9"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs>' +
-    '<path class="robot-antenna" d="M60 22V9" fill="none" stroke="#52637a" stroke-width="5" stroke-linecap="round"/><circle class="robot-antenna-dot" cx="60" cy="7" r="5" fill="#22c55e"/>' +
-    '<rect x="23" y="25" width="74" height="58" rx="20" fill="url(#pcsRobotBody)" stroke="#52637a" stroke-width="4"/>' +
-    '<rect x="34" y="38" width="52" height="28" rx="12" fill="#102033"/><circle class="robot-eye" cx="49" cy="52" r="5" fill="#8df7c7"/><circle class="robot-eye" cx="71" cy="52" r="5" fill="#8df7c7"/><path class="robot-mouth" d="M48 63Q60 70 72 63" fill="none" stroke="url(#pcsRobotScreen)" stroke-width="4" stroke-linecap="round"/>' +
-    '<path d="M25 48H15a8 8 0 0 0 0 16h10M95 48h10a8 8 0 0 1 0 16H95" fill="none" stroke="#52637a" stroke-width="5" stroke-linecap="round"/>' +
-    '<rect x="34" y="82" width="52" height="42" rx="15" fill="url(#pcsRobotBody)" stroke="#52637a" stroke-width="4"/><circle cx="50" cy="100" r="4" fill="#0ea5e9"/><circle cx="60" cy="100" r="4" fill="#22c55e"/><circle cx="70" cy="100" r="4" fill="#f59e0b"/>' +
-    '<path d="M45 124v9M75 124v9" stroke="#52637a" stroke-width="5" stroke-linecap="round"/><path d="M37 134h18M65 134h18" stroke="#52637a" stroke-width="5" stroke-linecap="round"/>' +
-    '</svg></div>';
+  var ROBOT_SVG = '<div id="robotAvatarGraphic" class="robot-3d-avatar robot-mood-idle" aria-hidden="true" data-mood="idle">' +
+    '<div class="robot-3d-stage">' +
+    '<span class="robot-3d-shadow"></span>' +
+    '<span class="robot-3d-signal robot-3d-signal-a"></span>' +
+    '<span class="robot-3d-signal robot-3d-signal-b"></span>' +
+    '<span class="robot-3d-antenna"><span></span></span>' +
+    '<div class="robot-3d-head">' +
+    '<span class="robot-3d-ear robot-3d-ear-left"></span>' +
+    '<span class="robot-3d-ear robot-3d-ear-right"></span>' +
+    '<div class="robot-3d-face">' +
+    '<span class="robot-3d-eye robot-3d-eye-left"></span>' +
+    '<span class="robot-3d-eye robot-3d-eye-right"></span>' +
+    '<span class="robot-3d-mouth"></span>' +
+    '</div>' +
+    '</div>' +
+    '<div class="robot-3d-body">' +
+    '<span class="robot-3d-core"></span>' +
+    '<span class="robot-3d-light robot-3d-light-a"></span>' +
+    '<span class="robot-3d-light robot-3d-light-b"></span>' +
+    '<span class="robot-3d-light robot-3d-light-c"></span>' +
+    '</div>' +
+    '<span class="robot-3d-arm robot-3d-arm-left"></span>' +
+    '<span class="robot-3d-arm robot-3d-arm-right"></span>' +
+    '<span class="robot-3d-leg robot-3d-leg-left"></span>' +
+    '<span class="robot-3d-leg robot-3d-leg-right"></span>' +
+    '</div>' +
+    '</div>';
 
   function isMobileChatViewport() {
     try {
@@ -143,6 +178,290 @@
   }
 
   var CHAT_PERSONALITY_STORAGE_KEY = 'pcs_ai_chat_personality';
+  var CHAT_ENABLED_STORAGE_KEY = 'pcs_ai_chat_enabled';
+  var ROBOT_ENABLED_STORAGE_KEY = 'pcs_ai_robot_enabled';
+  var VOICE_COMMAND_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
+  var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
+
+  function normalizeChatPersonalityMode(value) {
+    return normalize(value).toLowerCase() === 'robot' && state.robotEnabled ? 'robot' : 'normal';
+  }
+
+  function normalizeRobotVoice(value) {
+    var raw = normalize(value);
+    var lower = raw.toLowerCase();
+    if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
+    if (lower === 'es-co-male' || lower === 'masculina' || lower === 'hombre') return 'es-CO-male';
+    if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
+    if (lower === 'es-es' || lower === 'espana' || lower === 'españa' || lower === 'castellano') return 'es-ES';
+    return 'es-CO';
+  }
+
+  function labelForRobotVoice(value) {
+    switch (normalizeRobotVoice(value)) {
+      case 'es-CO-female': return 'Colombiana femenina';
+      case 'es-CO-male': return 'Colombiana masculina';
+      case 'es-MX': return 'Español latino';
+      case 'es-ES': return 'Español castellano';
+      default: return 'Colombiana natural';
+    }
+  }
+
+  function robotVoiceLang(value) {
+    var voice = normalizeRobotVoice(value);
+    if (voice === 'es-MX') return 'es-MX';
+    if (voice === 'es-ES') return 'es-ES';
+    return 'es-CO';
+  }
+
+  function readEnabledPreference(key, fallback) {
+    try {
+      var raw = window.localStorage.getItem(key);
+      if (raw === null || raw === '') return !!fallback;
+      return raw !== '0' && raw !== 'false';
+    } catch (error) {
+      return !!fallback;
+    }
+  }
+
+  function writeEnabledPreference(key, enabled) {
+    var value = !!enabled;
+    try {
+      window.localStorage.setItem(key, value ? '1' : '0');
+    } catch (error) {}
+    return value;
+  }
+
+  function setChatEnabledPreference(enabled) {
+    state.chatEnabled = writeEnabledPreference(CHAT_ENABLED_STORAGE_KEY, enabled);
+    if (!state.chatEnabled) {
+      closeChatDrawerFully();
+      setRobotInlineVisible(false);
+    }
+    applyChatPersonalityMode();
+    return state.chatEnabled;
+  }
+
+  function setRobotEnabledPreference(enabled) {
+    state.robotEnabled = writeEnabledPreference(ROBOT_ENABLED_STORAGE_KEY, enabled);
+    if (!state.robotEnabled) {
+      try {
+        window.localStorage.setItem(CHAT_PERSONALITY_STORAGE_KEY, 'normal');
+      } catch (error) {}
+    }
+    applyChatPersonalityMode();
+    return state.robotEnabled;
+  }
+
+  function setRobotVoicePreference(value) {
+    state.robotVoice = normalizeRobotVoice(value);
+    try {
+      window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, state.robotVoice);
+    } catch (error) {}
+    return state.robotVoice;
+  }
+
+  function setChatPersonalityMode(value) {
+    var mode = normalizeChatPersonalityMode(value);
+    try {
+      window.localStorage.setItem(CHAT_PERSONALITY_STORAGE_KEY, mode);
+    } catch (error) {}
+    applyChatPersonalityMode();
+    return mode;
+  }
+
+  function persistChatPersonalityPreference(value) {
+    var mode = setChatPersonalityMode(value);
+    return fetch(CHAT_PREFS_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personality_mode: mode })
+    }).catch(function (err) {
+      console.warn('No se pudo guardar la apariencia del chat:', err);
+      return null;
+    });
+  }
+
+  function normalizeVoiceCommandText(text) {
+    return String(text || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[¿?¡!.,;:]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function shouldAutoEnableVoice(text) {
+    var normalized = normalizeVoiceCommandText(text);
+    if (!normalized) return false;
+    return /\b(activa|activar|enciende|prende|habilita|pon)\b.*\b(tu\s+)?voz\b/.test(normalized) ||
+      /\bvoz\b.*\b(activa|activada|encendida|prendida|habilitada)\b/.test(normalized);
+  }
+
+  function shouldAutoEnableRobot(text) {
+    var normalized = normalizeVoiceCommandText(text);
+    if (!normalized) return false;
+    return /\b(activa|activar|enciende|prende|habilita|pon)\b.*\b(el\s+)?robot\b/.test(normalized) ||
+      /\brobot\b.*\b(activo|activado|encendido|prendido|habilitado)\b/.test(normalized);
+  }
+
+  function isOnlyLocalPreferenceCommand(text) {
+    var normalized = normalizeVoiceCommandText(text);
+    normalized = normalized
+      .replace(/\b(por favor|porfa|porfis)\b/g, '')
+      .replace(/\b(de la ia|del asistente|del chat|de ia|ia)\b/g, '')
+      .replace(/\b(el|la|los|las|tu|mi|modo|chat)\b/g, '')
+      .replace(/\b(y|e|tambien|ademas)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return /^(activa|activar|enciende|prende|habilita|pon)(\s+(robot|voz))+$/.test(normalized);
+  }
+
+  function isOnlyVoiceEnableCommand(text) {
+    var normalized = normalizeVoiceCommandText(text);
+    normalized = normalized.replace(/\b(por favor|porfa|porfis)\b/g, '').replace(/\s+/g, ' ').trim();
+    return normalized === 'activa tu voz' ||
+      normalized === 'activa voz' ||
+      normalized === 'activar voz' ||
+      normalized === 'enciende tu voz' ||
+      normalized === 'enciende voz' ||
+      normalized === 'prende tu voz' ||
+      normalized === 'prende voz' ||
+      normalized === 'habilita tu voz' ||
+      normalized === 'habilita voz' ||
+      normalized === 'pon tu voz' ||
+      normalized === 'pon voz';
+  }
+
+  function persistVoicePreference(enabled) {
+    var value = !!enabled;
+    try {
+      window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, value ? '1' : '0');
+    } catch (error) {}
+    return fetch(CHAT_PREFS_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice_enabled: value })
+    }).catch(function (err) {
+      console.warn('No se pudo guardar la preferencia de voz del chat:', err);
+      return null;
+    });
+  }
+
+  function persistChatEnabledPreference(enabled) {
+    var value = setChatEnabledPreference(enabled);
+    return fetch(CHAT_PREFS_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_enabled: value })
+    }).catch(function (err) {
+      console.warn('No se pudo guardar el estado del chat IA:', err);
+      return null;
+    });
+  }
+
+  function persistRobotEnabledPreference(enabled) {
+    var value = setRobotEnabledPreference(enabled);
+    return fetch(CHAT_PREFS_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ robot_enabled: value })
+    }).catch(function (err) {
+      console.warn('No se pudo guardar el estado del robot IA:', err);
+      return null;
+    });
+  }
+
+  function persistRobotVoicePreference(value) {
+    var voice = setRobotVoicePreference(value);
+    return fetch(CHAT_PREFS_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ robot_voice: voice })
+    }).catch(function (err) {
+      console.warn('No se pudo guardar la voz del robot:', err);
+      return null;
+    });
+  }
+
+  function applyVoicePreference(enabled) {
+    state.voiceEnabled = !!enabled;
+    if (!state.voiceEnabled) {
+      state.conversationMode = false;
+    }
+    try {
+      window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, state.voiceEnabled ? '1' : '0');
+    } catch (error) {}
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+  }
+
+  function loadVoicePreference(micBtn, voiceBtn, convBtn) {
+    try {
+      state.chatEnabled = readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
+      state.robotEnabled = readEnabledPreference(ROBOT_ENABLED_STORAGE_KEY, true);
+      state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
+      setRobotVoicePreference(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || state.robotVoice);
+    } catch (error) {}
+    applyChatPersonalityMode();
+    updateVoiceButtons(micBtn, voiceBtn, convBtn);
+    fetch(CHAT_PREFS_ENDPOINT, { credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (typeof data.chat_enabled === 'boolean') {
+          setChatEnabledPreference(data.chat_enabled);
+        }
+        if (typeof data.robot_enabled === 'boolean') {
+          setRobotEnabledPreference(data.robot_enabled);
+        }
+        if (typeof data.voice_enabled === 'boolean') {
+          applyVoicePreference(data.voice_enabled);
+        }
+        if (data.personality_mode) {
+          setChatPersonalityMode(data.personality_mode);
+        }
+        if (data.robot_voice) {
+          setRobotVoicePreference(data.robot_voice);
+        }
+        try {
+          window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, state.voiceEnabled ? '1' : '0');
+        } catch (error) {}
+        updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
+      })
+      .catch(function () {});
+  }
+
+  function activateVoiceFromCommand(micBtn, voiceBtn, convBtn) {
+    state.voiceEnabled = true;
+    persistVoicePreference(true);
+    updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
+    setNotice('Voz del asistente activada y guardada.');
+  }
+
+  function activateRobotFromCommand() {
+    persistRobotEnabledPreference(true);
+    persistChatPersonalityPreference('robot');
+    setNotice('Robot IA activado y guardado.');
+  }
+
+  function buildPreferenceCommandMessage(wantsRobot, wantsVoice) {
+    if (wantsRobot && wantsVoice) {
+      return 'Listo. Active el robot IA y la voz del asistente. Guarde estas preferencias para los proximos reinicios.';
+    }
+    if (wantsRobot) {
+      return 'Listo. Active el robot IA y guarde esta preferencia para los proximos reinicios.';
+    }
+    return 'Listo. Active mi voz y guarde esta preferencia para los proximos reinicios.';
+  }
 
   function getEndpointLabel() {
     return isSuperContext() ? 'chat global de super administrador' : 'chat empresarial';
@@ -156,7 +475,7 @@
       raw = '';
     }
     raw = normalize(raw).toLowerCase();
-    if (raw === 'robot' || raw === 'clippy') {
+    if ((raw === 'robot' || raw === 'clippy') && state.robotEnabled) {
       return 'robot';
     }
     return 'normal';
@@ -164,15 +483,60 @@
 
   function getRobotInlineElements() {
     return {
+      host: document.getElementById(TOGGLE_ID),
+      avatar: document.getElementById('robotAvatarGraphic'),
       panel: document.getElementById(ROBOT_PANEL_ID),
       assistantBubble: document.getElementById(ROBOT_ASSISTANT_BUBBLE_ID),
+      actions: document.getElementById(ROBOT_ACTIONS_ID),
       userBubble: document.getElementById(ROBOT_USER_BUBBLE_ID),
       form: document.getElementById(ROBOT_INLINE_FORM_ID),
       input: document.getElementById(ROBOT_INLINE_INPUT_ID),
       send: document.getElementById(ROBOT_INLINE_SEND_ID),
+      stopVoice: document.getElementById(ROBOT_INLINE_STOP_VOICE_ID),
+      mic: document.getElementById(ROBOT_INLINE_MIC_ID),
       hideBtn: document.getElementById(ROBOT_HIDE_ID),
       showBtn: document.getElementById(ROBOT_SHOW_ID)
     };
+  }
+
+  function normalizeRobotMood(mood) {
+    mood = normalize(mood).toLowerCase();
+    switch (mood) {
+      case 'listening':
+      case 'thinking':
+      case 'speaking':
+      case 'happy':
+      case 'error':
+      case 'action':
+      case 'hidden':
+        return mood;
+      default:
+        return 'idle';
+    }
+  }
+
+  function setRobotMood(mood, durationMs) {
+    var els = getRobotInlineElements();
+    var next = normalizeRobotMood(mood);
+    var classNames = ['idle', 'listening', 'thinking', 'speaking', 'happy', 'error', 'action', 'hidden'];
+    if (state.robotMoodTimer) {
+      window.clearTimeout(state.robotMoodTimer);
+      state.robotMoodTimer = null;
+    }
+    [els.host, els.avatar].forEach(function (node) {
+      if (!node || !node.classList) return;
+      classNames.forEach(function (name) {
+        node.classList.remove('robot-mood-' + name);
+      });
+      node.classList.add('robot-mood-' + next);
+      if (node.setAttribute) node.setAttribute('data-mood', next);
+    });
+    if (durationMs && Number(durationMs) > 0) {
+      state.robotMoodTimer = window.setTimeout(function () {
+        state.robotMoodTimer = null;
+        setRobotMood(state.loading ? 'thinking' : 'idle');
+      }, Number(durationMs));
+    }
   }
 
   function setRobotInlineVisible(on) {
@@ -184,6 +548,7 @@
     if (els.hideBtn) {
       els.hideBtn.style.display = on ? 'inline-flex' : 'none';
     }
+    setRobotMood(on ? 'idle' : 'hidden');
   }
 
   function setRobotAssistantText(text, isError) {
@@ -193,6 +558,59 @@
     els.assistantBubble.textContent = value;
     els.assistantBubble.classList.toggle('is-error', !!isError);
     els.assistantBubble.classList.remove('is-thinking');
+    setRobotMood(isError ? 'error' : 'speaking', isError ? 2800 : 2200);
+  }
+
+  function clearRobotActionChips() {
+    var els = getRobotInlineElements();
+    if (!els.actions) return;
+    els.actions.innerHTML = '';
+    els.actions.hidden = true;
+  }
+
+  function renderRobotActionChips(actions) {
+    var els = getRobotInlineElements();
+    if (!els.actions) return;
+    var list = Array.isArray(actions) ? actions : [];
+    els.actions.innerHTML = '';
+    if (!list.length) {
+      els.actions.hidden = true;
+      return;
+    }
+    list.slice(0, 8).forEach(function (item) {
+      var label = normalize(item && item.label);
+      var prompt = normalize(item && item.prompt);
+      if (!label || !prompt) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'robot-assistant-action-chip';
+      btn.textContent = label;
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        sendRobotPrompt(prompt);
+      });
+      els.actions.appendChild(btn);
+    });
+    els.actions.hidden = !els.actions.children.length;
+  }
+
+  function renderRobotProposalActions(proposal) {
+    if (!proposal || !Array.isArray(proposal.actions) || !proposal.actions.length) {
+      clearRobotActionChips();
+      return;
+    }
+    var idx = state.proposals.length;
+    state.proposals.push(proposal);
+    renderRobotActionChips([
+      {
+        label: 'Confirmar acciones',
+        prompt: '__PCS_ROBOT_CONFIRM_ACTIONS__' + idx
+      },
+      {
+        label: 'Cancelar acciones',
+        prompt: '__PCS_ROBOT_CANCEL_ACTIONS__' + idx
+      }
+    ]);
   }
 
   function setRobotUserText(text) {
@@ -201,6 +619,9 @@
     var value = normalize(text);
     els.userBubble.textContent = value;
     els.userBubble.hidden = !value;
+    if (value) {
+      setRobotMood('listening', 1100);
+    }
   }
 
   function setRobotLoading(on) {
@@ -214,6 +635,7 @@
     }
     if (els.input) els.input.disabled = !!on;
     if (els.send) els.send.disabled = !!on;
+    setRobotMood(on ? 'thinking' : 'idle');
   }
 
   function focusRobotInput() {
@@ -235,6 +657,7 @@
   }
 
   function showRobotAssistant(toggleBtn) {
+    if (!state.chatEnabled || !state.robotEnabled) return false;
     if (toggleBtn) {
       toggleBtn.style.display = 'inline-flex';
       toggleBtn.classList.remove('robot-appear');
@@ -244,10 +667,13 @@
     var showBtn = document.getElementById(ROBOT_SHOW_ID);
     if (showBtn) showBtn.style.display = 'none';
     setRobotInlineVisible(true);
+    setRobotMood('happy', 1400);
     focusRobotInput();
+    return true;
   }
 
   function ensureRobotInlineUI(toggleBtn) {
+    if (!state.chatEnabled || !state.robotEnabled) return null;
     var panel = document.getElementById(ROBOT_PANEL_ID);
     if (!panel) {
       panel = document.createElement('section');
@@ -256,15 +682,20 @@
       panel.setAttribute('aria-label', 'Conversacion con robot IA');
       panel.innerHTML =
         '<div id="' + ROBOT_ASSISTANT_BUBBLE_ID + '" class="robot-cloud robot-cloud-assistant"></div>' +
+        '<div id="' + ROBOT_ACTIONS_ID + '" class="robot-assistant-actions" hidden></div>' +
         '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
         '<form id="' + ROBOT_INLINE_FORM_ID + '" class="robot-cloud robot-cloud-input">' +
         '<textarea id="' + ROBOT_INLINE_INPUT_ID + '" rows="1" maxlength="2000"></textarea>' +
+        '<button id="' + ROBOT_INLINE_STOP_VOICE_ID + '" class="robot-inline-stop-voice" type="button" aria-label="Detener voz del robot" title="Detener voz"></button>' +
+        '<button id="' + ROBOT_INLINE_MIC_ID + '" class="robot-inline-mic" type="button" aria-label="Dictar mensaje al robot"></button>' +
         '<button id="' + ROBOT_INLINE_SEND_ID + '" type="submit" aria-label="Enviar al robot">Enviar</button>' +
         '</form>';
       document.body.appendChild(panel);
 
       var form = document.getElementById(ROBOT_INLINE_FORM_ID);
       var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+      var stopVoiceBtn = document.getElementById(ROBOT_INLINE_STOP_VOICE_ID);
+      var micBtn = document.getElementById(ROBOT_INLINE_MIC_ID);
       if (form) {
         form.addEventListener('submit', handleRobotInlineSubmit);
       }
@@ -284,6 +715,17 @@
           input.style.height = Math.min(input.scrollHeight, 96) + 'px';
         });
       }
+      if (stopVoiceBtn) {
+        stopVoiceBtn.innerHTML = ICON_STOP;
+        stopVoiceBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          stopAssistantVoiceForMoment();
+          focusRobotInput();
+        });
+      }
+      setupSpeechRecognition(input, micBtn, document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      updateVoiceButtons(micBtn, document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     }
 
     var hideBtn = document.getElementById(ROBOT_HIDE_ID);
@@ -315,6 +757,7 @@
 
     setRobotAssistantText(getDefaultAssistantGreeting());
     setRobotInlineVisible(true);
+    setRobotMood('happy', 1600);
   }
 
   function applyChatPersonalityMode() {
@@ -324,11 +767,30 @@
     var toggleBtn = document.getElementById(TOGGLE_ID);
     var mode = getChatPersonalityMode();
 
+    if (!state.chatEnabled) {
+      closeChatDrawerFully();
+      if (drawer) drawer.classList.remove('robot-mode');
+      setRobotInlineVisible(false);
+      if (toggleBtn) {
+        toggleBtn.style.display = 'none';
+        toggleBtn.setAttribute('aria-hidden', 'true');
+      }
+      var hiddenRobotBtn = document.getElementById(ROBOT_HIDE_ID);
+      var hiddenShowBtn = document.getElementById(ROBOT_SHOW_ID);
+      if (hiddenRobotBtn) hiddenRobotBtn.style.display = 'none';
+      if (hiddenShowBtn) hiddenShowBtn.style.display = 'none';
+      return;
+    }
+
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-hidden', 'false');
+    }
+
     if (drawer) {
       drawer.classList.toggle('robot-mode', mode === 'robot');
     }
     if (titleEl) {
-      titleEl.textContent = mode === 'robot' ? 'Robot IA' : 'Asistente IA';
+      titleEl.textContent = mode === 'robot' ? 'Ejecutivo IA 3D' : 'Asistente IA';
     }
     if (input) {
       input.placeholder = mode === 'robot'
@@ -353,6 +815,7 @@
           toggleBtn.style.display = 'inline-flex';
           closeChatDrawerFully();
           ensureRobotInlineUI(toggleBtn);
+          setRobotMood('idle');
           var robotShowBtn = document.getElementById(ROBOT_SHOW_ID);
           if (robotShowBtn) robotShowBtn.style.display = 'none';
           return;
@@ -442,7 +905,7 @@
 
   function getDefaultAssistantGreeting() {
     if (getChatPersonalityMode() === 'robot') {
-      return 'Hola. Soy tu robot IA, listo para ayudarte en este panel.';
+      return 'Hola. Soy tu ejecutivo IA 3D, listo para ayudarte en este panel.';
     }
     return 'Hola. Soy tu Asistente IA, listo para ayudarte en el panel.';
     return getChatPersonalityMode() === 'robot'
@@ -450,14 +913,191 @@
       : '¡Hola! Soy tu Asistente IA, listo para ayudarte en el panel.';
   }
 
-  function openChatConfigPage() {
-    var target = '/administrar_empresa/configuracion_chat_flotante.html';
-    var frame = document.getElementById('contentFrame');
-    if (frame && !frame.classList.contains('is-hidden')) {
-      frame.src = target;
-      return;
+  function getCompactConfigMode() {
+    var selected = document.querySelector('input[name="aiChatCompactMode"]:checked');
+    return normalizeChatPersonalityMode(selected && selected.value);
+  }
+
+  function setCompactConfigState(mode, voiceEnabled, robotVoice, chatEnabled, robotEnabled) {
+    if (typeof chatEnabled === 'boolean') {
+      state.chatEnabled = chatEnabled;
     }
-    window.location.href = target;
+    if (typeof robotEnabled === 'boolean') {
+      state.robotEnabled = robotEnabled;
+    }
+    var normalizedMode = normalizeChatPersonalityMode(mode);
+    var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
+    var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
+    var modeInput = document.querySelector('input[name="aiChatCompactMode"][value="' + normalizedMode + '"]');
+    var voiceInput = document.getElementById(CONFIG_VOICE_ID);
+    var robotVoiceInput = document.getElementById(CONFIG_ROBOT_VOICE_ID);
+    var modeInputs = Array.prototype.slice.call(document.querySelectorAll('input[name="aiChatCompactMode"]'));
+    if (chatInput) {
+      chatInput.checked = !!state.chatEnabled;
+    }
+    if (robotInput) {
+      robotInput.checked = !!state.robotEnabled;
+      robotInput.disabled = !state.chatEnabled;
+    }
+    modeInputs.forEach(function (input) {
+      input.disabled = !state.chatEnabled || (input.value === 'robot' && !state.robotEnabled);
+    });
+    if (modeInput) {
+      modeInput.checked = true;
+    }
+    if (voiceInput && typeof voiceEnabled === 'boolean') {
+      voiceInput.checked = voiceEnabled;
+      voiceInput.disabled = !state.chatEnabled;
+    }
+    if (robotVoiceInput) {
+      robotVoiceInput.value = normalizeRobotVoice(robotVoice || state.robotVoice);
+      robotVoiceInput.disabled = !state.chatEnabled || !state.robotEnabled;
+    }
+  }
+
+  function ensureCompactConfigPanel() {
+    var panel = document.getElementById(CONFIG_PANEL_ID);
+    if (panel) return panel;
+
+    panel = document.createElement('div');
+    panel.id = CONFIG_PANEL_ID;
+    panel.className = 'ai-chat-compact-config';
+    panel.hidden = true;
+    panel.innerHTML =
+      '<div class="ai-chat-compact-config-card" role="dialog" aria-modal="false" aria-labelledby="aiChatCompactConfigTitle">' +
+      '<div class="ai-chat-compact-config-header">' +
+      '<strong id="aiChatCompactConfigTitle">Configuracion del chat</strong>' +
+      '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuracion">×</button>' +
+      '</div>' +
+      '<div class="ai-chat-compact-config-body">' +
+      '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>Activar chat IA</b><small>Muestra u oculta el chat flotante completo.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input id="' + CONFIG_ROBOT_ENABLED_ID + '" type="checkbox"><span><b>Activar robot IA</b><small>Permite el avatar 3D, la guia inicial y avisos de recordatorios.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="normal"><span><b>Chat cuadrado</b><small>Ventana lateral tradicional con historial y controles completos.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="robot"><span><b>Robot IA</b><small>Avatar 3D con conversacion en globos sobre el robot.</small></span></label>' +
+      '<label class="ai-chat-compact-option ai-chat-compact-option-voice"><input id="' + CONFIG_VOICE_ID + '" type="checkbox"><span><b>Activar modo voz</b><small>Lee las respuestas con el servicio de voz o la voz del navegador.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><span><b>Voz del robot</b><small>Selecciona el timbre para las respuestas habladas.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">Español latino</option><option value="es-ES">Español castellano</option></select></span></label>' +
+      '</div>' +
+      '<div class="ai-chat-compact-config-actions">' +
+      '<button id="' + CONFIG_SAVE_ID + '" type="button" class="btn primary small">Guardar</button>' +
+      '</div>' +
+      '<div class="ai-chat-compact-config-status" aria-live="polite"></div>' +
+      '</div>';
+    document.body.appendChild(panel);
+
+    var closeBtn = document.getElementById(CONFIG_CLOSE_ID);
+    var saveBtn = document.getElementById(CONFIG_SAVE_ID);
+    var statusEl = panel.querySelector('.ai-chat-compact-config-status');
+
+    function setConfigStatus(message, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = String(message || '');
+      statusEl.classList.toggle('is-error', !!isError);
+    }
+
+    function applyCompactPreview() {
+      var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
+      var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
+      var chatOn = setChatEnabledPreference(chatInput ? chatInput.checked : state.chatEnabled);
+      var robotOn = setRobotEnabledPreference(robotInput ? robotInput.checked : state.robotEnabled);
+      setChatPersonalityMode(getCompactConfigMode());
+      applyVoicePreference(!!document.getElementById(CONFIG_VOICE_ID).checked);
+      setRobotVoicePreference(document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
+      setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, chatOn, robotOn);
+      setConfigStatus('Vista previa aplicada. Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Voz del robot: ' + labelForRobotVoice(state.robotVoice) + '. Presiona Guardar para persistirla.');
+    }
+
+    var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
+    if (chatInput) {
+      chatInput.addEventListener('change', applyCompactPreview);
+    }
+    var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
+    if (robotInput) {
+      robotInput.addEventListener('change', applyCompactPreview);
+    }
+    Array.prototype.slice.call(panel.querySelectorAll('input[name="aiChatCompactMode"]')).forEach(function (input) {
+      input.addEventListener('change', applyCompactPreview);
+    });
+    var voiceInput = document.getElementById(CONFIG_VOICE_ID);
+    if (voiceInput) {
+      voiceInput.addEventListener('change', applyCompactPreview);
+    }
+    var robotVoiceInput = document.getElementById(CONFIG_ROBOT_VOICE_ID);
+    if (robotVoiceInput) {
+      robotVoiceInput.addEventListener('change', applyCompactPreview);
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        panel.hidden = true;
+      });
+    }
+    panel.addEventListener('click', function (event) {
+      if (event.target === panel) {
+        panel.hidden = true;
+      }
+    });
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function () {
+        var chatOn = setChatEnabledPreference(!!document.getElementById(CONFIG_CHAT_ENABLED_ID).checked);
+        var robotOn = setRobotEnabledPreference(!!document.getElementById(CONFIG_ROBOT_ENABLED_ID).checked);
+        var mode = setChatPersonalityMode(getCompactConfigMode());
+        var voice = !!document.getElementById(CONFIG_VOICE_ID).checked;
+        var robotVoice = setRobotVoicePreference(document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
+        applyVoicePreference(voice);
+        setConfigStatus('Guardando configuracion...');
+        fetch(CHAT_PREFS_ENDPOINT, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
+        }).then(function (res) {
+          if (!res.ok) throw new Error('No se pudo guardar en servidor.');
+          return res.json();
+        }).then(function (data) {
+          var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabledPreference(data.chat_enabled) : chatOn;
+          var savedRobot = typeof (data && data.robot_enabled) === 'boolean' ? setRobotEnabledPreference(data.robot_enabled) : robotOn;
+          var savedMode = setChatPersonalityMode(data && data.personality_mode ? data.personality_mode : mode);
+          var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? data.voice_enabled : voice;
+          var savedRobotVoice = setRobotVoicePreference(data && data.robot_voice ? data.robot_voice : robotVoice);
+          applyVoicePreference(savedVoice);
+          setCompactConfigState(savedMode, savedVoice, savedRobotVoice, savedChat, savedRobot);
+          setConfigStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del robot: ' + labelForRobotVoice(savedRobotVoice) + '.');
+        }).catch(function (err) {
+          setConfigStatus('Configuracion aplicada localmente, pero no se pudo guardar. ' + String(err && err.message ? err.message : ''), true);
+        });
+      });
+    }
+    return panel;
+  }
+
+  function openChatConfigPage() {
+    var panel = ensureCompactConfigPanel();
+    setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled);
+    panel.hidden = false;
+    fetch(CHAT_PREFS_ENDPOINT, { credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (typeof data.chat_enabled === 'boolean') {
+          setChatEnabledPreference(data.chat_enabled);
+        }
+        if (typeof data.robot_enabled === 'boolean') {
+          setRobotEnabledPreference(data.robot_enabled);
+        }
+        if (data.personality_mode) {
+          setChatPersonalityMode(data.personality_mode);
+        }
+        if (typeof data.voice_enabled === 'boolean') {
+          applyVoicePreference(data.voice_enabled);
+        }
+        if (data.robot_voice) {
+          setRobotVoicePreference(data.robot_voice);
+        }
+        setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled);
+      })
+      .catch(function () {});
   }
 
   function normalize(text) {
@@ -520,6 +1160,52 @@
     return isSpeechSynthesisSupported() || state.voiceServerAvailable;
   }
 
+  function sanitizeTextForSpeech(text) {
+    var raw = String(text || '');
+    if (!raw) return '';
+    return raw
+      .replace(/```[\s\S]*?```/g, ' bloque de codigo omitido. ')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+      .replace(/https?:\/\/\S+/gi, ' enlace ')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+      .replace(/^\s{0,3}>\s?/gm, '')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/^\s*\d+[.)]\s+/gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/~~([^~]+)~~/g, '$1')
+      .replace(/[*_~`#>|{}\[\]\\]/g, ' ')
+      .replace(/[\u2022\u00b7]/g, ' ')
+      .replace(/\s+([,.;:!?])/g, '$1')
+      .replace(/([,.;:!?]){2,}/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function stopAssistantVoiceForMoment() {
+    state.voicePlaybackVersion += 1;
+    try {
+      if (state.voiceServerAudio) {
+        state.voiceServerAudio.pause();
+        state.voiceServerAudio.currentTime = 0;
+        state.voiceServerAudio = null;
+      }
+    } catch (err) {}
+    try {
+      if (window.speechSynthesis && typeof window.speechSynthesis.cancel === 'function') {
+        window.speechSynthesis.cancel();
+      }
+    } catch (err) {}
+    if (getChatPersonalityMode() === 'robot') {
+      setRobotMood('idle', 900);
+    }
+    setNotice('Voz detenida por ahora. La siguiente respuesta volvera a hablar si el modo voz sigue activo.');
+  }
+
   function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
     if (micBtn) {
       micBtn.innerHTML = ICON_MIC;
@@ -527,9 +1213,29 @@
       micBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje');
       micBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
       micBtn.disabled = state.loading || !isSpeechRecognitionSupported();
+      micBtn.classList.toggle('is-listening', state.listening);
       if (!isSpeechRecognitionSupported()) {
         micBtn.title = 'Dictado no disponible en este navegador';
       }
+    }
+    var robotMicBtn = document.getElementById(ROBOT_INLINE_MIC_ID);
+    if (robotMicBtn && robotMicBtn !== micBtn) {
+      robotMicBtn.innerHTML = ICON_MIC;
+      robotMicBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el microfono';
+      robotMicBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje al robot');
+      robotMicBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
+      robotMicBtn.disabled = state.loading || !isSpeechRecognitionSupported();
+      robotMicBtn.classList.toggle('is-listening', state.listening);
+      if (!isSpeechRecognitionSupported()) {
+        robotMicBtn.title = 'Dictado no disponible en este navegador';
+      }
+    }
+    var robotStopVoiceBtn = document.getElementById(ROBOT_INLINE_STOP_VOICE_ID);
+    if (robotStopVoiceBtn) {
+      robotStopVoiceBtn.innerHTML = ICON_STOP;
+      robotStopVoiceBtn.title = 'Detener voz del robot por ahora';
+      robotStopVoiceBtn.setAttribute('aria-label', 'Detener voz del robot por ahora');
+      robotStopVoiceBtn.disabled = !isVoiceOutputSupported();
     }
     if (voiceBtn) {
       voiceBtn.innerHTML = ICON_SPK;
@@ -551,37 +1257,113 @@
 
   function speakAssistantText(text) {
     var readAloud = state.voiceEnabled || state.conversationMode;
-    if (!readAloud || !text) return;
+    if (!text) return;
+    if (getChatPersonalityMode() === 'robot') {
+      setRobotMood('speaking', readAloud ? 0 : 2200);
+    }
+    if (!readAloud) return;
+    var spokenText = sanitizeTextForSpeech(text);
+    if (!spokenText) return;
+    var playbackVersion = state.voicePlaybackVersion;
     if (state.voiceServerAvailable) {
-      playVoiceStreamAudio(text).then(function (played) {
+      playVoiceStreamAudio(spokenText, playbackVersion).then(function (played) {
+        if (state.voicePlaybackVersion !== playbackVersion) {
+          return;
+        }
         if (!played) {
-          speakAssistantTextWithBrowser(text);
+          speakAssistantTextWithBrowser(spokenText, playbackVersion);
         }
       });
       return;
     }
-    speakAssistantTextWithBrowser(text);
+    speakAssistantTextWithBrowser(spokenText, playbackVersion);
   }
 
-  function speakAssistantTextWithBrowser(text) {
+  function speakRobotAnnouncement(text) {
+    var spokenText = sanitizeTextForSpeech(text);
+    if (!spokenText) return;
+    var playbackVersion = state.voicePlaybackVersion;
+    if (state.voiceServerAvailable) {
+      playVoiceStreamAudio(spokenText, playbackVersion).then(function (played) {
+        if (state.voicePlaybackVersion !== playbackVersion) return;
+        if (!played) speakAssistantTextWithBrowser(spokenText, playbackVersion);
+      });
+      return;
+    }
+    speakAssistantTextWithBrowser(spokenText, playbackVersion);
+  }
+
+  function speakAssistantTextWithBrowser(text, playbackVersion) {
     if (!isSpeechSynthesisSupported() || !text) return;
     try {
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) return;
       window.speechSynthesis.cancel();
       var utterance = new SpeechSynthesisUtterance(String(text));
-      utterance.lang = 'es-CO';
+      utterance.lang = robotVoiceLang(state.robotVoice);
       utterance.rate = 1;
       utterance.pitch = 1;
+      var desiredVoice = pickBrowserSpeechVoice(state.robotVoice);
+      if (desiredVoice) {
+        utterance.voice = desiredVoice;
+      }
+      utterance.onstart = function () {
+        if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+          try { window.speechSynthesis.cancel(); } catch (e) {}
+          return;
+        }
+        if (getChatPersonalityMode() === 'robot') setRobotMood('speaking');
+      };
+      utterance.onend = function () {
+        if (getChatPersonalityMode() === 'robot') setRobotMood('happy', 1200);
+      };
+      utterance.onerror = function () {
+        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
+      };
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn('No se pudo reproducir voz:', err);
+      if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
     }
   }
 
-  function playVoiceStreamAudio(text) {
+  function pickBrowserSpeechVoice(robotVoice) {
+    if (!window.speechSynthesis || typeof window.speechSynthesis.getVoices !== 'function') return null;
+    var voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+    var preferredLang = robotVoiceLang(robotVoice).toLowerCase();
+    var wantsFemale = normalizeRobotVoice(robotVoice) === 'es-CO-female';
+    var wantsMale = normalizeRobotVoice(robotVoice) === 'es-CO-male';
+    var spanish = voices.filter(function (voice) {
+      return String(voice.lang || '').toLowerCase().indexOf('es') === 0;
+    });
+    var exact = spanish.filter(function (voice) {
+      return String(voice.lang || '').toLowerCase() === preferredLang;
+    });
+    var pool = exact.length ? exact : spanish;
+    if (!pool.length) return null;
+    if (wantsFemale) {
+      var female = pool.find(function (voice) {
+        return /female|mujer|maria|paulina|helena|sabina|monica|laura|sofia|lucia/i.test(String(voice.name || ''));
+      });
+      if (female) return female;
+    }
+    if (wantsMale) {
+      var male = pool.find(function (voice) {
+        return /male|hombre|carlos|jorge|diego|juan|pablo|miguel|raul/i.test(String(voice.name || ''));
+      });
+      if (male) return male;
+    }
+    return pool[0];
+  }
+
+  function playVoiceStreamAudio(text, playbackVersion) {
     if (!state.voiceServerAvailable || !text) {
       return Promise.resolve(false);
     }
     try {
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        return Promise.resolve(false);
+      }
       if (state.voiceServerAudio) {
         state.voiceServerAudio.pause();
         state.voiceServerAudio = null;
@@ -600,7 +1382,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: String(text).slice(0, 4000) }),
+      body: JSON.stringify({ text: String(text).slice(0, 4000), voice: state.robotVoice }),
       signal: controller ? controller.signal : undefined
     }).then(function (res) {
       if (timer) window.clearTimeout(timer);
@@ -614,21 +1396,33 @@
       return res.blob();
     }).then(function (blob) {
       if (!blob || typeof blob.size !== 'number' || blob.size <= 0) return false;
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        return false;
+      }
       var url = URL.createObjectURL(blob);
       var audio = new Audio(url);
       state.voiceServerAudio = audio;
       audio.onended = function () {
         URL.revokeObjectURL(url);
         if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+        if (getChatPersonalityMode() === 'robot') setRobotMood('happy', 1200);
       };
       audio.onerror = function () {
         URL.revokeObjectURL(url);
         if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
       };
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        URL.revokeObjectURL(url);
+        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+        return false;
+      }
       return audio.play().then(function () {
+        if (getChatPersonalityMode() === 'robot') setRobotMood('speaking');
         return true;
       }).catch(function () {
         URL.revokeObjectURL(url);
+        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
         return false;
       });
     }).catch(function (err) {
@@ -669,10 +1463,14 @@
     recognition.continuous = false;
     var finalText = '';
     var baseText = String(input.value || '').trim();
+    var isRobotMic = micBtn.id === ROBOT_INLINE_MIC_ID;
 
     function setListening(on) {
       state.listening = !!on;
       updateVoiceButtons(micBtn, voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
+      if (isRobotMic) {
+        setRobotMood(on ? 'listening' : 'idle', on ? 0 : 800);
+      }
     }
 
     recognition.onresult = function (event) {
@@ -691,6 +1489,9 @@
         finalText += updatedFinalText;
       }
       input.value = (baseText ? baseText + ' ' : '') + String((finalText + interimText).trim());
+      try {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      } catch (e) {}
     };
 
     recognition.onerror = function () {
@@ -715,6 +1516,9 @@
       try {
         recognition.start();
         setListening(true);
+        if (isRobotMic) {
+          setNotice('Escuchando desde el microfono del robot...');
+        }
       } catch (err) {
         setListening(false);
         setNotice('No se pudo iniciar dictado.');
@@ -724,6 +1528,7 @@
 
   function setupSpeechControls(input, micBtn, voiceBtn, convBtn) {
     updateVoiceButtons(micBtn, voiceBtn, convBtn);
+    loadVoicePreference(micBtn, voiceBtn, convBtn);
     if (voiceBtn) {
       voiceBtn.addEventListener('click', function () {
         if (state.loading) return;
@@ -731,6 +1536,7 @@
         if (!state.voiceEnabled) {
           state.conversationMode = false;
         }
+        persistVoicePreference(state.voiceEnabled);
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
         setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: síntesis).' : 'Respuestas de voz desactivadas.');
       });
@@ -741,6 +1547,7 @@
         state.conversationMode = !state.conversationMode;
         if (state.conversationMode) {
           state.voiceEnabled = true;
+          persistVoicePreference(true);
           setNotice('Modo conversación: lectura automática de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
         } else {
           setNotice('Modo conversación desactivado.');
@@ -1100,6 +1907,7 @@
     if (event && typeof event.preventDefault === 'function') {
       event.preventDefault();
     }
+    if (!state.chatEnabled || !state.robotEnabled) return;
     if (state.loading) return;
     var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
     if (!input) return;
@@ -1110,20 +1918,43 @@
     input.style.height = 'auto';
     setRobotInlineVisible(true);
     setRobotUserText(query);
+    var wantsRobot = shouldAutoEnableRobot(query);
+    var wantsVoice = shouldAutoEnableVoice(query);
+    if (wantsRobot) {
+      activateRobotFromCommand();
+    }
+    if (wantsVoice) {
+      activateVoiceFromCommand(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+    }
+    if ((wantsRobot || wantsVoice) && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
+      var preferenceReadyMessage = buildPreferenceCommandMessage(wantsRobot, wantsVoice);
+      setRobotAssistantText(preferenceReadyMessage);
+      speakAssistantText(preferenceReadyMessage);
+      focusRobotInput();
+      return;
+    }
     setRobotLoading(true);
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
     sendQuery(query, null).then(function (result) {
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
-      if (result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length) {
-        answer += '\n\nPrepare acciones sugeridas. Para ejecutarlas se requiere confirmacion en el panel completo del chat.';
+      var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
+      if (hasActions) {
+        answer += '\n\nPrepare acciones sugeridas. Puedes confirmarlas desde estos botones del robot.';
       }
       setRobotAssistantText(answer);
+      if (hasActions) {
+        setRobotMood('action', 3200);
+        renderRobotProposalActions(result.proposal);
+      } else {
+        clearRobotActionChips();
+      }
       speakAssistantText(answer);
       setNotice('Respuesta lista desde el robot.');
     }).catch(function (err) {
       var message = err && err.message ? err.message : 'Error al procesar la consulta.';
+      setRobotMood('error', 2600);
       setRobotAssistantText(message, true);
       setNotice('No se pudo completar la solicitud. ' + String(message), true);
     }).finally(function () {
@@ -1134,8 +1965,118 @@
     });
   }
 
+  function sendRobotPrompt(prompt) {
+    if (!state.chatEnabled || !state.robotEnabled) return false;
+    var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+    var value = normalize(prompt);
+    if (!input || !value || state.loading) return;
+    if (value.indexOf('__PCS_ROBOT_CONFIRM_ACTIONS__') === 0) {
+      clearRobotActionChips();
+      executeActionProposal(parseInt(value.replace('__PCS_ROBOT_CONFIRM_ACTIONS__', ''), 10));
+      return;
+    }
+    if (value.indexOf('__PCS_ROBOT_CANCEL_ACTIONS__') === 0) {
+      clearRobotActionChips();
+      cancelActionProposal(parseInt(value.replace('__PCS_ROBOT_CANCEL_ACTIONS__', ''), 10));
+      setRobotAssistantText('Acciones canceladas. Puedes pedirme otra configuracion o ajustar la propuesta.');
+      return;
+    }
+    input.value = value;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+    clearRobotActionChips();
+    handleRobotInlineSubmit({ preventDefault: function () {} });
+    return true;
+  }
+
+  function buildConfigurationAssistantActions(summary) {
+    var tipo = normalize(summary && summary.tipo_empresa_nombre);
+    var tipoText = tipo ? (' para una empresa tipo ' + tipo) : '';
+    return [
+      {
+        label: 'Agregar productos',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Revisa el contexto de preconfiguracion y guiame para agregar o ajustar productos, categorias, precios, costos, impuestos y stock minimo. Si puedes proponer acciones seguras, proponlas para confirmarlas.'
+      },
+      {
+        label: 'Configurar tarifas',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Ayudame a configurar tarifas por minutos, por dia o por servicio segun el tipo de empresa. Preguntame los datos faltantes y propon una configuracion profesional.'
+      },
+      {
+        label: 'Estaciones y caja',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Revisa estaciones, nombres, caja, carrito, notas y vista movil. Guiame para dejar operativa la empresa sin romper la configuracion actual.'
+      },
+      {
+        label: 'Usuarios y roles',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Guiame para convertir usuarios guia en usuarios reales, asignar roles, permisos y tareas iniciales.'
+      },
+      {
+        label: 'Facturacion',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Guiame por la configuracion de facturacion, resoluciones, impuestos, DIAN si aplica y pruebas necesarias antes de vender.'
+      },
+      {
+        label: 'Plan completo',
+        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Dame un plan paso a paso para terminar productos, tarifas, estaciones, usuarios, facturacion, reportes y auditoria usando la preconfiguracion de esta empresa.'
+      }
+    ];
+  }
+
+  function startConfigurationAssistant(summary) {
+    if (!state.chatEnabled || !state.robotEnabled) return false;
+    var toggleBtn = document.getElementById(TOGGLE_ID);
+    setChatPersonalityMode('robot');
+    closeChatDrawerFully();
+    ensureRobotInlineUI(toggleBtn);
+    showRobotAssistant(toggleBtn);
+    var tipo = normalize(summary && summary.tipo_empresa_nombre);
+    var estaciones = parsePositiveInt(summary && summary.estaciones_creadas);
+    var productos = parsePositiveInt(summary && summary.productos_creados);
+    var usuarios = parsePositiveInt(summary && summary.usuarios_creados);
+    var intro = 'Hola. Soy tu robot asistente de configuracion. ';
+    if (tipo || estaciones || productos || usuarios) {
+      intro += 'Detecte una preconfiguracion inicial';
+      if (tipo) intro += ' para ' + tipo;
+      intro += '. ';
+      intro += 'Ya puedo ayudarte a revisar';
+      if (estaciones) intro += ' ' + estaciones + ' estaciones,';
+      if (productos) intro += ' ' + productos + ' productos guia,';
+      if (usuarios) intro += ' ' + usuarios + ' usuarios guia,';
+      intro = intro.replace(/,\s*$/, '') + '. ';
+    }
+    intro += 'Elige una opcion o escribeme que quieres configurar: productos, tarifas, estaciones, usuarios, facturacion o reportes.';
+    setRobotAssistantText(intro);
+    renderRobotActionChips(buildConfigurationAssistantActions(summary || {}));
+    setNotice('Asistente de configuracion inicial activo.');
+    speakRobotAnnouncement(intro);
+    focusRobotInput();
+    return true;
+  }
+
+  function notifyRobotReminder(payload) {
+    if (!state.chatEnabled || !state.robotEnabled) return false;
+    var toggleBtn = document.getElementById(TOGGLE_ID);
+    setChatPersonalityMode('robot');
+    closeChatDrawerFully();
+    ensureRobotInlineUI(toggleBtn);
+    showRobotAssistant(toggleBtn);
+    var title = normalize(payload && payload.title) || 'Recordatorio de notas';
+    var detail = normalize(payload && payload.detail);
+    var message = 'Tiempo cumplido: ' + title + '.';
+    if (detail) {
+      message += ' ' + detail;
+    }
+    setRobotAssistantText(message);
+    renderRobotActionChips([
+      { label: 'Que hago ahora', prompt: 'Se cumplio un recordatorio de nota: "' + title + '". Ayudame a decidir el siguiente paso operativo con una respuesta corta y accionable.' },
+      { label: 'Crear tarea', prompt: 'Se cumplio un recordatorio de nota: "' + title + '". Guiame para crear una tarea o seguimiento relacionado y dejar evidencia en el sistema.' }
+    ]);
+    setNotice('Recordatorio de notas cumplido.');
+    speakRobotAnnouncement(message);
+    return true;
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
+    if (!state.chatEnabled) return;
     if (state.loading) return;
     var input = document.getElementById(INPUT_ID);
     if (!input) return;
@@ -1146,16 +2087,35 @@
 
     input.value = '';
     appendMessage('user', attachment ? (query + '\n\n[Adjunto: ' + describeAttachment(attachment) + ']') : query);
+    var wantsRobot = shouldAutoEnableRobot(query);
+    var wantsVoice = shouldAutoEnableVoice(query);
+    if (wantsRobot) {
+      activateRobotFromCommand();
+    }
+    if (wantsVoice) {
+      activateVoiceFromCommand(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+    }
+    if ((wantsRobot || wantsVoice) && !attachment && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
+      var preferenceReadyMessage = buildPreferenceCommandMessage(wantsRobot, wantsVoice);
+      appendMessage('assistant', preferenceReadyMessage);
+      setRobotAssistantText(preferenceReadyMessage);
+      speakAssistantText(preferenceReadyMessage);
+      return;
+    }
     setNotice(attachment ? 'Procesando consulta con adjunto...' : 'Procesando tu consulta...');
+    if (getChatPersonalityMode() === 'robot') setRobotMood('thinking');
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
     sendQuery(query, attachment).then(function (result) {
+      var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       appendMessage('assistant', result.clean, null, result.proposal);
+      if (hasActions) setRobotMood('action', 3200);
       speakAssistantText(result.clean);
       setNotice('Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
+      if (getChatPersonalityMode() === 'robot') setRobotMood('error', 2600);
       appendMessage('assistant', err.message || 'Error al procesar la consulta.', 'error');
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
     }).finally(function () {
@@ -1274,6 +2234,7 @@
   }
 
   function openChatDrawerFromUser() {
+    if (!state.chatEnabled) return;
     var drawer = document.getElementById(DRAWER_ID);
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
@@ -1330,6 +2291,7 @@
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
 
     toggle.addEventListener('click', function () {
+      if (!state.chatEnabled) return;
       if (getChatPersonalityMode() === 'robot') {
         closeChatDrawerFully();
         setRobotInlineVisible(true);
@@ -1460,7 +2422,39 @@
 
     window.addEventListener('message', function (event) {
       var data = event && event.data;
-      if (!data || data.type !== 'pcs-ai-drawer-open') return;
+      if (!data) return;
+      if (data.type === 'pcs-ai-chat-personality-updated') {
+        setChatPersonalityMode(data.mode);
+        return;
+      }
+      if (data.type === 'pcs-ai-chat-enabled-updated') {
+        setChatEnabledPreference(!!data.enabled);
+        return;
+      }
+      if (data.type === 'pcs-ai-robot-enabled-updated') {
+        setRobotEnabledPreference(!!data.enabled);
+        return;
+      }
+      if (data.type === 'pcs-ai-chat-voice-updated') {
+        applyVoicePreference(!!data.enabled);
+        return;
+      }
+      if (data.type === 'pcs-ai-chat-robot-voice-updated') {
+        setRobotVoicePreference(data.voice);
+        return;
+      }
+      if (data.type === 'pcs-ai-config-assistant-start') {
+        if (!state.chatEnabled || !state.robotEnabled) return;
+        startConfigurationAssistant(data.summary || data.preconfiguracion || {});
+        return;
+      }
+      if (data.type === 'pcs-ai-robot-reminder') {
+        if (!state.chatEnabled || !state.robotEnabled) return;
+        notifyRobotReminder(data.payload || data);
+        return;
+      }
+      if (data.type !== 'pcs-ai-drawer-open') return;
+      if (!state.chatEnabled) return;
       if (getChatPersonalityMode() === 'robot') {
         closeChatDrawerFully();
         setRobotInlineVisible(true);
@@ -1496,6 +2490,28 @@
     renderAttachmentState();
     syncModeUI();
     applyChatPersonalityMode();
+
+    window.PCSAIChatRobot = {
+      startConfigurationAssistant: startConfigurationAssistant,
+      notifyReminder: notifyRobotReminder,
+      showMessage: function (text, options) {
+        if (!state.chatEnabled || !state.robotEnabled) return false;
+        var toggleBtn = document.getElementById(TOGGLE_ID);
+        setChatPersonalityMode('robot');
+        closeChatDrawerFully();
+        ensureRobotInlineUI(toggleBtn);
+        showRobotAssistant(toggleBtn);
+        setRobotAssistantText(text);
+        renderRobotActionChips(options && options.actions);
+        if (options && options.speak) {
+          speakRobotAnnouncement(text);
+        }
+        return true;
+      },
+      sendPrompt: sendRobotPrompt
+    };
+
+    window.dispatchEvent(new CustomEvent('pcs-ai-chat-robot-ready'));
 
     window.addEventListener('storage', function (event) {
       if (!event || event.key !== CHAT_PERSONALITY_STORAGE_KEY) return;

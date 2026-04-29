@@ -7836,3 +7836,9 @@
 2026-04-29T16:31:45-05:00 [INFO] req_id=req-1777498304988623900-8c6988b9cef6 event=request_end method=GET path=/img/company-briefcase-color.svg status=200 dur_ms=129
 2026-04-29T16:31:45-05:00 [INFO] req_id=req-1777498303962830400-d88747aa5e1b event=request_end method=GET path=/img/sistema%20restaurante.png status=200 dur_ms=1367
 2026-04-29T16:31:45-05:00 [INFO] req_id=req-1777498303948766300-fd78e3fef114 event=request_end method=GET path=/img/sistema%20motel%20con%20sensor%20en%20puertas.png status=200 dur_ms=1396
+2026-04-29T18:25:54-05:00 [INFO] req_id=req-1777505154048516800-78d894ae7f92 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-29T18:25:55-05:00 [INFO] req_id=req-1777505154048516800-78d894ae7f92 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=1220
+2026-04-29T18:26:07-05:00 [INFO] req_id=req-1777505167044503400-137f69086f9f event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-29T18:26:07-05:00 [INFO] req_id=req-1777505167044503400-137f69086f9f event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=815
+2026-04-29T18:26:18-05:00 [INFO] req_id=req-1777505178591628800-3ea55453380a event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-29T18:26:19-05:00 [INFO] req_id=req-1777505178591628800-3ea55453380a event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=522

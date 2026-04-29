@@ -240,9 +240,19 @@
       var showLabel = toggleBtn.getAttribute('data-show-label') || 'Mostrar menú';
       var hideLabel = toggleBtn.getAttribute('data-hide-label') || 'Ocultar menú';
       var label = toggleBtn.querySelector('.admin-menu-visibility-label');
+      var userChangedSidebarState = false;
 
       function isMobile(){
         return !!(mq && mq.matches);
+      }
+
+      function shouldAutoCollapseOnEntry(){
+        try {
+          var body = document.body;
+          return !!(body && body.getAttribute('data-auto-collapse-menu') === 'true');
+        } catch (e) {
+          return false;
+        }
       }
 
       function applySidebarState(collapsed){
@@ -255,12 +265,13 @@
       }
 
       function resetForViewport(){
-        applySidebarState(false);
+        applySidebarState(!userChangedSidebarState && shouldAutoCollapseOnEntry());
       }
 
       toggleBtn.dataset.pcsBound = '1';
       toggleBtn.addEventListener('click', function(){
         if (!isMobile()) return;
+        userChangedSidebarState = true;
         applySidebarState(!sidebar.classList.contains('is-collapsed'));
       });
 

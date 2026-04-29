@@ -27,7 +27,7 @@
   <div class="container">
     <div class="page-header">
       <h1>Preconfiguracion de tipos de empresa</h1>
-      <p class="form-help">Define datos guia para empresas nuevas: estaciones, caja y productos iniciales. Al crear la empresa, el administrador decide si conserva o elimina la preconfiguracion aplicada.</p>
+      <p class="form-help">Define datos guia para empresas nuevas: estaciones, caja, productos, usuarios iniciales y contexto de IA. Al crear la empresa, el administrador decide si conserva o elimina la preconfiguracion aplicada.</p>
     </div>
 
     <div class="preconfig-layout">
@@ -109,6 +109,38 @@
             <div id="productsPreview" class="preconfig-products-preview"></div>
           </section>
 
+          <section class="card" style="padding:14px;">
+            <h3>Usuarios guia</h3>
+            <label class="form-label" for="usuariosText">Un usuario por linea</label>
+            <textarea id="usuariosText" class="form-textarea" rows="5" spellcheck="false"></textarea>
+            <div class="form-help">Formato: Nombre | Rol | Email opcional | Observaciones. Se crean inactivos y sin clave para que luego se conviertan en usuarios reales.</div>
+          </section>
+
+          <section class="card" style="padding:14px;">
+            <h3>Asistente IA guia</h3>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label">
+                  <input id="asistenteEnabled" type="checkbox"> Activar guia de IA para este tipo
+                </label>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="asistenteRol">Rol del asistente</label>
+                <input id="asistenteRol" class="form-input" placeholder="Asistente operativo para ventas, auditoria y reportes">
+              </div>
+            </div>
+            <label class="form-label" for="instruccionesText">Instrucciones para la IA</label>
+            <textarea id="instruccionesText" class="form-textarea" rows="5" spellcheck="false"></textarea>
+            <div class="form-help">Una instruccion por linea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guia operativa.</div>
+          </section>
+
+          <section class="card" style="padding:14px;">
+            <h3>Tareas guia iniciales</h3>
+            <label class="form-label" for="tareasText">Una tarea por linea</label>
+            <textarea id="tareasText" class="form-textarea" rows="6" spellcheck="false"></textarea>
+            <div class="form-help">Formato: Modulo | Titulo | Descripcion. La IA puede usar estas tareas como ruta de configuracion inicial.</div>
+          </section>
+
           <div class="form-actions">
             <button type="submit" class="btn primary">Guardar preconfiguracion</button>
             <button type="button" id="resetDefaultBtn" class="btn secondary">Restaurar sugerida</button>
@@ -128,6 +160,9 @@
       var msg = document.getElementById('message');
       var productsText = document.getElementById('productosText');
       var productsPreview = document.getElementById('productsPreview');
+      var usuariosText = document.getElementById('usuariosText');
+      var instruccionesText = document.getElementById('instruccionesText');
+      var tareasText = document.getElementById('tareasText');
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (match) {
@@ -163,6 +198,23 @@
         ].join(' | ');
       }
 
+      function usuarioToLine(u) {
+        return [
+          u.nombre || '',
+          u.rol || '',
+          u.email || '',
+          u.observaciones || ''
+        ].join(' | ');
+      }
+
+      function tareaToLine(t) {
+        return [
+          t.modulo || '',
+          t.titulo || '',
+          t.descripcion || ''
+        ].join(' | ');
+      }
+
       function parseProducts() {
         return String(productsText.value || '').split(/\r?\n/).map(function (line, idx) {
           var parts = line.split('|').map(function (part) { return part.trim(); });
@@ -183,11 +235,46 @@
         }).filter(Boolean);
       }
 
+      function parseUsuarios() {
+        return String(usuariosText.value || '').split(/\r?\n/).map(function (line) {
+          var parts = line.split('|').map(function (part) { return part.trim(); });
+          if (!parts.join('')) return null;
+          var nombre = parts[0] || '';
+          if (!nombre) return null;
+          return {
+            nombre: nombre,
+            rol: parts[1] || 'operacion',
+            email: parts[2] || '',
+            observaciones: parts[3] || ''
+          };
+        }).filter(Boolean);
+      }
+
+      function parseInstrucciones() {
+        return String(instruccionesText.value || '').split(/\r?\n/)
+          .map(function (line) { return line.trim(); })
+          .filter(Boolean);
+      }
+
+      function parseTareas() {
+        return String(tareasText.value || '').split(/\r?\n/).map(function (line) {
+          var parts = line.split('|').map(function (part) { return part.trim(); });
+          if (!parts.join('')) return null;
+          var titulo = parts[1] || parts[0] || '';
+          if (!titulo) return null;
+          return {
+            modulo: parts[1] ? (parts[0] || 'General') : 'General',
+            titulo: titulo,
+            descripcion: parts[2] || ''
+          };
+        }).filter(Boolean);
+      }
+
       function renderProductsPreview() {
         var products = parseProducts();
         productsPreview.innerHTML = products.length ? products.map(function (p) {
           return '<div class="preconfig-product-row">' +
-            '<div><strong>' + escapeHtml(p.nombre) + '</strong><br><small>' + escapeHtml(p.sku + ' · ' + (p.categoria || 'Sin categoria')) + '</small></div>' +
+            '<div><strong>' + escapeHtml(p.nombre) + '</strong><br><small>' + escapeHtml(p.sku + ' - ' + (p.categoria || 'Sin categoria')) + '</small></div>' +
             '<span>$' + Number(p.precio || 0).toLocaleString('es-CO') + '</span>' +
             '<small>Costo $' + Number(p.costo || 0).toLocaleString('es-CO') + '</small>' +
             '</div>';
@@ -200,6 +287,7 @@
         var preconfig = item && item.preconfig ? item.preconfig : {};
         var template = item && item.template ? item.template : {};
         var estaciones = template.estaciones || {};
+        var asistente = template.asistente_ia || {};
         document.getElementById('tipoEmpresaID').value = tipo.id || '';
         document.getElementById('editorTitle').textContent = tipo.nombre || 'Tipo de empresa';
         document.getElementById('editorSubtitle').textContent = item && item.es_default ? 'Plantilla sugerida aun no guardada.' : 'Plantilla guardada para empresas nuevas.';
@@ -212,6 +300,11 @@
         document.getElementById('cardSize').value = estaciones.card_size || 'medium';
         document.getElementById('cajaEnabled').checked = !!estaciones.caja_enabled;
         productsText.value = (template.productos || []).map(productToLine).join('\n');
+        usuariosText.value = (template.usuarios || []).map(usuarioToLine).join('\n');
+        document.getElementById('asistenteEnabled').checked = !!asistente.enabled;
+        document.getElementById('asistenteRol').value = asistente.rol || '';
+        instruccionesText.value = (asistente.instrucciones || []).join('\n');
+        tareasText.value = (template.tareas_guia || []).map(tareaToLine).join('\n');
         renderProductsPreview();
         renderTypeList();
       }
@@ -227,13 +320,17 @@
           var template = item.template || {};
           var estaciones = template.estaciones || {};
           var products = template.productos || [];
+          var usuarios = template.usuarios || [];
+          var tareas = template.tareas_guia || [];
           var active = selected && selected.tipo_empresa && Number(selected.tipo_empresa.id) === Number(tipo.id);
           return '<button type="button" class="preconfig-type' + (active ? ' active' : '') + '" data-index="' + idx + '">' +
             '<strong>' + escapeHtml(tipo.nombre || ('Tipo #' + tipo.id)) + '</strong>' +
-            '<span>' + (preconfig.enabled ? 'Activa' : 'Inactiva') + (item.es_default ? ' · sugerida' : ' · guardada') + '</span>' +
+            '<span>' + (preconfig.enabled ? 'Activa' : 'Inactiva') + (item.es_default ? ' - sugerida' : ' - guardada') + '</span>' +
             '<div class="preconfig-badges">' +
               '<span class="preconfig-badge">' + Number(estaciones.cantidad || 0) + ' estaciones</span>' +
               '<span class="preconfig-badge">' + products.length + ' productos</span>' +
+              '<span class="preconfig-badge">' + usuarios.length + ' usuarios</span>' +
+              '<span class="preconfig-badge">' + tareas.length + ' tareas IA</span>' +
             '</div>' +
           '</button>';
         }).join('');
@@ -275,7 +372,14 @@
             card_size: document.getElementById('cardSize').value,
             caja_enabled: !!document.getElementById('cajaEnabled').checked
           },
-          productos: parseProducts()
+          productos: parseProducts(),
+          usuarios: parseUsuarios(),
+          asistente_ia: {
+            enabled: !!document.getElementById('asistenteEnabled').checked,
+            rol: document.getElementById('asistenteRol').value.trim(),
+            instrucciones: parseInstrucciones()
+          },
+          tareas_guia: parseTareas()
         };
         try {
           setMessage('Guardando...');
@@ -295,25 +399,11 @@
         if (!selected) return;
         var idx = items.indexOf(selected);
         if (idx >= 0) {
-          var tipo = selected.tipo_empresa || {};
+          var defaultPreconfig = selected.default_preconfig || selected.preconfig || {};
+          var defaultTemplate = selected.default_template || selected.template || {};
           selected.es_default = true;
-          selected.preconfig = {
-            tipo_empresa_id: tipo.id,
-            tipo_empresa_nombre: tipo.nombre,
-            enabled: /restaurante|restaurant|comida|bar|cafeter/i.test(tipo.nombre || ''),
-            nombre: 'Restaurante basico',
-            descripcion: 'Plantilla inicial aplicada automaticamente al crear empresas nuevas de este tipo.'
-          };
-          selected.template = selected.preconfig.enabled ? {
-            estaciones: { enabled: true, cantidad: 5, prefijo: 'Mesa', card_size: 'medium', caja_enabled: true },
-            productos: [
-              { sku: 'DEMO-REST-001', nombre: 'Hamburguesa clasica', categoria: 'Comidas', precio: 18000, costo: 9000, stock_minimo: 5 },
-              { sku: 'DEMO-REST-002', nombre: 'Perro caliente', categoria: 'Comidas', precio: 12000, costo: 6000, stock_minimo: 5 },
-              { sku: 'DEMO-REST-003', nombre: 'Gaseosa personal', categoria: 'Bebidas', precio: 4000, costo: 2200, stock_minimo: 12 },
-              { sku: 'DEMO-REST-004', nombre: 'Agua botella', categoria: 'Bebidas', precio: 3500, costo: 1800, stock_minimo: 12 },
-              { sku: 'DEMO-REST-005', nombre: 'Menu del dia', categoria: 'Almuerzos', precio: 22000, costo: 12000, stock_minimo: 3 }
-            ]
-          } : { estaciones: { enabled: false, cantidad: 0, prefijo: 'Estacion', card_size: 'medium', caja_enabled: false }, productos: [] };
+          selected.preconfig = JSON.parse(JSON.stringify(defaultPreconfig));
+          selected.template = JSON.parse(JSON.stringify(defaultTemplate));
           items[idx] = selected;
           setForm(selected);
         }

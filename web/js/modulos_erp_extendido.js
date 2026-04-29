@@ -1020,6 +1020,16 @@
         execute: function () { return runDianAction("validar_credenciales", "POST", {}); }
       });
       actions.push({
+        key: "dian_pruebas",
+        label: "Pruebas Dian",
+        params: [{ name: "simular", label: "Simular sin enviar", type: "checkbox", required: false }],
+        execute: function (values) {
+          values = values || {};
+          values.detener_en_error = true;
+          return runDianAction("pruebas_dian", "POST", values);
+        }
+      });
+      actions.push({
         key: "dian_cufe",
         label: "DIAN CUFE demo",
         params: [
@@ -1830,6 +1840,10 @@
     var btnXML = document.getElementById("btnDianXML");
     if (btnXML) {
       btnXML.onclick = function () { runDianAction("generar_xml_demo", "POST"); };
+    }
+    var btnPruebas = document.getElementById("btnDianPruebas");
+    if (btnPruebas) {
+      btnPruebas.onclick = function () { runDianAction("pruebas_dian", "POST", { simular: false, detener_en_error: true }); };
     }
   }
 

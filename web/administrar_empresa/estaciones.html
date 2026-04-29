@@ -414,6 +414,7 @@
       const now = Date.now();
       let changed = false;
       let triggeredAlert = false;
+      let triggeredNote = null;
       notesRuntimeState.notes.forEach(note => {
         if (note.status !== 'running' || !note.target_time_ms) {
           return;
@@ -425,6 +426,9 @@
           note.alert_active = true;
           note.last_alert_at = now;
           triggeredAlert = true;
+          if (!triggeredNote) {
+            triggeredNote = note;
+          }
         }
         const repeatMinutes = normalizeNotesRepeatMinutes(note.repeat_minutes);
         if (repeatMinutes > 0) {
@@ -444,6 +448,9 @@
       }
       if (triggeredAlert && cfg && cfg.notas_beep_enabled) {
         playNotesBeep();
+      }
+      if (triggeredAlert && triggeredNote) {
+        notifyRobotNotesReminder(triggeredNote);
       }
       renderNotesCardState(cfg);
     }
@@ -1100,6 +1107,34 @@
       } catch (err) {
         return false;
       }
+    }
+
+    function notifyRobotNotesReminder(note) {
+      const text = String(note && note.text ? note.text : '').trim();
+      const title = text.split('\n')[0] || 'Nota operativa';
+      const detail = text
+        ? 'La nota dice: ' + text.slice(0, 260)
+        : 'Revisa la tarjeta Notas para continuar.';
+      const payload = {
+        type: 'pcs-ai-robot-reminder',
+        payload: {
+          source: 'estaciones_notas',
+          title,
+          detail,
+          empresa_id: Number(empresaId || 0)
+        }
+      };
+      try {
+        if (window.parent && window.parent !== window && window.parent.PCSAIChatRobot && typeof window.parent.PCSAIChatRobot.notifyReminder === 'function') {
+          window.parent.PCSAIChatRobot.notifyReminder(payload.payload);
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      } catch (_) {}
     }
 
     function stopNotasTimer(message) {

@@ -108,12 +108,14 @@ try {
     storage = null;
   }
   var links = [
+    document.getElementById("linkPanelEmpresa"),
     document.getElementById("linkEstaciones"),
     document.getElementById("linkProductos"),
     document.getElementById("linkCompras"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkConfiguracionMain"),
     document.getElementById("linkConfiguracionPermisos"),
+    document.getElementById("linkConfiguracionChatFlotante"),
     document.getElementById("linkConfiguracionAvanzada"),
     document.getElementById("linkConfiguracionCarritoEmpresa"),
     document.getElementById("linkCarritoCompras"),
@@ -170,6 +172,7 @@ try {
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionPermisos: { module: permModuleSeguridad, action: permActionApprove },
+    linkConfiguracionChatFlotante: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentas, action: permActionApprove },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
@@ -200,6 +203,7 @@ try {
     linkDocumentosOnlyOffice: { module: permModuleSeguridad, action: permActionRead },
     linkNextcloud: { module: permModuleSeguridad, action: permActionRead },
     linkEstaciones: { alwaysVisible: true },
+    linkPanelEmpresa: { alwaysVisible: true },
     
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
@@ -733,10 +737,10 @@ try {
   }
 
   function preferredStartupFrameSrc(empresaId) {
-    var chatLink = document.getElementById("linkChatTareas");
-    var href = chatLink
-      ? withEmpresaParam(chatLink.getAttribute("href"), empresaId)
-      : withEmpresaParam("/administrar_empresa/chat_tareas_agenda.html", empresaId);
+    var panelLink = document.getElementById("linkPanelEmpresa");
+    var href = panelLink
+      ? withEmpresaParam(panelLink.getAttribute("href"), empresaId)
+      : withEmpresaParam("/administrar_empresa/panel.html", empresaId);
     if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
       return href;
     }
@@ -856,6 +860,52 @@ try {
     setActiveByHref(initialSrc);
   }
 
+  function readPendingConfigurationAssistant(empresaId) {
+    if (!empresaId) return null;
+    var key = "pcs_config_assistant_pending_" + String(empresaId);
+    var stores = [];
+    try { stores.push(window.sessionStorage); } catch (e) {}
+    try { stores.push(window.localStorage); } catch (e) {}
+    for (var i = 0; i < stores.length; i += 1) {
+      var store = stores[i];
+      if (!store) continue;
+      try {
+        var raw = store.getItem(key) || "";
+        if (!raw) continue;
+        var data = JSON.parse(raw);
+        if (data && Number(data.empresa_id || empresaId) > 0) {
+          return data;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  function clearPendingConfigurationAssistant(empresaId) {
+    if (!empresaId) return;
+    var key = "pcs_config_assistant_pending_" + String(empresaId);
+    try { window.sessionStorage.removeItem(key); } catch (e) {}
+    try { window.localStorage.removeItem(key); } catch (e) {}
+  }
+
+  function startPendingConfigurationAssistant(empresaId) {
+    var pending = readPendingConfigurationAssistant(empresaId);
+    if (!pending) return;
+    var attempts = 0;
+    function tryStart() {
+      attempts += 1;
+      if (window.PCSAIChatRobot && typeof window.PCSAIChatRobot.startConfigurationAssistant === "function") {
+        clearPendingConfigurationAssistant(empresaId);
+        window.PCSAIChatRobot.startConfigurationAssistant(pending);
+        return;
+      }
+      if (attempts < 40) {
+        window.setTimeout(tryStart, 200);
+      }
+    }
+    window.setTimeout(tryStart, 650);
+  }
+
   if (frame) {
     frame.addEventListener("load", function () {
       var currentHref = "";
@@ -934,6 +984,7 @@ try {
           .then(function () {
             initializeMenuAndFrame(id);
             loadEmpresaTitle(id);
+            startPendingConfigurationAssistant(id);
           });
       }
       applyMenuPermissionsByRole(role);
@@ -949,6 +1000,7 @@ try {
         setMenuPermissionsEvidence("Permisos de menú: no se pudo resolver contexto, se mantiene visibilidad base.", true);
         initializeMenuAndFrame(id);
         loadEmpresaTitle(id);
+        startPendingConfigurationAssistant(id);
         return;
       }
       applyMenuPermissionsByRole("");

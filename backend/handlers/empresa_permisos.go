@@ -186,6 +186,7 @@ type empresaPermisosContextResponse struct {
 	Paginas          map[string]bool             `json:"paginas,omitempty"`
 	Resumen          permissionSummary           `json:"resumen"`
 	Licencia         *empresaPermisosLicenciaCtx `json:"licencia,omitempty"`
+	EmpresaPolicy    *empresaPermisosFinosCtx    `json:"empresa_policy,omitempty"`
 	IncluyeMatriz    bool                        `json:"incluye_matriz"`
 	MatrizRoles      []empresaPermisosRolMatriz  `json:"matriz_roles,omitempty"`
 }
@@ -196,6 +197,29 @@ type empresaPermisosLicenciaCtx struct {
 	ModulosHabilitados []string `json:"modulos_habilitados,omitempty"`
 	SuperRolHabilitado bool     `json:"super_rol_habilitado"`
 	RestringeModulos   bool     `json:"restringe_modulos"`
+}
+
+type empresaPermisosFinosCtx struct {
+	ReglasModulo int  `json:"reglas_modulo"`
+	ReglasPagina int  `json:"reglas_pagina"`
+	Activo       bool `json:"activo"`
+}
+
+type empresaPermisoModuloPayload struct {
+	Modulo    string `json:"modulo"`
+	Accion    string `json:"accion"`
+	Permitido bool   `json:"permitido"`
+}
+
+type empresaPermisoPaginaPayload struct {
+	PaginaClave string `json:"pagina_clave"`
+	Permitido   bool   `json:"permitido"`
+}
+
+type empresaPermisosFinosPayload struct {
+	EmpresaID      int64                         `json:"empresa_id"`
+	PermisosModulo []empresaPermisoModuloPayload `json:"permisos_modulo"`
+	PermisosPagina []empresaPermisoPaginaPayload `json:"permisos_pagina"`
 }
 
 // EmpresaPermisosContextoHandler expone el contexto de permisos efectivo por rol/modulo.
@@ -240,7 +264,10 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		modulos := buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
 		modulos = applyLicenciaRestriccionesToModuleRows(modulos, allowedModules)
+		empresaModuleOverrides, empresaPageOverrides, empresaPolicyCtx := loadEmpresaPermissionOverrides(dbSuper, empresaID)
+		modulos = applyEmpresaRestriccionesToModuleRows(modulos, empresaModuleOverrides)
 		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
+		paginas = applyEmpresaPageRestrictionsToMap(paginas, empresaPageOverrides)
 
 		var licenciaCtx *empresaPermisosLicenciaCtx
 		if licenciaPolicy != nil {
@@ -263,6 +290,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Paginas:          paginas,
 			Resumen:          summarizePermissionModules(modulos),
 			Licencia:         licenciaCtx,
+			EmpresaPolicy:    empresaPolicyCtx,
 			IncluyeMatriz:    false,
 		}
 
@@ -272,6 +300,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			for _, catalogRole := range permissionRolesCatalogOrdered {
 				rows := buildPermissionModuleMatrixForRoleDynamic(dbSuper, catalogRole)
 				rows = applyLicenciaRestriccionesToModuleRows(rows, allowedModules)
+				rows = applyEmpresaRestriccionesToModuleRows(rows, empresaModuleOverrides)
 				resp.MatrizRoles = append(resp.MatrizRoles, empresaPermisosRolMatriz{
 					Rol:     catalogRole,
 					Modulos: rows,
@@ -281,6 +310,110 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, resp)
+	}
+}
+
+// EmpresaPermisosFinosHandler administra el techo fino de modulos, acciones y paginas para una empresa.
+func EmpresaPermisosFinosHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := dbpkg.EnsureEmpresaPermisosFinosSchema(dbSuper); err != nil {
+			http.Error(w, "failed to ensure empresa permisos finos schema: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			modulos := buildEmpresaPermisosDefaultModuleRows()
+			moduleItems, err := dbpkg.ListEmpresaPermisosModuloByEmpresaID(dbSuper, empresaID)
+			if err != nil {
+				http.Error(w, "failed to load empresa modulo permisos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			moduleOverrides := make(map[string]bool, len(moduleItems))
+			for _, item := range moduleItems {
+				moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
+			}
+			modulos = applyEmpresaRestriccionesToModuleRows(modulos, moduleOverrides)
+
+			pageItems, err := dbpkg.ListEmpresaPermisosPaginaByEmpresaID(dbSuper, empresaID)
+			if err != nil {
+				http.Error(w, "failed to load empresa pagina permisos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			pageOverrides := make(map[string]bool, len(pageItems))
+			for _, item := range pageItems {
+				pageOverrides[strings.TrimSpace(item.PaginaClave)] = item.Permitido
+			}
+			paginas := buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"empresa_id":          empresaID,
+				"acciones_catalogo":   append([]string{}, permissionActionsCatalogOrdered...),
+				"acciones_etiqueta":   PermissionActionDisplayNameMap(),
+				"modulos_catalogo":    append([]string{}, permissionModulesCatalogOrdered...),
+				"modulos_etiqueta":    PermissionModuleDisplayNameMap(),
+				"modulos":             modulos,
+				"paginas":             paginas,
+				"reglas_modulo":       len(moduleItems),
+				"reglas_pagina":       len(pageItems),
+				"comportamiento_base": "sin reglas guardadas, la empresa no restringe el catalogo; licencia y rol siguen aplicando",
+			})
+			return
+
+		case http.MethodPut:
+			var payload empresaPermisosFinosPayload
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			empresaID := payload.EmpresaID
+			if empresaID <= 0 {
+				if qID, err := parseOptionalInt64Query(r, "empresa_id"); err == nil && qID > 0 {
+					empresaID = qID
+				}
+			}
+			if empresaID <= 0 {
+				http.Error(w, "empresa_id required", http.StatusBadRequest)
+				return
+			}
+
+			moduleRows := make([]dbpkg.EmpresaPermisoModulo, 0, len(payload.PermisosModulo))
+			for _, item := range payload.PermisosModulo {
+				moduleRows = append(moduleRows, dbpkg.EmpresaPermisoModulo{
+					EmpresaID: empresaID,
+					Modulo:    strings.ToLower(strings.TrimSpace(item.Modulo)),
+					Accion:    strings.ToUpper(strings.TrimSpace(item.Accion)),
+					Permitido: item.Permitido,
+				})
+			}
+
+			pageRows := make([]dbpkg.EmpresaPermisoPagina, 0, len(payload.PermisosPagina))
+			for _, item := range payload.PermisosPagina {
+				pageRows = append(pageRows, dbpkg.EmpresaPermisoPagina{
+					EmpresaID:   empresaID,
+					PaginaClave: strings.TrimSpace(item.PaginaClave),
+					Permitido:   item.Permitido,
+				})
+			}
+
+			if err := dbpkg.ReplaceEmpresaPermisosFinos(dbSuper, empresaID, moduleRows, pageRows, adminEmailFromRequest(r)); err != nil {
+				http.Error(w, "failed to save empresa permisos finos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusNoContent)
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 	}
 }
 
@@ -399,6 +532,13 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		skipLicenciaModuloCheck := module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")
 		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, allowedModules) {
 			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
+			return
+		}
+
+		skipEmpresaModuloCheck := module == permModuleSeguridad && (strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto") || strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_empresa"))
+		if !skipEmpresaModuloCheck && !empresaAllowsModuleActionWithOverrides(dbSuper, empresaID, module, action) {
+			http.Error(w, "forbidden: permiso fino de empresa deshabilita la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
@@ -692,6 +832,9 @@ func permissionChangeRequiresApproval(module string, r *http.Request, action str
 	if path == "/api/empresa/roles_de_usuario" {
 		return !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
 	}
+	if path == "/api/empresa/permisos_empresa" {
+		return !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
+	}
 	if path != "/api/empresa/usuarios" {
 		return false
 	}
@@ -955,6 +1098,29 @@ func roleAllowsModuleActionWithOverrides(dbSuper *sql.DB, role, module, action s
 	return allowed
 }
 
+func empresaAllowsModuleActionWithOverrides(dbSuper *sql.DB, empresaID int64, module, action string) bool {
+	if dbSuper == nil || empresaID <= 0 {
+		return true
+	}
+	normalizedModule := strings.ToLower(strings.TrimSpace(module))
+	normalizedAction := strings.ToUpper(strings.TrimSpace(action))
+	if normalizedModule == "" || normalizedAction == "" {
+		return true
+	}
+	found, permitido, err := dbpkg.LookupEmpresaPermisoModulo(dbSuper, empresaID, normalizedModule, normalizedAction)
+	if err != nil {
+		if isPermissionMissingTableError(err) {
+			return true
+		}
+		log.Printf("[authz] empresa permiso lookup empresa_id=%d modulo=%s accion=%s error: %v", empresaID, normalizedModule, normalizedAction, err)
+		return true
+	}
+	if found {
+		return permitido
+	}
+	return true
+}
+
 func loadPermissionOverridesByRoleName(dbSuper *sql.DB, role string) (map[string]bool, map[string]bool, error) {
 	moduleOverrides := map[string]bool{}
 	pageOverrides := map[string]bool{}
@@ -1000,6 +1166,42 @@ func loadPermissionOverridesByRoleName(dbSuper *sql.DB, role string) (map[string
 	return moduleOverrides, pageOverrides, nil
 }
 
+func loadEmpresaPermissionOverrides(dbSuper *sql.DB, empresaID int64) (map[string]bool, map[string]bool, *empresaPermisosFinosCtx) {
+	moduleOverrides := map[string]bool{}
+	pageOverrides := map[string]bool{}
+	ctx := &empresaPermisosFinosCtx{}
+	if dbSuper == nil || empresaID <= 0 {
+		return moduleOverrides, pageOverrides, ctx
+	}
+
+	modulos, err := dbpkg.ListEmpresaPermisosModuloByEmpresaID(dbSuper, empresaID)
+	if err != nil {
+		if !isPermissionMissingTableError(err) {
+			log.Printf("[authz] load empresa modulo overrides empresa_id=%d error: %v", empresaID, err)
+		}
+		modulos = []dbpkg.EmpresaPermisoModulo{}
+	}
+	for _, item := range modulos {
+		moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
+	}
+
+	paginas, err := dbpkg.ListEmpresaPermisosPaginaByEmpresaID(dbSuper, empresaID)
+	if err != nil {
+		if !isPermissionMissingTableError(err) {
+			log.Printf("[authz] load empresa page overrides empresa_id=%d error: %v", empresaID, err)
+		}
+		paginas = []dbpkg.EmpresaPermisoPagina{}
+	}
+	for _, item := range paginas {
+		pageOverrides[strings.TrimSpace(item.PaginaClave)] = item.Permitido
+	}
+
+	ctx.ReglasModulo = len(moduleOverrides)
+	ctx.ReglasPagina = len(pageOverrides)
+	ctx.Activo = ctx.ReglasModulo > 0 || ctx.ReglasPagina > 0
+	return moduleOverrides, pageOverrides, ctx
+}
+
 func permissionModuleActionKey(modulo, accion string) string {
 	return strings.ToLower(strings.TrimSpace(modulo)) + "|" + strings.ToUpper(strings.TrimSpace(accion))
 }
@@ -1028,7 +1230,8 @@ func isPermissionMissingTableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return strings.Contains(strings.ToLower(strings.TrimSpace(err.Error())), "no such table")
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(msg, "no such table") || strings.Contains(msg, "does not exist")
 }
 
 func roleIn(role string, allowed ...string) bool {
@@ -1094,6 +1297,28 @@ func buildPermissionModuleMatrixForRoleDynamic(dbSuper *sql.DB, role string) []p
 	}
 
 	return rows
+}
+
+func buildEmpresaPermisosDefaultModuleRows() []permissionModuleMatrixRow {
+	out := make([]permissionModuleMatrixRow, 0, len(permissionModulesCatalogOrdered))
+	for _, modulo := range permissionModulesCatalogOrdered {
+		out = append(out, permissionModuleMatrixRow{
+			Modulo:  modulo,
+			Read:    true,
+			Create:  true,
+			Update:  true,
+			Delete:  true,
+			Approve: true,
+			Acciones: map[string]bool{
+				permActionRead:    true,
+				permActionCreate:  true,
+				permActionUpdate:  true,
+				permActionDelete:  true,
+				permActionApprove: true,
+			},
+		})
+	}
+	return out
 }
 
 func buildPermissionPagesMapForRoleDynamic(dbSuper *sql.DB, role string, modulos []permissionModuleMatrixRow) map[string]bool {
@@ -1224,6 +1449,45 @@ func applyLicenciaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, al
 			setPermissionActionOnModuleRow(&next, permActionApprove, false)
 		}
 		out = append(out, next)
+	}
+	return out
+}
+
+func applyEmpresaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, overrides map[string]bool) []permissionModuleMatrixRow {
+	if len(overrides) == 0 {
+		return rows
+	}
+	out := make([]permissionModuleMatrixRow, 0, len(rows))
+	for _, row := range rows {
+		next := row
+		next.Acciones = map[string]bool{}
+		for _, action := range permissionActionsCatalogOrdered {
+			next.Acciones[action] = row.Acciones[action]
+		}
+		for _, action := range permissionActionsCatalogOrdered {
+			if permitido, ok := overrides[permissionModuleActionKey(next.Modulo, action)]; ok {
+				setPermissionActionOnModuleRow(&next, action, permitido && row.Acciones[action])
+			}
+		}
+		out = append(out, next)
+	}
+	return out
+}
+
+func applyEmpresaPageRestrictionsToMap(paginas map[string]bool, overrides map[string]bool) map[string]bool {
+	if len(overrides) == 0 {
+		return paginas
+	}
+	out := make(map[string]bool, len(paginas))
+	for k, v := range paginas {
+		out[k] = v
+	}
+	for key, permitido := range overrides {
+		clean := strings.TrimSpace(key)
+		if clean == "" {
+			continue
+		}
+		out[clean] = permitido && out[clean]
 	}
 	return out
 }

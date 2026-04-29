@@ -20,7 +20,9 @@ type empresaPreconfigApplyResult struct {
 	TipoEmpresaNombre string   `json:"tipo_empresa_nombre,omitempty"`
 	EstacionesCreadas int      `json:"estaciones_creadas"`
 	ProductosCreados  int      `json:"productos_creados"`
+	UsuariosCreados   int      `json:"usuarios_creados"`
 	ProductosError    []string `json:"productos_error,omitempty"`
+	UsuariosError     []string `json:"usuarios_error,omitempty"`
 	CarritosSync      any      `json:"carritos_sync,omitempty"`
 	Mensaje           string   `json:"mensaje,omitempty"`
 }
@@ -45,7 +47,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	if err != nil {
 		return result, fmt.Errorf("plantilla de preconfiguracion invalida: %w", err)
 	}
-	if template.Estaciones.Cantidad == 0 && len(template.Productos) == 0 {
+	if template.Estaciones.Cantidad == 0 && len(template.Productos) == 0 && len(template.Usuarios) == 0 && !template.Asistente.Enabled && len(template.TareasGuia) == 0 {
 		return result, nil
 	}
 
@@ -55,9 +57,16 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
 		return result, err
 	}
+	if len(template.Usuarios) > 0 {
+		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmp); err != nil {
+			return result, err
+		}
+	}
 
 	productIDs := make([]int64, 0, len(template.Productos))
 	productSKUs := make([]string, 0, len(template.Productos))
+	userIDs := make([]int64, 0, len(template.Usuarios))
+	userEmails := make([]string, 0, len(template.Usuarios))
 	if template.Estaciones.Cantidad > 0 {
 		rawConfig, estaciones := buildEmpresaEstacionesPreconfig(template.Estaciones)
 		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
@@ -105,6 +114,68 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		result.ProductosCreados++
 	}
 
+	for idx, u := range template.Usuarios {
+		email := buildPreconfigUsuarioEmail(u, empresaID, idx)
+		nombre := strings.TrimSpace(u.Nombre)
+		rol := strings.TrimSpace(u.Rol)
+		if nombre == "" {
+			continue
+		}
+		if rol == "" {
+			rol = "operacion"
+		}
+		observaciones := empresaPreconfigMarker + " usuario guia de " + strings.TrimSpace(preconfig.Nombre)
+		if strings.TrimSpace(u.Observaciones) != "" {
+			observaciones += " | " + strings.TrimSpace(u.Observaciones)
+		}
+		id, err := dbpkg.CreateEmpresaUsuario(
+			dbEmp,
+			empresaID,
+			email,
+			nombre,
+			"",
+			0,
+			rol,
+			observaciones,
+			usuario,
+			fmt.Sprintf("preconfig-%d-%d-%d", empresaID, idx+1, time.Now().UnixNano()),
+			"",
+		)
+		if err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "unique") {
+				result.UsuariosError = append(result.UsuariosError, fmt.Sprintf("%s: ya existe el correo guia %s", nombre, email))
+				continue
+			}
+			result.UsuariosError = append(result.UsuariosError, fmt.Sprintf("%s: %v", nombre, err))
+			log.Printf("[empresa_preconfiguracion] crear usuario empresa_id=%d email=%q error: %v", empresaID, email, err)
+			continue
+		}
+		userIDs = append(userIDs, id)
+		userEmails = append(userEmails, email)
+		result.UsuariosCreados++
+	}
+
+	assistantRaw, _ := json.Marshal(map[string]any{
+		"tipo_empresa_id":     tipoEmpresaID,
+		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
+		"preconfiguracion":    strings.TrimSpace(preconfig.Nombre),
+		"asistente_ia":        template.Asistente,
+		"tareas_guia":         template.TareasGuia,
+		"usuarios_guia":       template.Usuarios,
+		"estaciones":          template.Estaciones,
+		"producto_skus":       productSKUs,
+		"actualizado_en":      time.Now().Format(time.RFC3339),
+	})
+	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          "preconfiguracion_tipo_empresa_asistente_ia",
+		Valor:          string(assistantRaw),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " contexto guia para IA",
+	})
+
 	metaRaw, _ := json.Marshal(map[string]any{
 		"tipo_empresa_id":     tipoEmpresaID,
 		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
@@ -113,8 +184,13 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"aplicada_en":         time.Now().Format(time.RFC3339),
 		"estaciones_creadas":  result.EstacionesCreadas,
 		"productos_creados":   result.ProductosCreados,
+		"usuarios_creados":    result.UsuariosCreados,
 		"producto_ids":        productIDs,
 		"producto_skus":       productSKUs,
+		"usuario_ids":         userIDs,
+		"usuario_emails":      userEmails,
+		"asistente_ia":        template.Asistente,
+		"tareas_guia":         template.TareasGuia,
 	})
 	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 		EmpresaID:      empresaID,
@@ -175,6 +251,38 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 	return string(raw), cantidad
 }
 
+func buildPreconfigUsuarioEmail(u dbpkg.TipoEmpresaPreconfigUsuario, empresaID int64, idx int) string {
+	email := strings.ToLower(strings.TrimSpace(u.Email))
+	if email != "" {
+		return email
+	}
+	base := strings.ToLower(strings.TrimSpace(u.Rol))
+	if base == "" {
+		base = strings.ToLower(strings.TrimSpace(u.Nombre))
+	}
+	if base == "" {
+		base = fmt.Sprintf("usuario%d", idx+1)
+	}
+	var b strings.Builder
+	for _, r := range base {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '.' || r == '_' || r == '-':
+			b.WriteRune(r)
+		case r == ' ':
+			b.WriteRune('.')
+		}
+	}
+	local := strings.Trim(b.String(), ".-_")
+	if local == "" {
+		local = fmt.Sprintf("usuario%d", idx+1)
+	}
+	return fmt.Sprintf("%s.%d.%d@preconfig.local", local, empresaID, idx+1)
+}
+
 func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[string]any, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
@@ -186,15 +294,21 @@ func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[strin
 	if err != nil {
 		return nil, err
 	}
+	usuariosEliminados, err := dbpkg.DeleteEmpresaUsuariosPreconfiguracion(dbEmp, empresaID, empresaPreconfigMarker)
+	if err != nil {
+		return nil, err
+	}
 	prefsEliminadas, err := dbpkg.DeleteEmpresaEstacionPrefsByKeys(dbEmp, empresaID, 0, []string{
 		"estaciones_config",
 		"preconfiguracion_tipo_empresa_aplicada",
+		"preconfiguracion_tipo_empresa_asistente_ia",
 	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
 		"productos_eliminados":    productosEliminados,
+		"usuarios_eliminados":     usuariosEliminados,
 		"preferencias_eliminadas": prefsEliminadas,
 		"mensaje":                 "Preconfiguracion eliminada. La empresa quedo sin datos guia personalizados.",
 	}, nil
@@ -231,27 +345,34 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			items := make([]map[string]any, 0, len(tipos))
 			for _, tipo := range tipos {
 				item, exists := byTipo[tipo.ID]
+				defaultItem := dbpkg.DefaultTipoEmpresaPreconfiguracion(tipo.ID, tipo.Nombre)
 				if !exists {
-					item = dbpkg.DefaultTipoEmpresaPreconfiguracion(tipo.ID, tipo.Nombre)
+					item = defaultItem
 				}
 				template, _ := dbpkg.ParseTipoEmpresaPreconfigTemplate(item.ConfigJSON)
+				defaultTemplate, _ := dbpkg.ParseTipoEmpresaPreconfigTemplate(defaultItem.ConfigJSON)
 				items = append(items, map[string]any{
-					"tipo_empresa": tipo,
-					"preconfig":    item,
-					"template":     template,
-					"es_default":   !exists,
+					"tipo_empresa":      tipo,
+					"preconfig":         item,
+					"template":          template,
+					"default_preconfig": defaultItem,
+					"default_template":  defaultTemplate,
+					"es_default":        !exists,
 				})
 			}
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "items": items})
 			return
 		case http.MethodPost, http.MethodPut:
 			var payload struct {
-				TipoEmpresaID int64                                `json:"tipo_empresa_id"`
-				Enabled       bool                                 `json:"enabled"`
-				Nombre        string                               `json:"nombre"`
-				Descripcion   string                               `json:"descripcion"`
-				Estaciones    dbpkg.TipoEmpresaPreconfigEstaciones `json:"estaciones"`
-				Productos     []dbpkg.TipoEmpresaPreconfigProducto `json:"productos"`
+				TipoEmpresaID int64                                 `json:"tipo_empresa_id"`
+				Enabled       bool                                  `json:"enabled"`
+				Nombre        string                                `json:"nombre"`
+				Descripcion   string                                `json:"descripcion"`
+				Estaciones    dbpkg.TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
+				Productos     []dbpkg.TipoEmpresaPreconfigProducto  `json:"productos"`
+				Usuarios      []dbpkg.TipoEmpresaPreconfigUsuario   `json:"usuarios"`
+				Asistente     dbpkg.TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia"`
+				TareasGuia    []dbpkg.TipoEmpresaPreconfigTareaGuia `json:"tareas_guia"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -264,6 +385,9 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			configJSON, err := dbpkg.MarshalTipoEmpresaPreconfigTemplate(dbpkg.TipoEmpresaPreconfigTemplate{
 				Estaciones: payload.Estaciones,
 				Productos:  payload.Productos,
+				Usuarios:   payload.Usuarios,
+				Asistente:  payload.Asistente,
+				TareasGuia: payload.TareasGuia,
 			})
 			if err != nil {
 				http.Error(w, "plantilla invalida: "+err.Error(), http.StatusBadRequest)
