@@ -1199,3 +1199,16 @@ Archivos modificados:
 Archivos modificados:
 - scripts/sync_to_vps.ps1
 - scripts/sync_to_vps.sh
+
+2026-04-29 16:26:40 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 4c9b003; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_papelera.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- web/estilos.css
+- web/index.html
+- web/menu.js
+- web/super/pagina_principal.html
