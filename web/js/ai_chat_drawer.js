@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   var DRAWER_ID = 'aiChatDrawer';
   var TOGGLE_ID = 'openAIDrawer';
   var CLOSE_ID = 'closeAIDrawer';
@@ -12,6 +12,7 @@
   var MIC_ID = 'aiChatMicBtn';
   var VOICE_ID = 'aiChatVoiceBtn';
   var CONV_ID = 'aiChatConvBtn';
+  var CLEAR_CHAT_ID = 'aiChatNewBtn';
   var BACKDROP_ID = 'aiChatBackdrop';
   var MINIMIZE_ID = 'aiChatMinimize';
   var MINIBAR_ID = 'aiChatMinibar';
@@ -28,12 +29,32 @@
     selectedAttachment: null,
     voiceEnabled: false,
     listening: false,
-    conversationMode: false
+    conversationMode: false,
+    voiceServerAvailable: false,
+    voiceServerChecked: false,
+    voiceServerAudio: null
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
   var ICON_SPK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
   var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
+  var ROBOT_PANEL_ID = 'robotInlineChatPanel';
+  var ROBOT_ASSISTANT_BUBBLE_ID = 'robotAssistantBubble';
+  var ROBOT_USER_BUBBLE_ID = 'robotUserBubble';
+  var ROBOT_INLINE_FORM_ID = 'robotInlineForm';
+  var ROBOT_INLINE_INPUT_ID = 'robotInlineInput';
+  var ROBOT_INLINE_SEND_ID = 'robotInlineSend';
+  var ROBOT_HIDE_ID = 'robotHideBtn';
+  var ROBOT_SHOW_ID = 'robotShowBtn';
+  var ROBOT_SVG = '<div id="robotAvatarGraphic" aria-hidden="true"><svg viewBox="0 0 120 140" role="img" focusable="false">' +
+    '<defs><linearGradient id="pcsRobotBody" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f8fbff"/><stop offset="1" stop-color="#b7c8df"/></linearGradient><linearGradient id="pcsRobotScreen" x1="0" x2="1"><stop offset="0" stop-color="#0ea5e9"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs>' +
+    '<path class="robot-antenna" d="M60 22V9" fill="none" stroke="#52637a" stroke-width="5" stroke-linecap="round"/><circle class="robot-antenna-dot" cx="60" cy="7" r="5" fill="#22c55e"/>' +
+    '<rect x="23" y="25" width="74" height="58" rx="20" fill="url(#pcsRobotBody)" stroke="#52637a" stroke-width="4"/>' +
+    '<rect x="34" y="38" width="52" height="28" rx="12" fill="#102033"/><circle class="robot-eye" cx="49" cy="52" r="5" fill="#8df7c7"/><circle class="robot-eye" cx="71" cy="52" r="5" fill="#8df7c7"/><path class="robot-mouth" d="M48 63Q60 70 72 63" fill="none" stroke="url(#pcsRobotScreen)" stroke-width="4" stroke-linecap="round"/>' +
+    '<path d="M25 48H15a8 8 0 0 0 0 16h10M95 48h10a8 8 0 0 1 0 16H95" fill="none" stroke="#52637a" stroke-width="5" stroke-linecap="round"/>' +
+    '<rect x="34" y="82" width="52" height="42" rx="15" fill="url(#pcsRobotBody)" stroke="#52637a" stroke-width="4"/><circle cx="50" cy="100" r="4" fill="#0ea5e9"/><circle cx="60" cy="100" r="4" fill="#22c55e"/><circle cx="70" cy="100" r="4" fill="#f59e0b"/>' +
+    '<path d="M45 124v9M75 124v9" stroke="#52637a" stroke-width="5" stroke-linecap="round"/><path d="M37 134h18M65 134h18" stroke="#52637a" stroke-width="5" stroke-linecap="round"/>' +
+    '</svg></div>';
 
   function isMobileChatViewport() {
     try {
@@ -121,8 +142,322 @@
     return '/api/empresa/chat_con_inteligencia_artificial/consultar_con_adjunto';
   }
 
+  var CHAT_PERSONALITY_STORAGE_KEY = 'pcs_ai_chat_personality';
+
   function getEndpointLabel() {
     return isSuperContext() ? 'chat global de super administrador' : 'chat empresarial';
+  }
+
+  function getChatPersonalityMode() {
+    var raw = '';
+    try {
+      raw = window.localStorage.getItem(CHAT_PERSONALITY_STORAGE_KEY) || '';
+    } catch (error) {
+      raw = '';
+    }
+    raw = normalize(raw).toLowerCase();
+    if (raw === 'robot' || raw === 'clippy') {
+      return 'robot';
+    }
+    return 'normal';
+  }
+
+  function getRobotInlineElements() {
+    return {
+      panel: document.getElementById(ROBOT_PANEL_ID),
+      assistantBubble: document.getElementById(ROBOT_ASSISTANT_BUBBLE_ID),
+      userBubble: document.getElementById(ROBOT_USER_BUBBLE_ID),
+      form: document.getElementById(ROBOT_INLINE_FORM_ID),
+      input: document.getElementById(ROBOT_INLINE_INPUT_ID),
+      send: document.getElementById(ROBOT_INLINE_SEND_ID),
+      hideBtn: document.getElementById(ROBOT_HIDE_ID),
+      showBtn: document.getElementById(ROBOT_SHOW_ID)
+    };
+  }
+
+  function setRobotInlineVisible(on) {
+    var els = getRobotInlineElements();
+    if (els.panel) {
+      els.panel.hidden = !on;
+      els.panel.setAttribute('aria-hidden', on ? 'false' : 'true');
+    }
+    if (els.hideBtn) {
+      els.hideBtn.style.display = on ? 'inline-flex' : 'none';
+    }
+  }
+
+  function setRobotAssistantText(text, isError) {
+    var els = getRobotInlineElements();
+    if (!els.assistantBubble) return;
+    var value = normalize(text) || getDefaultAssistantGreeting();
+    els.assistantBubble.textContent = value;
+    els.assistantBubble.classList.toggle('is-error', !!isError);
+    els.assistantBubble.classList.remove('is-thinking');
+  }
+
+  function setRobotUserText(text) {
+    var els = getRobotInlineElements();
+    if (!els.userBubble) return;
+    var value = normalize(text);
+    els.userBubble.textContent = value;
+    els.userBubble.hidden = !value;
+  }
+
+  function setRobotLoading(on) {
+    var els = getRobotInlineElements();
+    if (els.assistantBubble) {
+      els.assistantBubble.classList.toggle('is-thinking', !!on);
+      if (on) {
+        els.assistantBubble.textContent = 'Pensando...';
+        els.assistantBubble.classList.remove('is-error');
+      }
+    }
+    if (els.input) els.input.disabled = !!on;
+    if (els.send) els.send.disabled = !!on;
+  }
+
+  function focusRobotInput() {
+    var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+    if (!input) return;
+    window.setTimeout(function () {
+      input.focus();
+    }, 40);
+  }
+
+  function hideRobotAssistant(toggleBtn) {
+    closeChatDrawerFully();
+    setRobotInlineVisible(false);
+    if (toggleBtn) {
+      toggleBtn.style.display = 'none';
+    }
+    var showBtn = document.getElementById(ROBOT_SHOW_ID);
+    if (showBtn) showBtn.style.display = 'inline-flex';
+  }
+
+  function showRobotAssistant(toggleBtn) {
+    if (toggleBtn) {
+      toggleBtn.style.display = 'inline-flex';
+      toggleBtn.classList.remove('robot-appear');
+      void toggleBtn.offsetWidth;
+      toggleBtn.classList.add('robot-appear');
+    }
+    var showBtn = document.getElementById(ROBOT_SHOW_ID);
+    if (showBtn) showBtn.style.display = 'none';
+    setRobotInlineVisible(true);
+    focusRobotInput();
+  }
+
+  function ensureRobotInlineUI(toggleBtn) {
+    var panel = document.getElementById(ROBOT_PANEL_ID);
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = ROBOT_PANEL_ID;
+      panel.className = 'robot-inline-chat-panel';
+      panel.setAttribute('aria-label', 'Conversacion con robot IA');
+      panel.innerHTML =
+        '<div id="' + ROBOT_ASSISTANT_BUBBLE_ID + '" class="robot-cloud robot-cloud-assistant"></div>' +
+        '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
+        '<form id="' + ROBOT_INLINE_FORM_ID + '" class="robot-cloud robot-cloud-input">' +
+        '<textarea id="' + ROBOT_INLINE_INPUT_ID + '" rows="1" maxlength="2000"></textarea>' +
+        '<button id="' + ROBOT_INLINE_SEND_ID + '" type="submit" aria-label="Enviar al robot">Enviar</button>' +
+        '</form>';
+      document.body.appendChild(panel);
+
+      var form = document.getElementById(ROBOT_INLINE_FORM_ID);
+      var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+      if (form) {
+        form.addEventListener('submit', handleRobotInlineSubmit);
+      }
+      if (input) {
+        input.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (form && typeof form.requestSubmit === 'function') {
+              form.requestSubmit();
+            } else if (form) {
+              handleRobotInlineSubmit(event);
+            }
+          }
+        });
+        input.addEventListener('input', function () {
+          input.style.height = 'auto';
+          input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+        });
+      }
+    }
+
+    var hideBtn = document.getElementById(ROBOT_HIDE_ID);
+    if (!hideBtn) {
+      hideBtn = document.createElement('button');
+      hideBtn.id = ROBOT_HIDE_ID;
+      hideBtn.type = 'button';
+      hideBtn.textContent = 'Ocultar robot';
+      hideBtn.addEventListener('click', function (event) {
+        event.stopPropagation();
+        hideRobotAssistant(toggleBtn || document.getElementById(TOGGLE_ID));
+      });
+      document.body.appendChild(hideBtn);
+    }
+
+    var showBtn = document.getElementById(ROBOT_SHOW_ID);
+    if (!showBtn) {
+      showBtn = document.createElement('button');
+      showBtn.id = ROBOT_SHOW_ID;
+      showBtn.type = 'button';
+      showBtn.textContent = 'Mostrar robot';
+      showBtn.style.display = 'none';
+      showBtn.addEventListener('click', function (event) {
+        event.stopPropagation();
+        showRobotAssistant(toggleBtn || document.getElementById(TOGGLE_ID));
+      });
+      document.body.appendChild(showBtn);
+    }
+
+    setRobotAssistantText(getDefaultAssistantGreeting());
+    setRobotInlineVisible(true);
+  }
+
+  function applyChatPersonalityMode() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var input = document.getElementById(INPUT_ID);
+    var titleEl = document.getElementById('aiChatTitle');
+    var toggleBtn = document.getElementById(TOGGLE_ID);
+    var mode = getChatPersonalityMode();
+
+    if (drawer) {
+      drawer.classList.toggle('robot-mode', mode === 'robot');
+    }
+    if (titleEl) {
+      titleEl.textContent = mode === 'robot' ? 'Robot IA' : 'Asistente IA';
+    }
+    if (input) {
+      input.placeholder = mode === 'robot'
+        ? 'Pregúntale al Ejecutivo Asistente...'
+        : 'Escribe tu consulta para el asistente IA...';
+    }
+
+    if (input && mode === 'robot') {
+      input.placeholder = 'Escribele al robot IA...';
+    }
+    if (mode !== 'robot') {
+      setRobotInlineVisible(false);
+    }
+
+    if (toggleBtn) {
+       if (mode === 'robot') {
+          toggleBtn.classList.add('is-robot-avatar');
+          if (typeof toggleBtn.dataset.originalHtml === 'undefined') {
+             toggleBtn.dataset.originalHtml = toggleBtn.innerHTML;
+          }
+          toggleBtn.innerHTML = ROBOT_SVG;
+          toggleBtn.style.display = 'inline-flex';
+          closeChatDrawerFully();
+          ensureRobotInlineUI(toggleBtn);
+          var robotShowBtn = document.getElementById(ROBOT_SHOW_ID);
+          if (robotShowBtn) robotShowBtn.style.display = 'none';
+          return;
+       }
+       toggleBtn.classList.toggle('is-robot-avatar', mode === 'robot');
+       if (mode === 'robot') {
+          if (!document.getElementById('robotAvatarGraphic')) {
+             if (typeof toggleBtn.dataset.originalHtml === 'undefined') {
+                toggleBtn.dataset.originalHtml = toggleBtn.innerHTML;
+             }
+             var robotHtml = '<div id="robotAvatarGraphic"><svg viewBox="0 0 100 100" style="width:100%; height:100%; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4));">' +
+               '<!-- Sparkles -->' +
+               '<g class="exec-sparkles">' +
+               '  <path d="M 15 5 L 18 15 L 28 18 L 18 21 L 15 31 L 12 21 L 2 18 L 12 15 Z" fill="#facc15" />' +
+               '  <path d="M 85 20 L 87 27 L 94 29 L 87 31 L 85 38 L 83 31 L 76 29 L 83 27 Z" fill="#facc15" />' +
+               '  <path d="M 75 75 L 77 82 L 84 84 L 77 86 L 75 93 L 73 86 L 66 84 L 73 82 Z" fill="#facc15" />' +
+               '</g>' +
+               '<!-- Suit -->' +
+               '<path d="M 20 100 Q 50 60 80 100 Z" fill="#1e293b" />' +
+               '<!-- Shirt -->' +
+               '<path d="M 40 100 L 50 75 L 60 100 Z" fill="#ffffff" />' +
+               '<!-- Tie -->' +
+               '<path d="M 48 75 L 52 75 L 54 95 L 50 100 L 46 95 Z" fill="#0284c7" />' +
+               '<g class="exec-head-group">' +
+               '  <!-- Head -->' +
+               '  <circle cx="50" cy="45" r="22" fill="#fcd5ce" />' +
+               '  <!-- Hair -->' +
+               '  <path d="M 28 45 Q 25 15 50 20 Q 75 15 72 45 Q 75 35 68 25 Q 50 15 32 25 Q 25 35 28 45 Z" fill="#334155" />' +
+               '  <!-- Eyes -->' +
+               '  <circle cx="42" cy="42" r="2.5" fill="#0f172a" class="exec-eye" />' +
+               '  <circle cx="58" cy="42" r="2.5" fill="#0f172a" class="exec-eye" />' +
+               '  <!-- Glasses -->' +
+               '  <rect x="35" y="38" width="14" height="8" rx="2" fill="none" stroke="#0f172a" stroke-width="2" />' +
+               '  <rect x="51" y="38" width="14" height="8" rx="2" fill="none" stroke="#0f172a" stroke-width="2" />' +
+               '  <line x1="49" y1="42" x2="51" y2="42" stroke="#0f172a" stroke-width="2" />' +
+               '  <!-- Mouth -->' +
+               '  <path d="M 45 54 Q 50 57 55 54" stroke="#0f172a" stroke-width="2" fill="none" class="exec-mouth" />' +
+               '</g>' +
+               '</svg></div>';
+             toggleBtn.innerHTML = robotHtml;
+             
+             var hideBtn = document.createElement('button');
+             hideBtn.id = 'robotHideBtn';
+             hideBtn.innerHTML = 'Ocultar Ejecutivo';
+             hideBtn.onclick = function(e) {
+                e.stopPropagation();
+                toggleBtn.style.display = 'none';
+                hideBtn.style.display = 'none';
+                document.getElementById('robotShowBtn').style.display = 'block';
+             };
+             document.body.appendChild(hideBtn);
+             
+             var showBtn = document.createElement('button');
+             showBtn.id = 'robotShowBtn';
+             showBtn.innerHTML = '💼 Aparecer Ejecutivo';
+             showBtn.style.display = 'none';
+             showBtn.onclick = function(e) {
+                e.stopPropagation();
+                toggleBtn.style.display = 'inline-flex';
+                hideBtn.style.display = 'block';
+                showBtn.style.display = 'none';
+                
+                // Trigger appear animation
+                toggleBtn.classList.remove('exec-appear');
+                void toggleBtn.offsetWidth; // trigger reflow
+                toggleBtn.classList.add('exec-appear');
+             };
+             document.body.appendChild(showBtn);
+          }
+          toggleBtn.style.display = 'inline-flex';
+          var hb = document.getElementById('robotHideBtn');
+          if (hb) hb.style.display = 'block';
+          var sb = document.getElementById('robotShowBtn');
+          if (sb) sb.style.display = 'none';
+       } else {
+          if (typeof toggleBtn.dataset.originalHtml !== 'undefined') {
+             toggleBtn.innerHTML = toggleBtn.dataset.originalHtml;
+          }
+          var hb = document.getElementById('robotHideBtn');
+          if (hb) hb.style.display = 'none';
+          var sb = document.getElementById('robotShowBtn');
+          if (sb) sb.style.display = 'none';
+          toggleBtn.style.display = 'inline-flex';
+       }
+    }
+  }
+
+  function getDefaultAssistantGreeting() {
+    if (getChatPersonalityMode() === 'robot') {
+      return 'Hola. Soy tu robot IA, listo para ayudarte en este panel.';
+    }
+    return 'Hola. Soy tu Asistente IA, listo para ayudarte en el panel.';
+    return getChatPersonalityMode() === 'robot'
+      ? '¡Hola! Soy tu Ejecutivo Asistente, listo para optimizar la gestión en tu empresa.'
+      : '¡Hola! Soy tu Asistente IA, listo para ayudarte en el panel.';
+  }
+
+  function openChatConfigPage() {
+    var target = '/administrar_empresa/configuracion_chat_flotante.html';
+    var frame = document.getElementById('contentFrame');
+    if (frame && !frame.classList.contains('is-hidden')) {
+      frame.src = target;
+      return;
+    }
+    window.location.href = target;
   }
 
   function normalize(text) {
@@ -181,6 +516,10 @@
     return !!(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function');
   }
 
+  function isVoiceOutputSupported() {
+    return isSpeechSynthesisSupported() || state.voiceServerAvailable;
+  }
+
   function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
     if (micBtn) {
       micBtn.innerHTML = ICON_MIC;
@@ -197,9 +536,9 @@
       voiceBtn.title = state.voiceEnabled ? 'Desactivar voz del asistente' : 'Activar voz del asistente';
       voiceBtn.setAttribute('aria-label', state.voiceEnabled ? 'Voz del asistente activada' : 'Activar voz del asistente');
       voiceBtn.setAttribute('aria-pressed', state.voiceEnabled ? 'true' : 'false');
-      voiceBtn.disabled = state.loading || !isSpeechSynthesisSupported();
-      if (!isSpeechSynthesisSupported()) {
-        voiceBtn.title = 'Texto a voz no disponible en este navegador';
+      voiceBtn.disabled = state.loading || !isVoiceOutputSupported();
+      if (!isVoiceOutputSupported()) {
+        voiceBtn.title = 'Texto a voz no disponible';
       }
     }
     if (convBtn) {
@@ -212,7 +551,20 @@
 
   function speakAssistantText(text) {
     var readAloud = state.voiceEnabled || state.conversationMode;
-    if (!readAloud || !isSpeechSynthesisSupported() || !text) return;
+    if (!readAloud || !text) return;
+    if (state.voiceServerAvailable) {
+      playVoiceStreamAudio(text).then(function (played) {
+        if (!played) {
+          speakAssistantTextWithBrowser(text);
+        }
+      });
+      return;
+    }
+    speakAssistantTextWithBrowser(text);
+  }
+
+  function speakAssistantTextWithBrowser(text) {
+    if (!isSpeechSynthesisSupported() || !text) return;
     try {
       window.speechSynthesis.cancel();
       var utterance = new SpeechSynthesisUtterance(String(text));
@@ -225,6 +577,89 @@
     }
   }
 
+  function playVoiceStreamAudio(text) {
+    if (!state.voiceServerAvailable || !text) {
+      return Promise.resolve(false);
+    }
+    try {
+      if (state.voiceServerAudio) {
+        state.voiceServerAudio.pause();
+        state.voiceServerAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (e) {}
+
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = controller ? window.setTimeout(function () {
+      try { controller.abort(); } catch (e) {}
+    }, 15000) : null;
+
+    return fetch('/api/voice_stream/tts', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: String(text).slice(0, 4000) }),
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      if (timer) window.clearTimeout(timer);
+      if (!res.ok) {
+        if (res.status === 503 || res.status === 502 || res.status === 504) {
+          state.voiceServerAvailable = false;
+          updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+        }
+        return false;
+      }
+      return res.blob();
+    }).then(function (blob) {
+      if (!blob || typeof blob.size !== 'number' || blob.size <= 0) return false;
+      var url = URL.createObjectURL(blob);
+      var audio = new Audio(url);
+      state.voiceServerAudio = audio;
+      audio.onended = function () {
+        URL.revokeObjectURL(url);
+        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+      };
+      audio.onerror = function () {
+        URL.revokeObjectURL(url);
+        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+      };
+      return audio.play().then(function () {
+        return true;
+      }).catch(function () {
+        URL.revokeObjectURL(url);
+        return false;
+      });
+    }).catch(function (err) {
+      if (timer) window.clearTimeout(timer);
+      if (err && err.name !== 'AbortError') {
+        console.warn('No se pudo usar el servidor de voz:', err);
+      }
+      state.voiceServerAvailable = false;
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      return false;
+    });
+  }
+
+  function refreshVoiceStreamStatus(micBtn, voiceBtn, convBtn) {
+    fetch('/api/voice_stream/status', { credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        state.voiceServerChecked = true;
+        state.voiceServerAvailable = !!(data && data.enabled && data.service_ok !== false);
+        updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
+      })
+      .catch(function () {
+        state.voiceServerChecked = true;
+        state.voiceServerAvailable = false;
+        updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
+      });
+  }
+
   function setupSpeechRecognition(input, micBtn, voiceBtn, convBtn) {
     if (!micBtn || !input || !isSpeechRecognitionSupported()) return;
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -233,6 +668,7 @@
     recognition.interimResults = true;
     recognition.continuous = false;
     var finalText = '';
+    var baseText = String(input.value || '').trim();
 
     function setListening(on) {
       state.listening = !!on;
@@ -241,17 +677,20 @@
 
     recognition.onresult = function (event) {
       var interimText = '';
+      var updatedFinalText = '';
       for (var i = event.resultIndex; i < event.results.length; i += 1) {
         var result = event.results[i];
         var transcript = String((result[0] && result[0].transcript) || '');
         if (result.isFinal) {
-          finalText += transcript;
+          updatedFinalText += transcript;
         } else {
           interimText += transcript;
         }
       }
-      var current = String(input.value || '').trim();
-      input.value = (current ? current + ' ' : '') + String(finalText + interimText).trim();
+      if (updatedFinalText) {
+        finalText += updatedFinalText;
+      }
+      input.value = (baseText ? baseText + ' ' : '') + String((finalText + interimText).trim());
     };
 
     recognition.onerror = function () {
@@ -272,6 +711,7 @@
         return;
       }
       finalText = '';
+      baseText = String(input.value || '').trim();
       try {
         recognition.start();
         setListening(true);
@@ -309,6 +749,7 @@
       });
     }
     setupSpeechRecognition(input, micBtn, voiceBtn, convBtn);
+    refreshVoiceStreamStatus(micBtn, voiceBtn, convBtn);
   }
 
   function syncModeUI() {
@@ -352,6 +793,21 @@
       input.value = '';
     }
     renderAttachmentState();
+  }
+
+  function resetChatConversation() {
+    var messagesEl = document.getElementById(MESSAGES_ID);
+    if (messagesEl) {
+      messagesEl.innerHTML = '';
+    }
+    state.proposals = [];
+    clearAttachmentSelection();
+    var input = document.getElementById(INPUT_ID);
+    if (input) {
+      input.value = '';
+    }
+    appendMessage('assistant', getDefaultAssistantGreeting());
+    setNotice('Chat reiniciado. Escribe tu nueva consulta.');
   }
 
   function extractPCSActionBlock(text) {
@@ -473,6 +929,13 @@
 
     messagesEl.appendChild(item);
     scrollChatToBottom();
+    if (getChatPersonalityMode() === 'robot') {
+      if (author === 'assistant') {
+        setRobotAssistantText(text, messageType === 'error');
+      } else if (author === 'user') {
+        setRobotUserText(text);
+      }
+    }
   }
 
   function setNotice(message, isWarning) {
@@ -631,6 +1094,44 @@
         var answer = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
         return extractPCSActionBlock(answer);
       });
+  }
+
+  function handleRobotInlineSubmit(event) {
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+    if (state.loading) return;
+    var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+    if (!input) return;
+    var query = String(input.value || '').trim();
+    if (!query) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    setRobotInlineVisible(true);
+    setRobotUserText(query);
+    setRobotLoading(true);
+    state.loading = true;
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+
+    sendQuery(query, null).then(function (result) {
+      var answer = result && result.clean ? result.clean : 'Respuesta lista.';
+      if (result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length) {
+        answer += '\n\nPrepare acciones sugeridas. Para ejecutarlas se requiere confirmacion en el panel completo del chat.';
+      }
+      setRobotAssistantText(answer);
+      speakAssistantText(answer);
+      setNotice('Respuesta lista desde el robot.');
+    }).catch(function (err) {
+      var message = err && err.message ? err.message : 'Error al procesar la consulta.';
+      setRobotAssistantText(message, true);
+      setNotice('No se pudo completar la solicitud. ' + String(message), true);
+    }).finally(function () {
+      state.loading = false;
+      setRobotLoading(false);
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      focusRobotInput();
+    });
   }
 
   function handleSubmit(event) {
@@ -822,12 +1323,19 @@
     var attachInput = document.getElementById(ATTACHMENT_INPUT_ID);
     var attachBtn = document.getElementById(ATTACH_BTN_ID);
     var clearAttachBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
+    var clearBtn = document.getElementById(CLEAR_CHAT_ID);
     var modeEl = document.getElementById(MODE_ID);
     var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
 
     toggle.addEventListener('click', function () {
+      if (getChatPersonalityMode() === 'robot') {
+        closeChatDrawerFully();
+        setRobotInlineVisible(true);
+        focusRobotInput();
+        return;
+      }
       if (drawer.classList.contains('open')) {
         closeChatDrawerFully();
         return;
@@ -873,6 +1381,13 @@
       });
     }
 
+    var configBtn = document.getElementById('aiChatConfigBtn');
+    if (configBtn) {
+      configBtn.addEventListener('click', function () {
+        openChatConfigPage();
+      });
+    }
+
     if (attachBtn && attachInput) {
       attachBtn.addEventListener('click', function () {
         if (state.loading) return;
@@ -904,6 +1419,13 @@
         if (state.loading) return;
         clearAttachmentSelection();
         setNotice('Adjunto removido.');
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        if (state.loading) return;
+        resetChatConversation();
       });
     }
 
@@ -939,7 +1461,12 @@
     window.addEventListener('message', function (event) {
       var data = event && event.data;
       if (!data || data.type !== 'pcs-ai-drawer-open') return;
-      openChatDrawerFromUser();
+      if (getChatPersonalityMode() === 'robot') {
+        closeChatDrawerFully();
+        setRobotInlineVisible(true);
+      } else {
+        openChatDrawerFromUser();
+      }
       if (modeEl && normalize(data.mode)) {
         modeEl.value = normalize(data.mode);
         syncModeUI();
@@ -947,17 +1474,33 @@
       if (input && normalize(data.prompt)) {
         input.value = normalize(data.prompt);
       }
+      if (getChatPersonalityMode() === 'robot') {
+        var robotInput = document.getElementById(ROBOT_INLINE_INPUT_ID);
+        if (robotInput && normalize(data.prompt)) {
+          robotInput.value = normalize(data.prompt);
+        }
+      }
       window.setTimeout(function () {
-        if (input) input.focus();
+        if (getChatPersonalityMode() === 'robot') {
+          focusRobotInput();
+        } else if (input) {
+          input.focus();
+        }
       }, 50);
     });
 
     if (!messagesEl.querySelector('.ai-chat-message')) {
-      appendMessage('assistant', 'Asistente IA disponible para ' + getEndpointLabel() + '.');
+      appendMessage('assistant', getDefaultAssistantGreeting());
     }
 
     renderAttachmentState();
     syncModeUI();
+    applyChatPersonalityMode();
+
+    window.addEventListener('storage', function (event) {
+      if (!event || event.key !== CHAT_PERSONALITY_STORAGE_KEY) return;
+      applyChatPersonalityMode();
+    });
   }
 
   document.addEventListener('DOMContentLoaded', initDrawer);

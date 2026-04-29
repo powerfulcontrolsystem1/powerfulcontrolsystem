@@ -110,7 +110,13 @@ try {
   var links = [
     document.getElementById("linkEstaciones"),
     document.getElementById("linkProductos"),
+    document.getElementById("linkCompras"),
     document.getElementById("linkConfiguracion"),
+    document.getElementById("linkConfiguracionMain"),
+    document.getElementById("linkConfiguracionPermisos"),
+    document.getElementById("linkConfiguracionAvanzada"),
+    document.getElementById("linkConfiguracionCarritoEmpresa"),
+    document.getElementById("linkCarritoCompras"),
     document.getElementById("linkFacturacionElectronica"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
@@ -127,6 +133,17 @@ try {
     document.getElementById("linkAuditoria"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
+    document.getElementById("linkVentaPublica"),
+    document.getElementById("linkRedSocialComercial"),
+    document.getElementById("linkDocumentosOnlyOffice"),
+    document.getElementById("linkImpuestos"),
+    document.getElementById("linkNextcloud"),
+    document.getElementById("linkPropinas"),
+    document.getElementById("linkComisiones"),
+    document.getElementById("linkConfigEstaciones"),
+    document.getElementById("linkTarifasPorMinutos"),
+    document.getElementById("linkTarifasPorDia"),
+    document.getElementById("linkFrecuenciaFE"),
   ];
   var frameLinks = [];
 
@@ -151,6 +168,10 @@ try {
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionPermisos: { module: permModuleSeguridad, action: permActionApprove },
+    linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionCarritoEmpresa: { module: permModuleVentas, action: permActionApprove },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
     linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
     linkNominaSueldos: { module: permModuleFinanzas, action: permActionCreate },
@@ -174,6 +195,10 @@ try {
     linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
     linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
     linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
+    linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
+    linkImpuestos: { module: permModuleFacturacion, action: permActionUpdate },
+    linkDocumentosOnlyOffice: { module: permModuleSeguridad, action: permActionRead },
+    linkNextcloud: { module: permModuleSeguridad, action: permActionRead },
     linkEstaciones: { alwaysVisible: true },
     
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
@@ -573,11 +598,13 @@ try {
       setMenuLinkVisible(link, true);
     });
     if (!permissionContext) {
+      refreshMenuGroups();
       return;
     }
     links.forEach(function (link) {
       setMenuLinkVisible(link, canPermissionContextAccessLink(permissionContext, link));
     });
+    refreshMenuGroups();
   }
 
   function describePermissionContext(permissionContext) {
@@ -635,6 +662,21 @@ try {
     }
   }
 
+  function refreshMenuGroups() {
+    var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
+    groups.forEach(function (group) {
+      var items = Array.prototype.slice.call(group.querySelectorAll(".admin-nav-sublist > li"));
+      if (items.length === 0) {
+        group.style.display = "";
+        return;
+      }
+      var hasVisibleItem = items.some(function (item) {
+        return item.style.display !== "none" && item.hidden !== true;
+      });
+      group.style.display = hasVisibleItem ? "" : "none";
+    });
+  }
+
   function isMenuLinkVisible(link) {
     if (!link) return false;
     return link.getAttribute("data-menu-visible") !== "0";
@@ -655,11 +697,13 @@ try {
       setMenuLinkVisible(link, true);
     });
     if (!normalizedRole) {
+      refreshMenuGroups();
       return;
     }
     links.forEach(function (link) {
       setMenuLinkVisible(link, canRoleAccessLink(normalizedRole, link));
     });
+    refreshMenuGroups();
   }
 
   function isVisibleMenuHref(href) {

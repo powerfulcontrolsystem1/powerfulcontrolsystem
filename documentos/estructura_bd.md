@@ -37,6 +37,28 @@ Actualizacion 2026-04-26 (finanzas/inventario/asistencia: integracion operativa)
 - empresa_asistencia_empleados:
   - `empleado_id` puede vincular el registro de asistencia al usuario interno de la empresa (`users.id`) para mantener trazabilidad operativa de llegada/salida por cuenta creada.
 
+Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
+- empresa_auditoria_eventos:
+  - la tabla existente pasa a ser la fuente central de contexto operativo reciente para IA empresarial y global.
+  - los wrappers protegidos registran tambien acciones de lectura (`R`), ademas de crear/actualizar/eliminar/aprobar (`C/U/D/A`), para que la IA pueda ver actividad real de usuarios sin incrustarse en cada modulo.
+  - el contexto IA usa consultas agregadas y eventos recientes acotados por ventana temporal; no inyecta `metadata_json` completo ni secretos.
+  - si la tabla no existe, falla la consulta o la IA esta desactivada, el servidor mantiene operacion normal y la IA recibe una nota de contexto degradado cuando corresponda.
+- empresa_auditoria_ia_consultas:
+  - nueva bitacora de uso de auditoria por IA para consultas empresariales y globales.
+  - campos clave: `empresa_id`, `alcance`, `modelo`, `usuario_consulta`, `pregunta_hash`, `pregunta_resumen`, `filtros_json`, `resultados_json`, `eventos_consultados`, `contexto_caracteres`, `resultado`, `fecha_consulta`.
+  - registra que contexto de auditoria se preparo para GPT-5.4 mini o el modelo activo, sin guardar la pregunta completa cuando puede bastar con hash/resumen.
+  - permite trazabilidad posterior de busquedas profundas y consultas DB seguras entregadas a la IA.
+- Regla de consultas IA sobre base de datos:
+  - la IA no ejecuta SQL libre ni recibe credenciales.
+  - el backend deriva intencion desde la pregunta, aplica `empresa_id` cuando corresponde y solo ejecuta consultas parametrizadas/whitelist para usuarios activos, ventas, finanzas, inventario y clientes.
+  - los resultados se devuelven como contexto compacto y se registran en `empresa_auditoria_ia_consultas`.
+- Configuracion super de lectura DB para chat empresarial:
+  - `ai.chat.empresa.db_query_enabled`: activa/desactiva el acceso de lectura total controlada de GPT-5.4 mini/modelo activo a tablas con `empresa_id`; default `true`.
+  - `ai.chat.empresa.db_query_max_tables`: maximo de tablas incluidas por pregunta; default `25`, tope tecnico `100`.
+  - `ai.chat.empresa.db_query_rows`: filas por tabla entregadas a la IA; default `8`, tope tecnico `30`.
+  - `ai.chat.super.empresa_solo_lectura`: habilita contexto de lectura de la base de empresas para el chat global super; default `true`.
+  - la consulta es solo lectura (`SELECT`), parametrizada por `empresa_id`, sin credenciales y con omision de columnas sensibles como password, token, secret, hash, salt, keys, JWT, PIN o certificados.
+
 ## 1) Base: pcs_empresas
 
 

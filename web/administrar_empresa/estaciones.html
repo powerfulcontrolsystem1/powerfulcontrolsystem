@@ -758,6 +758,35 @@
       return bloques > 0 ? ('Hora extra: ' + bloques) : '';
     }
 
+    function stripStationRowPrefix(value, prefix) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const normalizedPrefix = String(prefix || '').trim();
+      if (!normalizedPrefix) return raw;
+      const lower = raw.toLowerCase();
+      const prefixLower = normalizedPrefix.toLowerCase();
+      return lower.indexOf(prefixLower) === 0 ? raw.slice(normalizedPrefix.length).trim() : raw;
+    }
+
+    function stationMetaRowHtml(key, label, value, visible) {
+      const text = String(value || '').trim();
+      const isVisible = visible !== false && text !== '';
+      return '<div class="station-data-row station-meta-' + sanitize(key) + '-row"' + (isVisible ? '' : ' hidden') + '>' +
+        '<span class="station-data-label">' + sanitize(label) + '</span>' +
+        '<span class="station-data-value station-meta-' + sanitize(key) + '">' + sanitize(text) + '</span>' +
+        '</div>';
+    }
+
+    function setStationMetaRow(card, key, value, visible) {
+      if (!card) return;
+      const row = card.querySelector('.station-meta-' + key + '-row');
+      const valueEl = card.querySelector('.station-meta-' + key);
+      const text = String(value || '').trim();
+      const show = visible !== false && text !== '';
+      if (valueEl) valueEl.textContent = text;
+      if (row) row.hidden = !show;
+    }
+
     function isTarifaWithinAlertWindow(data) {
       const tpm = data && data.tarifaPorMinutos ? data.tarifaPorMinutos : null;
       if (!tpm || !tpm.fecha_fin_tarifa_actual) return false;
@@ -787,20 +816,15 @@
     const bg = isDirty ? state.colores.sucia : (meta.alerta ? state.colores.alertaTiempo : (meta.activo ? state.colores.ocupada : state.colores.disponible));
     card.style.setProperty('--station-state-bg', bg);
 
-    const startEl = card.querySelector('.station-meta-start');
-    if (startEl) startEl.textContent = meta.inicio || '';
-    const endEl = card.querySelector('.station-meta-end');
-    if (endEl) endEl.textContent = meta.fin || '';
-    const clienteEl = card.querySelector('.station-meta-cliente');
-    if (clienteEl) clienteEl.textContent = meta.cliente ? ('Cliente: ' + meta.cliente) : '';
-    const tarifaEl = card.querySelector('.station-meta-tarifa');
-    if (tarifaEl) tarifaEl.textContent = meta.tarifaResumen || '';
-    const extraEl = card.querySelector('.station-meta-extra');
-    if (extraEl) extraEl.textContent = meta.horaExtra || '';
-    const totalEl = card.querySelector('.station-meta-total');
-    if (totalEl) totalEl.textContent = meta.total ? ('Total: ' + meta.total) : '';
-    const durationEl = card.querySelector('.station-meta-duration');
-    if (durationEl) durationEl.textContent = meta.duracionActiva || '';
+    const estado = isDirty ? 'Sucia' : (meta.activo ? (meta.alerta ? 'Alerta' : 'Ocupada') : 'Disponible');
+    setStationMetaRow(card, 'estado', estado, true);
+    setStationMetaRow(card, 'cliente', meta.cliente, meta.cliente);
+    setStationMetaRow(card, 'tarifa', stripStationRowPrefix(meta.tarifaResumen, 'Tarifa:'), meta.tarifaResumen);
+    setStationMetaRow(card, 'duration', meta.duracionActiva, meta.duracionActiva);
+    setStationMetaRow(card, 'start', meta.inicio, stationCfg && stationCfg.mostrar_fecha_hora_inicio !== false && meta.inicio);
+    setStationMetaRow(card, 'end', meta.fin, stationCfg && stationCfg.mostrar_fecha_hora_fin_tarifa !== false && meta.fin);
+    setStationMetaRow(card, 'extra', stripStationRowPrefix(meta.horaExtra, 'Hora extra:'), meta.horaExtra);
+    setStationMetaRow(card, 'total', meta.total, stationCfg && stationCfg.mostrar_total !== false && meta.total);
     });
     }
 
@@ -1483,18 +1507,10 @@
         const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
         const meta = buildStationRuntimeMeta(info, est);
         const carritoActivo = meta.activo;
-        const entradaHtml = useMostrarInicio
-          ? '<p class="station-entry-time station-meta-start">' + sanitize(meta.inicio || '') + '</p>'
-          : '';
-        const finHtml = useMostrarFinTarifa
-          ? '<p class="station-entry-time station-meta-end">' + sanitize(meta.fin || '') + '</p>'
-          : '';
-        const totalHtml = useMostrarTotal
-          ? '<p class="station-entry-time station-meta-total">' + sanitize(meta.total ? ('Total: ' + meta.total) : '') + '</p>'
-          : '';
         const isDirty = !!state.dirtyByEstacion[stationID];
         const stationClass = isDirty ? 'station-card-dirty' : (carritoActivo ? 'station-card-active' : 'station-card-inactive');
         const stationColor = isDirty ? state.colores.sucia : (meta.alerta ? state.colores.alertaTiempo : (carritoActivo ? state.colores.ocupada : state.colores.disponible));
+        const estado = isDirty ? 'Sucia' : (carritoActivo ? (meta.alerta ? 'Alerta' : 'Ocupada') : 'Disponible');
 
         // Estado del sensor asociado a la estación (negro = no conectado/inactivo, verde = sensor activo)
         const sensor = (state.sensorsByEstacion && state.sensorsByEstacion[stationID]) ? state.sensorsByEstacion[stationID] : null;
@@ -1516,20 +1532,20 @@
           }
         }
 
-          const clienteHtml = (meta && meta.cliente) ? '<p class="station-entry-time station-meta-cliente">' + sanitize('Cliente: ' + meta.cliente) + '</p>' : '<p class="station-entry-time station-meta-cliente"></p>';
-          const tarifaHtml = (meta && meta.tarifaResumen) ? '<p class="station-entry-time station-meta-tarifa">' + sanitize(meta.tarifaResumen) + '</p>' : '<p class="station-entry-time station-meta-tarifa"></p>';
-          const durationHtml = (meta && meta.duracionActiva) ? '<p class="station-entry-time station-meta-duration">' + sanitize(meta.duracionActiva) + '</p>' : '<p class="station-entry-time station-meta-duration"></p>';
-          const extraHtml = (meta && meta.horaExtra) ? '<p class="station-entry-time station-meta-extra">' + sanitize(meta.horaExtra) + '</p>' : '<p class="station-entry-time station-meta-extra"></p>';
+          const stationDataHtml = '<div class="station-data">' +
+            stationMetaRowHtml('estado', 'Estado', estado, true) +
+            stationMetaRowHtml('cliente', 'Cliente', meta.cliente, !!meta.cliente) +
+            stationMetaRowHtml('tarifa', 'Tarifa', stripStationRowPrefix(meta.tarifaResumen, 'Tarifa:'), !!meta.tarifaResumen) +
+            stationMetaRowHtml('duration', 'Duracion', meta.duracionActiva, !!meta.duracionActiva) +
+            stationMetaRowHtml('start', 'Inicio', meta.inicio, useMostrarInicio && !!meta.inicio) +
+            stationMetaRowHtml('end', 'Fin', meta.fin, useMostrarFinTarifa && !!meta.fin) +
+            stationMetaRowHtml('extra', 'Extra', stripStationRowPrefix(meta.horaExtra, 'Hora extra:'), !!meta.horaExtra) +
+            stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
+          '</div>';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
-            clienteHtml +
-            tarifaHtml +
-            durationHtml +
-            entradaHtml +
-            finHtml +
-            extraHtml +
-            totalHtml +
+            stationDataHtml +
             '</article>';
       }).join('');
           html += afterSpecial.join('');

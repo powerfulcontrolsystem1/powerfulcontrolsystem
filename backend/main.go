@@ -696,6 +696,7 @@ func main() {
 
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
+	http.HandleFunc("/super/api/tipos_empresas/preconfiguracion", handlers.SuperTipoEmpresaPreconfiguracionHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
@@ -759,6 +760,7 @@ func main() {
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
 	http.HandleFunc("/api/public/estacion_vip", handlers.PublicEstacionVIPHandler(dbEmpresas))
 	http.HandleFunc("/api/public/chat_portal", handlers.PublicPortalCompanyChatHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/public/chat_portal_stream", handlers.PublicPortalCompanyChatStreamHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/public/mensajes_privados", handlers.PublicMensajesPrivadosHandler(dbEmpresas))
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
@@ -866,6 +868,10 @@ func main() {
 	http.HandleFunc("/super/api/config/chat_ia_logica", handlers.SuperChatIALogicaConfigHandler(dbEmpresas, dbSuper))
 	// Endpoint para configurar gestion RustDesk en el VPS (GET/PUT)
 	http.HandleFunc("/super/api/config/rustdesk", handlers.RustDeskConfigHandler(dbSuper))
+	// Endpoint para configurar voz natural por streaming en VPS (GET/PUT)
+	http.HandleFunc("/super/api/config/voice_stream", handlers.SuperVoiceStreamConfigHandler(dbSuper))
+	http.HandleFunc("/api/voice_stream/status", handlers.VoiceStreamStatusHandler(dbSuper))
+	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
 	// Endpoint para configurar Nextcloud en el VPS (GET/PUT)
 	http.HandleFunc("/super/api/config/nextcloud", handlers.NextcloudConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)

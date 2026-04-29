@@ -49,7 +49,30 @@
           <div class="form-help">Si está activo, el chat puede mostrar la respuesta en vivo (SSE). Si está apagado, siempre responde en modo normal.</div>
           <div id="empresaStreamingEnabledStatus" class="form-help">Cargando estado...</div>
         </div>
-        <div class="form-col"></div>
+        <div class="form-col">
+          <label class="form-label">Consultas DB para GPT-5.4 mini</label>
+          <label class="mode-switch-row" for="empresaDBQueryEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaDBQueryEnabled" type="checkbox" role="switch" aria-label="Permitir consultas de lectura a la base de datos para el chat IA empresarial">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Activo por defecto. El servidor entrega a la IA consultas SELECT ya resueltas sobre tablas con empresa_id; no entrega credenciales ni permite SQL libre.</div>
+          <div id="empresaDBQueryEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaDBQueryMaxTables">Maximo de tablas consultables por pregunta</label>
+          <input id="empresaDBQueryMaxTables" class="form-input" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="25">
+          <div class="form-help">Default: 25. Tope tecnico: 100 tablas por pregunta.</div>
+          <div id="empresaDBQueryMaxTablesStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaDBQueryRows">Filas por tabla entregadas a la IA</label>
+          <input id="empresaDBQueryRows" class="form-input" type="number" min="1" max="30" step="1" inputmode="numeric" placeholder="8">
+          <div class="form-help">Default: 8. Tope tecnico: 30 filas por tabla.</div>
+          <div id="empresaDBQueryRowsStatus" class="form-help">Cargando estado...</div>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -227,6 +250,9 @@
           const empMaxInfo = values.empresa_max_consultas || {};
           const empMaxGPT55Info = values.empresa_max_gpt55_consultas || {};
           const empStreamingInfo = values.empresa_streaming_enabled || {};
+          const empDBQueryInfo = values.empresa_db_query_enabled || {};
+          const empDBQueryMaxTablesInfo = values.empresa_db_query_max_tables || {};
+          const empDBQueryRowsInfo = values.empresa_db_query_rows || {};
           const supEnabledInfo = values.super_enabled || {};
           const supMaxInfo = values.super_max_consultas || {};
           const supStreamingInfo = values.super_streaming_enabled || {};
@@ -237,6 +263,8 @@
           document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
           var empStreamEl = document.getElementById('empresaStreamingEnabled');
           if (empStreamEl) empStreamEl.checked = !!empStreamingInfo.value;
+          var empDBQueryEl = document.getElementById('empresaDBQueryEnabled');
+          if (empDBQueryEl) empDBQueryEl.checked = empDBQueryInfo.value !== false;
           var supStreamEl = document.getElementById('superStreamingEnabled');
           if (supStreamEl) supStreamEl.checked = !!supStreamingInfo.value;
           var portalEl = document.getElementById('portalChatEnabled');
@@ -247,12 +275,19 @@
           document.getElementById('empresaMaxConsultas').value = String(toInt(empMaxInfo.value, toInt(defaults.empresa_max_consultas, 10)));
           var empMax55El = document.getElementById('empresaMaxGPT55Consultas');
           if (empMax55El) empMax55El.value = String(toInt(empMaxGPT55Info.value, toInt(defaults.empresa_max_gpt55_consultas, 2)));
+          var empDBMaxTablesEl = document.getElementById('empresaDBQueryMaxTables');
+          if (empDBMaxTablesEl) empDBMaxTablesEl.value = String(toInt(empDBQueryMaxTablesInfo.value, toInt(defaults.empresa_db_query_max_tables, 25)));
+          var empDBRowsEl = document.getElementById('empresaDBQueryRows');
+          if (empDBRowsEl) empDBRowsEl.value = String(toInt(empDBQueryRowsInfo.value, toInt(defaults.empresa_db_query_rows, 8)));
           document.getElementById('superMaxConsultas').value = String(toInt(supMaxInfo.value, toInt(defaults.super_max_consultas, 30)));
 
           renderStatus(document.getElementById('empresaChatEnabledStatus'), empEnabledInfo);
           renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
           renderStatus(document.getElementById('empresaMaxGPT55ConsultasStatus'), empMaxGPT55Info);
           renderStatus(document.getElementById('empresaStreamingEnabledStatus'), empStreamingInfo);
+          renderStatus(document.getElementById('empresaDBQueryEnabledStatus'), empDBQueryInfo);
+          renderStatus(document.getElementById('empresaDBQueryMaxTablesStatus'), empDBQueryMaxTablesInfo);
+          renderStatus(document.getElementById('empresaDBQueryRowsStatus'), empDBQueryRowsInfo);
           renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
           renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
           renderStatus(document.getElementById('superStreamingEnabledStatus'), supStreamingInfo);
@@ -302,12 +337,18 @@
           const elPortalEnabled = document.getElementById('portalChatEnabled');
           const elEmpMax55 = document.getElementById('empresaMaxGPT55Consultas');
           const elEmpStream = document.getElementById('empresaStreamingEnabled');
+          const elEmpDBQuery = document.getElementById('empresaDBQueryEnabled');
+          const elEmpDBMaxTables = document.getElementById('empresaDBQueryMaxTables');
+          const elEmpDBRows = document.getElementById('empresaDBQueryRows');
           const elSupStream = document.getElementById('superStreamingEnabled');
           const payload = {
             empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
             empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
             empresa_max_gpt55_consultas: elEmpMax55 ? toInt(elEmpMax55.value, 2) : 2,
             empresa_streaming_enabled: elEmpStream ? !!elEmpStream.checked : false,
+            empresa_db_query_enabled: elEmpDBQuery ? !!elEmpDBQuery.checked : true,
+            empresa_db_query_max_tables: elEmpDBMaxTables ? toInt(elEmpDBMaxTables.value, 25) : 25,
+            empresa_db_query_rows: elEmpDBRows ? toInt(elEmpDBRows.value, 8) : 8,
             super_enabled: !!document.getElementById('superChatEnabled').checked,
             super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
             super_streaming_enabled: elSupStream ? !!elSupStream.checked : false,
@@ -341,4 +382,3 @@
   </script>
 </body>
 </html>
-

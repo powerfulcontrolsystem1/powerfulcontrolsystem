@@ -288,7 +288,7 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 	}
 	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
-	})
+	}, model.ID)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
@@ -452,7 +452,7 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	}
 	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
-	})
+	}, model.ID)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
@@ -603,7 +603,7 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 	}
 	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, preguntaContexto, dbpkg.SuperAIContextoOpts{
 		EmpresaSoloLectura: empresaRO,
-	})
+	}, model.ID)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
@@ -725,6 +725,8 @@ func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSolo
 		extra + "\n\n" +
 		assistantInstruction + "\n\n" +
 		"Si existe la seccion CONSULTAS_SEGURAS_GLOBALES_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
+		"Si existe AUDITORIA_GLOBAL_TIEMPO_REAL, AUDITORIA_GLOBAL_BUSQUEDA_PROFUNDA o AUDITORIA_GLOBAL_CONSULTAS_DB_SEGURAS, usalas para diagnosticar actividad multiempresa, buscar eventos auditados y cruzar datos agregados permitidos. " +
+		"Estas consultas ya fueron ejecutadas por el servidor con whitelist; no inventes SQL ni solicites acceso directo a credenciales o tablas sensibles. Si auditoria indica no_disponible o error_lectura, informa la limitacion sin bloquear el diagnostico. " +
 		"Si faltan datos, dilo explicitamente y sugiere el siguiente reporte o consulta a revisar.\n\nCONTEXTO_GLOBAL_VALIDADO:\n" + contexto
 }
 

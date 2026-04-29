@@ -55,6 +55,50 @@
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
+## 2026-04-29
+- Reportes globales y busqueda en configuracion avanzada.
+	- Archivos: `backend/handlers/reportes_globales.go`, `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js`, `web/super/configuracion_avanzada.html`.
+	- Descripcion: reportes globales en seleccionar empresa ahora permite a la cuenta super principal ver todas las empresas, corrige textos con codificacion danada y agrega manejo mas claro de respuestas no JSON. Configuracion avanzada incorpora un submenu sticky con buscador por categoria y seccion.
+- Voz IA streaming segura.
+	- Archivos: `backend/handlers/voice_stream_config.go`, `backend/handlers/super_config_backup_handlers.go`, `services/voice_stream_server/app.py`, `services/voice_stream_server/README.md`, `scripts/install_voice_stream_server_vps.sh`, `web/super/voz_streaming_ia.html`, `web/super/configuracion_avanzada.html`.
+	- Descripcion: el servicio de voz puede activarse/probarse desde super administrador, registra token cifrado en configuraciones, envia autenticacion al health/TTS y el microservicio puede exigir el mismo token por header.
+- Epayco y chat flotante movil.
+	- Archivos: `web/pagar_licencia.html`, `web/administrar_empresa.html`, `web/seleccionar_empresa.html`, `web/super_administrador.html`, `web/estilos.css`.
+	- Descripcion: el boton `Pagar con Epayco` precarga Smart Checkout v2, abre con tipo compatible para movil y prueba fallback entre `onpage`/`standard` si la primera apertura falla. El chat flotante mueve `Nuevo chat` al toolbar inferior y compacta en una sola fila nuevo mensaje, modo conversacion, microfono, voz, selector de modo y adjuntar.
+	- Verificacion: validacion de scripts HTML/JS con Node y `go test ./handlers`.
+
+- Checkout de licencias: tarjetas comerciales y asesor bajo descuento.
+	- Archivos: `web/pagar_licencia.html`, `web/estilos.css`.
+	- Descripcion: las tarjetas del pago de licencia quedan con presentacion mas profesional de venta, beneficios visibles y precio destacado. El campo `Codigo de asesor comercial` queda debajo del `Codigo de descuento`, conservando el envio de `asesor_id` a las pasarelas y activacion sin pago.
+	- Verificacion: validacion de scripts de `web/pagar_licencia.html` con Node.
+
+- Preconfiguracion de tipos de empresa.
+	- Archivos: `backend/db/tipo_empresa_preconfiguracion.go`, `backend/handlers/empresa_preconfiguracion.go`, `backend/db/empresa_estacion_prefs.go`, `backend/db/productos.go`, `backend/handlers/system_empresas_handlers.go`, `backend/main.go`, `web/super/preconfiguracion_tipos_empresa.html`, `web/js/seleccionar_empresa.js`, `web/super_administrador.html`, `Pendiente Notas`, documentacion relacionada.
+	- Descripcion: Super Administrador puede definir plantillas iniciales por tipo de empresa. Al crear una empresa se aplican estaciones y productos guia si la plantilla esta activa; restaurante trae 5 mesas y productos demo. Tras crearla, el administrador decide si conserva la preconfiguracion o la elimina para dejar la empresa limpia.
+	- Verificacion: `go test ./db`, `go test ./handlers` y validacion de scripts de `seleccionar_empresa` / `preconfiguracion_tipos_empresa`.
+
+- Estaciones: tarjetas sin filas vacias.
+	- Archivos: `web/administrar_empresa/estaciones.html`, `web/estilos.css`, documentacion relacionada.
+	- Descripcion: las tarjetas de estaciones normales reorganizan sus datos en filas etiqueta/valor tipo tarjeta Caja. Las filas sin dato quedan ocultas, conservando una sola columna de informacion ordenada por estado, cliente, tarifa, duracion, inicio, fin, extra y total.
+
+- Voz IA streaming y reorganizacion super.
+	- Archivos: `backend/handlers/voice_stream_config.go`, `backend/main.go`, `services/voice_stream_server/*`, `scripts/install_voice_stream_server_vps.sh`, `web/js/ai_chat_drawer.js`, `web/super/voz_streaming_ia.html`, `web/super_administrador.html`, `web/super/configuracion_avanzada.html`, documentacion relacionada.
+	- Descripcion: se agrega un servicio abierto FastAPI + Piper TTS para voz natural en VPS, configurable desde Super Administrador y desactivado por defecto. El backend expone configuracion protegida, estado publico no sensible y proxy TTS; el chat flotante intenta usar el servidor de voz y cae a voz del navegador/texto si esta desactivado o falla. El menu super y Configuracion avanzada quedan agrupados por categorias empresariales.
+
+- Tarjetas del index con modo informacion/foto o banner.
+	- Archivos: `backend/handlers/pagina_principal_handlers.go`, `web/super/pagina_principal.html`, `web/index.html`, `web/estilos.css`, documentacion relacionada.
+	- Descripcion: la configuracion super de Pagina principal permite elegir por tarjeta entre `tarjeta informacion mas foto` (default compatible con lo existente) y `tarjeta banner`. El modo banner usa solo la imagen principal y la renderiza ocupando toda la tarjeta del index. La pantalla permite subir imagenes a `web/img` y muestra medidas recomendadas 4:3 por tamano de tarjeta.
+	- Verificacion: `go test ./...` en `backend/` compilo y ejecuto paquetes; Windows bloqueo temporalmente el borrado del binario de test al final, luego se limpio `.gotmp6`.
+
+- Reorganizacion empresarial de Administrar Empresa y Configuracion.
+	- Archivos: `web/administrar_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/configuracion.html`, `web/js/administrar_empresa.js`, `web/estilos.css`, documentacion relacionada.
+	- Descripcion: el menu principal queda agrupado por modulos de trabajo (colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion). Configuracion se reorganiza por base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado. Se conserva la compatibilidad con rutas, iframes y permisos, y se eliminan duplicados de navegacion.
+
+- Auditoria IA profunda y consultas DB seguras para GPT-5.4 mini/modelo activo.
+	- Archivos: `backend/db/auditoria_empresa.go`, `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/auditoria_empresa.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html`, documentacion relacionada.
+	- Descripcion: el chat empresarial y el chat global reciben auditoria en tiempo real, busqueda profunda de eventos por intencion y resultados de consultas DB seguras ejecutadas por el backend con whitelist/empresa_id. Se agrega `empresa_auditoria_ia_consultas` y lectura total controlada de DB para el chat empresarial, activa por defecto y configurable desde super (`ai.chat.empresa.db_query_enabled`, tablas maximas y filas por tabla). La IA no ejecuta SQL libre y el servidor degrada sin romper si auditoria, lectura DB o proveedor IA fallan.
+	- Verificacion: `go test ./...` en `backend/` usando `GOTMPDIR=.gotmp4`.
+
 ## 2026-04-25
 - Facturación electrónica: perfiles independientes para Ecuador (SRI) y Panamá (DGE/DGI) frente a Colombia (DIAN); detección por licencia; API y UI con `vista` por país.
 	- Archivos: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`.
@@ -3911,3 +3955,4 @@
 
 ## [2026-04-20] Limpieza Total Themes
 - [UI/Temas] Auditoría y barrido de más de 50 páginas y scripts en web/administrar_empresa, web/super y páginas públicas para limpiar colores fijos, migrando lógicas JS a .classList.add('text-danger') y respetando las 6 paletas dinámicas. Completado barrido masivo de vistas.
+- **Auditoria + IA contextual**: los wrappers empresariales auditan ahora acciones `R/C/U/D/A` de forma no bloqueante y la IA empresarial/global recibe una ventana reciente de `empresa_auditoria_eventos` como contexto operativo. La integracion vive en auditoria + constructor de prompt, sin insertar IA en cada modulo; si auditoria o IA fallan/deshabilitan, el servidor continua con estado controlado. Archivos: `backend/handlers/auditoria_empresa.go`, `backend/db/auditoria_empresa.go`, `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, documentacion relacionada.

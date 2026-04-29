@@ -9,9 +9,27 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Configuración</h1>
+      <h1>Centro de configuracion empresarial</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Configura reglas de productos/pedidos y administra respaldos de esta configuración.</p>
+      <p class="form-help">Administra reglas comerciales, cobro, documentos, formato monetario, impresoras, respaldos y pasarelas desde una vista organizada por temas.</p>
+      <div class="empresa-config-map" aria-label="Mapa de configuracion">
+        <a href="#configuracionFormatoNumerico" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Operacion comercial</span>
+          <span>Productos, pedidos y descuentos.</span>
+        </a>
+        <a href="#configuracionCobroOperativo" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Cobro y comisiones</span>
+          <span>Metodos de pago, propinas y reglas por rol.</span>
+        </a>
+        <a href="#configuracionDocumentoImpresion" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Documentos e impresion</span>
+          <span>Documento de venta, formatos e impresoras.</span>
+        </a>
+        <a href="#configuracionBackupsPasarelas" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Continuidad y canales</span>
+          <span>Backups y pasarelas para venta publica.</span>
+        </a>
+      </div>
     </section>
 
     <section id="configuracionFormatoNumerico" class="card empresa-section">
@@ -100,7 +118,7 @@
       <div id="configMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionCobroOperativo" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Configuracion operativa de cobro</h2>
         <button id="btnGuardarConfigOperativa" type="button" class="btn">Guardar empresa</button>
@@ -374,7 +392,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionDocumentoImpresion" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Documento de venta e impresion</h2>
         <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar documento</button>
@@ -427,7 +445,7 @@
       <div id="facturaMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionFormatoMonetario" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Formato monetario y numerico</h2>
         <button id="btnGuardarFormatoNumerico" type="button" class="btn">Guardar formato</button>
@@ -471,7 +489,7 @@
       <div id="formatoNumericoMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionImpresorasSistema" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Impresoras del sistema</h2>
         <button id="btnRefrescarImpresoras" type="button" class="btn secondary">Refrescar</button>
@@ -633,7 +651,7 @@
       <div id="impresorasMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionBackupsPasarelas" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Backup</h2>
       </div>
@@ -659,7 +677,7 @@
       <div id="backupMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section id="configuracionPasarelasPago" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Pasarelas de pago</h2>
         <button id="btnGuardarPasarelasPago" type="button" class="btn">Guardar pasarelas</button>

@@ -56,6 +56,11 @@
     el.style.color = isError ? '#ef5350' : '';
   }
 
+  function safeSetText(id, text) {
+    var el = byId(id);
+    if (el) el.textContent = text == null ? '' : String(text);
+  }
+
   function getSelectedEmpresaIDs() {
     var ids = state.selectedEmpresaIDs.slice().sort(function (a, b) { return a - b; });
     if (state.selectionMode === 'single') {
@@ -348,9 +353,17 @@
 
   async function requestJSON(url) {
     var res = await fetch(url, { credentials: 'same-origin' });
+    var contentType = normalize(res.headers.get('Content-Type')).toLowerCase();
     if (!res.ok) {
       var body = await res.text();
       throw new Error(body || ('HTTP ' + res.status));
+    }
+    if (contentType && contentType.indexOf('application/json') < 0) {
+      var text = await res.text();
+      if (/<!doctype|<html/i.test(text)) {
+        throw new Error('La sesión no está disponible dentro de reportes globales. Vuelve a iniciar sesión y abre el módulo otra vez.');
+      }
+      throw new Error('La API devolvió una respuesta no JSON.');
     }
     return res.json();
   }
@@ -395,8 +408,10 @@
     if (!select) return;
     if (!state.datasets.length) {
       select.innerHTML = '<option value="">Sin datasets</option>';
+      select.disabled = true;
       return;
     }
+    select.disabled = false;
     select.innerHTML = state.datasets.map(function (item) {
       var label = '[' + normalize(item.level || 'operativo') + '] ' + normalize(item.title || item.key || 'dataset');
       return '<option value="' + escapeHtml(item.key) + '">' + escapeHtml(label) + '</option>';
@@ -417,15 +432,15 @@
     var financiero = totales.financiero || {};
     var estadoResultados = totales.estado_resultados || {};
 
-    byId('rgKpiEmpresas').textContent = String(totales.empresas_seleccionadas || 0);
-    byId('rgKpiEmpresasActivas').textContent = String(totales.empresas_activas || 0);
-    byId('rgKpiVentas').textContent = String(operativo.ventas_cerradas || 0);
-    byId('rgKpiIngresos').textContent = fmtMoney(financiero.ingresos || operativo.ingresos_ventas || 0);
-    byId('rgKpiEgresos').textContent = fmtMoney(financiero.egresos || 0);
-    byId('rgKpiBalance').textContent = fmtMoney(financiero.balance || 0);
-    byId('rgKpiClientes').textContent = String(operativo.clientes_activos || 0);
-    byId('rgKpiProductos').textContent = String(operativo.productos_activos || 0);
-    byId('rgKpiUtilidad').textContent = fmtMoney(estadoResultados.utilidad_operacional || 0);
+    safeSetText('rgKpiEmpresas', totales.empresas_seleccionadas || 0);
+    safeSetText('rgKpiEmpresasActivas', totales.empresas_activas || 0);
+    safeSetText('rgKpiVentas', operativo.ventas_cerradas || 0);
+    safeSetText('rgKpiIngresos', fmtMoney(financiero.ingresos || operativo.ingresos_ventas || 0));
+    safeSetText('rgKpiEgresos', fmtMoney(financiero.egresos || 0));
+    safeSetText('rgKpiBalance', fmtMoney(financiero.balance || 0));
+    safeSetText('rgKpiClientes', operativo.clientes_activos || 0);
+    safeSetText('rgKpiProductos', operativo.productos_activos || 0);
+    safeSetText('rgKpiUtilidad', fmtMoney(estadoResultados.utilidad_operacional || 0));
 
     var items = Array.isArray(tablero.por_empresa) ? tablero.por_empresa : [];
     renderExecutiveSummary(items, totales);
@@ -707,6 +722,8 @@
 
   async function refreshAll() {
     if (!state.empresas.length) {
+      state.tablero = { por_empresa: [], totales: {} };
+      state.dataset = null;
       renderTablero();
       renderDatasetTable();
       renderIndividuales();
@@ -715,6 +732,25 @@
     syncSelectedFromDOM();
     if (!state.selectedEmpresaIDs.length) {
       setMsg('Seleccione al menos una empresa para construir los reportes.', true);
+      state.tablero = { por_empresa: [], totales: {} };
+      state.dataset = null;
+      renderTablero();
+      renderDatasetTable();
+      renderIndividuales();
+      return;
+    }
+    if (!state.datasets.length) {
+      setMsg('No hay datasets configurados para reportes globales.', true);
+      state.tablero = { por_empresa: [], totales: {} };
+      state.dataset = null;
+      renderTablero();
+      renderDatasetTable();
+      renderIndividuales();
+      return;
+    }
+    var datasetKey = normalize(byId('rgDataset') && byId('rgDataset').value);
+    if (!datasetKey) {
+      setMsg('Seleccione un dataset válido antes de actualizar los reportes.', true);
       state.tablero = { por_empresa: [], totales: {} };
       state.dataset = null;
       renderTablero();

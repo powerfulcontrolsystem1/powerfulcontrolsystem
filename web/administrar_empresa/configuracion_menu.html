@@ -3,38 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración - Menú</title>
+  <title>Configuracion - Menu</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
-      <h2>Configuración</h2>
-      <ul class="nav" id="configuracionSidebarNav">
-        <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">General</a></li>
-        <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
-        <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion.html#configuracionDocumentoVenta" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Avanzada</a></li>
-        <li><a id="linkConfiguracionCarritoEmpresa" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito unificado</a></li>
-        <li><a id="linkCarritoCompras" href="/administrar_empresa/carrito_de_compras.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Operar carrito</a></li>
-        <li><a id="linkPropinas" href="/administrar_empresa/propinas.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Propinas</a></li>
-        <li><a id="linkComisiones" href="/administrar_empresa/comisiones.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Comisiones</a></li>
-        <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Impuestos</a></li>
-        <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Configuración de estaciones</a></li>
-        <li><a id="linkTarifasPorMinutos" href="/administrar_empresa/tarifas_por_minutos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por minutos</a></li>
-        <li><a id="linkTarifasPorDia" href="/administrar_empresa/tarifas_por_dia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por día</a></li>
-        <li id="menuFrecuenciaFE" hidden><a id="linkFrecuenciaFE" href="/administrar_empresa/frecuencia_fe.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FE</a></li>
+      <h2>Configuracion empresarial</h2>
+      <ul class="nav admin-nav-grouped" id="configuracionSidebarNav">
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Base empresarial</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">General</a></li>
+            <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Ventas y cobro</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionCarritoEmpresa" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito unificado</a></li>
+            <li><a id="linkCarritoCompras" href="/administrar_empresa/carrito_de_compras.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Operar carrito</a></li>
+            <li><a id="linkPropinas" href="/administrar_empresa/propinas.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Propinas</a></li>
+            <li><a id="linkComisiones" href="/administrar_empresa/comisiones.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Comisiones</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Estaciones y tarifas</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Configuracion de estaciones</a></li>
+            <li><a id="linkTarifasPorMinutos" href="/administrar_empresa/tarifas_por_minutos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por minutos</a></li>
+            <li><a id="linkTarifasPorDia" href="/administrar_empresa/tarifas_por_dia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por dia</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Fiscal y automatizacion</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Impuestos</a></li>
+            <li id="menuFrecuenciaFE" hidden><a id="linkFrecuenciaFE" href="/administrar_empresa/frecuencia_fe.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FE</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Avanzado</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion.html#configuracionDocumentoVenta" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Documento y formato</a></li>
+          </ul>
+        </li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="configuracionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
-            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
-            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="configuracionSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
           </button>
         </li>
       </ul>
     </aside>
 
     <main class="admin-content">
-      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion.html" title="Contenido de configuración" class="admin-empresa-frame"></iframe>
+      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion.html" title="Contenido de configuracion" class="admin-empresa-frame"></iframe>
     </main>
   </div>
   <script src="/js/administrar_empresa.js"></script>
@@ -80,3 +109,4 @@
   </script>
 </body>
 </html>
+

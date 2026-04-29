@@ -23,6 +23,15 @@ Quitado del pendiente por ya estar implementado
 Pendiente vigente
 
 1. Prioridad alta
+- Voz IA streaming en VPS.
+	- Instalar dependencias del servicio abierto Piper/FastAPI en el VPS usando `scripts/install_voice_stream_server_vps.sh`.
+	- Descargar y registrar un modelo Piper en espanol compatible con la voz natural requerida.
+	- Crear `/etc/powerfulcontrolsystem-voice.env` con `PIPER_BIN`, `PIPER_MODEL`, `PCS_VOICE_HOST`, `PCS_VOICE_PORT` y valores operativos sin guardar secretos en este archivo.
+	- Verificar `systemctl status pcs-voice-stream` y `curl http://127.0.0.1:8097/health`.
+	- Configurar desde Super Administrador > Voz IA streaming la URL interna del servicio, activar el interruptor y probar el endpoint.
+	- Si el servicio queda expuesto fuera del VPS, publicar solo por HTTPS/reverse proxy con firewall y autenticacion de red; preferir uso interno `127.0.0.1`.
+	- Confirmar que el chat conserva fallback a texto o voz del navegador cuando el servicio esta apagado, caido o con timeout.
+
 - Depurar postmigracion PostgreSQL. Estado: completado el 2026-04-20.
 	- Resultado: se elimino el artefacto SQLite legacy restante del repositorio y se ajusto la documentacion activa para dejar PostgreSQL como unica base operativa canonica.
 	- Inventario final: SQLite queda solo como referencia historica de migracion o para pruebas puntuales fuera del repositorio activo.
@@ -186,5 +195,49 @@ ssh
 root
 Azz19861986#Azz
 
-- organizar por modulo: administrar emoresa
--  contador de visitas de la pagina
+- organizar por modulo: administrar empresa
+- 2000011314292025
+
+- integrar whatapp para la ia empresarial.
+- lo de eliminar empresa compartida
+- mejorar el plan
+- baner amarrillo de la esquina
+
+---
+
+Generación de claves secretas para OnlyOffice y Nextcloud
+
+OnlyOffice (Document Server):
+1. Genera una clave segura en el servidor, por ejemplo:
+   - PowerShell: `pwsh -NoProfile -Command "[System.BitConverter]::ToString((New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32)).Replace('-', '')"`
+   - Linux/macOS: `openssl rand -hex 32`
+2. Guarda la clave en un lugar seguro, preferiblemente en una variable de entorno o gestor de secretos, no en un archivo público.
+3. En el archivo de configuración de OnlyOffice Document Server (por ejemplo `default.json` o la configuración del contenedor), asigna el valor a la propiedad `secret` o `jwt.secret` según corresponda.
+4. En la configuración de integración de OnlyOffice en tu aplicación/Nextcloud, usa la misma clave secreta para firmar y validar las solicitudes.
+5. Reinicia Document Server y la aplicación que consume la integración para que tomen la nueva clave.
+6. Verifica la conexión abriendo un documento desde Nextcloud o desde el módulo que use OnlyOffice.
+
+Nextcloud (App Password / clave de integración):
+1. En Nextcloud ve a tu perfil de administrador y luego a `Seguridad`.
+2. Crea una nueva `Contraseña de aplicación` con un nombre claro como `Integración OnlyOffice` o `API externa`.
+3. Copia el valor generado y guárdalo en un gestor seguro; no lo copies en archivos públicos.
+4. Si necesitas una clave compartida para una app externa o webhook, usa el método de `Contraseña de aplicación` o la configuración de la app específica en Nextcloud.
+5. En la integración, configura la URL de Nextcloud y la contraseña de aplicación en las variables de entorno o en el archivo de configuración de la aplicación consumidora.
+6. Prueba el acceso con un cliente autorizado o desde la app externa para confirmar que la clave funciona.
+
+Nota importante:
+- Nunca documentes las claves reales en este archivo.
+- Usa variables de entorno, un gestor de secretos o un archivo de configuración protegido para almacenar los valores.
+- Si hay un valor rotativo, actualiza ambas partes (OnlyOffice y Nextcloud) al mismo tiempo y prueba inmediatamente.
+
+La preconfiguracion para cada tipo de empresa, que la preconfiguracion heste hecha por defecto, pero que de la opcion de elimiarla. que la ia funcione como un asistente o guia para todas las tareas.
+
+- implementar toda la ia en todo el proyecto, que la ia esta en cada funcionalidad del proyecto, es importante que si se deshabilita o falla la iA que no rompa rl servidor. pero la ia no va a estar en todo el codigo, la ia obtendra la informacion de la auditoria en tiempo real. asi la ia sabe en todo momento lo que el usuario o usuarios hacen en el sistema y asi la ia siempre sabe lo que se esta haciendo.  mejora la auditoria general del proyecto para que se integre de la mejor manera profesional , escalable con la ia.
+
+agregar la api de CodeGeeX para continuo.
+
+-Añade una apariencia super oscupar para proteger la vista
+
+. probar pago de epayco
+
+- 

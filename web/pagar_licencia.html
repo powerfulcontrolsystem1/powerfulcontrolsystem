@@ -181,6 +181,49 @@
         });
         return epaycoCheckoutScriptPromise;
       }
+      function preferredEpaycoCheckoutType(rawType){
+        const requested = String(rawType || '').trim().toLowerCase();
+        const isMobile = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+        if (isMobile) return 'onpage';
+        return requested === 'onpage' ? 'onpage' : 'standard';
+      }
+      function openEpaycoSmartCheckout(epaycoRuntime, sessionId, rawType, mode){
+        if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
+          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout.');
+        }
+        const firstType = preferredEpaycoCheckoutType(rawType);
+        const fallbackType = firstType === 'onpage' ? 'standard' : 'onpage';
+        const testMode = String(mode || '').trim().toLowerCase() === 'sandbox';
+        let lastError = null;
+        for (const type of [firstType, fallbackType]) {
+          try {
+            const checkout = epaycoRuntime.checkout.configure({
+              sessionId: sessionId,
+              type: type,
+              test: testMode
+            });
+            if (!checkout || typeof checkout.open !== 'function') {
+              throw new Error('Epayco no devolvió una instancia de checkout válida.');
+            }
+            if (typeof checkout.onErrors === 'function') {
+              checkout.onErrors(function(errors){
+                const detail = Array.isArray(errors) && errors.length ? JSON.stringify(errors) : String(errors || 'Error desconocido');
+                syncStatusText(document.getElementById('epaycoStatus'), 'Epayco reportó un error al abrir el checkout: ' + detail);
+                var btn = document.getElementById('payEpaycoBtn');
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = originalButtonLabel('epayco');
+                }
+              });
+            }
+            checkout.open();
+            return true;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        throw lastError || new Error('No se pudo abrir Epayco Smart Checkout.');
+      }
       async function fetchProviderStatus(provider, context, licenciaId, empresaId){
         const normalizedProvider = normalizeProvider(provider);
         if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
@@ -351,37 +394,47 @@
               '</section>'+
               '<div class="portal-grid portal-home-grid checkout-summary-grid">'+
                 '<article class="portal-card home-offer-card checkout-home-card checkout-license-card">'+
-                  '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
-                  '<div class="home-offer-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
+                  '<div class="checkout-license-topline">'+
+                    '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
+                    '<div class="home-offer-media checkout-license-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
+                  '</div>'+
                   '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
                   '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacción.')+'</p>'+
+                  '<div class="checkout-license-benefits">'+
+                    '<span>Activación controlada</span>'+
+                    '<span>Renovación trazable</span>'+
+                    '<span>Pago seguro</span>'+
+                  '</div>'+
                   '<div class="checkout-meta-list">'+
                     (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
                     (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
                     (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
                   '</div>'+
-                  '<div class="card-actions checkout-card-actions-inline">'+
-                    '<span class="checkout-price-chip">'+escapeHtml(formatCurrency(licenciaValor))+'</span>'+
+                  '<div class="checkout-license-value-row">'+
+                    '<span>Total a pagar</span>'+
+                    '<strong class="checkout-price-chip">'+escapeHtml(formatCurrency(licenciaValor))+'</strong>'+
                   '</div>'+
                 '</article>'+
                 '<article class="portal-card home-offer-card checkout-home-card checkout-discount-card">'+
-                  '<div class="checkout-card-kicker">Códigos y referencias</div>'+
-                  '<div class="home-offer-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
-                  '<h3>Códigos de descuento</h3>'+
-                  '<p>Usa este espacio para aplicar promociones o asociar la venta a un asesor comercial antes de abrir el checkout.</p>'+
-                  '<div class="form-row checkout-discount-row">'+
+                  '<div class="checkout-license-topline">'+
+                    '<div class="checkout-card-kicker">Códigos y referencias</div>'+
+                    '<div class="home-offer-media checkout-license-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
+                  '</div>'+
+                  '<h3>Beneficios comerciales</h3>'+
+                  '<p>Aplica promociones y registra el asesor comercial asociado antes de abrir la pasarela.</p>'+
+                  '<div class="checkout-code-stack">'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+
                       '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional">'+
                     '</div>'+
                     '<div class="form-col">'+
-                      '<label class="form-label" for="asesorId">Código asesor comercial</label>'+
+                      '<label class="form-label" for="asesorId">Código de asesor comercial</label>'+
                       '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC">'+
                     '</div>'+
                   '</div>'+
                   '<div class="checkout-mini-pills">'+
                     '<span class="checkout-mini-pill">Opcional</span>'+
-                    '<span class="checkout-mini-pill">Se valida al crear la transacción</span>'+
+                    '<span class="checkout-mini-pill">Validación automática</span>'+
                   '</div>'+
                   '<div id="discountCodeStatus" class="form-help checkout-discount-status"></div>'+
                 '</article>'+
@@ -555,6 +608,10 @@
           }
 
           renderCheckoutSummary(summaryPayload);
+
+          if (epaycoProvider && epaycoProvider.available) {
+            loadEpaycoSmartCheckoutScript().catch(function () {});
+          }
 
           function scheduleCheckoutSummaryRefresh(){
             if (summaryTimer) window.clearTimeout(summaryTimer);
@@ -946,19 +1003,7 @@
                 renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciará el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
                 syncStatusText(ui.epaycoStatus, 'Preparando Smart Checkout de Epayco...');
                 const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL);
-                const checkout = epaycoRuntime.checkout.configure({
-                  sessionId: sessionId,
-                  type: checkoutType === 'onpage' ? 'onpage' : 'standard',
-                  test: String((data && data.mode) || '').trim().toLowerCase() === 'sandbox'
-                });
-                if (checkout && typeof checkout.onErrors === 'function') {
-                  checkout.onErrors(function(errors){
-                    const detail = Array.isArray(errors) && errors.length ? JSON.stringify(errors) : String(errors || 'Error desconocido');
-                    syncStatusText(ui.epaycoStatus, 'Epayco reportó un error al abrir el checkout: ' + detail);
-                    resetProvider('epayco');
-                  });
-                }
-                checkout.open();
+                openEpaycoSmartCheckout(epaycoRuntime, sessionId, checkoutType, data && data.mode);
                 return;
               }
               if (checkoutUrl) {

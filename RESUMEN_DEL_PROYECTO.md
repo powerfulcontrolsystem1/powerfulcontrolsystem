@@ -13,10 +13,10 @@ Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a 
 - **Correo:** envio por SMTP/Gmail configurable desde super administrador para confirmaciones, recuperacion de contraseña, activacion de licencias, alertas y plantillas editables.
 - **Pagos:** integraciones con Wompi y Epayco para licencias y venta publica, con configuracion global y por empresa segun el flujo.
 - **Facturacion electronica:** modulo por empresa con configuracion por pais. Para Colombia incluye preparacion DIAN, datos tributarios, resoluciones, consecutivos, firma y trazabilidad documental.
-- **Inteligencia artificial:** chat IA empresarial, chat IA global para super administrador y chat publico comercial del portal. Soporta adjuntos/fotos en flujos empresariales, acciones confirmables (`PCS_ACTION`) y consumo controlado por proveedor/modelo.
+- **Inteligencia artificial:** chat IA empresarial, chat IA global para super administrador y chat publico comercial del portal. Soporta adjuntos/fotos en flujos empresariales, acciones confirmables (`PCS_ACTION`), voz natural por servidor abierto configurable y consumo controlado por proveedor/modelo.
 - **Documentos:** OnlyOffice para documentos por empresa y Nextcloud como almacenamiento/colaboracion configurable. Ambos se controlan desde super y empresa con manejo de errores cuando estan desactivados o desconfigurados.
 - **Soporte remoto:** RustDesk como flujo recomendado, con configuracion super del servicio y configuracion empresarial para publicar datos de conexion, instrucciones y acceso remoto.
-- **Servidor y operacion:** despliegue a VPS con scripts PowerShell/Bash, Nginx como reverse proxy esperado, certificados HTTPS wildcard y herramientas de diagnostico del backend.
+- **Servidor y operacion:** despliegue a VPS con scripts PowerShell/Bash, Nginx como reverse proxy esperado, certificados HTTPS wildcard, servicio opcional de voz IA streaming con Piper TTS y herramientas de diagnostico del backend.
 
 ## Modulos principales
 
@@ -64,6 +64,8 @@ La IA empresarial puede responder preguntas de operacion, analizar adjuntos, pro
 
 - Chat IA empresarial con contexto de `empresa_id`, restricciones de modelo y uso, y soporte para adjuntos/fotos en consultas avanzadas.
 - Chat IA global para super administrador con consolidacion multinivel de datos entre empresas, vision holistica y capacidades de diagnostico de sistema.
+- Contexto IA por auditoria en tiempo real: GPT-5.4 mini o el modelo asociado recibe actividad reciente, busqueda profunda por intencion y resultados de consultas DB seguras ya resueltas por el backend.
+- Voz IA streaming: servicio abierto FastAPI + Piper TTS desplegable en VPS, desactivado por defecto y configurable desde Super Administrador; el chat usa proxy backend para no exponer la URL interna y degrada a voz del navegador/texto si el servicio no responde.
 - Descubrimiento de musica YouTube asistido por IA en la tarjeta de estaciones: sugiere playlists y videos actuales, permite cargar enlaces validos y ofrece busquedas inteligentes cuando no hay fuente directa.
 - Integracion profesional con OpenAI/GPT gestionando modelo preferido, limites diarios, registro de consumo y configuracion centralizada desde super administrador.
 
@@ -75,7 +77,8 @@ El sistema incluye soporte remoto empresarial con RustDesk, backups por empresa,
 
 El backend registra rutas en `backend/main.go`, delega reglas HTTP a `backend/handlers`, persistencia a `backend/db` y seguridad/utilidades a `backend/utils`, `backend/auth`, `backend/secure` y `backend/vpssecurity`. La interfaz vive en `web/`, con paginas publicas, subpaginas super y subpaginas empresariales embebidas en iframes. La documentacion tecnica vigente vive en `documentos/`, incluyendo descripcion del proyecto, modulos, base de datos, permisos, diagramas, runbooks y trazabilidad historica.
 
-## Seguridad y trazabilidad
+## Seguridad, trazabilidad e IA contextual
 
-El proyecto no debe registrar secretos en texto plano. Credenciales de pago, correo, IA, OnlyOffice, Nextcloud y DIAN se manejan por entorno o configuracion cifrada/referenciada. Toda operacion relevante mantiene `empresa_id`, usuario, estado, observaciones y fechas. Los cambios funcionales deben actualizar documentacion y dejar registro en `documentos/historial_de_cambios`.
+El proyecto no debe registrar secretos en texto plano. Credenciales de pago, correo, IA, OnlyOffice, Nextcloud y DIAN se manejan por entorno o configuracion cifrada/referenciada. Toda operacion relevante mantiene `empresa_id`, usuario, estado, observaciones y fechas. Desde 2026-04-29 la IA empresarial y global obtiene una ventana reciente de `empresa_auditoria_eventos` como contexto operativo en tiempo real: usuarios, modulos, endpoints, resultados y errores. La integracion es centralizada en auditoria y prompt, no en cada modulo; si la auditoria o la IA fallan, el servidor conserva operacion normal con contexto degradado.
 
+La auditoria tambien alimenta una capa de contexto profundo para GPT-5.4 mini/modelo activo: detecta preguntas sobre usuarios, modulos, errores, ventas, finanzas, inventario o clientes; busca eventos auditados relevantes; ejecuta consultas permitidas por whitelist y `empresa_id`; y registra cada consulta IA en `empresa_auditoria_ia_consultas` con filtros, resumen y cantidad de eventos usados. Adicionalmente, el chat empresarial tiene por defecto acceso de lectura total controlada a la base operativa de la empresa: el backend lista tablas con `empresa_id`, consulta filas recientes/relevantes con SELECT parametrizado, omite columnas sensibles y entrega resultados ya resueltos al prompt. Super administrador puede activar/desactivar esta capacidad y ajustar limites de tablas/filas desde la configuracion logica del chat IA. El modelo no recibe credenciales ni permiso para ejecutar SQL libre. Los cambios funcionales deben actualizar documentacion y dejar registro en `documentos/historial_de_cambios`.

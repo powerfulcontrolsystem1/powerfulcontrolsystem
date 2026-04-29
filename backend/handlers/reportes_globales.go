@@ -10,6 +10,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 type superReportesDatasetEmpresaItem struct {
@@ -77,7 +78,7 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		empresas, err := dbpkg.GetEmpresasByUsuarioCreador(dbSuper, adminEmail)
+		empresas, err := superReportesEmpresasPermitidas(dbSuper, adminEmail)
 		if err != nil {
 			http.Error(w, "no se pudieron cargar las empresas del administrador", http.StatusInternalServerError)
 			return
@@ -276,6 +277,13 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func superReportesEmpresasPermitidas(dbSuper *sql.DB, adminEmail string) ([]dbpkg.Empresa, error) {
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		return dbpkg.GetEmpresas(dbSuper)
+	}
+	return dbpkg.GetEmpresasByUsuarioCreador(dbSuper, adminEmail)
 }
 
 func superReportesResolveEmpresasSeleccionadas(empresas []dbpkg.Empresa, r *http.Request) ([]dbpkg.Empresa, error) {

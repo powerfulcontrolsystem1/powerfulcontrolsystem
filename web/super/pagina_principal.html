@@ -14,7 +14,7 @@
         try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
         if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
         t = String(t || "").trim().toLowerCase();
-        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-protect": 1, light: 1, "light-rose": 1, "light-gold": 1 };
         if (!ok[t]) t = "dark";
         var root = document.documentElement;
         root.setAttribute("data-theme", t);
@@ -73,12 +73,13 @@
       </div>
       <div class="form-row">
         <div class="form-col">
-          <p class="form-help">Las tarjetas tipo banner fueron removidas del index. Ahora solo se muestran las tarjetas principales y, debajo, el chat público centrado.</p>
+          <p class="form-help"><strong>Tipos de tarjeta:</strong> por defecto se usa "tarjeta informacion mas foto". Si eliges "tarjeta banner", el index mostrara solamente la imagen ocupando toda la tarjeta.</p>
+          <p class="form-help"><strong>Medidas recomendadas para banner:</strong> relacion 4:3. Pequena: 640 x 480 px, mediana: 800 x 600 px, grande: 1000 x 750 px. Tambien puedes usar una imagen un poco mas pequena con la misma proporcion para evitar recortes.</p>
         </div>
       </div>
       <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
-      <!-- Banners removidos del index: ya no se configuran aquí. -->
+      <!-- El tipo banner se configura por tarjeta desde el editor. -->
       <div class="form-actions pp-bottom-actions">
         <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
       </div>
@@ -110,7 +111,7 @@
       var indexTextSizeEl = document.getElementById('ppIndexTextSize');
       var landingCardSizeEl = document.getElementById('ppLandingCardSize');
       var landingTextSizeEl = document.getElementById('ppLandingTextSize');
-      // Banners removidos del index.
+      // El tipo banner se configura por tarjeta desde el editor.
 
       function setCantidadLoading(isLoading) {
         cantidadEl.disabled = !!isLoading;
@@ -144,6 +145,7 @@
       function makeDefaultCard(index) {
         var image = state.images[index % (state.images.length || 1)] || '/img/punto_venta.png';
         return {
+          tipo_tarjeta: 'info_foto',
           titulo: 'Tarjeta ' + (index + 1),
           descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
           imagen_url: image,
@@ -206,6 +208,25 @@
         }).join('');
       }
 
+      function normalizeCardType(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'banner' || value === 'baner' || value === 'tarjeta_banner' || value === 'tarjeta_baner') {
+          return 'banner';
+        }
+        return 'info_foto';
+      }
+
+      function cardTypeOptionsHTML(selected) {
+        var current = normalizeCardType(selected);
+        var options = [
+          { value: 'info_foto', label: 'Tarjeta informacion mas foto' },
+          { value: 'banner', label: 'Tarjeta banner' }
+        ];
+        return options.map(function (option) {
+          return '<option value="' + option.value + '"' + (option.value === current ? ' selected' : '') + '>' + option.label + '</option>';
+        }).join('');
+      }
+
       function renderStyleControls() {
         var styles = normalizeVisualSettings(state.config.estilos);
         state.config.estilos = styles;
@@ -235,7 +256,7 @@
         state.config.tarjetas = cards;
       }
 
-      // (se eliminó la lógica de banners)
+      // Los banners usan la imagen principal de cada tarjeta.
 
       function imageOptionsHTML(selected) {
         var current = String(selected || '').trim();
@@ -260,6 +281,7 @@
         state.config.tarjetas.forEach(function (card, idx) {
           var image = String(card.imagen_url || '').trim();
           var secondaryImage = String(card.imagen_secundaria_url || '').trim();
+          var cardType = normalizeCardType(card.tipo_tarjeta);
           var title = String(card.titulo || '').trim();
           var description = String(card.descripcion || '').trim();
           var link = String(card.enlace || '').trim();
@@ -270,38 +292,47 @@
           var detailParagraphTwo = String(card.detalle_parrafo_dos || '').trim();
           var detailPoints = Array.isArray(card.detalle_puntos) ? card.detalle_puntos.join('\n') : '';
 
-          html += '<article class="card pp-card-item" data-index="' + idx + '">';
+          html += '<article class="card pp-card-item" data-index="' + idx + '" data-card-type="' + escapeHTML(cardType) + '">';
           html += '<h3>Tarjeta ' + (idx + 1) + '</h3>';
           html += '<div class="form-row">';
           html += '  <div class="form-col">';
-          html += '    <label class="form-label" for="ppImage' + idx + '">Imagen (web/img)</label>';
-          html += '    <select id="ppImage' + idx + '" class="form-input pp-image-select" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '    <label class="form-label" for="ppCardType' + idx + '">Tipo de tarjeta</label>';
+          html += '    <select id="ppCardType' + idx + '" class="form-input pp-field pp-card-type-select" data-field="tipo_tarjeta">' + cardTypeOptionsHTML(cardType) + '</select>';
+          html += '    <p class="form-help">Banner usa solo la imagen principal y la muestra a todo el tamano de la tarjeta del index.</p>';
           html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
           html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppImage' + idx + '">Imagen principal / banner (web/img)</label>';
+          html += '    <select id="ppImage' + idx + '" class="form-input pp-image-select" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '    <input class="form-input pp-image-upload" data-field="imagen_url" type="file" accept="image/png,image/jpeg,image/webp,image/gif">';
+          html += '    <p class="form-help">Para tarjeta banner, usa una imagen 4:3. Recomendado: 800 x 600 px en tamano mediano.</p>';
+          html += '  </div>';
+          html += '  <div class="form-col pp-info-only">';
           html += '    <label class="form-label" for="ppSecondaryImage' + idx + '">Imagen pequeña (derecha del logo)</label>';
           html += '    <select id="ppSecondaryImage' + idx + '" class="form-input pp-image-select pp-field" data-field="imagen_secundaria_url">' + imageOptionsHTML(secondaryImage) + '</select>';
           html += '    <p class="form-help">Se muestra como imagen pequeña al lado del icono principal en el index.</p>';
           html += '  </div>';
-          html += '  <div class="form-col">';
+          html += '  <div class="form-col pp-info-only">';
           html += '    <label class="form-label" for="ppLink' + idx + '">Destino de Probar Gratis</label>';
           html += '    <input id="ppLink' + idx + '" class="form-input pp-field" data-field="enlace" type="text" value="' + escapeHTML(link) + '" placeholder="/login.html">';
           html += '  </div>';
           html += '</div>';
-          html += '<div class="form-row">';
+          html += '<div class="form-row pp-info-only">';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppYoutube' + idx + '">Video de YouTube (opcional)</label>';
           html += '    <input id="ppYoutube' + idx + '" class="form-input pp-field" data-field="youtube_url" type="url" value="' + escapeHTML(youtubeURL) + '" placeholder="https://www.youtube.com/watch?v=...">';
           html += '    <p class="form-help">Pega un enlace de YouTube o youtu.be. La landing pública mostrará el video embebido en la tarjeta seleccionada.</p>';
           html += '  </div>';
           html += '</div>';
-          html += '<div class="form-row">';
+          html += '<div class="form-row pp-info-only">';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppTitle' + idx + '">Titulo</label>';
           html += '    <input id="ppTitle' + idx + '" class="form-input pp-field" data-field="titulo" type="text" value="' + escapeHTML(title) + '" maxlength="120">';
           html += '  </div>';
           html += '</div>';
           html += '<div class="form-row">';
-          html += '  <div class="form-col">';
+          html += '  <div class="form-col pp-info-only">';
           html += '    <label class="form-label" for="ppDesc' + idx + '">Descripcion</label>';
           html += '    <textarea id="ppDesc' + idx + '" class="form-textarea pp-field" data-field="descripcion" maxlength="360">' + escapeHTML(description) + '</textarea>';
           html += '  </div>';
@@ -312,7 +343,7 @@
           html += '    </div>';
           html += '  </div>';
           html += '</div>';
-          html += '<div class="form-row">';
+          html += '<div class="form-row pp-info-only">';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppDetailTag' + idx + '">Etiqueta en landing</label>';
           html += '    <input id="ppDetailTag' + idx + '" class="form-input pp-field" data-field="detalle_etiqueta" type="text" value="' + escapeHTML(detailTag) + '" maxlength="80">';
@@ -322,7 +353,7 @@
           html += '    <input id="ppDetailHeadline' + idx + '" class="form-input pp-field" data-field="detalle_titular" type="text" value="' + escapeHTML(detailHeadline) + '" maxlength="180">';
           html += '  </div>';
           html += '</div>';
-          html += '<div class="form-row">';
+          html += '<div class="form-row pp-info-only">';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppDetailParagraphOne' + idx + '">Parrafo 1 de landing</label>';
           html += '    <textarea id="ppDetailParagraphOne' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_uno" maxlength="900">' + escapeHTML(detailParagraphOne) + '</textarea>';
@@ -332,7 +363,7 @@
           html += '    <textarea id="ppDetailParagraphTwo' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_dos" maxlength="900">' + escapeHTML(detailParagraphTwo) + '</textarea>';
           html += '  </div>';
           html += '</div>';
-          html += '<div class="form-row">';
+          html += '<div class="form-row pp-info-only">';
           html += '  <div class="form-col">';
           html += '    <label class="form-label" for="ppDetailPoints' + idx + '">Capacidades clave (una por linea)</label>';
           html += '    <textarea id="ppDetailPoints' + idx + '" class="form-textarea pp-field" data-field="detalle_puntos" maxlength="1200">' + escapeHTML(detailPoints) + '</textarea>';
@@ -375,6 +406,23 @@
 
       cardsEditorEl.addEventListener('change', function (event) {
         var target = event.target;
+        if (target.classList.contains('pp-image-upload')) {
+          uploadImageForCard(target);
+          return;
+        }
+        if (target.classList.contains('pp-field') && !target.classList.contains('pp-image-select')) {
+          var fieldIdx = getCardIndexFromElement(target);
+          if (fieldIdx < 0 || fieldIdx >= state.config.tarjetas.length) return;
+          var fieldName = target.getAttribute('data-field');
+          if (!fieldName) return;
+          state.config.tarjetas[fieldIdx][fieldName] = fieldName === 'tipo_tarjeta'
+            ? normalizeCardType(target.value)
+            : target.value;
+          if (fieldName === 'tipo_tarjeta') {
+            renderCardsEditor();
+          }
+          return;
+        }
         if (!target.classList.contains('pp-image-select')) return;
         var idx = getCardIndexFromElement(target);
         if (idx < 0 || idx >= state.config.tarjetas.length) return;
@@ -389,6 +437,33 @@
           }
         }
       });
+
+      async function uploadImageForCard(inputEl) {
+        var idx = getCardIndexFromElement(inputEl);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        var file = inputEl.files && inputEl.files[0] ? inputEl.files[0] : null;
+        if (!file) return;
+        var form = new FormData();
+        form.append('imagen', file);
+        setMsg('Subiendo imagen...', '');
+        try {
+          var data = await requestJSON('/super/api/pagina_principal?action=upload_image', {
+            method: 'POST',
+            body: form
+          });
+          var url = String((data && data.url) || '').trim();
+          if (!url) throw new Error('El servidor no devolvio URL de imagen.');
+          if (state.images.indexOf(url) < 0) {
+            state.images.push(url);
+            state.images.sort();
+          }
+          state.config.tarjetas[idx].imagen_url = url;
+          renderCardsEditor();
+          setMsg('Imagen cargada y asignada a la tarjeta ' + (idx + 1) + '.', 'success');
+        } catch (err) {
+          setMsg('No se pudo subir la imagen: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
 
       async function requestJSON(url, options) {
         var resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
@@ -417,7 +492,6 @@
         var data = await requestJSON('/super/api/pagina_principal?action=config');
         var cfg = data && data.config ? data.config : {};
         state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
-        state.config.banners = [];
         var persistedCount = normalizeCount(cfg.cantidad || 0);
         if (state.config.tarjetas.length > persistedCount) {
           persistedCount = normalizeCount(state.config.tarjetas.length);
@@ -434,6 +508,7 @@
           estilos: normalizeVisualSettings(state.config.estilos),
           tarjetas: state.config.tarjetas.map(function (card) {
             return {
+              tipo_tarjeta: normalizeCardType(card.tipo_tarjeta),
               titulo: String(card.titulo || '').trim(),
               descripcion: String(card.descripcion || '').trim(),
               imagen_url: String(card.imagen_url || '').trim(),
@@ -461,7 +536,7 @@
         });
       });
 
-      // (listeners de banners removidos)
+      // Los cambios de tipo se atienden en el listener general del editor.
 
       async function saveConfig() {
         var payload = buildPayloadFromState();

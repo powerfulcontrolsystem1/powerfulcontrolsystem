@@ -476,3 +476,13 @@ miusuario ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rustdesk-hbbs, /usr/bin/s
 
 ### 10.3 Cliente y Modulo Empresa
 El modulo de 'Soporte Remoto' del administrador de empresa en el ERP proveera instrucciones para descargar el cliente RustDesk e instruira introducir la IP del servidor ID (hbbs/hbbr) y opcionalmente su Clave (Key), garantizando conexiones privadas y directas desde el portal hacia el equipo del cliente.
+# Servicio opcional de voz IA streaming
+
+El chat IA puede usar un microservicio abierto de voz natural en el VPS. Esta capa es opcional y esta desactivada por defecto desde Super Administrador.
+
+1. Instalar o copiar el proyecto en el VPS.
+2. Instalar Piper TTS y ubicar el modelo de voz en `/opt/piper/models/`.
+3. Ejecutar `scripts/install_voice_stream_server_vps.sh` como root para crear el entorno Python y el servicio systemd `pcs-voice-stream`.
+4. En Super Administrador > Voz IA streaming, configurar `http://127.0.0.1:8097`, activar el servicio y usar "Probar servicio".
+
+Si el servicio no responde, el backend devuelve degradacion controlada y el chat conserva texto/voz del navegador.

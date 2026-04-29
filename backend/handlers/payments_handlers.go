@@ -3466,7 +3466,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		enabledRaw, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.enabled")
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "failed to read epayco.enabled: "+err.Error(), http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to read epayco.enabled: " + err.Error(),
+				"provider": "epayco",
+			})
 			return
 		}
 		if !parseBoolConfigValue(enabledRaw) {
@@ -3481,13 +3486,23 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		publicKey, _, privateKey, err := resolveEpaycoCredentials(dbSuper)
 		if err != nil {
-			http.Error(w, "failed to read Epayco credentials: "+err.Error(), http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to read Epayco credentials: " + err.Error(),
+				"provider": "epayco",
+			})
 			return
 		}
 		publicKey = strings.TrimSpace(publicKey)
 		privateKey = strings.TrimSpace(privateKey)
 		if publicKey == "" {
-			http.Error(w, "epayco.public_key no configurada", http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "epayco.public_key no configurada",
+				"provider": "epayco",
+			})
 			return
 		}
 
@@ -3517,7 +3532,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
 		if err != nil {
-			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to resolve licencia summary: " + err.Error(),
+				"provider": "epayco",
+			})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -3590,12 +3610,22 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		apifyToken, loginRaw, err := fetchEpaycoApifyToken(publicKey, privateKey)
 		if err != nil {
-			http.Error(w, "failed to authenticate with Epayco Smart Checkout: "+err.Error(), http.StatusBadGateway)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to authenticate with Epayco Smart Checkout: " + err.Error(),
+				"provider": "epayco",
+			})
 			return
 		}
 		sessionID, sessionRaw, err := createEpaycoSmartCheckoutSession(apifyToken, sessionPayload)
 		if err != nil {
-			http.Error(w, "failed to create Epayco Smart Checkout session: "+err.Error(), http.StatusBadGateway)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to create Epayco Smart Checkout session: " + err.Error(),
+				"provider": "epayco",
+			})
 			return
 		}
 

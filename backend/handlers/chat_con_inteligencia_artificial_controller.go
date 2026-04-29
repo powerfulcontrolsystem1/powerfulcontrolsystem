@@ -197,6 +197,28 @@ func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController
 	}
 }
 
+func (c *EmpresaAIChatController) contextoPreguntaOptions(modelID string) dbpkg.EmpresaAIContextoPreguntaOptions {
+	enabled, _, _, err := getChatIAEmpresaDBQueryEnabled(c.dbSuper)
+	if err != nil {
+		enabled = defaultChatIAEmpresaDBQueryEnabled
+	}
+	maxTables, _, _, err := getChatIAEmpresaDBQueryMaxTables(c.dbSuper)
+	if err != nil {
+		maxTables = defaultChatIAEmpresaDBQueryMaxTables
+	}
+	rows, _, _, err := getChatIAEmpresaDBQueryRows(c.dbSuper)
+	if err != nil {
+		rows = defaultChatIAEmpresaDBQueryRows
+	}
+	return dbpkg.EmpresaAIContextoPreguntaOptions{
+		Modelo:            modelID,
+		DBQueryEnabled:    enabled,
+		DBQueryEnabledSet: true,
+		DBQueryMaxTables:  int(maxTables),
+		DBQueryRows:       int(rows),
+	}
+}
+
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
@@ -562,7 +584,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptions(model.ID))
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -782,7 +804,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, empresaID, pregunta, googleAccount, paginaContexto)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, empresaID, pregunta, googleAccount, paginaContexto, c.contextoPreguntaOptions(model.ID))
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -944,7 +966,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestion(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto)
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptions(model.ID))
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -1379,6 +1401,9 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"Si la operacion es riesgosa o destructiva, pregunta confirmacion adicional.\n\n" +
 		assistantInstruction + "\n\n" +
 		"Si existe la seccion CONSULTAS_SEGURAS_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
+		"Si existe AUDITORIA_TIEMPO_REAL, AUDITORIA_BUSQUEDA_PROFUNDA o AUDITORIA_CONSULTAS_DB_SEGURAS, usalas como fuente principal para entender actividad reciente, buscar eventos auditados y cruzar datos permitidos de la base. " +
+		"Si existe BASE_DATOS_EMPRESA_LECTURA_TOTAL o CONSULTAS_DB_LECTURA_TOTAL_RESUELTAS, tratalas como acceso de lectura a la base de datos de esa empresa: puedes responder con esos datos ya consultados por el servidor, pedir mas filtros o proponer una consulta select via /api/empresa/db_admin si hace falta. " +
+		"Estas consultas ya fueron ejecutadas por el servidor con whitelist y empresa_id; no inventes SQL ni pidas credenciales o acceso directo a tablas. Si auditoria o lectura DB indican no_disponible o error_lectura, dilo sin bloquear la respuesta. " +
 		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
 }
 

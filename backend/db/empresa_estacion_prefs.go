@@ -186,6 +186,41 @@ func UpsertEmpresaEstacionPref(dbConn *sql.DB, p EmpresaEstacionPref) (int64, er
 	return id, nil
 }
 
+// DeleteEmpresaEstacionPrefsByKeys elimina preferencias puntuales de una empresa.
+func DeleteEmpresaEstacionPrefsByKeys(dbConn *sql.DB, empresaID int64, estacionID int64, claves []string) (int64, error) {
+	if dbConn == nil {
+		return 0, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return 0, errors.New("empresa_id invalido")
+	}
+	if estacionID < 0 {
+		estacionID = 0
+	}
+	clean := make([]string, 0, len(claves))
+	for _, clave := range claves {
+		clave = strings.TrimSpace(clave)
+		if clave != "" {
+			clean = append(clean, clave)
+		}
+	}
+	if len(clean) == 0 {
+		return 0, nil
+	}
+	placeholders := make([]string, 0, len(clean))
+	args := []interface{}{empresaID, estacionID}
+	for _, clave := range clean {
+		placeholders = append(placeholders, "?")
+		args = append(args, clave)
+	}
+	res, err := execSQLCompat(dbConn, "DELETE FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave IN ("+strings.Join(placeholders, ",")+")", args...)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
+
 func parseEmpresaEstacionesConfig(raw string) (*empresaEstacionesConfig, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {

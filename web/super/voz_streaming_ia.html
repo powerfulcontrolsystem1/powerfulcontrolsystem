@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Voz IA streaming</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .voice-status-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:14px 0; }
+    .voice-status-item { border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); padding:12px; }
+    .voice-status-item strong { display:block; color:var(--text); margin-bottom:4px; }
+    .voice-status-item span { color:var(--muted); font-size:.92rem; }
+    .voice-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .voice-message-error { color:#fca5a5; }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Voz IA streaming</h1>
+      <p class="form-help">Servicio abierto de voz natural para conversar con la IA. El backend usa este servidor solo cuando esta activo; si falla, el chat sigue funcionando con texto y respaldo del navegador.</p>
+    </div>
+
+    <section class="card form advanced-card" data-brand="ai">
+      <h2>Servidor de voz natural</h2>
+      <p class="form-help">Motor recomendado: Piper TTS en el VPS. Configura la URL interna del servicio y controla su disponibilidad global desde aqui.</p>
+
+      <div class="voice-status-grid">
+        <div class="voice-status-item">
+          <strong>Configuracion</strong>
+          <span id="voiceConfigState">Cargando...</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Servicio VPS</strong>
+          <span id="voiceServiceState">Sin comprobar</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Fallback</strong>
+          <span>Si el servicio falla, el chat usa voz del navegador o continua en texto.</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Credencial</strong>
+          <span id="voiceAuthState">Sin comprobar</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar / desactivar</label>
+          <label class="mode-switch-row" for="voiceStreamEnabled">
+            <span class="mode-label">Off</span>
+            <input id="voiceStreamEnabled" type="checkbox" role="switch" aria-label="Activar servidor de voz IA">
+            <span class="mode-label">On</span>
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamProvider">Proveedor abierto</label>
+          <input id="voiceStreamProvider" class="form-input" type="text" value="piper" placeholder="piper">
+          <div class="form-help">Piper TTS convierte texto a voz natural sin depender de servicios cerrados.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamBaseURL">URL del servidor VPS</label>
+          <input id="voiceStreamBaseURL" class="form-input" type="url" placeholder="http://127.0.0.1:8097">
+          <div class="form-help">Usa una URL interna si backend y voz corren en el mismo VPS. Si es remoto, usa HTTPS y firewall.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamVoice">Voz / idioma</label>
+          <input id="voiceStreamVoice" class="form-input" type="text" placeholder="es-CO">
+          <div class="form-help">La voz real depende del modelo Piper configurado en el servidor.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamTimeoutMS">Timeout del proxy (ms)</label>
+          <input id="voiceStreamTimeoutMS" class="form-input" type="number" min="1000" max="60000" step="500" value="12000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Comandos VPS</label>
+          <div class="form-help">Instalador incluido: <code>scripts/install_voice_stream_server_vps.sh</code>. Servicio systemd: <code>pcs-voice-stream</code>.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamAuthHeader">Header de autenticacion</label>
+          <input id="voiceStreamAuthHeader" class="form-input" type="text" value="X-PCS-Voice-Token" placeholder="X-PCS-Voice-Token">
+          <div class="form-help">Debe coincidir con <code>VOICE_STREAM_AUTH_HEADER</code> del servicio VPS.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamAuthToken">Token secreto</label>
+          <input id="voiceStreamAuthToken" class="form-input" type="password" placeholder="********">
+          <label class="form-help"><input id="voiceStreamGenerateToken" type="checkbox"> Generar y registrar token nuevo al guardar.</label>
+          <div class="form-help">Se guarda cifrado en la base de datos de super administrador. Si no escribes nada, se conserva el token actual.</div>
+        </div>
+      </div>
+
+      <div class="voice-actions">
+        <button id="saveVoiceStreamConfig" type="button" class="btn primary">Guardar</button>
+        <button id="activateTestVoiceStreamConfig" type="button" class="btn">Activar y probar</button>
+        <button id="testVoiceStreamConfig" type="button" class="btn secondary">Probar servicio</button>
+        <span id="voiceStreamMessage" class="form-help"></span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var enabled = document.getElementById('voiceStreamEnabled');
+      var baseURL = document.getElementById('voiceStreamBaseURL');
+      var provider = document.getElementById('voiceStreamProvider');
+      var voice = document.getElementById('voiceStreamVoice');
+      var timeoutMS = document.getElementById('voiceStreamTimeoutMS');
+      var authHeader = document.getElementById('voiceStreamAuthHeader');
+      var authToken = document.getElementById('voiceStreamAuthToken');
+      var generateToken = document.getElementById('voiceStreamGenerateToken');
+      var msg = document.getElementById('voiceStreamMessage');
+      var configState = document.getElementById('voiceConfigState');
+      var serviceState = document.getElementById('voiceServiceState');
+      var authState = document.getElementById('voiceAuthState');
+
+      function setMessage(text, error) {
+        msg.textContent = text || '';
+        msg.classList.toggle('voice-message-error', !!error);
+      }
+
+      function applyConfig(config) {
+        enabled.checked = !!config.enabled;
+        baseURL.value = config.base_url || '';
+        provider.value = config.provider || 'piper';
+        voice.value = config.voice || 'es-CO';
+        timeoutMS.value = config.timeout_ms || 12000;
+        authHeader.value = config.auth_header || 'X-PCS-Voice-Token';
+        authToken.value = '';
+        generateToken.checked = false;
+        configState.textContent = config.enabled ? 'Activo en backend' : 'Desactivado';
+        authState.textContent = config.auth_configured
+          ? ('Token registrado' + (config.auth_encrypted ? ' y cifrado' : ' sin cifrar'))
+          : 'Token no registrado';
+        if (config.encryption_available === false) {
+          authState.textContent = 'Cifrado no disponible: configura CONFIG_ENC_KEY';
+        }
+      }
+
+      async function loadConfig() {
+        setMessage('Cargando configuracion...');
+        try {
+          var res = await fetch('/super/api/config/voice_stream', { credentials: 'same-origin' });
+          var data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || res.status);
+          applyConfig(data.config || {});
+          setMessage('');
+        } catch (err) {
+          setMessage('No se pudo cargar: ' + err.message, true);
+        }
+      }
+
+      async function saveConfig() {
+        setMessage('Guardando...');
+        try {
+          var payload = {
+            enabled: enabled.checked,
+            base_url: baseURL.value.trim(),
+            provider: provider.value.trim() || 'piper',
+            voice: voice.value.trim() || 'es-CO',
+            timeout_ms: Number(timeoutMS.value || 12000),
+            auth_header: authHeader.value.trim() || 'X-PCS-Voice-Token'
+          };
+          var tokenValue = authToken.value.trim();
+          if (tokenValue) payload.auth_token = tokenValue;
+          if (generateToken.checked) payload.generate_auth_token = true;
+          var res = await fetch('/super/api/config/voice_stream', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (!res.ok) throw new Error(text || res.status);
+          applyConfig(data.config || payload);
+          setMessage('Configuracion guardada.');
+        } catch (err) {
+          setMessage('No se pudo guardar: ' + err.message, true);
+        }
+      }
+
+      async function testConfig() {
+        setMessage('Probando servicio...');
+        serviceState.textContent = 'Comprobando...';
+        try {
+          var res = await fetch('/super/api/config/voice_stream?action=test', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (!res.ok || !data.ok) throw new Error(data.error || data.status || text || res.status);
+          serviceState.textContent = 'Disponible (' + data.status + ')';
+          setMessage('Servicio disponible.');
+        } catch (err) {
+          serviceState.textContent = 'No disponible';
+          setMessage('Prueba fallida: ' + err.message, true);
+        }
+      }
+
+      async function activateAndTestConfig() {
+        setMessage('Activando y registrando credencial...');
+        serviceState.textContent = 'Comprobando...';
+        try {
+          var res = await fetch('/super/api/config/voice_stream?action=activate_test', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (data.config) applyConfig(data.config);
+          if (!res.ok || !data.ok) {
+            var status = data.status || {};
+            throw new Error(status.error || status.status || text || res.status);
+          }
+          serviceState.textContent = 'Disponible (' + ((data.status && data.status.status) || 'OK') + ')';
+          setMessage('Servicio activo, credencial registrada y VPS disponible.');
+        } catch (err) {
+          serviceState.textContent = 'No disponible';
+          setMessage('Activado/configurado, pero la prueba fallo: ' + err.message, true);
+        }
+      }
+
+      document.getElementById('saveVoiceStreamConfig').addEventListener('click', saveConfig);
+      document.getElementById('activateTestVoiceStreamConfig').addEventListener('click', activateAndTestConfig);
+      document.getElementById('testVoiceStreamConfig').addEventListener('click', testConfig);
+      loadConfig();
+    })();
+  </script>
+</body>
+</html>

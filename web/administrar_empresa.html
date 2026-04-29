@@ -12,48 +12,84 @@
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2 id="empresaTitleMenu">Administrar Empresa</h2>
       <p id="empresaNameMenu" class="empresa-name-menu"></p>
-      <ul class="nav" id="adminSidebarNav">
-        <li><a id="linkChatTareas" href="/administrar_empresa/chat_tareas_agenda.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
-        <li><a id="linkSoporteRemoto" href="/administrar_empresa/soporte_remoto.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Soporte remoto</a></li>
-          <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
+      <ul class="nav admin-nav-grouped" id="adminSidebarNav">
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Trabajo colaborativo</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkChatTareas" href="/administrar_empresa/chat_tareas_agenda.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkProductos" href="/administrar_empresa/administrar_productos_menu.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Productos</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Operacion y ventas</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
+            <li><a id="linkReservasHotel" href="/administrar_empresa/reservas_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reservas</a></li>
+            <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
+            <li><a id="linkVentaPublica" href="/administrar_empresa/venta_publica.html" target="contentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Venta publica</a></li>
+            <li><a id="linkRedSocialComercial" href="/administrar_empresa/publicar_red_social.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">Red social empresarial</a></li>
+            <li><a id="linkCodigosDescuento" href="/administrar_empresa/codigos_de_descuento.html" target="contentFrame"><img class="icon" src="/img/gift-card.svg" alt="">Codigos de descuento</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkCompras" href="/administrar_empresa/compras_menu.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Compras</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Inventario y compras</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkProductos" href="/administrar_empresa/administrar_productos_menu.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Productos</a></li>
+            <li><a id="linkCompras" href="/administrar_empresa/compras_menu.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Compras</a></li>
+            <li><a id="linkGeneradorCodigosBarras" href="/administrar_empresa/generador_codigos_barras.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Generador codigos de barras</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkConfiguracion" href="/administrar_empresa/configuracion_menu.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Finanzas y cumplimiento</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Finanzas</a></li>
+            <li><a id="linkFacturacionElectronica" href="/administrar_empresa/facturacion_electronica_menu.html" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Facturacion electronica</a></li>
+            <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="contentFrame"><img class="icon" src="/img/taxes.svg" alt="">Impuestos</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkFacturacionElectronica" href="/administrar_empresa/facturacion_electronica_menu.html" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Facturación electrónica</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Personas y activos</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkUsuarios" href="/administrar_empresa/administrar_usuarios.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Usuarios</a></li>
+            <li><a id="linkPortalUsuarios" href="/login_usuario.html"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
+            <li><a id="linkAsistenciaEmpleados" href="/administrar_empresa/asistencia_empleados.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencia de empleados</a></li>
+            <li><a id="linkVehiculosRegistro" href="/administrar_empresa/vehiculos_registro.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Registro de vehiculos</a></li>
+            <li><a id="linkUbicacionGPS" href="/administrar_empresa/ubicacion_gps.html" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Ubicacion GPS</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Finanzas</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Analisis y control</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkReportes" href="/administrar_empresa/reportes_menu.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Reportes</a></li>
+            <li><a id="linkAuditoria" href="/administrar_empresa/auditoria.html" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoria</a></li>
+            <li><a id="linkBackups" href="/administrar_empresa/backups.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Backups empresariales</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkBackups" href="/administrar_empresa/backups.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Backups empresariales</a></li>
-          <li><a id="linkDocumentosOnlyOffice" href="/administrar_empresa/documentos_onlyoffice.html" target="contentFrame"><img class="icon" src="/img/excel.svg" alt="">OnlyOffice</a></li>
-          <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="contentFrame"><img class="icon" src="/img/taxes.svg" alt="">Impuestos</a></li>
-          <li><a id="linkNextcloud" href="/administrar_empresa/nextcloud.html" target="contentFrame"><img class="icon" src="/img/google-drive.svg" alt="">Nextcloud</a></li>
-        <li><a id="linkSoporteRemoto" href="/administrar_empresa/soporte_remoto.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Soporte remoto</a></li>
-        <li><a id="linkUbicacionGPS" href="/administrar_empresa/ubicacion_gps.html" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Ubicación GPS</a></li>
-        <li><a id="linkReservasHotel" href="/administrar_empresa/reservas_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reservas</a></li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Documentos, nube y soporte</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkDocumentosOnlyOffice" href="/administrar_empresa/documentos_onlyoffice.html" target="contentFrame"><img class="icon" src="/img/excel.svg" alt="">OnlyOffice</a></li>
+            <li><a id="linkNextcloud" href="/administrar_empresa/nextcloud.html" target="contentFrame"><img class="icon" src="/img/google-drive.svg" alt="">Nextcloud</a></li>
+            <li><a id="linkSoporteRemoto" href="/administrar_empresa/soporte_remoto.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Soporte remoto</a></li>
+          </ul>
+        </li>
 
-        <li><a id="linkReportes" href="/administrar_empresa/reportes_menu.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Reportes</a></li>
-
-        <li><a id="linkUsuarios" href="/administrar_empresa/administrar_usuarios.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Usuarios</a></li>
-        <li><a id="linkPortalUsuarios" href="/login_usuario.html"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
-        <li><a id="linkCodigosDescuento" href="/administrar_empresa/codigos_de_descuento.html" target="contentFrame"><img class="icon" src="/img/gift-card.svg" alt="">Códigos de descuento</a></li>
-        <li><a id="linkGeneradorCodigosBarras" href="/administrar_empresa/generador_codigos_barras.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Generador códigos de barras</a></li>
-        <li><a id="linkAsistenciaEmpleados" href="/administrar_empresa/asistencia_empleados.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencia de empleados</a></li>
-        <li><a id="linkVehiculosRegistro" href="/administrar_empresa/vehiculos_registro.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Registro de vehículos</a></li>
-        <li><a id="linkAuditoria" href="/administrar_empresa/auditoria.html" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoría</a></li>
-        <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
-
-        <li><a id="linkRedSocialComercial" href="/administrar_empresa/publicar_red_social.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">Red social empresarial</a></li>
-        <li><a id="linkVentaPublica" href="/administrar_empresa/venta_publica.html" target="contentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Venta pública</a></li>
-
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Administracion</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracion" href="/administrar_empresa/configuracion_menu.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuracion</a></li>
+          </ul>
+        </li>
         <li><a href="/seleccionar_empresa.html" class="select-company"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Volver a empresas</a></li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="adminSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
-            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
-            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="adminSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
           </button>
         </li>
       </ul>
@@ -89,6 +125,9 @@
         </div>
         <div class="ai-chat-header-actions">
           <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>
+          </button>
           <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
           </button>
@@ -111,6 +150,9 @@
       <form id="aiChatForm" class="ai-chat-form">
         <div class="ai-chat-toolbar-row">
           <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
+            <button id="aiChatNewBtn" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
+            </button>
             <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
             <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
             <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
@@ -128,8 +170,10 @@
               <span>Adjunto</span>
               <div class="ai-chat-attachment-row">
                 <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
-                <button id="aiChatAttachBtn" type="button" class="btn secondary small">Adjuntar</button>
-                <button id="aiChatClearAttachment" type="button" class="btn secondary small is-hidden">Quitar</button>
+                <button id="aiChatAttachBtn" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>
+                </button>
+                <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">×</button>
               </div>
               <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
             </div>
@@ -145,3 +189,4 @@
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
+

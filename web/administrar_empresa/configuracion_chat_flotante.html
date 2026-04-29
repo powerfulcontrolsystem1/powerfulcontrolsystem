@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración chat flotante</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuración del chat flotante</h1>
+      <p class="form-help">Selecciona el modo del asistente IA que usarás en el chat flotante. El modo <strong>normal</strong> conserva la experiencia actual. El modo <strong>ejecutivo</strong> cambia el estilo visual a un avatar corporativo y modifica el tono inicial del asistente.</p>
+    </div>
+
+    <section class="card form advanced-card">
+      <div class="form-row" style="gap:18px;">
+        <div class="form-col" style="flex:1;min-width:260px;">
+          <label class="form-label" for="chatMode">Modo del asistente</label>
+          <select id="chatMode" class="form-input" aria-label="Modo del chat flotante">
+            <option value="normal">Normal</option>
+            <option value="robot">Ejecutivo de empresa</option>
+          </select>
+          <div class="form-help">El modo ejecutivo aplica un estilo animado más corporativo y profesional.</div>
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button id="saveChatModeBtn" class="btn" type="button">Guardar modo</button>
+        <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer normal</button>
+        <a href="/administrar_empresa.html" class="btn secondary" style="text-decoration:none;">Volver al panel</a>
+      </div>
+      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Guardado localmente en el navegador.</div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'pcs_ai_chat_personality';
+      var modeSelect = document.getElementById('chatMode');
+      var saveBtn = document.getElementById('saveChatModeBtn');
+      var resetBtn = document.getElementById('resetChatModeBtn');
+      var status = document.getElementById('chatModeStatus');
+
+      function normalize(value) {
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function loadMode() {
+        var current = 'normal';
+        try {
+          current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
+        } catch (err) {
+          current = 'normal';
+        }
+        if (current !== 'robot') {
+          current = 'normal';
+        }
+        if (modeSelect) {
+          modeSelect.value = current;
+        }
+        updateStatus('Modo actual: ' + (current === 'robot' ? 'Ejecutivo de empresa' : 'Normal') + '.');
+      }
+
+      function saveMode() {
+        if (!modeSelect) return;
+        var value = normalize(modeSelect.value) === 'robot' ? 'robot' : 'normal';
+        try {
+          window.localStorage.setItem(STORAGE_KEY, value);
+          updateStatus('Modo guardado: ' + (value === 'robot' ? 'Ejecutivo de empresa' : 'Normal') + '.');
+        } catch (err) {
+          updateStatus('No se pudo guardar la configuración en el navegador.', true);
+        }
+      }
+
+      function resetMode() {
+        try {
+          window.localStorage.removeItem(STORAGE_KEY);
+          loadMode();
+          updateStatus('Modo restablecido a normal.');
+        } catch (err) {
+          updateStatus('No se pudo restablecer la configuración.', true);
+        }
+      }
+
+      function updateStatus(message, isError) {
+        if (!status) return;
+        status.textContent = String(message || '');
+        status.style.color = isError ? '#b91c1c' : '';
+      }
+
+      if (saveBtn) {
+        saveBtn.addEventListener('click', saveMode);
+      }
+      if (resetBtn) {
+        resetBtn.addEventListener('click', resetMode);
+      }
+      loadMode();
+    })();
+  </script>
+</body>
+</html>

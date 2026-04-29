@@ -391,3 +391,161 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		})
 	}
 }
+
+// PublicPortalCompanyChatStreamHandler expone un chat público contextual con soporte para streaming SSE.
+func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if !isPortalPublicChatEnabled(dbSuper) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+				"ok":    false,
+				"code":  "chat_portal_disabled",
+				"error": "El chat publico del portal esta deshabilitado.",
+			})
+			return
+		}
+		if !isSuperAIEnabled(dbSuper) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+				"ok":    false,
+				"code":  "ai_disabled",
+				"error": "El chat esta temporalmente deshabilitado.",
+			})
+			return
+		}
+
+		var body struct {
+			Pregunta    string                 `json:"pregunta"`
+			Historial   []empresaAIChatMensaje `json:"historial"`
+			Scope       string                 `json:"scope"`
+			EmpresaSlug string                 `json:"empresa_slug"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "JSON invalido", http.StatusBadRequest)
+			return
+		}
+
+		scope := strings.ToLower(strings.TrimSpace(body.Scope))
+		if scope == "" {
+			scope = "portal"
+		}
+		rateScope := "portal"
+		if scope == "venta_publica" {
+			rateScope = "venta_publica:" + dbpkg.NormalizeEmpresaPublicSlug(body.EmpresaSlug)
+		}
+
+		clientID := portalChatGetOrSetClientID(w, r)
+		ip := portalChatClientIP(r)
+		key := rateScope + ":" + clientID + ":" + ip
+		ok, _, retry := portalChatLimiter.allow(key, 10, 5*time.Minute)
+		if !ok {
+			w.Header().Set("Retry-After", strconv.Itoa(retry))
+			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+				"ok":                      false,
+				"code":                    "rate_limited",
+				"error":                   "Has alcanzado el limite de 10 preguntas. Espera unos 5 minutos e intentalo de nuevo, o escribenos por WhatsApp para atencion mas personalizada.",
+				"retry_after_seconds":     retry,
+				"remaining_in_window":     0,
+				"window_seconds":          300,
+				"public_contact_whatsapp": "https://wa.me/573043306506",
+				"public_contact_email":    "powerfulcontrolsystem@gmail.com",
+			})
+			return
+		}
+
+		p := strings.TrimSpace(body.Pregunta)
+		if p == "" {
+			http.Error(w, "pregunta es obligatoria", http.StatusBadRequest)
+			return
+		}
+		if len(p) > 2000 {
+			p = p[:2000]
+		}
+
+		model, okModel := pickPortalChatModel(dbSuper, p, false)
+		if !okModel {
+			writeJSON(w, http.StatusBadGateway, map[string]interface{}{
+				"ok":    false,
+				"code":  "ai_model_missing",
+				"error": "Modelo de IA no disponible.",
+			})
+			return
+		}
+		// Forzar el modelo a gpt-5.4-mini según requerimientos
+		model.UpstreamModel = "gpt-5.4-mini"
+
+		ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 35 * time.Second}}
+		systemPrompt := buildPortalCompanySystemPrompt()
+		if scope == "venta_publica" {
+			empresaID, err := dbpkg.ResolveVentaPublicaEmpresaIDFromAny(dbEmp, 0, body.EmpresaSlug)
+			if err != nil {
+				writeJSON(w, http.StatusNotFound, map[string]interface{}{
+					"ok":    false,
+					"code":  "empresa_publica_no_encontrada",
+					"error": "La tienda publica solicitada no existe.",
+				})
+				return
+			}
+			cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudo cargar la tienda publica", http.StatusInternalServerError)
+				return
+			}
+			pages, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, empresaID, false)
+			if err != nil {
+				http.Error(w, "No se pudieron cargar las paginas publicas", http.StatusInternalServerError)
+				return
+			}
+			items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
+				IncludeInactive: false,
+				Limit:           120,
+				Offset:          0,
+			})
+			if err != nil {
+				http.Error(w, "No se pudo cargar el catalogo publico", http.StatusInternalServerError)
+				return
+			}
+			systemPrompt = buildPortalPublicStoreSystemPrompt(cfg, pages, items)
+		} else {
+			if extra := portalChatLoadExtraInfo(dbSuper); extra != "" {
+				systemPrompt += "\n\n=== Informacion oficial editable (super administrador) ===\n" + extra
+			}
+			if pricing := portalChatBuildLicenciasPriceSummary(dbSuper); pricing != "" {
+				systemPrompt += "\n\n=== Precios y planes desde base de datos ===\n" + pricing
+			}
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.WriteHeader(http.StatusOK)
+
+		h := sanitizeHistorial(body.Historial, 6)
+		answer, err := ctrl.callOpenAIStreamChatCompletions(model, p, h, systemPrompt, func(delta string) {
+			b, _ := json.Marshal(map[string]interface{}{"text": delta})
+			fmt.Fprintf(w, "data: %s\n\n", b)
+			if flusher, okFlusher := w.(http.Flusher); okFlusher {
+				flusher.Flush()
+			}
+		})
+		if err != nil {
+			errJSON, _ := json.Marshal(map[string]interface{}{"error": "No se pudo generar respuesta: " + err.Error()})
+			fmt.Fprintf(w, "data: %s\n\n", errJSON)
+		} else {
+			answer = strings.TrimSpace(answer)
+			if scope != "venta_publica" {
+				closing := "No olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
+				if !strings.Contains(strings.ToLower(answer), strings.ToLower(closing)) {
+					b, _ := json.Marshal(map[string]interface{}{"text": "\n\n" + closing})
+					fmt.Fprintf(w, "data: %s\n\n", b)
+				}
+			}
+		}
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		if flusher, okFlusher := w.(http.Flusher); okFlusher {
+			flusher.Flush()
+		}
+	}
+}

@@ -16,6 +16,18 @@
     .rustdesk-download-item span { display:block; color:var(--muted); font-size:.88rem; }
     .rustdesk-probe-list { margin:0; padding-left:18px; display:grid; gap:8px; }
     .rustdesk-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
+    .advanced-section-finder { position:sticky; top:0; z-index:20; margin:18px 0 22px; padding:12px; border:1px solid var(--content-soft-border); border-radius:8px; background:var(--card-bg); box-shadow:0 10px 24px rgba(15,23,42,.08); }
+    .advanced-section-finder-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .advanced-section-finder-row input { flex:1 1 260px; }
+    .advanced-category-map { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-top:12px; }
+    .advanced-category-map a { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); color:var(--text); text-decoration:none; font-weight:800; min-height:48px; }
+    .advanced-category-map a span { color:var(--muted); font-weight:700; font-size:.82rem; text-align:right; }
+    .advanced-category-map a.is-hidden { display:none; }
+    .advanced-section-empty { display:none; margin-top:10px; color:var(--muted); }
+    .advanced-section-empty.is-visible { display:block; }
+    .advanced-category-heading { margin:28px 0 12px; padding:12px 14px; border-left:4px solid var(--accent); background:var(--content-soft-bg); border-radius:8px; }
+    .advanced-category-heading h2 { margin:0; font-size:1.05rem; }
+    .advanced-category-heading p { margin:4px 0 0; color:var(--muted); }
     @media (max-width: 900px) { .rustdesk-download-item { flex-direction:column; align-items:flex-start; } }
   </style>
 </head>
@@ -27,6 +39,26 @@
       <h1 class="advanced-page-title"><span class="advanced-page-title-icon" aria-hidden="true"></span>Configuración avanzada</h1>
       <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco, Wompi, Gmail y capacidades IA para los portales de clientes.</p>
       <p class="form-help"><strong>Nota:</strong> cada tarjeta se guarda por separado con su botón <strong>Guardar</strong>.</p>
+    </div>
+
+    <nav class="advanced-section-finder" aria-label="Submenu de busqueda de configuracion avanzada">
+      <div class="advanced-section-finder-row">
+        <input id="advancedSectionSearch" class="form-input" type="search" placeholder="Buscar seccion: IA, pagos, Gmail, RustDesk, voz, respaldo...">
+        <button id="advancedSectionClear" class="btn secondary" type="button">Limpiar</button>
+      </div>
+      <div id="advancedCategoryList" class="advanced-category-map">
+        <a href="#categoriaInfraestructura" data-search="infraestructura vps documentos nube rustdesk onlyoffice nextcloud voz">Infraestructura <span>VPS, documentos, nube</span></a>
+        <a href="#categoriaPagos" data-search="pagos facturacion checkout epayco wompi nequi venta digital">Pagos <span>Pasarelas y checkout</span></a>
+        <a href="#categoriaComunicaciones" data-search="comunicaciones gmail correo smtp whatsapp contacto portal">Comunicaciones <span>Correo y contacto</span></a>
+        <a href="#categoriaSeguridad" data-search="seguridad captcha recaptcha respaldo backup mantenimiento continuidad">Seguridad <span>Captcha y respaldo</span></a>
+        <a href="#categoriaIA" data-search="ia inteligencia artificial modelos credenciales chat gpt openai voz">IA <span>Modelos y voz</span></a>
+      </div>
+      <div id="advancedSectionEmpty" class="advanced-section-empty">No se encontraron secciones con ese texto.</div>
+    </nav>
+
+    <div id="categoriaInfraestructura" class="advanced-category-heading">
+      <h2>Infraestructura y servicios del VPS</h2>
+      <p>Control remoto, limites por empresa, documentos colaborativos, nube privada y voz natural para IA.</p>
     </div>
 
     <section class="card form advanced-card" data-brand="system" id="rustdeskVpsCard">
@@ -287,6 +319,35 @@
       <div id="nextcloudMsg" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="ai" id="voiceStreamConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M8 8v8"></path><path d="M16 8v8"></path><path d="M4 11v2"></path><path d="M20 11v2"></path></svg>
+        Voz IA streaming
+      </h2>
+      <p class="form-help">Servidor abierto de voz natural para conversar con la IA. Se administra en una pagina dedicada para mantener separada la infraestructura de voz, el proxy del backend y el fallback del navegador.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Gestion centralizada</label>
+          <div class="form-help">Activacion global, URL del VPS, proveedor Piper, voz e intervalo de timeout.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado seguro</label>
+          <div class="form-help">Desactivado por defecto. Si el servicio no responde, el chat no se rompe.</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="btn primary" href="/super/voz_streaming_ia.html">Abrir configuracion de voz IA</a>
+        <button id="voiceStreamQuickActivateTestBtn" type="button" class="btn">Activar y probar</button>
+        <button id="voiceStreamQuickTestBtn" type="button" class="btn secondary">Probar servicio</button>
+      </div>
+      <div id="voiceStreamQuickMsg" class="form-help">Cargando estado de voz IA...</div>
+    </section>
+
+    <div id="categoriaPagos" class="advanced-category-heading">
+      <h2>Pagos y facturacion digital</h2>
+      <p>Pasarelas, llaves, terminos de checkout y modos de prueba o produccion.</p>
+    </div>
+
     <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
@@ -445,6 +506,11 @@
       <div id="wompiTestResult" class="form-help"></div>
     </section>
 
+    <div id="categoriaComunicaciones" class="advanced-category-heading">
+      <h2>Comunicaciones y canales de contacto</h2>
+      <p>Correo transaccional, formatos de envio y datos visibles de contacto del portal.</p>
+    </div>
+
     <section class="card form advanced-card" data-brand="gmail" id="gmailConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -548,6 +614,11 @@
       <div id="portalWhatsAppMsg" class="form-help"></div>
     </section>
 
+    <div id="categoriaSeguridad" class="advanced-category-heading">
+      <h2>Seguridad, continuidad y respaldo</h2>
+      <p>Protecciones publicas, mantenimiento global y respaldo de configuracion critica.</p>
+    </div>
+
     <section class="card form advanced-card" data-brand="system" id="recaptchaConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.5 7.8-8 9-4.5-1.2-8-4-8-9V7l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
@@ -612,6 +683,11 @@
       </div>
     </section>
 
+    <div id="categoriaIA" class="advanced-category-heading">
+      <h2>Inteligencia artificial</h2>
+      <p>Modelos, credenciales y servicios que complementan el chat empresarial y global.</p>
+    </div>
+
     <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
@@ -656,6 +732,11 @@
       <div class="form-help">Usa la prueba para validar la API key de OpenAI desde el backend.</div>
       <div id="aiTestResult" class="form-help"></div>
     </section>
+
+    <div class="advanced-category-heading">
+      <h2>Operacion global y respaldos</h2>
+      <p>Modo mantenimiento y respaldo/restauracion de configuracion sensible.</p>
+    </div>
 
       <section class="card form advanced-card" data-brand="system" id="mantenimientoConfigCard">
         <h2>
@@ -1245,13 +1326,148 @@
         }
       }
 
+      async function loadVoiceStreamQuickStatus(){
+        const msgEl = document.getElementById('voiceStreamQuickMsg');
+        if (!msgEl) return;
+        try {
+          const res = await fetch('/super/api/config/voice_stream', { method: 'GET', credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          const data = raw ? JSON.parse(raw) : {};
+          const cfg = data.config || {};
+          const parts = [];
+          parts.push(cfg.enabled ? 'Activo' : 'Desactivado');
+          parts.push(cfg.base_url ? ('URL: ' + cfg.base_url) : 'URL no configurada');
+          parts.push(cfg.auth_configured ? 'token registrado' : 'token pendiente');
+          if (cfg.encryption_available === false) parts.push('cifrado no disponible');
+          msgEl.innerText = parts.join(' - ');
+        } catch (err) {
+          msgEl.innerText = err.message || 'No se pudo leer voz IA.';
+        }
+      }
+
+      async function testVoiceStreamQuickConfig(){
+        const msgEl = document.getElementById('voiceStreamQuickMsg');
+        const btn = document.getElementById('voiceStreamQuickTestBtn');
+        const prev = btn ? btn.innerText : '';
+        if (btn) { btn.disabled = true; btn.innerText = 'Probando...'; }
+        if (msgEl) msgEl.innerText = 'Probando servicio de voz...';
+        try {
+          const res = await fetch('/super/api/config/voice_stream?action=test', { method: 'POST', credentials: 'same-origin' });
+          const raw = await res.text();
+          const data = raw ? JSON.parse(raw) : {};
+          if (!res.ok || !data.ok) throw new Error(data.error || data.status || raw || ('HTTP ' + res.status));
+          if (msgEl) msgEl.innerText = 'OK: Voz IA responde (' + data.status + ').';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = 'Voz IA no disponible: ' + (err.message || err);
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerText = prev; }
+        }
+      }
+
+      async function activateAndTestVoiceStreamQuickConfig(){
+        const msgEl = document.getElementById('voiceStreamQuickMsg');
+        const btn = document.getElementById('voiceStreamQuickActivateTestBtn');
+        const prev = btn ? btn.innerText : '';
+        if (btn) { btn.disabled = true; btn.innerText = 'Activando...'; }
+        if (msgEl) msgEl.innerText = 'Activando servicio y registrando credencial cifrada...';
+        try {
+          const res = await fetch('/super/api/config/voice_stream?action=activate_test', { method: 'POST', credentials: 'same-origin' });
+          const raw = await res.text();
+          const data = raw ? JSON.parse(raw) : {};
+          if (!res.ok || !data.ok) {
+            const status = data.status || {};
+            throw new Error(status.error || status.status || raw || ('HTTP ' + res.status));
+          }
+          const probe = data.status || {};
+          if (msgEl) msgEl.innerText = 'OK: Voz IA activa, token registrado y servicio disponible (' + (probe.status || 'OK') + ').';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = 'Voz IA configurada, pero la prueba fallo: ' + (err.message || err);
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerText = prev; }
+        }
+      }
+
+      function initAdvancedSectionFinder(){
+        const searchEl = document.getElementById('advancedSectionSearch');
+        const clearBtn = document.getElementById('advancedSectionClear');
+        const listEl = document.getElementById('advancedCategoryList');
+        const emptyEl = document.getElementById('advancedSectionEmpty');
+        if (!searchEl || !listEl) return;
+
+        const normalizeText = function(value){
+          let text = String(value || '').toLowerCase().trim();
+          if (typeof text.normalize === 'function') {
+            text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          }
+          return text;
+        };
+
+        const existingHrefs = new Set(Array.from(listEl.querySelectorAll('a')).map(function(link){
+          return link.getAttribute('href') || '';
+        }));
+        const nodes = Array.from(document.querySelectorAll('.advanced-category-heading[id], section.advanced-card[id]'));
+        nodes.forEach(function(node){
+          const id = node.getAttribute('id');
+          if (!id || existingHrefs.has('#' + id)) return;
+          const titleEl = node.querySelector('h2');
+          const title = titleEl ? titleEl.textContent.trim() : id;
+          const help = node.querySelector('.form-help');
+          const hint = help ? help.textContent.trim() : 'Seccion';
+          const link = document.createElement('a');
+          link.href = '#' + id;
+          link.dataset.search = normalizeText(title + ' ' + hint + ' ' + id);
+          link.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
+          listEl.appendChild(link);
+        });
+
+        const links = Array.from(listEl.querySelectorAll('a'));
+        links.forEach(function(link){
+          if (!link.dataset.search) {
+            link.dataset.search = normalizeText(link.textContent || '');
+          }
+          link.addEventListener('click', function(ev){
+            const href = link.getAttribute('href') || '';
+            const target = href.charAt(0) === '#' ? document.getElementById(href.slice(1)) : null;
+            if (!target) return;
+            ev.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, '', href);
+          });
+        });
+
+        const applyFilter = function(){
+          const query = normalizeText(searchEl.value);
+          let visible = 0;
+          links.forEach(function(link){
+            const haystack = normalizeText((link.dataset.search || '') + ' ' + link.textContent);
+            const show = !query || haystack.indexOf(query) >= 0;
+            link.classList.toggle('is-hidden', !show);
+            if (show) visible += 1;
+          });
+          if (emptyEl) emptyEl.classList.toggle('is-visible', visible === 0);
+        };
+
+        searchEl.addEventListener('input', applyFilter);
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function(){
+            searchEl.value = '';
+            applyFilter();
+            searchEl.focus();
+          });
+        }
+        applyFilter();
+      }
+
       async function load(){
+        initAdvancedSectionFinder();
         await loadRustDeskSshConfig();
         await loadRustDeskCard();
         await loadEmpresaLimitacionesConfig();
         await loadMantenimientoConfig();
         await loadOnlyOfficeConfig();
         await loadNextcloudConfig();
+        await loadVoiceStreamQuickStatus();
         // cargar estado Wompi
         try {
           const rw = await fetch('/super/api/config/wompi');
@@ -2413,6 +2629,8 @@
       document.getElementById('onlyofficeTestBtn').addEventListener('click', testOnlyOfficeConfig);
       document.getElementById('nextcloudSaveBtn').addEventListener('click', saveNextcloudConfig);
       document.getElementById('nextcloudTestBtn').addEventListener('click', testNextcloudConfig);
+      document.getElementById('voiceStreamQuickActivateTestBtn').addEventListener('click', activateAndTestVoiceStreamQuickConfig);
+      document.getElementById('voiceStreamQuickTestBtn').addEventListener('click', testVoiceStreamQuickConfig);
       document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
         if (rustdeskActiveToggleBusy) return;
         toggleRustDeskService(this.checked ? 'start' : 'stop');

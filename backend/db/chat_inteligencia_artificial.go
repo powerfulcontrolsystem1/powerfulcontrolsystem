@@ -1353,7 +1353,22 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 
 // BuildEmpresaAIContextoForQuestion amplía el contexto base con resultados de consultas seguras
 // resueltas por intención, sin permitir SQL libre generado por IA.
-func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string) (string, error) {
+type EmpresaAIContextoPreguntaOptions struct {
+	Modelo            string
+	DBQueryEnabled    bool
+	DBQueryEnabledSet bool
+	DBQueryMaxTables  int
+	DBQueryRows       int
+	DBQueryMaxChars   int
+}
+
+func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string, modelo ...string) (string, error) {
+	return BuildEmpresaAIContextoForQuestionWithOptions(dbConn, empresaID, pregunta, usuarioCreador, paginaContexto, EmpresaAIContextoPreguntaOptions{
+		Modelo: aiContextModelName(modelo...),
+	})
+}
+
+func BuildEmpresaAIContextoForQuestionWithOptions(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string, opts EmpresaAIContextoPreguntaOptions) (string, error) {
 	base, err := BuildEmpresaAIContexto(dbConn, empresaID)
 	if err != nil {
 		return "", err
@@ -1368,10 +1383,292 @@ func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta
 		}
 		safeContext += "PAGINA_CONTEXTO: " + paginaContexto
 	}
+	if auditContext := BuildEmpresaAuditoriaAIContextForQuestion(dbConn, empresaID, pregunta, usuarioCreador, aiContextModelName(opts.Modelo), 20, 2*time.Hour); strings.TrimSpace(auditContext) != "" {
+		if safeContext != "" {
+			safeContext += "\n"
+		}
+		safeContext += auditContext
+	}
+	if dbReadContext := buildEmpresaAIFullReadDBContext(dbConn, empresaID, pregunta, opts); strings.TrimSpace(dbReadContext) != "" {
+		if safeContext != "" {
+			safeContext += "\n"
+		}
+		safeContext += dbReadContext
+	}
 	if safeContext == "" {
 		return base, nil
 	}
 	return base + "\n" + safeContext, nil
+}
+
+type empresaAIFullReadTable struct {
+	Name        string
+	Columns     []DBAdminColumn
+	SafeColumns []string
+	Score       int
+	HasID       bool
+	RowCount    int64
+}
+
+func buildEmpresaAIFullReadDBContext(dbConn *sql.DB, empresaID int64, pregunta string, opts EmpresaAIContextoPreguntaOptions) string {
+	if dbConn == nil || empresaID <= 0 {
+		return ""
+	}
+	if opts.DBQueryEnabledSet && !opts.DBQueryEnabled {
+		return ""
+	}
+	maxTables := opts.DBQueryMaxTables
+	if maxTables <= 0 {
+		maxTables = 25
+	}
+	if maxTables > 100 {
+		maxTables = 100
+	}
+	rowsPerTable := opts.DBQueryRows
+	if rowsPerTable <= 0 {
+		rowsPerTable = 8
+	}
+	if rowsPerTable > 30 {
+		rowsPerTable = 30
+	}
+	maxChars := opts.DBQueryMaxChars
+	if maxChars <= 0 {
+		maxChars = 45000
+	}
+	if maxChars > 120000 {
+		maxChars = 120000
+	}
+
+	tableNames, err := DBAdminListEmpresaTables(dbConn)
+	if err != nil || len(tableNames) == 0 {
+		return "BASE_DATOS_EMPRESA_LECTURA_TOTAL\n- estado=no_disponible\n- nota=no se pudo listar tablas consultables por empresa_id.\n"
+	}
+	terms := aiFullReadTerms(pregunta)
+	tables := make([]empresaAIFullReadTable, 0, len(tableNames))
+	for _, name := range tableNames {
+		if !isSafePostgresUnquotedIdent(name) {
+			continue
+		}
+		cols, err := DBAdminGetTableColumns(dbConn, name)
+		if err != nil || len(cols) == 0 {
+			continue
+		}
+		item := empresaAIFullReadTable{Name: name, Columns: cols}
+		for _, col := range cols {
+			colName := strings.TrimSpace(col.Name)
+			if strings.EqualFold(colName, "id") {
+				item.HasID = true
+			}
+			if strings.EqualFold(colName, "empresa_id") || aiFullReadSensitiveColumn(colName) {
+				continue
+			}
+			if isSafePostgresUnquotedIdent(colName) {
+				item.SafeColumns = append(item.SafeColumns, colName)
+			}
+		}
+		item.Score = aiFullReadTableScore(item, terms)
+		tables = append(tables, item)
+	}
+	if len(tables) == 0 {
+		return ""
+	}
+	sort.SliceStable(tables, func(i, j int) bool {
+		if tables[i].Score != tables[j].Score {
+			return tables[i].Score > tables[j].Score
+		}
+		return tables[i].Name < tables[j].Name
+	})
+	if len(tables) > maxTables {
+		tables = tables[:maxTables]
+	}
+
+	var b strings.Builder
+	b.WriteString("BASE_DATOS_EMPRESA_LECTURA_TOTAL\n")
+	b.WriteString(fmt.Sprintf("- empresa_id=%d\n", empresaID))
+	b.WriteString(fmt.Sprintf("- modelo=%s\n", safeAIValue(aiContextModelName(opts.Modelo))))
+	b.WriteString("- estado=activo_por_configuracion_super\n")
+	b.WriteString("- regla=lectura total controlada: el backend puede consultar cualquier tabla con empresa_id; solo SELECT parametrizado; sin SQL libre del modelo; columnas sensibles omitidas.\n")
+	b.WriteString(fmt.Sprintf("- tablas_consultables_detectadas=%d\n", len(tableNames)))
+	b.WriteString(fmt.Sprintf("- tablas_entregadas_en_contexto=%d\n", len(tables)))
+	b.WriteString(fmt.Sprintf("- filas_por_tabla=%d\n", rowsPerTable))
+	b.WriteString("ESQUEMA_TABLAS_EMPRESA\n")
+	for _, t := range tables {
+		cols := make([]string, 0, len(t.Columns))
+		for _, c := range t.Columns {
+			name := strings.TrimSpace(c.Name)
+			if name == "" || aiFullReadSensitiveColumn(name) {
+				continue
+			}
+			cols = append(cols, fmt.Sprintf("%s:%s", safeAIValue(name), safeAIValue(c.Type)))
+			if len(cols) >= 28 {
+				cols = append(cols, "...")
+				break
+			}
+		}
+		b.WriteString(fmt.Sprintf("- tabla=%s columnas=%s\n", safeAIValue(t.Name), strings.Join(cols, ",")))
+	}
+	b.WriteString("CONSULTAS_DB_LECTURA_TOTAL_RESUELTAS\n")
+	for _, t := range tables {
+		lines, count := empresaAIFullReadTableRows(dbConn, empresaID, t, rowsPerTable)
+		b.WriteString(fmt.Sprintf("- tabla=%s filas_empresa=%d filas_entregadas=%d score=%d\n", safeAIValue(t.Name), count, len(lines), t.Score))
+		for _, line := range lines {
+			b.WriteString("  - " + line + "\n")
+			if b.Len() >= maxChars {
+				b.WriteString("- nota=CONTEXTO_DB_LECTURA_TOTAL_RECORTADO\n")
+				return b.String()
+			}
+		}
+		if b.Len() >= maxChars {
+			b.WriteString("- nota=CONTEXTO_DB_LECTURA_TOTAL_RECORTADO\n")
+			return b.String()
+		}
+	}
+	return b.String()
+}
+
+func aiFullReadTerms(pregunta string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, 12)
+	add := func(v string) {
+		v = strings.Trim(strings.TrimSpace(aiFoldText(v)), ".,;:()[]{}Â¿?Â¡!\"'")
+		if len([]rune(v)) < 3 {
+			return
+		}
+		if _, ok := seen[v]; ok {
+			return
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	for _, term := range aiExtractSearchTerms(pregunta) {
+		add(term)
+	}
+	stop := map[string]bool{"que": true, "quien": true, "como": true, "para": true, "por": true, "con": true, "los": true, "las": true, "una": true, "uno": true, "del": true, "base": true, "datos": true, "tabla": true, "tablas": true, "consulta": true, "consultar": true, "empresa": true, "sistema": true}
+	for _, part := range strings.Fields(aiFoldText(pregunta)) {
+		part = strings.Trim(part, ".,;:()[]{}Â¿?Â¡!\"'")
+		if stop[part] {
+			continue
+		}
+		add(part)
+		if len(out) >= 12 {
+			break
+		}
+	}
+	return out
+}
+
+func aiFullReadSensitiveColumn(name string) bool {
+	v := aiFoldText(name)
+	for _, token := range []string{"password", "passwd", "contrasena", "contraseña", "token", "secret", "secreto", "hash", "salt", "api_key", "apikey", "private_key", "public_key", "jwt", "credential", "credencial", "firma", "certificate", "certificado", "pin", "otp"} {
+		if strings.Contains(v, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func aiFullReadTableScore(t empresaAIFullReadTable, terms []string) int {
+	score := 0
+	name := aiFoldText(t.Name)
+	if len(terms) == 0 {
+		score = 1
+	}
+	for _, term := range terms {
+		if term == "" {
+			continue
+		}
+		if strings.Contains(name, term) {
+			score += 8
+		}
+		for _, col := range t.Columns {
+			if strings.Contains(aiFoldText(col.Name), term) {
+				score += 3
+			}
+		}
+	}
+	for _, preferred := range []string{"clientes", "productos", "carritos", "ventas", "finanzas", "inventario", "users", "usuarios", "auditoria", "compras", "facturacion"} {
+		if strings.Contains(name, preferred) {
+			score++
+		}
+	}
+	return score
+}
+
+func empresaAIFullReadTableRows(dbConn *sql.DB, empresaID int64, t empresaAIFullReadTable, limit int) ([]string, int64) {
+	var count int64
+	countQuery := fmt.Sprintf("SELECT COUNT(1) FROM %s WHERE empresa_id = ?", quotePGIdent(t.Name))
+	_ = queryRowSQLCompat(dbConn, countQuery, empresaID).Scan(&count)
+	if len(t.SafeColumns) == 0 || count == 0 {
+		return nil, count
+	}
+	cols := append([]string{}, t.SafeColumns...)
+	if len(cols) > 12 {
+		cols = cols[:12]
+	}
+	quotedCols := make([]string, 0, len(cols))
+	for _, col := range cols {
+		quotedCols = append(quotedCols, quotePGIdent(col))
+	}
+	order := ""
+	if t.HasID {
+		order = " ORDER BY " + quotePGIdent("id") + " DESC"
+	}
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE empresa_id = ?%s LIMIT ?", strings.Join(quotedCols, ", "), quotePGIdent(t.Name), order)
+	rows, err := querySQLCompat(dbConn, query, empresaID, limit)
+	if err != nil {
+		return []string{"estado=error_lectura detalle=" + safeAIValue(err.Error())}, count
+	}
+	defer rows.Close()
+	names, err := rows.Columns()
+	if err != nil {
+		return nil, count
+	}
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		raw := make([]interface{}, len(names))
+		ptrs := make([]interface{}, len(names))
+		for i := range raw {
+			ptrs[i] = &raw[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			continue
+		}
+		parts := make([]string, 0, len(names))
+		for i, name := range names {
+			parts = append(parts, fmt.Sprintf("%s=%s", safeAIValue(name), aiFullReadFormatValue(raw[i])))
+		}
+		out = append(out, strings.Join(parts, " | "))
+	}
+	return out, count
+}
+
+func aiFullReadFormatValue(v interface{}) string {
+	if v == nil {
+		return "null"
+	}
+	switch val := v.(type) {
+	case []byte:
+		return aiFullReadCompactValue(string(val))
+	case string:
+		return aiFullReadCompactValue(val)
+	default:
+		return aiFullReadCompactValue(fmt.Sprintf("%v", val))
+	}
+}
+
+func aiFullReadCompactValue(v string) string {
+	v = strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(v, "\n", " "), "\r", " "))
+	for strings.Contains(v, "  ") {
+		v = strings.ReplaceAll(v, "  ", " ")
+	}
+	if v == "" {
+		return "sin_dato"
+	}
+	r := []rune(v)
+	if len(r) > 140 {
+		v = string(r[:140]) + "..."
+	}
+	return v
 }
 
 // BuildSuperAIContexto resume contexto global consolidado del sistema para super administrador.
@@ -1474,7 +1771,7 @@ type SuperAIContextoOpts struct {
 
 // BuildSuperAIContextoForQuestion amplía el contexto global con consultas seguras resueltas
 // a partir de la intención de la pregunta.
-func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunta string, opts SuperAIContextoOpts) (string, error) {
+func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunta string, opts SuperAIContextoOpts, modelo ...string) (string, error) {
 	base, err := BuildSuperAIContexto(dbEmp, dbSuper, adminEmail)
 	if err != nil {
 		return "", err
@@ -1487,6 +1784,12 @@ func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunt
 	safeContext, err := buildSuperAISafeIntentContext(dbEmp, pregunta, opts.EmpresaSoloLectura)
 	if err != nil {
 		return "", err
+	}
+	if auditContext := BuildSuperAuditoriaAIContextForQuestion(dbEmp, pregunta, adminEmail, aiContextModelName(modelo...), 25, 2*time.Hour); strings.TrimSpace(auditContext) != "" {
+		if safeContext != "" {
+			safeContext += "\n"
+		}
+		safeContext += auditContext
 	}
 	if safeContext == "" {
 		return base, nil
@@ -2914,6 +3217,15 @@ func empresaAISafeMovimientosFinancieros(dbConn *sql.DB, empresaID int64, availa
 
 func aiNormalizeProvider(v string) string {
 	return strings.ToLower(strings.TrimSpace(v))
+}
+
+func aiContextModelName(modelo ...string) string {
+	for _, item := range modelo {
+		if v := strings.TrimSpace(item); v != "" {
+			return v
+		}
+	}
+	return "openai:gpt-5.4-mini"
 }
 
 func aiNormalizeModelID(v string) string {

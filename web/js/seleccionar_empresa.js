@@ -653,6 +653,35 @@
     }
   }
 
+  async function handleEmpresaPreconfigDecision(createData) {
+    if (!createData || !createData.preconfiguracion_aplicada || !createData.id) {
+      return;
+    }
+    var preconfig = createData.preconfiguracion || {};
+    var estaciones = Number(preconfig.estaciones_creadas || 0);
+    var productos = Number(preconfig.productos_creados || 0);
+    var tipo = String(preconfig.tipo_empresa_nombre || "").trim();
+    var message = "La empresa fue creada con una preconfiguracion inicial" +
+      (tipo ? " para " + tipo : "") + ".\n\n" +
+      "Se generaron " + estaciones + " estaciones y " + productos + " productos guia.\n\n" +
+      "Aceptar: conservar esta preconfiguracion.\n" +
+      "Cancelar: eliminarla y dejar la empresa sin configuracion personalizada.";
+    var keep = window.confirm(message);
+    if (keep) {
+      setShareNotice("Empresa creada con preconfiguracion inicial conservada.", false);
+      return;
+    }
+    setShareNotice("Eliminando preconfiguracion inicial...", false);
+    var cleanData = await fetchJSON("/super/api/empresas?id=" + encodeURIComponent(createData.id) + "&action=limpiar_preconfiguracion", {
+      method: "PUT",
+      credentials: "same-origin"
+    });
+    var cleanMsg = cleanData && cleanData.result && cleanData.result.mensaje
+      ? cleanData.result.mensaje
+      : "Preconfiguracion eliminada. La empresa quedo sin datos guia.";
+    setShareNotice(cleanMsg, false);
+  }
+
   function buildEmpresaCard(empresa, hasLicense) {
     var visual = getEmpresaTypeVisual(empresa);
     var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
@@ -1215,14 +1244,19 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        var createRaw = await createRes.text();
+        var createData = null;
+        try {
+          createData = createRaw ? JSON.parse(createRaw) : null;
+        } catch (parseErr) {
+          createData = null;
+        }
         if (!createRes.ok) {
-          var errorText = await createRes.text().catch(function () {
-            return "";
-          });
-          throw new Error(errorText || "No se pudo crear la empresa");
+          throw new Error(createRaw || "No se pudo crear la empresa");
         }
         hideForm();
-        render();
+        await handleEmpresaPreconfigDecision(createData);
+        await render();
       } catch (err) {
         document.getElementById("msg").innerText = err.message;
       }

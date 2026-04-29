@@ -557,8 +557,21 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if id > 0 {
 				_ = ensureDir(empresaBackupDir(id))
 			}
+			preconfigResult, preconfigErr := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, id, payload.TipoID, payload.TipoNombre, payload.UsuarioCreador)
+			if preconfigErr != nil {
+				log.Printf("POST /super/api/empresas id=%d preconfiguracion warning: %v", id, preconfigErr)
+			}
+			preconfigErrText := ""
+			if preconfigErr != nil {
+				preconfigErrText = preconfigErr.Error()
+			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"id":                        id,
+				"preconfiguracion_aplicada": preconfigResult != nil && preconfigResult.Aplicada,
+				"preconfiguracion":          preconfigResult,
+				"preconfiguracion_error":    preconfigErrText,
+			})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -587,6 +600,17 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			} else if !owner {
 				http.Error(w, "solo el administrador propietario puede modificar o desactivar la empresa", http.StatusForbidden)
+				return
+			}
+
+			if action == "limpiar_preconfiguracion" {
+				result, err := clearEmpresaTipoPreconfiguracion(dbEmp, id)
+				if err != nil {
+					log.Printf("PUT /super/api/empresas action=%s id=%d cleanup error: %v", action, id, err)
+					http.Error(w, "failed to clean preconfiguration: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "result": result})
 				return
 			}
 

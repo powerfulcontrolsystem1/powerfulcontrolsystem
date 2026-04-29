@@ -1,3 +1,27 @@
+## Actualizacion 2026-04-29 (navegacion empresarial por modulos)
+
+- `web/administrar_empresa.html` mantiene el shell iframe, pero el menu lateral queda agrupado por categorias empresariales: colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion.
+- `web/administrar_empresa/configuracion_menu.html` organiza las subpaginas de configuracion en base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado.
+- `web/js/administrar_empresa.js` conserva la resolucion de `empresa_id`, permisos y estado activo del iframe; agrega soporte para refrescar visibilidad de grupos cuando los permisos ocultan todos los enlaces de una categoria.
+- `web/estilos.css` agrega estilos compartidos para `admin-nav-grouped`, `admin-nav-group` y `admin-nav-sublist` con comportamiento responsive.
+
+## Actualizacion 2026-04-29 (auditoria en tiempo real como contexto IA)
+
+- Backend auditoria / IA:
+  - `backend/handlers/auditoria_empresa.go` registra ahora tambien acciones de lectura (`R`) desde los wrappers `/api/empresa/*`, manteniendo la escritura de auditoria como no bloqueante.
+  - `backend/db/auditoria_empresa.go` agrega constructores best-effort de contexto IA: resumen por empresa (`AUDITORIA_TIEMPO_REAL`) y resumen global para super (`AUDITORIA_GLOBAL_TIEMPO_REAL`), busqueda profunda por intencion (`AUDITORIA_BUSQUEDA_PROFUNDA` / `AUDITORIA_GLOBAL_BUSQUEDA_PROFUNDA`) y consultas DB seguras (`AUDITORIA_CONSULTAS_DB_SEGURAS` / `AUDITORIA_GLOBAL_CONSULTAS_DB_SEGURAS`), sin inyectar metadata sensible ni depender del proveedor IA.
+  - `backend/db/chat_inteligencia_artificial.go` agrega lectura total controlada para el chat empresarial: inventario de tablas con `empresa_id`, columnas no sensibles y muestras SELECT parametrizadas por tabla para GPT-5.4 mini/modelo activo.
+  - `backend/handlers/super_chat_ia_logica.go` y `web/super/configuracion_logica_del_chat_con_ia.html` exponen la configuracion super `ai.chat.empresa.db_query_enabled`, `ai.chat.empresa.db_query_max_tables` y `ai.chat.empresa.db_query_rows`; el acceso viene activo por defecto.
+  - `backend/db/auditoria_empresa.go` crea `empresa_auditoria_ia_consultas` para auditar cada preparacion de contexto IA: modelo, usuario, hash/resumen de pregunta, filtros, resultados compactos, eventos consultados y tamano del contexto.
+  - `backend/db/chat_inteligencia_artificial.go` incorpora esos bloques al contexto validado de chat empresarial y chat global, pasando el modelo real usado por el chat. Si la auditoria no existe o falla, la IA recibe una nota de limitacion y el servidor continua.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` instruyen al modelo a tratar la auditoria y las consultas seguras ya resueltas como fuente principal para actividad reciente; el modelo no debe inventar SQL ni pedir acceso directo a tablas.
+- Flujo resumido:
+  - Usuario opera cualquier modulo empresarial protegido -> wrapper valida `empresa_id`, rol y licencia -> auditoria registra la operacion -> chat IA consulta contexto -> el prompt incluye actividad reciente de usuarios, modulos, endpoints, errores y ultima actividad.
+  - Si la pregunta menciona auditoria, usuarios, modulos, endpoints, errores o datos operativos, el backend busca eventos relevantes y ejecuta consultas parametrizadas por whitelist antes de llamar a GPT-5.4 mini/modelo activo.
+  - Si la lectura DB empresarial esta activa, el backend tambien entrega a la IA `BASE_DATOS_EMPRESA_LECTURA_TOTAL` y `CONSULTAS_DB_LECTURA_TOTAL_RESUELTAS` con tablas/filas acotadas por configuracion super.
+  - La IA recibe resultados ya calculados por el servidor y cada preparacion queda registrada en `empresa_auditoria_ia_consultas`.
+  - Si la IA global/proveedor esta desactivado o la auditoria no esta disponible, el backend no rompe el servidor: los endpoints devuelven estado controlado o contexto degradado.
+
 ## Actualizacion 2026-04-24 (estaciones: pedidos con IA y miniaturas movil)
 
 - Backend ventas / IA:

@@ -4,12 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -26,7 +29,13 @@ const (
 	paginaPrincipalVisualSizeLarge  = "grande"
 )
 
+const (
+	paginaPrincipalCardTypeInfoPhoto = "info_foto"
+	paginaPrincipalCardTypeBanner    = "banner"
+)
+
 type paginaPrincipalCard struct {
+	TipoTarjeta       string   `json:"tipo_tarjeta,omitempty"`
 	Titulo            string   `json:"titulo"`
 	Descripcion       string   `json:"descripcion"`
 	ImagenURL         string   `json:"imagen_url"`
@@ -108,6 +117,7 @@ func paginaPrincipalDefaultVisualSettings() paginaPrincipalVisualSettings {
 func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 	cards := []paginaPrincipalCard{
 		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Punto de venta",
 			Descripcion:       "Solucion completa para ventas rapidas y facturacion electronica.",
 			ImagenURL:         "/img/punto_venta.png",
@@ -125,6 +135,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			},
 		},
 		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Motel",
 			Descripcion:       "Gestion por tiempo de servicio y facturacion tarifada por estancia.",
 			ImagenURL:         "/img/motel.png",
@@ -142,6 +153,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			},
 		},
 		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Restaurante",
 			Descripcion:       "Gestion de mesas, pedidos y facturacion para restaurantes.",
 			ImagenURL:         "/img/restaurante.png",
@@ -159,6 +171,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			},
 		},
 		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Control por sensor",
 			Descripcion:       "Integracion y alertas con sensores para control de accesos.",
 			ImagenURL:         "/img/sensor.png",
@@ -176,6 +189,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 			},
 		},
 		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Hotel",
 			Descripcion:       "Administracion de empresas, roles y permisos para operacion hotelera.",
 			ImagenURL:         "/img/settings-color.svg",
@@ -237,6 +251,18 @@ func paginaPrincipalNormalizeVisualSettings(raw paginaPrincipalVisualSettings) p
 		IndexTextSize:   indexTextSize,
 		LandingCardSize: landingCardSize,
 		LandingTextSize: landingTextSize,
+	}
+}
+
+func paginaPrincipalNormalizeCardType(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "banner", "baner", "tarjeta_banner", "tarjeta_baner":
+		return paginaPrincipalCardTypeBanner
+	case "info_foto", "informacion_foto", "info_photo", "tarjeta_informacion_mas_foto":
+		return paginaPrincipalCardTypeInfoPhoto
+	default:
+		return paginaPrincipalCardTypeInfoPhoto
 	}
 }
 
@@ -371,6 +397,7 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 			description = base.Descripcion
 		}
 		normalized = append(normalized, paginaPrincipalCard{
+			TipoTarjeta:       paginaPrincipalNormalizeCardType(current.TipoTarjeta),
 			Titulo:            title,
 			Descripcion:       description,
 			ImagenURL:         paginaPrincipalNormalizeImageURL(current.ImagenURL, base.ImagenURL),
@@ -452,6 +479,81 @@ func paginaPrincipalListImageURLs(webDir string) ([]string, error) {
 		return strings.ToLower(images[i]) < strings.ToLower(images[j])
 	})
 	return images, nil
+}
+
+func paginaPrincipalSanitizeUploadName(raw string) string {
+	base := strings.ToLower(strings.TrimSpace(filepath.Base(raw)))
+	if base == "" || base == "." {
+		base = "imagen"
+	}
+	var b strings.Builder
+	for _, r := range base {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '.' || r == '-' || r == '_' {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteRune('-')
+	}
+	clean := strings.Trim(b.String(), ".-_")
+	if clean == "" {
+		clean = "imagen"
+	}
+	return clean
+}
+
+func paginaPrincipalAllowedUploadExt(ext string) bool {
+	switch strings.ToLower(strings.TrimSpace(ext)) {
+	case ".png", ".jpg", ".jpeg", ".webp", ".gif":
+		return true
+	default:
+		return false
+	}
+}
+
+func paginaPrincipalUploadImage(w http.ResponseWriter, r *http.Request, webDir string) {
+	r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
+		http.Error(w, "imagen invalida o demasiado grande", http.StatusBadRequest)
+		return
+	}
+	file, header, err := r.FormFile("imagen")
+	if err != nil {
+		http.Error(w, "imagen requerida", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	original := paginaPrincipalSanitizeUploadName(header.Filename)
+	ext := strings.ToLower(filepath.Ext(original))
+	if !paginaPrincipalAllowedUploadExt(ext) {
+		http.Error(w, "formato no permitido; usa png, jpg, jpeg, webp o gif", http.StatusBadRequest)
+		return
+	}
+	nameWithoutExt := strings.TrimSuffix(original, ext)
+	if nameWithoutExt == "" {
+		nameWithoutExt = "imagen"
+	}
+	finalName := fmt.Sprintf("pagina_principal_%d_%s%s", time.Now().UnixNano(), nameWithoutExt, ext)
+	imgDir := filepath.Join(strings.TrimSpace(webDir), "img")
+	if err := os.MkdirAll(imgDir, 0755); err != nil {
+		http.Error(w, "no se pudo preparar carpeta de imagenes: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	destPath := filepath.Join(imgDir, finalName)
+	dest, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		http.Error(w, "no se pudo guardar imagen: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer dest.Close()
+	if _, err := io.Copy(dest, file); err != nil {
+		http.Error(w, "no se pudo escribir imagen: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":  true,
+		"url": "/img/" + finalName,
+	})
 }
 
 func paginaPrincipalRoleIsSuper(role string) bool {
@@ -538,6 +640,14 @@ func SuperPaginaPrincipalHandler(dbSuper *sql.DB, webDir string) http.HandlerFun
 			}
 
 		case http.MethodPut, http.MethodPost:
+			if action == "upload_image" || action == "subir_imagen" {
+				if r.Method != http.MethodPost {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				paginaPrincipalUploadImage(w, r, webDir)
+				return
+			}
 			if action != "config" && action != "save" && action != "guardar" {
 				http.Error(w, "action not supported", http.StatusBadRequest)
 				return
@@ -583,12 +693,12 @@ func PublicPaginaPrincipalHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":         true,
-			"cantidad":   cfg.Cantidad,
-			"tarjetas":   cfg.Tarjetas,
-			"estilos":    cfg.Estilos,
+			"ok":                      true,
+			"cantidad":                cfg.Cantidad,
+			"tarjetas":                cfg.Tarjetas,
+			"estilos":                 cfg.Estilos,
 			"whatsapp_contact_number": paginaPrincipalLoadWhatsAppContactNumber(dbSuper),
-			"updated_at": updatedAt,
+			"updated_at":              updatedAt,
 		})
 	}
 }

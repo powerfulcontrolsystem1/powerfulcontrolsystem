@@ -1,3 +1,19 @@
+2026-04-29: Preconfiguracion de tipos de empresa y checkout de licencias
+- Modulos afectados: `super`, `empresas`, `estaciones`, `productos`, `licencias`, `pagos`
+- Cambio funcional: Super Administrador agrega `Preconfiguracion de tipos de empresa` para guardar plantillas iniciales de estaciones/productos por tipo. Al crear una empresa, la plantilla activa se aplica como datos guia y luego puede conservarse o limpiarse. El checkout de licencias mejora sus tarjetas comerciales y muestra `Codigo de asesor comercial` debajo de `Codigo de descuento`.
+- Impacto operativo: la preconfiguracion es opcional y no bloquea la creacion de empresa si falla; el asesor sigue viajando como `asesor_id` a pagos y activacion sin pago.
+
+2026-04-29: Estaciones - tarjetas sin filas vacias
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: las tarjetas normales de `web/administrar_empresa/estaciones.html` agrupan sus datos internos en filas etiqueta/valor tipo tarjeta Caja. Las filas sin dato quedan ocultas para evitar huecos visuales y mantener la informacion en una sola columna ordenada.
+- Impacto operativo: no cambia endpoints ni configuracion de estaciones; solo mejora la presentacion de estado, cliente, tarifa, duracion, inicio, fin, extra y total dentro de cada tarjeta.
+
+2026-04-29: Voz IA streaming y Super Administrador por categorias
+- Modulos afectados: `chat IA`, `super`, `configuracion avanzada`, `VPS`
+- Cambio funcional: se agrega un servidor abierto FastAPI + Piper TTS para voz natural en VPS, configurable desde `web/super/voz_streaming_ia.html`. El backend registra `/super/api/config/voice_stream`, `/api/voice_stream/status` y `/api/voice_stream/tts`; el chat flotante usa el proxy para reproducir audio cuando `voice_stream.enabled` esta activo.
+- Tolerancia a fallos: la voz por servidor queda desactivada por defecto; si el microservicio no existe, no responde o devuelve error, el chat cae a voz del navegador o continua en texto sin romper el servidor.
+- Organizacion super: `web/super_administrador.html` agrupa accesos por operacion global, empresas/licencias, seguridad/acceso, IA/automatizacion e infraestructura/comunicaciones. `web/super/configuracion_avanzada.html` agrega mapa por categorias y separa infraestructura, pagos, comunicaciones, seguridad, IA, operacion y respaldos.
+
 2026-04-27: Carrito de estación — panel de cobro (toolbar, tabla fija, totales, montos por método)
 - Módulos afectados: `carritos`, `estaciones`
 - Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/combo, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
@@ -1356,3 +1372,20 @@ Criterio de esta guia:
 - `web/pagar_licencia.html` permite seleccionar pasarela para pago de licencia y mantiene trazabilidad por transaccion/referencia.
 - Wompi opera por API (`create_transaction_nequi`, `transaction_status`, `webhook`) con activacion automatica de licencia al aprobar.
 - Epayco opera con checkout hospedado, confirmacion por `webhook` y consulta por referencia para activar licencia y registrar estado en `pagos_epayco`.
+2026-04-29: IA contextual por auditoria en tiempo real
+- Modulos afectados: `chat IA`, `auditoria empresarial`, `seguridad y permisos`
+- Cambio funcional: la auditoria empresarial registra tambien acciones de lectura de los wrappers protegidos y pasa a alimentar el contexto de los chats IA con actividad reciente por empresa y a nivel global super. El contexto incluye resumen por modulo/accion, usuarios activos, errores HTTP, endpoints y ultimas operaciones, sin inyectar metadata sensible.
+- Impacto operativo: la IA puede responder con mayor conciencia de lo que los usuarios estan haciendo en el sistema, pero no ejecuta acciones por observar auditoria. Si la auditoria no esta disponible o la IA esta desactivada, el servidor no se rompe y el contexto se degrada de forma controlada.
+2026-04-29: Auditoria IA profunda y consultas DB seguras.
+- Modulos afectados: `auditoria empresarial`, `chat IA`, `super`, `seguridad y permisos`.
+- Cambio funcional: la auditoria empresarial pasa a alimentar a GPT-5.4 mini/modelo activo con una capa de contexto profundo: resumen en tiempo real, busqueda de eventos por intencion de pregunta y consultas DB seguras ya ejecutadas por el backend. Ademas, el chat empresarial recibe por defecto lectura total controlada de tablas con `empresa_id` (SELECT parametrizado, columnas sensibles omitidas), configurable desde super.
+- Trazabilidad: se crea `empresa_auditoria_ia_consultas` para registrar alcance, modelo, usuario, hash/resumen de pregunta, filtros usados, resultados compactos, eventos consultados y tamano de contexto.
+- Impacto operativo: si auditoria o IA fallan/deshabilitan, los endpoints continuan respondiendo con contexto degradado; la escritura de auditoria sigue siendo no bloqueante.
+2026-04-29: Administrar Empresa — navegacion empresarial por categorias
+- Modulos afectados: `administrar_empresa`, `configuracion`, `seguridad y permisos`
+- Cambio funcional: el shell de `web/administrar_empresa.html` se organiza por grupos de trabajo: colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion. `configuracion_menu.html` separa los accesos por base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado. La pagina `configuracion.html` agrega un mapa ejecutivo de secciones sin cambiar IDs de controles ni endpoints de guardado.
+- Impacto operativo: se conserva compatibilidad con los iframes, `empresa_id`, permisos por rol y rutas existentes; el JS tambien oculta grupos vacios cuando todos sus enlaces quedan ocultos por permisos.
+2026-04-29: Pagina principal — tarjetas tipo banner
+- Modulos afectados: `super`, `portal_publico`, `pagina_principal`
+- Cambio funcional: `web/super/pagina_principal.html` agrega por tarjeta el campo `tipo_tarjeta` con dos opciones: `info_foto` para la tarjeta actual de informacion mas foto, y `banner` para mostrar solo la imagen principal a todo el tamano de la tarjeta en `web/index.html`. El mismo editor puede subir imagenes nuevas a `web/img` mediante `/super/api/pagina_principal?action=upload_image`.
+- Impacto operativo: las configuraciones antiguas quedan en `info_foto` por defecto. El modo banner recomienda imagen 4:3 (640x480, 800x600 o 1000x750 segun tamano) y no requiere titulo, descripcion, enlace ni contenido ampliado para el index.

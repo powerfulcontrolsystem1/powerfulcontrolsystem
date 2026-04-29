@@ -423,7 +423,7 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 	if dbEmp == nil {
 		return
 	}
-	if !accionCriticaParaAuditoria(permissionAction) {
+	if !accionDebeAuditarse(permissionAction) {
 		return
 	}
 	if empresaID <= 0 {
@@ -433,6 +433,23 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 	metadata := map[string]interface{}{
 		"permission_action": strings.ToUpper(strings.TrimSpace(permissionAction)),
 		"duracion_ms":       elapsed.Milliseconds(),
+		"content_length":    r.ContentLength,
+	}
+	if role := strings.TrimSpace(r.Header.Get("X-Admin-Role")); role != "" {
+		metadata["admin_role"] = role
+	}
+	if roleEfectivo := strings.TrimSpace(r.Header.Get("X-Admin-Role-Efectivo")); roleEfectivo != "" {
+		metadata["admin_role_efectivo"] = roleEfectivo
+	}
+	if len(r.URL.Query()) > 0 {
+		keys := make([]string, 0, len(r.URL.Query()))
+		for key := range r.URL.Query() {
+			key = strings.TrimSpace(key)
+			if key != "" {
+				keys = append(keys, key)
+			}
+		}
+		metadata["query_keys"] = keys
 	}
 	if src := strings.TrimSpace(r.Header.Get("X-PCS-Source")); src != "" {
 		metadata["source"] = strings.ToLower(src)
@@ -492,7 +509,7 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 		RetencionDias:  normalizeRetencionDiasForHandler(0),
 		UsuarioCreador: strings.TrimSpace(adminEmailFromRequest(r)),
 		Estado:         "activo",
-		Observaciones:  "auditoria automatica de accion critica",
+		Observaciones:  "auditoria automatica de operacion empresarial",
 	}
 
 	if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, auditoria); err != nil {
@@ -500,9 +517,9 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 	}
 }
 
-func accionCriticaParaAuditoria(permissionAction string) bool {
+func accionDebeAuditarse(permissionAction string) bool {
 	switch strings.ToUpper(strings.TrimSpace(permissionAction)) {
-	case "C", "U", "D", "A":
+	case "R", "C", "U", "D", "A":
 		return true
 	default:
 		return false
@@ -516,6 +533,8 @@ func resolveAuditoriaAccion(r *http.Request, permissionAction string) string {
 		return q
 	}
 	switch strings.ToUpper(strings.TrimSpace(permissionAction)) {
+	case "R":
+		return "leer"
 	case "C":
 		return "crear"
 	case "U":

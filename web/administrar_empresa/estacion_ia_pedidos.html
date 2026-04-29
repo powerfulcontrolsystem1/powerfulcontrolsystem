@@ -14,7 +14,7 @@
         try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
         if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
         t = String(t || "").trim().toLowerCase();
-        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-protect": 1, light: 1, "light-rose": 1, "light-gold": 1 };
         if (!ok[t]) t = "dark";
         var root = document.documentElement;
         root.setAttribute("data-theme", t);

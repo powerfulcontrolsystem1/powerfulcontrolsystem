@@ -1715,6 +1715,27 @@ func SetProductoEstado(dbConn *sql.DB, empresaID, productoID int64, estado strin
 	return err
 }
 
+// DeleteProductosPreconfiguracion elimina productos guia creados por la preconfiguracion de tipo de empresa.
+func DeleteProductosPreconfiguracion(dbConn *sql.DB, empresaID int64) (int64, error) {
+	if dbConn == nil {
+		return 0, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return 0, errors.New("empresa_id invalido")
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	res, err := execSQLCompat(dbConn, `DELETE FROM productos
+		WHERE empresa_id = ?
+		AND observaciones LIKE ?`, empresaID, "%[preconfiguracion_tipo_empresa]%")
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
+
 // UpdateProductoImagen actualiza la URL de imagen/logo de un producto.
 func UpdateProductoImagen(dbConn *sql.DB, empresaID, productoID int64, imagenURL string) error {
 	_, err := dbConn.Exec("UPDATE productos SET imagen_url = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?", strings.TrimSpace(imagenURL), productoID, empresaID)
