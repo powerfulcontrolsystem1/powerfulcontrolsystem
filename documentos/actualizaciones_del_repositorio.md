@@ -2829,3 +2829,24 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/configuracion.html
 - web/estilos.css
+
+2026-04-30 17:56:25 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 193f985; PushStatus: OK
+Archivos modificados:
+- .gitignore
+- juegos/README.md
+- juegos/app/main.go
+- juegos/deploy/juegos.service
+- juegos/deploy/nginx.conf
+- juegos/empresas/README.md
+- juegos/public/app.js
+- juegos/public/index.html
+- juegos/public/styles.css
+- juegos/roms/README.md
+- web/Juegos/arcade_embed.css
+- web/Juegos/arcade_embed.js
+- web/Juegos/menu_juegos.html
+- web/Juegos/open_game_embed.js
+- web/Juegos/open_game_source.css
+- web/Juegos/pacman_arcade/pcs-pacman-arcade.css
+- web/Juegos/patito_volando.html
+- web/js/ai_chat_drawer.js
