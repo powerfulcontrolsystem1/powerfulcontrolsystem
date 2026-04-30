@@ -43,6 +43,7 @@ type CarritoCompra struct {
 	Estado             string                          `json:"estado,omitempty"`
 	Observaciones      string                          `json:"observaciones,omitempty"`
 	TarifaPorMinutos   *CarritoTarifaPorMinutosResumen `json:"tarifa_por_minutos,omitempty"`
+	TarifaPorDia       *CarritoTarifaPorDiaCalculo     `json:"tarifa_por_dia,omitempty"`
 }
 
 // CarritoCompraItem representa un item dentro de un carrito de compra.
@@ -1056,6 +1057,90 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 	}
 	item.EstadoVenta = resolveCarritoEstadoVenta(item.EstadoCarrito, item.Estado, item.PagadoEn)
 	return &item, nil
+}
+
+// GetCarritoCompraByStation obtiene el carrito operativo asociado a una estacion.
+func GetCarritoCompraByStation(dbConn *sql.DB, empresaID, estacionID int64) (*CarritoCompra, error) {
+	if empresaID <= 0 || estacionID <= 0 {
+		return nil, fmt.Errorf("empresa_id y estacion_id son obligatorios")
+	}
+	codigo := fmt.Sprintf("EST-%d-%d", empresaID, estacionID)
+	item, err := GetCarritoCompraByCodigo(dbConn, empresaID, codigo)
+	if err == nil {
+		return item, nil
+	}
+	if err != sql.ErrNoRows {
+		return nil, err
+	}
+	referencia := fmt.Sprintf("ESTACION_%d", estacionID)
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo, ''),
+		COALESCE(nombre, ''),
+		COALESCE(canal_venta, 'mostrador'),
+		COALESCE(cliente_id, 0),
+		COALESCE(estado_carrito, 'abierto'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(referencia_externa, ''),
+		COALESCE(subtotal, 0),
+		COALESCE(descuento_total, 0),
+		COALESCE(impuesto_total, 0),
+		COALESCE(total, 0),
+		COALESCE(activado_en, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(descuento_tipo, ''),
+		COALESCE(descuento_codigo, ''),
+		COALESCE(descuento_valor, 0),
+		COALESCE(devolucion_total, 0),
+		COALESCE(total_pagado, 0),
+		COALESCE(metodo_pago, 'efectivo'),
+		COALESCE(referencia_pago, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM carritos_compras
+	WHERE empresa_id = ? AND lower(trim(referencia_externa)) = lower(trim(?))
+	ORDER BY id DESC
+	LIMIT 1`
+	row := dbConn.QueryRow(query, empresaID, referencia)
+
+	var byRef CarritoCompra
+	if err := row.Scan(
+		&byRef.ID,
+		&byRef.EmpresaID,
+		&byRef.Codigo,
+		&byRef.Nombre,
+		&byRef.CanalVenta,
+		&byRef.ClienteID,
+		&byRef.EstadoCarrito,
+		&byRef.Moneda,
+		&byRef.ReferenciaExterna,
+		&byRef.Subtotal,
+		&byRef.DescuentoTotal,
+		&byRef.ImpuestoTotal,
+		&byRef.Total,
+		&byRef.ActivadoEn,
+		&byRef.PagadoEn,
+		&byRef.DescuentoTipo,
+		&byRef.DescuentoCodigo,
+		&byRef.DescuentoValor,
+		&byRef.DevolucionTotal,
+		&byRef.TotalPagado,
+		&byRef.MetodoPago,
+		&byRef.ReferenciaPago,
+		&byRef.FechaCreacion,
+		&byRef.FechaActualizacion,
+		&byRef.UsuarioCreador,
+		&byRef.Estado,
+		&byRef.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	byRef.EstadoVenta = resolveCarritoEstadoVenta(byRef.EstadoCarrito, byRef.Estado, byRef.PagadoEn)
+	return &byRef, nil
 }
 
 // UpdateCarritoCompra actualiza los campos principales del carrito.

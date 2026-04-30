@@ -249,6 +249,27 @@ func TestEpaycoApprovedStatusAliasesActivateLicenses(t *testing.T) {
 	}
 }
 
+func TestParseLicenciaDiscountSpecCapsAtOriginalValue(t *testing.T) {
+	amount, label, ok := parseLicenciaDiscountSpec("120000", 50000)
+	if !ok {
+		t.Fatal("expected fixed discount value to be parsed")
+	}
+	if amount != 50000 {
+		t.Fatalf("expected discount to be capped at original value, got %.2f", amount)
+	}
+	if label != "120000" {
+		t.Fatalf("expected original label to be preserved, got %q", label)
+	}
+
+	amount, _, ok = parseLicenciaDiscountSpec("150%", 80000)
+	if !ok {
+		t.Fatal("expected percentage discount to be parsed")
+	}
+	if amount != 80000 {
+		t.Fatalf("expected percentage discount over 100%% to be capped at original value, got %.2f", amount)
+	}
+}
+
 func TestPaymentContextFromEpaycoPayloadReadsExtrasAndInvoice(t *testing.T) {
 	payload := map[string]interface{}{
 		"x_extra1": "12",

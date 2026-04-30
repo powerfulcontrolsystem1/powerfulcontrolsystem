@@ -28,6 +28,9 @@
   var CONFIG_ROBOT_ENABLED_ID = 'aiChatCompactConfigRobotEnabled';
   var CONFIG_VOICE_ID = 'aiChatCompactConfigVoice';
   var CONFIG_ROBOT_VOICE_ID = 'aiChatCompactConfigRobotVoice';
+  var DOCUMENT_TOOLS_ID = 'aiChatDocumentTools';
+  var DOCUMENT_FORMAT_ID = 'aiChatDocumentFormat';
+  var DOCUMENT_DOWNLOAD_ID = 'aiChatDocumentDownload';
   var MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
   var CHAT_PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
 
@@ -49,7 +52,8 @@
     activeSpeechSource: '',
     robotVoice: 'es-CO',
     robotAssistantVisible: false,
-    robotMoodTimer: null
+    robotMoodTimer: null,
+    generatedDocument: null
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
@@ -64,6 +68,7 @@
   var ROBOT_INLINE_SEND_ID = 'robotInlineSend';
   var ROBOT_INLINE_STOP_VOICE_ID = 'robotInlineStopVoice';
   var ROBOT_INLINE_MIC_ID = 'robotInlineMic';
+  var ROBOT_INLINE_CONFIG_ID = 'robotInlineConfig';
   var ROBOT_ACTIONS_ID = 'robotAssistantActions';
   var ROBOT_HIDE_ID = 'robotHideBtn';
   var ROBOT_SHOW_ID = 'robotShowBtn';
@@ -580,6 +585,7 @@
       send: document.getElementById(ROBOT_INLINE_SEND_ID),
       stopVoice: document.getElementById(ROBOT_INLINE_STOP_VOICE_ID),
       mic: document.getElementById(ROBOT_INLINE_MIC_ID),
+      config: document.getElementById(ROBOT_INLINE_CONFIG_ID),
       hideBtn: document.getElementById(ROBOT_HIDE_ID),
       showBtn: document.getElementById(ROBOT_SHOW_ID)
     };
@@ -674,13 +680,18 @@
     list.slice(0, 8).forEach(function (item) {
       var label = normalize(item && item.label);
       var prompt = normalize(item && item.prompt);
-      if (!label || !prompt) return;
+      var url = normalize(item && item.url);
+      if (!label || (!prompt && !url)) return;
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'robot-assistant-action-chip';
       btn.textContent = label;
       btn.addEventListener('click', function (event) {
         event.preventDefault();
+        if (url) {
+          window.location.href = url;
+          return;
+        }
         sendRobotPrompt(prompt);
       });
       els.actions.appendChild(btn);
@@ -735,6 +746,34 @@
       btn.addEventListener('click', function (event) {
         event.preventDefault();
         exportChatDocumentContent(item, entry[0], btn);
+      });
+      els.actions.appendChild(btn);
+    });
+    els.actions.hidden = false;
+  }
+
+  function renderRobotGeneratedDocumentActions(doc) {
+    var els = getRobotInlineElements();
+    if (!els.actions || !doc) return;
+    var urls = doc.download_urls || {};
+    els.actions.innerHTML = '';
+    [
+      ['pdf', 'PDF'],
+      ['docx', 'Word'],
+      ['xlsx', 'Excel'],
+      ['txt', 'TXT'],
+      ['json', 'JSON']
+    ].forEach(function (entry) {
+      var url = normalize(urls[entry[0]]) || ('/download?id=' + encodeURIComponent(doc.document_id || '') + '&type=' + entry[0]);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'robot-assistant-action-chip';
+      btn.textContent = 'Descargar ' + entry[1];
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (url.indexOf('/download?') === 0) {
+          window.location.href = url;
+        }
       });
       els.actions.appendChild(btn);
     });
@@ -816,6 +855,7 @@
         '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
         '<form id="' + ROBOT_INLINE_FORM_ID + '" class="robot-cloud robot-cloud-input">' +
         '<textarea id="' + ROBOT_INLINE_INPUT_ID + '" rows="1" maxlength="2000"></textarea>' +
+        '<button id="' + ROBOT_INLINE_CONFIG_ID + '" class="robot-inline-config" type="button" aria-label="Configurar chat IA" title="Configurar chat IA">&#9881;</button>' +
       '<button id="' + ROBOT_INLINE_STOP_VOICE_ID + '" class="robot-inline-stop-voice" type="button" aria-label="Detener voz del avatar" title="Detener voz"></button>' +
         '<button id="' + ROBOT_INLINE_MIC_ID + '" class="robot-inline-mic" type="button" aria-label="Dictar mensaje al robot"></button>' +
         '<button id="' + ROBOT_INLINE_SEND_ID + '" type="submit" aria-label="Enviar al robot">Enviar</button>' +
@@ -824,6 +864,7 @@
 
       var form = document.getElementById(ROBOT_INLINE_FORM_ID);
       var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
+      var configBtn = document.getElementById(ROBOT_INLINE_CONFIG_ID);
       var stopVoiceBtn = document.getElementById(ROBOT_INLINE_STOP_VOICE_ID);
       var micBtn = document.getElementById(ROBOT_INLINE_MIC_ID);
       if (form) {
@@ -848,6 +889,13 @@
           event.stopPropagation();
           stopAssistantVoiceForMoment();
           focusRobotInput();
+        });
+      }
+      if (configBtn) {
+        configBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          openChatConfigPage();
         });
       }
       var sendBtn = document.getElementById(ROBOT_INLINE_SEND_ID);
@@ -1244,11 +1292,32 @@
     var modeEl = document.getElementById(MODE_ID);
     var value = normalize(modeEl && modeEl.value);
     if (value === 'reportes') return 'reportes';
+    if (value === 'documentos') return 'documentos';
     return value === 'ayudante' ? 'ayudante' : 'operativo';
   }
 
   function isReportMode() {
     return getAssistantMode() === 'reportes';
+  }
+
+  function isDocumentMode() {
+    return getAssistantMode() === 'documentos';
+  }
+
+  function shouldAutoUseDocumentMode(query) {
+    if (isSuperContext()) return false;
+    var text = normalize(String(query || ''));
+    if (!text) return false;
+    var hasAction = /\b(genera|generar|crea|crear|haz|hacer|redacta|redactar|prepara|preparar|exporta|exportar)\b/.test(text);
+    var hasDocument = /\b(documento|contrato|factura|reporte|informe|acta|cotizacion|presupuesto|excel|xlsx|word|docx|pdf|tabla|listado)\b/.test(text);
+    return hasAction && hasDocument;
+  }
+
+  function isImageFileForAI(file) {
+    if (!file) return false;
+    var type = String(file.type || '').toLowerCase();
+    if (type.indexOf('image/') === 0) return true;
+    return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(String(file.name || ''));
   }
 
   function buildReportesEndpoint() {
@@ -1282,6 +1351,86 @@
     if (clearBtn) {
       clearBtn.classList.toggle('is-hidden', !file);
     }
+  }
+
+  function ensureDocumentModeUI() {
+    var modeEl = document.getElementById(MODE_ID);
+    if (modeEl && !modeEl.querySelector('option[value="documentos"]')) {
+      var option = document.createElement('option');
+      option.value = 'documentos';
+      option.textContent = 'Documentos IA';
+      var reportOption = modeEl.querySelector('option[value="reportes"]');
+      if (reportOption && reportOption.parentNode === modeEl) {
+        modeEl.insertBefore(option, reportOption);
+      } else {
+        modeEl.appendChild(option);
+      }
+    }
+
+    var tools = document.getElementById(DOCUMENT_TOOLS_ID);
+    if (tools) return tools;
+    var controls = modeEl && modeEl.closest('.ai-chat-controls');
+    if (!controls) return null;
+
+    tools = document.createElement('div');
+    tools.id = DOCUMENT_TOOLS_ID;
+    tools.className = 'ai-chat-control-field ai-chat-document-tools is-hidden';
+    tools.innerHTML =
+      '<span>Documento</span>' +
+      '<div class="ai-chat-document-tool-row">' +
+      '<select id="' + DOCUMENT_FORMAT_ID + '" class="form-input" aria-label="Formato de descarga del documento">' +
+      '<option value="pdf">PDF</option>' +
+      '<option value="docx">Word</option>' +
+      '<option value="xlsx">Excel</option>' +
+      '<option value="txt">TXT</option>' +
+      '<option value="json">JSON</option>' +
+      '</select>' +
+      '<button id="' + DOCUMENT_DOWNLOAD_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Descargar</button>' +
+      '</div>';
+    controls.appendChild(tools);
+
+    var downloadBtn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        downloadCurrentGeneratedDocument();
+      });
+    }
+    return tools;
+  }
+
+  function setGeneratedDocument(doc) {
+    state.generatedDocument = doc || null;
+    updateDocumentDownloadButton();
+  }
+
+  function getSelectedDocumentFormat() {
+    var select = document.getElementById(DOCUMENT_FORMAT_ID);
+    var value = normalize(select && select.value).toLowerCase();
+    return /^(pdf|docx|xlsx|txt|json)$/.test(value) ? value : 'pdf';
+  }
+
+  function updateDocumentDownloadButton() {
+    var btn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
+    if (!btn) return;
+    btn.disabled = !state.generatedDocument;
+    btn.textContent = state.generatedDocument ? 'Descargar' : 'Genera primero';
+  }
+
+  function downloadCurrentGeneratedDocument() {
+    var doc = state.generatedDocument;
+    if (!doc) {
+      setNotice('Primero genera un documento en modo Documentos IA.', true);
+      return;
+    }
+    var format = getSelectedDocumentFormat();
+    var urls = doc.download_urls || {};
+    var url = normalize(urls[format]) || ('/download?id=' + encodeURIComponent(doc.document_id || doc.id || '') + '&type=' + encodeURIComponent(format));
+    if (!url || url.indexOf('/download?') !== 0) {
+      setNotice('No se pudo resolver la descarga del documento.', true);
+      return;
+    }
+    window.location.href = url;
   }
 
   function isSpeechRecognitionSupported() {
@@ -1894,12 +2043,16 @@
   }
 
   function syncModeUI() {
+    ensureDocumentModeUI();
     var modeEl = document.getElementById(MODE_ID);
     var attachBtn = document.getElementById(ATTACH_BTN_ID);
     var clearBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
     var attachName = document.getElementById(ATTACHMENT_NAME_ID);
     var reportOption = modeEl && modeEl.querySelector('option[value="reportes"]');
+    var documentOption = modeEl && modeEl.querySelector('option[value="documentos"]');
+    var documentTools = document.getElementById(DOCUMENT_TOOLS_ID);
     var reportMode = isReportMode();
+    var documentMode = isDocumentMode();
     var superContext = isSuperContext();
 
     if (reportOption) {
@@ -1910,19 +2063,37 @@
         reportMode = false;
       }
     }
+    if (documentOption) {
+      documentOption.hidden = superContext;
+      documentOption.disabled = superContext;
+      if (superContext && normalize(modeEl.value) === 'documentos') {
+        modeEl.value = 'operativo';
+        documentMode = false;
+      }
+    }
 
-    if (attachBtn) attachBtn.disabled = reportMode;
-    if (clearBtn) clearBtn.disabled = reportMode;
+    if (documentTools) {
+      documentTools.classList.toggle('is-hidden', !documentMode);
+    }
+    if (!documentMode) {
+      updateDocumentDownloadButton();
+    }
+
+    if (attachBtn) attachBtn.disabled = reportMode || documentMode;
+    if (clearBtn) clearBtn.disabled = reportMode || documentMode;
     if (attachName) {
       if (reportMode) {
         attachName.textContent = 'Modo reportes: el asistente usara el flujo centralizado de reportes y exportaciones.';
+        attachName.classList.remove('is-hidden');
+      } else if (documentMode) {
+        attachName.textContent = 'Modo Documentos IA: GPT-5.4 mini generara el documento. Los adjuntos quedan desactivados; GPT-5.5 se reserva solo para fotos.';
         attachName.classList.remove('is-hidden');
       } else if (!getCurrentAttachment()) {
         attachName.textContent = '';
         attachName.classList.add('is-hidden');
       }
     }
-    if (reportMode && getCurrentAttachment()) {
+    if ((reportMode || documentMode) && getCurrentAttachment()) {
       clearAttachmentSelection();
     }
   }
@@ -1943,6 +2114,7 @@
     }
     state.proposals = [];
     state.exportables = [];
+    setGeneratedDocument(null);
     clearAttachmentSelection();
     var input = document.getElementById(INPUT_ID);
     if (input) {
@@ -2229,7 +2401,7 @@
       item.dataset.proposalIndex = String(proposalIndex);
       item.appendChild(createActionProposalElement(actionProposal, proposalIndex));
     }
-    if (author === 'assistant' && messageType !== 'error' && shouldShowDocumentExports(text)) {
+    if (author === 'assistant' && messageType !== 'error' && messageType !== 'document' && shouldShowDocumentExports(text)) {
       item.appendChild(createDocumentExportElement(text, inferCurrentSourceModule()));
     }
 
@@ -2295,7 +2467,65 @@
     });
   }
 
+  function generateDocumentFromPrompt(query) {
+    if (isSuperContext()) {
+      throw new Error('El modo Documentos IA requiere una empresa activa.');
+    }
+    var empresaId = getCurrentEmpresaId();
+    if (!empresaId) {
+      throw new Error('No se encontro una empresa activa para generar el documento.');
+    }
+    var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
+    return fetch('/api/empresa/chat_documentos/generar', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-PCS-Source': 'ai_drawer_document_mode'
+      },
+      body: JSON.stringify({
+        empresa_id: parsePositiveInt(empresaId),
+        title: inferDocumentExportTitle(query),
+        prompt: query,
+        input_format: 'markdown',
+        template_name: inferDocumentExportType(query),
+        model_id: 'openai:gpt-5.4-mini',
+        formats: ['pdf', 'docx', 'xlsx', 'txt', 'json'],
+        metadata: {
+          origin: 'chat_ia',
+          source_module: inferCurrentSourceModule(),
+          document_mode: true,
+          page_context: pageContext
+        }
+      })
+    }).then(function (resp) {
+      if (!resp.ok) return parseErrorResponse(resp);
+      return resp.json();
+    }).then(function (data) {
+      if (!data || data.ok === false) {
+        throw new Error((data && data.error) ? String(data.error) : 'No se pudo generar el documento.');
+      }
+      setGeneratedDocument(data);
+      var selectedFormat = getSelectedDocumentFormat().toUpperCase();
+      var preview = normalize(data.preview_text);
+      var text = 'Documento generado con GPT-5.4 mini: ' + normalize(data.title || 'Documento IA') + '.';
+      text += '\nFormato seleccionado para descarga: ' + selectedFormat + '.';
+      text += '\nUsa el boton Descargar para obtenerlo como PDF, Word, Excel, TXT o JSON.';
+      if (preview) {
+        text += '\n\nVista previa:\n' + preview;
+      }
+      return { clean: text, proposal: null, document: data };
+    });
+  }
+
   function sendQuery(query, attachment) {
+    var useDocumentMode = isDocumentMode() || (!attachment && shouldAutoUseDocumentMode(query));
+    if (useDocumentMode) {
+      if (attachment) {
+        throw new Error('El modo Documentos IA no usa adjuntos. Para fotos cambia a modo operativo y adjunta la imagen.');
+      }
+      return generateDocumentFromPrompt(query);
+    }
     if (isReportMode()) {
       if (isSuperContext()) {
         throw new Error('El modo reportes centralizado aplica al contexto de empresa. En super administrador usa el asistente global en modo operativo o ayudante.');
@@ -2345,7 +2575,8 @@
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
-      modo_asistente: mode
+      modo_asistente: mode,
+      model_id: 'openai:gpt-5.4-mini'
     };
 
     if (pageContext) {
@@ -2368,6 +2599,9 @@
     };
 
     if (attachment) {
+      if (!isImageFileForAI(attachment)) {
+        throw new Error('GPT-5.5 solo se usara para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA.');
+      }
       var formData = new FormData();
       formData.set('pregunta', query);
       formData.set('modo_asistente', mode);
@@ -2452,6 +2686,9 @@
       if (hasActions) {
         setRobotMood('action', 3200);
         renderRobotProposalActions(result.proposal);
+      } else if (result && result.document) {
+        setRobotMood('action', 3200);
+        renderRobotGeneratedDocumentActions(result.document);
       } else {
         renderRobotDocumentExportActions(answer);
       }
@@ -2620,10 +2857,10 @@
 
     sendQuery(query, attachment).then(function (result) {
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
-      appendMessage('assistant', result.clean, null, result.proposal);
+      appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal);
       if (hasActions) setRobotMood('action', 3200);
       speakAssistantText(result.clean);
-      setNotice('Respuesta lista. Puedes seguir escribiendo otra consulta.');
+      setNotice(result && result.document ? 'Documento listo. Elige formato y presiona Descargar.' : 'Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
       if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 2600);
@@ -2801,6 +3038,7 @@
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
     var submitBtn = form.querySelector('button[type="submit"]');
+    ensureDocumentModeUI();
 
     toggle.addEventListener('click', function () {
       if (!state.chatEnabled) return;
@@ -2849,9 +3087,11 @@
     if (modeEl) {
       modeEl.addEventListener('change', function () {
         syncModeUI();
-        setNotice(isReportMode()
-          ? 'Modo reportes activo. Este chat central usara el flujo de reportes y exportaciones de la empresa.'
-          : 'Modo actualizado. Puedes seguir consultando normalmente.');
+        setNotice(isDocumentMode()
+          ? 'Modo Documentos IA activo. GPT-5.4 mini generara documentos descargables.'
+          : (isReportMode()
+            ? 'Modo reportes activo. Este chat central usara el flujo de reportes y exportaciones de la empresa.'
+            : 'Modo actualizado. Puedes seguir consultando normalmente.'));
       });
     }
     if (hintToggle && hints) {
@@ -2875,6 +3115,10 @@
           setNotice('El modo reportes no admite adjuntos en este flujo.', true);
           return;
         }
+        if (isDocumentMode()) {
+          setNotice('El modo Documentos IA no usa adjuntos. Para fotos cambia a modo operativo.', true);
+          return;
+        }
         attachInput.click();
       });
       attachInput.addEventListener('change', function () {
@@ -2886,6 +3130,11 @@
         if (Number(file.size) > MAX_ATTACHMENT_BYTES) {
           clearAttachmentSelection();
           setNotice('El archivo supera el maximo permitido de 8 MB.', true);
+          return;
+        }
+        if (!isImageFileForAI(file)) {
+          clearAttachmentSelection();
+          setNotice('GPT-5.5 solo se usa para subir y analizar fotos o imagenes. Para documentos usa el modo Documentos IA.', true);
           return;
         }
         state.selectedAttachment = file;

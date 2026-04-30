@@ -28,6 +28,18 @@ type carritoPagoMixtoNormalizado struct {
 	Referencia string
 }
 
+type carritoBusinessPrerequisite struct {
+	OK           bool                     `json:"ok"`
+	Code         string                   `json:"code"`
+	Title        string                   `json:"title"`
+	Message      string                   `json:"message"`
+	RobotMessage string                   `json:"robot_message"`
+	Scope        string                   `json:"scope"`
+	Steps        []string                 `json:"steps"`
+	Missing      []string                 `json:"missing,omitempty"`
+	Actions      []map[string]interface{} `json:"actions,omitempty"`
+}
+
 // EmpresaCarritosCompraHandler gestiona CRUD de carritos por empresa.
 func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -193,6 +205,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudieron listar los carritos", http.StatusInternalServerError)
 				return
 			}
+			attachCarritoStationRuntimeSummaries(dbEmp, rows)
 			writeJSON(w, http.StatusOK, rows)
 			return
 
@@ -261,7 +274,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":          true,
+					"ok":           true,
 					"empresa_id":   empresaID,
 					"estacion_id":  estacionID,
 					"carrito_id":   carrito.ID,
@@ -301,6 +314,12 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if !resetItems && normalizeCarritoRegistroEstado(carrito.Estado) == "activo" && normalizeCarritoOperativoEstado(carrito.EstadoCarrito) == "abierto" {
 					http.Error(w, "la venta ya se encuentra activa y abierta", http.StatusConflict)
 					return
+				}
+				if resetItems {
+					if err := validateStationCancelMargin(dbEmp, empresaID, carrito); err != nil {
+						http.Error(w, err.Error(), http.StatusConflict)
+						return
+					}
 				}
 				if err := dbpkg.ActivateCarritoStationSession(dbEmp, empresaID, id, resetItems); err != nil {
 					log.Printf("[carritos] activar_estacion empresa_id=%d id=%d reset_items=%v error: %v", empresaID, id, resetItems, err)
@@ -348,6 +367,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
 					log.Printf("[carritos] validate failed action=%s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q err=%v", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn, err)
 					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+				if prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito); err != nil {
+					log.Printf("[carritos] preflight pago empresa_id=%d id=%d error: %v", empresaID, id, err)
+					http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
+					return
+				} else if prerequisite != nil {
+					writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
 					return
 				}
 
@@ -1164,9 +1191,9 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 Pasos sugeridos:
 1) Cree al menos una bodega para la empresa (tabla 'bodegas').
 2) Asigne existencia para el producto en la bodega (tabla 'inventario_existencias'), por ejemplo:
-   INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (6, 2, <BODEGA_ID>, 10, 'activo', datetime('now','localtime'), datetime('now','localtime'), 'admin@example.com');
+   INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (<EMPRESA_ID>, <PRODUCTO_ID>, <BODEGA_ID>, 10, 'activo', datetime('now','localtime'), datetime('now','localtime'), '<USUARIO>');
 3) Alternativamente, establezca 'bodega_principal_id' en la tabla 'productos':
-   UPDATE productos SET bodega_principal_id = <BODEGA_ID> WHERE empresa_id = 6 AND id = 2;
+   UPDATE productos SET bodega_principal_id = <BODEGA_ID> WHERE empresa_id = <EMPRESA_ID> AND id = <PRODUCTO_ID>;
 4) Reintente agregar el producto al carrito.
 
 Si necesita ayuda, consulte la sección de Inventario o contacte al administrador.`
@@ -1280,6 +1307,40 @@ func validateCarritoPayload(payload dbpkg.CarritoCompra) error {
 		return fmt.Errorf("cliente_id invalido")
 	}
 	return nil
+}
+
+func attachCarritoStationRuntimeSummaries(dbEmp *sql.DB, rows []dbpkg.CarritoCompra) {
+	if dbEmp == nil || len(rows) == 0 {
+		return
+	}
+	now := time.Now()
+	for i := range rows {
+		estadoRegistro := normalizeCarritoRegistroEstado(rows[i].Estado)
+		estadoOperativo := normalizeCarritoOperativoEstado(rows[i].EstadoCarrito)
+		if estadoRegistro != "activo" || estadoOperativo != "abierto" || strings.TrimSpace(rows[i].PagadoEn) != "" {
+			continue
+		}
+		estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(&rows[i])
+		if estacionID <= 0 {
+			continue
+		}
+		minutos, err := dbpkg.ResolveCarritoTarifaPorMinutosResumen(dbEmp, rows[i], now)
+		if err != nil {
+			log.Printf("[carritos] resumen tarifa minutos omitido empresa_id=%d carrito_id=%d error: %v", rows[i].EmpresaID, rows[i].ID, err)
+		}
+		if minutos != nil {
+			rows[i].TarifaPorMinutos = minutos
+			continue
+		}
+		dia, err := dbpkg.ResolveCarritoTarifaPorDiaResumen(dbEmp, rows[i], now)
+		if err != nil {
+			log.Printf("[carritos] resumen tarifa dia omitido empresa_id=%d carrito_id=%d error: %v", rows[i].EmpresaID, rows[i].ID, err)
+			continue
+		}
+		if dia != nil {
+			rows[i].TarifaPorDia = dia
+		}
+	}
 }
 
 func normalizeCarritoRegistroEstado(v string) string {
@@ -1728,6 +1789,240 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		"envio_correo_venta":      envioCorreoVenta,
 		"envio_correo_factura_fe": envioCorreoFactura,
 	}, nil
+}
+
+func writeCarritoBusinessPrerequisite(w http.ResponseWriter, status int, prerequisite carritoBusinessPrerequisite) {
+	prerequisite.OK = false
+	if prerequisite.Scope == "" {
+		prerequisite.Scope = "pagar_estacion"
+	}
+	writeJSON(w, status, prerequisite)
+}
+
+func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra) (*carritoBusinessPrerequisite, error) {
+	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 || carrito.ID <= 0 {
+		return nil, nil
+	}
+	if carrito.ItemCount <= 0 && roundMoneyCarritoHandler(carrito.Total) <= 0 {
+		return &carritoBusinessPrerequisite{
+			Code:         "carrito_sin_productos",
+			Title:        "Carrito sin productos o tarifa",
+			Message:      "Antes de pagar debes agregar al menos un producto, servicio o tarifa al carrito. Asi el cierre queda trazable y el documento de venta sale con detalle.",
+			RobotMessage: "No cierres todavia este carrito. Primero agrega productos o configura una tarifa para esta estacion. Pasos: entra a Buscar productos, agrega el producto o servicio, revisa el total y despues vuelve a presionar Pagar.",
+			Scope:        "pagar_estacion",
+			Steps: []string{
+				"Agrega un producto, combo, servicio o tarifa al carrito.",
+				"Verifica que el total a pagar sea mayor o igual al valor esperado.",
+				"Vuelve a presionar Pagar cuando el detalle este completo.",
+			},
+			Actions: []map[string]interface{}{
+				{"label": "Buscar productos", "url": fmt.Sprintf("/administrar_empresa/buscar_producto_botones.html?empresa_id=%d&carrito_id=%d", carrito.EmpresaID, carrito.ID)},
+			},
+		}, nil
+	}
+
+	cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, carrito.EmpresaID)
+	if err != nil {
+		return nil, err
+	}
+	if !carritoShouldEmitFacturaElectronica(cfg) {
+		return nil, nil
+	}
+
+	paisCodigo := strings.TrimSpace(cfg.PaisCodigo)
+	if paisCodigo == "" {
+		paisDetectado, _, err := dbpkg.DetectFacturacionPais(dbEmp, carrito.EmpresaID, "", "")
+		if err != nil {
+			return nil, err
+		}
+		paisCodigo = paisDetectado.Codigo
+	}
+	feCfg, feErr := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, carrito.EmpresaID, paisCodigo)
+	if feErr != nil && !errors.Is(feErr, sql.ErrNoRows) {
+		return nil, feErr
+	}
+
+	missing := missingFacturacionElectronicaPaymentFields(cfg, feCfg)
+	if feCfg != nil && strings.EqualFold(strings.TrimSpace(feCfg.Estado), "inactivo") {
+		missing = append(missing, "perfil de facturacion por pais activo")
+	}
+	if reason := invalidFacturacionResolutionReason(cfg); reason != "" {
+		missing = append(missing, reason)
+	}
+	if len(missing) == 0 {
+		return nil, nil
+	}
+
+	configURL := fmt.Sprintf("/administrar_empresa/facturacion_electronica.html?empresa_id=%d", carrito.EmpresaID)
+	message := "Antes de pagar debes completar el formato y la configuracion de facturacion electronica de la empresa. Faltan: " + strings.Join(missing, ", ") + "."
+	return &carritoBusinessPrerequisite{
+		Code:         "facturacion_configuracion_incompleta",
+		Title:        "Configura la factura antes de pagar",
+		Message:      message,
+		RobotMessage: "Alto un momento: esta empresa tiene factura electronica automatica al cerrar la venta, pero la configuracion todavia no esta completa. Abre Facturacion electronica, completa datos fiscales, resolucion, numeracion y formato de impresion, guarda los cambios y vuelve al carrito para pagar.",
+		Scope:        "pagar_estacion",
+		Missing:      missing,
+		Steps: []string{
+			"Abre Administrar empresa > Configuracion > Facturacion electronica.",
+			"Completa los datos fiscales del emisor: tipo de documento, NIT o identificador fiscal y razon social.",
+			"Completa resolucion y numeracion: prefijo, numero de resolucion, fechas de vigencia y rango de consecutivos.",
+			"Revisa Impresion y apariencia de factura: formato, logo, pie y notas legales si aplican.",
+			"Guarda la configuracion y vuelve al carrito para pagar.",
+		},
+		Actions: []map[string]interface{}{
+			{"label": "Abrir facturacion", "url": configURL},
+		},
+	}, nil
+}
+
+func carritoShouldEmitFacturaElectronica(cfg *dbpkg.EmpresaConfiguracionAvanzada) bool {
+	if cfg == nil || normalizeVentaDocumentMode(cfg.ModoDocumentoVenta) != "factura_electronica" {
+		return false
+	}
+	if cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
+		ciclo := cfg.FacturacionFrecuenciaCadaNNo + 1
+		if ciclo <= 0 {
+			return true
+		}
+		contador := cfg.FacturacionFrecuenciaContador % ciclo
+		if contador < 0 {
+			contador = 0
+		}
+		return contador == 0
+	}
+	return true
+}
+
+func missingFacturacionElectronicaPaymentFields(cfg *dbpkg.EmpresaConfiguracionAvanzada, feCfg *dbpkg.FacturacionElectronicaPaisConfig) []string {
+	missing := make([]string, 0)
+	value := func(advanced, country string) string {
+		if strings.TrimSpace(country) != "" {
+			return strings.TrimSpace(country)
+		}
+		return strings.TrimSpace(advanced)
+	}
+	if cfg == nil {
+		return []string{"configuracion avanzada de facturacion"}
+	}
+	if value(cfg.TipoDocumentoEmisor, nonNilFacturacionPaisField(feCfg, "tipo_documento_emisor")) == "" {
+		missing = append(missing, "tipo de documento del emisor")
+	}
+	if value(cfg.NIT, nonNilFacturacionPaisField(feCfg, "identificador_fiscal")) == "" {
+		missing = append(missing, "NIT o identificador fiscal")
+	}
+	if value(cfg.RazonSocial, nonNilFacturacionPaisField(feCfg, "razon_social")) == "" {
+		missing = append(missing, "razon social")
+	}
+	if value(cfg.PrefijoFactura, nonNilFacturacionPaisField(feCfg, "prefijo_factura")) == "" {
+		missing = append(missing, "prefijo de factura")
+	}
+	if value(cfg.ResolucionNumero, nonNilFacturacionPaisField(feCfg, "resolucion_numero")) == "" {
+		missing = append(missing, "numero de resolucion")
+	}
+	if strings.TrimSpace(cfg.FormatoImpresion) == "" {
+		missing = append(missing, "formato de impresion de factura")
+	}
+	if cfg.ConsecutivoDesde <= 0 || cfg.ConsecutivoHasta < cfg.ConsecutivoDesde || cfg.ProximoConsecutivo < cfg.ConsecutivoDesde || cfg.ProximoConsecutivo > cfg.ConsecutivoHasta {
+		missing = append(missing, "rango de consecutivos valido")
+	}
+	return missing
+}
+
+func nonNilFacturacionPaisField(cfg *dbpkg.FacturacionElectronicaPaisConfig, field string) string {
+	if cfg == nil {
+		return ""
+	}
+	switch field {
+	case "tipo_documento_emisor":
+		return cfg.TipoDocumentoEmisor
+	case "identificador_fiscal":
+		return cfg.IdentificadorFiscal
+	case "razon_social":
+		return cfg.RazonSocial
+	case "prefijo_factura":
+		return cfg.PrefijoFactura
+	case "resolucion_numero":
+		return cfg.ResolucionNumero
+	default:
+		return ""
+	}
+}
+
+func validateStationCancelMargin(dbEmp *sql.DB, empresaID int64, carrito *dbpkg.CarritoCompra) error {
+	if carrito == nil {
+		return nil
+	}
+	if isCarritoVentaPagada(carrito) {
+		return nil
+	}
+	if normalizeCarritoRegistroEstado(carrito.Estado) != "activo" || normalizeCarritoOperativoEstado(carrito.EstadoCarrito) != "abierto" {
+		return nil
+	}
+	cfg, err := dbpkg.GetEmpresaTarifaPorMinutosConfiguracion(dbEmp, empresaID)
+	if err != nil {
+		log.Printf("[carritos] cancel margin config empresa_id=%d error: %v", empresaID, err)
+		return nil
+	}
+	if cfg == nil || !cfg.MargenDesactivacionHabilitado || cfg.MargenDesactivacionMinutos <= 0 {
+		return nil
+	}
+	activadoAt, ok := parseCarritoActivationTime(carrito.ActivadoEn)
+	if !ok {
+		return nil
+	}
+	elapsed := time.Since(activadoAt)
+	if elapsed < 0 {
+		return nil
+	}
+	if elapsed > time.Duration(cfg.MargenDesactivacionMinutos)*time.Minute {
+		return fmt.Errorf("el margen para cancelar o desactivar la estacion vencio. Debes usar Pagar y cerrar carrito para finalizar esta sesion")
+	}
+	return nil
+}
+
+func parseCarritoActivationTime(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		time.RFC3339,
+		time.RFC3339Nano,
+	}
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func invalidFacturacionResolutionReason(cfg *dbpkg.EmpresaConfiguracionAvanzada) string {
+	if cfg == nil {
+		return ""
+	}
+	nowDate := time.Now().Format("2006-01-02")
+	if raw := strings.TrimSpace(cfg.ResolucionFechaDesde); raw != "" {
+		desde, err := time.Parse("2006-01-02", raw)
+		if err != nil {
+			return "fecha inicial de resolucion valida"
+		}
+		if nowDate < desde.Format("2006-01-02") {
+			return "resolucion vigente: la fecha inicial aun no aplica"
+		}
+	}
+	if raw := strings.TrimSpace(cfg.ResolucionFechaHasta); raw != "" {
+		hasta, err := time.Parse("2006-01-02", raw)
+		if err != nil {
+			return "fecha final de resolucion valida"
+		}
+		if nowDate > hasta.Format("2006-01-02") {
+			return "resolucion vigente: la resolucion esta vencida"
+		}
+	}
+	return ""
 }
 
 func parseOptionalInt64CarritoQuery(r *http.Request, key string) (int64, error) {

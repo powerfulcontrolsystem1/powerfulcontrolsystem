@@ -13,14 +13,14 @@ import (
 
 const (
 	reportesIAModelTextUsageID   = "openai:gpt-5.4-mini:reportes_texto"
-	reportesIAModelReportUsageID = "openai:gpt-5.5:reportes_export"
+	reportesIAModelReportUsageID = "openai:gpt-5.4-mini:reportes_export"
 	reportesIATextDailyLimit     = 10
 	reportesIAReportDailyLimit   = 2
 )
 
 // EmpresaReportesIAChatHandler agrega un chat compacto dentro de reportes.
 // - modo texto: GPT-5.4 mini, 10 preguntas/dia por empresa.
-// - modo reporte: GPT-5.5, 2 reportes/dia por empresa; interpreta dataset/formato y devuelve URL de exportacion.
+// - modo reporte: GPT-5.4 mini, 2 reportes/dia por empresa; interpreta dataset/formato y devuelve URL de exportacion.
 func EmpresaReportesIAChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -139,9 +139,9 @@ func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp,
 }
 
 func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, pregunta string, historial []empresaAIChatMensaje, dataset, format, desde, hasta string) {
-	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.5"]
+	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
 	if !ok {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.5 no esta disponible."})
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible."})
 		return
 	}
 	fechaUso := time.Now().Format("2006-01-02")

@@ -1,0 +1,284 @@
+:root {
+  --bg: #06070a;
+  --panel: #10141d;
+  --panel-soft: #171d29;
+  --border: #293244;
+  --text: #f4f7fb;
+  --muted: #9aa6bb;
+  --accent: #38bdf8;
+  --accent-strong: #0ea5e9;
+  --danger: #fb7185;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.games-panel {
+  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--panel), #0b0f17);
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.panel-header,
+.player-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1rem;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.status-row span,
+.selector-card,
+.rom-card {
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  border-radius: 10px;
+}
+
+.status-row span {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: .86rem;
+}
+
+.selector-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 18px;
+}
+
+label {
+  color: var(--muted);
+  font-size: .86rem;
+  font-weight: 700;
+}
+
+select,
+button {
+  min-height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+select {
+  width: 100%;
+  background: #0b111b;
+  color: var(--text);
+  padding: 0 10px;
+}
+
+button {
+  cursor: pointer;
+  background: #1c2534;
+  color: var(--text);
+  padding: 0 14px;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.primary-button {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #00111c;
+  font-weight: 900;
+}
+
+.icon-button {
+  min-height: 36px;
+  font-size: .82rem;
+}
+
+.rom-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.rom-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  text-align: left;
+}
+
+.rom-card strong {
+  overflow-wrap: anywhere;
+}
+
+.rom-card small {
+  color: var(--muted);
+}
+
+.rom-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, .18);
+}
+
+.player-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  gap: 14px;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-shell {
+  position: relative;
+  flex: 1;
+  min-height: min(70vh, 720px);
+  border: 1px solid var(--border);
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+}
+
+.empty-state strong {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.empty-state code {
+  color: var(--accent);
+}
+
+.message {
+  min-height: 22px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.message.is-error {
+  color: var(--danger);
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .games-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 42vh;
+  }
+
+  .rom-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .player-panel {
+    padding: 12px;
+  }
+
+  .player-toolbar {
+    align-items: flex-start;
+  }
+
+  .player-shell {
+    min-height: 58vh;
+    border-radius: 8px;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 260px 1fr;
+  }
+
+  .games-panel {
+    max-height: 100vh;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+
+  .player-shell {
+    min-height: calc(100vh - 110px);
+  }
+}

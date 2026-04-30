@@ -904,10 +904,11 @@
     await render();
   }
 
-  function appendEmpresasGroup(container, title, empresas, activeByEmpresa) {
+  function appendEmpresasGroup(container, title, empresas, activeByEmpresa, options) {
     if (!empresas.length) return;
+    var opts = options && typeof options === "object" ? options : {};
     var section = document.createElement("section");
-    section.className = "card empresa-section selector-company-group";
+    section.className = "card empresa-section selector-company-group" + (opts.variant ? " selector-company-group--" + opts.variant : "");
 
     var header = document.createElement("div");
     header.className = "empresa-section-header";
@@ -1020,8 +1021,8 @@
         return !activeByEmpresa[e.id];
       });
 
-      appendEmpresasGroup(container, "Empresas con licencia activa", conLicenciaActiva, activeByEmpresa);
-      appendEmpresasGroup(container, "Empresas sin licencia activa", sinLicenciaActiva, activeByEmpresa);
+      appendEmpresasGroup(container, "Empresas con licencia activa", conLicenciaActiva, activeByEmpresa, { variant: "active" });
+      appendEmpresasGroup(container, "Empresas sin licencia activa", sinLicenciaActiva, activeByEmpresa, { variant: "inactive" });
 
       document.getElementById("addBtn").onclick = function () {
         showForm();

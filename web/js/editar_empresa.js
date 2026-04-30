@@ -9,6 +9,7 @@
       requester_email: "",
       principal_email: "",
     },
+    deleteDownloadOffered: false,
   };
 
   function $(id) {
@@ -30,6 +31,22 @@
       }
     } catch (e) {}
     window.location.href = "/seleccionar_empresa.html";
+  }
+
+  function buildEmpresaDownloadUrl() {
+    var empresaId = state.empresa && state.empresa.id ? state.empresa.id : getEmpresaId();
+    return "/descargar_informacion_de_la_empresa.html?empresa_id=" + encodeURIComponent(empresaId);
+  }
+
+  function openEmpresaDownload() {
+    state.deleteDownloadOffered = true;
+    var url = buildEmpresaDownloadUrl();
+    try {
+      window.open(url, "_blank", "noopener");
+    } catch (e) {
+      window.location.href = url;
+    }
+    setMessage("empresaDeleteMessage", "Se abrio la pagina de descarga. Cuando termines, vuelve aqui y confirma la eliminacion si deseas continuar.", false);
   }
 
   async function fetchJSON(url, options) {
@@ -167,6 +184,9 @@
     }
     if ($("empresaDeleteBtn")) {
       $("empresaDeleteBtn").disabled = !!isShared;
+    }
+    if ($("empresaDownloadBeforeDeleteBtn")) {
+      $("empresaDownloadBeforeDeleteBtn").disabled = !!isShared;
     }
     if (shareCard) {
       shareCard.style.display = '';
@@ -343,10 +363,17 @@
       setMessage("empresaDeleteMessage", "El nombre digitado no coincide exactamente.", true);
       return;
     }
-    if (!window.confirm("Esta accion eliminara todos los datos de la empresa. ¿Deseas continuar?")) {
+    if (!state.deleteDownloadOffered) {
+      var wantsDownload = window.confirm("Antes de eliminar, puedes descargar toda la informacion de la empresa. Aceptar abre la descarga y detiene la eliminacion por ahora. Cancelar continua con la eliminacion sin descargar.");
+      state.deleteDownloadOffered = true;
+      if (wantsDownload) {
+        openEmpresaDownload();
+        return;
+      }
+    }
+    if (!window.confirm("Esta accion eliminara TODO rastro de la empresa: registros, auditoria, archivos, documentos, respaldos y accesos asociados. Esta accion no se puede deshacer. Deseas continuar?")) {
       return;
     }
-
     try {
       var data = await fetchJSON(
         "/super/api/empresas?id=" + encodeURIComponent(state.empresa.id) + "&action=eliminar_total",
@@ -358,13 +385,16 @@
         }
       );
       var result = data && data.result ? data.result : null;
-      setMessage(
-        "empresaDeleteMessage",
-        result
-          ? "Empresa eliminada. Tablas afectadas: " + result.tablas_afectadas + ". Registros eliminados: " + result.registros_eliminados + "."
-          : "Empresa eliminada correctamente.",
-        false
-      );
+      var archivos = data && data.archivos ? data.archivos : {};
+      var pathsEliminados = Array.isArray(archivos.paths_eliminados) ? archivos.paths_eliminados.length : 0;
+      var erroresArchivos = Array.isArray(archivos.errores) ? archivos.errores.length : 0;
+      var message = result
+        ? "Empresa eliminada. Tablas afectadas: " + result.tablas_afectadas + ". Registros eliminados: " + result.registros_eliminados + ". Carpetas eliminadas: " + pathsEliminados + "."
+        : "Empresa eliminada correctamente. Carpetas eliminadas: " + pathsEliminados + ".";
+      if (erroresArchivos) {
+        message += " Advertencias al limpiar archivos: " + erroresArchivos + ".";
+      }
+      setMessage("empresaDeleteMessage", message, false);
       window.setTimeout(function () {
         redirectToSeleccionarEmpresa();
       }, 900);
@@ -448,6 +478,10 @@
     var deleteBtn = $("empresaDeleteBtn");
     if (deleteBtn) {
       deleteBtn.addEventListener("click", deleteEmpresa);
+    }
+    var downloadBtn = $("empresaDownloadBeforeDeleteBtn");
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", openEmpresaDownload);
     }
     var shareForm = $("empresaShareForm");
     if (shareForm) {

@@ -768,15 +768,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "failed to purge empresa: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result})
+				fileCleanup := cleanupEmpresaOwnedFiles(id)
+				if len(fileCleanup.Errores) > 0 {
+					log.Printf("DELETE /super/api/empresas action=%s id=%d file cleanup warnings: %v", action, id, fileCleanup.Errores)
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result, "archivos": fileCleanup})
 				return
 			}
-			if err := dbpkg.DeleteEmpresa(dbEmp, id); err != nil {
-				log.Println("DELETE /super/api/empresas error:", err)
-				http.Error(w, "failed to delete empresa: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
+			http.Error(w, "la eliminacion simple fue deshabilitada; usa action=eliminar_total con confirmacion_nombre", http.StatusPreconditionRequired)
 			return
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

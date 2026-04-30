@@ -1083,19 +1083,38 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
 				return
 			}
+			if requesterAdmin == nil || !strings.EqualFold(strings.TrimSpace(requesterAdmin.Role), "super_administrador") {
+				http.Error(w, "solo el super administrador puede agregar administradores", http.StatusForbidden)
+				return
+			}
 			var payload struct{ Email, Name, Role, Photo string }
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
+			payload.Email = strings.TrimSpace(payload.Email)
+			payload.Name = strings.TrimSpace(payload.Name)
+			payload.Photo = strings.TrimSpace(payload.Photo)
+			payload.Role = strings.ToLower(strings.TrimSpace(payload.Role))
 			if payload.Email == "" {
 				http.Error(w, "email required", http.StatusBadRequest)
 				return
 			}
-			if requesterAdmin != nil && strings.TrimSpace(requesterAdmin.Role) != "" {
-				payload.Role = strings.TrimSpace(requesterAdmin.Role)
-			} else if payload.Role == "" {
+			if payload.Role == "" {
 				payload.Role = "administrador"
+			}
+			if payload.Role != "administrador" && payload.Role != "super_administrador" {
+				http.Error(w, "rol invalido", http.StatusBadRequest)
+				return
+			}
+			if existing, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email); err != nil {
+				if err != sql.ErrNoRows {
+					http.Error(w, "failed to validate administrador existente", http.StatusInternalServerError)
+					return
+				}
+			} else if existing != nil && existing.ID > 0 {
+				http.Error(w, "el administrador ya existe; elimina el registro antes de crearlo de nuevo", http.StatusConflict)
+				return
 			}
 			creatorEmail := ""
 			if principalEmail != "" && !strings.EqualFold(strings.TrimSpace(payload.Email), principalEmail) {
@@ -1161,16 +1180,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			var payloadUpdate struct{ Name, Role string }
-			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
-				http.Error(w, "invalid payload", http.StatusBadRequest)
-				return
-			}
-			if err := dbpkg.UpdateAdministrador(dbSuper, id, payloadUpdate.Name, payloadUpdate.Role); err != nil {
-				http.Error(w, "failed to update administrador: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
+			http.Error(w, "no se permite editar administradores ni cambiar roles desde esta API; elimina y crea el registro si corresponde", http.StatusMethodNotAllowed)
 			return
 		case http.MethodDelete:
 			q := r.URL.Query()
@@ -1184,9 +1194,13 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
 			}
-			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 			if err != nil {
 				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if requesterAdmin == nil || !strings.EqualFold(strings.TrimSpace(requesterAdmin.Role), "super_administrador") {
+				http.Error(w, "solo el super administrador puede eliminar administradores", http.StatusForbidden)
 				return
 			}
 			if principalEmail != "" {

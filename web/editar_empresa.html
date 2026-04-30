@@ -97,7 +97,7 @@
 
       <article class="card empresa-edit-card empresa-edit-danger empresa-edit-delete-card">
         <h2>Eliminar</h2>
-        <p class="empresa-edit-panel-copy">Esta accion borra la empresa y todos los datos asociados por empresa_id. El sistema exige confirmacion por nombre exacto.</p>
+        <p class="empresa-edit-panel-copy">Esta accion borra la empresa, sus registros, archivos, documentos, respaldos y accesos asociados. Antes de continuar puedes descargar su informacion.</p>
         <div class="empresa-edit-delete-summary">
           <div class="empresa-edit-delete-chip">
             <span>Usuarios activos</span>
@@ -118,12 +118,16 @@
         </div>
         <div id="empresaEditImpacto" class="empresa-edit-impacto muted"></div>
         <div class="empresa-edit-danger-box">
-        <label class="form-label" for="empresaDeleteConfirm">Escribe el nombre exacto de la empresa para confirmar</label>
-        <input id="empresaDeleteConfirm" class="form-input" autocomplete="off">
-        <div class="form-actions">
-          <button id="empresaDeleteBtn" type="button" class="btn danger">Eliminar empresa definitivamente</button>
-        </div>
-        <div id="empresaDeleteMessage" class="form-help"></div>
+          <p class="form-help empresa-delete-warning">Recomendacion: descarga primero la informacion de la empresa. Luego podras confirmar la eliminacion definitiva si ya no necesitas conservarla.</p>
+          <div class="form-actions empresa-delete-download-actions">
+            <button id="empresaDownloadBeforeDeleteBtn" type="button" class="btn secondary">Descargar informacion antes de eliminar</button>
+          </div>
+          <label class="form-label" for="empresaDeleteConfirm">Escribe el nombre exacto de la empresa para confirmar</label>
+          <input id="empresaDeleteConfirm" class="form-input" autocomplete="off">
+          <div class="form-actions">
+            <button id="empresaDeleteBtn" type="button" class="btn danger">Eliminar empresa definitivamente</button>
+          </div>
+          <div id="empresaDeleteMessage" class="form-help"></div>
         </div>
       </article>
     </section>

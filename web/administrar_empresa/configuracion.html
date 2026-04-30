@@ -21,6 +21,10 @@
           <span class="empresa-config-map-title">Cobro y comisiones</span>
           <span>Metodos de pago, propinas y reglas por rol.</span>
         </a>
+        <a href="#configuracionCaja" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Caja y cajon</span>
+          <span>Apertura automatica del cajon monedero.</span>
+        </a>
         <a href="#configuracionDocumentoImpresion" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Documentos e impresion</span>
           <span>Documento de venta, formatos e impresoras.</span>
@@ -390,6 +394,66 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section id="configuracionCaja" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Caja y cajon monedero</h2>
+        <button id="btnGuardarCajaConfig" type="button" class="btn">Guardar caja</button>
+      </div>
+      <p class="form-help">Configura la caja operativa de la empresa y define si el cajon monedero se abre automaticamente al terminar el pago de un carrito o una transaccion.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <label class="empresa-config-check" for="cajaActiva">
+            <input id="cajaActiva" type="checkbox" checked>
+            <span>Caja activa para ventas</span>
+          </label>
+
+          <label for="cajaNombre">Nombre de la caja</label>
+          <input id="cajaNombre" type="text" maxlength="120" placeholder="Caja principal">
+
+          <label for="cajaCodigo">Codigo interno</label>
+          <input id="cajaCodigo" type="text" maxlength="80" placeholder="CAJA-01">
+
+          <label for="cajaObservaciones">Observaciones</label>
+          <textarea id="cajaObservaciones" rows="4" maxlength="800" placeholder="Notas internas de operacion, responsable o ubicacion fisica."></textarea>
+        </div>
+
+        <div class="form">
+          <label class="empresa-config-check" for="cajonMonederoHabilitado">
+            <input id="cajonMonederoHabilitado" type="checkbox">
+            <span>Habilitar cajon monedero</span>
+          </label>
+
+          <label class="empresa-config-check" for="abrirCajonAlPagarCarrito">
+            <input id="abrirCajonAlPagarCarrito" type="checkbox">
+            <span>Abrir automaticamente al pagar un carrito</span>
+          </label>
+
+          <label class="empresa-config-check" for="abrirCajonAlCerrarTransaccion">
+            <input id="abrirCajonAlCerrarTransaccion" type="checkbox">
+            <span>Abrir automaticamente al terminar la transaccion</span>
+          </label>
+
+          <label for="cajonMonederoMetodo">Metodo de apertura</label>
+          <select id="cajonMonederoMetodo">
+            <option value="impresion_pos">Impresion POS / driver de impresora</option>
+            <option value="manual">Manual, solo aviso operativo</option>
+          </select>
+
+          <label for="cajonMonederoImpresoraFuncionalidad">Funcionalidad de impresora</label>
+          <input id="cajonMonederoImpresoraFuncionalidad" type="text" maxlength="80" value="cajon_monedero">
+          <p class="form-help">Asigna una impresora con la funcionalidad <strong>cajon_monedero</strong>. El navegador envia una impresion minima y el driver POS debe estar configurado para abrir el cajon.</p>
+
+          <label for="cajonMonederoComando">Comportamiento esperado</label>
+          <select id="cajonMonederoComando">
+            <option value="escpos_pulse">Pulso ESC/POS por impresora</option>
+            <option value="driver_auto_open">Apertura automatica del driver</option>
+          </select>
+        </div>
+      </div>
+      <div id="cajaMsg" class="form-help"></div>
     </section>
 
     <section id="configuracionDocumentoImpresion" class="card empresa-section">
@@ -828,6 +892,7 @@
     function normalizeConfig(raw) {
       const src = raw && typeof raw === 'object' ? raw : {};
       const productos = src.productos && typeof src.productos === 'object' ? src.productos : src;
+      const caja = src.caja && typeof src.caja === 'object' ? src.caja : {};
       const copias = Number(productos.copias_orden_servicio || 1);
       return {
         productos: {
@@ -843,6 +908,18 @@
           lector_codigo_barras_habilitado: productos.lector_codigo_barras_habilitado === undefined ? true : Boolean(productos.lector_codigo_barras_habilitado),
           lector_codigo_barras_autofoco: productos.lector_codigo_barras_autofoco === undefined ? true : Boolean(productos.lector_codigo_barras_autofoco),
           lector_codigo_barras_acumular: productos.lector_codigo_barras_acumular === undefined ? true : Boolean(productos.lector_codigo_barras_acumular)
+        },
+        caja: {
+          caja_nombre: String(caja.caja_nombre || '').trim().slice(0, 120),
+          caja_codigo: String(caja.caja_codigo || '').trim().slice(0, 80),
+          caja_activa: caja.caja_activa === undefined ? true : Boolean(caja.caja_activa),
+          cajon_monedero_habilitado: Boolean(caja.cajon_monedero_habilitado),
+          abrir_cajon_al_pagar_carrito: Boolean(caja.abrir_cajon_al_pagar_carrito),
+          abrir_cajon_al_cerrar_transaccion: Boolean(caja.abrir_cajon_al_cerrar_transaccion),
+          cajon_monedero_metodo: ['impresion_pos', 'manual'].indexOf(String(caja.cajon_monedero_metodo || 'impresion_pos')) >= 0 ? String(caja.cajon_monedero_metodo || 'impresion_pos') : 'impresion_pos',
+          cajon_monedero_impresora_funcionalidad: String(caja.cajon_monedero_impresora_funcionalidad || 'cajon_monedero').trim().slice(0, 80) || 'cajon_monedero',
+          cajon_monedero_comando: ['escpos_pulse', 'driver_auto_open'].indexOf(String(caja.cajon_monedero_comando || 'escpos_pulse')) >= 0 ? String(caja.cajon_monedero_comando || 'escpos_pulse') : 'escpos_pulse',
+          caja_observaciones: String(caja.caja_observaciones || '').trim().slice(0, 800)
         }
       };
     }
@@ -878,6 +955,13 @@
 
     function setConfigMessage(text, type) {
       const box = document.getElementById('configMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setCajaMessage(text, type) {
+      const box = document.getElementById('cajaMsg');
+      if (!box) return;
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
@@ -2197,7 +2281,8 @@
     }
 
     function setFormData(cfg) {
-      const productos = normalizeConfig(cfg).productos;
+      const normalized = normalizeConfig(cfg);
+      const productos = normalized.productos;
       document.getElementById('imprimirOrdenServicio').checked = Boolean(productos.imprimir_orden_servicio);
       document.getElementById('areaDespacho').value = productos.area_despacho || '';
       document.getElementById('copiasOrden').value = String(productos.copias_orden_servicio || 1);
@@ -2210,6 +2295,38 @@
       document.getElementById('habilitarLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_habilitado);
       document.getElementById('autofocoLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_autofoco);
       document.getElementById('acumularLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_acumular);
+      setCajaFormData(normalized.caja);
+    }
+
+    function setCajaFormData(cajaRaw) {
+      const caja = normalizeConfig({ caja: cajaRaw }).caja;
+      document.getElementById('cajaActiva').checked = Boolean(caja.caja_activa);
+      document.getElementById('cajaNombre').value = caja.caja_nombre || '';
+      document.getElementById('cajaCodigo').value = caja.caja_codigo || '';
+      document.getElementById('cajonMonederoHabilitado').checked = Boolean(caja.cajon_monedero_habilitado);
+      document.getElementById('abrirCajonAlPagarCarrito').checked = Boolean(caja.abrir_cajon_al_pagar_carrito);
+      document.getElementById('abrirCajonAlCerrarTransaccion').checked = Boolean(caja.abrir_cajon_al_cerrar_transaccion);
+      document.getElementById('cajonMonederoMetodo').value = caja.cajon_monedero_metodo || 'impresion_pos';
+      document.getElementById('cajonMonederoImpresoraFuncionalidad').value = caja.cajon_monedero_impresora_funcionalidad || 'cajon_monedero';
+      document.getElementById('cajonMonederoComando').value = caja.cajon_monedero_comando || 'escpos_pulse';
+      document.getElementById('cajaObservaciones').value = caja.caja_observaciones || '';
+    }
+
+    function getCajaFormData() {
+      return normalizeConfig({
+        caja: {
+          caja_activa: document.getElementById('cajaActiva').checked,
+          caja_nombre: document.getElementById('cajaNombre').value,
+          caja_codigo: document.getElementById('cajaCodigo').value,
+          cajon_monedero_habilitado: document.getElementById('cajonMonederoHabilitado').checked,
+          abrir_cajon_al_pagar_carrito: document.getElementById('abrirCajonAlPagarCarrito').checked,
+          abrir_cajon_al_cerrar_transaccion: document.getElementById('abrirCajonAlCerrarTransaccion').checked,
+          cajon_monedero_metodo: document.getElementById('cajonMonederoMetodo').value,
+          cajon_monedero_impresora_funcionalidad: document.getElementById('cajonMonederoImpresoraFuncionalidad').value,
+          cajon_monedero_comando: document.getElementById('cajonMonederoComando').value,
+          caja_observaciones: document.getElementById('cajaObservaciones').value
+        }
+      }).caja;
     }
 
     function getFormData() {
@@ -2227,7 +2344,8 @@
           lector_codigo_barras_habilitado: document.getElementById('habilitarLectorCodigoBarras').checked,
           lector_codigo_barras_autofoco: document.getElementById('autofocoLectorCodigoBarras').checked,
           lector_codigo_barras_acumular: document.getElementById('acumularLectorCodigoBarras').checked
-        }
+        },
+        caja: getCajaFormData()
       });
     }
 
@@ -2265,6 +2383,21 @@
         setConfigMessage('Configuración guardada correctamente.', 'success');
       } catch (err) {
         setConfigMessage('No se pudo guardar la configuración: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarCajaConfig() {
+      if (!empresaId) {
+        setCajaMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      setCajaMessage('Guardando caja...', '');
+      try {
+        const cfg = await saveGeneralConfig(getFormData());
+        setFormData(cfg);
+        setCajaMessage('Configuracion de caja guardada correctamente.', 'success');
+      } catch (err) {
+        setCajaMessage('No se pudo guardar la configuracion de caja: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2330,6 +2463,7 @@
           if (label) label.textContent = 'Empresa no definida (falta empresa_id). Abre esta pantalla desde Administrar Empresa o selecciona la empresa.';
         } catch (_) {}
         setConfigMessage('No se detectó empresa_id. Esta página necesita abrirse desde /administrar_empresa.html o con ?empresa_id=...', 'error');
+        setCajaMessage('No se detectó empresa_id para cargar caja.', 'error');
         setOperativaMessage('No se detectó empresa_id para cargar configuración operativa.', 'error');
         setPasarelasMessage('No se detectó empresa_id para cargar pasarelas.', 'error');
         setImpresorasMessage('No se detectó empresa_id para cargar impresoras.', 'error');
@@ -2353,6 +2487,7 @@
       loadPasarelasConfig();
       loadImpresorasConfig(false);
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
+      document.getElementById('btnGuardarCajaConfig').addEventListener('click', guardarCajaConfig);
       document.getElementById('btnGuardarConfigOperativa').addEventListener('click', guardarOperativaEmpresa);
       document.getElementById('btnGuardarConfigOperativaRol').addEventListener('click', guardarOperativaRol);
       document.getElementById('btnGuardarConfigOperativaPolitica').addEventListener('click', guardarOperativaPolitica);

@@ -9,7 +9,10 @@
 <body class="super-page">
   <div class="container">
     <div class="page-header">
-      <h1>Administradores</h1>
+      <div>
+        <h1>Administradores</h1>
+        <p class="form-help page-header-lead">Solo el super administrador puede agregar administradores o super administradores. En esta pagina no se cambia el rol de registros existentes.</p>
+      </div>
       <button id="addBtn" class="btn add">Agregar</button>
     </div>
 
@@ -56,50 +59,49 @@
         const tbody = document.createElement('tbody');
         data.forEach(i=>{
           const tr = document.createElement('tr');
-          const activo = (i.estado === 'activo' || i.estado==1) ? 1 : (i.estado||0);
-          const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
-          tr.innerHTML = `<td>${i.id}</td><td>${i.email}</td><td>${i.name||''}</td><td>${i.role||''}</td><td>${i.estado||''}</td><td class="actions"><button data-id="${i.id}" data-email="${i.email||''}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
+          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(i.estado||'')}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
         const list = document.getElementById('list'); list.innerHTML=''; list.appendChild(table);
 
-        document.querySelectorAll('.edit').forEach(b=>b.onclick = async ()=>{
-          const id = b.getAttribute('data-id');
-          const email = b.getAttribute('data-email');
-          // obtener item desde data cargada
-          const item = data.find(x => String(x.id) === String(id) || x.email === email);
-          if(!item) return alert('Registro no encontrado');
-          document.getElementById('form').style.display = '';
-          document.getElementById('addBtn').style.display = 'none';
-          document.getElementById('itemId').value = item.id;
-          document.getElementById('email').value = item.email || '';
-          document.getElementById('email').readOnly = true;
-          document.getElementById('name').value = item.name || '';
-          document.getElementById('role').value = item.role || 'administrador';
-          document.getElementById('saveBtn').innerText = 'Actualizar';
-          document.getElementById('cancelBtn').style.display = '';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
         document.querySelectorAll('.del').forEach(b=>b.onclick = async ()=>{
           if(!confirm('Eliminar administrador?')) return;
           const id = b.getAttribute('data-id');
-          await fetch('/super/api/administradores?id='+id, { method: 'DELETE' });
-          load();
-        });
-        document.querySelectorAll('.toggle').forEach(b=>b.onclick = async ()=>{
-          const id = b.getAttribute('data-id');
-          const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
-          if(!confirm((activo==='1' ? 'Activar' : 'Desactivar')+' administrador?')) return;
-          await fetch('/super/api/administradores?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
+          await ensureOK(await fetch('/super/api/administradores?id='+encodeURIComponent(id), { method: 'DELETE' }));
           load();
         });
       }catch(err){ document.getElementById('list').innerText = 'Error cargando administradores: '+(err.message||err); }
     }
 
+    function escapeHTML(value){
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function ensureOK(res){
+      if(res.ok) return res;
+      const raw = await res.text().catch(()=> '');
+      throw new Error(raw || ('HTTP ' + res.status));
+    }
+
+    function resetForm(){
+      document.getElementById('itemId').value='';
+      document.getElementById('email').value='';
+      document.getElementById('email').readOnly=false;
+      document.getElementById('name').value='';
+      document.getElementById('role').value='administrador';
+      document.getElementById('saveBtn').innerText='Guardar';
+      document.getElementById('cancelBtn').style.display='none';
+      document.getElementById('msg').innerText='';
+    }
+
     document.getElementById('form').onsubmit = async (e)=>{
       e.preventDefault();
-      const id = document.getElementById('itemId').value;
       const payload = {
         Email: document.getElementById('email').value.trim(),
         Name: document.getElementById('name').value.trim(),
@@ -107,26 +109,20 @@
       };
       try{
         if(!payload.Email){ document.getElementById('msg').innerText='Email requerido'; return }
-        if(id){
-          // update name and role by id
-          const up = { Name: payload.Name, Role: payload.Role };
-          await fetch('/super/api/administradores?id='+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(up) });
-        } else {
-          await fetch('/super/api/administradores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ Email: payload.Email, Name: payload.Name, Role: payload.Role }) });
-        }
-        document.getElementById('itemId').value=''; document.getElementById('email').value=''; document.getElementById('email').readOnly=false; document.getElementById('name').value=''; document.getElementById('role').value='administrador'; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none'; document.getElementById('msg').innerText='';
+        await ensureOK(await fetch('/super/api/administradores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        resetForm();
         document.getElementById('form').style.display = 'none';
         document.getElementById('addBtn').style.display = '';
         load();
       }catch(err){ document.getElementById('msg').innerText = err.message }
     }
 
-    document.getElementById('cancelBtn').onclick = ()=>{ document.getElementById('itemId').value=''; document.getElementById('email').value=''; document.getElementById('email').readOnly=false; document.getElementById('name').value=''; document.getElementById('role').value='administrador'; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none'; document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
+    document.getElementById('cancelBtn').onclick = ()=>{ resetForm(); document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
 
     document.getElementById('addBtn').onclick = ()=>{
       document.getElementById('form').style.display = '';
       document.getElementById('addBtn').style.display = 'none';
-      document.getElementById('itemId').value=''; document.getElementById('email').value=''; document.getElementById('email').readOnly=false; document.getElementById('name').value=''; document.getElementById('role').value='administrador'; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none';
+      resetForm();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 

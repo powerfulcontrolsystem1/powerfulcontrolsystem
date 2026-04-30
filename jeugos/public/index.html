@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06070a">
+  <title>Jeugos - Emulador Web</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="games-panel" aria-label="Lista de juegos">
+      <header class="panel-header">
+        <div>
+          <p class="eyebrow">EmulatorJS</p>
+          <h1>Jeugos</h1>
+        </div>
+        <button id="refreshRoms" class="icon-button" type="button" title="Recargar ROMs">Recargar</button>
+      </header>
+
+      <div class="status-row">
+        <span id="coreBadge">Core: snes</span>
+        <span id="gamepadBadge">Gamepad: no detectado</span>
+      </div>
+
+      <section class="selector-card">
+        <label for="romSelect">Juego</label>
+        <select id="romSelect"></select>
+        <button id="playButton" class="primary-button" type="button">Jugar</button>
+      </section>
+
+      <section>
+        <h2>ROMs disponibles</h2>
+        <div id="romGrid" class="rom-grid" role="list"></div>
+      </section>
+    </aside>
+
+    <section class="player-panel">
+      <div class="player-toolbar">
+        <div>
+          <p class="eyebrow">SNES</p>
+          <h2 id="currentTitle">Selecciona un juego</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button id="fullscreenButton" type="button">Pantalla completa</button>
+          <button id="reloadButton" type="button">Reiniciar</button>
+        </div>
+      </div>
+
+      <div id="playerShell" class="player-shell">
+        <div id="game"></div>
+        <div id="emptyState" class="empty-state">
+          <strong>Sin juego cargado</strong>
+          <span>Agrega ROMs SNES en la carpeta <code>/roms</code> y presiona Jugar.</span>
+        </div>
+      </div>
+
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

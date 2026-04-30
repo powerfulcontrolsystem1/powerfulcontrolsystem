@@ -16,6 +16,8 @@ type CarritoTarifaPorMinutosCalculo struct {
 	Aplicada             bool    `json:"aplicada"`
 	DiaSemana            int     `json:"dia_semana"`
 	MinutosConsumidos    float64 `json:"minutos_consumidos"`
+	MinutosFacturables   float64 `json:"minutos_facturables"`
+	MinutosTolerancia    int     `json:"minutos_tolerancia"`
 	MinutosBase          int     `json:"minutos_base"`
 	MinutosExtra         int     `json:"minutos_extra"`
 	BloquesExtra         int     `json:"bloques_extra"`
@@ -42,6 +44,8 @@ type CarritoTarifaPorMinutosResumen struct {
 	Aplicada             bool    `json:"aplicada"`
 	DiaSemana            int     `json:"dia_semana"`
 	MinutosConsumidos    float64 `json:"minutos_consumidos"`
+	MinutosFacturables   float64 `json:"minutos_facturables"`
+	MinutosTolerancia    int     `json:"minutos_tolerancia"`
 	MinutosBase          int     `json:"minutos_base"`
 	MinutosExtra         int     `json:"minutos_extra"`
 	BloquesExtra         int     `json:"bloques_extra"`
@@ -89,6 +93,7 @@ func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int
 		COALESCE(valor_base, 0),
 		COALESCE(minutos_extra, 60),
 		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(prioridad, 1),
 		COALESCE(fecha_creacion, ''),
@@ -105,6 +110,7 @@ func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int
 	LIMIT 1`, empresaID, estacionID, diaSemana, diaSemana, diaSemana)
 
 	var item EmpresaTarifaPorMinutos
+	var cobrarPorFraccion int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -117,6 +123,7 @@ func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int
 		&item.ValorBase,
 		&item.MinutosExtra,
 		&item.ValorExtra,
+		&cobrarPorFraccion,
 		&item.Moneda,
 		&item.Prioridad,
 		&item.FechaCreacion,
@@ -130,6 +137,7 @@ func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int
 		}
 		return nil, err
 	}
+	item.CobrarPorFraccion = cobrarPorFraccion > 0
 	return &item, nil
 }
 
@@ -141,6 +149,10 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 		COALESCE(redondeo_unidad, 100),
 		COALESCE(monto_minimo_diario, 0),
 		COALESCE(monto_maximo_diario, 0),
+		COALESCE(margen_tolerancia_entrada_minutos, 0),
+		COALESCE(sensor_auto_activar_estacion, 0),
+		COALESCE(margen_desactivacion_habilitado, 0),
+		COALESCE(margen_desactivacion_minutos, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -151,6 +163,8 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 	LIMIT 1`, empresaID)
 
 	var item EmpresaTarifaPorMinutosConfiguracion
+	var sensorAutoActivarEstacion int
+	var margenDesactivacionHabilitado int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -158,6 +172,10 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 		&item.RedondeoUnidad,
 		&item.MontoMinimoDiario,
 		&item.MontoMaximoDiario,
+		&item.MargenToleranciaEntradaMinutos,
+		&sensorAutoActivarEstacion,
+		&margenDesactivacionHabilitado,
+		&item.MargenDesactivacionMinutos,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -170,6 +188,8 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 		}
 		return nil, err
 	}
+	item.SensorAutoActivarEstacion = sensorAutoActivarEstacion > 0
+	item.MargenDesactivacionHabilitado = margenDesactivacionHabilitado > 0
 	if err := normalizeEmpresaTarifaPorMinutosConfiguracionPayload(&item); err != nil {
 		return nil, err
 	}
@@ -177,9 +197,9 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 }
 
 func resolveCarritoTarifaPorMinutosCurrentEnd(activadoAt time.Time, tarifa EmpresaTarifaPorMinutos, detalle EmpresaTarifaPorMinutosCalculo) time.Time {
-	minutosTramoActual := tarifa.MinutosBase
+	minutosTramoActual := tarifa.MinutosBase + detalle.MinutosTolerancia
 	if detalle.BloquesExtra > 0 {
-		minutosTramoActual += detalle.BloquesExtra * tarifa.MinutosExtra
+		minutosTramoActual = tarifa.MinutosBase + detalle.MinutosTolerancia + detalle.BloquesExtra*tarifa.MinutosExtra
 	}
 	if minutosTramoActual < tarifa.MinutosBase {
 		minutosTramoActual = tarifa.MinutosBase
@@ -297,6 +317,8 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 	calc.Aplicada = true
 	calc.DiaSemana = diaSemana
 	calc.MinutosConsumidos = detalle.MinutosConsumidos
+	calc.MinutosFacturables = detalle.MinutosFacturables
+	calc.MinutosTolerancia = detalle.MinutosTolerancia
 	calc.MinutosBase = tarifa.MinutosBase
 	calc.MinutosExtra = tarifa.MinutosExtra
 	calc.BloquesExtra = detalle.BloquesExtra
@@ -460,6 +482,8 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 		Aplicada:             true,
 		DiaSemana:            diaSemana,
 		MinutosConsumidos:    detalle.MinutosConsumidos,
+		MinutosFacturables:   detalle.MinutosFacturables,
+		MinutosTolerancia:    detalle.MinutosTolerancia,
 		MinutosBase:          tarifa.MinutosBase,
 		MinutosExtra:         tarifa.MinutosExtra,
 		BloquesExtra:         detalle.BloquesExtra,

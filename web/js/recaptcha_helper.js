@@ -3,6 +3,7 @@
 
   var scriptPromise = null;
   var onloadCallbackName = '__pcsRecaptchaOnload';
+  var scriptSelector = 'script[data-pcs-recaptcha-script="1"]';
 
   function resolveRecaptchaApi() {
     var g = global.grecaptcha;
@@ -98,6 +99,7 @@
       } catch (e) {}
 
       var script = document.createElement('script');
+      script.setAttribute('data-pcs-recaptcha-script', '1');
       var provider = normalizeProvider(global.RECAPTCHA_PROVIDER);
       var base = (provider === 'google-recaptcha-enterprise')
         ? 'https://www.google.com/recaptcha/enterprise.js'
@@ -135,6 +137,26 @@
     return scriptPromise;
   }
 
+  function resetScriptLoadState() {
+    scriptPromise = null;
+    try {
+      delete global[onloadCallbackName];
+    } catch (e) {
+      global[onloadCallbackName] = undefined;
+    }
+    if (resolveLoadedApi()) {
+      return;
+    }
+    try {
+      var scripts = document.querySelectorAll(scriptSelector);
+      Array.prototype.forEach.call(scripts, function (script) {
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      });
+    } catch (e) {}
+  }
+
   function createManager(options) {
     var settings = options || {};
     var widgetId = null;
@@ -161,6 +183,44 @@
       }
     }
 
+    function showRetry(message) {
+      var container = getContainer();
+      if (!container) {
+        return;
+      }
+      setContainerVisible(true);
+      container.style.minHeight = '0';
+      container.innerHTML = '';
+
+      var box = document.createElement('div');
+      box.className = 'recaptcha-retry-box';
+      box.style.display = 'flex';
+      box.style.flexDirection = 'column';
+      box.style.alignItems = 'flex-start';
+      box.style.gap = '8px';
+
+      var text = document.createElement('span');
+      text.textContent = message || 'No se pudo cargar la verificacion de seguridad.';
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn secondary small';
+      button.textContent = 'Reintentar reCAPTCHA';
+      button.addEventListener('click', function () {
+        widgetId = null;
+        initializing = null;
+        resetScriptLoadState();
+        container.innerHTML = 'Reintentando verificacion de seguridad...';
+        init().catch(function (error) {
+          showRetry((error && error.message) ? error.message : 'No se pudo cargar la verificacion de seguridad.');
+        });
+      });
+
+      box.appendChild(text);
+      box.appendChild(button);
+      container.appendChild(box);
+    }
+
     function init() {
       if (!isEnabled() || isBypassEnabled()) {
         setContainerVisible(false);
@@ -170,7 +230,11 @@
       if (provider === 'google-recaptcha-v3' || provider === 'google-recaptcha-enterprise') {
         // v3: no hay widget que renderizar
         setContainerVisible(false);
-        return loadScript().then(function () { return true; });
+        return loadScript().then(function () { return true; }).catch(function (error) {
+          resetScriptLoadState();
+          showRetry((error && error.message) ? error.message : 'No se pudo cargar la verificacion de seguridad.');
+          throw error;
+        });
       }
       if (widgetId !== null) {
         setContainerVisible(true);
@@ -198,6 +262,8 @@
         return true;
       }).catch(function (error) {
         initializing = null;
+        resetScriptLoadState();
+        showRetry((error && error.message) ? error.message : 'No se pudo cargar la verificacion de seguridad.');
         throw error;
       });
       return initializing;
@@ -213,6 +279,7 @@
           return loadScript().then(function () {
             var api = resolveRecaptchaApiV3();
             if (!api || typeof api.ready !== 'function' || typeof api.execute !== 'function') {
+              showRetry('Google reCAPTCHA no expuso execute() para este tipo de clave.');
               return {
                 ok: false,
                 message: 'Google reCAPTCHA no expuso execute() para este tipo de clave. Comprueba en configuración avanzada que el tipo (v2 / v3 / Enterprise) coincida con la clave creada en Google.'
@@ -225,7 +292,8 @@
                   return;
                 }
                 settled = true;
-                resolve({ ok: false, message: 'La verificación de seguridad tardó demasiado. Recarga la página e inténtalo de nuevo.' });
+                showRetry('La verificacion de seguridad tardo demasiado.');
+                resolve({ ok: false, message: 'La verificación de seguridad tardó demasiado. Usa el botón Reintentar reCAPTCHA e inténtalo de nuevo.' });
               }, 18000);
               function finish(result) {
                 if (settled) {
@@ -241,10 +309,12 @@
                   api.execute(String(global.RECAPTCHA_SITE_KEY || '').trim(), { action: action }).then(function (token) {
                     finish({ ok: true, token: String(token || '').trim() });
                   }).catch(function (e) {
+                    showRetry((e && e.message) ? e.message : 'No se pudo ejecutar la verificacion de seguridad.');
                     finish({ ok: false, message: (e && e.message) ? e.message : 'No se pudo ejecutar la verificación de seguridad.' });
                   });
                 });
               } catch (e) {
+                showRetry((e && e.message) ? e.message : 'No se pudo ejecutar la verificacion de seguridad.');
                 finish({ ok: false, message: (e && e.message) ? e.message : 'No se pudo ejecutar la verificación de seguridad.' });
               }
             });
@@ -267,6 +337,8 @@
         return { ok: true, token: token };
       }).catch(function (error) {
         setContainerVisible(true);
+        resetScriptLoadState();
+        showRetry((error && error.message) ? error.message : 'No se pudo cargar la verificacion de seguridad.');
         return {
           ok: false,
           message: (error && error.message) ? error.message : 'No se pudo cargar la verificación de seguridad.'

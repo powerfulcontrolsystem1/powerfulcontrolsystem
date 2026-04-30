@@ -207,6 +207,8 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			"template_name":     record.TemplateName,
 			"download_urls":     formatLinks,
 			"html_preview_path": "/download?id=" + id + "&type=html",
+			"preview_text":      truncateText(record.PlainText, 1400),
+			"available_formats": normalizeDynamicDocumentFormats(payload.Formats),
 			"prompt_tokens":     promptTokens,
 			"completion_tokens": completionTokens,
 		})

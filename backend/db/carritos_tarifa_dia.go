@@ -294,3 +294,60 @@ func RefreshCarritosActivosConTarifaPorDia(dbConn *sql.DB, empresaID int64, fech
 	}
 	return nil
 }
+
+// ResolveCarritoTarifaPorDiaResumen obtiene metadata operativa de la tarifa diaria vigente
+// para pintar tarjetas de estacion sin depender de estado temporal del navegador.
+func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fechaCorte time.Time) (*CarritoTarifaPorDiaCalculo, error) {
+	if item.EmpresaID <= 0 || item.ID <= 0 {
+		return nil, nil
+	}
+	estadoRegistro := strings.TrimSpace(strings.ToLower(item.Estado))
+	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
+	if estadoRegistro == "" {
+		estadoRegistro = "activo"
+	}
+	if estadoCarrito == "" {
+		estadoCarrito = "abierto"
+	}
+	if estadoRegistro != "activo" || estadoCarrito != "abierto" || strings.TrimSpace(item.PagadoEn) != "" {
+		return nil, nil
+	}
+	if fechaCorte.IsZero() {
+		fechaCorte = time.Now()
+	}
+
+	estacionID := parseReservaHotelEstacionID(item.ReferenciaExterna, item.Codigo, item.EmpresaID)
+	if estacionID <= 0 {
+		return nil, nil
+	}
+	activadoAt, err := parseTarifaPorDiaDateTime(item.ActivadoEn)
+	if err != nil {
+		return nil, nil
+	}
+
+	tarifa, err := GetEmpresaTarifaPorDiaAplicable(dbConn, item.EmpresaID, estacionID)
+	if err != nil || tarifa == nil {
+		return nil, err
+	}
+	detalle := CalcularDetalleTarifaPorDia(*tarifa, activadoAt, fechaCorte)
+	return &CarritoTarifaPorDiaCalculo{
+		EmpresaID:      item.EmpresaID,
+		CarritoID:      item.ID,
+		EstacionID:     estacionID,
+		TarifaID:       tarifa.ID,
+		Aplicada:       detalle.MontoTotal > 0 || detalle.DiasCobrados > 0,
+		DiasCobrados:   detalle.DiasCobrados,
+		ValorDia:       detalle.ValorDia,
+		MontoTarifa:    detalle.MontoTotal,
+		Moneda:         normalizeTarifaPorDiaMoneda(tarifa.Moneda),
+		HoraCheckIn:    tarifa.HoraCheckIn,
+		HoraCheckOut:   tarifa.HoraCheckOut,
+		ActivadoEn:     activadoAt.Format("2006-01-02 15:04:05"),
+		FechaCorte:     fechaCorte.Format("2006-01-02 15:04:05"),
+		BaseSubtotal:   round2(item.Subtotal),
+		BaseTotal:      round2(item.Total),
+		SubtotalFinal:  round2(item.Subtotal),
+		TotalFinal:     round2(item.Total),
+		ServicioNombre: strings.TrimSpace(tarifa.ServicioNombre),
+	}, nil
+}

@@ -49,7 +49,12 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "error interno", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "estacion_id": estacionID})
+				autoActivated, autoWarning := maybeAutoActivateStationFromSensor(dbEmp, empresaID, estacionID, payload.State)
+				resp := map[string]interface{}{"ok": true, "empresa_id": empresaID, "estacion_id": estacionID, "auto_activated": autoActivated}
+				if autoWarning != "" {
+					resp["auto_activation_warning"] = autoWarning
+				}
+				writeJSON(w, http.StatusOK, resp)
 				return
 			}
 
@@ -77,7 +82,12 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "error interno", http.StatusInternalServerError)
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "estacion_id": estacionID})
+			autoActivated, autoWarning := maybeAutoActivateStationFromSensor(dbEmp, empresaID, estacionID, payload.State)
+			resp := map[string]interface{}{"ok": true, "empresa_id": empresaID, "estacion_id": estacionID, "auto_activated": autoActivated}
+			if autoWarning != "" {
+				resp["auto_activation_warning"] = autoWarning
+			}
+			writeJSON(w, http.StatusOK, resp)
 			return
 		case "message":
 			if r.Method != http.MethodPost {
@@ -149,6 +159,48 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "action no soportada", http.StatusBadRequest)
 			return
 		}
+	}
+}
+
+func maybeAutoActivateStationFromSensor(dbEmp *sql.DB, empresaID, estacionID int64, sensorState string) (bool, string) {
+	if empresaID <= 0 || estacionID <= 0 || !isSensorStationActiveSignal(sensorState) {
+		return false, ""
+	}
+	cfg, err := dbpkg.GetEmpresaTarifaPorMinutosConfiguracion(dbEmp, empresaID)
+	if err != nil {
+		log.Printf("[sensor_puertas] load tarifa config empresa_id=%d error: %v", empresaID, err)
+		return false, "no se pudo leer la configuracion de autoactivacion"
+	}
+	if cfg == nil || !cfg.SensorAutoActivarEstacion {
+		return false, ""
+	}
+	carrito, err := dbpkg.GetCarritoCompraByStation(dbEmp, empresaID, estacionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, "no existe carrito asociado a la estacion"
+		}
+		log.Printf("[sensor_puertas] resolve station cart empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+		return false, "no se pudo resolver el carrito de la estacion"
+	}
+	estadoRegistro := normalizeCarritoRegistroEstado(carrito.Estado)
+	estadoCarrito := normalizeCarritoOperativoEstado(carrito.EstadoCarrito)
+	if estadoRegistro == "activo" && estadoCarrito == "abierto" && strings.TrimSpace(carrito.PagadoEn) == "" {
+		return false, ""
+	}
+	resetItems := isCarritoVentaPagada(carrito) || estadoCarrito == "cerrado"
+	if err := dbpkg.ActivateCarritoStationSession(dbEmp, empresaID, carrito.ID, resetItems); err != nil {
+		log.Printf("[sensor_puertas] auto activate empresa_id=%d estacion_id=%d carrito_id=%d error: %v", empresaID, estacionID, carrito.ID, err)
+		return false, "no se pudo autoactivar la estacion"
+	}
+	return true, ""
+}
+
+func isSensorStationActiveSignal(state string) bool {
+	switch strings.ToLower(strings.TrimSpace(state)) {
+	case "1", "true", "on", "open", "opened", "active", "activo", "activa", "abierto", "abierta", "ocupado", "ocupada", "occupied":
+		return true
+	default:
+		return false
 	}
 }
 

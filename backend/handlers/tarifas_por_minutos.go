@@ -15,6 +15,12 @@ import (
 // EmpresaTarifasPorMinutosHandler gestiona tarifas por minutos por estacion y dia de semana.
 func EmpresaTarifasPorMinutosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete {
+			if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmp); err != nil {
+				writeTarifasPorMinutosError(w, err)
+				return
+			}
+		}
 		switch r.Method {
 		case http.MethodGet:
 			handleTarifasPorMinutosGet(w, r, dbEmp)
@@ -207,6 +213,8 @@ func handleTarifasPorMinutosGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			"documento_tipo":           "tarifa_por_minutos_calculo",
 			"documento_codigo":         documentoCodigo,
 			"periodo_contable":         periodoContable,
+			"minutos_facturables":      detalle.MinutosFacturables,
+			"minutos_tolerancia":       detalle.MinutosTolerancia,
 		})
 		return
 

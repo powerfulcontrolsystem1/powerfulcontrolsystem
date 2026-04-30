@@ -556,6 +556,25 @@
       return String(v == null ? '' : v).trim().toLowerCase();
     }
 
+    function parseStationIDFromCarritoRef(value) {
+      const text = String(value == null ? '' : value).trim();
+      if (!text) return 0;
+      let match = /^ESTACION[_-](\d+)$/i.exec(text);
+      if (match) return Number(match[1] || 0) || 0;
+      match = /^EST-(\d+)-(\d+)$/i.exec(text);
+      if (match && Number(match[1] || 0) === Number(empresaId || 0)) {
+        return Number(match[2] || 0) || 0;
+      }
+      return 0;
+    }
+
+    function resolveStationIDFromCarrito(item) {
+      if (!item) return 0;
+      return parseStationIDFromCarritoRef(item.referencia_externa) ||
+        parseStationIDFromCarritoRef(item.codigo) ||
+        0;
+    }
+
     function toBool(v) {
       if (typeof v === 'boolean') return v;
       if (typeof v === 'number') return v === 1;
@@ -677,13 +696,14 @@
         if (!Array.isArray(carritos)) return;
 
         carritos.forEach(item => {
-          const code = normalizeCode(item && item.codigo);
-          if (!code) return;
-          state.carritosPorCodigo[code] = {
+          const stationID = resolveStationIDFromCarrito(item);
+          const info = {
             id: Number(item && item.id ? item.id : 0),
+            estacionID: stationID,
             activo: isCarritoOperativoActivo(item),
             estado: String((item && item.estado) || ''),
             estadoCarrito: String((item && item.estado_carrito) || ''),
+            estadoVenta: String((item && item.estado_venta) || ''),
             activadoEn: String((item && item.activado_en) || ''),
             pagadoEn: String((item && item.pagado_en) || ''),
             total: Number(item && item.total ? item.total : 0),
@@ -691,6 +711,13 @@
             tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null,
             tarifaPorDia: item && item.tarifa_por_dia ? item.tarifa_por_dia : null
           };
+          const code = normalizeCode(item && item.codigo);
+          const ref = normalizeCode(item && item.referencia_externa);
+          const canonical = stationID > 0 ? normalizeCode(getCarritoCodeForStation(stationID)) : '';
+          const stationKey = stationID > 0 ? ('station:' + stationID) : '';
+          [code, ref, canonical, stationKey].forEach(key => {
+            if (key) state.carritosPorCodigo[key] = info;
+          });
         });
       } catch (err) {
         console.warn('No se pudo cargar estado de carritos por estación:', err);
@@ -819,7 +846,7 @@
     const stationCfg = stationConfig.estaciones.find(function (est) {
       return Number(est && est.id) === stationID;
     }) || null;
-    const info = state.carritosPorCodigo[normalizeCode(getCarritoCodeForStation(stationID))] || null;
+    const info = findStationCarritoInfo(stationID);
     const meta = buildStationRuntimeMeta(info, stationCfg || {});
     const isDirty = !!state.dirtyByEstacion[stationID];
     card.classList.toggle('station-card-active', meta.activo && !isDirty);
@@ -896,7 +923,9 @@
 
     function findStationCarritoInfo(stationID) {
       const code = normalizeCode(getCarritoCodeForStation(stationID));
-      return state.carritosPorCodigo && state.carritosPorCodigo[code] ? state.carritosPorCodigo[code] : null;
+      const stationKey = 'station:' + Number(stationID || 0);
+      if (!state.carritosPorCodigo) return null;
+      return state.carritosPorCodigo[code] || state.carritosPorCodigo[stationKey] || null;
     }
 
     function isNoopStationActivationError(message) {
@@ -1637,7 +1666,7 @@
         const useMostrarFinTarifa = est.mostrar_fecha_hora_fin_tarifa === undefined ? true : !!est.mostrar_fecha_hora_fin_tarifa;
         const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
         const carritoCode = getCarritoCodeForStation(stationID);
-        const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
+        const info = findStationCarritoInfo(stationID);
         const meta = buildStationRuntimeMeta(info, est);
         const carritoActivo = meta.activo;
         const isDirty = !!state.dirtyByEstacion[stationID];

@@ -1,0 +1,19 @@
+[Unit]
+Description=Jeugos EmulatorJS Go API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/jeugos
+ExecStart=/opt/jeugos/jeugos-server -addr 127.0.0.1:8099 -public /opt/jeugos/public -emulator /opt/jeugos/emulator -roms /opt/jeugos/roms -core snes
+Restart=on-failure
+RestartSec=3
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

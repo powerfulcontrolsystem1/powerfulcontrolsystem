@@ -202,7 +202,11 @@ func pickPortalChatModel(dbSuper *sql.DB, question string, wantsVision bool) (em
 		strings.Contains(normalizedQuestion, "foto") ||
 		strings.Contains(normalizedQuestion, "archivo")
 	if preferResponses {
-		for _, candidate := range []string{"openai:gpt-5.5", "openai:gpt-5.4-mini"} {
+		candidates := []string{"openai:gpt-5.4-mini"}
+		if wantsVision {
+			candidates = []string{"openai:gpt-5.5", "openai:gpt-5.4-mini"}
+		}
+		for _, candidate := range candidates {
 			if model, ok := modelMap[candidate]; ok && isAIProviderEnabled(dbSuper, model.Provider) {
 				return model, true
 			}

@@ -103,7 +103,6 @@ func hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID
 		return false, err
 	}
 
-	approvedStatuses := []string{"approved", "accredited", "manual"}
 	excludeTable := ""
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "epayco":
@@ -114,22 +113,32 @@ func hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID
 	transactionID = strings.TrimSpace(transactionID)
 	reference = strings.TrimSpace(reference)
 	for _, tableName := range []string{"pagos_epayco", "pagos_wompi"} {
-		var count int
-		query := "SELECT COUNT(1) FROM " + tableName + " WHERE empresa_id = ? AND upper(trim(COALESCE(discount_code, ''))) = ? AND lower(trim(COALESCE(status, ''))) IN (?, ?, ?)"
-		args := []interface{}{empresaID, code, approvedStatuses[0], approvedStatuses[1], approvedStatuses[2]}
-		if tableName == excludeTable {
-			query += " AND NOT ((? <> '' AND COALESCE(transaction_id, '') = ?) OR (? <> '' AND COALESCE(reference, '') = ?))"
-			args = append(args, transactionID, transactionID, reference, reference)
-		}
-		if err := queryRowSQLCompat(dbConn, query, args...).Scan(&count); err != nil {
+		rows, err := querySQLCompat(dbConn, "SELECT COALESCE(status, ''), COALESCE(transaction_id, ''), COALESCE(reference, '') FROM "+tableName+" WHERE empresa_id = ? AND upper(trim(COALESCE(discount_code, ''))) = ?", empresaID, code)
+		if err != nil {
 			if isMissingTableError(err) || isMissingColumnError(err) {
 				continue
 			}
 			return false, err
 		}
-		if count > 0 {
-			return true, nil
+		for rows.Next() {
+			var status, rowTransactionID, rowReference string
+			if err := rows.Scan(&status, &rowTransactionID, &rowReference); err != nil {
+				_ = rows.Close()
+				return false, err
+			}
+			if tableName == excludeTable && licenciaPaymentRecordMatchesExclusion(rowTransactionID, rowReference, transactionID, reference) {
+				continue
+			}
+			if isApprovedLicenciaPaymentStatus(status) {
+				_ = rows.Close()
+				return true, nil
+			}
 		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return false, err
+		}
+		_ = rows.Close()
 	}
 
 	var activationCount int
@@ -146,6 +155,23 @@ func hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID
 	return activationCount > 0, nil
 }
 
+func licenciaPaymentRecordMatchesExclusion(rowTransactionID, rowReference, transactionID, reference string) bool {
+	rowTransactionID = strings.TrimSpace(rowTransactionID)
+	rowReference = strings.TrimSpace(rowReference)
+	transactionID = strings.TrimSpace(transactionID)
+	reference = strings.TrimSpace(reference)
+	return (transactionID != "" && rowTransactionID == transactionID) || (reference != "" && rowReference == reference)
+}
+
+func isApprovedLicenciaPaymentStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "approved", "accepted", "accredited", "aprobado", "aprobada", "aceptado", "aceptada", "acreditado", "acreditada", "success", "successful", "ok", "1", "manual":
+		return true
+	default:
+		return false
+	}
+}
+
 func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin, discountCode, motivo string) error {
 	if licenciaID <= 0 || empresaID <= 0 {
 		return errors.New("licencia_id y empresa_id son obligatorios")
@@ -160,28 +186,49 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 	defer tx.Rollback()
 
 	var count int
-	if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
-		FROM licencias_activaciones_gratis
-		WHERE empresa_id = ?
-			AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return ErrLicenciaGratisYaUsada
-	}
-	if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
-		FROM licencias
-		WHERE empresa_id = ?
-			AND COALESCE(activo, 1) = 1
-			AND COALESCE(valor, 0) <= 0
-			AND trim(COALESCE(fecha_inicio, '')) <> ''`, empresaID).Scan(&count); err != nil {
-		if !isMissingTableError(err) && !isMissingColumnError(err) {
+	code := strings.ToUpper(strings.TrimSpace(discountCode))
+	licenciaValor := 0.0
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(valor, 0) FROM licencias WHERE id = ?`, licenciaID).Scan(&licenciaValor); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) && !isMissingTableError(err) && !isMissingColumnError(err) {
 			return err
 		}
-		count = 0
 	}
-	if count > 0 {
-		return ErrLicenciaGratisYaUsada
+	isZeroValueLicense := licenciaValor <= 0
+	if code != "" && !isZeroValueLicense {
+		if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
+			FROM licencias_activaciones_gratis
+			WHERE empresa_id = ?
+				AND upper(trim(COALESCE(discount_code, ''))) = ?
+				AND COALESCE(estado, 'activo') = 'activo'`, empresaID, code).Scan(&count); err != nil {
+			return err
+		}
+		if count > 0 {
+			return ErrLicenciaGratisYaUsada
+		}
+	} else {
+		if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
+			FROM licencias_activaciones_gratis
+			WHERE empresa_id = ?
+				AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
+			return err
+		}
+		if count > 0 {
+			return ErrLicenciaGratisYaUsada
+		}
+		if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
+			FROM licencias
+			WHERE empresa_id = ?
+				AND COALESCE(activo, 1) = 1
+				AND COALESCE(valor, 0) <= 0
+				AND trim(COALESCE(fecha_inicio, '')) <> ''`, empresaID).Scan(&count); err != nil {
+			if !isMissingTableError(err) && !isMissingColumnError(err) {
+				return err
+			}
+			count = 0
+		}
+		if count > 0 {
+			return ErrLicenciaGratisYaUsada
+		}
 	}
 
 	nowExpr := sqlNowExpr()

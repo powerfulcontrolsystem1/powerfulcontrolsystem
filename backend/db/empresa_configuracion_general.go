@@ -7,25 +7,35 @@ import (
 )
 
 type EmpresaConfiguracionGeneral struct {
-	ID                           int64  `json:"id"`
-	EmpresaID                    int64  `json:"empresa_id"`
-	ImprimirOrdenServicio        bool   `json:"imprimir_orden_servicio"`
-	AreaDespacho                 string `json:"area_despacho,omitempty"`
-	CopiasOrdenServicio          int64  `json:"copias_orden_servicio,omitempty"`
-	NotaOrdenServicio            string `json:"nota_orden_servicio,omitempty"`
-	DescuentosHabilitados        bool   `json:"descuentos_habilitados"`
-	PermitirDescuentoPorcentaje  bool   `json:"permitir_descuento_porcentaje"`
-	PermitirDescuentoCodigo      bool   `json:"permitir_descuento_codigo"`
-	PermitirDescuentoValor       bool   `json:"permitir_descuento_valor"`
-	CodigosDescuento             string `json:"codigos_descuento,omitempty"`
-	LectorCodigoBarrasHabilitado bool   `json:"lector_codigo_barras_habilitado"`
-	LectorCodigoBarrasAutofoco   bool   `json:"lector_codigo_barras_autofoco"`
-	LectorCodigoBarrasAcumular   bool   `json:"lector_codigo_barras_acumular"`
-	FechaCreacion                string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion           string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador               string `json:"usuario_creador,omitempty"`
-	Estado                       string `json:"estado,omitempty"`
-	Observaciones                string `json:"observaciones,omitempty"`
+	ID                                  int64  `json:"id"`
+	EmpresaID                           int64  `json:"empresa_id"`
+	ImprimirOrdenServicio               bool   `json:"imprimir_orden_servicio"`
+	AreaDespacho                        string `json:"area_despacho,omitempty"`
+	CopiasOrdenServicio                 int64  `json:"copias_orden_servicio,omitempty"`
+	NotaOrdenServicio                   string `json:"nota_orden_servicio,omitempty"`
+	DescuentosHabilitados               bool   `json:"descuentos_habilitados"`
+	PermitirDescuentoPorcentaje         bool   `json:"permitir_descuento_porcentaje"`
+	PermitirDescuentoCodigo             bool   `json:"permitir_descuento_codigo"`
+	PermitirDescuentoValor              bool   `json:"permitir_descuento_valor"`
+	CodigosDescuento                    string `json:"codigos_descuento,omitempty"`
+	LectorCodigoBarrasHabilitado        bool   `json:"lector_codigo_barras_habilitado"`
+	LectorCodigoBarrasAutofoco          bool   `json:"lector_codigo_barras_autofoco"`
+	LectorCodigoBarrasAcumular          bool   `json:"lector_codigo_barras_acumular"`
+	CajaNombre                          string `json:"caja_nombre,omitempty"`
+	CajaCodigo                          string `json:"caja_codigo,omitempty"`
+	CajaActiva                          bool   `json:"caja_activa"`
+	CajonMonederoHabilitado             bool   `json:"cajon_monedero_habilitado"`
+	AbrirCajonAlPagarCarrito            bool   `json:"abrir_cajon_al_pagar_carrito"`
+	AbrirCajonAlCerrarTransaccion       bool   `json:"abrir_cajon_al_cerrar_transaccion"`
+	CajonMonederoMetodo                 string `json:"cajon_monedero_metodo,omitempty"`
+	CajonMonederoImpresoraFuncionalidad string `json:"cajon_monedero_impresora_funcionalidad,omitempty"`
+	CajonMonederoComando                string `json:"cajon_monedero_comando,omitempty"`
+	CajaObservaciones                   string `json:"caja_observaciones,omitempty"`
+	FechaCreacion                       string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion                  string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                      string `json:"usuario_creador,omitempty"`
+	Estado                              string `json:"estado,omitempty"`
+	Observaciones                       string `json:"observaciones,omitempty"`
 }
 
 func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
@@ -49,6 +59,16 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 			lector_codigo_barras_habilitado INTEGER DEFAULT 1,
 			lector_codigo_barras_autofoco INTEGER DEFAULT 1,
 			lector_codigo_barras_acumular INTEGER DEFAULT 1,
+			caja_nombre TEXT,
+			caja_codigo TEXT,
+			caja_activa INTEGER DEFAULT 1,
+			cajon_monedero_habilitado INTEGER DEFAULT 0,
+			abrir_cajon_al_pagar_carrito INTEGER DEFAULT 0,
+			abrir_cajon_al_cerrar_transaccion INTEGER DEFAULT 0,
+			cajon_monedero_metodo TEXT DEFAULT 'impresion_pos',
+			cajon_monedero_impresora_funcionalidad TEXT DEFAULT 'cajon_monedero',
+			cajon_monedero_comando TEXT DEFAULT 'escpos_pulse',
+			caja_observaciones TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -100,6 +120,36 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "lector_codigo_barras_acumular", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_activa", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajon_monedero_habilitado", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "abrir_cajon_al_pagar_carrito", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "abrir_cajon_al_cerrar_transaccion", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajon_monedero_metodo", "TEXT DEFAULT 'impresion_pos'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajon_monedero_impresora_funcionalidad", "TEXT DEFAULT 'cajon_monedero'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajon_monedero_comando", "TEXT DEFAULT 'escpos_pulse'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_observaciones", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -142,6 +192,16 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		COALESCE(lector_codigo_barras_habilitado, 1),
 		COALESCE(lector_codigo_barras_autofoco, 1),
 		COALESCE(lector_codigo_barras_acumular, 1),
+		COALESCE(caja_nombre, ''),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_activa, 1),
+		COALESCE(cajon_monedero_habilitado, 0),
+		COALESCE(abrir_cajon_al_pagar_carrito, 0),
+		COALESCE(abrir_cajon_al_cerrar_transaccion, 0),
+		COALESCE(cajon_monedero_metodo, 'impresion_pos'),
+		COALESCE(cajon_monedero_impresora_funcionalidad, 'cajon_monedero'),
+		COALESCE(cajon_monedero_comando, 'escpos_pulse'),
+		COALESCE(caja_observaciones, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -160,6 +220,10 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 	var lectorCodigoBarrasHabilitado int
 	var lectorCodigoBarrasAutofoco int
 	var lectorCodigoBarrasAcumular int
+	var cajaActiva int
+	var cajonMonederoHabilitado int
+	var abrirCajonAlPagarCarrito int
+	var abrirCajonAlCerrarTransaccion int
 	err := row.Scan(
 		&out.ID,
 		&out.EmpresaID,
@@ -175,6 +239,16 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		&lectorCodigoBarrasHabilitado,
 		&lectorCodigoBarrasAutofoco,
 		&lectorCodigoBarrasAcumular,
+		&out.CajaNombre,
+		&out.CajaCodigo,
+		&cajaActiva,
+		&cajonMonederoHabilitado,
+		&abrirCajonAlPagarCarrito,
+		&abrirCajonAlCerrarTransaccion,
+		&out.CajonMonederoMetodo,
+		&out.CajonMonederoImpresoraFuncionalidad,
+		&out.CajonMonederoComando,
+		&out.CajaObservaciones,
 		&out.FechaCreacion,
 		&out.FechaActualizacion,
 		&out.UsuarioCreador,
@@ -202,6 +276,10 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 	out.LectorCodigoBarrasHabilitado = lectorCodigoBarrasHabilitado > 0
 	out.LectorCodigoBarrasAutofoco = lectorCodigoBarrasAutofoco > 0
 	out.LectorCodigoBarrasAcumular = lectorCodigoBarrasAcumular > 0
+	out.CajaActiva = cajaActiva > 0
+	out.CajonMonederoHabilitado = cajonMonederoHabilitado > 0
+	out.AbrirCajonAlPagarCarrito = abrirCajonAlPagarCarrito > 0
+	out.AbrirCajonAlCerrarTransaccion = abrirCajonAlCerrarTransaccion > 0
 	out = normalizeEmpresaConfiguracionGeneral(out)
 
 	return &out, nil
@@ -241,6 +319,16 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			lector_codigo_barras_habilitado,
 			lector_codigo_barras_autofoco,
 			lector_codigo_barras_acumular,
+			caja_nombre,
+			caja_codigo,
+			caja_activa,
+			cajon_monedero_habilitado,
+			abrir_cajon_al_pagar_carrito,
+			abrir_cajon_al_cerrar_transaccion,
+			cajon_monedero_metodo,
+			cajon_monedero_impresora_funcionalidad,
+			cajon_monedero_comando,
+			caja_observaciones,
 			fecha_creacion,
 			fecha_actualizacion,
 			usuario_creador,
@@ -248,6 +336,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			observaciones
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			datetime('now','localtime'),
 			datetime('now','localtime'),
 			?, ?, ?
@@ -265,6 +354,16 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			configGeneralBoolToInt(cfg.LectorCodigoBarrasHabilitado),
 			configGeneralBoolToInt(cfg.LectorCodigoBarrasAutofoco),
 			configGeneralBoolToInt(cfg.LectorCodigoBarrasAcumular),
+			cfg.CajaNombre,
+			cfg.CajaCodigo,
+			configGeneralBoolToInt(cfg.CajaActiva),
+			configGeneralBoolToInt(cfg.CajonMonederoHabilitado),
+			configGeneralBoolToInt(cfg.AbrirCajonAlPagarCarrito),
+			configGeneralBoolToInt(cfg.AbrirCajonAlCerrarTransaccion),
+			cfg.CajonMonederoMetodo,
+			cfg.CajonMonederoImpresoraFuncionalidad,
+			cfg.CajonMonederoComando,
+			cfg.CajaObservaciones,
 			cfg.UsuarioCreador,
 			cfg.Estado,
 			cfg.Observaciones,
@@ -288,6 +387,16 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		lector_codigo_barras_habilitado = ?,
 		lector_codigo_barras_autofoco = ?,
 		lector_codigo_barras_acumular = ?,
+		caja_nombre = ?,
+		caja_codigo = ?,
+		caja_activa = ?,
+		cajon_monedero_habilitado = ?,
+		abrir_cajon_al_pagar_carrito = ?,
+		abrir_cajon_al_cerrar_transaccion = ?,
+		cajon_monedero_metodo = ?,
+		cajon_monedero_impresora_funcionalidad = ?,
+		cajon_monedero_comando = ?,
+		caja_observaciones = ?,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = ?,
 		estado = ?,
@@ -305,6 +414,16 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		configGeneralBoolToInt(cfg.LectorCodigoBarrasHabilitado),
 		configGeneralBoolToInt(cfg.LectorCodigoBarrasAutofoco),
 		configGeneralBoolToInt(cfg.LectorCodigoBarrasAcumular),
+		cfg.CajaNombre,
+		cfg.CajaCodigo,
+		configGeneralBoolToInt(cfg.CajaActiva),
+		configGeneralBoolToInt(cfg.CajonMonederoHabilitado),
+		configGeneralBoolToInt(cfg.AbrirCajonAlPagarCarrito),
+		configGeneralBoolToInt(cfg.AbrirCajonAlCerrarTransaccion),
+		cfg.CajonMonederoMetodo,
+		cfg.CajonMonederoImpresoraFuncionalidad,
+		cfg.CajonMonederoComando,
+		cfg.CajaObservaciones,
 		cfg.UsuarioCreador,
 		cfg.Estado,
 		cfg.Observaciones,
@@ -319,16 +438,20 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 
 func defaultEmpresaConfiguracionGeneral(empresaID int64) EmpresaConfiguracionGeneral {
 	return normalizeEmpresaConfiguracionGeneral(EmpresaConfiguracionGeneral{
-		EmpresaID:                    empresaID,
-		CopiasOrdenServicio:          1,
-		DescuentosHabilitados:        true,
-		PermitirDescuentoPorcentaje:  true,
-		PermitirDescuentoCodigo:      true,
-		PermitirDescuentoValor:       true,
-		LectorCodigoBarrasHabilitado: true,
-		LectorCodigoBarrasAutofoco:   true,
-		LectorCodigoBarrasAcumular:   true,
-		Estado:                       "activo",
+		EmpresaID:                           empresaID,
+		CopiasOrdenServicio:                 1,
+		DescuentosHabilitados:               true,
+		PermitirDescuentoPorcentaje:         true,
+		PermitirDescuentoCodigo:             true,
+		PermitirDescuentoValor:              true,
+		LectorCodigoBarrasHabilitado:        true,
+		LectorCodigoBarrasAutofoco:          true,
+		LectorCodigoBarrasAcumular:          true,
+		CajaActiva:                          true,
+		CajonMonederoMetodo:                 "impresion_pos",
+		CajonMonederoImpresoraFuncionalidad: "cajon_monedero",
+		CajonMonederoComando:                "escpos_pulse",
+		Estado:                              "activo",
 	})
 }
 
@@ -347,6 +470,37 @@ func normalizeEmpresaConfiguracionGeneral(cfg EmpresaConfiguracionGeneral) Empre
 	cfg.CodigosDescuento = strings.TrimSpace(cfg.CodigosDescuento)
 	if len(cfg.CodigosDescuento) > 2000 {
 		cfg.CodigosDescuento = cfg.CodigosDescuento[:2000]
+	}
+	cfg.CajaNombre = strings.TrimSpace(cfg.CajaNombre)
+	if len(cfg.CajaNombre) > 120 {
+		cfg.CajaNombre = cfg.CajaNombre[:120]
+	}
+	cfg.CajaCodigo = strings.TrimSpace(cfg.CajaCodigo)
+	if len(cfg.CajaCodigo) > 80 {
+		cfg.CajaCodigo = cfg.CajaCodigo[:80]
+	}
+	cfg.CajonMonederoMetodo = strings.TrimSpace(strings.ToLower(cfg.CajonMonederoMetodo))
+	switch cfg.CajonMonederoMetodo {
+	case "impresion_pos", "manual":
+	default:
+		cfg.CajonMonederoMetodo = "impresion_pos"
+	}
+	cfg.CajonMonederoImpresoraFuncionalidad = strings.TrimSpace(cfg.CajonMonederoImpresoraFuncionalidad)
+	if cfg.CajonMonederoImpresoraFuncionalidad == "" {
+		cfg.CajonMonederoImpresoraFuncionalidad = "cajon_monedero"
+	}
+	if len(cfg.CajonMonederoImpresoraFuncionalidad) > 80 {
+		cfg.CajonMonederoImpresoraFuncionalidad = cfg.CajonMonederoImpresoraFuncionalidad[:80]
+	}
+	cfg.CajonMonederoComando = strings.TrimSpace(strings.ToLower(cfg.CajonMonederoComando))
+	switch cfg.CajonMonederoComando {
+	case "escpos_pulse", "driver_auto_open":
+	default:
+		cfg.CajonMonederoComando = "escpos_pulse"
+	}
+	cfg.CajaObservaciones = strings.TrimSpace(cfg.CajaObservaciones)
+	if len(cfg.CajaObservaciones) > 800 {
+		cfg.CajaObservaciones = cfg.CajaObservaciones[:800]
 	}
 	cfg.Estado = strings.TrimSpace(cfg.Estado)
 	if cfg.Estado == "" {

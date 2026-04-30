@@ -431,7 +431,7 @@ Pacman.User = function (game, map) {
         block = map.block(nextWhole);        
         
         if ((isMidSquare(position.y) || isMidSquare(position.x)) &&
-            block === Pacman.BISCUIT || block === Pacman.PILL) {
+            (block === Pacman.BISCUIT || block === Pacman.PILL)) {
             
             map.setBlock(nextWhole, Pacman.EMPTY);           
             addScore((block === Pacman.BISCUIT) ? 10 : 50);
@@ -441,8 +441,10 @@ Pacman.User = function (game, map) {
                 game.completedLevel();
             }
             
-            if (block === Pacman.PILL) { 
+            if (block === Pacman.PILL) {
                 game.eatenPill();
+            } else if (typeof game.eatenBiscuit === "function") {
+                game.eatenBiscuit();
             }
         }   
                 
@@ -764,9 +766,15 @@ Pacman.Audio = function(game) {
 
     function play(name) { 
         if (!game.soundDisabled()) {
+            if (!files[name]) {
+                return;
+            }
             endEvents[name] = function() { ended(name); };
             playing.push(name);
             files[name].addEventListener("ended", endEvents[name], true);
+            try {
+                files[name].currentTime = 0;
+            } catch (ignore) {}
             var playback = files[name].play();
             if (playback && typeof playback.catch === "function") {
                 playback.catch(function() {});
@@ -815,7 +823,8 @@ var PACMAN = (function () {
         timer        = null,
         map          = null,
         user         = null,
-        stored       = null;
+        stored       = null,
+        eatingSoundToggle = false;
 
     function getTick() { 
         return tick;
@@ -1039,6 +1048,11 @@ var PACMAN = (function () {
             ghosts[i].makeEatable(ctx);
         }        
     };
+
+    function eatenBiscuit() {
+        eatingSoundToggle = !eatingSoundToggle;
+        audio.play(eatingSoundToggle ? "eating" : "eating2");
+    };
     
     function completedLevel() {
         setState(WAITING);
@@ -1072,7 +1086,8 @@ var PACMAN = (function () {
         map   = new Pacman.Map(blockSize);
         user  = new Pacman.User({ 
             "completedLevel" : completedLevel, 
-            "eatenPill"      : eatenPill 
+            "eatenPill"      : eatenPill,
+            "eatenBiscuit"   : eatenBiscuit
         }, map);
 
         for (i = 0, len = ghostSpecs.length; i < len; i += 1) {

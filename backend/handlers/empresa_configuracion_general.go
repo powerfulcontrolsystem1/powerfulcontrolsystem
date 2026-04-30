@@ -26,9 +26,23 @@ type empresaConfiguracionGeneralProductosPayload struct {
 	LectorCodigoBarrasAcumular   bool   `json:"lector_codigo_barras_acumular"`
 }
 
+type empresaConfiguracionGeneralCajaPayload struct {
+	CajaNombre                          string `json:"caja_nombre"`
+	CajaCodigo                          string `json:"caja_codigo"`
+	CajaActiva                          bool   `json:"caja_activa"`
+	CajonMonederoHabilitado             bool   `json:"cajon_monedero_habilitado"`
+	AbrirCajonAlPagarCarrito            bool   `json:"abrir_cajon_al_pagar_carrito"`
+	AbrirCajonAlCerrarTransaccion       bool   `json:"abrir_cajon_al_cerrar_transaccion"`
+	CajonMonederoMetodo                 string `json:"cajon_monedero_metodo"`
+	CajonMonederoImpresoraFuncionalidad string `json:"cajon_monedero_impresora_funcionalidad"`
+	CajonMonederoComando                string `json:"cajon_monedero_comando"`
+	CajaObservaciones                   string `json:"caja_observaciones"`
+}
+
 type empresaConfiguracionGeneralPayload struct {
 	EmpresaID     int64                                        `json:"empresa_id"`
 	Productos     *empresaConfiguracionGeneralProductosPayload `json:"productos,omitempty"`
+	Caja          *empresaConfiguracionGeneralCajaPayload      `json:"caja,omitempty"`
 	Estado        string                                       `json:"estado,omitempty"`
 	Observaciones string                                       `json:"observaciones,omitempty"`
 }
@@ -101,6 +115,18 @@ func EmpresaConfiguracionGeneralHandler(dbEmp *sql.DB) http.HandlerFunc {
 				cfg.LectorCodigoBarrasAutofoco = payload.Productos.LectorCodigoBarrasAutofoco
 				cfg.LectorCodigoBarrasAcumular = payload.Productos.LectorCodigoBarrasAcumular
 			}
+			if payload.Caja != nil {
+				cfg.CajaNombre = payload.Caja.CajaNombre
+				cfg.CajaCodigo = payload.Caja.CajaCodigo
+				cfg.CajaActiva = payload.Caja.CajaActiva
+				cfg.CajonMonederoHabilitado = payload.Caja.CajonMonederoHabilitado
+				cfg.AbrirCajonAlPagarCarrito = payload.Caja.AbrirCajonAlPagarCarrito
+				cfg.AbrirCajonAlCerrarTransaccion = payload.Caja.AbrirCajonAlCerrarTransaccion
+				cfg.CajonMonederoMetodo = payload.Caja.CajonMonederoMetodo
+				cfg.CajonMonederoImpresoraFuncionalidad = payload.Caja.CajonMonederoImpresoraFuncionalidad
+				cfg.CajonMonederoComando = payload.Caja.CajonMonederoComando
+				cfg.CajaObservaciones = payload.Caja.CajaObservaciones
+			}
 			id, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, *cfg)
 			if err != nil {
 				log.Printf("[empresa_config_general] upsert empresa_id=%d error: %v", payload.EmpresaID, err)
@@ -132,6 +158,7 @@ func empresaConfiguracionGeneralResponse(cfg *dbpkg.EmpresaConfiguracionGeneral)
 		return map[string]interface{}{
 			"empresa_id": 0,
 			"productos":  map[string]interface{}{},
+			"caja":       map[string]interface{}{},
 		}
 	}
 	return map[string]interface{}{
@@ -152,6 +179,18 @@ func empresaConfiguracionGeneralResponse(cfg *dbpkg.EmpresaConfiguracionGeneral)
 			"lector_codigo_barras_habilitado": cfg.LectorCodigoBarrasHabilitado,
 			"lector_codigo_barras_autofoco":   cfg.LectorCodigoBarrasAutofoco,
 			"lector_codigo_barras_acumular":   cfg.LectorCodigoBarrasAcumular,
+		},
+		"caja": map[string]interface{}{
+			"caja_nombre":                            cfg.CajaNombre,
+			"caja_codigo":                            cfg.CajaCodigo,
+			"caja_activa":                            cfg.CajaActiva,
+			"cajon_monedero_habilitado":              cfg.CajonMonederoHabilitado,
+			"abrir_cajon_al_pagar_carrito":           cfg.AbrirCajonAlPagarCarrito,
+			"abrir_cajon_al_cerrar_transaccion":      cfg.AbrirCajonAlCerrarTransaccion,
+			"cajon_monedero_metodo":                  cfg.CajonMonederoMetodo,
+			"cajon_monedero_impresora_funcionalidad": cfg.CajonMonederoImpresoraFuncionalidad,
+			"cajon_monedero_comando":                 cfg.CajonMonederoComando,
+			"caja_observaciones":                     cfg.CajaObservaciones,
 		},
 	}
 }

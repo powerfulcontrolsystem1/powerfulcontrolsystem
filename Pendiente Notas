@@ -190,3 +190,29 @@ Nota importante:
 - probar secretaria
 - implementar onlyOffice
 - implementar nextcloud
+
+---
+
+Revision integral de modulos - avance 2026-04-30
+
+- Fase base completada:
+  - `go test ./...` en `backend` paso correctamente.
+  - Validacion de sintaxis de 15 scripts compartidos en `web/js` paso correctamente.
+  - Validacion de scripts embebidos en 135 paginas HTML paso correctamente.
+  - Chequeo de enlaces internos no encontro paginas faltantes; solo descargas RustDesk bajo `/descargas`, que pertenecen al directorio de descargas del proyecto y no a `web`.
+
+- Fase Super / Seleccionar empresa:
+  - Pagina `super/administradores.html` ajustada para no permitir editar ni cambiar rol.
+  - El API `/super/api/administradores` ahora bloquea edicion por `PUT` y limita crear/eliminar administradores a rol `super_administrador`.
+  - El rol `super_administrador` creado por panel se conserva en autenticacion.
+
+- Fase Administrar empresa / Configuracion:
+  - Validacion de IDs en paginas criticas no encontro errores de carga en configuracion.
+  - Referencias antiguas del carrito (`productsSummaryCard`, `paymentMethodsCards`, etc.) estan protegidas y no rompen la pagina.
+
+- Fase POS / carrito:
+  - Mensaje de inventario sin bodega ajustado para no mostrar IDs fijos de ejemplo.
+  - Pruebas `go test ./handlers ./db` pasaron correctamente.
+
+- Siguiente fase:
+  - Continuar con revision funcional de estaciones, carrito, pagos internos, inventario, reportes y venta publica.

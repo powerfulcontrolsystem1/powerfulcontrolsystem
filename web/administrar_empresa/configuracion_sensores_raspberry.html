@@ -20,6 +20,40 @@
 
       <div id="message" class="form-message" role="status" aria-live="polite"></div>
 
+      <div class="form sub-card">
+        <div class="empresa-section-header compact">
+          <div>
+            <h2>Reglas de sensor y tiempos</h2>
+            <p class="form-help">Controla la tolerancia de cobro por minutos y el comportamiento automatico del sensor.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-col inline-check" for="sensorAutoActivarEstacion">
+            <input id="sensorAutoActivarEstacion" type="checkbox">
+            Activar automaticamente la estacion cuando detecte senal del sensor
+          </label>
+          <div class="form-col">
+            <label class="form-label" for="margenToleranciaEntradaMinutos">Margen de tolerancia para cobro extra (minutos)</label>
+            <input id="margenToleranciaEntradaMinutos" class="form-input" type="number" min="0" max="1440" step="1" placeholder="Ej: 10">
+            <p class="form-help">Si la estacion supera la tarifa base solo dentro de este margen, no se cobra hora o fraccion extra.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-col inline-check" for="margenDesactivacionHabilitado">
+            <input id="margenDesactivacionHabilitado" type="checkbox">
+            Margen de tiempo (minutos) para desactivar la estacion
+          </label>
+          <div class="form-col">
+            <label class="form-label" for="margenDesactivacionMinutos">Minutos permitidos para cancelar carrito</label>
+            <input id="margenDesactivacionMinutos" class="form-input" type="number" min="0" max="1440" step="1" placeholder="Ej: 10">
+            <p class="form-help">Despues de este tiempo, la estacion ya no se cancela: se debe usar Pagar y cerrar carrito.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn add" id="saveSensorRulesBtn" type="button">Guardar reglas</button>
+        </div>
+      </div>
+
       <div class="form">
         <div class="form-row">
           <div class="form-col">
@@ -139,6 +173,57 @@
           return await res.json();
         } catch (e) {
           return null;
+        }
+      }
+
+      function clampMinutes(value) {
+        var n = Math.floor(Number(value || 0));
+        if (!isFinite(n) || n < 0) n = 0;
+        if (n > 1440) n = 1440;
+        return n;
+      }
+
+      async function loadSensorRules() {
+        if (!empresaId) return null;
+        try {
+          var cfg = await requestJSON('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(empresaId) + '&action=configuracion');
+          document.getElementById('sensorAutoActivarEstacion').checked = Boolean(cfg && cfg.sensor_auto_activar_estacion);
+          document.getElementById('margenToleranciaEntradaMinutos').value = clampMinutes(cfg && cfg.margen_tolerancia_entrada_minutos);
+          document.getElementById('margenDesactivacionHabilitado').checked = Boolean(cfg && cfg.margen_desactivacion_habilitado);
+          document.getElementById('margenDesactivacionMinutos').value = clampMinutes(cfg && cfg.margen_desactivacion_minutos);
+          return cfg;
+        } catch (err) {
+          showMessage('No se pudieron cargar las reglas del sensor: ' + (err.message || String(err)), 'error');
+          return null;
+        }
+      }
+
+      async function saveSensorRules() {
+        if (!empresaId) {
+          showMessage('Falta empresa_id en la URL.', 'error');
+          return;
+        }
+        try {
+          var current = await requestJSON('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(empresaId) + '&action=configuracion');
+          var payload = Object.assign({}, current || {}, {
+            empresa_id: Number(empresaId),
+            sensor_auto_activar_estacion: Boolean(document.getElementById('sensorAutoActivarEstacion').checked),
+            margen_tolerancia_entrada_minutos: clampMinutes(document.getElementById('margenToleranciaEntradaMinutos').value),
+            margen_desactivacion_habilitado: Boolean(document.getElementById('margenDesactivacionHabilitado').checked),
+            margen_desactivacion_minutos: clampMinutes(document.getElementById('margenDesactivacionMinutos').value)
+          });
+          var saved = await requestJSON('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(empresaId) + '&action=configuracion', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          document.getElementById('sensorAutoActivarEstacion').checked = Boolean(saved && saved.sensor_auto_activar_estacion);
+          document.getElementById('margenToleranciaEntradaMinutos').value = clampMinutes(saved && saved.margen_tolerancia_entrada_minutos);
+          document.getElementById('margenDesactivacionHabilitado').checked = Boolean(saved && saved.margen_desactivacion_habilitado);
+          document.getElementById('margenDesactivacionMinutos').value = clampMinutes(saved && saved.margen_desactivacion_minutos);
+          showMessage('Reglas de sensor y tiempos guardadas correctamente.', 'success');
+        } catch (err) {
+          showMessage(err.message || 'No se pudieron guardar las reglas del sensor.', 'error');
         }
       }
 
@@ -321,12 +406,17 @@
           ev.preventDefault();
           generateToken();
         });
+        document.getElementById('saveSensorRulesBtn').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          saveSensorRules();
+        });
       }
 
       document.addEventListener('DOMContentLoaded', function () {
         wireEvents();
         setEndpointExample();
         cargarEmpresa();
+        loadSensorRules();
         loadDevices();
       });
     })();

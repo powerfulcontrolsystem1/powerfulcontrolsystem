@@ -1132,12 +1132,15 @@ func resolveLicenciaDiscountAmount(dbSuper *sql.DB, discountCode string, origina
 	return amount, label, ok, nil
 }
 
-func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64) (bool, error) {
+func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (bool, error) {
 	if lic == nil || empresaID <= 0 {
 		return false, nil
 	}
 	if lic.EmpresaID == empresaID && strings.TrimSpace(lic.FechaInicio) != "" {
 		return true, nil
+	}
+	if strings.TrimSpace(discountCode) != "" && roundLicenciaCheckoutAmount(lic.Valor) > 0 {
+		return dbpkg.HasLicenciaDiscountCodeUsedByEmpresa(dbSuper, empresaID, discountCode)
 	}
 	return dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
 }
@@ -1168,7 +1171,7 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	isZeroTotal := totalValue <= 0
 	zeroBlocked := false
 	if isZeroTotal {
-		zeroBlocked, err = isLicenciaGratisActivationBlocked(dbSuper, lic, empresaID)
+		zeroBlocked, err = isLicenciaGratisActivationBlocked(dbSuper, lic, empresaID, discountCode)
 		if err != nil {
 			return summary, err
 		}
@@ -1185,7 +1188,11 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 		CanActivateWithoutPayment: isZeroTotal && !zeroBlocked,
 	}
 	if zeroBlocked {
-		summary.Message = "Esta licencia gratuita solo puede activarse una vez por empresa."
+		if strings.TrimSpace(discountCode) != "" && roundLicenciaCheckoutAmount(lic.Valor) > 0 {
+			summary.Message = "Este codigo de descuento ya fue usado por esta empresa."
+		} else {
+			summary.Message = "Esta licencia gratuita solo puede activarse una vez por empresa."
+		}
 	} else if isZeroTotal {
 		summary.Message = "El total quedó en cero. Puedes activar la licencia sin pasar por la pasarela."
 	} else if summary.DiscountApplied {

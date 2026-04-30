@@ -103,6 +103,7 @@
         <div class="carrito-primary-main">
       <div id="buscarProductosActions" class="form-actions mt-10">
         <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
+        <button type="button" id="carritoBtnBuscarBotones" class="btn secondary">Buscar (botones)</button>
       </div>
 
       <div id="scannerPanel" class="card empresa-section mt-12">
@@ -112,33 +113,35 @@
         <div id="carritoClienteRow" class="form-row carrito-scanner-stack">
           <div class="form-col carrito-scanner-column">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
-            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea y presiona Enter">
+            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea codigo">
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
             <input id="scannerCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
           </div>
-          <div class="form-col maxw-240 flex-end">
-            <button type="button" id="scannerAgregarBtn" class="btn w-full">Agregar por escaneo</button>
-          </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
       </div>
 
-      <div id="productsSummaryCard" class="card empresa-section mt-12">
-        <div class="empresa-section-header">
-          <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
+      <div id="stationCartSplitRow" class="carrito-station-split mt-12" hidden>
+        <div class="carrito-station-split-main">
+          <p class="form-help mb-8 mt-0">Items del carrito</p>
+          <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus items.</div>
         </div>
-        <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
+        <aside class="card carrito-summary-card carrito-station-totals-aside">
+          <h3 class="section-heading">Totales y detalles</h3>
+          <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
+        </aside>
       </div>
 
-      <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
+        <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
         <div class="empresa-section-header">
           <h3 class="section-heading">Cobro y estados del carrito</h3>
         </div>
 
-        <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10 mt-10">
-          <button type="button" id="carritoBtnPagar" class="btn">Pagar</button>
+        <section id="stationCartActionsCard" class="card carrito-payment-section-card carrito-actions-card mt-10">
+          <h4 class="section-heading">Acciones del carrito</h4>
+          <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn danger">Cancelar carrito</button>
@@ -150,40 +153,8 @@
           <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
           <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
           <button type="button" id="carritoBtnVehiculo" class="btn secondary">Vehículo</button>
-        </div>
-
-        <div class="form-row mt-12">
-          <div class="form-col">
-            <label class="form-label">Acceso cliente VIP (público)</label>
-            <p class="form-help">Genera un código temporal para que el cliente pueda pedir productos desde su celular. Se desactiva al pagar.</p>
-            <div class="form-actions">
-              <button id="btnVipCodigo" type="button" class="btn secondary">Generar codigo para cliente vip</button>
-            </div>
-            <div id="vipCodigoMsg" class="form-help"></div>
           </div>
-        </div>
-
-        <div id="carritoQuickScanRow" class="form-row mt-10" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
-          <div class="form-col" style="flex:1;min-width:220px;">
-            <label class="form-label" for="carritoCodigoRapido">Código / SKU (Enter para agregar)</label>
-            <input id="carritoCodigoRapido" type="text" class="form-input" autocomplete="off" placeholder="Escribe o escanea código y pulsa Enter">
-          </div>
-          <div class="form-col flex-end">
-            <label class="form-label">&nbsp;</label>
-            <button type="button" id="carritoBtnBuscarBotones" class="btn secondary">Buscar (botones)</button>
-          </div>
-        </div>
-
-        <div id="stationCartSplitRow" class="carrito-station-split mt-12">
-          <div class="carrito-station-split-main">
-            <p class="form-help mb-8 mt-0">Ítems del carrito</p>
-            <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus items.</div>
-          </div>
-          <aside class="card carrito-summary-card carrito-station-totals-aside">
-            <h3 class="section-heading">Totales y detalles</h3>
-            <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
-          </aside>
-        </div>
+        </section>
 
         <div id="carritoAlertBanner" class="alert is-hidden mt-10"></div>
 
@@ -230,11 +201,6 @@
               <input id="applyTipCheckbox" type="checkbox" checked> Aplicar propina configurada
             </label>
             <div id="tipConfigHint" class="form-help mt-6">Configuracion de propinas: cargando...</div>
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="commissionWorker">Lavador (comision)</label>
-            <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com">
-            <div id="commissionConfigHint" class="form-help mt-6">Configuracion de comisiones: cargando...</div>
           </div>
         </div>
 
@@ -302,7 +268,18 @@
 
         <div id="stationPaymentBreakdown" class="form-help mt-8"></div>
 
-        <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row mt-10">
+        <div class="form-actions mt-10">
+          <button type="button" id="btnActivarSesionCarrito" class="btn secondary is-hidden">Activar carrito</button>
+          </div>
+        </section>
+        <div id="stationPaymentMsg" class="form-help"></div>
+      </div>
+
+      <section id="stationPaymentAmountsCard" class="card empresa-section carrito-payment-amounts-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <h3 class="section-heading">Valores por medio de pago</h3>
+        </div>
+        <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row">
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayEfectivo">Efectivo</label>
             <input id="stationPayDisplayEfectivo" type="text" class="form-input" readonly value="" autocomplete="off">
@@ -320,19 +297,42 @@
             <input id="stationPayDisplayOtro" type="text" class="form-input" readonly value="" autocomplete="off">
           </div>
         </div>
-        <div id="paymentMethodsCards" class="carrito-payment-cards mt-10 is-hidden" aria-hidden="true"></div>
+      </section>
 
-        <div class="form-actions mt-10">
-          <button type="button" id="btnRecalcularCobro" class="btn secondary">Recalcular</button>
-          <button type="button" id="btnActivarSesionCarrito" class="btn secondary is-hidden">Activar carrito</button>
-          <button type="button" id="btnPagarCarrito" class="btn">Pagar y cerrar carrito</button>
+      <section id="stationWorkerCommissionCard" class="card empresa-section carrito-worker-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <h3 class="section-heading">Lavador</h3>
         </div>
-        <div id="stationPaymentMsg" class="form-help"></div>
-      </div>
+        <div class="form-col">
+          <label class="form-label" for="commissionWorker">Lavador (comision)</label>
+          <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com">
+          <div id="commissionConfigHint" class="form-help mt-6">Configuracion de comisiones: cargando...</div>
+        </div>
+      </section>
+
+      <section id="stationVipAccessCard" class="card empresa-section carrito-vip-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <h3 class="section-heading">Acceso cliente VIP (público)</h3>
+        </div>
+        <div class="form-col">
+          <p class="form-help">Genera un código temporal para que el cliente pueda pedir productos desde su celular. Se desactiva al pagar.</p>
+          <div class="form-actions">
+            <button id="btnVipCodigo" type="button" class="btn secondary">Generar codigo para cliente vip</button>
+          </div>
+          <div id="vipCodigoMsg" class="form-help"></div>
+        </div>
+      </section>
 
       <form id="itemForm" class="mt-12">
         <input type="hidden" id="itemId">
 
+        <section class="card carrito-item-card">
+          <div class="empresa-section-header compact">
+            <h3 class="section-heading">Item del carrito</h3>
+          </div>
+
+        <section id="itemCatalogSection" class="card carrito-payment-section-card carrito-catalog-card">
+          <h4 class="section-heading">Catalogo inteligente</h4>
         <div id="itemCatalogSearchRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Buscar en catálogo inteligente</label>
@@ -354,6 +354,8 @@
             <button id="limpiarCatalogoBtn" type="button" class="btn secondary">Quitar referencia</button>
           </div>
         </div>
+
+        </section>
 
         <div id="itemManualReferenceRow" class="form-row">
           <div class="form-col">
@@ -423,8 +425,9 @@
           <button type="submit" id="saveItemBtn" class="btn">Guardar item</button>
           <button type="button" id="cancelItemBtn" class="btn secondary">Cancelar</button>
         </div>
+        <div id="itemMsg" class="form-help"></div>
+        </section>
       </form>
-      <div id="itemMsg" class="form-help"></div>
 
       <div id="carritoGrid" class="carrito-grid mt-14">
         <div class="carrito-grid-main">
@@ -437,6 +440,9 @@
         <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
           <h3 class="section-heading">Totales y detalles</h3>
           <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
+          <div class="carrito-summary-pay-actions">
+            <button type="button" id="btnPagarCarrito" class="btn w-full">Pagar y cerrar carrito</button>
+          </div>
         </aside>
       </div>
     </div>
@@ -451,6 +457,7 @@
       stationName: '',
       empresaGeneralConfig: null,
       stationConfig: null,
+      tarifaMinutosConfig: null,
       stationCartUI: null,
       stationUpdateInterval: null,
       stationAlert10Interval: null,
@@ -501,6 +508,9 @@
     };
 
     let itemSearchDebounceTimer = null;
+    let scannerAutoTimer = null;
+    let scannerProcessing = false;
+    let scannerAutofocusPaused = false;
 
     function getQueryParam(name) {
       const p = new URLSearchParams(window.location.search);
@@ -635,7 +645,7 @@
 
     function setInitialLoadContentVisible(visible) {
       const display = visible ? '' : 'none';
-      ['buscarProductosActions', 'scannerPanel', 'itemForm', 'productsSummaryCard'].forEach(function(id) {
+      ['buscarProductosActions', 'scannerPanel', 'stationCartSplitRow', 'itemForm'].forEach(function(id) {
         const el = document.getElementById(id);
         if (!el) return;
         el.style.display = display;
@@ -645,6 +655,24 @@
         const stationPanel = document.getElementById('stationCheckoutPanel');
         if (stationPanel) {
           stationPanel.style.display = 'none';
+        }
+        const stationVipCard = document.getElementById('stationVipAccessCard');
+        if (stationVipCard) {
+          stationVipCard.style.display = 'none';
+          stationVipCard.hidden = true;
+          stationVipCard.classList.add('is-hidden');
+        }
+        const stationWorkerCard = document.getElementById('stationWorkerCommissionCard');
+        if (stationWorkerCard) {
+          stationWorkerCard.style.display = 'none';
+          stationWorkerCard.hidden = true;
+          stationWorkerCard.classList.add('is-hidden');
+        }
+        const stationPaymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
+        if (stationPaymentAmountsCard) {
+          stationPaymentAmountsCard.style.display = 'none';
+          stationPaymentAmountsCard.hidden = true;
+          stationPaymentAmountsCard.classList.add('is-hidden');
         }
         const itemsList = document.getElementById('itemsList');
         if (itemsList) {
@@ -729,7 +757,11 @@
         mostrar_desglose_cobro: true,
         mostrar_resumen_productos: true,
         mostrar_boton_pagar: true,
-        mostrar_tarjetas_pago: true
+        mostrar_tarjetas_pago: true,
+        mostrar_tarjeta_acciones_carrito: true,
+        mostrar_tarjeta_valores_pago: true,
+        mostrar_tarjeta_comision: true,
+        mostrar_tarjeta_vip_cliente: true
       };
     }
 
@@ -752,7 +784,11 @@
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
-        mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago)
+        mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago),
+        mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : Boolean(src.mostrar_tarjeta_acciones_carrito),
+        mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
+        mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
+        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente)
       };
     }
 
@@ -838,6 +874,39 @@
       return state.stationConfig;
     }
 
+    function normalizeTarifaMinutosConfig(raw) {
+      const cfg = raw && typeof raw === 'object' ? raw : {};
+      const clampMinutes = function(value) {
+        let n = Math.floor(Number(value || 0));
+        if (!Number.isFinite(n) || n < 0) n = 0;
+        if (n > 1440) n = 1440;
+        return n;
+      };
+      return {
+        margen_desactivacion_habilitado: Boolean(cfg.margen_desactivacion_habilitado),
+        margen_desactivacion_minutos: clampMinutes(cfg.margen_desactivacion_minutos),
+        margen_tolerancia_entrada_minutos: clampMinutes(cfg.margen_tolerancia_entrada_minutos),
+        sensor_auto_activar_estacion: Boolean(cfg.sensor_auto_activar_estacion)
+      };
+    }
+
+    async function loadTarifaMinutosConfigFromServer() {
+      if (!state.empresaID) {
+        state.tarifaMinutosConfig = normalizeTarifaMinutosConfig({});
+        return state.tarifaMinutosConfig;
+      }
+      try {
+        const res = await fetch('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=configuracion', {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('No disponible');
+        state.tarifaMinutosConfig = normalizeTarifaMinutosConfig(await res.json());
+      } catch (_) {
+        state.tarifaMinutosConfig = normalizeTarifaMinutosConfig({});
+      }
+      return state.tarifaMinutosConfig;
+    }
+
     function getStationConfigRecord(empresaID, estacionID) {
       if (!empresaID || !estacionID || !state.stationConfig || !Array.isArray(state.stationConfig.estaciones)) return null;
       return state.stationConfig.estaciones.find(function(item) {
@@ -868,20 +937,23 @@
       const cfg = normalizeUnifiedCartUIConfig(ui);
       const showPayButton = Boolean(cfg.mostrar_boton_pagar);
       const showPaymentMeans = Boolean(cfg.mostrar_tarjetas_pago);
-      const carritoPayBtn = document.getElementById('carritoBtnPagar');
+      const showPaymentAmounts = showPaymentMeans && Boolean(cfg.mostrar_tarjeta_valores_pago) && state.stationMode && Boolean(getSelectedCarrito());
       const stationPayBtn = document.getElementById('btnPagarCarrito');
+      const stationPaymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
       const stationPaymentAmountsRow = document.getElementById('stationPaymentAmountsRow');
       const paymentMethodsCards = document.getElementById('paymentMethodsCards');
 
-      if (carritoPayBtn) {
-        carritoPayBtn.style.display = showPayButton ? '' : 'none';
-      }
       if (stationPayBtn) {
         stationPayBtn.style.display = showPayButton ? '' : 'none';
       }
       if (stationPaymentAmountsRow) {
-        stationPaymentAmountsRow.style.display = showPaymentMeans ? '' : 'none';
-        stationPaymentAmountsRow.hidden = !showPaymentMeans;
+        stationPaymentAmountsRow.style.display = showPaymentAmounts ? '' : 'none';
+        stationPaymentAmountsRow.hidden = !showPaymentAmounts;
+      }
+      if (stationPaymentAmountsCard) {
+        stationPaymentAmountsCard.classList.toggle('is-hidden', !showPaymentAmounts);
+        stationPaymentAmountsCard.style.display = showPaymentAmounts ? '' : 'none';
+        stationPaymentAmountsCard.hidden = !showPaymentAmounts;
       }
       if (paymentMethodsCards) {
         paymentMethodsCards.classList.toggle('is-hidden', !showPaymentMeans);
@@ -908,12 +980,11 @@
         btnBuscarToolbar.style.display = ui.mostrar_boton_buscar_productos ? '' : 'none';
       }
 
-      const quickScanRow = document.getElementById('carritoQuickScanRow');
-      if (quickScanRow) {
-        quickScanRow.style.display = state.stationMode ? '' : 'none';
-      }
-
       const itemCatalogSearchRow = document.getElementById('itemCatalogSearchRow');
+      const itemCatalogSection = document.getElementById('itemCatalogSection');
+      if (itemCatalogSection) {
+        itemCatalogSection.style.display = ui.mostrar_busqueda_catalogo ? '' : 'none';
+      }
       if (itemCatalogSearchRow) {
         itemCatalogSearchRow.style.display = ui.mostrar_busqueda_catalogo ? '' : 'none';
       }
@@ -958,6 +1029,13 @@
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
         productsSummaryCard.style.display = ui.mostrar_resumen_productos ? '' : 'none';
+      }
+
+      const actionsCard = document.getElementById('stationCartActionsCard');
+      if (actionsCard) {
+        actionsCard.classList.toggle('is-hidden', !ui.mostrar_tarjeta_acciones_carrito);
+        actionsCard.hidden = !ui.mostrar_tarjeta_acciones_carrito;
+        actionsCard.style.display = ui.mostrar_tarjeta_acciones_carrito ? '' : 'none';
       }
     }
 
@@ -1107,55 +1185,11 @@
     function renderPaymentMethodsCards(carrito) {
       const wrap = document.getElementById('paymentMethodsCards');
       if (!wrap) return;
-
-      const stationUI = getCurrentStationCartUIConfig();
-      const showPaymentMeans = Boolean(stationUI.mostrar_tarjetas_pago);
-      wrap.classList.toggle('is-hidden', !showPaymentMeans);
-      wrap.hidden = !showPaymentMeans;
-      wrap.setAttribute('aria-hidden', showPaymentMeans ? 'false' : 'true');
-      wrap.style.display = showPaymentMeans ? '' : 'none';
-      if (!showPaymentMeans) {
-        wrap.innerHTML = '';
-        return;
-      }
-
-      const allowed = getAllowedPaymentMethods();
-      const selectedActive = carrito ? isCarritoOperativoActivo(carrito) : false;
-      const paymentMethodEl = document.getElementById('paymentMethod');
-      const currentMethod = normalize((paymentMethodEl && paymentMethodEl.value) || state.stationDiscount.paymentMethod || allowed[0] || '').toLowerCase();
       wrap.innerHTML = '';
-
-      if (!allowed.length) {
-        const empty = document.createElement('div');
-        empty.className = 'form-help carrito-payment-empty';
-        empty.textContent = 'No hay medios de pago habilitados para este rol.';
-        wrap.appendChild(empty);
-        return;
-      }
-
-      allowed.forEach(function(method) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn secondary carrito-payment-card';
-        btn.dataset.paymentMethod = method;
-        btn.textContent = getPaymentMethodLabel(method);
-        btn.disabled = !selectedActive;
-        if (method === currentMethod) {
-          btn.classList.add('active');
-          btn.setAttribute('aria-pressed', 'true');
-        } else {
-          btn.setAttribute('aria-pressed', 'false');
-        }
-        btn.addEventListener('click', function() {
-          if (btn.disabled) return;
-          if (paymentMethodEl) {
-            paymentMethodEl.value = method;
-          }
-          state.stationDiscount.paymentMethod = method;
-          renderStationPaymentPanel(getSelectedCarrito() || carrito);
-        });
-        wrap.appendChild(btn);
-      });
+      wrap.hidden = true;
+      wrap.classList.add('is-hidden');
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.style.display = 'none';
     }
 
     function getAllowedMixedMethods() {
@@ -1273,12 +1307,20 @@
     function focusScannerInput() {
       const caps = getBarcodeCapabilities();
       if (!caps.enabled || !caps.autofocus) return;
+      if (scannerAutofocusPaused) return;
       const input = document.getElementById('scannerCodigo');
       if (!input || input.disabled) return;
       setTimeout(function() {
         try {
-          input.focus();
+          const scrollX = window.scrollX || window.pageXOffset || 0;
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          try {
+            input.focus({ preventScroll: true });
+          } catch (_) {
+            input.focus();
+          }
           input.select();
+          window.scrollTo(scrollX, scrollY);
         } catch (_) {}
       }, 0);
     }
@@ -1607,6 +1649,36 @@
       return !!normalize(carrito.pagado_en);
     }
 
+    function getStationCancelMarginState(carrito) {
+      const cfg = state.tarifaMinutosConfig || {};
+      const enabled = Boolean(cfg.margen_desactivacion_habilitado);
+      const minutes = Math.max(0, Math.floor(Number(cfg.margen_desactivacion_minutos || 0)));
+      if (!enabled || minutes <= 0 || !carrito || isCarritoPagado(carrito) || !isCarritoOperativoActivo(carrito)) {
+        return { enabled: enabled, allowed: true, minutes: minutes, remainingSeconds: null, expired: false };
+      }
+      const activatedAt = parseSQLiteDate(carrito.activado_en);
+      if (!activatedAt) {
+        return { enabled: enabled, allowed: true, minutes: minutes, remainingSeconds: null, expired: false };
+      }
+      const limitMs = activatedAt.getTime() + minutes * 60000;
+      const remainingSeconds = Math.floor((limitMs - Date.now()) / 1000);
+      const expired = remainingSeconds < 0;
+      return {
+        enabled: enabled,
+        allowed: !expired,
+        minutes: minutes,
+        remainingSeconds: Math.max(0, remainingSeconds),
+        expired: expired
+      };
+    }
+
+    function formatCancelMarginRemaining(seconds) {
+      if (seconds == null) return '';
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    }
+
     function getStationPaymentBreakdown(carrito) {
       const totalBase = Number((carrito && carrito.total) || 0);
       const caps = getDiscountCapabilities();
@@ -1887,6 +1959,91 @@
       }
     }
 
+    function getCashDrawerConfig() {
+      const cfg = loadEmpresaGeneralConfig();
+      const caja = cfg && cfg.caja && typeof cfg.caja === 'object' ? cfg.caja : {};
+      const method = normalize(caja.cajon_monedero_metodo) || 'impresion_pos';
+      const command = normalize(caja.cajon_monedero_comando) || 'escpos_pulse';
+      return {
+        cajaActiva: caja.caja_activa === undefined ? true : Boolean(caja.caja_activa),
+        enabled: Boolean(caja.cajon_monedero_habilitado),
+        openOnCartPayment: Boolean(caja.abrir_cajon_al_pagar_carrito),
+        openOnTransactionClose: Boolean(caja.abrir_cajon_al_cerrar_transaccion),
+        method: method === 'manual' ? 'manual' : 'impresion_pos',
+        printerFunction: normalize(caja.cajon_monedero_impresora_funcionalidad) || 'cajon_monedero',
+        command: command === 'driver_auto_open' ? 'driver_auto_open' : 'escpos_pulse',
+        name: normalize(caja.caja_nombre) || 'Caja principal',
+        code: normalize(caja.caja_codigo)
+      };
+    }
+
+    async function resolvePrinterForCashDrawer(drawerConfig) {
+      if (!state.empresaID) return null;
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('funcionalidad', normalize(drawerConfig && drawerConfig.printerFunction) || 'cajon_monedero');
+      try {
+        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) return null;
+        const out = await res.json();
+        if (!out || out.ok !== true) return null;
+        return out.resolucion || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function openCashDrawerIfEnabled(trigger, carrito, pay) {
+      const drawer = getCashDrawerConfig();
+      if (!drawer.cajaActiva || !drawer.enabled) return false;
+      if (trigger === 'pago_carrito' && !drawer.openOnCartPayment && !drawer.openOnTransactionClose) return false;
+      if (trigger === 'transaccion' && !drawer.openOnTransactionClose) return false;
+
+      if (drawer.method === 'manual') {
+        setStationPaymentMessage('Pago registrado. Caja configurada en modo manual: abre el cajon monedero desde el punto de venta.', false);
+        return true;
+      }
+
+      const printerResolution = await resolvePrinterForCashDrawer(drawer);
+      const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
+      if (!printerTarget) {
+        setStationPaymentMessage('Pago registrado, pero no hay impresora configurada para abrir el cajon monedero. Asigna una impresora con funcionalidad ' + drawer.printerFunction + ' o abre el cajon manualmente.', true);
+        return false;
+      }
+      const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
+      const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
+      const now = new Date();
+      const amount = pay && Number(pay.totalPagarFinal || 0) > 0 ? formatAmount(pay.totalPagarFinal, (carrito && carrito.moneda) || 'COP') : '';
+
+      const html = '<!doctype html><html><head><meta charset="utf-8"><title>Apertura cajon monedero</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:10px;color:#111;font-size:12px}h1{font-size:14px;margin:0 0 6px}.muted{color:#666}</style>' +
+        '</head><body>' +
+        '<h1>Apertura cajon monedero</h1>' +
+        '<p><strong>Caja:</strong> ' + escapeHtml(drawer.name) + (drawer.code ? (' / ' + escapeHtml(drawer.code)) : '') + '</p>' +
+        '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && (carrito.nombre || carrito.codigo)) || '') + '</p>' +
+        (amount ? ('<p><strong>Total:</strong> ' + escapeHtml(amount) + '</p>') : '') +
+        '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' +
+        '<p class="muted">Pulso: ' + escapeHtml(drawer.command) + ' | Fecha: ' + escapeHtml(now.toLocaleString()) + '</p>' +
+        '</body></html>';
+
+      const printWindow = window.open('', '_blank', 'width=320,height=260');
+      if (!printWindow) {
+        setStationPaymentMessage('Pago registrado, pero el navegador bloqueo la apertura automatica del cajon. Permite ventanas emergentes o abre el cajon manualmente.', true);
+        return false;
+      }
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+      }, 180);
+      return true;
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items) {
       const cfg = loadEmpresaGeneralConfig();
       const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
@@ -1944,6 +2101,81 @@
       setMessage('stationPaymentMsg', text, isError);
     }
 
+    function buildBusinessGuideText(payload, fallback) {
+      if (!payload || typeof payload !== 'object') return normalize(fallback);
+      const parts = [];
+      if (normalize(payload.title)) parts.push(normalize(payload.title));
+      if (normalize(payload.message)) parts.push(normalize(payload.message));
+      if (Array.isArray(payload.steps) && payload.steps.length) {
+        parts.push('Pasos: ' + payload.steps.map(function(step, idx) {
+          return (idx + 1) + '. ' + normalize(step);
+        }).filter(Boolean).join(' '));
+      }
+      return parts.join(' ');
+    }
+
+    function showRobotBusinessGuide(payload) {
+      const text = normalize(payload && (payload.robot_message || payload.message));
+      if (!text) return false;
+      const actions = Array.isArray(payload && payload.actions) ? payload.actions.map(function(action) {
+        const label = normalize(action && action.label);
+        const url = normalize(action && action.url);
+        const prompt = normalize(action && action.prompt);
+        if (!label) return null;
+        return { label: label, url: url, prompt: prompt };
+      }).filter(Boolean) : [];
+
+      function run() {
+        if (window.PCSAIChatRobot && typeof window.PCSAIChatRobot.showMessage === 'function') {
+          return window.PCSAIChatRobot.showMessage(text, { speak: true, actions: actions });
+        }
+        return false;
+      }
+
+      if (run()) return true;
+      window.addEventListener('pcs-ai-chat-robot-ready', function() {
+        run();
+      }, { once: true });
+      return false;
+    }
+
+    function inferKnownBusinessPrerequisiteFromError(err) {
+      const msg = normalize(err && err.message);
+      const lower = msg.toLowerCase();
+      if (!msg) return null;
+      if (lower.indexOf('bodega') >= 0 || lower.indexOf('inventario_existencias') >= 0 || lower.indexOf('inventario') >= 0) {
+        return {
+          code: 'inventario_bodega_requerida',
+          title: 'Inventario pendiente de configurar',
+          message: 'No se puede agregar este producto porque falta una bodega o existencia de inventario asociada. Primero crea una bodega, asigna existencia al producto o define su bodega principal.',
+          robot_message: 'Este producto necesita inventario listo antes de venderse. Pasos: abre Bodegas, crea o revisa la bodega principal; luego entra a Productos, asigna existencia o bodega principal al producto; despues vuelve al carrito y agregalo de nuevo.',
+          steps: [
+            'Abre Administrar empresa > Configuracion o Productos > Bodegas.',
+            'Crea al menos una bodega activa para la empresa.',
+            'Asigna existencia al producto o configura su bodega principal.',
+            'Regresa al carrito y vuelve a agregar el producto.'
+          ],
+          actions: [
+            { label: 'Abrir bodegas', url: '/administrar_empresa/bodega.html?empresa_id=' + encodeURIComponent(state.empresaID || 0) },
+            { label: 'Abrir productos', url: '/administrar_empresa/administrar_productos.html?empresa_id=' + encodeURIComponent(state.empresaID || 0) }
+          ]
+        };
+      }
+      return null;
+    }
+
+    function handleBusinessPrerequisiteError(err, fallback, targetSetter) {
+      const payload = (err && err.payload ? err.payload : null) || inferKnownBusinessPrerequisiteFromError(err);
+      if (!payload || typeof payload !== 'object' || !normalize(payload.code)) {
+        (targetSetter || setStationPaymentMessage)(err && err.message ? err.message : fallback, true);
+        return false;
+      }
+      const text = buildBusinessGuideText(payload, err && err.message ? err.message : fallback);
+      (targetSetter || setStationPaymentMessage)(text, true);
+      showRobotBusinessGuide(payload);
+      return true;
+    }
+
     function syncStationDiscountFromInputs() {
       const allowedPaymentMethods = getAllowedPaymentMethods();
       const allowedMixedMethods = getAllowedMixedMethods();
@@ -1980,10 +2212,37 @@
 
     function renderStationPaymentPanel(carrito) {
       const panel = document.getElementById('stationCheckoutPanel');
+      const vipCard = document.getElementById('stationVipAccessCard');
+      const commissionCard = document.getElementById('stationWorkerCommissionCard');
+      const paymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
+      const stationItemsPanel = document.getElementById('stationCartSplitRow');
       if (!state.stationMode || !carrito) {
+        const btnPay = document.getElementById('btnPagarCarrito');
+        if (btnPay) {
+          btnPay.style.display = 'none';
+        }
         panel.style.display = 'none';
         panel.hidden = true;
         panel.classList.add('is-hidden');
+        if (vipCard) {
+          vipCard.style.display = 'none';
+          vipCard.hidden = true;
+          vipCard.classList.add('is-hidden');
+        }
+        if (commissionCard) {
+          commissionCard.style.display = 'none';
+          commissionCard.hidden = true;
+          commissionCard.classList.add('is-hidden');
+        }
+        if (paymentAmountsCard) {
+          paymentAmountsCard.style.display = 'none';
+          paymentAmountsCard.hidden = true;
+          paymentAmountsCard.classList.add('is-hidden');
+        }
+        if (stationItemsPanel) {
+          stationItemsPanel.style.display = 'none';
+          stationItemsPanel.hidden = true;
+        }
         syncStationPaymentDisplayInputs(null);
         renderPaymentMethodsCards(null);
         return;
@@ -1992,16 +2251,26 @@
       panel.classList.remove('is-hidden');
       panel.hidden = false;
       panel.style.display = '';
+      if (stationItemsPanel) {
+        stationItemsPanel.hidden = false;
+        stationItemsPanel.style.display = '';
+      }
 
       const caps = getDiscountCapabilities();
       const stationUI = getCurrentStationCartUIConfig();
       const selectedActive = isCarritoOperativoActivo(carrito);
       setPaymentCheckoutVisibility(stationUI);
+      if (vipCard) {
+        vipCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_vip_cliente);
+        vipCard.hidden = !stationUI.mostrar_tarjeta_vip_cliente;
+        vipCard.style.display = stationUI.mostrar_tarjeta_vip_cliente ? '' : 'none';
+      }
 
       const block = document.getElementById('stationDiscountSettings');
       const breakdownEl = document.getElementById('stationPaymentBreakdown');
       const btnPay = document.getElementById('btnPagarCarrito');
       const btnActivate = document.getElementById('btnActivarSesionCarrito');
+      const btnCancel = document.getElementById('carritoBtnCancelarCarrito');
       const mixedBlockEl = document.getElementById('mixedPaymentBlock');
       const mixedBlock2El = document.getElementById('mixedPaymentBlock2');
       const mixedBlock3El = document.getElementById('mixedPaymentBlock3');
@@ -2011,6 +2280,17 @@
       block.style.display = '';
       btnPay.style.display = selectedActive && stationUI.mostrar_boton_pagar ? '' : 'none';
       btnActivate.style.display = selectedActive ? 'none' : '';
+      if (btnCancel) {
+        const marginState = getStationCancelMarginState(carrito);
+        btnCancel.disabled = selectedActive && !marginState.allowed;
+        if (selectedActive && marginState.enabled && marginState.allowed && marginState.remainingSeconds != null) {
+          btnCancel.title = 'Disponible por ' + formatCancelMarginRemaining(marginState.remainingSeconds) + ' antes de exigir pagar y cerrar.';
+        } else if (selectedActive && marginState.expired) {
+          btnCancel.title = 'Margen vencido: usa Pagar y cerrar carrito.';
+        } else {
+          btnCancel.title = '';
+        }
+      }
 
       const discountTypeEl = document.getElementById('discountType');
       const discountValueEl = document.getElementById('discountValue');
@@ -2044,6 +2324,12 @@
       setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision);
       setFieldColumnVisibility('paymentMethod', stationUI.mostrar_tarjetas_pago);
       setFieldColumnVisibility('paymentReference', stationUI.mostrar_tarjetas_pago);
+      if (commissionCard) {
+        const showCommissionCard = stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision;
+        commissionCard.classList.toggle('is-hidden', !showCommissionCard);
+        commissionCard.hidden = !showCommissionCard;
+        commissionCard.style.display = showCommissionCard ? '' : 'none';
+      }
       ensurePaymentMethodInputsFromOperativa();
       const hasAllowedPaymentMethods = getAllowedPaymentMethods().length > 0;
 
@@ -2250,6 +2536,11 @@
         } catch (printErr) {
           console.warn(printErr);
         }
+        try {
+          await openCashDrawerIfEnabled('pago_carrito', selected, pay);
+        } catch (drawerErr) {
+          console.warn(drawerErr);
+        }
         // Si está configurado, marcar la estación como "sucia" al pagar.
         try {
           const ui = state.stationConfig && state.stationConfig.station_card_ui ? state.stationConfig.station_card_ui : null;
@@ -2266,7 +2557,9 @@
         await loadCarritos();
         await loadItems();
       } catch (err) {
-        setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
+        if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
+          setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
+        }
       }
     }
 
@@ -2303,11 +2596,48 @@
     async function ensureOk(res) {
       if (res.ok) return;
       const t = await res.text();
-      throw new Error(t || ('HTTP ' + res.status));
+      let payload = null;
+      try {
+        payload = t ? JSON.parse(t) : null;
+      } catch (_) {
+        payload = null;
+      }
+      const msg = payload && (payload.message || payload.error || payload.title)
+        ? String(payload.message || payload.error || payload.title)
+        : (t || ('HTTP ' + res.status));
+      const err = new Error(msg);
+      err.status = res.status;
+      err.payload = payload;
+      throw err;
     }
 
     function getSelectedCarrito() {
       return state.carritos.find(function(x) { return Number(x.id) === Number(state.selectedCarritoID); }) || null;
+    }
+
+    function ensureSelectedCarritoFromLoadedList() {
+      if (!Array.isArray(state.carritos) || !state.carritos.length) {
+        return null;
+      }
+
+      const selected = getSelectedCarrito();
+      if (selected) {
+        return selected;
+      }
+
+      const existingStationCarrito = findExistingStationCarrito();
+      if (existingStationCarrito) {
+        state.selectedCarritoID = Number(existingStationCarrito.id || 0);
+        state.selectedCarritoCode = '';
+        return existingStationCarrito;
+      }
+
+      if (!state.stationMode && !state.selectedCarritoID && state.carritos.length === 1) {
+        state.selectedCarritoID = Number(state.carritos[0].id || 0);
+        return getSelectedCarrito();
+      }
+
+      return null;
     }
 
     function getCarritoCodeFromItem(item) {
@@ -2446,7 +2776,7 @@
 
       inputCode.disabled = disabled;
       inputQty.disabled = disabled;
-      btnAdd.disabled = disabled;
+      if (btnAdd) btnAdd.disabled = disabled;
 
       if (!caps.enabled) {
         setScannerMessage('El lector de código de barras está deshabilitado en Configuración de empresa.', false);
@@ -2461,11 +2791,16 @@
         return;
       }
 
-      setScannerMessage('Lector listo. Escanea código y presiona Enter.', false);
+      setScannerMessage('', false);
       focusScannerInput();
     }
 
     async function processScannerInput() {
+      if (scannerAutoTimer) {
+        clearTimeout(scannerAutoTimer);
+        scannerAutoTimer = null;
+      }
+      if (scannerProcessing) return;
       const caps = getBarcodeCapabilities();
       if (!caps.enabled) {
         setScannerMessage('El lector de código de barras está deshabilitado para esta empresa.', true);
@@ -2494,6 +2829,7 @@
         return;
       }
 
+      scannerProcessing = true;
       try {
         setScannerMessage('Buscando producto en catálogo...', false);
         const producto = await resolveProductoFromScanCode(scanCode);
@@ -2547,8 +2883,25 @@
         }
       } catch (err) {
         const msg = err && err.message ? err.message : 'No se pudo procesar el escaneo.';
-        setScannerMessage(msg, true);
+        if (!handleBusinessPrerequisiteError(err, msg, setScannerMessage)) {
+          setScannerMessage(msg, true);
+        }
+      } finally {
+        scannerProcessing = false;
       }
+    }
+
+    function scheduleScannerAutoProcess() {
+      const input = document.getElementById('scannerCodigo');
+      const scanCode = normalizeScanCode(input ? input.value : '');
+      if (scannerAutoTimer) {
+        clearTimeout(scannerAutoTimer);
+        scannerAutoTimer = null;
+      }
+      if (!scanCode || scanCode.length < 3 || scannerProcessing) return;
+      scannerAutoTimer = setTimeout(function() {
+        processScannerInput();
+      }, 180);
     }
 
     function fillClientesSelect(selected) {
@@ -2941,16 +3294,7 @@
       }
       title.textContent = (state.stationMode ? 'Items de estación: ' : 'Items del carrito: ') + (normalize(selected.nombre) || 'sin nombre');
 
-      const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
-      const parts = [];
-      parts.push('Código: ' + (normalize(selected.codigo) || '-'));
-      parts.push('Estado: ' + (normalize(selected.estado_carrito) || 'abierto'));
-      parts.push('Subtotal: ' + formatAmount(selected.subtotal, selected.moneda));
-      parts.push('Descuento: ' + formatAmount(selected.descuento_total, selected.moneda));
-      parts.push('Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda));
-      if (showTotal) parts.push('Total: ' + formatAmount(selected.total, selected.moneda));
-      if (normalize(selected.pagado_en)) parts.push('Pagado: ' + formatAmount(selected.total_pagado, selected.moneda));
-      target.textContent = parts.join(' | ');
+      target.textContent = '';
       syncBuscarProductosButton();
       renderScannerPanel();
       renderCarritoSummaryPanel();
@@ -3016,7 +3360,19 @@
         { label: 'Saldo', value: formatAmount(balance, selected.moneda) }
       ];
 
-      return rows.map(function(row) {
+      const hiddenSummaryLabels = new Set(['EstaciÃ³n ID', 'Carrito ID', 'CÃ³digo', 'Estado', 'SesiÃ³n']);
+      const compactRows = rows.filter(function(row) {
+        return !hiddenSummaryLabels.has(row.label);
+      });
+      const totalRows = compactRows.filter(function(row) {
+        return row.label === 'Total' || row.label === 'Saldo';
+      });
+      const detailRows = compactRows.filter(function(row) {
+        return row.label !== 'Total' && row.label !== 'Saldo';
+      });
+      const orderedRows = totalRows.concat(detailRows);
+
+      return orderedRows.map(function(row) {
         return '<div class="carrito-summary-row"><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></div>';
       }).join('');
     }
@@ -3060,10 +3416,22 @@
       state.stationUpdateInterval = setInterval(async function() {
         const selected = getSelectedCarrito();
         if (!selected || !isCarritoOperativoActivo(selected)) return;
+        const scrollX = window.scrollX || window.pageXOffset || 0;
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        scannerAutofocusPaused = true;
         try {
           await Promise.all([loadCarritos(), loadItems()]);
         } catch (_) {
           // ignore refresh failures
+        } finally {
+          scannerAutofocusPaused = false;
+          window.scrollTo(scrollX, scrollY);
+          window.requestAnimationFrame(function() {
+            window.scrollTo(scrollX, scrollY);
+          });
+          window.setTimeout(function() {
+            window.scrollTo(scrollX, scrollY);
+          }, 80);
         }
       }, ms);
     }
@@ -3101,6 +3469,7 @@
 
     function renderProductosCarritoTable() {
       const box = document.getElementById('productosCarritoList');
+      if (!box) return;
       const selected = getSelectedCarrito();
       if (!selected) {
         box.textContent = 'Selecciona un carrito para visualizar sus productos.';
@@ -3187,7 +3556,6 @@
       const tbody = document.createElement('tbody');
       state.items.forEach(function(item) {
         const estado = normalize(item.estado) || 'activo';
-        const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
         const tr = document.createElement('tr');
         let row = '<td>' + item.id + '</td>' +
           '<td>' + (normalize(item.tipo_item) || '') + '</td>' +
@@ -3201,9 +3569,7 @@
           '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
-              : ('<button data-id="' + item.id + '" class="editItem btn secondary">Editar</button> ' +
-                '<button data-id="' + item.id + '" class="delItem btn danger">Eliminar</button> ' +
-                '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleItem btn">' + toggleLabel + '</button>')) +
+              : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver</button>') +
           '</td>';
         tr.innerHTML = row;
         tbody.appendChild(tr);
@@ -3214,8 +3580,65 @@
       box.appendChild(table);
     }
 
+    function prepareItemReturn(itemID) {
+      const id = Number(itemID);
+      const item = state.items.find(function(x) { return Number(x.id) === id; });
+      const selected = getSelectedCarrito();
+      if (!item || !selected) {
+        setMessage('itemMsg', 'No fue posible preparar la devolucion del item seleccionado.', true);
+        return;
+      }
+
+      const lineTotal = Number(item.total_linea || 0) > 0
+        ? Number(item.total_linea || 0)
+        : Number(item.cantidad || 0) * Number(item.precio_unitario || 0);
+      const amount = Math.max(0, roundMoney(lineTotal));
+      state.stationDiscount.devolucion = amount;
+
+      const devolucionEl = document.getElementById('devolucionMonto');
+      if (devolucionEl) {
+        devolucionEl.value = amount.toFixed(2);
+      }
+
+      renderStationPaymentPanel(selected);
+      renderCarritoSummaryPanel();
+      setMessage('itemMsg', 'Devolucion preparada por ' + formatAmount(amount, selected.moneda) + '.', false);
+
+      const panel = document.getElementById('stationCheckoutPanel');
+      if (panel && state.stationMode) {
+        panel.classList.remove('is-hidden');
+        panel.style.display = '';
+      }
+      const vipCard = document.getElementById('stationVipAccessCard');
+      const stationUI = getCurrentStationCartUIConfig();
+      if (vipCard && state.stationMode && stationUI.mostrar_tarjeta_vip_cliente) {
+        vipCard.classList.remove('is-hidden');
+        vipCard.hidden = false;
+        vipCard.style.display = '';
+      }
+      const commissionCard = document.getElementById('stationWorkerCommissionCard');
+      if (commissionCard && state.stationMode && stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision) {
+        commissionCard.classList.remove('is-hidden');
+        commissionCard.hidden = false;
+        commissionCard.style.display = '';
+      }
+      if (devolucionEl && typeof devolucionEl.focus === 'function') {
+        try {
+          devolucionEl.focus({ preventScroll: true });
+        } catch (_) {
+          devolucionEl.focus();
+        }
+      }
+    }
+
     function bindItemRowActions(root) {
       if (!root) return;
+
+      root.querySelectorAll('.returnItem').forEach(function(btn) {
+        btn.onclick = function() {
+          prepareItemReturn(btn.getAttribute('data-id'));
+        };
+      });
 
       root.querySelectorAll('.editItem').forEach(function(btn) {
         btn.onclick = function() {
@@ -3359,13 +3782,7 @@
       await ensureOk(res);
       state.carritos = await res.json();
 
-      if (!state.selectedCarritoID && state.selectedCarritoCode) {
-        const existingStationCarrito = findExistingStationCarrito();
-        if (existingStationCarrito) {
-          state.selectedCarritoID = Number(existingStationCarrito.id || 0);
-          state.selectedCarritoCode = '';
-        }
-      }
+      ensureSelectedCarritoFromLoadedList();
 
       if (state.selectedCarritoID) {
         const found = state.carritos.some(function(c) { return Number(c.id) === Number(state.selectedCarritoID); });
@@ -3579,7 +3996,11 @@
           await printServiceOrderIfEnabled(payload);
         }
       } catch (err) {
-        setMessage('itemMsg', err.message || 'Error guardando item', true);
+        if (!handleBusinessPrerequisiteError(err, 'Error guardando item', function(text, isError) {
+          setMessage('itemMsg', text, isError);
+        })) {
+          setMessage('itemMsg', err.message || 'Error guardando item', true);
+        }
       }
     };
 
@@ -3680,23 +4101,6 @@
       });
     }
 
-    const carritoCodigoRapido = document.getElementById('carritoCodigoRapido');
-    if (carritoCodigoRapido) {
-      carritoCodigoRapido.addEventListener('keydown', async function(e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        const raw = String(carritoCodigoRapido.value || '');
-        const scanInput = document.getElementById('scannerCodigo');
-        if (scanInput) scanInput.value = raw;
-        await processScannerInput();
-        carritoCodigoRapido.value = '';
-      });
-    }
-
-    document.getElementById('carritoBtnPagar').addEventListener('click', function() {
-      const payBtn = document.getElementById('btnPagarCarrito');
-      if (payBtn) payBtn.click();
-    });
     document.getElementById('carritoBtnDescuentos').addEventListener('click', function() {
       const discountTypeEl = document.getElementById('discountType');
       if (discountTypeEl) {
@@ -3712,6 +4116,12 @@
       }
     });
     document.getElementById('carritoBtnCancelarCarrito').addEventListener('click', async function() {
+      const selected = getSelectedCarrito();
+      const marginState = getStationCancelMarginState(selected);
+      if (marginState.expired) {
+        setStationPaymentMessage('El margen para cancelar o desactivar la estacion vencio. Debes usar Pagar y cerrar carrito.', true);
+        return;
+      }
       if (!confirm('¿Deseas cancelar el carrito y reiniciar la sesión de estación?')) return;
       await activateStationSession(true, 'activar_estacion');
     });
@@ -3734,8 +4144,15 @@
       window.location.href = '/administrar_empresa/vehiculos_registro.html';
     });
 
-    document.getElementById('scannerAgregarBtn').addEventListener('click', async function() {
-      await processScannerInput();
+    const scannerAgregarBtn = document.getElementById('scannerAgregarBtn');
+    if (scannerAgregarBtn) {
+      scannerAgregarBtn.addEventListener('click', async function() {
+        await processScannerInput();
+      });
+    }
+
+    document.getElementById('scannerCodigo').addEventListener('input', function() {
+      scheduleScannerAutoProcess();
     });
 
     document.getElementById('scannerCodigo').addEventListener('keydown', function(e) {
@@ -3780,11 +4197,14 @@
       });
     });
 
-    document.getElementById('btnRecalcularCobro').addEventListener('click', function() {
-      const selected = getSelectedCarrito();
-      if (!selected) return;
-      renderStationPaymentPanel(selected);
-    });
+    const btnRecalcularCobro = document.getElementById('btnRecalcularCobro');
+    if (btnRecalcularCobro) {
+      btnRecalcularCobro.addEventListener('click', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+    }
 
     document.getElementById('btnPagarCarrito').addEventListener('click', async function() {
       await payStationSession();
@@ -3851,6 +4271,7 @@
 
       await loadEmpresaGeneralConfigFromServer();
       await loadStationConfigFromServer();
+      await loadTarifaMinutosConfigFromServer();
 
       await loadEmpresaTitle();
       await loadClientes();
@@ -3864,7 +4285,8 @@
           await ensureStationCarritoLifecycle();
           await loadCarritos();
         }
-        if (state.selectedCarritoID) {
+        const selectedOnOpen = ensureSelectedCarritoFromLoadedList();
+        if (selectedOnOpen || state.selectedCarritoID) {
           await loadItems();
         }
       } catch (err) {

@@ -28,14 +28,167 @@
       background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 88%, var(--surface) 12%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%));
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 20px;
+      padding: 14px;
       box-sizing: border-box;
       box-shadow: 0 18px 34px rgba(0,0,0,0.14);
       display: flex;
       flex-direction: column;
-      min-height: 190px;
+      min-height: 280px;
       min-width: 0;
       max-width: 100%;
+      overflow: hidden;
+    }
+    .games-cover {
+      position: relative;
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      background: #070b18;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .games-cover::before,
+    .games-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .games-cover::after {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 36%, rgba(0,0,0,.28));
+      mix-blend-mode: screen;
+      opacity: .72;
+    }
+    .games-cover span {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      z-index: 2;
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,.76);
+    }
+    .games-cover-pacman {
+      background:
+        radial-gradient(circle at 25% 54%, #ffd84a 0 11%, transparent 11.5%),
+        radial-gradient(circle at 55% 44%, #ff4f8b 0 8%, transparent 8.5%),
+        radial-gradient(circle at 71% 52%, #35d3ff 0 8%, transparent 8.5%),
+        radial-gradient(circle at 84% 44%, #ff8a3d 0 8%, transparent 8.5%),
+        linear-gradient(90deg, transparent 0 8%, #1736ff 8% 10%, transparent 10% 18%, #1736ff 18% 20%, transparent 20% 100%),
+        repeating-linear-gradient(0deg, transparent 0 18px, rgba(51,88,255,.72) 18px 20px),
+        #050711;
+    }
+    .games-cover-cube {
+      background:
+        linear-gradient(150deg, transparent 18%, rgba(0,255,204,.75) 18% 22%, transparent 22%),
+        conic-gradient(from 45deg at 54% 42%, #5eead4 0 25%, #0891b2 0 50%, #164e63 0 75%, #67e8f9 0),
+        linear-gradient(180deg, #0f172a, #111827 48%, #052e2b);
+    }
+    .games-cover-cube::before {
+      inset: 44% 10% 0;
+      background: repeating-linear-gradient(90deg, transparent 0 35px, rgba(45,212,191,.32) 35px 37px), linear-gradient(150deg, transparent 0 48%, rgba(45,212,191,.5) 49% 51%, transparent 52%);
+    }
+    .games-cover-dock {
+      background:
+        radial-gradient(circle at 18% 20%, #fff 0 1px, transparent 2px),
+        radial-gradient(circle at 72% 30%, #fff 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 72%, #fff 0 1px, transparent 2px),
+        linear-gradient(135deg, transparent 44%, #f8fafc 45% 50%, #38bdf8 51% 56%, transparent 57%),
+        radial-gradient(circle at 58% 52%, rgba(59,130,246,.45), transparent 24%),
+        #020617;
+    }
+    .games-cover-mines {
+      background:
+        radial-gradient(circle at 77% 32%, #111827 0 5%, transparent 5.5%),
+        radial-gradient(circle at 28% 68%, #111827 0 5%, transparent 5.5%),
+        repeating-linear-gradient(90deg, transparent 0 12.3%, rgba(15,23,42,.9) 12.3% 13%),
+        repeating-linear-gradient(0deg, #cbd5e1 0 12.3%, #94a3b8 12.3% 13%);
+    }
+    .games-cover-memory {
+      background:
+        linear-gradient(135deg, transparent 10%, #f97316 10% 24%, transparent 24%),
+        radial-gradient(circle at 33% 40%, #22c55e 0 11%, transparent 12%),
+        radial-gradient(circle at 67% 58%, #60a5fa 0 11%, transparent 12%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 26px, transparent 26px 52px),
+        #4c1d95;
+    }
+    .games-cover-frogger {
+      background:
+        radial-gradient(circle at 50% 78%, #22c55e 0 9%, transparent 9.5%),
+        linear-gradient(90deg, #ef4444 0 18%, transparent 18% 38%, #f59e0b 38% 56%, transparent 56%),
+        repeating-linear-gradient(0deg, #111827 0 21%, #f8fafc 21% 23%, #111827 23% 42%, #166534 42% 54%);
+    }
+    .games-cover-tetris {
+      background:
+        linear-gradient(90deg, transparent 0 12%, #22c55e 12% 24%, #22c55e 24% 36%, transparent 36%),
+        linear-gradient(0deg, #f97316 0 18%, transparent 18%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.1) 0 12.5%, transparent 12.5% 25%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 12.5%, transparent 12.5% 25%),
+        linear-gradient(135deg, #0f172a, #312e81);
+    }
+    .games-cover-invaders {
+      background:
+        radial-gradient(circle at 50% 84%, #22c55e 0 4%, transparent 4.5%),
+        repeating-linear-gradient(90deg, transparent 0 18px, rgba(34,197,94,.18) 18px 19px),
+        repeating-linear-gradient(0deg, transparent 0 18px, rgba(34,197,94,.18) 18px 19px),
+        #020617;
+    }
+    .games-cover-invaders::before {
+      inset: 18% 18% 34%;
+      background:
+        radial-gradient(circle at 16% 20%, #a3e635 0 9%, transparent 10%),
+        radial-gradient(circle at 50% 20%, #a3e635 0 9%, transparent 10%),
+        radial-gradient(circle at 84% 20%, #a3e635 0 9%, transparent 10%),
+        radial-gradient(circle at 28% 62%, #38bdf8 0 9%, transparent 10%),
+        radial-gradient(circle at 72% 62%, #38bdf8 0 9%, transparent 10%);
+    }
+    .games-cover-asteroids {
+      background:
+        radial-gradient(circle at 70% 28%, transparent 0 8%, #cbd5e1 8.5% 9.5%, transparent 10%),
+        radial-gradient(circle at 30% 65%, transparent 0 10%, #cbd5e1 10.5% 11.5%, transparent 12%),
+        linear-gradient(135deg, transparent 46%, #f8fafc 47% 49%, transparent 50%),
+        #020617;
+    }
+    .games-cover-breakout {
+      background:
+        linear-gradient(90deg, #ef4444 0 16%, #f59e0b 16% 32%, #eab308 32% 48%, #22c55e 48% 64%, #06b6d4 64% 80%, #8b5cf6 80%),
+        linear-gradient(180deg, transparent 0 38%, #0f172a 38% 100%);
+    }
+    .games-cover-breakout::before {
+      inset: 54% 18% 18%;
+      background: radial-gradient(circle at 62% 20%, #fff 0 7%, transparent 7.5%), linear-gradient(90deg, transparent 0 35%, #f8fafc 35% 65%, transparent 65%);
+    }
+    .games-cover-snake {
+      background:
+        radial-gradient(circle at 72% 32%, #ef4444 0 5%, transparent 5.5%),
+        linear-gradient(90deg, transparent 0 12%, #22c55e 12% 24%, #22c55e 24% 36%, #22c55e 36% 48%, #22c55e 48% 60%, transparent 60%),
+        repeating-linear-gradient(90deg, rgba(34,197,94,.12) 0 18px, transparent 18px 36px),
+        #052e16;
+    }
+    .games-cover-pong {
+      background:
+        radial-gradient(circle at 50% 44%, #fff 0 4%, transparent 4.5%),
+        linear-gradient(90deg, #fff 0 2%, transparent 2% 48%, rgba(255,255,255,.28) 48% 52%, transparent 52% 98%, #fff 98%),
+        #020617;
+    }
+    .games-cover-duck {
+      background:
+        radial-gradient(circle at 42% 52%, #facc15 0 10%, transparent 10.5%),
+        radial-gradient(circle at 53% 44%, #fef3c7 0 6%, transparent 6.5%),
+        linear-gradient(90deg, transparent 0 58%, #22c55e 58% 68%, transparent 68%),
+        linear-gradient(180deg, #38bdf8, #bfdbfe 62%, #16a34a 62%);
+    }
+    .games-cover-n64 {
+      background:
+        conic-gradient(from 45deg at 50% 50%, #ef4444 0 25%, #22c55e 0 50%, #3b82f6 0 75%, #facc15 0),
+        radial-gradient(circle, rgba(255,255,255,.55), transparent 38%),
+        #111827;
     }
     .games-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
     .games-card p { color: var(--muted); line-height: 1.55; margin: 0; }
@@ -63,8 +216,9 @@
       .games-card {
         width: 100%;
         max-width: calc(100vw - 24px);
-        padding: 18px;
+        padding: 12px;
       }
+      .games-cover { margin-bottom: 12px; }
       .games-card p {
         max-width: min(100%, 310px);
         font-size: 0.94rem;
@@ -85,6 +239,7 @@
 
     <section class="games-grid" aria-label="Juegos disponibles">
       <article class="games-card is-featured">
+        <div class="games-cover games-cover-pacman" role="img" aria-label="Imagen representativa de Pacman Arcade"><span>Pacman</span></div>
         <span class="games-badge">Arcade completo</span>
         <h2>Pacman Arcade</h2>
         <p>Version abierta integrada desde daleharvey/pacman, con laberinto clasico, niveles, fantasmas, powerpills, vidas, puntaje, sonido local, teclado y controles tactiles.</p>
@@ -94,6 +249,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-cube" role="img" aria-label="Imagen representativa de Cube Runner 3D"><span>3D Runner</span></div>
         <h2>Cube Runner 3D</h2>
         <p>Runner WebGL MIT con profundidad real, carriles, salto, obstaculos progresivos y controles tactiles/teclado.</p>
         <div class="games-actions">
@@ -102,6 +258,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-dock" role="img" aria-label="Imagen representativa de Space Dock 3D"><span>Space Dock</span></div>
         <h2>Space Dock 3D</h2>
         <p>Juego WebGL MIT de nave espacial con objetos 3D reales, energia, asteroides y movimiento en dos ejes.</p>
         <div class="games-actions">
@@ -110,6 +267,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-mines" role="img" aria-label="Imagen representativa de Buscaminas Arcade"><span>Buscaminas</span></div>
         <h2>Buscaminas Arcade</h2>
         <p>Clasico de logica MIT con banderas, temporizador, reinicio y tablero adaptable para celular.</p>
         <div class="games-actions">
@@ -118,6 +276,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-memory" role="img" aria-label="Imagen representativa de Memoria Arcade"><span>Memoria</span></div>
         <h2>Memoria Arcade</h2>
         <p>Juego MIT de parejas con racha visual, conteo de movimientos y tarjetas responsivas para toque.</p>
         <div class="games-actions">
@@ -126,6 +285,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-frogger" role="img" aria-label="Imagen representativa de Frogger Calle"><span>Frogger</span></div>
         <h2>Frogger Calle</h2>
         <p>Arcade MIT de cruce de carriles con niveles, autos animados, vidas y cruceta movil.</p>
         <div class="games-actions">
@@ -134,6 +294,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-tetris" role="img" aria-label="Imagen representativa de Tetris Arcade"><span>Tetris</span></div>
         <h2>Tetris Arcade</h2>
         <p>Version HTML5 MIT con controles de teclado, tactil, seleccion de nivel, pausa, hard drop y pieza fantasma.</p>
         <div class="games-actions">
@@ -142,6 +303,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-invaders" role="img" aria-label="Imagen representativa de Space Invaders"><span>Invaders</span></div>
         <h2>Space Invaders</h2>
         <p>Clon arcade MIT con tres niveles, vidas, disparos, enemigos animados y efectos de sonido locales.</p>
         <div class="games-actions">
@@ -150,6 +312,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-asteroids" role="img" aria-label="Imagen representativa de Asteroids"><span>Asteroids</span></div>
         <h2>Asteroids</h2>
         <p>Asteroids vectorial MIT en JavaScript puro, con nave, disparos, asteroides y sonido local.</p>
         <div class="games-actions">
@@ -158,6 +321,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-breakout" role="img" aria-label="Imagen representativa de Breakout"><span>Breakout</span></div>
         <h2>Breakout</h2>
         <p>Rompe ladrillos HTML5 MIT con colisiones, puntaje, vidas, paleta y controles por teclado.</p>
         <div class="games-actions">
@@ -166,6 +330,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-snake" role="img" aria-label="Imagen representativa de Snake"><span>Snake</span></div>
         <h2>Snake</h2>
         <p>Serpiente clasica MIT responsive, con puntaje, comida, velocidad progresiva y reinicio.</p>
         <div class="games-actions">
@@ -174,6 +339,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-pong" role="img" aria-label="Imagen representativa de Pong"><span>Pong</span></div>
         <h2>Pong</h2>
         <p>Pong completo MIT con modo un jugador, dos jugadores, IA, sonido y ajustes visuales.</p>
         <div class="games-actions">
@@ -182,6 +348,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-duck" role="img" aria-label="Imagen representativa de Patito Volando"><span>Patito</span></div>
         <h2>Patito Volando</h2>
         <p>Arcade de superar obstaculos. Optimizado para celular con toques y para PC con la tecla espacio.</p>
         <div class="games-actions">
@@ -190,6 +357,7 @@
       </article>
 
       <article class="games-card">
+        <div class="games-cover games-cover-n64" role="img" aria-label="Imagen representativa de Arcade N64"><span>N64</span></div>
         <h2>Arcade N64</h2>
         <p>Entrada rapida a la coleccion recreativa restaurada para pruebas visuales y navegacion interna.</p>
         <div class="games-actions">

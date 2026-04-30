@@ -55,6 +55,9 @@ func ManagedAdminRole(email, currentRole string) string {
 	if normalizedCurrent != "" && normalizedCurrent != "administrador" && normalizedCurrent != "super_administrador" {
 		return strings.TrimSpace(currentRole)
 	}
+	if normalizedCurrent == "super_administrador" {
+		return "super_administrador"
+	}
 	if AdminShouldUseSuperRole(email) {
 		return "super_administrador"
 	}
@@ -506,7 +509,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/estacion_vip":                              {},
 			"/api/public/chat_portal":                               {},
 			"/api/public/chat_portal_stream":                        {},
-			"/api/public/mensajes_privados":                          {},
+			"/api/public/mensajes_privados":                         {},
 			"/api/public/publicaciones":                             {},
 			"/api/public/soporte_remoto":                            {},
 			"/api/public/venta_digital":                             {},

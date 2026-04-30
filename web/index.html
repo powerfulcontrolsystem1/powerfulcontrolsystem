@@ -482,10 +482,18 @@
     }
 
     .brand-logo .brand-subtitle {
-      font-size: 0.76rem;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      opacity: 0.82;
+      font-size: clamp(0.94rem, 1.1vw, 1.05rem);
+      font-weight: 800;
+      letter-spacing: 0.25px;
+      color: #b45309;
+      opacity: 1;
+    }
+
+    html[data-theme="dark"] .brand-logo .brand-subtitle,
+    html[data-theme="dark-violet"] .brand-logo .brand-subtitle,
+    html[data-theme="dark-emerald"] .brand-logo .brand-subtitle {
+      color: #fbbf24;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
     }
   </style>
 </head>
@@ -784,7 +792,7 @@
             '    <p>' + escapeHTML(card.descripcion) + '</p>' +
             '  </div>' +
             '  <div class="card-actions" style="margin-top:auto;">' +
-            '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '">Explorar oferta</a>' +
+        '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '">Probar Gratis</a>' +
             '  </div>' +
             '</article>';
         }).join('');

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Corte de caja</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage corte-caja-page">
+  <div class="container">
+    <section class="card empresa-section no-print">
+      <div class="empresa-section-header">
+        <div>
+          <h1 class="empresa-section-title">Corte de caja</h1>
+          <p class="form-help">Reporte del turno del cajero con ventas, movimientos, métodos de pago y alertas de sensores.</p>
+        </div>
+        <div class="empresa-inline-actions">
+          <button id="btnGenerar" class="btn" type="button">Generar corte</button>
+          <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir reporte</button>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="desde">Desde</label>
+            <input id="desde" type="datetime-local" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="hasta">Hasta</label>
+            <input id="hasta" type="datetime-local" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="usuario">Cajero / usuario</label>
+            <input id="usuario" class="form-input" placeholder="Vacío: todos los usuarios">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="apertura">Efectivo inicial</label>
+            <input id="apertura" type="number" step="0.01" min="0" class="form-input" value="0">
+          </div>
+        </div>
+        <div id="msg" class="form-help"></div>
+      </div>
+    </section>
+
+    <section id="report" class="card empresa-section corte-caja-report">
+      <div class="corte-report-header">
+        <div>
+          <h2 id="reportTitle" class="empresa-section-title">Reporte de corte</h2>
+          <p id="reportMeta" class="form-help">Genera un corte para ver los datos del turno.</p>
+        </div>
+        <div class="corte-report-badge">Corte de caja</div>
+      </div>
+
+      <div id="summaryGrid" class="corte-summary-grid"></div>
+
+      <div class="corte-report-section">
+        <h3 class="section-heading">Movimientos agrupados</h3>
+        <div id="movimientosBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section">
+        <h3 class="section-heading">Ventas del turno</h3>
+        <div id="ventasBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section">
+        <h3 class="section-heading">Productos y servicios</h3>
+        <div id="itemsBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section">
+        <h3 class="section-heading">Habitaciones ocupadas sin factura</h3>
+        <div id="sensoresBox" class="table-wrap form-help">Solo se evalúa para empresas tipo motel con sensores configurados.</div>
+      </div>
+
+      <div class="corte-final-note">
+        <strong>Efectivo esperado en caja:</strong>
+        <span id="efectivoFinal">COP 0.00</span>
+      </div>
+    </section>
+  </div>
+
+<script>
+  function parsePositiveInt(raw) {
+    var n = Number(String(raw || '').trim());
+    if (!Number.isFinite(n)) return 0;
+    n = Math.trunc(n);
+    return n > 0 ? n : 0;
+  }
+
+  function resolveEmpresaId() {
+    try {
+      var params = new URLSearchParams(window.location.search || '');
+      var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      if (own > 0) return own;
+    } catch (_) {}
+    try {
+      if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+        var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+        if (parentResolved > 0) return parentResolved;
+      }
+    } catch (_) {}
+    try {
+      var candidates = [
+        sessionStorage.getItem('active_empresa_id'),
+        sessionStorage.getItem('empresa_id'),
+        localStorage.getItem('active_empresa_id'),
+        localStorage.getItem('empresa_id')
+      ];
+      for (var i = 0; i < candidates.length; i += 1) {
+        var parsed = parsePositiveInt(candidates[i]);
+        if (parsed > 0) return parsed;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  var empresaId = resolveEmpresaId();
+  var lastReport = null;
+  var printFormat = 'carta';
+
+  function escapeHtml(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function money(value, currency) {
+    var cur = String(currency || 'COP').trim() || 'COP';
+    try {
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: cur, minimumFractionDigits: 2 }).format(Number(value || 0));
+    } catch (_) {
+      return cur + ' ' + Number(value || 0).toFixed(2);
+    }
+  }
+
+  function formatDateTime(raw) {
+    var r = String(raw || '').trim();
+    if (!r) return '';
+    var d = new Date(r.indexOf('T') >= 0 ? r : r.replace(' ', 'T'));
+    if (Number.isNaN(d.getTime())) return r;
+    return d.toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function requestJSON(url) {
+    var res = await fetch(url, { credentials: 'same-origin' });
+    var text = await res.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    if (!res.ok) {
+      throw new Error((data && data.error) || (typeof data === 'string' ? data : '') || ('HTTP ' + res.status));
+    }
+    return data;
+  }
+
+  function normalizePrintFormat(value) {
+    var v = String(value || '').trim().toLowerCase();
+    if (v === 'pos' || v === 'ticket' || v === 'pequena' || v === 'pequeña') return 'pos';
+    return 'carta';
+  }
+
+  function applyPrintFormat(format) {
+    printFormat = normalizePrintFormat(format);
+    document.body.classList.toggle('report-print-pos', printFormat === 'pos');
+    document.body.classList.toggle('report-print-carta', printFormat !== 'pos');
+
+    var style = document.getElementById('dynamicPrintPageSize');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'dynamicPrintPageSize';
+      document.head.appendChild(style);
+    }
+    style.textContent = printFormat === 'pos'
+      ? '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}}'
+      : '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto}}';
+  }
+
+  async function loadPrintFormatConfig() {
+    if (!empresaId) {
+      applyPrintFormat('carta');
+      return;
+    }
+    try {
+      var cfg = await requestJSON('/api/empresa/finanzas/configuracion?empresa_id=' + encodeURIComponent(empresaId));
+      applyPrintFormat(cfg && cfg.formato_impresion);
+    } catch (_) {
+      applyPrintFormat('carta');
+    }
+  }
+
+  function setDefaultDates() {
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    document.getElementById('desde').value = toLocalInputValue(start);
+    document.getElementById('hasta').value = toLocalInputValue(now);
+  }
+
+  function toLocalInputValue(date) {
+    function pad(n) { return String(n).padStart(2, '0'); }
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function renderSummary(resumen) {
+    var cur = resumen.moneda || 'COP';
+    var cards = [
+      ['Ventas', String(resumen.ventas_cantidad || 0), money(resumen.ventas_total || 0, cur)],
+      ['Efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo'],
+      ['Tarjetas', money(resumen.tarjetas_ventas || 0, cur), 'Crédito y débito'],
+      ['Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios'],
+      ['Productos', money(resumen.total_productos || 0, cur), 'Total vendido'],
+      ['Servicios', money(resumen.total_servicios || 0, cur), 'Total vendido'],
+      ['Mov. efectivo', money((resumen.ingresos_efectivo || 0) - (resumen.egresos_efectivo || 0), cur), 'Ingresos menos egresos'],
+      ['Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado']
+    ];
+    document.getElementById('summaryGrid').innerHTML = cards.map(function(card) {
+      return '<article class="corte-summary-card"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></article>';
+    }).join('');
+    document.getElementById('efectivoFinal').textContent = money(resumen.efectivo_esperado_caja || 0, cur);
+  }
+
+  function renderTable(boxId, columns, rows, emptyText) {
+    var box = document.getElementById(boxId);
+    if (!Array.isArray(rows) || !rows.length) {
+      box.className = 'table-wrap form-help';
+      box.textContent = emptyText;
+      return;
+    }
+    box.className = 'table-wrap';
+    var html = '<table class="table table-full"><thead><tr>' + columns.map(function(c) {
+      return '<th>' + escapeHtml(c.label) + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function(row) {
+      html += '<tr>' + columns.map(function(c) {
+        var value = typeof c.value === 'function' ? c.value(row) : row[c.key];
+        return '<td data-label="' + escapeHtml(c.label) + '">' + escapeHtml(value) + '</td>';
+      }).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  }
+
+  function renderReport(payload) {
+    var resumen = payload.resumen || {};
+    var cur = resumen.moneda || 'COP';
+    document.getElementById('reportTitle').textContent = 'Corte de caja - ' + (resumen.empresa_nombre || 'Empresa');
+    document.getElementById('reportMeta').textContent =
+      'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) +
+      ' | Usuario: ' + (resumen.usuario_filtro || 'Todos') +
+      ' | Generado: ' + formatDateTime(payload.generado_en) +
+      ' | Hoja: ' + (printFormat === 'pos' ? 'pequeña/POS' : 'grande/carta');
+    renderSummary(resumen);
+
+    renderTable('movimientosBox', [
+      { label: 'Tipo', key: 'tipo' },
+      { label: 'Método', key: 'metodo' },
+      { label: 'Categoría', key: 'categoria' },
+      { label: 'Usuario', key: 'usuario' },
+      { label: 'Cantidad', key: 'cantidad' },
+      { label: 'Total', value: function(r) { return money(r.total || 0, cur); } }
+    ], payload.movimientos || [], 'No hay movimientos financieros agrupados en este rango.');
+
+    renderTable('ventasBox', [
+      { label: 'Fecha', value: function(r) { return formatDateTime(r.fecha_pago); } },
+      { label: 'Código', key: 'codigo' },
+      { label: 'Estación', value: function(r) { return r.estacion_nombre || r.nombre || ''; } },
+      { label: 'Cajero', key: 'cajero' },
+      { label: 'Método', key: 'metodo_pago' },
+      { label: 'Total', value: function(r) { return money((r.total_pagado || r.total || 0), r.moneda || cur); } }
+    ], payload.ventas || [], 'No hay ventas facturadas en este rango.');
+
+    renderTable('itemsBox', [
+      { label: 'Tipo', key: 'tipo' },
+      { label: 'Cantidad', value: function(r) { return Number(r.cantidad || 0).toFixed(2); } },
+      { label: 'Total', value: function(r) { return money(r.total || 0, cur); } }
+    ], payload.items_por_tipo || [], 'No hay items vendidos en este rango.');
+
+    renderTable('sensoresBox', [
+      { label: 'Habitación', value: function(r) { return r.estacion_nombre || ('Habitación ' + r.estacion_id); } },
+      { label: 'Sensor', key: 'device_id' },
+      { label: 'Estado', key: 'estado_sensor' },
+      { label: 'Última lectura', value: function(r) { return formatDateTime(r.ultima_lectura); } },
+      { label: 'Observación', key: 'motivo' }
+    ], payload.sensores_sin_factura || [], 'No hay habitaciones ocupadas por sensor sin factura en este corte.');
+  }
+
+  async function generar() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) {
+      msg.textContent = 'No se encontró la empresa activa.';
+      return;
+    }
+    var params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId));
+    params.set('desde', document.getElementById('desde').value || '');
+    params.set('hasta', document.getElementById('hasta').value || '');
+    params.set('usuario', document.getElementById('usuario').value || '');
+    params.set('apertura_efectivo', document.getElementById('apertura').value || '0');
+    try {
+      msg.textContent = 'Generando corte...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + params.toString());
+      renderReport(lastReport);
+      document.getElementById('btnImprimir').disabled = false;
+      msg.textContent = 'Corte generado correctamente.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte.';
+      document.getElementById('btnImprimir').disabled = true;
+    }
+  }
+
+  async function preloadAccount() {
+    try {
+      var account = await requestJSON('/api/account');
+      var email = (account && (account.email || account.user_email || account.admin_email)) || '';
+      if (email && !document.getElementById('usuario').value) {
+        document.getElementById('usuario').value = email;
+      }
+    } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setDefaultDates();
+    preloadAccount();
+    loadPrintFormatConfig();
+    document.getElementById('btnGenerar').addEventListener('click', generar);
+    document.getElementById('btnImprimir').addEventListener('click', function() {
+      if (lastReport) {
+        applyPrintFormat(printFormat);
+        window.print();
+      }
+    });
+  });
+</script>
+</body>
+</html>

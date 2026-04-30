@@ -23,6 +23,7 @@ type EmpresaTarifaPorMinutos struct {
 	ValorBase          float64 `json:"valor_base"`
 	MinutosExtra       int     `json:"minutos_extra"`
 	ValorExtra         float64 `json:"valor_extra"`
+	CobrarPorFraccion  bool    `json:"cobrar_por_fraccion"`
 	Moneda             string  `json:"moneda,omitempty"`
 	Prioridad          int     `json:"prioridad"`
 	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
@@ -49,17 +50,21 @@ const (
 
 // EmpresaTarifaPorMinutosConfiguracion define reglas globales de calculo por empresa.
 type EmpresaTarifaPorMinutosConfiguracion struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	RedondeoModo       string  `json:"redondeo_modo"`
-	RedondeoUnidad     float64 `json:"redondeo_unidad"`
-	MontoMinimoDiario  float64 `json:"monto_minimo_diario"`
-	MontoMaximoDiario  float64 `json:"monto_maximo_diario"`
-	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
-	Estado             string  `json:"estado,omitempty"`
-	Observaciones      string  `json:"observaciones,omitempty"`
+	ID                             int64   `json:"id"`
+	EmpresaID                      int64   `json:"empresa_id"`
+	RedondeoModo                   string  `json:"redondeo_modo"`
+	RedondeoUnidad                 float64 `json:"redondeo_unidad"`
+	MontoMinimoDiario              float64 `json:"monto_minimo_diario"`
+	MontoMaximoDiario              float64 `json:"monto_maximo_diario"`
+	MargenToleranciaEntradaMinutos int     `json:"margen_tolerancia_entrada_minutos"`
+	SensorAutoActivarEstacion      bool    `json:"sensor_auto_activar_estacion"`
+	MargenDesactivacionHabilitado  bool    `json:"margen_desactivacion_habilitado"`
+	MargenDesactivacionMinutos     int     `json:"margen_desactivacion_minutos"`
+	FechaCreacion                  string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion             string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                 string  `json:"usuario_creador,omitempty"`
+	Estado                         string  `json:"estado,omitempty"`
+	Observaciones                  string  `json:"observaciones,omitempty"`
 }
 
 // EmpresaTarifaPorMinutosCalculo representa el detalle de calculo por consumo.
@@ -68,6 +73,8 @@ type EmpresaTarifaPorMinutosCalculo struct {
 	EstacionID          int64   `json:"estacion_id"`
 	DiaSemana           int     `json:"dia_semana"`
 	MinutosConsumidos   float64 `json:"minutos_consumidos"`
+	MinutosFacturables  float64 `json:"minutos_facturables"`
+	MinutosTolerancia   int     `json:"minutos_tolerancia"`
 	BloquesExtra        int     `json:"bloques_extra"`
 	MontoBase           float64 `json:"monto_base"`
 	MontoExtra          float64 `json:"monto_extra"`
@@ -112,6 +119,7 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 			valor_base REAL NOT NULL DEFAULT 0,
 			minutos_extra INTEGER NOT NULL DEFAULT 60,
 			valor_extra REAL NOT NULL DEFAULT 0,
+			cobrar_por_fraccion INTEGER NOT NULL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			prioridad INTEGER DEFAULT 1,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -154,6 +162,9 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos", "valor_extra", "REAL NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos", "cobrar_por_fraccion", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
 		return err
 	}
@@ -189,6 +200,10 @@ func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 			redondeo_unidad REAL NOT NULL DEFAULT 100,
 			monto_minimo_diario REAL NOT NULL DEFAULT 0,
 			monto_maximo_diario REAL NOT NULL DEFAULT 0,
+			margen_tolerancia_entrada_minutos INTEGER NOT NULL DEFAULT 0,
+			sensor_auto_activar_estacion INTEGER NOT NULL DEFAULT 0,
+			margen_desactivacion_habilitado INTEGER NOT NULL DEFAULT 0,
+			margen_desactivacion_minutos INTEGER NOT NULL DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -216,6 +231,18 @@ func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "monto_maximo_diario", "REAL NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "margen_tolerancia_entrada_minutos", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "sensor_auto_activar_estacion", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "margen_desactivacion_habilitado", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "margen_desactivacion_minutos", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_minutos_configuracion", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -234,12 +261,16 @@ func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 
 func defaultEmpresaTarifaPorMinutosConfiguracion(empresaID int64) EmpresaTarifaPorMinutosConfiguracion {
 	return EmpresaTarifaPorMinutosConfiguracion{
-		EmpresaID:         empresaID,
-		RedondeoModo:      tarifaPorMinutosRedondeoNinguno,
-		RedondeoUnidad:    100,
-		MontoMinimoDiario: 0,
-		MontoMaximoDiario: 0,
-		Estado:            "activo",
+		EmpresaID:                      empresaID,
+		RedondeoModo:                   tarifaPorMinutosRedondeoNinguno,
+		RedondeoUnidad:                 100,
+		MontoMinimoDiario:              0,
+		MontoMaximoDiario:              0,
+		MargenToleranciaEntradaMinutos: 0,
+		SensorAutoActivarEstacion:      false,
+		MargenDesactivacionHabilitado:  false,
+		MargenDesactivacionMinutos:     0,
+		Estado:                         "activo",
 	}
 }
 
@@ -317,6 +348,16 @@ func normalizeTarifaPorMinutosRedondeoUnidad(v float64) float64 {
 	return round2(v)
 }
 
+func normalizeTarifaPorMinutosMargin(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > 1440 {
+		return 1440
+	}
+	return v
+}
+
 func normalizeEmpresaTarifaPorMinutosConfiguracionPayload(payload *EmpresaTarifaPorMinutosConfiguracion) error {
 	if payload == nil {
 		return fmt.Errorf("payload invalido")
@@ -337,6 +378,11 @@ func normalizeEmpresaTarifaPorMinutosConfiguracionPayload(payload *EmpresaTarifa
 	}
 	if payload.MontoMaximoDiario > 0 && payload.MontoMinimoDiario > payload.MontoMaximoDiario {
 		return fmt.Errorf("monto_minimo_diario no puede ser mayor que monto_maximo_diario")
+	}
+	payload.MargenToleranciaEntradaMinutos = normalizeTarifaPorMinutosMargin(payload.MargenToleranciaEntradaMinutos)
+	payload.MargenDesactivacionMinutos = normalizeTarifaPorMinutosMargin(payload.MargenDesactivacionMinutos)
+	if payload.MargenDesactivacionMinutos == 0 {
+		payload.MargenDesactivacionHabilitado = false
 	}
 	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
 	payload.Estado = normalizeTarifaEstado(payload.Estado)
@@ -437,7 +483,7 @@ func CreateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		return 0, err
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_tarifas_por_minutos (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_tarifas_por_minutos (
 		empresa_id,
 		estacion_id,
 		estacion_codigo,
@@ -448,6 +494,7 @@ func CreateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		valor_base,
 		minutos_extra,
 		valor_extra,
+		cobrar_por_fraccion,
 		moneda,
 		prioridad,
 		usuario_creador,
@@ -455,7 +502,7 @@ func CreateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		payload.EstacionID,
 		payload.EstacionCodigo,
@@ -466,16 +513,13 @@ func CreateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		payload.ValorBase,
 		payload.MinutosExtra,
 		payload.ValorExtra,
+		boolToInt(payload.CobrarPorFraccion),
 		payload.Moneda,
 		payload.Prioridad,
 		payload.UsuarioCreador,
 		payload.Estado,
 		payload.Observaciones,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 // UpdateEmpresaTarifaPorMinutos actualiza una tarifa por minutos existente.
@@ -498,6 +542,7 @@ func UpdateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		valor_base = ?,
 		minutos_extra = ?,
 		valor_extra = ?,
+		cobrar_por_fraccion = ?,
 		moneda = ?,
 		prioridad = ?,
 		usuario_creador = ?,
@@ -514,6 +559,7 @@ func UpdateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		payload.ValorBase,
 		payload.MinutosExtra,
 		payload.ValorExtra,
+		boolToInt(payload.CobrarPorFraccion),
 		payload.Moneda,
 		payload.Prioridad,
 		payload.UsuarioCreador,
@@ -584,6 +630,7 @@ func GetEmpresaTarifaPorMinutosByID(dbConn *sql.DB, empresaID, id int64) (*Empre
 		COALESCE(valor_base, 0),
 		COALESCE(minutos_extra, 60),
 		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(prioridad, 1),
 		COALESCE(fecha_creacion, ''),
@@ -596,6 +643,7 @@ func GetEmpresaTarifaPorMinutosByID(dbConn *sql.DB, empresaID, id int64) (*Empre
 	LIMIT 1`, empresaID, id)
 
 	var item EmpresaTarifaPorMinutos
+	var cobrarPorFraccion int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -608,6 +656,7 @@ func GetEmpresaTarifaPorMinutosByID(dbConn *sql.DB, empresaID, id int64) (*Empre
 		&item.ValorBase,
 		&item.MinutosExtra,
 		&item.ValorExtra,
+		&cobrarPorFraccion,
 		&item.Moneda,
 		&item.Prioridad,
 		&item.FechaCreacion,
@@ -618,6 +667,7 @@ func GetEmpresaTarifaPorMinutosByID(dbConn *sql.DB, empresaID, id int64) (*Empre
 	); err != nil {
 		return nil, err
 	}
+	item.CobrarPorFraccion = cobrarPorFraccion > 0
 	return &item, nil
 }
 
@@ -645,6 +695,7 @@ func ListEmpresaTarifasPorMinutos(dbConn *sql.DB, empresaID int64, filter Empres
 		COALESCE(valor_base, 0),
 		COALESCE(minutos_extra, 60),
 		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(prioridad, 1),
 		COALESCE(fecha_creacion, ''),
@@ -683,6 +734,7 @@ func ListEmpresaTarifasPorMinutos(dbConn *sql.DB, empresaID int64, filter Empres
 	out := make([]EmpresaTarifaPorMinutos, 0)
 	for rows.Next() {
 		var item EmpresaTarifaPorMinutos
+		var cobrarPorFraccion int
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
@@ -695,6 +747,7 @@ func ListEmpresaTarifasPorMinutos(dbConn *sql.DB, empresaID int64, filter Empres
 			&item.ValorBase,
 			&item.MinutosExtra,
 			&item.ValorExtra,
+			&cobrarPorFraccion,
 			&item.Moneda,
 			&item.Prioridad,
 			&item.FechaCreacion,
@@ -705,6 +758,7 @@ func ListEmpresaTarifasPorMinutos(dbConn *sql.DB, empresaID int64, filter Empres
 		); err != nil {
 			return nil, err
 		}
+		item.CobrarPorFraccion = cobrarPorFraccion > 0
 		out = append(out, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -737,6 +791,7 @@ func GetEmpresaTarifaPorMinutosAplicable(dbConn *sql.DB, empresaID, estacionID i
 		COALESCE(valor_base, 0),
 		COALESCE(minutos_extra, 60),
 		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(prioridad, 1),
 		COALESCE(fecha_creacion, ''),
@@ -753,6 +808,7 @@ func GetEmpresaTarifaPorMinutosAplicable(dbConn *sql.DB, empresaID, estacionID i
 	LIMIT 1`, empresaID, estacionID, diaSemana, diaSemana, diaSemana)
 
 	var item EmpresaTarifaPorMinutos
+	var cobrarPorFraccion int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -765,6 +821,7 @@ func GetEmpresaTarifaPorMinutosAplicable(dbConn *sql.DB, empresaID, estacionID i
 		&item.ValorBase,
 		&item.MinutosExtra,
 		&item.ValorExtra,
+		&cobrarPorFraccion,
 		&item.Moneda,
 		&item.Prioridad,
 		&item.FechaCreacion,
@@ -778,6 +835,7 @@ func GetEmpresaTarifaPorMinutosAplicable(dbConn *sql.DB, empresaID, estacionID i
 		}
 		return nil, err
 	}
+	item.CobrarPorFraccion = cobrarPorFraccion > 0
 	return &item, nil
 }
 
@@ -797,6 +855,10 @@ func GetEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, empresaID int64) (*
 		COALESCE(redondeo_unidad, 100),
 		COALESCE(monto_minimo_diario, 0),
 		COALESCE(monto_maximo_diario, 0),
+		COALESCE(margen_tolerancia_entrada_minutos, 0),
+		COALESCE(sensor_auto_activar_estacion, 0),
+		COALESCE(margen_desactivacion_habilitado, 0),
+		COALESCE(margen_desactivacion_minutos, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -807,6 +869,8 @@ func GetEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, empresaID int64) (*
 	LIMIT 1`, empresaID)
 
 	var item EmpresaTarifaPorMinutosConfiguracion
+	var sensorAutoActivarEstacion int
+	var margenDesactivacionHabilitado int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -814,6 +878,10 @@ func GetEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, empresaID int64) (*
 		&item.RedondeoUnidad,
 		&item.MontoMinimoDiario,
 		&item.MontoMaximoDiario,
+		&item.MargenToleranciaEntradaMinutos,
+		&sensorAutoActivarEstacion,
+		&margenDesactivacionHabilitado,
+		&item.MargenDesactivacionMinutos,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -826,6 +894,8 @@ func GetEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, empresaID int64) (*
 		}
 		return nil, err
 	}
+	item.SensorAutoActivarEstacion = sensorAutoActivarEstacion > 0
+	item.MargenDesactivacionHabilitado = margenDesactivacionHabilitado > 0
 	if err := normalizeEmpresaTarifaPorMinutosConfiguracionPayload(&item); err != nil {
 		return nil, err
 	}
@@ -847,17 +917,25 @@ func UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, payload EmpresaT
 		redondeo_unidad,
 		monto_minimo_diario,
 		monto_maximo_diario,
+		margen_tolerancia_entrada_minutos,
+		sensor_auto_activar_estacion,
+		margen_desactivacion_habilitado,
+		margen_desactivacion_minutos,
 		usuario_creador,
 		estado,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		redondeo_modo = excluded.redondeo_modo,
 		redondeo_unidad = excluded.redondeo_unidad,
 		monto_minimo_diario = excluded.monto_minimo_diario,
 		monto_maximo_diario = excluded.monto_maximo_diario,
+		margen_tolerancia_entrada_minutos = excluded.margen_tolerancia_entrada_minutos,
+		sensor_auto_activar_estacion = excluded.sensor_auto_activar_estacion,
+		margen_desactivacion_habilitado = excluded.margen_desactivacion_habilitado,
+		margen_desactivacion_minutos = excluded.margen_desactivacion_minutos,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones,
@@ -867,6 +945,10 @@ func UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, payload EmpresaT
 		payload.RedondeoUnidad,
 		payload.MontoMinimoDiario,
 		payload.MontoMaximoDiario,
+		payload.MargenToleranciaEntradaMinutos,
+		boolToInt(payload.SensorAutoActivarEstacion),
+		boolToInt(payload.MargenDesactivacionHabilitado),
+		payload.MargenDesactivacionMinutos,
 		payload.UsuarioCreador,
 		payload.Estado,
 		payload.Observaciones,
@@ -887,9 +969,17 @@ func CalcularDetalleTarifaPorMinutos(tarifa EmpresaTarifaPorMinutos, minutosCons
 	}
 
 	montoBase := round2(tarifa.ValorBase)
+	minutosFacturables := minutosConsumidos
+	margenTolerancia := normalizeTarifaPorMinutosMargin(cfg.MargenToleranciaEntradaMinutos)
+	if margenTolerancia > 0 && minutosFacturables > float64(tarifa.MinutosBase) {
+		minutosFacturables -= float64(margenTolerancia)
+		if minutosFacturables < float64(tarifa.MinutosBase) {
+			minutosFacturables = float64(tarifa.MinutosBase)
+		}
+	}
 	bloquesExtra := 0
-	if minutosConsumidos > float64(tarifa.MinutosBase) {
-		extraMinutos := minutosConsumidos - float64(tarifa.MinutosBase)
+	if minutosFacturables > float64(tarifa.MinutosBase) {
+		extraMinutos := minutosFacturables - float64(tarifa.MinutosBase)
 		bloquesExtra = int(math.Ceil(extraMinutos / float64(tarifa.MinutosExtra)))
 		if bloquesExtra < 0 {
 			bloquesExtra = 0
@@ -919,6 +1009,8 @@ func CalcularDetalleTarifaPorMinutos(tarifa EmpresaTarifaPorMinutos, minutosCons
 		TarifaID:            tarifa.ID,
 		EstacionID:          tarifa.EstacionID,
 		MinutosConsumidos:   round2(minutosConsumidos),
+		MinutosFacturables:  round2(minutosFacturables),
+		MinutosTolerancia:   margenTolerancia,
 		BloquesExtra:        bloquesExtra,
 		MontoBase:           montoBase,
 		MontoExtra:          montoExtra,
@@ -951,6 +1043,7 @@ func findEmpresaTarifaPorMinutosByStationRange(dbConn *sql.DB, empresaID, estaci
 		COALESCE(valor_base, 0),
 		COALESCE(minutos_extra, 60),
 		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(prioridad, 1),
 		COALESCE(fecha_creacion, ''),
@@ -967,6 +1060,7 @@ func findEmpresaTarifaPorMinutosByStationRange(dbConn *sql.DB, empresaID, estaci
 	LIMIT 1`, empresaID, estacionID, diaDesde, diaHasta)
 
 	var item EmpresaTarifaPorMinutos
+	var cobrarPorFraccion int
 	if err := row.Scan(
 		&item.ID,
 		&item.EmpresaID,
@@ -979,6 +1073,7 @@ func findEmpresaTarifaPorMinutosByStationRange(dbConn *sql.DB, empresaID, estaci
 		&item.ValorBase,
 		&item.MinutosExtra,
 		&item.ValorExtra,
+		&cobrarPorFraccion,
 		&item.Moneda,
 		&item.Prioridad,
 		&item.FechaCreacion,
@@ -992,6 +1087,7 @@ func findEmpresaTarifaPorMinutosByStationRange(dbConn *sql.DB, empresaID, estaci
 		}
 		return nil, err
 	}
+	item.CobrarPorFraccion = cobrarPorFraccion > 0
 	return &item, nil
 }
 
@@ -1021,6 +1117,24 @@ func mergeTarifaPorMinutosEstacionRef(store map[int64]empresaTarifaPorMinutosEst
 
 func listEmpresaTarifaPorMinutosStationRefs(dbConn *sql.DB, empresaID int64) ([]empresaTarifaPorMinutosEstacionRef, error) {
 	refs := make(map[int64]empresaTarifaPorMinutosEstacionRef)
+
+	if pref, err := GetEmpresaEstacionPref(dbConn, empresaID, 0, "estaciones_config"); err != nil {
+		return nil, err
+	} else if pref != nil && strings.TrimSpace(pref.Valor) != "" {
+		cfg, err := parseEmpresaEstacionesConfig(pref.Valor)
+		if err != nil {
+			return nil, err
+		}
+		if cfg != nil {
+			for _, station := range cfg.Estaciones {
+				mergeTarifaPorMinutosEstacionRef(refs, empresaTarifaPorMinutosEstacionRef{
+					ID:     station.ID,
+					Codigo: fmt.Sprintf("EST-%d-%d", empresaID, station.ID),
+					Nombre: station.Nombre,
+				}, empresaID)
+			}
+		}
+	}
 
 	rowsTarifas, err := dbConn.Query(`SELECT DISTINCT
 		COALESCE(estacion_id, 0),

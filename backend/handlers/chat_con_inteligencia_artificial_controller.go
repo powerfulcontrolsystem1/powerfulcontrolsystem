@@ -235,13 +235,13 @@ func empresaAIModelCatalog() []empresaAIModelDef {
 		{
 			ID:             "openai:gpt-5.5",
 			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.5 (documentos)",
+			DisplayName:    "OpenAI GPT-5.5 (vision/fotos)",
 			UpstreamModel:  "gpt-5.5",
 			Endpoint:       "https://api.openai.com/v1/responses",
 			ApiKeyEnv:      "OPENAI_API_KEY",
 			Famous:         true,
 			FreeDailyLimit: 20,
-			Description:    "Procesamiento de documentos e imágenes con OpenAI. Se recomienda limitar su uso diario por empresa desde el panel super.",
+			Description:    "Analisis de fotos e imagenes con OpenAI. Los documentos de texto se generan con GPT-5.4 mini.",
 		},
 	}
 }
@@ -678,8 +678,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	})
 }
 
-// ConsultarConAdjuntoHandler permite consultas con documentos/imagenes y/o forzar uso GPT-5.5.
-// Este endpoint está pensado para "2 consultas diarias" (configurable) por empresa usando GPT-5.5.
+// ConsultarConAdjuntoHandler permite consultas con fotos/imagenes usando GPT-5.5.
+// Este endpoint esta pensado para consultas diarias configurables por empresa usando GPT-5.5.
 func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -704,6 +704,10 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
 	if err != nil {
 		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if att == nil || !isImageAIAttachment(att) {
+		http.Error(w, "GPT-5.5 solo esta habilitado para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA con GPT-5.4 mini.", http.StatusBadRequest)
 		return
 	}
 
@@ -734,9 +738,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if v := strings.TrimSpace(strings.ToLower(r.FormValue("use_gpt55"))); v == "1" || v == "true" || v == "si" || v == "sí" {
 		useGPT55 = true
 	}
-	if att != nil {
-		useGPT55 = true
-	}
+	useGPT55 = true
 	if !useGPT55 {
 		http.Error(w, "Debe adjuntar un archivo o activar use_gpt55=1", http.StatusBadRequest)
 		return
@@ -1289,6 +1291,23 @@ func parseSingleAttachmentFromMultipart(r *http.Request, field string, maxBytes 
 		MimeType: mt,
 		Bytes:    b,
 	}, nil
+}
+
+func isImageAIAttachment(att *aiAttachment) bool {
+	if att == nil {
+		return false
+	}
+	mt := strings.ToLower(strings.TrimSpace(att.MimeType))
+	if strings.HasPrefix(mt, "image/") {
+		return true
+	}
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {

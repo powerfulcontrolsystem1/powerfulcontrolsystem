@@ -371,7 +371,7 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 	})
 }
 
-// ConsultarConAdjuntoHandler permite enviar una imagen/documento al chat global super usando GPT-5.5.
+// ConsultarConAdjuntoHandler permite enviar una foto o imagen al chat global super usando GPT-5.5.
 func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -409,6 +409,10 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
 	if err != nil {
 		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if att == nil || !isImageAIAttachment(att) {
+		http.Error(w, "GPT-5.5 solo esta habilitado para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA con GPT-5.4 mini.", http.StatusBadRequest)
 		return
 	}
 
