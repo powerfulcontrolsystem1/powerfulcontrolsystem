@@ -68,7 +68,6 @@
   var ROBOT_INLINE_SEND_ID = 'robotInlineSend';
   var ROBOT_INLINE_STOP_VOICE_ID = 'robotInlineStopVoice';
   var ROBOT_INLINE_MIC_ID = 'robotInlineMic';
-  var ROBOT_INLINE_CONFIG_ID = 'robotInlineConfig';
   var ROBOT_ACTIONS_ID = 'robotAssistantActions';
   var ROBOT_HIDE_ID = 'robotHideBtn';
   var ROBOT_SHOW_ID = 'robotShowBtn';
@@ -585,7 +584,6 @@
       send: document.getElementById(ROBOT_INLINE_SEND_ID),
       stopVoice: document.getElementById(ROBOT_INLINE_STOP_VOICE_ID),
       mic: document.getElementById(ROBOT_INLINE_MIC_ID),
-      config: document.getElementById(ROBOT_INLINE_CONFIG_ID),
       hideBtn: document.getElementById(ROBOT_HIDE_ID),
       showBtn: document.getElementById(ROBOT_SHOW_ID)
     };
@@ -855,7 +853,6 @@
         '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
         '<form id="' + ROBOT_INLINE_FORM_ID + '" class="robot-cloud robot-cloud-input">' +
         '<textarea id="' + ROBOT_INLINE_INPUT_ID + '" rows="1" maxlength="2000"></textarea>' +
-        '<button id="' + ROBOT_INLINE_CONFIG_ID + '" class="robot-inline-config" type="button" aria-label="Configurar chat IA" title="Configurar chat IA">&#9881;</button>' +
       '<button id="' + ROBOT_INLINE_STOP_VOICE_ID + '" class="robot-inline-stop-voice" type="button" aria-label="Detener voz del avatar" title="Detener voz"></button>' +
         '<button id="' + ROBOT_INLINE_MIC_ID + '" class="robot-inline-mic" type="button" aria-label="Dictar mensaje al robot"></button>' +
         '<button id="' + ROBOT_INLINE_SEND_ID + '" type="submit" aria-label="Enviar al robot">Enviar</button>' +
@@ -864,7 +861,6 @@
 
       var form = document.getElementById(ROBOT_INLINE_FORM_ID);
       var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
-      var configBtn = document.getElementById(ROBOT_INLINE_CONFIG_ID);
       var stopVoiceBtn = document.getElementById(ROBOT_INLINE_STOP_VOICE_ID);
       var micBtn = document.getElementById(ROBOT_INLINE_MIC_ID);
       if (form) {
@@ -889,13 +885,6 @@
           event.stopPropagation();
           stopAssistantVoiceForMoment();
           focusRobotInput();
-        });
-      }
-      if (configBtn) {
-        configBtn.addEventListener('click', function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          openChatConfigPage();
         });
       }
       var sendBtn = document.getElementById(ROBOT_INLINE_SEND_ID);
@@ -1543,7 +1532,17 @@
   function stopActiveSpeechRecognition(silent) {
     var active = state.activeSpeechRecognition;
     if (active) {
-      try { active.stop(); } catch (err) {}
+      try {
+        if (silent && typeof active.abort === 'function') {
+          active.abort();
+        } else {
+          active.stop();
+        }
+      } catch (err) {
+        try {
+          if (typeof active.abort === 'function') active.abort();
+        } catch (abortErr) {}
+      }
     }
     state.activeSpeechRecognition = null;
     state.activeSpeechSource = '';
@@ -1911,10 +1910,7 @@
       micBtn.dataset.pcsSpeechBound = '1';
     }
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    var recognition = new SpeechRecognition();
-    recognition.lang = 'es-CO';
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    var recognition = null;
     var finalText = '';
     var baseText = String(input.value || '').trim();
     var isRobotMic = micBtn.id === ROBOT_INLINE_MIC_ID;
@@ -1935,51 +1931,74 @@
       }
     }
 
-    recognition.onresult = function (event) {
-      var interimText = '';
-      var updatedFinalText = '';
-      for (var i = event.resultIndex; i < event.results.length; i += 1) {
-        var result = event.results[i];
-        var transcript = String((result[0] && result[0].transcript) || '');
-        if (result.isFinal) {
-          updatedFinalText += transcript;
-        } else {
-          interimText += transcript;
+    function createRecognition() {
+      var instance = new SpeechRecognition();
+      instance.lang = 'es-CO';
+      instance.interimResults = true;
+      instance.continuous = false;
+      instance.maxAlternatives = 1;
+
+      instance.onstart = function () {
+        setListening(true);
+      };
+
+      instance.onresult = function (event) {
+        var interimText = '';
+        var updatedFinalText = '';
+        for (var i = event.resultIndex; i < event.results.length; i += 1) {
+          var result = event.results[i];
+          var transcript = String((result[0] && result[0].transcript) || '');
+          if (result.isFinal) {
+            updatedFinalText += transcript;
+          } else {
+            interimText += transcript;
+          }
         }
-      }
-      if (updatedFinalText) {
-        finalText += updatedFinalText;
-      }
-      var dictatedFinal = String(finalText || '').trim();
-      var sendCommand = stripSendVoiceCommand(dictatedFinal);
-      if (sendCommand.shouldSend) {
-        finalText = sendCommand.text;
-        interimText = '';
-      }
-      input.value = (baseText ? baseText + ' ' : '') + String((finalText + interimText).trim());
-      try {
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      } catch (e) {}
-      if (sendCommand.shouldSend && !sendCommandQueued) {
-        sendCommandQueued = true;
-        setNotice('Comando de voz recibido: enviando mensaje.');
-        window.setTimeout(function () {
-          var form = input.form || (input.closest ? input.closest('form') : null);
-          submitFormSafely(form, getSubmitFallbackForInput(input));
-          sendCommandQueued = false;
-        }, 80);
-      }
-    };
+        if (updatedFinalText) {
+          finalText += updatedFinalText;
+        }
+        var dictatedFinal = String(finalText || '').trim();
+        var sendCommand = stripSendVoiceCommand(dictatedFinal);
+        if (sendCommand.shouldSend) {
+          finalText = sendCommand.text;
+          interimText = '';
+        }
+        input.value = (baseText ? baseText + ' ' : '') + String((finalText + interimText).trim());
+        try {
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        } catch (e) {}
+        if (sendCommand.shouldSend && !sendCommandQueued) {
+          sendCommandQueued = true;
+          setNotice('Comando de voz recibido: enviando mensaje.');
+          window.setTimeout(function () {
+            var form = input.form || (input.closest ? input.closest('form') : null);
+            submitFormSafely(form, getSubmitFallbackForInput(input));
+            sendCommandQueued = false;
+          }, 80);
+        }
+      };
 
-    recognition.onerror = function () {
-      setListening(false);
-      setNotice('Error de micrÃ³fono.');
-    };
+      instance.onerror = function (event) {
+        var errorCode = event && event.error ? String(event.error) : '';
+        setListening(false);
+        if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
+          setNotice('Permiso de microfono denegado. Revisa los permisos del navegador.');
+        } else if (errorCode === 'no-speech') {
+          setNotice('No se detecto voz. Intenta hablar mas cerca del microfono.');
+        } else if (errorCode === 'audio-capture') {
+          setNotice('No se detecto un microfono disponible en este equipo.');
+        } else {
+          setNotice(errorCode ? 'Error de microfono: ' + errorCode + '.' : 'Error de microfono.');
+        }
+      };
 
-    recognition.onend = function () {
-      setListening(false);
-      finalText = '';
-    };
+      instance.onend = function () {
+        setListening(false);
+        finalText = '';
+      };
+
+      return instance;
+    }
 
     micBtn.addEventListener('click', function (event) {
       if (event && typeof event.preventDefault === 'function') event.preventDefault();
@@ -1996,6 +2015,7 @@
       finalText = '';
       sendCommandQueued = false;
       baseText = String(input.value || '').trim();
+      recognition = createRecognition();
       try {
         recognition.start();
         setListening(true);

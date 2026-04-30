@@ -15,10 +15,14 @@ scripts/logs/*.log
 scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1
 tmp/*.txt
+tmp/*.js
 backend/.env.local
 .env.local
 juegos/roms/*
 !juegos/roms/README.md
+juegos/empresas/*
+!juegos/empresas/README.md
+juegos/tmp/
 # VSCode
 .vscode/
 # Archivos compilados

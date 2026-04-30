@@ -184,12 +184,6 @@
         linear-gradient(90deg, transparent 0 58%, #22c55e 58% 68%, transparent 68%),
         linear-gradient(180deg, #38bdf8, #bfdbfe 62%, #16a34a 62%);
     }
-    .games-cover-n64 {
-      background:
-        conic-gradient(from 45deg at 50% 50%, #ef4444 0 25%, #22c55e 0 50%, #3b82f6 0 75%, #facc15 0),
-        radial-gradient(circle, rgba(255,255,255,.55), transparent 38%),
-        #111827;
-    }
     .games-cover-emulator {
       background:
         radial-gradient(circle at 72% 30%, #38bdf8 0 7%, transparent 7.5%),
@@ -371,26 +365,48 @@
       </article>
 
       <article class="games-card is-featured">
-        <div class="games-cover games-cover-emulator" role="img" aria-label="Imagen representativa del emulador SNES"><span>EmulatorJS</span></div>
+        <div class="games-cover games-cover-emulator" role="img" aria-label="Imagen representativa del emulador web"><span>EmulatorJS</span></div>
         <span class="games-badge">Emulador web</span>
-        <h2>Emulador SNES</h2>
-        <p>Emulador multiplataforma con EmulatorJS, ROMs listadas desde el servidor Go, pantalla completa, controles tactiles y soporte para gamepad.</p>
+        <h2>Emulador web</h2>
+        <p>Emulador multiplataforma nuevo con EmulatorJS, partidas guardadas por empresa, ROMs listadas desde el servidor Go, pantalla completa, controles tactiles y soporte para gamepad.</p>
         <div class="games-actions">
           <a class="btn" href="/emulador/">Abrir emulador</a>
-        </div>
-      </article>
-
-      <article class="games-card">
-        <div class="games-cover games-cover-n64" role="img" aria-label="Imagen representativa de Arcade N64"><span>N64</span></div>
-        <h2>Arcade N64</h2>
-        <p>Entrada rapida a la coleccion recreativa restaurada para pruebas visuales y navegacion interna.</p>
-        <div class="games-actions">
-          <a class="btn secondary" href="/Juegos/n64/index.html">Abrir N64</a>
         </div>
       </article>
     </section>
 
     <p class="games-note">El acceso queda publicado desde el menu flotante para conservar un punto de entrada estable.</p>
   </main>
+  <script>
+    (function(){
+      function parsePositiveInt(value) {
+        var parsed = parseInt(String(value || '').trim(), 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+      }
+      function resolveEmpresaId() {
+        var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+        var stores = [window.sessionStorage, window.localStorage];
+        for (var i = 0; i < stores.length; i += 1) {
+          for (var j = 0; j < keys.length; j += 1) {
+            try {
+              var value = parsePositiveInt(stores[i].getItem(keys[j]));
+              if (value) return value;
+            } catch (error) {}
+          }
+        }
+        return 0;
+      }
+      var empresaId = resolveEmpresaId();
+      if (!empresaId) return;
+      var links = document.querySelectorAll('a[href="/emulador/"]');
+      for (var i = 0; i < links.length; i += 1) {
+        try {
+          var url = new URL(links[i].getAttribute('href'), window.location.origin);
+          url.searchParams.set('empresa_id', String(empresaId));
+          links[i].setAttribute('href', url.pathname + url.search);
+        } catch (error) {}
+      }
+    })();
+  </script>
 </body>
 </html>

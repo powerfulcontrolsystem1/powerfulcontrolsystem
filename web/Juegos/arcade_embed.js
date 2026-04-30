@@ -1,4 +1,13 @@
 (function () {
+  var THEME_VALUES = {
+    dark: true,
+    "dark-violet": true,
+    "dark-emerald": true,
+    light: true,
+    "light-rose": true,
+    "light-gold": true
+  };
+
   var KEY_META = {
     13: { key: "Enter", code: "Enter" },
     27: { key: "Escape", code: "Escape" },
@@ -22,6 +31,60 @@
   var frame = document.querySelector("[data-arcade-frame]");
   if (!frame) {
     return;
+  }
+
+  function normalizeTheme(theme) {
+    var value = String(theme || "").trim().toLowerCase();
+    if (value === "dark-protect") value = "dark";
+    return THEME_VALUES[value] ? value : "light";
+  }
+
+  function currentTheme() {
+    try {
+      if (window.__pcsThemeManager) {
+        return normalizeTheme(window.__pcsThemeManager.getTheme());
+      }
+    } catch (error) {}
+    try {
+      return normalizeTheme(window.localStorage.getItem("theme") || "");
+    } catch (error) {
+      return "light";
+    }
+  }
+
+  function injectSourceTheme() {
+    var doc;
+    try {
+      doc = frame.contentDocument;
+    } catch (error) {
+      return;
+    }
+    if (!doc || !doc.documentElement) return;
+    var theme = currentTheme();
+    doc.documentElement.setAttribute("data-theme", theme);
+    try {
+      frame.contentWindow.postMessage({ type: "pcs-theme", theme: theme }, window.location.origin);
+    } catch (error) {}
+    if (!doc.getElementById("pcsOpenGameSourceTheme")) {
+      var link = doc.createElement("link");
+      link.id = "pcsOpenGameSourceTheme";
+      link.rel = "stylesheet";
+      link.href = "/Juegos/open_game_source.css";
+      (doc.head || doc.documentElement).appendChild(link);
+    }
+  }
+
+  function resizeFrameToViewport() {
+    var controls = document.querySelector(".arcade-controls");
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 720;
+    var controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
+    var minHeight = window.matchMedia && window.matchMedia("(max-width: 720px)").matches ? 300 : 430;
+    var frameRect = frame.getBoundingClientRect();
+    var available = Math.max(minHeight, viewportHeight - frameRect.top - controlsHeight - 10);
+    var widthRatio = window.matchMedia && window.matchMedia("(max-width: 720px)").matches ? 0.78 : 0.68;
+    var maxByWidth = Math.max(minHeight, Math.round(frameRect.width * widthRatio));
+    var next = Math.min(available, maxByWidth, viewportHeight - 84);
+    frame.style.setProperty("--arcade-frame-height", Math.max(minHeight, Math.round(next)) + "px");
   }
 
   function makeEvent(win, type, keyCode) {
@@ -93,6 +156,24 @@
   });
 
   frame.addEventListener("load", function () {
+    injectSourceTheme();
+    resizeFrameToViewport();
+    window.setTimeout(resizeFrameToViewport, 120);
     frame.focus();
   });
+
+  window.addEventListener("resize", resizeFrameToViewport);
+  window.addEventListener("orientationchange", function () {
+    window.setTimeout(resizeFrameToViewport, 180);
+  });
+  window.addEventListener("pcs:theme-changed", function (event) {
+    injectSourceTheme();
+    try {
+      frame.contentWindow.postMessage({ type: "pcs-theme", theme: event.detail && event.detail.theme }, window.location.origin);
+    } catch (error) {}
+  });
+
+  injectSourceTheme();
+  resizeFrameToViewport();
+  window.setTimeout(resizeFrameToViewport, 120);
 }());

@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/juegos
-ExecStart=/opt/juegos/juegos-server -addr 127.0.0.1:8099 -public /opt/juegos/public -emulator /opt/juegos/emulator -roms /opt/juegos/roms -core snes
+ExecStart=/opt/juegos/juegos-server -addr 127.0.0.1:8099 -public /opt/juegos/public -emulator /opt/juegos/emulator -roms /opt/juegos/roms -saves /opt/juegos/empresas -core snes
 Restart=on-failure
 RestartSec=3
 User=www-data

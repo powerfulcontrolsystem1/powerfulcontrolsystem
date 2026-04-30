@@ -16,6 +16,7 @@ juegos/
     data/
       loader.js
   roms/
+  empresas/
   deploy/
     nginx.conf
     juegos.service
@@ -29,10 +30,12 @@ juegos/
 - Servidor Go del emulador: `juegos/app/main.go`
 - Archivos oficiales de EmulatorJS: `juegos/emulator/data/`
 - Juegos/ROMs: `juegos/roms/`
+- Partidas guardadas por empresa: `juegos/empresas/`
 - En el VPS recomendado:
   - Emulador: `/opt/juegos/public/index.html`
   - EmulatorJS: `/opt/juegos/emulator/data/loader.js`
   - Juegos/ROMs: `/opt/juegos/roms/`
+  - Partidas guardadas: `/opt/juegos/empresas/`
 - URL de acceso despues de configurar Nginx: `http://juegos.tu-dominio.com/` o `https://juegos.tu-dominio.com/`
 - URL integrada desde el menu de juegos del sistema: `https://tu-dominio.com/emulador/`
 - Entrada visual del sistema principal: `web/Juegos/menu_juegos.html` -> tarjeta `Emulador SNES`
@@ -62,14 +65,14 @@ Debe quedar disponible:
 
 ## Agregar ROMs
 
-Copia tus ROMs legales de SNES:
+Copia tus ROMs legales o homebrew:
 
 ```bash
 sudo cp mi-juego.sfc /opt/juegos/roms/
 sudo chown -R www-data:www-data /opt/juegos
 ```
 
-Formatos aceptados: `.sfc`, `.smc`, `.fig`, `.swc`, `.zip`.
+Formatos aceptados: `.sfc`, `.smc`, `.fig`, `.swc`, `.nes`, `.gb`, `.gbc`, `.gba`, `.gen`, `.bin`, `.zip`.
 
 Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carpeta esta ignorada por git, salvo este README, para evitar redistribuir ROMs accidentalmente. En esta estacion de trabajo quedaron instaladas ROMs de prueba homebrew de Retrobrews:
 
@@ -78,8 +81,36 @@ Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carp
 - `hilda.sfc`
 - `horizontal-shooter.sfc`
 - `rockfall.smc`
+- `nes-31-in-1-real-game.nes`
+- `nes-assimilate.nes`
+- `nes-babel-blox.nes`
+- `nes-black-box-challenge.nes`
+- `nes-debris-dodger.nes`
+- `nes-invaders.nes`
+- `nes-lunar-limit.nes`
+- `gb-2048.gb`
+- `gb-8-bitty-games-collection.gb`
+- `gb-1d-marathon.gb`
+- `gbc-2560-colors-demo.gbc`
+- `gba-apotris.gba`
+- `gba-bloxorz.gba`
+- `gba-butano-fighter.gba`
+- `gen-cave-story-md-es.gen`
 
-Fuente de referencia: `https://github.com/retrobrews/snes-games`.
+Fuentes de referencia:
+
+- SNES/NES homebrew: `https://github.com/retrobrews/snes-games` y `https://github.com/retrobrews/nes-games`
+- GB/GBC homebrew: `https://github.com/gbdev/database`
+- GBA homebrew: `https://github.com/gbadev-org/games`
+- Mega Drive homebrew: `https://github.com/andwn/cave-story-md`
+
+El backend detecta automaticamente el core de EmulatorJS por extension:
+
+- SNES: `.sfc`, `.smc`, `.fig`, `.swc`
+- NES: `.nes`
+- Game Boy / Game Boy Color: `.gb`, `.gbc`
+- Game Boy Advance: `.gba`
+- Sega Mega Drive / Genesis: `.gen`, `.bin`
 
 ## Compilar Go
 
@@ -91,7 +122,7 @@ go build -o juegos-server ./app
 ## Ejecutar manualmente
 
 ```bash
-./juegos-server -addr 127.0.0.1:8099 -public ./public -emulator ./emulator -roms ./roms -core snes
+./juegos-server -addr 127.0.0.1:8099 -public ./public -emulator ./emulator -roms ./roms -saves ./empresas -core snes
 ```
 
 Prueba:
@@ -99,7 +130,45 @@ Prueba:
 ```bash
 curl http://127.0.0.1:8099/health
 curl http://127.0.0.1:8099/api/roms
+curl "http://127.0.0.1:8099/api/saves/latest?empresa_id=7&rom=blt.sfc"
 ```
+
+## Partidas guardadas por empresa
+
+El emulador conserva partidas separadas por empresa. La empresa se resuelve en este orden:
+
+1. Parametro `empresa_id` en la URL del emulador.
+2. `sessionStorage` o `localStorage`: `active_empresa_id`, `empresa_id`, `admin_empresa_id`.
+3. Carpeta `empresa_publico` si no hay contexto de empresa.
+
+Cuando EmulatorJS emite `EJS_onSaveState`, el frontend sube el estado a:
+
+```text
+POST /api/saves/state
+```
+
+Cuando EmulatorJS emite `EJS_onSaveUpdate`, el frontend sube el guardado interno del juego a:
+
+```text
+POST /api/saves/file
+```
+
+El backend guarda los archivos en:
+
+```text
+empresas/
+  empresa_<ID>/
+    emulador/
+      <rom-saneada>/
+        latest.state
+        latest.save
+        latest.png
+        meta.json
+```
+
+Al abrir un juego, el frontend consulta `/api/saves/latest` y, si existe `latest.state`, configura `EJS_loadStateURL` para retomar la partida automaticamente.
+
+> Nota tecnica: EmulatorJS documenta `EJS_loadStateURL`, `EJS_onSaveState`, `EJS_onSaveUpdate` y `EJS_fixedSaveInterval`. El boton `Guardar avance` intenta usar `EJS_emulator.gameManager.getState()` cuando la version instalada lo expone; si no existe, el juego sigue funcionando y el usuario puede guardar desde el menu nativo del emulador.
 
 ## Servicio systemd
 
@@ -108,6 +177,13 @@ sudo cp deploy/juegos.service /etc/systemd/system/juegos.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now juegos
 sudo systemctl status juegos
+```
+
+Antes de iniciar el servicio, crea la carpeta de partidas:
+
+```bash
+sudo mkdir -p /opt/juegos/empresas
+sudo chown -R www-data:www-data /opt/juegos/empresas
 ```
 
 ## Nginx
@@ -144,6 +220,7 @@ location ^~ /emulador/ {
 - No hay subida de archivos desde frontend.
 - `/api/roms` solo lista archivos permitidos.
 - `/roms/*` sanitiza rutas y bloquea traversal.
+- `/api/saves/*` solo guarda y lee archivos saneados por `empresa_id` y ROM permitida.
 - Nginx sirve `public`, `emulator` y `roms` como archivos estaticos.
 - El backend Go queda escuchando en `127.0.0.1:8099` detras de Nginx.
 
@@ -161,8 +238,8 @@ El core por defecto es `snes`, configurado en frontend con:
 
 ```js
 EJS_player = "#game";
-EJS_core = "snes";
+EJS_core = "snes"; // o el core detectado para cada ROM
 EJS_gameUrl = "/roms/archivo.sfc";
 ```
 
-Para otro sistema cambia el flag `-core` y ajusta las extensiones permitidas en `app/main.go`.
+Para ZIP se usa el core de respaldo definido con el flag `-core`.
