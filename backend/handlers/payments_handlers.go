@@ -134,10 +134,16 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "failed to activate trial licencia: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
+				if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+					if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
+						http.Error(w, "failed to activate empresa after trial licencia: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
 
 				// Enviar correo de bienvenida/activación para pruebas.
 				// Se registra un pago sintético en pagos_epayco para trazabilidad y para evitar duplicados.
-				empresa, _ := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+				empresa, _ := dbpkg.GetEmpresaByScopeID(dbpkg.GetDB(), empresaID)
 				toEmail := ""
 				if empresa != nil {
 					toEmail = strings.TrimSpace(empresa.UsuarioCreador)
@@ -1022,6 +1028,11 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
 	if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
 		return false, err
+	}
+	if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+		if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
+			return false, err
+		}
 	}
 	lic.EmpresaID = empresaID
 	lic.Activo = 1
@@ -4793,8 +4804,8 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 	}
 }
 
-// ActivateLicenciaSinPagoHandler activa una licencia manualmente para avanzar en pruebas internas.
-func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
+// ActivateLicenciaSinPagoHandler activa una licencia sin pasarela cuando el total final es cero.
+func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -4855,6 +4866,12 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+			if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
+				http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 
 		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
 
@@ -4862,7 +4879,11 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		// Se registra un pago sintético en pagos_epayco para trazabilidad y anti-duplicación.
 		ref := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 		toEmail := ""
-		if empresa, eerr := dbpkg.GetEmpresaByScopeID(dbSuper, payload.EmpresaID); eerr == nil && empresa != nil {
+		empresaDB := dbEmpresas
+		if empresaDB == nil {
+			empresaDB = dbpkg.GetDB()
+		}
+		if empresa, eerr := dbpkg.GetEmpresaByScopeID(empresaDB, payload.EmpresaID); eerr == nil && empresa != nil {
 			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
 		}
 		rawMapWelcome := map[string]interface{}{
@@ -4877,7 +4898,11 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		rawBytesWelcome, _ := json.Marshal(rawMapWelcome)
 		if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, ref, ref, "APPROVED", string(rawBytesWelcome), payload.DiscountCode, payload.AsesorID); recErr == nil {
-			if licReload, lerr := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID); lerr == nil && licReload != nil {
+			licReload, lerr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID)
+			if lerr != nil || licReload == nil {
+				licReload, lerr = dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+			}
+			if lerr == nil && licReload != nil {
 				if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
 					if mailErr := trySendLicenciaActivationEmail(r, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); mailErr != nil {
 						log.Println("warning: failed to send manual licencia welcome email:", mailErr)

@@ -415,6 +415,13 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 	var args []interface{}
 	if soloActivas {
 		where = append(where, "l.activo = 1")
+		if isPostgresDialect() {
+			where = append(where, "(COALESCE(CAST(l.fecha_inicio AS TEXT), '') = '' OR CAST(l.fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)")
+			where = append(where, "(COALESCE(CAST(l.fecha_fin AS TEXT), '') = '' OR CAST(l.fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)")
+		} else {
+			where = append(where, "(COALESCE(l.fecha_inicio, '') = '' OR datetime(l.fecha_inicio) <= datetime('now','localtime'))")
+			where = append(where, "(COALESCE(l.fecha_fin, '') = '' OR datetime(l.fecha_fin) >= datetime('now','localtime'))")
+		}
 	}
 	if conEmpresa {
 		where = append(where, "l.empresa_id IS NOT NULL AND l.empresa_id > 0")
@@ -544,6 +551,73 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 		return nil, err
 	}
 	return scanLicencia()
+}
+
+// GetActiveLicenciaByEmpresa devuelve la licencia activa vigente mas reciente de una empresa.
+func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, error) {
+	if empresaID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+	FROM licencias
+	WHERE empresa_id = ?
+		AND COALESCE(activo, 1) = 1
+		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
+		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
+	ORDER BY
+		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
+		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		id DESC
+	LIMIT 1`
+	if isPostgresDialect() {
+		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
+			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
+		ORDER BY
+			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
+			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
+			id DESC
+		LIMIT 1`
+	}
+	row := queryRowSQLCompat(dbConn, q, empresaID)
+	var lic Licencia
+	var empresaIDVal sql.NullInt64
+	var paisCodigo sql.NullString
+	var descripcion sql.NullString
+	var modulosHab sql.NullString
+	var fechaInicio sql.NullString
+	var fechaFin sql.NullString
+	var fechaCreacion sql.NullString
+	if err := row.Scan(&lic.ID, &empresaIDVal, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		return nil, err
+	}
+	if empresaIDVal.Valid {
+		lic.EmpresaID = empresaIDVal.Int64
+	}
+	if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+		lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+	} else {
+		lic.PaisCodigo = "CO"
+	}
+	if descripcion.Valid {
+		lic.Descripcion = descripcion.String
+	}
+	if modulosHab.Valid {
+		lic.ModulosHab = modulosHab.String
+	}
+	if fechaInicio.Valid {
+		lic.FechaInicio = fechaInicio.String
+	}
+	if fechaFin.Valid {
+		lic.FechaFin = fechaFin.String
+	}
+	if fechaCreacion.Valid {
+		lic.FechaCreacion = fechaCreacion.String
+	}
+	return &lic, nil
 }
 
 // UpdateLicencia actualiza campos editables de una licencia
@@ -1756,19 +1830,157 @@ func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (in
 	return read()
 }
 
-// ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin
-func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fechaInicio, fechaFin string) (int64, error) {
+	if licenciaID <= 0 || empresaID <= 0 {
+		return 0, fmt.Errorf("licencia_id y empresa_id son obligatorios")
+	}
+	var currentEmpresa sql.NullInt64
+	var tipoID sql.NullInt64
+	var paisCodigo sql.NullString
+	var nombre sql.NullString
+	var descripcion sql.NullString
+	var valor sql.NullFloat64
+	var duracionDias sql.NullInt64
+	var modulosHabilitados sql.NullString
+	var superRol sql.NullInt64
+	var usuarioCreador sql.NullString
+	var observaciones sql.NullString
+	if err := queryRowTxSQLCompat(tx, `SELECT
+		empresa_id,
+		tipo_id,
+		COALESCE(pais_codigo, 'CO'),
+		COALESCE(nombre, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(valor, 0),
+		COALESCE(duracion_dias, 0),
+		COALESCE(modulos_habilitados, ''),
+		COALESCE(super_rol_habilitado, 0),
+		COALESCE(usuario_creador, ''),
+		COALESCE(observaciones, '')
+	FROM licencias
+	WHERE id = ?
+	LIMIT 1`, licenciaID).Scan(
+		&currentEmpresa,
+		&tipoID,
+		&paisCodigo,
+		&nombre,
+		&descripcion,
+		&valor,
+		&duracionDias,
+		&modulosHabilitados,
+		&superRol,
+		&usuarioCreador,
+		&observaciones,
+	); err != nil {
+		return 0, err
+	}
+
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
-	if err == nil {
-		return nil
+	if currentEmpresa.Valid && currentEmpresa.Int64 == empresaID {
+		if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", fechaInicio, fechaFin, licenciaID); err != nil {
+			return 0, err
+		}
+		return licenciaID, nil
 	}
-	// Compatibilidad con bases antiguas que no tienen fecha_actualizacion.
-	_, fallbackErr := execSQLCompat(dbConn, "UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ? WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
-	if fallbackErr == nil {
-		return nil
+
+	activePlanQuery := `SELECT id
+	FROM licencias
+	WHERE empresa_id = ?
+		AND COALESCE(activo, 1) = 1
+		AND COALESCE(tipo_id, 0) = ?
+		AND COALESCE(nombre, '') = ?
+		AND ABS(COALESCE(valor, 0) - ?) < 0.0001
+		AND COALESCE(duracion_dias, 0) = ?
+		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
+		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
+	ORDER BY
+		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
+		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		id DESC
+	LIMIT 1`
+	if isPostgresDialect() {
+		activePlanQuery = `SELECT id
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND COALESCE(tipo_id, 0) = ?
+			AND COALESCE(nombre, '') = ?
+			AND ABS(COALESCE(valor, 0) - ?) < 0.0001
+			AND COALESCE(duracion_dias, 0) = ?
+			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
+			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
+		ORDER BY
+			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
+			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
+			id DESC
+		LIMIT 1`
 	}
-	return fallbackErr
+	var existingActivePlanID int64
+	err := queryRowTxSQLCompat(tx, activePlanQuery, empresaID, tipoID.Int64, nombre.String, valor.Float64, int(duracionDias.Int64)).Scan(&existingActivePlanID)
+	if err == nil && existingActivePlanID > 0 {
+		return existingActivePlanID, nil
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+
+	newID, err := insertTxSQLCompat(tx, `INSERT INTO licencias (
+		empresa_id,
+		tipo_id,
+		pais_codigo,
+		nombre,
+		descripcion,
+		valor,
+		duracion_dias,
+		modulos_habilitados,
+		super_rol_habilitado,
+		fecha_inicio,
+		fecha_fin,
+		activo,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
+		empresaID,
+		tipoID.Int64,
+		strings.TrimSpace(paisCodigo.String),
+		nombre.String,
+		descripcion.String,
+		valor.Float64,
+		int(duracionDias.Int64),
+		modulosHabilitados.String,
+		int(superRol.Int64),
+		fechaInicio,
+		fechaFin,
+		usuarioCreador.String,
+		observaciones.String,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return newID, nil
+}
+
+// ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin.
+// Si la licencia base ya pertenece a otra empresa, crea una copia activa para no mover ni desactivar la licencia anterior.
+func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
+	if err := EnsureLicenciasSchema(dbConn); err != nil {
+		return err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // SetConfigValue inserta o actualiza una configuración en la tabla configuraciones

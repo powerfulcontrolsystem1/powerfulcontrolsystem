@@ -407,6 +407,9 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			if _, err := dbpkg.SyncEmpresasEstadoPorLicencia(dbEmp, dbSuper); err != nil {
+				log.Println("GET /super/api/empresas licencia sync warning:", err)
+			}
 			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 			if err != nil {

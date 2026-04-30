@@ -675,6 +675,11 @@ func main() {
 		dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
 	})
 
+	stopLicenciasEstado := make(chan struct{})
+	go utils.RunProtectedProcess("licencias.estado_empresas_worker", map[string]interface{}{"interval_hours": 1}, func() {
+		dbpkg.StartLicenciaEmpresaEstadoWorker(dbEmpresas, dbSuper, time.Hour, stopLicenciasEstado)
+	})
+
 	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
 	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
 	stopAsientosWorker := make(chan struct{})
@@ -922,7 +927,7 @@ func main() {
 	http.HandleFunc("/epayco/transaction_status", handlers.EpaycoTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper, dbEmpresas))
 	// ActivaciÃ³n manual de licencia sin pago (uso interno de avance/prototipo)
-	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
+	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper, dbEmpresas))
 	// ConfirmaciÃ³n de correo para usuarios de empresa.
 	http.HandleFunc("/auth/confirmar_correo", handlers.ConfirmarCorreoUsuarioHandler(dbEmpresas))
 

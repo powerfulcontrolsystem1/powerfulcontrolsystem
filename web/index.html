@@ -472,6 +472,21 @@
       font-size: 1.05rem;
       line-height: 1.5;
     }
+
+    .brand-logo .brand-title-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      line-height: 1.12;
+    }
+
+    .brand-logo .brand-subtitle {
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      opacity: 0.82;
+    }
   </style>
 </head>
 
@@ -482,7 +497,10 @@
       <a href="/" class="brand-logo"
         style="font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px;">
         <img src="/img/punto_venta.png" alt="Logo" width="32" height="32" style="border-radius: 4px;">
-        Powerful Control System - Plataforma SaaS POS Multiempresa
+        <span class="brand-title-wrap">
+          <span>Powerful Control System - Plataforma SaaS POS Multiempresa</span>
+          <span class="brand-subtitle">Sistema de Facturación Electrónica</span>
+        </span>
       </a>
       <nav class="nav-actions">
         <a class="btn dark" href="/login.html">Iniciar sesión</a>
@@ -501,12 +519,6 @@
 
     <main class="portal-main container">
       <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
-      <div class="portal-hero-title">
-        <h1 class="portal-cards-heading">Sistema de Facturación Electrónica</h1>
-        <div class="portal-cards-subheading portal-ai-subheading">
-          <span>Habla con tu empresa — <strong>Inteligencia artificial integrada</strong></span>
-        </div>
-      </div>
       <section id="portalCardsGrid" class="portal-grid portal-home-grid" aria-live="polite"></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
 
