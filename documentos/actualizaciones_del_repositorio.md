@@ -2795,3 +2795,37 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/estaciones.html
 - web/estilos.css
+
+2026-04-30 17:33:30 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 8c92f05; PushStatus: OK
+Archivos modificados:
+- .gitignore
+- backend/db/empresa_impresoras.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/empresa_impresoras.go
+- documentos/actualizaciones_del_repositorio.md
+- jeugos/README.md
+- jeugos/go.mod
+- juegos/README.md
+- juegos/app/main.go
+- juegos/deploy/fetch_emulatorjs.sh
+- juegos/deploy/juegos.service
+- juegos/deploy/nginx.conf
+- juegos/emulator/README.md
+- juegos/go.mod
+- juegos/public/app.js
+- juegos/public/index.html
+- juegos/public/styles.css
+- juegos/roms/README.md
+- web/Juegos/arcade_embed.css
+- web/Juegos/asteroids_arcade/source/index.html
+- web/Juegos/breakout_arcade/source/css/main.css
+- web/Juegos/menu_juegos.html
+- web/Juegos/open_game_source.css
+- web/Juegos/pacman_arcade/pcs-pacman-arcade.css
+- web/Juegos/pong_arcade/source/pong.css
+- web/Juegos/snake_arcade/source/style.css
+- web/Juegos/space_invaders/source/Styles/main.css
+- web/Juegos/tetris_arcade/source/index.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion.html
+- web/estilos.css
