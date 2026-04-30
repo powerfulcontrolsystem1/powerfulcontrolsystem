@@ -1250,3 +1250,1434 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/menu.js
 - web/super/preconfiguracion_tipos_empresa.html
+
+2026-04-30 10:04:43 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 7279093; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- RESUMEN_DEL_PROYECTO.md
+- backend/db/backups_empresariales.go
+- backend/db/backups_empresariales_test.go
+- backend/db/hoja_vida_operativa.go
+- backend/db/reservas_hotel.go
+- backend/db/sensor_puertas.go
+- backend/db/sensor_puertas_test.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/tipo_empresa_preconfiguracion_test.go
+- backend/db/venta_publica.go
+- backend/go.mod
+- backend/go.sum
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/chat_flotante_config.go
+- backend/handlers/dynamic_documents.go
+- backend/handlers/dynamic_documents_test.go
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_rate_limit_test.go
+- backend/handlers/hoja_vida_operativa.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/handlers/reportes_globales.go
+- backend/handlers/reservas_hotel.go
+- backend/handlers/sensor_puertas.go
+- backend/handlers/sensor_puertas_test.go
+- backend/handlers/super_limitaciones_empresa.go
+- backend/handlers/venta_publica.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/main_frontend_routes_contract_test.go
+- backend/main_frontend_static_resources_test.go
+- backend/tmp/plink_tunnel_db_15432.err.log
+- backend/tools/seed_tipo_empresa_preconfiguraciones/main.go
+- backend/utils/auth_middleware_test.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/gobernanza_tecnica/README.md
+- documentos/gobernanza_tecnica/contratos/README.md
+- documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md
+- documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md
+- documentos/gobernanza_tecnica/runbooks/README.md
+- documentos/gobernanza_tecnica/runbooks/plan_revision_integral_modulos.md
+- documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- services/voice_stream_server/README.md
+- tmp/chrome-games-test-2/Crashpad/metadata
+- tmp/chrome-games-test-2/Crashpad/settings.dat
+- tmp/chrome-games-test-2/CrashpadMetrics-active.pma
+- tmp/chrome-games-test-2/Default/Account Web Data
+- tmp/chrome-games-test-2/Default/Account Web Data-journal
+- tmp/chrome-games-test-2/Default/Affiliation Database
+- tmp/chrome-games-test-2/Default/Affiliation Database-journal
+- tmp/chrome-games-test-2/Default/BookmarkMergedSurfaceOrdering
+- tmp/chrome-games-test-2/Default/BrowsingTopicsSiteData
+- tmp/chrome-games-test-2/Default/BrowsingTopicsSiteData-journal
+- tmp/chrome-games-test-2/Default/BrowsingTopicsState
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/data_0
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/data_1
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/data_2
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/data_3
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/f_000001
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/f_000002
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/f_000003
+- tmp/chrome-games-test-2/Default/Cache/Cache_Data/index
+- tmp/chrome-games-test-2/Default/Cache/No_Vary_Search/journal.baj
+- tmp/chrome-games-test-2/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/chrome-games-test-2/Default/ClientCertificates/LOCK
+- tmp/chrome-games-test-2/Default/ClientCertificates/LOG
+- tmp/chrome-games-test-2/Default/Code Cache/js/9bc5656052ada469_0
+- tmp/chrome-games-test-2/Default/Code Cache/js/ba678a2fbd8c358c_0
+- tmp/chrome-games-test-2/Default/Code Cache/js/f3be87c762501f85_0
+- tmp/chrome-games-test-2/Default/Code Cache/js/index
+- tmp/chrome-games-test-2/Default/Code Cache/js/index-dir/the-real-index
+- tmp/chrome-games-test-2/Default/Code Cache/wasm/index
+- tmp/chrome-games-test-2/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/chrome-games-test-2/Default/DawnGraphiteCache/data_0
+- tmp/chrome-games-test-2/Default/DawnGraphiteCache/data_1
+- tmp/chrome-games-test-2/Default/DawnGraphiteCache/data_2
+- tmp/chrome-games-test-2/Default/DawnGraphiteCache/data_3
+- tmp/chrome-games-test-2/Default/DawnGraphiteCache/index
+- tmp/chrome-games-test-2/Default/DawnWebGPUCache/data_0
+- tmp/chrome-games-test-2/Default/DawnWebGPUCache/data_1
+- tmp/chrome-games-test-2/Default/DawnWebGPUCache/data_2
+- tmp/chrome-games-test-2/Default/DawnWebGPUCache/data_3
+- tmp/chrome-games-test-2/Default/DawnWebGPUCache/index
+- tmp/chrome-games-test-2/Default/Extension Rules/000003.log
+- tmp/chrome-games-test-2/Default/Extension Rules/CURRENT
+- tmp/chrome-games-test-2/Default/Extension Rules/LOCK
+- tmp/chrome-games-test-2/Default/Extension Rules/LOG
+- tmp/chrome-games-test-2/Default/Extension Rules/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Extension Scripts/000003.log
+- tmp/chrome-games-test-2/Default/Extension Scripts/CURRENT
+- tmp/chrome-games-test-2/Default/Extension Scripts/LOCK
+- tmp/chrome-games-test-2/Default/Extension Scripts/LOG
+- tmp/chrome-games-test-2/Default/Extension Scripts/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Extension State/000003.log
+- tmp/chrome-games-test-2/Default/Extension State/CURRENT
+- tmp/chrome-games-test-2/Default/Extension State/LOCK
+- tmp/chrome-games-test-2/Default/Extension State/LOG
+- tmp/chrome-games-test-2/Default/Extension State/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_128.png
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_32.png
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_48.png
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_56.png
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_64.png
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/bg/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ca/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/cs/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/da/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/de/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/el/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/en/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/es/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/et/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/eu/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fi/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fr/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/gl/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hi/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hr/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hu/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/id/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/it/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ja/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/kk/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ko/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lt/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lv/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ms/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb-NO/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nl/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nn/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/no/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pl/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-BR/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-PT/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ro/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ru/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sk/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sl/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Cyrl-RS/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Latn-RS/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sv/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/th/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/tr/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/uk/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/vi/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hans/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hant/messages.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_metadata/verified_contents.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/background.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/manifest.json
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v1.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v2.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v3.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v4.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v1.js
+- tmp/chrome-games-test-2/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v2.js
+- tmp/chrome-games-test-2/Default/Favicons
+- tmp/chrome-games-test-2/Default/Favicons-journal
+- tmp/chrome-games-test-2/Default/GPUCache/data_0
+- tmp/chrome-games-test-2/Default/GPUCache/data_1
+- tmp/chrome-games-test-2/Default/GPUCache/data_2
+- tmp/chrome-games-test-2/Default/GPUCache/data_3
+- tmp/chrome-games-test-2/Default/GPUCache/index
+- tmp/chrome-games-test-2/Default/History
+- tmp/chrome-games-test-2/Default/History-journal
+- tmp/chrome-games-test-2/Default/LOCK
+- tmp/chrome-games-test-2/Default/LOG
+- tmp/chrome-games-test-2/Default/Local Storage/leveldb/000003.log
+- tmp/chrome-games-test-2/Default/Local Storage/leveldb/CURRENT
+- tmp/chrome-games-test-2/Default/Local Storage/leveldb/LOCK
+- tmp/chrome-games-test-2/Default/Local Storage/leveldb/LOG
+- tmp/chrome-games-test-2/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Login Data
+- tmp/chrome-games-test-2/Default/Login Data For Account
+- tmp/chrome-games-test-2/Default/Login Data For Account-journal
+- tmp/chrome-games-test-2/Default/Login Data-journal
+- tmp/chrome-games-test-2/Default/Network/Cookies
+- tmp/chrome-games-test-2/Default/Network/Cookies-journal
+- tmp/chrome-games-test-2/Default/Network/Device Bound Sessions
+- tmp/chrome-games-test-2/Default/Network/Device Bound Sessions-journal
+- tmp/chrome-games-test-2/Default/Network/Network Persistent State
+- tmp/chrome-games-test-2/Default/Network/NetworkDataMigrated
+- tmp/chrome-games-test-2/Default/Network/Reporting and NEL
+- tmp/chrome-games-test-2/Default/Network/Reporting and NEL-journal
+- tmp/chrome-games-test-2/Default/Network/TransportSecurity
+- tmp/chrome-games-test-2/Default/Network/Trust Tokens
+- tmp/chrome-games-test-2/Default/Network/Trust Tokens-journal
+- tmp/chrome-games-test-2/Default/PersistentOriginTrials/LOCK
+- tmp/chrome-games-test-2/Default/PersistentOriginTrials/LOG
+- tmp/chrome-games-test-2/Default/Preferences
+- tmp/chrome-games-test-2/Default/README
+- tmp/chrome-games-test-2/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/chrome-games-test-2/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/chrome-games-test-2/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/chrome-games-test-2/Default/Secure Preferences
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SignalDB/LOG
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/chrome-games-test-2/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/chrome-games-test-2/Default/ServerCertificate
+- tmp/chrome-games-test-2/Default/ServerCertificate-journal
+- tmp/chrome-games-test-2/Default/Service Worker/Database/000003.log
+- tmp/chrome-games-test-2/Default/Service Worker/Database/CURRENT
+- tmp/chrome-games-test-2/Default/Service Worker/Database/LOCK
+- tmp/chrome-games-test-2/Default/Service Worker/Database/LOG
+- tmp/chrome-games-test-2/Default/Service Worker/Database/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+- tmp/chrome-games-test-2/Default/Service Worker/ScriptCache/index
+- tmp/chrome-games-test-2/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/chrome-games-test-2/Default/Session Storage/000003.log
+- tmp/chrome-games-test-2/Default/Session Storage/CURRENT
+- tmp/chrome-games-test-2/Default/Session Storage/LOCK
+- tmp/chrome-games-test-2/Default/Session Storage/LOG
+- tmp/chrome-games-test-2/Default/Session Storage/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Sessions/Session_13421999375016464
+- tmp/chrome-games-test-2/Default/Sessions/Tabs_13421999381637461
+- tmp/chrome-games-test-2/Default/Shared Dictionary/cache/index
+- tmp/chrome-games-test-2/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/chrome-games-test-2/Default/Shared Dictionary/db
+- tmp/chrome-games-test-2/Default/Shared Dictionary/db-journal
+- tmp/chrome-games-test-2/Default/SharedStorage
+- tmp/chrome-games-test-2/Default/Shortcuts
+- tmp/chrome-games-test-2/Default/Shortcuts-journal
+- tmp/chrome-games-test-2/Default/Site Characteristics Database/000003.log
+- tmp/chrome-games-test-2/Default/Site Characteristics Database/CURRENT
+- tmp/chrome-games-test-2/Default/Site Characteristics Database/LOCK
+- tmp/chrome-games-test-2/Default/Site Characteristics Database/LOG
+- tmp/chrome-games-test-2/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Sync Data/LevelDB/000003.log
+- tmp/chrome-games-test-2/Default/Sync Data/LevelDB/CURRENT
+- tmp/chrome-games-test-2/Default/Sync Data/LevelDB/LOCK
+- tmp/chrome-games-test-2/Default/Sync Data/LevelDB/LOG
+- tmp/chrome-games-test-2/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/Top Sites
+- tmp/chrome-games-test-2/Default/Top Sites-journal
+- tmp/chrome-games-test-2/Default/Web Data
+- tmp/chrome-games-test-2/Default/Web Data-journal
+- tmp/chrome-games-test-2/Default/WebStorage/QuotaManager
+- tmp/chrome-games-test-2/Default/WebStorage/QuotaManager-journal
+- tmp/chrome-games-test-2/Default/chrome_cart_db/LOCK
+- tmp/chrome-games-test-2/Default/chrome_cart_db/LOG
+- tmp/chrome-games-test-2/Default/commerce_subscription_db/LOCK
+- tmp/chrome-games-test-2/Default/commerce_subscription_db/LOG
+- tmp/chrome-games-test-2/Default/discount_infos_db/LOCK
+- tmp/chrome-games-test-2/Default/discount_infos_db/LOG
+- tmp/chrome-games-test-2/Default/discounts_db/LOCK
+- tmp/chrome-games-test-2/Default/discounts_db/LOG
+- tmp/chrome-games-test-2/Default/heavy_ad_intervention_opt_out.db-journal
+- tmp/chrome-games-test-2/Default/parcel_tracking_db/LOCK
+- tmp/chrome-games-test-2/Default/parcel_tracking_db/LOG
+- tmp/chrome-games-test-2/Default/shared_proto_db/000003.log
+- tmp/chrome-games-test-2/Default/shared_proto_db/CURRENT
+- tmp/chrome-games-test-2/Default/shared_proto_db/LOCK
+- tmp/chrome-games-test-2/Default/shared_proto_db/LOG
+- tmp/chrome-games-test-2/Default/shared_proto_db/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/shared_proto_db/metadata/000003.log
+- tmp/chrome-games-test-2/Default/shared_proto_db/metadata/CURRENT
+- tmp/chrome-games-test-2/Default/shared_proto_db/metadata/LOCK
+- tmp/chrome-games-test-2/Default/shared_proto_db/metadata/LOG
+- tmp/chrome-games-test-2/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/chrome-games-test-2/Default/trusted_vault.pb
+- tmp/chrome-games-test-2/GrShaderCache/data_0
+- tmp/chrome-games-test-2/GrShaderCache/data_1
+- tmp/chrome-games-test-2/GrShaderCache/data_2
+- tmp/chrome-games-test-2/GrShaderCache/data_3
+- tmp/chrome-games-test-2/GrShaderCache/index
+- tmp/chrome-games-test-2/GraphiteDawnCache/data_0
+- tmp/chrome-games-test-2/GraphiteDawnCache/data_1
+- tmp/chrome-games-test-2/GraphiteDawnCache/data_2
+- tmp/chrome-games-test-2/GraphiteDawnCache/data_3
+- tmp/chrome-games-test-2/GraphiteDawnCache/index
+- tmp/chrome-games-test-2/Last Version
+- tmp/chrome-games-test-2/Local State
+- tmp/chrome-games-test-2/ShaderCache/data_0
+- tmp/chrome-games-test-2/ShaderCache/data_1
+- tmp/chrome-games-test-2/ShaderCache/data_2
+- tmp/chrome-games-test-2/ShaderCache/data_3
+- tmp/chrome-games-test-2/ShaderCache/index
+- tmp/chrome-games-test-2/Variations
+- tmp/chrome-games-test-2/component_crx_cache/metadata.json
+- tmp/chrome-games-test-2/es-ES-3-0.bdic
+- tmp/chrome-games-test-2/extensions_crx_cache/metadata.json
+- tmp/chrome-games-test-2/segmentation_platform/ukm_db
+- tmp/chrome-games-test-2/segmentation_platform/ukm_db-wal
+- tmp/chrome-games-test-3/Crashpad/metadata
+- tmp/chrome-games-test-3/Crashpad/settings.dat
+- tmp/chrome-games-test-3/CrashpadMetrics-active.pma
+- tmp/chrome-games-test-3/Default/Account Web Data
+- tmp/chrome-games-test-3/Default/Account Web Data-journal
+- tmp/chrome-games-test-3/Default/Affiliation Database
+- tmp/chrome-games-test-3/Default/Affiliation Database-journal
+- tmp/chrome-games-test-3/Default/BookmarkMergedSurfaceOrdering
+- tmp/chrome-games-test-3/Default/BrowsingTopicsSiteData
+- tmp/chrome-games-test-3/Default/BrowsingTopicsSiteData-journal
+- tmp/chrome-games-test-3/Default/BrowsingTopicsState
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/data_0
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/data_1
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/data_2
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/data_3
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/f_000001
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/f_000002
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/f_000003
+- tmp/chrome-games-test-3/Default/Cache/Cache_Data/index
+- tmp/chrome-games-test-3/Default/Cache/No_Vary_Search/journal.baj
+- tmp/chrome-games-test-3/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/chrome-games-test-3/Default/ClientCertificates/LOCK
+- tmp/chrome-games-test-3/Default/ClientCertificates/LOG
+- tmp/chrome-games-test-3/Default/Code Cache/js/9bc5656052ada469_0
+- tmp/chrome-games-test-3/Default/Code Cache/js/ba678a2fbd8c358c_0
+- tmp/chrome-games-test-3/Default/Code Cache/js/be0e9cb0cbc3f2fd_0
+- tmp/chrome-games-test-3/Default/Code Cache/js/f3be87c762501f85_0
+- tmp/chrome-games-test-3/Default/Code Cache/js/index
+- tmp/chrome-games-test-3/Default/Code Cache/js/index-dir/the-real-index
+- tmp/chrome-games-test-3/Default/Code Cache/wasm/index
+- tmp/chrome-games-test-3/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/chrome-games-test-3/Default/DawnGraphiteCache/data_0
+- tmp/chrome-games-test-3/Default/DawnGraphiteCache/data_1
+- tmp/chrome-games-test-3/Default/DawnGraphiteCache/data_2
+- tmp/chrome-games-test-3/Default/DawnGraphiteCache/data_3
+- tmp/chrome-games-test-3/Default/DawnGraphiteCache/index
+- tmp/chrome-games-test-3/Default/DawnWebGPUCache/data_0
+- tmp/chrome-games-test-3/Default/DawnWebGPUCache/data_1
+- tmp/chrome-games-test-3/Default/DawnWebGPUCache/data_2
+- tmp/chrome-games-test-3/Default/DawnWebGPUCache/data_3
+- tmp/chrome-games-test-3/Default/DawnWebGPUCache/index
+- tmp/chrome-games-test-3/Default/Extension Rules/000003.log
+- tmp/chrome-games-test-3/Default/Extension Rules/CURRENT
+- tmp/chrome-games-test-3/Default/Extension Rules/LOCK
+- tmp/chrome-games-test-3/Default/Extension Rules/LOG
+- tmp/chrome-games-test-3/Default/Extension Rules/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Extension Scripts/000003.log
+- tmp/chrome-games-test-3/Default/Extension Scripts/CURRENT
+- tmp/chrome-games-test-3/Default/Extension Scripts/LOCK
+- tmp/chrome-games-test-3/Default/Extension Scripts/LOG
+- tmp/chrome-games-test-3/Default/Extension Scripts/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Extension State/000003.log
+- tmp/chrome-games-test-3/Default/Extension State/CURRENT
+- tmp/chrome-games-test-3/Default/Extension State/LOCK
+- tmp/chrome-games-test-3/Default/Extension State/LOG
+- tmp/chrome-games-test-3/Default/Extension State/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_128.png
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_32.png
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_48.png
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_56.png
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_64.png
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/bg/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ca/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/cs/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/da/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/de/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/el/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/en/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/es/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/et/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/eu/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fi/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fr/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/gl/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hi/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hr/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hu/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/id/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/it/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ja/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/kk/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ko/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lt/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lv/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ms/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb-NO/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nl/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nn/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/no/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pl/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-BR/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-PT/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ro/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ru/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sk/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sl/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Cyrl-RS/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Latn-RS/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sv/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/th/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/tr/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/uk/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/vi/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hans/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hant/messages.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_metadata/verified_contents.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/background.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/manifest.json
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v1.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v2.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v3.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v4.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v1.js
+- tmp/chrome-games-test-3/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v2.js
+- tmp/chrome-games-test-3/Default/Favicons
+- tmp/chrome-games-test-3/Default/Favicons-journal
+- tmp/chrome-games-test-3/Default/GPUCache/data_0
+- tmp/chrome-games-test-3/Default/GPUCache/data_1
+- tmp/chrome-games-test-3/Default/GPUCache/data_2
+- tmp/chrome-games-test-3/Default/GPUCache/data_3
+- tmp/chrome-games-test-3/Default/GPUCache/index
+- tmp/chrome-games-test-3/Default/History
+- tmp/chrome-games-test-3/Default/History-journal
+- tmp/chrome-games-test-3/Default/LOCK
+- tmp/chrome-games-test-3/Default/LOG
+- tmp/chrome-games-test-3/Default/Local Storage/leveldb/000003.log
+- tmp/chrome-games-test-3/Default/Local Storage/leveldb/CURRENT
+- tmp/chrome-games-test-3/Default/Local Storage/leveldb/LOCK
+- tmp/chrome-games-test-3/Default/Local Storage/leveldb/LOG
+- tmp/chrome-games-test-3/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Login Data
+- tmp/chrome-games-test-3/Default/Login Data For Account
+- tmp/chrome-games-test-3/Default/Login Data For Account-journal
+- tmp/chrome-games-test-3/Default/Login Data-journal
+- tmp/chrome-games-test-3/Default/Network/Cookies
+- tmp/chrome-games-test-3/Default/Network/Cookies-journal
+- tmp/chrome-games-test-3/Default/Network/Device Bound Sessions
+- tmp/chrome-games-test-3/Default/Network/Device Bound Sessions-journal
+- tmp/chrome-games-test-3/Default/Network/Network Persistent State
+- tmp/chrome-games-test-3/Default/Network/NetworkDataMigrated
+- tmp/chrome-games-test-3/Default/Network/Reporting and NEL
+- tmp/chrome-games-test-3/Default/Network/Reporting and NEL-journal
+- tmp/chrome-games-test-3/Default/Network/TransportSecurity
+- tmp/chrome-games-test-3/Default/Network/Trust Tokens
+- tmp/chrome-games-test-3/Default/Network/Trust Tokens-journal
+- tmp/chrome-games-test-3/Default/PersistentOriginTrials/LOCK
+- tmp/chrome-games-test-3/Default/PersistentOriginTrials/LOG
+- tmp/chrome-games-test-3/Default/Preferences
+- tmp/chrome-games-test-3/Default/README
+- tmp/chrome-games-test-3/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/chrome-games-test-3/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/chrome-games-test-3/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/chrome-games-test-3/Default/Secure Preferences
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SignalDB/LOG
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/chrome-games-test-3/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/chrome-games-test-3/Default/ServerCertificate
+- tmp/chrome-games-test-3/Default/ServerCertificate-journal
+- tmp/chrome-games-test-3/Default/Service Worker/Database/000003.log
+- tmp/chrome-games-test-3/Default/Service Worker/Database/CURRENT
+- tmp/chrome-games-test-3/Default/Service Worker/Database/LOCK
+- tmp/chrome-games-test-3/Default/Service Worker/Database/LOG
+- tmp/chrome-games-test-3/Default/Service Worker/Database/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
+- tmp/chrome-games-test-3/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+- tmp/chrome-games-test-3/Default/Service Worker/ScriptCache/4cb013792b196a35_1
+- tmp/chrome-games-test-3/Default/Service Worker/ScriptCache/index
+- tmp/chrome-games-test-3/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/chrome-games-test-3/Default/Session Storage/000003.log
+- tmp/chrome-games-test-3/Default/Session Storage/CURRENT
+- tmp/chrome-games-test-3/Default/Session Storage/LOCK
+- tmp/chrome-games-test-3/Default/Session Storage/LOG
+- tmp/chrome-games-test-3/Default/Session Storage/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Sessions/Session_13421999375016560
+- tmp/chrome-games-test-3/Default/Sessions/Tabs_13421999384809261
+- tmp/chrome-games-test-3/Default/Shared Dictionary/cache/index
+- tmp/chrome-games-test-3/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/chrome-games-test-3/Default/Shared Dictionary/db
+- tmp/chrome-games-test-3/Default/Shared Dictionary/db-journal
+- tmp/chrome-games-test-3/Default/SharedStorage
+- tmp/chrome-games-test-3/Default/Shortcuts
+- tmp/chrome-games-test-3/Default/Shortcuts-journal
+- tmp/chrome-games-test-3/Default/Site Characteristics Database/000003.log
+- tmp/chrome-games-test-3/Default/Site Characteristics Database/CURRENT
+- tmp/chrome-games-test-3/Default/Site Characteristics Database/LOCK
+- tmp/chrome-games-test-3/Default/Site Characteristics Database/LOG
+- tmp/chrome-games-test-3/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Sync Data/LevelDB/000003.log
+- tmp/chrome-games-test-3/Default/Sync Data/LevelDB/CURRENT
+- tmp/chrome-games-test-3/Default/Sync Data/LevelDB/LOCK
+- tmp/chrome-games-test-3/Default/Sync Data/LevelDB/LOG
+- tmp/chrome-games-test-3/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/Top Sites
+- tmp/chrome-games-test-3/Default/Top Sites-journal
+- tmp/chrome-games-test-3/Default/Web Data
+- tmp/chrome-games-test-3/Default/Web Data-journal
+- tmp/chrome-games-test-3/Default/WebStorage/QuotaManager
+- tmp/chrome-games-test-3/Default/WebStorage/QuotaManager-journal
+- tmp/chrome-games-test-3/Default/chrome_cart_db/LOCK
+- tmp/chrome-games-test-3/Default/chrome_cart_db/LOG
+- tmp/chrome-games-test-3/Default/commerce_subscription_db/LOCK
+- tmp/chrome-games-test-3/Default/commerce_subscription_db/LOG
+- tmp/chrome-games-test-3/Default/discount_infos_db/LOCK
+- tmp/chrome-games-test-3/Default/discount_infos_db/LOG
+- tmp/chrome-games-test-3/Default/discounts_db/LOCK
+- tmp/chrome-games-test-3/Default/discounts_db/LOG
+- tmp/chrome-games-test-3/Default/heavy_ad_intervention_opt_out.db-journal
+- tmp/chrome-games-test-3/Default/parcel_tracking_db/LOCK
+- tmp/chrome-games-test-3/Default/parcel_tracking_db/LOG
+- tmp/chrome-games-test-3/Default/shared_proto_db/000003.log
+- tmp/chrome-games-test-3/Default/shared_proto_db/CURRENT
+- tmp/chrome-games-test-3/Default/shared_proto_db/LOCK
+- tmp/chrome-games-test-3/Default/shared_proto_db/LOG
+- tmp/chrome-games-test-3/Default/shared_proto_db/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/shared_proto_db/metadata/000003.log
+- tmp/chrome-games-test-3/Default/shared_proto_db/metadata/CURRENT
+- tmp/chrome-games-test-3/Default/shared_proto_db/metadata/LOCK
+- tmp/chrome-games-test-3/Default/shared_proto_db/metadata/LOG
+- tmp/chrome-games-test-3/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/chrome-games-test-3/Default/trusted_vault.pb
+- tmp/chrome-games-test-3/GrShaderCache/data_0
+- tmp/chrome-games-test-3/GrShaderCache/data_1
+- tmp/chrome-games-test-3/GrShaderCache/data_2
+- tmp/chrome-games-test-3/GrShaderCache/data_3
+- tmp/chrome-games-test-3/GrShaderCache/index
+- tmp/chrome-games-test-3/GraphiteDawnCache/data_0
+- tmp/chrome-games-test-3/GraphiteDawnCache/data_1
+- tmp/chrome-games-test-3/GraphiteDawnCache/data_2
+- tmp/chrome-games-test-3/GraphiteDawnCache/data_3
+- tmp/chrome-games-test-3/GraphiteDawnCache/index
+- tmp/chrome-games-test-3/Last Version
+- tmp/chrome-games-test-3/Local State
+- tmp/chrome-games-test-3/ShaderCache/data_0
+- tmp/chrome-games-test-3/ShaderCache/data_1
+- tmp/chrome-games-test-3/ShaderCache/data_2
+- tmp/chrome-games-test-3/ShaderCache/data_3
+- tmp/chrome-games-test-3/ShaderCache/index
+- tmp/chrome-games-test-3/Variations
+- tmp/chrome-games-test-3/component_crx_cache/metadata.json
+- tmp/chrome-games-test-3/es-ES-3-0.bdic
+- tmp/chrome-games-test-3/extensions_crx_cache/metadata.json
+- tmp/chrome-games-test-3/first_party_sets.db-journal
+- tmp/chrome-games-test-3/segmentation_platform/ukm_db
+- tmp/chrome-games-test-3/segmentation_platform/ukm_db-wal
+- tmp/chrome-games-test-4/Crashpad/metadata
+- tmp/chrome-games-test-4/Crashpad/settings.dat
+- tmp/chrome-games-test-4/CrashpadMetrics-active.pma
+- tmp/chrome-games-test-4/Default/Account Web Data
+- tmp/chrome-games-test-4/Default/Account Web Data-journal
+- tmp/chrome-games-test-4/Default/Affiliation Database
+- tmp/chrome-games-test-4/Default/Affiliation Database-journal
+- tmp/chrome-games-test-4/Default/BookmarkMergedSurfaceOrdering
+- tmp/chrome-games-test-4/Default/BrowsingTopicsSiteData
+- tmp/chrome-games-test-4/Default/BrowsingTopicsSiteData-journal
+- tmp/chrome-games-test-4/Default/BrowsingTopicsState
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/data_0
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/data_1
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/data_2
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/data_3
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/f_000001
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/f_000002
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/f_000003
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/f_000004
+- tmp/chrome-games-test-4/Default/Cache/Cache_Data/index
+- tmp/chrome-games-test-4/Default/Cache/No_Vary_Search/journal.baj
+- tmp/chrome-games-test-4/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/chrome-games-test-4/Default/ClientCertificates/LOCK
+- tmp/chrome-games-test-4/Default/ClientCertificates/LOG
+- tmp/chrome-games-test-4/Default/Code Cache/js/9bc5656052ada469_0
+- tmp/chrome-games-test-4/Default/Code Cache/js/ba678a2fbd8c358c_0
+- tmp/chrome-games-test-4/Default/Code Cache/js/f3be87c762501f85_0
+- tmp/chrome-games-test-4/Default/Code Cache/js/index
+- tmp/chrome-games-test-4/Default/Code Cache/js/index-dir/the-real-index
+- tmp/chrome-games-test-4/Default/Code Cache/wasm/index
+- tmp/chrome-games-test-4/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/chrome-games-test-4/Default/DawnGraphiteCache/data_0
+- tmp/chrome-games-test-4/Default/DawnGraphiteCache/data_1
+- tmp/chrome-games-test-4/Default/DawnGraphiteCache/data_2
+- tmp/chrome-games-test-4/Default/DawnGraphiteCache/data_3
+- tmp/chrome-games-test-4/Default/DawnGraphiteCache/index
+- tmp/chrome-games-test-4/Default/DawnWebGPUCache/data_0
+- tmp/chrome-games-test-4/Default/DawnWebGPUCache/data_1
+- tmp/chrome-games-test-4/Default/DawnWebGPUCache/data_2
+- tmp/chrome-games-test-4/Default/DawnWebGPUCache/data_3
+- tmp/chrome-games-test-4/Default/DawnWebGPUCache/index
+- tmp/chrome-games-test-4/Default/Extension Rules/000003.log
+- tmp/chrome-games-test-4/Default/Extension Rules/CURRENT
+- tmp/chrome-games-test-4/Default/Extension Rules/LOCK
+- tmp/chrome-games-test-4/Default/Extension Rules/LOG
+- tmp/chrome-games-test-4/Default/Extension Rules/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Extension Scripts/000003.log
+- tmp/chrome-games-test-4/Default/Extension Scripts/CURRENT
+- tmp/chrome-games-test-4/Default/Extension Scripts/LOCK
+- tmp/chrome-games-test-4/Default/Extension Scripts/LOG
+- tmp/chrome-games-test-4/Default/Extension Scripts/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Extension State/000003.log
+- tmp/chrome-games-test-4/Default/Extension State/CURRENT
+- tmp/chrome-games-test-4/Default/Extension State/LOCK
+- tmp/chrome-games-test-4/Default/Extension State/LOG
+- tmp/chrome-games-test-4/Default/Extension State/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Favicons
+- tmp/chrome-games-test-4/Default/Favicons-journal
+- tmp/chrome-games-test-4/Default/GPUCache/data_0
+- tmp/chrome-games-test-4/Default/GPUCache/data_1
+- tmp/chrome-games-test-4/Default/GPUCache/data_2
+- tmp/chrome-games-test-4/Default/GPUCache/data_3
+- tmp/chrome-games-test-4/Default/GPUCache/index
+- tmp/chrome-games-test-4/Default/History
+- tmp/chrome-games-test-4/Default/History-journal
+- tmp/chrome-games-test-4/Default/LOCK
+- tmp/chrome-games-test-4/Default/LOG
+- tmp/chrome-games-test-4/Default/Local Storage/leveldb/000003.log
+- tmp/chrome-games-test-4/Default/Local Storage/leveldb/CURRENT
+- tmp/chrome-games-test-4/Default/Local Storage/leveldb/LOCK
+- tmp/chrome-games-test-4/Default/Local Storage/leveldb/LOG
+- tmp/chrome-games-test-4/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Login Data
+- tmp/chrome-games-test-4/Default/Login Data For Account
+- tmp/chrome-games-test-4/Default/Login Data For Account-journal
+- tmp/chrome-games-test-4/Default/Login Data-journal
+- tmp/chrome-games-test-4/Default/Network/Cookies
+- tmp/chrome-games-test-4/Default/Network/Cookies-journal
+- tmp/chrome-games-test-4/Default/Network/Device Bound Sessions
+- tmp/chrome-games-test-4/Default/Network/Device Bound Sessions-journal
+- tmp/chrome-games-test-4/Default/Network/Network Persistent State
+- tmp/chrome-games-test-4/Default/Network/NetworkDataMigrated
+- tmp/chrome-games-test-4/Default/Network/Reporting and NEL
+- tmp/chrome-games-test-4/Default/Network/Reporting and NEL-journal
+- tmp/chrome-games-test-4/Default/Network/TransportSecurity
+- tmp/chrome-games-test-4/Default/Network/Trust Tokens
+- tmp/chrome-games-test-4/Default/Network/Trust Tokens-journal
+- tmp/chrome-games-test-4/Default/PersistentOriginTrials/LOCK
+- tmp/chrome-games-test-4/Default/PersistentOriginTrials/LOG
+- tmp/chrome-games-test-4/Default/Preferences
+- tmp/chrome-games-test-4/Default/README
+- tmp/chrome-games-test-4/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/chrome-games-test-4/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/chrome-games-test-4/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/chrome-games-test-4/Default/Secure Preferences
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SignalDB/LOG
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/chrome-games-test-4/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/chrome-games-test-4/Default/ServerCertificate
+- tmp/chrome-games-test-4/Default/ServerCertificate-journal
+- tmp/chrome-games-test-4/Default/Service Worker/Database/000003.log
+- tmp/chrome-games-test-4/Default/Service Worker/Database/CURRENT
+- tmp/chrome-games-test-4/Default/Service Worker/Database/LOCK
+- tmp/chrome-games-test-4/Default/Service Worker/Database/LOG
+- tmp/chrome-games-test-4/Default/Service Worker/Database/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+- tmp/chrome-games-test-4/Default/Service Worker/ScriptCache/index
+- tmp/chrome-games-test-4/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/chrome-games-test-4/Default/Session Storage/000003.log
+- tmp/chrome-games-test-4/Default/Session Storage/CURRENT
+- tmp/chrome-games-test-4/Default/Session Storage/LOCK
+- tmp/chrome-games-test-4/Default/Session Storage/LOG
+- tmp/chrome-games-test-4/Default/Session Storage/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Sessions/Session_13421999375699359
+- tmp/chrome-games-test-4/Default/Sessions/Tabs_13421999386673010
+- tmp/chrome-games-test-4/Default/Shared Dictionary/cache/index
+- tmp/chrome-games-test-4/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/chrome-games-test-4/Default/Shared Dictionary/db
+- tmp/chrome-games-test-4/Default/Shared Dictionary/db-journal
+- tmp/chrome-games-test-4/Default/SharedStorage
+- tmp/chrome-games-test-4/Default/Shortcuts
+- tmp/chrome-games-test-4/Default/Shortcuts-journal
+- tmp/chrome-games-test-4/Default/Site Characteristics Database/000003.log
+- tmp/chrome-games-test-4/Default/Site Characteristics Database/CURRENT
+- tmp/chrome-games-test-4/Default/Site Characteristics Database/LOCK
+- tmp/chrome-games-test-4/Default/Site Characteristics Database/LOG
+- tmp/chrome-games-test-4/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Sync Data/LevelDB/000003.log
+- tmp/chrome-games-test-4/Default/Sync Data/LevelDB/CURRENT
+- tmp/chrome-games-test-4/Default/Sync Data/LevelDB/LOCK
+- tmp/chrome-games-test-4/Default/Sync Data/LevelDB/LOG
+- tmp/chrome-games-test-4/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/Top Sites
+- tmp/chrome-games-test-4/Default/Top Sites-journal
+- tmp/chrome-games-test-4/Default/Web Data
+- tmp/chrome-games-test-4/Default/Web Data-journal
+- tmp/chrome-games-test-4/Default/WebStorage/QuotaManager
+- tmp/chrome-games-test-4/Default/WebStorage/QuotaManager-journal
+- tmp/chrome-games-test-4/Default/chrome_cart_db/LOCK
+- tmp/chrome-games-test-4/Default/chrome_cart_db/LOG
+- tmp/chrome-games-test-4/Default/commerce_subscription_db/LOCK
+- tmp/chrome-games-test-4/Default/commerce_subscription_db/LOG
+- tmp/chrome-games-test-4/Default/discount_infos_db/LOCK
+- tmp/chrome-games-test-4/Default/discount_infos_db/LOG
+- tmp/chrome-games-test-4/Default/discounts_db/LOCK
+- tmp/chrome-games-test-4/Default/discounts_db/LOG
+- tmp/chrome-games-test-4/Default/heavy_ad_intervention_opt_out.db-journal
+- tmp/chrome-games-test-4/Default/parcel_tracking_db/LOCK
+- tmp/chrome-games-test-4/Default/parcel_tracking_db/LOG
+- tmp/chrome-games-test-4/Default/shared_proto_db/000003.log
+- tmp/chrome-games-test-4/Default/shared_proto_db/CURRENT
+- tmp/chrome-games-test-4/Default/shared_proto_db/LOCK
+- tmp/chrome-games-test-4/Default/shared_proto_db/LOG
+- tmp/chrome-games-test-4/Default/shared_proto_db/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/shared_proto_db/metadata/000003.log
+- tmp/chrome-games-test-4/Default/shared_proto_db/metadata/CURRENT
+- tmp/chrome-games-test-4/Default/shared_proto_db/metadata/LOCK
+- tmp/chrome-games-test-4/Default/shared_proto_db/metadata/LOG
+- tmp/chrome-games-test-4/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/chrome-games-test-4/Default/trusted_vault.pb
+- tmp/chrome-games-test-4/GrShaderCache/data_0
+- tmp/chrome-games-test-4/GrShaderCache/data_1
+- tmp/chrome-games-test-4/GrShaderCache/data_2
+- tmp/chrome-games-test-4/GrShaderCache/data_3
+- tmp/chrome-games-test-4/GrShaderCache/index
+- tmp/chrome-games-test-4/GraphiteDawnCache/data_0
+- tmp/chrome-games-test-4/GraphiteDawnCache/data_1
+- tmp/chrome-games-test-4/GraphiteDawnCache/data_2
+- tmp/chrome-games-test-4/GraphiteDawnCache/data_3
+- tmp/chrome-games-test-4/GraphiteDawnCache/index
+- tmp/chrome-games-test-4/Last Version
+- tmp/chrome-games-test-4/Local State
+- tmp/chrome-games-test-4/ShaderCache/data_0
+- tmp/chrome-games-test-4/ShaderCache/data_1
+- tmp/chrome-games-test-4/ShaderCache/data_2
+- tmp/chrome-games-test-4/ShaderCache/data_3
+- tmp/chrome-games-test-4/ShaderCache/index
+- tmp/chrome-games-test-4/Variations
+- tmp/chrome-games-test-4/component_crx_cache/metadata.json
+- tmp/chrome-games-test-4/es-ES-3-0.bdic
+- tmp/chrome-games-test-4/extensions_crx_cache/metadata.json
+- tmp/chrome-games-test-4/first_party_sets.db-journal
+- tmp/chrome-games-test-4/segmentation_platform/ukm_db
+- tmp/chrome-games-test-4/segmentation_platform/ukm_db-wal
+- tmp/chrome-games-test-5/Breadcrumbs
+- tmp/chrome-games-test-5/Crashpad/metadata
+- tmp/chrome-games-test-5/Crashpad/settings.dat
+- tmp/chrome-games-test-5/CrashpadMetrics-active.pma
+- tmp/chrome-games-test-5/Default/Account Web Data
+- tmp/chrome-games-test-5/Default/Account Web Data-journal
+- tmp/chrome-games-test-5/Default/Affiliation Database
+- tmp/chrome-games-test-5/Default/Affiliation Database-journal
+- tmp/chrome-games-test-5/Default/BookmarkMergedSurfaceOrdering
+- tmp/chrome-games-test-5/Default/BrowsingTopicsSiteData
+- tmp/chrome-games-test-5/Default/BrowsingTopicsSiteData-journal
+- tmp/chrome-games-test-5/Default/BrowsingTopicsState
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/data_0
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/data_1
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/data_2
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/data_3
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/f_000001
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/f_000002
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/f_000003
+- tmp/chrome-games-test-5/Default/Cache/Cache_Data/index
+- tmp/chrome-games-test-5/Default/Cache/No_Vary_Search/journal.baj
+- tmp/chrome-games-test-5/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/chrome-games-test-5/Default/ClientCertificates/LOCK
+- tmp/chrome-games-test-5/Default/ClientCertificates/LOG
+- tmp/chrome-games-test-5/Default/Code Cache/js/9bc5656052ada469_0
+- tmp/chrome-games-test-5/Default/Code Cache/js/ba678a2fbd8c358c_0
+- tmp/chrome-games-test-5/Default/Code Cache/js/f3be87c762501f85_0
+- tmp/chrome-games-test-5/Default/Code Cache/js/index
+- tmp/chrome-games-test-5/Default/Code Cache/js/index-dir/the-real-index
+- tmp/chrome-games-test-5/Default/Code Cache/wasm/index
+- tmp/chrome-games-test-5/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/chrome-games-test-5/Default/DawnGraphiteCache/data_0
+- tmp/chrome-games-test-5/Default/DawnGraphiteCache/data_1
+- tmp/chrome-games-test-5/Default/DawnGraphiteCache/data_2
+- tmp/chrome-games-test-5/Default/DawnGraphiteCache/data_3
+- tmp/chrome-games-test-5/Default/DawnGraphiteCache/index
+- tmp/chrome-games-test-5/Default/DawnWebGPUCache/data_0
+- tmp/chrome-games-test-5/Default/DawnWebGPUCache/data_1
+- tmp/chrome-games-test-5/Default/DawnWebGPUCache/data_2
+- tmp/chrome-games-test-5/Default/DawnWebGPUCache/data_3
+- tmp/chrome-games-test-5/Default/DawnWebGPUCache/index
+- tmp/chrome-games-test-5/Default/Extension Rules/000003.log
+- tmp/chrome-games-test-5/Default/Extension Rules/CURRENT
+- tmp/chrome-games-test-5/Default/Extension Rules/LOCK
+- tmp/chrome-games-test-5/Default/Extension Rules/LOG
+- tmp/chrome-games-test-5/Default/Extension Rules/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Extension Scripts/000003.log
+- tmp/chrome-games-test-5/Default/Extension Scripts/CURRENT
+- tmp/chrome-games-test-5/Default/Extension Scripts/LOCK
+- tmp/chrome-games-test-5/Default/Extension Scripts/LOG
+- tmp/chrome-games-test-5/Default/Extension Scripts/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Extension State/000003.log
+- tmp/chrome-games-test-5/Default/Extension State/CURRENT
+- tmp/chrome-games-test-5/Default/Extension State/LOCK
+- tmp/chrome-games-test-5/Default/Extension State/LOG
+- tmp/chrome-games-test-5/Default/Extension State/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_128.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_32.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_48.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_56.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/PAD-ico_64.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/bg/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ca/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/cs/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/da/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/de/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/el/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/en/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/es/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/et/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/eu/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/fr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/gl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/hu/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/id/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/it/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ja/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/kk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ko/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lt/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/lv/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ms/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb-NO/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nb/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/nn/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/no/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-BR/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/pt-PT/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ro/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/ru/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Cyrl-RS/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sr-Latn-RS/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/sv/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/th/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/tr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/uk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/vi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hans/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_locales/zh-Hant/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/_metadata/verified_contents.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/background.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/manifest.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v1.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v2.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v3.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/api.v4.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v1.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_0/scripts/content.v2.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/PAD-ico_128.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/PAD-ico_32.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/PAD-ico_48.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/PAD-ico_56.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/PAD-ico_64.png
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/bg/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ca/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/cs/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/da/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/de/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/el/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/en/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/es/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/et/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/eu/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/fi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/fr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/gl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/hi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/hr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/hu/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/id/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/it/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ja/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/kk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ko/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/lt/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/lv/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ms/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/nb-NO/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/nb/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/nl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/nn/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/no/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/pl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/pt-BR/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/pt-PT/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ro/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/ru/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/sk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/sl/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/sr-Cyrl-RS/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/sr-Latn-RS/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/sv/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/th/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/tr/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/uk/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/vi/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/zh-Hans/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_locales/zh-Hant/messages.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/_metadata/verified_contents.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/background.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/manifest.json
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/api.v1.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/api.v2.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/api.v3.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/api.v4.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/content.v1.js
+- tmp/chrome-games-test-5/Default/Extensions/ljglajjnnkapghbckkcmodicjhacbfhk/2.68.0.34_1/scripts/content.v2.js
+- tmp/chrome-games-test-5/Default/Favicons
+- tmp/chrome-games-test-5/Default/Favicons-journal
+- tmp/chrome-games-test-5/Default/GPUCache/data_0
+- tmp/chrome-games-test-5/Default/GPUCache/data_1
+- tmp/chrome-games-test-5/Default/GPUCache/data_2
+- tmp/chrome-games-test-5/Default/GPUCache/data_3
+- tmp/chrome-games-test-5/Default/GPUCache/index
+- tmp/chrome-games-test-5/Default/History
+- tmp/chrome-games-test-5/Default/History-journal
+- tmp/chrome-games-test-5/Default/LOCK
+- tmp/chrome-games-test-5/Default/LOG
+- tmp/chrome-games-test-5/Default/Local Storage/leveldb/000003.log
+- tmp/chrome-games-test-5/Default/Local Storage/leveldb/CURRENT
+- tmp/chrome-games-test-5/Default/Local Storage/leveldb/LOCK
+- tmp/chrome-games-test-5/Default/Local Storage/leveldb/LOG
+- tmp/chrome-games-test-5/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Login Data
+- tmp/chrome-games-test-5/Default/Login Data For Account
+- tmp/chrome-games-test-5/Default/Login Data For Account-journal
+- tmp/chrome-games-test-5/Default/Login Data-journal
+- tmp/chrome-games-test-5/Default/Network Action Predictor
+- tmp/chrome-games-test-5/Default/Network Action Predictor-journal
+- tmp/chrome-games-test-5/Default/Network/Cookies
+- tmp/chrome-games-test-5/Default/Network/Cookies-journal
+- tmp/chrome-games-test-5/Default/Network/Device Bound Sessions
+- tmp/chrome-games-test-5/Default/Network/Device Bound Sessions-journal
+- tmp/chrome-games-test-5/Default/Network/Network Persistent State
+- tmp/chrome-games-test-5/Default/Network/NetworkDataMigrated
+- tmp/chrome-games-test-5/Default/Network/Reporting and NEL
+- tmp/chrome-games-test-5/Default/Network/Reporting and NEL-journal
+- tmp/chrome-games-test-5/Default/Network/TransportSecurity
+- tmp/chrome-games-test-5/Default/Network/Trust Tokens
+- tmp/chrome-games-test-5/Default/Network/Trust Tokens-journal
+- tmp/chrome-games-test-5/Default/PersistentOriginTrials/LOCK
+- tmp/chrome-games-test-5/Default/PersistentOriginTrials/LOG
+- tmp/chrome-games-test-5/Default/Preferences
+- tmp/chrome-games-test-5/Default/README
+- tmp/chrome-games-test-5/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/chrome-games-test-5/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/chrome-games-test-5/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/chrome-games-test-5/Default/Secure Preferences
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SignalDB/LOG
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/chrome-games-test-5/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/chrome-games-test-5/Default/ServerCertificate
+- tmp/chrome-games-test-5/Default/ServerCertificate-journal
+- tmp/chrome-games-test-5/Default/Service Worker/Database/000003.log
+- tmp/chrome-games-test-5/Default/Service Worker/Database/CURRENT
+- tmp/chrome-games-test-5/Default/Service Worker/Database/LOCK
+- tmp/chrome-games-test-5/Default/Service Worker/Database/LOG
+- tmp/chrome-games-test-5/Default/Service Worker/Database/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
+- tmp/chrome-games-test-5/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+- tmp/chrome-games-test-5/Default/Service Worker/ScriptCache/4cb013792b196a35_1
+- tmp/chrome-games-test-5/Default/Service Worker/ScriptCache/index
+- tmp/chrome-games-test-5/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/chrome-games-test-5/Default/Session Storage/000003.log
+- tmp/chrome-games-test-5/Default/Session Storage/CURRENT
+- tmp/chrome-games-test-5/Default/Session Storage/LOCK
+- tmp/chrome-games-test-5/Default/Session Storage/LOG
+- tmp/chrome-games-test-5/Default/Session Storage/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Sessions/Session_13421999408741181
+- tmp/chrome-games-test-5/Default/Sessions/Tabs_13421999424704955
+- tmp/chrome-games-test-5/Default/Shared Dictionary/cache/index
+- tmp/chrome-games-test-5/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/chrome-games-test-5/Default/Shared Dictionary/db
+- tmp/chrome-games-test-5/Default/Shared Dictionary/db-journal
+- tmp/chrome-games-test-5/Default/SharedStorage
+- tmp/chrome-games-test-5/Default/Shortcuts
+- tmp/chrome-games-test-5/Default/Shortcuts-journal
+- tmp/chrome-games-test-5/Default/Site Characteristics Database/000003.log
+- tmp/chrome-games-test-5/Default/Site Characteristics Database/CURRENT
+- tmp/chrome-games-test-5/Default/Site Characteristics Database/LOCK
+- tmp/chrome-games-test-5/Default/Site Characteristics Database/LOG
+- tmp/chrome-games-test-5/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Sync Data/LevelDB/000003.log
+- tmp/chrome-games-test-5/Default/Sync Data/LevelDB/CURRENT
+- tmp/chrome-games-test-5/Default/Sync Data/LevelDB/LOCK
+- tmp/chrome-games-test-5/Default/Sync Data/LevelDB/LOG
+- tmp/chrome-games-test-5/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/Top Sites
+- tmp/chrome-games-test-5/Default/Top Sites-journal
+- tmp/chrome-games-test-5/Default/Web Data
+- tmp/chrome-games-test-5/Default/Web Data-journal
+- tmp/chrome-games-test-5/Default/WebStorage/QuotaManager
+- tmp/chrome-games-test-5/Default/WebStorage/QuotaManager-journal
+- tmp/chrome-games-test-5/Default/chrome_cart_db/LOCK
+- tmp/chrome-games-test-5/Default/chrome_cart_db/LOG
+- tmp/chrome-games-test-5/Default/commerce_subscription_db/LOCK
+- tmp/chrome-games-test-5/Default/commerce_subscription_db/LOG
+- tmp/chrome-games-test-5/Default/discount_infos_db/LOCK
+- tmp/chrome-games-test-5/Default/discount_infos_db/LOG
+- tmp/chrome-games-test-5/Default/discounts_db/LOCK
+- tmp/chrome-games-test-5/Default/discounts_db/LOG
+- tmp/chrome-games-test-5/Default/heavy_ad_intervention_opt_out.db-journal
+- tmp/chrome-games-test-5/Default/parcel_tracking_db/LOCK
+- tmp/chrome-games-test-5/Default/parcel_tracking_db/LOG
+- tmp/chrome-games-test-5/Default/shared_proto_db/000003.log
+- tmp/chrome-games-test-5/Default/shared_proto_db/CURRENT
+- tmp/chrome-games-test-5/Default/shared_proto_db/LOCK
+- tmp/chrome-games-test-5/Default/shared_proto_db/LOG
+- tmp/chrome-games-test-5/Default/shared_proto_db/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/shared_proto_db/metadata/000003.log
+- tmp/chrome-games-test-5/Default/shared_proto_db/metadata/CURRENT
+- tmp/chrome-games-test-5/Default/shared_proto_db/metadata/LOCK
+- tmp/chrome-games-test-5/Default/shared_proto_db/metadata/LOG
+- tmp/chrome-games-test-5/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/chrome-games-test-5/Default/trusted_vault.pb
+- tmp/chrome-games-test-5/GrShaderCache/data_0
+- tmp/chrome-games-test-5/GrShaderCache/data_1
+- tmp/chrome-games-test-5/GrShaderCache/data_2
+- tmp/chrome-games-test-5/GrShaderCache/data_3
+- tmp/chrome-games-test-5/GrShaderCache/index
+- tmp/chrome-games-test-5/GraphiteDawnCache/data_0
+- tmp/chrome-games-test-5/GraphiteDawnCache/data_1
+- tmp/chrome-games-test-5/GraphiteDawnCache/data_2
+- tmp/chrome-games-test-5/GraphiteDawnCache/data_3
+- tmp/chrome-games-test-5/GraphiteDawnCache/index
+- tmp/chrome-games-test-5/Last Version
+- tmp/chrome-games-test-5/Local State
+- tmp/chrome-games-test-5/ShaderCache/data_0
+- tmp/chrome-games-test-5/ShaderCache/data_1
+- tmp/chrome-games-test-5/ShaderCache/data_2
+- tmp/chrome-games-test-5/ShaderCache/data_3
+- tmp/chrome-games-test-5/ShaderCache/index
+- tmp/chrome-games-test-5/Variations
+- tmp/chrome-games-test-5/component_crx_cache/metadata.json
+- tmp/chrome-games-test-5/es-ES-3-0.bdic
+- tmp/chrome-games-test-5/extensions_crx_cache/metadata.json
+- tmp/chrome-games-test-5/first_party_sets.db-journal
+- tmp/chrome-games-test-5/segmentation_platform/ukm_db
+- tmp/chrome-games-test-5/segmentation_platform/ukm_db-wal
+- tmp/chrome-games-test/Crashpad/metadata
+- tmp/chrome-games-test/Crashpad/settings.dat
+- tmp/chrome-games-test/CrashpadMetrics-active.pma
+- tmp/chrome-games-test/Default/Account Web Data
+- tmp/chrome-games-test/Default/Account Web Data-journal
+- tmp/chrome-games-test/Default/Affiliation Database
+- tmp/chrome-games-test/Default/Affiliation Database-journal
+- tmp/chrome-games-test/Default/BookmarkMergedSurfaceOrdering
+- tmp/chrome-games-test/Default/Cache/Cache_Data/data_0
+- tmp/chrome-games-test/Default/Cache/Cache_Data/data_1
+- tmp/chrome-games-test/Default/Cache/Cache_Data/data_2
+- tmp/chrome-games-test/Default/Cache/Cache_Data/data_3
+- tmp/chrome-games-test/Default/Cache/Cache_Data/f_000001
+- tmp/chrome-games-test/Default/Cache/Cache_Data/f_000002
+- tmp/chrome-games-test/Default/Cache/Cache_Data/f_000003
+- tmp/chrome-games-test/Default/Cache/Cache_Data/index
+- tmp/chrome-games-test/Default/Cache/No_Vary_Search/journal.baj
+- tmp/chrome-games-test/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/chrome-games-test/Default/ClientCertificates/LOCK
+- tmp/chrome-games-test/Default/ClientCertificates/LOG
+- tmp/chrome-games-test/Default/Code Cache/js/9bc5656052ada469_0
+- tmp/chrome-games-test/Default/Code Cache/js/ba678a2fbd8c358c_0
+- tmp/chrome-games-test/Default/Code Cache/js/index
+- tmp/chrome-games-test/Default/Code Cache/js/index-dir/the-real-index
+- tmp/chrome-games-test/Default/Code Cache/wasm/index
+- tmp/chrome-games-test/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/chrome-games-test/Default/DawnGraphiteCache/data_0
+- tmp/chrome-games-test/Default/DawnGraphiteCache/data_1
+- tmp/chrome-games-test/Default/DawnGraphiteCache/data_2
+- tmp/chrome-games-test/Default/DawnGraphiteCache/data_3
+- tmp/chrome-games-test/Default/DawnGraphiteCache/index
+- tmp/chrome-games-test/Default/DawnWebGPUCache/data_0
+- tmp/chrome-games-test/Default/DawnWebGPUCache/data_1
+- tmp/chrome-games-test/Default/DawnWebGPUCache/data_2
+- tmp/chrome-games-test/Default/DawnWebGPUCache/data_3
+- tmp/chrome-games-test/Default/DawnWebGPUCache/index
+- tmp/chrome-games-test/Default/Extension Rules/000003.log
+- tmp/chrome-games-test/Default/Extension Rules/CURRENT
+- tmp/chrome-games-test/Default/Extension Rules/LOCK
+- tmp/chrome-games-test/Default/Extension Rules/LOG
+- tmp/chrome-games-test/Default/Extension Rules/MANIFEST-000001
+- tmp/chrome-games-test/Default/Extension Scripts/000003.log
+- tmp/chrome-games-test/Default/Extension Scripts/CURRENT
+- tmp/chrome-games-test/Default/Extension Scripts/LOCK
+- tmp/chrome-games-test/Default/Extension Scripts/LOG
+- tmp/chrome-games-test/Default/Extension Scripts/MANIFEST-000001
+- tmp/chrome-games-test/Default/Extension State/000003.log
+- tmp/chrome-games-test/Default/Extension State/CURRENT
+- tmp/chrome-games-test/Default/Extension State/LOCK
+- tmp/chrome-games-test/Default/Extension State/LOG
+- tmp/chrome-games-test/Default/Extension State/MANIFEST-000001
+- tmp/chrome-games-test/Default/Favicons
+- tmp/chrome-games-test/Default/Favicons-journal
+- tmp/chrome-games-test/Default/GPUCache/data_0
+- tmp/chrome-games-test/Default/GPUCache/data_1
+- tmp/chrome-games-test/Default/GPUCache/data_2
+- tmp/chrome-games-test/Default/GPUCache/data_3
+- tmp/chrome-games-test/Default/GPUCache/index
+- tmp/chrome-games-test/Default/History
+- tmp/chrome-games-test/Default/History-journal
+- tmp/chrome-games-test/Default/LOCK
+- tmp/chrome-games-test/Default/LOG
+- tmp/chrome-games-test/Default/Local Storage/leveldb/000003.log
+- tmp/chrome-games-test/Default/Local Storage/leveldb/CURRENT
+- tmp/chrome-games-test/Default/Local Storage/leveldb/LOCK
+- tmp/chrome-games-test/Default/Local Storage/leveldb/LOG
+- tmp/chrome-games-test/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/chrome-games-test/Default/Login Data
+- tmp/chrome-games-test/Default/Login Data For Account
+- tmp/chrome-games-test/Default/Login Data For Account-journal
+- tmp/chrome-games-test/Default/Login Data-journal
+- tmp/chrome-games-test/Default/Network/Cookies
+- tmp/chrome-games-test/Default/Network/Cookies-journal
+- tmp/chrome-games-test/Default/Network/Device Bound Sessions
+- tmp/chrome-games-test/Default/Network/Device Bound Sessions-journal
+- tmp/chrome-games-test/Default/Network/Network Persistent State
+- tmp/chrome-games-test/Default/Network/NetworkDataMigrated
+- tmp/chrome-games-test/Default/Network/Reporting and NEL
+- tmp/chrome-games-test/Default/Network/Reporting and NEL-journal
+- tmp/chrome-games-test/Default/Network/Trust Tokens
+- tmp/chrome-games-test/Default/Network/Trust Tokens-journal
+- tmp/chrome-games-test/Default/PersistentOriginTrials/LOCK
+- tmp/chrome-games-test/Default/PersistentOriginTrials/LOG
+- tmp/chrome-games-test/Default/Preferences
+- tmp/chrome-games-test/Default/README
+- tmp/chrome-games-test/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/chrome-games-test/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/chrome-games-test/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/chrome-games-test/Default/Secure Preferences
+- tmp/chrome-games-test/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/chrome-games-test/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/chrome-games-test/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/chrome-games-test/Default/Segmentation Platform/SignalDB/LOG
+- tmp/chrome-games-test/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/chrome-games-test/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/chrome-games-test/Default/ServerCertificate
+- tmp/chrome-games-test/Default/ServerCertificate-journal
+- tmp/chrome-games-test/Default/Service Worker/Database/000003.log
+- tmp/chrome-games-test/Default/Service Worker/Database/CURRENT
+- tmp/chrome-games-test/Default/Service Worker/Database/LOCK
+- tmp/chrome-games-test/Default/Service Worker/Database/LOG
+- tmp/chrome-games-test/Default/Service Worker/Database/MANIFEST-000001
+- tmp/chrome-games-test/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
+- tmp/chrome-games-test/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+- tmp/chrome-games-test/Default/Service Worker/ScriptCache/4cb013792b196a35_1
+- tmp/chrome-games-test/Default/Service Worker/ScriptCache/index
+- tmp/chrome-games-test/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/chrome-games-test/Default/Session Storage/000003.log
+- tmp/chrome-games-test/Default/Session Storage/CURRENT
+- tmp/chrome-games-test/Default/Session Storage/LOCK
+- tmp/chrome-games-test/Default/Session Storage/LOG
+- tmp/chrome-games-test/Default/Session Storage/MANIFEST-000001
+- tmp/chrome-games-test/Default/Sessions/Session_13421999315996759
+- tmp/chrome-games-test/Default/Sessions/Tabs_13421999316002298
+- tmp/chrome-games-test/Default/Shared Dictionary/cache/index
+- tmp/chrome-games-test/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/chrome-games-test/Default/Shared Dictionary/db
+- tmp/chrome-games-test/Default/Shared Dictionary/db-journal
+- tmp/chrome-games-test/Default/SharedStorage
+- tmp/chrome-games-test/Default/Site Characteristics Database/000003.log
+- tmp/chrome-games-test/Default/Site Characteristics Database/CURRENT
+- tmp/chrome-games-test/Default/Site Characteristics Database/LOCK
+- tmp/chrome-games-test/Default/Site Characteristics Database/LOG
+- tmp/chrome-games-test/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/chrome-games-test/Default/Sync Data/LevelDB/000003.log
+- tmp/chrome-games-test/Default/Sync Data/LevelDB/CURRENT
+- tmp/chrome-games-test/Default/Sync Data/LevelDB/LOCK
+- tmp/chrome-games-test/Default/Sync Data/LevelDB/LOG
+- tmp/chrome-games-test/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/chrome-games-test/Default/Top Sites
+- tmp/chrome-games-test/Default/Top Sites-journal
+- tmp/chrome-games-test/Default/Web Data
+- tmp/chrome-games-test/Default/Web Data-journal
+- tmp/chrome-games-test/Default/WebStorage/QuotaManager
+- tmp/chrome-games-test/Default/WebStorage/QuotaManager-journal
+- tmp/chrome-games-test/Default/chrome_cart_db/LOCK
+- tmp/chrome-games-test/Default/chrome_cart_db/LOG
+- tmp/chrome-games-test/Default/commerce_subscription_db/LOCK
+- tmp/chrome-games-test/Default/commerce_subscription_db/LOG
+- tmp/chrome-games-test/Default/discount_infos_db/LOCK
+- tmp/chrome-games-test/Default/discount_infos_db/LOG
+- tmp/chrome-games-test/Default/discounts_db/LOCK
+- tmp/chrome-games-test/Default/discounts_db/LOG
+- tmp/chrome-games-test/Default/parcel_tracking_db/LOCK
+- tmp/chrome-games-test/Default/parcel_tracking_db/LOG
+- tmp/chrome-games-test/Default/shared_proto_db/000003.log
+- tmp/chrome-games-test/Default/shared_proto_db/CURRENT
+- tmp/chrome-games-test/Default/shared_proto_db/LOCK
+- tmp/chrome-games-test/Default/shared_proto_db/LOG
+- tmp/chrome-games-test/Default/shared_proto_db/MANIFEST-000001
+- tmp/chrome-games-test/Default/shared_proto_db/metadata/000003.log
+- tmp/chrome-games-test/Default/shared_proto_db/metadata/CURRENT
+- tmp/chrome-games-test/Default/shared_proto_db/metadata/LOCK
+- tmp/chrome-games-test/Default/shared_proto_db/metadata/LOG
+- tmp/chrome-games-test/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/chrome-games-test/GrShaderCache/data_0
+- tmp/chrome-games-test/GrShaderCache/data_1
+- tmp/chrome-games-test/GrShaderCache/data_2
+- tmp/chrome-games-test/GrShaderCache/data_3
+- tmp/chrome-games-test/GrShaderCache/index
+- tmp/chrome-games-test/GraphiteDawnCache/data_0
+- tmp/chrome-games-test/GraphiteDawnCache/data_1
+- tmp/chrome-games-test/GraphiteDawnCache/data_2
+- tmp/chrome-games-test/GraphiteDawnCache/data_3
+- tmp/chrome-games-test/GraphiteDawnCache/index
+- tmp/chrome-games-test/Last Version
+- tmp/chrome-games-test/Local State
+- tmp/chrome-games-test/ShaderCache/data_0
+- tmp/chrome-games-test/ShaderCache/data_1
+- tmp/chrome-games-test/ShaderCache/data_2
+- tmp/chrome-games-test/ShaderCache/data_3
+- tmp/chrome-games-test/ShaderCache/index
+- tmp/chrome-games-test/Variations
+- tmp/chrome-games-test/es-ES-3-0.bdic
+- tmp/chrome-games-test/extensions_crx_cache/metadata.json
+- tmp/chrome-games-test/segmentation_platform/ukm_db
+- tmp/chrome-games-test/segmentation_platform/ukm_db-wal
+- tmp/cube_runner_3d.png
+- tmp/cube_runner_3d_mobile.png
+- tmp/cube_runner_3d_mobile_v2.png
+- tmp/cube_runner_3d_mobile_v3.png
+- tmp/cube_runner_3d_mobile_v4.png
+- tmp/cube_runner_3d_v2.png
+- tmp/epayco_pagar_licencia_local.png
+- tmp/frogger_mobile.png
+- tmp/frogger_mobile_v2.png
+- tmp/frogger_mobile_v3.png
+- tmp/frogger_mobile_v4.png
+- tmp/frogger_mobile_v5.png
+- tmp/frogger_mobile_v6.png
+- tmp/juegos_nuevos_mobile.png
+- tmp/juegos_nuevos_mobile_v2.png
+- tmp/juegos_nuevos_mobile_v3.png
+- tmp/juegos_nuevos_mobile_v4.png
+- tmp/juegos_nuevos_mobile_v5.png
+- tmp/juegos_nuevos_mobile_v6.png
+- tmp/juegos_nuevos_mobile_v7.png
+- tmp/memory_desktop.png
+- tmp/minesweeper_desktop.png
+- tmp/phase_cube_runner_mobile_check.png
+- tmp/phase_cube_runner_mobile_check_v2.png
+- tmp/phase_games_menu_mobile_check.png
+- tmp/phase_games_menu_mobile_check_v2.png
+- tmp/phase_games_menu_mobile_check_v3.png
+- tmp/phase_space_dock_desktop_check.png
+- tmp/phase_space_dock_desktop_check_v2.png
+- tmp/space_dock_3d.png
+- tmp/space_dock_3d_v2.png
+- web/Juegos/LICENCIAS_JUEGOS_ABIERTOS.md
+- web/Juegos/arcade_embed.css
+- web/Juegos/arcade_embed.js
+- web/Juegos/asteroids_arcade/index.html
+- web/Juegos/asteroids_arcade/source/39459__THE_bizniss__laser.wav
+- web/Juegos/asteroids_arcade/source/51467__smcameron__missile_explosion.wav
+- web/Juegos/asteroids_arcade/source/LICENSE
+- web/Juegos/asteroids_arcade/source/README.md
+- web/Juegos/asteroids_arcade/source/game.js
+- web/Juegos/asteroids_arcade/source/index.html
+- web/Juegos/asteroids_arcade/source/ipad.js
+- web/Juegos/asteroids_arcade/source/jquery-1.4.1.min.js
+- web/Juegos/asteroids_arcade/source/vector_battle_regular.typeface.js
+- web/Juegos/breakout_arcade/index.html
+- web/Juegos/breakout_arcade/source/LICENSE
+- web/Juegos/breakout_arcade/source/css/main.css
+- web/Juegos/breakout_arcade/source/images/favicon.png
+- web/Juegos/breakout_arcade/source/index.html
+- web/Juegos/breakout_arcade/source/js/main.js
+- web/Juegos/breakout_arcade/source/readme.md
+- web/Juegos/cube_runner_3d/index.html
+- web/Juegos/cube_runner_3d/source/index.html
+- web/Juegos/frogger_arcade/index.html
+- web/Juegos/frogger_arcade/source/index.html
+- web/Juegos/memory_arcade/index.html
+- web/Juegos/memory_arcade/source/index.html
+- web/Juegos/menu_juegos.html
+- web/Juegos/minesweeper_arcade/index.html
+- web/Juegos/minesweeper_arcade/source/index.html
+- web/Juegos/open_game_embed.js
+- web/Juegos/open_game_source.css
+- web/Juegos/pacman_arcade/BD_Cartoon_Shout-webfont.ttf
+- web/Juegos/pacman_arcade/LICENSE
+- web/Juegos/pacman_arcade/audio/die.mp3
+- web/Juegos/pacman_arcade/audio/die.ogg
+- web/Juegos/pacman_arcade/audio/eatghost.mp3
+- web/Juegos/pacman_arcade/audio/eatghost.ogg
+- web/Juegos/pacman_arcade/audio/eating.mp3
+- web/Juegos/pacman_arcade/audio/eating.ogg
+- web/Juegos/pacman_arcade/audio/eating.short.mp3
+- web/Juegos/pacman_arcade/audio/eating.short.ogg
+- web/Juegos/pacman_arcade/audio/eatpill.mp3
+- web/Juegos/pacman_arcade/audio/eatpill.ogg
+- web/Juegos/pacman_arcade/audio/extra lives.mp3
+- web/Juegos/pacman_arcade/audio/extra lives.ogg
+- web/Juegos/pacman_arcade/audio/intermission.mp3
+- web/Juegos/pacman_arcade/audio/intermission.ogg
+- web/Juegos/pacman_arcade/audio/opening_song.mp3
+- web/Juegos/pacman_arcade/audio/opening_song.ogg
+- web/Juegos/pacman_arcade/audio/siren.mp3
+- web/Juegos/pacman_arcade/audio/siren.ogg
+- web/Juegos/pacman_arcade/audio/vcs_90.mp3
+- web/Juegos/pacman_arcade/audio/vcs_90.ogg
+- web/Juegos/pacman_arcade/index.html
+- web/Juegos/pacman_arcade/modernizr-1.5.min.js
+- web/Juegos/pacman_arcade/pacman.js
+- web/Juegos/pacman_arcade/pcs-pacman-arcade.css
+- web/Juegos/pong_arcade/index.html
+- web/Juegos/pong_arcade/source/LICENSE
+- web/Juegos/pong_arcade/source/README.md
+- web/Juegos/pong_arcade/source/game.js
+- web/Juegos/pong_arcade/source/images/press1.png
+- web/Juegos/pong_arcade/source/images/press2.png
+- web/Juegos/pong_arcade/source/images/winner.png
+- web/Juegos/pong_arcade/source/index.html
+- web/Juegos/pong_arcade/source/part1/game.js
+- web/Juegos/pong_arcade/source/part1/index.html
+- web/Juegos/pong_arcade/source/part1/pong.js
+- web/Juegos/pong_arcade/source/part2/game.js
+- web/Juegos/pong_arcade/source/part2/index.html
+- web/Juegos/pong_arcade/source/part2/pong.js
+- web/Juegos/pong_arcade/source/part3/game.js
+- web/Juegos/pong_arcade/source/part3/images/press1.png
+- web/Juegos/pong_arcade/source/part3/images/press2.png
+- web/Juegos/pong_arcade/source/part3/images/winner.png
+- web/Juegos/pong_arcade/source/part3/index.html
+- web/Juegos/pong_arcade/source/part3/pong.js
+- web/Juegos/pong_arcade/source/part4/game.js
+- web/Juegos/pong_arcade/source/part4/images/press1.png
+- web/Juegos/pong_arcade/source/part4/images/press2.png
+- web/Juegos/pong_arcade/source/part4/images/winner.png
+- web/Juegos/pong_arcade/source/part4/index.html
+- web/Juegos/pong_arcade/source/part4/pong.js
+- web/Juegos/pong_arcade/source/part5/game.js
+- web/Juegos/pong_arcade/source/part5/images/press1.png
+- web/Juegos/pong_arcade/source/part5/images/press2.png
+- web/Juegos/pong_arcade/source/part5/images/winner.png
+- web/Juegos/pong_arcade/source/part5/index.html
+- web/Juegos/pong_arcade/source/part5/pong.js
+- web/Juegos/pong_arcade/source/pong.css
+- web/Juegos/pong_arcade/source/pong.js
+- web/Juegos/pong_arcade/source/sounds/goal.wav
+- web/Juegos/pong_arcade/source/sounds/ping.wav
+- web/Juegos/pong_arcade/source/sounds/pong.wav
+- web/Juegos/pong_arcade/source/sounds/wall.wav
+- web/Juegos/snake_arcade/index.html
+- web/Juegos/snake_arcade/source/LICENSE
+- web/Juegos/snake_arcade/source/README.md
+- web/Juegos/snake_arcade/source/index.html
+- web/Juegos/snake_arcade/source/script.js
+- web/Juegos/snake_arcade/source/style.css
+- web/Juegos/space_dock_3d/index.html
+- web/Juegos/space_dock_3d/source/index.html
+- web/Juegos/space_invaders/index.html
+- web/Juegos/space_invaders/source/.DS_Store
+- web/Juegos/space_invaders/source/Images/invaders.gif
+- web/Juegos/space_invaders/source/LICENSE
+- web/Juegos/space_invaders/source/README.md
+- web/Juegos/space_invaders/source/Scripts/background.js
+- web/Juegos/space_invaders/source/Scripts/script.js
+- web/Juegos/space_invaders/source/Styles/main.css
+- web/Juegos/space_invaders/source/docs/.DS_Store
+- web/Juegos/space_invaders/source/docs/wireframe.png
+- web/Juegos/space_invaders/source/docs/wireframe.sketch
+- web/Juegos/space_invaders/source/error.html
+- web/Juegos/space_invaders/source/fonts/PressStart2P.ttf
+- web/Juegos/space_invaders/source/index.html
+- web/Juegos/space_invaders/source/sounds/.DS_Store
+- web/Juegos/space_invaders/source/sounds/explosion.wav
+- web/Juegos/space_invaders/source/sounds/fastinvader1.wav
+- web/Juegos/space_invaders/source/sounds/fastinvader2.wav
+- web/Juegos/space_invaders/source/sounds/fastinvader3.wav
+- web/Juegos/space_invaders/source/sounds/fastinvader4.wav
+- web/Juegos/space_invaders/source/sounds/invaderhit1.wav
+- web/Juegos/space_invaders/source/sounds/invaderhit3.wav
+- web/Juegos/space_invaders/source/sounds/invaderkilled.wav
+- web/Juegos/space_invaders/source/sounds/shoot.wav
+- web/Juegos/tetris_arcade/index.html
+- web/Juegos/tetris_arcade/source/LICENSE
+- web/Juegos/tetris_arcade/source/README.md
+- web/Juegos/tetris_arcade/source/classic-tetris.js
+- web/Juegos/tetris_arcade/source/index.html
+- web/Juegos/tetris_arcade/source/package.json
+- web/Juegos/webgl_arcade_engine.js
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/buscar_producto_botones.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/configuracion_chat_flotante.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion_sensores_raspberry.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- web/administrar_empresa/historial_productos.html
+- web/administrar_empresa/hoja_vida_operativa.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/productos/administrar_productos_menu.html
+- web/administrar_empresa/publicar_red_social.html
+- web/administrar_empresa/ultimos_movimientos_de_caja.html
+- web/administrar_empresa/venta_publica.html
+- web/administrar_empresa/ventas.html
+- web/ayuda/ayuda.html
+- web/ayuda/chat_ia.html
+- web/config.js
+- web/editar_empresa.html
+- web/elegir_licencia.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/js/editar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/menu.js
+- web/pagar_licencia.html
+- web/pagar_productos_de_venta_publica.html
+- web/seleccionar_empresa.html
+- web/super/configuracion_avanzada.html
+- web/super/preconfiguracion_tipos_empresa.html
+- web/venta_publica.html
