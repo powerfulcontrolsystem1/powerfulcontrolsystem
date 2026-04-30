@@ -186,7 +186,7 @@ body {
 
   .pacman-canvas-host {
     width: min(100%, 420px);
-    height: min(calc(100vw * 1.315), calc(100dvh - 178px));
+    height: min(131.5vw, calc(100dvh - 178px));
     max-height: 520px;
   }
 
@@ -201,10 +201,26 @@ body {
   }
 }
 
+@media (max-width: 520px) {
+  .pacman-canvas-host {
+    width: min(85vw, 357px);
+    height: min(111.8vw, calc(100dvh - 164px));
+    max-height: 442px;
+  }
+
+  .pacman-touch-controls {
+    width: min(85vw, 357px);
+  }
+}
+
 @media (max-width: 420px) {
   .pacman-canvas-host {
-    width: 100%;
-    height: min(calc(100vw * 1.315), calc(100dvh - 164px));
+    width: 85vw;
+    height: min(111.8vw, calc(100dvh - 164px));
+  }
+
+  .pacman-touch-controls {
+    width: 85vw;
   }
 }
 

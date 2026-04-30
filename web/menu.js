@@ -410,8 +410,13 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html">Red social comercial</a>' +
-        '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
-        '<a class="fm-item" href="/calculadora.html">Calculadora</a>' +
+        '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
+          '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
+          '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
+            '<a class="fm-item fm-subitem" href="/calculadora.html">Calculadora</a>' +
+            '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html">Juegos</a>' +
+          '</div>' +
+        '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
@@ -444,6 +449,8 @@
     var sessionLink = wrapper.querySelector('#sessionLink');
     var themeToggle = wrapper.querySelector('#themeToggle');
     var themeSelectorPopup = wrapper.querySelector('#themeSelectorPopup');
+    var utilitiesToggle = wrapper.querySelector('#utilitiesMenuToggle');
+    var utilitiesPopup = wrapper.querySelector('#utilitiesMenuPopup');
 
     function setPanelOpen(isOpen){
       if (!panel || !toggle) return;
@@ -460,6 +467,13 @@
       themeToggle.setAttribute('aria-expanded', 'false');
       themeSelectorPopup.setAttribute('aria-hidden', 'true');
       themeSelectorPopup.classList.remove('show');
+    }
+
+    function closeUtilitiesPopup(){
+      if (!utilitiesToggle || !utilitiesPopup) return;
+      utilitiesToggle.setAttribute('aria-expanded', 'false');
+      utilitiesPopup.setAttribute('aria-hidden', 'true');
+      utilitiesPopup.classList.remove('show');
     }
 
     function setSessionLinkAuthenticated(isAuthenticated){
@@ -487,8 +501,9 @@
       panel.addEventListener('click', function(event){
         event.stopPropagation();
         var item = event.target && event.target.closest ? event.target.closest('.fm-item') : null;
-        if (item && item.id !== 'themeToggle' && !item.classList.contains('fm-country')) {
+        if (item && item.id !== 'themeToggle' && item.id !== 'utilitiesMenuToggle' && !item.classList.contains('fm-country')) {
           closeThemePopup();
+          closeUtilitiesPopup();
           closePanel();
         }
       });
@@ -497,6 +512,7 @@
         var clickInsideMenu = wrapper.contains(event.target);
         if (!clickInsideMenu) {
           closeThemePopup();
+          closeUtilitiesPopup();
           closePanel();
           return;
         }
@@ -505,12 +521,31 @@
         if (!clickInsideTheme && !clickThemeButton) {
           closeThemePopup();
         }
+        var clickInsideUtilities = utilitiesPopup && utilitiesPopup.contains(event.target);
+        var clickUtilitiesButton = utilitiesToggle && utilitiesToggle.contains(event.target);
+        if (!clickInsideUtilities && !clickUtilitiesButton) {
+          closeUtilitiesPopup();
+        }
       });
 
       document.addEventListener('keydown', function(event){
         if (event.key === 'Escape') {
           closeThemePopup();
+          closeUtilitiesPopup();
           closePanel();
+        }
+      });
+    }
+
+    if (utilitiesToggle && utilitiesPopup) {
+      utilitiesToggle.addEventListener('click', function(event){
+        event.stopPropagation();
+        var isExpanded = utilitiesToggle.getAttribute('aria-expanded') === 'true';
+        utilitiesToggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+        utilitiesPopup.setAttribute('aria-hidden', isExpanded ? 'true' : 'false');
+        utilitiesPopup.classList.toggle('show', !isExpanded);
+        if (!isExpanded) {
+          closeThemePopup();
         }
       });
     }
@@ -522,6 +557,9 @@
         themeToggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
         themeSelectorPopup.setAttribute('aria-hidden', isExpanded ? 'true' : 'false');
         themeSelectorPopup.classList.toggle('show', !isExpanded);
+        if (!isExpanded) {
+          closeUtilitiesPopup();
+        }
       });
 
       var options = themeSelectorPopup.querySelectorAll('.theme-option');

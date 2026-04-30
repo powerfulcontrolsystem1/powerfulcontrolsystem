@@ -2753,6 +2753,11 @@ body.super-page{
 .floating-menu .fm-panel.open{display:block}
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600;word-break:break-word;touch-action:manipulation}
 .floating-menu .fm-item:hover{background:var(--focus)}
+.floating-menu .fm-submenu{position:relative}
+.floating-menu .fm-submenu-toggle{width:100%;background:transparent;border:0;text-align:left;font-family:inherit;cursor:pointer}
+.floating-menu .fm-submenu-popup{display:none;position:absolute;top:0;right:calc(100% + 8px);min-width:170px;padding:6px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 14px 30px rgba(4,11,21,0.42);z-index:2}
+.floating-menu .fm-submenu-popup.show{display:block}
+.floating-menu .fm-subitem{font-size:0.94rem}
 
 /* Estilos Selector Tema popup */
 .theme-selector-popup {
@@ -2780,6 +2785,13 @@ body.super-page{
 .theme-option.active { background:var(--focus); border-color:var(--accent); color:var(--accent); font-weight:800; }
 
 @media(max-width: 640px) {
+  .floating-menu .fm-submenu-popup {
+    position: static;
+    width: 100%;
+    margin-top: 4px;
+    box-shadow: none;
+    border-radius: 8px;
+  }
   .theme-selector-popup {
     position: static;
     width: 100%;
