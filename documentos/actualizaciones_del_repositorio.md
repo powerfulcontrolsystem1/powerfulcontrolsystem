@@ -2781,3 +2781,10 @@ Archivos modificados:
 - web/login_usuario.html
 - web/super/administradores.html
 - web/super/licencias.html
+
+2026-04-30 16:37:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: c1c60d8; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/estilos.css
