@@ -2692,3 +2692,26 @@ Archivos modificados:
 - backend/main.go
 - pendiete new
 - web/index.html
+
+2026-04-30 12:21:45 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 24b8111; PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- backend/db/roles_tipos_usuario.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/tipo_empresa_preconfiguracion_test.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- pendiete new
+- web/administrar_empresa.html
+- web/administrar_empresa/buscar_producto_botones.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/venta_directa.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/super/preconfiguracion_tipos_empresa.html
