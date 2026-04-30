@@ -93,7 +93,7 @@
 
     <div id="carritosList" class="mt-14">Cargando carritos...</div>
 
-    <div class="form mt-16">
+    <div class="form mt-16 carrito-workspace-card">
       <div class="page-header mb-10">
         <h2 id="itemsTitle" class="section-heading">Items del carrito</h2>
       </div>
@@ -134,14 +134,11 @@
         </aside>
       </div>
 
-        <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
-        <div class="empresa-section-header">
-          <h3 class="section-heading">Cobro y estados del carrito</h3>
+      <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <h3 class="section-heading">Acciones del carrito</h3>
         </div>
-
-        <section id="stationCartActionsCard" class="card carrito-payment-section-card carrito-actions-card mt-10">
-          <h4 class="section-heading">Acciones del carrito</h4>
-          <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
+        <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn danger">Cancelar carrito</button>
@@ -153,8 +150,13 @@
           <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
           <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
           <button type="button" id="carritoBtnVehiculo" class="btn secondary">Vehículo</button>
-          </div>
-        </section>
+        </div>
+      </section>
+
+      <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
+        <div class="empresa-section-header">
+          <h3 class="section-heading">Cobro y estados del carrito</h3>
+        </div>
 
         <div id="carritoAlertBanner" class="alert is-hidden mt-10"></div>
 
@@ -270,8 +272,7 @@
 
         <div class="form-actions mt-10">
           <button type="button" id="btnActivarSesionCarrito" class="btn secondary is-hidden">Activar carrito</button>
-          </div>
-        </section>
+        </div>
         <div id="stationPaymentMsg" class="form-help"></div>
       </div>
 
@@ -323,7 +324,7 @@
         </div>
       </section>
 
-      <form id="itemForm" class="mt-12">
+      <form id="itemForm" class="is-hidden" hidden>
         <input type="hidden" id="itemId">
 
         <section class="card carrito-item-card">
@@ -645,7 +646,7 @@
 
     function setInitialLoadContentVisible(visible) {
       const display = visible ? '' : 'none';
-      ['buscarProductosActions', 'scannerPanel', 'stationCartSplitRow', 'itemForm'].forEach(function(id) {
+      ['buscarProductosActions', 'scannerPanel', 'stationCartSplitRow'].forEach(function(id) {
         const el = document.getElementById(id);
         if (!el) return;
         el.style.display = display;
@@ -655,6 +656,12 @@
         const stationPanel = document.getElementById('stationCheckoutPanel');
         if (stationPanel) {
           stationPanel.style.display = 'none';
+        }
+        const stationActionsCard = document.getElementById('stationCartActionsCard');
+        if (stationActionsCard) {
+          stationActionsCard.style.display = 'none';
+          stationActionsCard.hidden = true;
+          stationActionsCard.classList.add('is-hidden');
         }
         const stationVipCard = document.getElementById('stationVipAccessCard');
         if (stationVipCard) {
@@ -758,6 +765,10 @@
         mostrar_resumen_productos: true,
         mostrar_boton_pagar: true,
         mostrar_tarjetas_pago: true,
+        mostrar_tarjeta_lector_codigo: true,
+        mostrar_tarjeta_items_carrito: true,
+        mostrar_tarjeta_totales_detalles: true,
+        mostrar_tarjeta_cobro_estados: true,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: true,
@@ -785,6 +796,10 @@
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago),
+        mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : Boolean(src.mostrar_tarjeta_lector_codigo),
+        mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : Boolean(src.mostrar_tarjeta_items_carrito),
+        mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : Boolean(src.mostrar_tarjeta_totales_detalles),
+        mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : Boolean(src.mostrar_tarjeta_cobro_estados),
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : Boolean(src.mostrar_tarjeta_acciones_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
@@ -933,6 +948,14 @@
       container.style.display = visible ? '' : 'none';
     }
 
+    function setCardVisibility(id, visible) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('is-hidden', !visible);
+      el.hidden = !visible;
+      el.style.display = visible ? '' : 'none';
+    }
+
     function setPaymentCheckoutVisibility(ui) {
       const cfg = normalizeUnifiedCartUIConfig(ui);
       const showPayButton = Boolean(cfg.mostrar_boton_pagar);
@@ -1026,6 +1049,14 @@
 
       setPaymentCheckoutVisibility(ui);
 
+      setCardVisibility('scannerPanel', Boolean(ui.mostrar_tarjeta_lector_codigo) && Boolean(ui.mostrar_lector_codigo_barras));
+      setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && state.stationMode && Boolean(getSelectedCarrito()));
+      if (!state.stationMode) {
+        setCardVisibility('carritoGrid', Boolean(ui.mostrar_tarjeta_items_carrito));
+      }
+      setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
+      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && state.stationMode && Boolean(getSelectedCarrito()));
+
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
         productsSummaryCard.style.display = ui.mostrar_resumen_productos ? '' : 'none';
@@ -1033,9 +1064,10 @@
 
       const actionsCard = document.getElementById('stationCartActionsCard');
       if (actionsCard) {
-        actionsCard.classList.toggle('is-hidden', !ui.mostrar_tarjeta_acciones_carrito);
-        actionsCard.hidden = !ui.mostrar_tarjeta_acciones_carrito;
-        actionsCard.style.display = ui.mostrar_tarjeta_acciones_carrito ? '' : 'none';
+        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && state.stationMode && Boolean(getSelectedCarrito());
+        actionsCard.classList.toggle('is-hidden', !showActionsCard);
+        actionsCard.hidden = !showActionsCard;
+        actionsCard.style.display = showActionsCard ? '' : 'none';
       }
     }
 
@@ -2212,6 +2244,7 @@
 
     function renderStationPaymentPanel(carrito) {
       const panel = document.getElementById('stationCheckoutPanel');
+      const actionsCard = document.getElementById('stationCartActionsCard');
       const vipCard = document.getElementById('stationVipAccessCard');
       const commissionCard = document.getElementById('stationWorkerCommissionCard');
       const paymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
@@ -2224,6 +2257,11 @@
         panel.style.display = 'none';
         panel.hidden = true;
         panel.classList.add('is-hidden');
+        if (actionsCard) {
+          actionsCard.style.display = 'none';
+          actionsCard.hidden = true;
+          actionsCard.classList.add('is-hidden');
+        }
         if (vipCard) {
           vipCard.style.display = 'none';
           vipCard.hidden = true;
@@ -2248,18 +2286,25 @@
         return;
       }
 
-      panel.classList.remove('is-hidden');
-      panel.hidden = false;
-      panel.style.display = '';
+      const stationUI = getCurrentStationCartUIConfig();
+      const showCheckoutPanel = Boolean(stationUI.mostrar_tarjeta_cobro_estados);
+      panel.classList.toggle('is-hidden', !showCheckoutPanel);
+      panel.hidden = !showCheckoutPanel;
+      panel.style.display = showCheckoutPanel ? '' : 'none';
       if (stationItemsPanel) {
-        stationItemsPanel.hidden = false;
-        stationItemsPanel.style.display = '';
+        const showItemsPanel = Boolean(stationUI.mostrar_tarjeta_items_carrito);
+        stationItemsPanel.hidden = !showItemsPanel;
+        stationItemsPanel.style.display = showItemsPanel ? '' : 'none';
       }
 
       const caps = getDiscountCapabilities();
-      const stationUI = getCurrentStationCartUIConfig();
       const selectedActive = isCarritoOperativoActivo(carrito);
       setPaymentCheckoutVisibility(stationUI);
+      if (actionsCard) {
+        actionsCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_acciones_carrito);
+        actionsCard.hidden = !stationUI.mostrar_tarjeta_acciones_carrito;
+        actionsCard.style.display = stationUI.mostrar_tarjeta_acciones_carrito ? '' : 'none';
+      }
       if (vipCard) {
         vipCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_vip_cliente);
         vipCard.hidden = !stationUI.mostrar_tarjeta_vip_cliente;
@@ -2424,7 +2469,8 @@
 
       syncStationPaymentDisplayInputs(carrito);
 
-      document.getElementById('itemForm').style.display = selectedActive ? '' : 'none';
+      document.getElementById('itemForm').style.display = 'none';
+      document.getElementById('itemForm').hidden = true;
       if (!selectedActive) {
         setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos, combos o servicios.', true);
       }
@@ -2762,12 +2808,16 @@
       const canUseByStation = !state.stationMode || isCarritoOperativoActivo(selected);
       const canUse = !!selected && canUseByStation;
 
-      if (state.stationMode && !stationUI.mostrar_lector_codigo_barras) {
+      if (state.stationMode && (!stationUI.mostrar_tarjeta_lector_codigo || !stationUI.mostrar_lector_codigo_barras)) {
         panel.style.display = 'none';
+        panel.hidden = true;
+        panel.classList.add('is-hidden');
         return;
       }
 
       panel.style.display = caps.enabled ? '' : 'none';
+      panel.hidden = !caps.enabled;
+      panel.classList.toggle('is-hidden', !caps.enabled);
 
       const inputCode = document.getElementById('scannerCodigo');
       const inputQty = document.getElementById('scannerCantidad');
@@ -3809,7 +3859,9 @@
       document.getElementById('carritoSearchBlock').style.display = stationMode ? 'none' : '';
       const carritoGrid = document.getElementById('carritoGrid');
       if (carritoGrid) {
-        carritoGrid.style.display = stationMode ? 'none' : '';
+        const ui = getCurrentStationCartUIConfig();
+        carritoGrid.style.display = stationMode || !ui.mostrar_tarjeta_items_carrito ? 'none' : '';
+        carritoGrid.hidden = stationMode || !ui.mostrar_tarjeta_items_carrito;
       }
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {

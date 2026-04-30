@@ -403,6 +403,33 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaLector" type="checkbox" checked>
+              Activar tarjeta del lector de código de barras
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaItems" type="checkbox" checked>
+              Activar tarjeta de items del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaTotales" type="checkbox" checked>
+              Activar tarjeta de totales y detalles
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaCobro" type="checkbox" checked>
+              Activar tarjeta de cobro y estados
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgTarjetaAcciones" type="checkbox" checked>
               Activar tarjeta de acciones del carrito
             </label>
@@ -576,6 +603,10 @@
         mostrar_resumen_productos: true,
         mostrar_boton_pagar: true,
         mostrar_tarjetas_pago: true,
+        mostrar_tarjeta_lector_codigo: true,
+        mostrar_tarjeta_items_carrito: true,
+        mostrar_tarjeta_totales_detalles: true,
+        mostrar_tarjeta_cobro_estados: true,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: true,
@@ -603,6 +634,10 @@
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos),
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : toBool(src.mostrar_boton_pagar),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : toBool(src.mostrar_tarjetas_pago),
+        mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : toBool(src.mostrar_tarjeta_lector_codigo),
+        mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : toBool(src.mostrar_tarjeta_items_carrito),
+        mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : toBool(src.mostrar_tarjeta_totales_detalles),
+        mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : toBool(src.mostrar_tarjeta_cobro_estados),
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : toBool(src.mostrar_tarjeta_acciones_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : toBool(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : toBool(src.mostrar_tarjeta_comision),
@@ -976,6 +1011,10 @@
         'carritoCfgResumenProductos',
         'carritoCfgMostrarPagar',
         'carritoCfgMostrarTarjetasPago',
+        'carritoCfgTarjetaLector',
+        'carritoCfgTarjetaItems',
+        'carritoCfgTarjetaTotales',
+        'carritoCfgTarjetaCobro',
         'carritoCfgTarjetaAcciones',
         'carritoCfgTarjetaValoresPago',
         'carritoCfgTarjetaComision',
@@ -1015,6 +1054,10 @@
       document.getElementById('carritoCfgResumenProductos').checked = !!resolved.mostrar_resumen_productos;
       document.getElementById('carritoCfgMostrarPagar').checked = !!resolved.mostrar_boton_pagar;
       document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!resolved.mostrar_tarjetas_pago;
+      document.getElementById('carritoCfgTarjetaLector').checked = !!resolved.mostrar_tarjeta_lector_codigo;
+      document.getElementById('carritoCfgTarjetaItems').checked = !!resolved.mostrar_tarjeta_items_carrito;
+      document.getElementById('carritoCfgTarjetaTotales').checked = !!resolved.mostrar_tarjeta_totales_detalles;
+      document.getElementById('carritoCfgTarjetaCobro').checked = !!resolved.mostrar_tarjeta_cobro_estados;
       document.getElementById('carritoCfgTarjetaAcciones').checked = !!resolved.mostrar_tarjeta_acciones_carrito;
       document.getElementById('carritoCfgTarjetaValoresPago').checked = !!resolved.mostrar_tarjeta_valores_pago;
       document.getElementById('carritoCfgTarjetaComision').checked = !!resolved.mostrar_tarjeta_comision;
@@ -1039,6 +1082,10 @@
         mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
         mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
         mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,
+        mostrar_tarjeta_lector_codigo: document.getElementById('carritoCfgTarjetaLector').checked,
+        mostrar_tarjeta_items_carrito: document.getElementById('carritoCfgTarjetaItems').checked,
+        mostrar_tarjeta_totales_detalles: document.getElementById('carritoCfgTarjetaTotales').checked,
+        mostrar_tarjeta_cobro_estados: document.getElementById('carritoCfgTarjetaCobro').checked,
         mostrar_tarjeta_acciones_carrito: document.getElementById('carritoCfgTarjetaAcciones').checked,
         mostrar_tarjeta_valores_pago: document.getElementById('carritoCfgTarjetaValoresPago').checked,
         mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,

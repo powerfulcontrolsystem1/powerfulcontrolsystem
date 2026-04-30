@@ -6275,6 +6275,7 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
 
+.carrito-workspace-card{box-sizing:border-box;}
 .carrito-primary-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(238px,306px);gap:18px;align-items:start;width:100%;}
 .carrito-primary-main{min-width:0;width:100%;}
 .carrito-grid{display:block;}
@@ -6399,6 +6400,15 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   .carrito-primary-layout{grid-template-columns:1fr;}
   #carritoTotalsPanel{position:static;max-width:none;order:-1;}
   .carrito-scanner-stack{grid-template-columns:1fr;}
+}
+
+@media (min-width:901px){
+  .carrito-workspace-card{
+    max-width:none;
+    width:100%;
+    margin-left:0;
+    margin-right:0;
+  }
 }
 
 /* Modulo ERP extendido */
