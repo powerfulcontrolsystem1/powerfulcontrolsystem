@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-21.55.0
-Ultima actualizacion: 2026-04-21
+Version: 2026-04-30.1.0
+Ultima actualizacion: 2026-04-30
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -19,6 +19,24 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-04-30 (pagos, empresas compartidas y documentos IA)
+- admin_empresa_compartida:
+  - tabla super para registrar administradores que tienen acceso compartido a una empresa.
+  - campos clave: `empresa_id`, `admin_email`, `compartido_por_email`, `invitacion_id`, `fecha_aceptada`, `fecha_revocada`, `revocado_por_email`, `estado`.
+  - permite que el administrador que compartio y el administrador receptor vean el acceso vigente y puedan retirarlo, dejando trazabilidad del actor que revoca.
+- admin_empresa_compartida_invitaciones:
+  - tabla super para invitaciones pendientes o historicas de acceso compartido.
+  - campos clave: `empresa_id`, `admin_email`, `invitado_por_email`, `token_hash`, `estado`, `expira_en`, `fecha_aceptada`, `fecha_revocada`, `revocada_por_email`.
+  - los tokens se guardan como hash; no se documentan ni almacenan tokens planos.
+- pagos_epayco:
+  - `raw_payload` puede incluir el diagnostico del checkout, `checkout_type=classic_form` y una copia saneada del formulario clasico cuando Smart Checkout v2 no entrega token.
+  - el formulario clasico firmado se envia al navegador solo como respuesta transitoria para hacer POST a `https://secure.payco.co/checkout.php`; en auditoria/persistencia se enmascara `p_key`.
+  - si falta `epayco.customer_id` o `epayco.checkout_key`/`epayco.p_key`, el backend devuelve error controlado `409` y no intenta redireccionar a URLs legacy que producen XML `AccessDenied`.
+  - el diagnostico del fallback puede incluir `mode`, `mode_source`, `smart_mode` y `smart_mode_source`; para credenciales reales el formulario clasico debe persistir evidencia saneada de `p_test_request=false`.
+- Documentos dinamicos IA:
+  - el flujo `/generate` + `/download` genera registros temporales de documento y archivos exportables en almacenamiento temporal.
+  - no introduce una tabla permanente nueva en esta version; si se requiere historial documental duradero, debe crearse una tabla dedicada con `empresa_id`, usuario, formato, estado y ruta segura.
 
 Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 - empresa_compras_documentos:

@@ -1,9 +1,13 @@
 package db
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/you/pos-backend/secure"
@@ -11,18 +15,53 @@ import (
 
 // EmpresaSensorDevice representa un dispositivo sensor (Raspberry) asociado a una empresa/estación
 type EmpresaSensorDevice struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	DeviceID           string `json:"device_id"`
-	DeviceToken        string `json:"device_token,omitempty"`
-	EstacionID         int64  `json:"estacion_id,omitempty"`
-	LastState          string `json:"last_state,omitempty"`
-	LastSeen           string `json:"last_seen,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                    int64  `json:"id"`
+	EmpresaID             int64  `json:"empresa_id"`
+	DeviceID              string `json:"device_id"`
+	DeviceToken           string `json:"device_token,omitempty"`
+	EstacionID            int64  `json:"estacion_id,omitempty"`
+	LastState             string `json:"last_state,omitempty"`
+	LastSeen              string `json:"last_seen,omitempty"`
+	FechaCreacion         string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion    string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador        string `json:"usuario_creador,omitempty"`
+	Estado                string `json:"estado,omitempty"`
+	Observaciones         string `json:"observaciones,omitempty"`
+	DeviceTokenConfigured bool   `json:"device_token_configured,omitempty"`
+}
+
+func NormalizeEmpresaSensorDeviceID(raw string) string {
+	value := strings.TrimSpace(strings.ToLower(raw))
+	value = regexp.MustCompile(`[^a-z0-9._-]+`).ReplaceAllString(value, "-")
+	value = strings.Trim(value, ".-_")
+	if len(value) > 80 {
+		value = value[:80]
+		value = strings.Trim(value, ".-_")
+	}
+	return value
+}
+
+func GenerateEmpresaSensorToken() (string, error) {
+	var b [32]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b[:]), nil
+}
+
+func GenerateEmpresaSensorDeviceID(empresaID, estacionID int64) (string, error) {
+	if empresaID <= 0 {
+		return "", fmt.Errorf("empresa_id invalido")
+	}
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", err
+	}
+	prefix := "rpi"
+	if estacionID > 0 {
+		prefix = fmt.Sprintf("rpi-e%d", estacionID)
+	}
+	return NormalizeEmpresaSensorDeviceID(fmt.Sprintf("%s-%d-%s", prefix, empresaID, hex.EncodeToString(b[:]))), nil
 }
 
 // EnsureEmpresaSensorPuertasSchema crea/migra las tablas del módulo sensor de puertas por empresa
@@ -107,16 +146,18 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 
 // GetEmpresaSensorByDeviceID busca un dispositivo por su identificador (case-insensitive)
 func GetEmpresaSensorByDeviceID(dbConn *sql.DB, deviceID string) (*EmpresaSensorDevice, error) {
-	idv := strings.TrimSpace(strings.ToLower(deviceID))
+	idv := NormalizeEmpresaSensorDeviceID(deviceID)
 	var p EmpresaSensorDevice
-	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresa_sensor_puertas_devices WHERE lower(device_id) = ? AND estado = 'activo' LIMIT 1`, idv)
+	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, '') FROM empresa_sensor_puertas_devices WHERE lower(device_id) = ? AND estado = 'activo' LIMIT 1`, idv)
 	var estacion int64
 	var observ sql.NullString
-	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ); err != nil {
+	var tokenHash string
+	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash); err != nil {
 		return nil, err
 	}
 	p.Observaciones = observ.String
 	p.EstacionID = estacion
+	p.DeviceTokenConfigured = strings.TrimSpace(tokenHash) != ""
 	return &p, nil
 }
 
@@ -133,12 +174,13 @@ func GetEmpresaSensorByToken(dbConn *sql.DB, token string) (*EmpresaSensorDevice
 	}
 	p.Observaciones = observ.String
 	p.EstacionID = estacion
+	p.DeviceTokenConfigured = true
 	return &p, nil
 }
 
 // GetEmpresaSensorsByEmpresa lista los dispositivos registrados para una empresa
 func GetEmpresaSensorsByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaSensorDevice, error) {
-	q := `SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresa_sensor_puertas_devices WHERE empresa_id = ? AND estado = 'activo'`
+	q := `SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, '') FROM empresa_sensor_puertas_devices WHERE empresa_id = ? AND estado = 'activo'`
 	rows, err := dbConn.Query(q, empresaID)
 	if err != nil {
 		return nil, err
@@ -149,11 +191,13 @@ func GetEmpresaSensorsByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaSenso
 		var p EmpresaSensorDevice
 		var estacion int64
 		var observ sql.NullString
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ); err != nil {
+		var tokenHash string
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash); err != nil {
 			return nil, err
 		}
 		p.Observaciones = observ.String
 		p.EstacionID = estacion
+		p.DeviceTokenConfigured = strings.TrimSpace(tokenHash) != ""
 		out = append(out, p)
 	}
 	return out, nil
@@ -161,7 +205,10 @@ func GetEmpresaSensorsByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaSenso
 
 // UpsertEmpresaSensorDevice crea o actualiza el mapeo device -> empresa/estacion
 func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, error) {
-	device := strings.TrimSpace(strings.ToLower(p.DeviceID))
+	device := NormalizeEmpresaSensorDeviceID(p.DeviceID)
+	if device == "" {
+		return 0, fmt.Errorf("device_id obligatorio")
+	}
 
 	var tokenHash sql.NullString
 	var tokenEnc sql.NullString
@@ -185,13 +232,13 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 
 	if existingID > 0 {
 		if tokenHash.Valid {
-			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), device_token_hash = ?, device_token_enc = ? WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, tokenHash.String, tokenEnc.String, existingID)
+			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones), device_token_hash = ?, device_token_enc = ? WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), tokenHash.String, tokenEnc.String, existingID)
 			if err != nil {
 				return 0, err
 			}
 			return existingID, nil
 		}
-		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo') WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, existingID)
+		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones) WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), existingID)
 		if err != nil {
 			return 0, err
 		}
@@ -199,14 +246,14 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 	}
 
 	if tokenHash.Valid {
-		res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado)
+		res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 		if err != nil {
 			return 0, err
 		}
 		return res.LastInsertId()
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, NULLIF(?,0), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado)
+	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, err
 	}
@@ -215,7 +262,7 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 
 // UpdateDeviceHeartbeat actualiza el estado y last_seen del dispositivo y devuelve la empresa/estacion asociada
 func UpdateDeviceHeartbeat(dbConn *sql.DB, deviceID, state string) (int64, int64, error) {
-	device := strings.TrimSpace(strings.ToLower(deviceID))
+	device := NormalizeEmpresaSensorDeviceID(deviceID)
 	var id int64
 	var empresaID int64
 	var estacion sql.NullInt64

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Buscaminas Arcade</title>
+  <link rel="stylesheet" href="/Juegos/open_game_source.css">
+  <script src="/Juegos/open_game_embed.js"></script>
+  <style>
+    .mine-board {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(24px, 44px));
+      gap: 4px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      background: rgba(15,23,42,.74);
+    }
+    .cell {
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #334155, #111827);
+      color: #e0f2fe;
+      font-weight: 900;
+      min-width: 0;
+    }
+    .cell.open { background: #e2e8f0; color: #0f172a; }
+    .cell.flag { color: #facc15; }
+    .cell.boom { background: #ef4444; color: #fff; }
+    @media (max-width: 680px) {
+      .mine-board { grid-template-columns: repeat(12, minmax(20px, 1fr)); gap: 3px; padding: 6px; width: min(96vw, 420px); }
+      .cell { font-size: .72rem; border-radius: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-root">
+    <div class="game-hud">
+      <span><strong>Buscaminas</strong></span>
+      <span>Minas: <strong id="mines">20</strong></span>
+      <span>Tiempo: <strong id="time">0</strong></span>
+      <span id="mode">Abrir</span>
+    </div>
+    <div class="game-board-wrap">
+      <div id="board" class="mine-board game-board" aria-label="Tablero de buscaminas"></div>
+      <div id="message" class="game-message" hidden></div>
+    </div>
+    <div class="game-actions">
+      <button id="flagBtn" class="game-btn" type="button">Bandera</button>
+      <button id="resetBtn" class="game-btn" type="button">Nuevo</button>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var size = 12, totalMines = 20, board = [], started = false, done = false, flagMode = false, timer = 0, timerId = 0;
+      var boardEl = document.getElementById("board"), minesEl = document.getElementById("mines"), timeEl = document.getElementById("time"), msg = document.getElementById("message"), mode = document.getElementById("mode");
+      function idx(x,y){ return y * size + x; }
+      function neighbors(x,y){
+        var out = [];
+        for (var dy=-1; dy<=1; dy++) for (var dx=-1; dx<=1; dx++) {
+          if (!dx && !dy) continue;
+          var nx=x+dx, ny=y+dy;
+          if (nx>=0 && ny>=0 && nx<size && ny<size) out.push(board[idx(nx,ny)]);
+        }
+        return out;
+      }
+      function startTimer(){
+        if (started) return;
+        started = true;
+        timerId = setInterval(function(){ timer++; timeEl.textContent = timer; }, 1000);
+      }
+      function reset(){
+        clearInterval(timerId); timer = 0; started = false; done = false; flagMode = false; timeEl.textContent = "0"; mode.textContent = "Abrir"; msg.hidden = true;
+        board = [];
+        for (var y=0; y<size; y++) for (var x=0; x<size; x++) board.push({x:x,y:y,mine:false,open:false,flag:false,count:0});
+        var placed = 0;
+        while (placed < totalMines) {
+          var p = Math.floor(Math.random() * board.length);
+          if (!board[p].mine) { board[p].mine = true; placed++; }
+        }
+        board.forEach(function(c){ c.count = neighbors(c.x,c.y).filter(function(n){ return n.mine; }).length; });
+        render();
+      }
+      function reveal(cell){
+        if (done || cell.open || cell.flag) return;
+        startTimer();
+        cell.open = true;
+        if (cell.mine) {
+          done = true; clearInterval(timerId); board.forEach(function(c){ if(c.mine) c.open = true; });
+          show("Explosion. Presiona Nuevo para intentar otra vez.");
+          if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+          render(); return;
+        }
+        if (cell.count === 0) neighbors(cell.x,cell.y).forEach(reveal);
+        if (board.filter(function(c){ return !c.mine && c.open; }).length === size*size-totalMines) {
+          done = true; clearInterval(timerId); show("Ganaste en " + timer + " segundos.");
+        }
+        render();
+      }
+      function show(text){ msg.textContent = text; msg.hidden = false; }
+      function render(){
+        minesEl.textContent = totalMines - board.filter(function(c){ return c.flag; }).length;
+        boardEl.innerHTML = "";
+        board.forEach(function(cell){
+          var b = document.createElement("button");
+          b.type = "button"; b.className = "cell";
+          if (cell.open) b.classList.add("open");
+          if (cell.flag) b.classList.add("flag");
+          if (cell.open && cell.mine) b.classList.add("boom");
+          b.textContent = cell.flag ? "!" : (cell.open ? (cell.mine ? "*" : (cell.count || "")) : "");
+          b.addEventListener("click", function(){ if (flagMode) { cell.flag = !cell.flag; render(); } else reveal(cell); });
+          b.addEventListener("contextmenu", function(e){ e.preventDefault(); cell.flag = !cell.flag; render(); });
+          boardEl.appendChild(b);
+        });
+      }
+      document.getElementById("flagBtn").onclick = function(){ flagMode = !flagMode; mode.textContent = flagMode ? "Bandera" : "Abrir"; };
+      document.getElementById("resetBtn").onclick = reset;
+      window.addEventListener("keydown", function(e){ if(e.key==="r" || e.key==="R") reset(); if(e.key==="f" || e.key==="F") document.getElementById("flagBtn").click(); });
+      reset();
+    }());
+  </script>
+</body>
+</html>

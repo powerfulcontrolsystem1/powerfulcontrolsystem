@@ -84,6 +84,7 @@
         const data=text?JSON.parse(text):{};
         if(!res.ok)throw new Error(data.error||text||'No se pudo cargar');
         state.data=data;
+        if(!state.slug && data.empresa_slug) state.slug=data.empresa_slug;
         if(state.cartMode){
           const cart=getCart();
           if(!cart.length) throw new Error('Tu carrito está vacío.');

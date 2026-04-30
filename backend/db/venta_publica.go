@@ -192,7 +192,7 @@ func ListPaginasPublicasByEmpresa(db *sql.DB, empresaID int64) ([]PaginaPublica,
 
 const (
 	ventaPublicaWompiModeSandbox     = "sandbox"
-	ventaPublicaWompiModeReal        = "real"
+	ventaPublicaWompiModeReal        = "production"
 	ventaPublicaEpaycoModeSandbox    = "sandbox"
 	ventaPublicaEpaycoModeProduction = "production"
 )
@@ -275,6 +275,7 @@ type EmpresaVentaPublicaItemsFilter struct {
 	PaginaID        int64
 	PaginaSlug      string
 	Q               string
+	Sort            string
 	Limit           int
 	Offset          int
 }
@@ -361,10 +362,25 @@ func ventaPublicaNormalizeTemaVisual(raw string) string {
 func ventaPublicaNormalizeWompiMode(raw string) string {
 	mode := strings.ToLower(strings.TrimSpace(raw))
 	switch mode {
-	case ventaPublicaWompiModeSandbox, ventaPublicaWompiModeReal:
-		return mode
+	case ventaPublicaWompiModeSandbox, "test", "testing", "pruebas":
+		return ventaPublicaWompiModeSandbox
+	case ventaPublicaWompiModeReal, "real", "prod", "live", "reales":
+		return ventaPublicaWompiModeReal
 	default:
 		return ventaPublicaWompiModeSandbox
+	}
+}
+
+func ventaPublicaNormalizeSort(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "precio_asc":
+		return "precio_asc"
+	case "precio_desc":
+		return "precio_desc"
+	case "nuevos", "recientes":
+		return "nuevos"
+	default:
+		return "relevancia"
 	}
 }
 
@@ -1598,6 +1614,16 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		return nil, 0, err
 	}
 
+	orderBy := `ORDER BY COALESCE(p.orden_visual, 0) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
+	switch ventaPublicaNormalizeSort(filter.Sort) {
+	case "precio_asc":
+		orderBy = `ORDER BY COALESCE(i.precio, 0) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
+	case "precio_desc":
+		orderBy = `ORDER BY COALESCE(i.precio, 0) DESC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
+	case "nuevos":
+		orderBy = `ORDER BY i.id DESC`
+	}
+
 	query := `SELECT
 		i.id,
 		i.empresa_id,
@@ -1621,7 +1647,7 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		COALESCE(i.observaciones, '')
 	FROM empresa_venta_publica_items i
 	LEFT JOIN empresa_venta_publica_paginas p ON p.empresa_id = i.empresa_id AND p.id = COALESCE(i.pagina_id, 0) ` + where + `
-	ORDER BY COALESCE(p.orden_visual, 0) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC
+	` + orderBy + `
 	LIMIT ? OFFSET ?`
 
 	rows, err := dbConn.Query(query, append(args, limit, offset)...)

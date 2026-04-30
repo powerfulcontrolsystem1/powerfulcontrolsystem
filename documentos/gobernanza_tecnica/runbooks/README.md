@@ -1,7 +1,7 @@
 # Catalogo de runbooks operativos
 
-Fecha: 2026-04-18
-Estado: semilla inicial
+Fecha: 2026-04-30
+Estado: vigente
 
 Los runbooks convierten fallas repetibles o diagnosticos delicados en procedimientos concretos para desarrollo, QA y soporte.
 
@@ -18,7 +18,7 @@ Los runbooks convierten fallas repetibles o diagnosticos delicados en procedimie
 
 ## Catalogo inicial
 
-- `runbook_checkout_licencias.md`: creado.
+- `runbook_checkout_licencias.md`: creado y actualizado para Smart Checkout, fallback clasico Epayco por POST y XML `AccessDenied`.
 - `runbook_estaciones_sensores_ventas_simple.md`: creado.
 - `runbook_arranque_postgresql_tunel_local.md`: creado.
 - `runbook_dian_set_pruebas_y_diagnostico_oficial.md`: creado.

@@ -349,20 +349,37 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if !exists {
 					item = defaultItem
 				}
-				template, _ := dbpkg.ParseTipoEmpresaPreconfigTemplate(item.ConfigJSON)
+				template, parseErr := dbpkg.ParseTipoEmpresaPreconfigTemplate(item.ConfigJSON)
 				defaultTemplate, _ := dbpkg.ParseTipoEmpresaPreconfigTemplate(defaultItem.ConfigJSON)
-				items = append(items, map[string]any{
+				responseItem := map[string]any{
 					"tipo_empresa":      tipo,
 					"preconfig":         item,
 					"template":          template,
 					"default_preconfig": defaultItem,
 					"default_template":  defaultTemplate,
 					"es_default":        !exists,
-				})
+				}
+				if parseErr != nil {
+					responseItem["template"] = defaultTemplate
+					responseItem["config_error"] = parseErr.Error()
+				}
+				items = append(items, responseItem)
 			}
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "items": items})
 			return
 		case http.MethodPost, http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "seed_defaults" || action == "registrar_defaults" || action == "registrar_preconfiguraciones" {
+				overwrite := parseEmpresaPreconfigBool(r.URL.Query().Get("overwrite"))
+				result, err := dbpkg.SeedDefaultTipoEmpresaPreconfiguraciones(dbSuper, adminEmail, overwrite)
+				if err != nil {
+					http.Error(w, "no se pudieron registrar preconfiguraciones: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": result})
+				return
+			}
+
 			var payload struct {
 				TipoEmpresaID int64                                 `json:"tipo_empresa_id"`
 				Enabled       bool                                  `json:"enabled"`
@@ -382,6 +399,14 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "tipo_empresa_id requerido", http.StatusBadRequest)
 				return
 			}
+			payload.Nombre = strings.TrimSpace(payload.Nombre)
+			if payload.Nombre == "" {
+				payload.Nombre = "Preconfiguracion inicial"
+			}
+			if payload.Estaciones.Cantidad < 0 || payload.Estaciones.Cantidad > 200 {
+				http.Error(w, "cantidad de estaciones debe estar entre 0 y 200", http.StatusBadRequest)
+				return
+			}
 			configJSON, err := dbpkg.MarshalTipoEmpresaPreconfigTemplate(dbpkg.TipoEmpresaPreconfigTemplate{
 				Estaciones: payload.Estaciones,
 				Productos:  payload.Productos,
@@ -397,7 +422,7 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				TipoEmpresaID:  payload.TipoEmpresaID,
 				Enabled:        payload.Enabled,
 				Nombre:         payload.Nombre,
-				Descripcion:    payload.Descripcion,
+				Descripcion:    strings.TrimSpace(payload.Descripcion),
 				ConfigJSON:     configJSON,
 				UsuarioCreador: adminEmail,
 				Estado:         "activo",
@@ -412,5 +437,14 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+	}
+}
+
+func parseEmpresaPreconfigBool(raw string) bool {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "1", "true", "si", "sí", "yes", "on", "activo", "enabled":
+		return true
+	default:
+		return false
 	}
 }

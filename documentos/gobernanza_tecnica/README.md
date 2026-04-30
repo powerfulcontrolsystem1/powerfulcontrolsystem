@@ -1,6 +1,6 @@
 # Gobernanza tecnica del proyecto
 
-Fecha: 2026-04-18
+Fecha: 2026-04-30
 Estado: vigente
 
 Este paquete instala la capa de gobernanza tecnica formal del proyecto para reducir errores de implementacion, mejorar la calidad de las decisiones, facilitar el trabajo de Copilot y sostener la escalabilidad del sistema.
@@ -22,10 +22,14 @@ Este paquete instala la capa de gobernanza tecnica formal del proyecto para redu
 - `runbooks/`: procedimientos operativos y de diagnostico.
 - `runbooks/checklist_evidencia_documental_para_qa_y_soporte.md`: checklist corta para validar evidencia documental en QA y soporte.
 
-## Avance actual 2026-04-18
+## Avance actual 2026-04-30
 
 - Contratos vigentes para checkout de licencias, estaciones, autenticacion, venta publica, permisos de api empresa, facturacion electronica y reportes multiformato.
 - Runbooks vigentes para checkout de licencias, estaciones, arranque PostgreSQL por tunel local, DIAN set de pruebas y alertas de reinicio con Gmail SMTP.
+- El contrato y runbook de checkout de licencias ya documentan el fallback clasico de Epayco firmado por POST a `https://secure.payco.co/checkout.php`, evitando redirecciones GET que producen XML `AccessDenied`.
+- La documentacion canonica incorpora la secretaria IA, el robot/chat configurable por empresa y la regla de fallback a texto o voz de navegador cuando el servicio de voz falla.
+- Se incorpora el flujo de empresas compartidas: consulta de administradores, revocacion desde ambos lados y trazabilidad en base super.
+- Se incorpora el flujo de documentos dinamicos con IA mediante `/generate` y `/download`, con HTML/template como estructura intermedia y exportes PDF, DOCX, XLSX, HTML, TXT y JSON.
 - La gobernanza ya distingue explicitamente entre capacidades operativas actuales y capacidades futuras no implementadas, especialmente en DIAN e integraciones sensibles.
 - Quedan incorporados ademas el contrato de soporte remoto multiempresa y los runbooks de contingencia para reportes programados y para sesiones/dispositivos de soporte remoto.
 - Se incorpora el frente financiero de periodos contables y conciliacion bancaria con contrato tecnico y runbook operativo alineados al backend real.

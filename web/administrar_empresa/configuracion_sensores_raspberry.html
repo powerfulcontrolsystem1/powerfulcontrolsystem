@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Raspberry Pi y sensores</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1>Raspberry Pi y sensores</h1>
+          <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
+        </div>
+      </div>
+
+      <p class="form-help">Registra cada Raspberry Pi o sensor fisico y asocialo a la estacion correspondiente. El estado se refleja en las tarjetas de estaciones cuando el dispositivo envia heartbeats al servidor.</p>
+
+      <div id="message" class="form-message" role="status" aria-live="polite"></div>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="deviceId">Identificador del dispositivo</label>
+            <input id="deviceId" class="form-input" placeholder="ej: RPI-ABC-1234" autocomplete="off">
+            <p class="form-help">Debe coincidir con el `device_id` enviado por la Raspberry Pi.</p>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estacionId">Estacion asociada</label>
+            <input id="estacionId" class="form-input" type="number" min="1" step="1" placeholder="Numero de estacion">
+            <p class="form-help">Usa el numero de estacion configurado en la pagina de estaciones.</p>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="deviceToken">Token del dispositivo</label>
+            <div class="input-action-row">
+              <input id="deviceToken" class="form-input" placeholder="Token para autenticacion" autocomplete="off">
+              <button id="generateToken" class="btn secondary" type="button">Generar</button>
+            </div>
+            <p class="form-help">Recomendado para que el sensor use el header `X-Device-Token`.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn add" id="saveBtn" type="button">Guardar dispositivo</button>
+          <button class="btn" id="provisionBtn" type="button">Provisionar seguro</button>
+          <button class="btn secondary" id="reloadBtn" type="button">Recargar estado</button>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="provisioningOutput">Datos de provisionamiento</label>
+            <textarea id="provisioningOutput" class="form-input" rows="7" readonly placeholder="Al provisionar, aqui aparecera el device_id, token y ejemplo de conexion. Guarda el token en la Raspberry; el sistema no lo vuelve a mostrar."></textarea>
+            <p class="form-help">El token solo se entrega en este momento. Si lo pierdes, provisiona de nuevo para rotarlo.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Dispositivos registrados</h2>
+      </div>
+      <div id="devicesTable" class="table-block">Cargando...</div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Endpoint para Raspberry Pi</h2>
+      </div>
+      <div class="form">
+        <label class="form-label" for="heartbeatExample">Heartbeat</label>
+        <textarea id="heartbeatExample" class="form-input" rows="5" readonly></textarea>
+        <p class="form-help">El sensor debe enviar `state` como `open`, `closed`, `active`, `inactive` u otro estado operativo acordado. Si el dispositivo tiene token, el servidor exige `X-Device-Token` y rechaza reportes por `device_id` sin token.</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var params = new URLSearchParams(window.location.search || '');
+      var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
+
+      function sanitize(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function showMessage(text, type) {
+        var box = document.getElementById('message');
+        if (!box) return;
+        box.textContent = text || '';
+        box.className = 'form-message' + (type ? ' ' + type : '');
+      }
+
+      async function requestJSON(url, options) {
+        var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var contentType = response.headers.get('content-type') || '';
+        var data = null;
+        if (contentType.indexOf('application/json') !== -1) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+        if (!response.ok) {
+          var msg = typeof data === 'string' ? data : (data && (data.error || data.message) ? (data.error || data.message) : 'error de servidor');
+          throw new Error(msg || ('HTTP ' + response.status));
+        }
+        return data;
+      }
+
+      async function cargarEmpresa() {
+        var label = document.getElementById('empresaInfo');
+        if (!label) return;
+        if (!empresaId) {
+          label.textContent = 'Empresa: no detectada';
+          return;
+        }
+        try {
+          var resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+          if (!resp.ok) throw new Error('No encontrada');
+          var data = await resp.json();
+          label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
+        } catch (e) {
+          label.textContent = 'Empresa: no disponible';
+        }
+      }
+
+      async function getStationConfig() {
+        if (!empresaId) return null;
+        try {
+          var res = await fetch('/api/empresa/estaciones_config?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function loadDevices() {
+        var container = document.getElementById('devicesTable');
+        container.innerHTML = 'Cargando...';
+
+        if (!empresaId) {
+          container.innerHTML = 'Falta empresa_id en la URL';
+          return;
+        }
+
+        try {
+          var devices = await requestJSON('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId));
+          if (!Array.isArray(devices) || !devices.length) {
+            container.innerHTML = '<p class="form-help">No hay dispositivos registrados.</p>';
+            return;
+          }
+
+          var rows = devices.map(function (d) {
+            var state = String(d.last_state || '').trim();
+            var stateClass = /^(active|open|on|1|true|abierto|activa|activo)$/i.test(state) ? 'success' : 'muted';
+            return '<tr>' +
+              '<td><strong>' + sanitize(d.device_id || '') + '</strong></td>' +
+              '<td>' + sanitize(d.estacion_id || 'no asociada') + '</td>' +
+              '<td><span class="status-pill ' + stateClass + '">' + sanitize(state || 'sin señal') + '</span></td>' +
+              '<td>' + (d.device_token_configured ? '<span class="status-pill success">Token activo</span>' : '<span class="status-pill muted">Sin token</span>') + '</td>' +
+              '<td>' + sanitize(d.last_seen || '') + '</td>' +
+              '<td>' + sanitize(d.usuario_creador || '') + '</td>' +
+              '</tr>';
+          }).join('');
+
+          container.innerHTML = '<div class="table-wrap">' +
+            '<table class="table">' +
+            '<thead><tr><th>Dispositivo</th><th>Estacion</th><th>Estado</th><th>Ultima señal</th><th>Registrado por</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+            '</table>' +
+            '</div>';
+          var headerRow = container.querySelector('thead tr');
+          if (headerRow && headerRow.children.length === 5) {
+            var th = document.createElement('th');
+            th.textContent = 'Seguridad';
+            headerRow.insertBefore(th, headerRow.children[3]);
+          }
+        } catch (err) {
+          container.innerHTML = 'Error: ' + sanitize(String(err && err.message ? err.message : err));
+        }
+      }
+
+      async function saveDevice() {
+        var deviceId = String(document.getElementById('deviceId').value || '').trim();
+        var estacionId = Number(document.getElementById('estacionId').value || 0);
+        var deviceToken = String(document.getElementById('deviceToken').value || '').trim();
+
+        if (!deviceId) {
+          showMessage('Ingresa el identificador del dispositivo.', 'error');
+          return;
+        }
+        if (!estacionId || estacionId < 1) {
+          showMessage('Ingresa una estacion valida mayor a 0.', 'error');
+          return;
+        }
+        if (!empresaId) {
+          showMessage('Falta empresa_id en la URL.', 'error');
+          return;
+        }
+
+        var cfg = await getStationConfig();
+        if (cfg && Number(cfg.cantidad || 0) > 0 && estacionId > Number(cfg.cantidad || 0)) {
+          showMessage('La estacion indicada no existe. Ajusta primero la cantidad de estaciones.', 'error');
+          return;
+        }
+
+        try {
+          var result = await requestJSON('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId, estacion_id: estacionId, device_token: deviceToken })
+          });
+          if (result && result.ok) {
+            document.getElementById('deviceId').value = '';
+            document.getElementById('estacionId').value = '';
+            showMessage('Dispositivo guardado correctamente.', 'success');
+            await loadDevices();
+            return;
+          }
+          showMessage('No se pudo guardar el dispositivo.', 'error');
+        } catch (err) {
+          showMessage(err.message || 'No se pudo guardar el dispositivo.', 'error');
+        }
+      }
+
+      async function provisionDevice() {
+        var deviceId = String(document.getElementById('deviceId').value || '').trim();
+        var estacionId = Number(document.getElementById('estacionId').value || 0);
+        var output = document.getElementById('provisioningOutput');
+
+        if (!estacionId || estacionId < 1) {
+          showMessage('Ingresa una estacion valida para provisionar el sensor.', 'error');
+          return;
+        }
+        if (!empresaId) {
+          showMessage('Falta empresa_id en la URL.', 'error');
+          return;
+        }
+
+        var cfg = await getStationConfig();
+        if (cfg && Number(cfg.cantidad || 0) > 0 && estacionId > Number(cfg.cantidad || 0)) {
+          showMessage('La estacion indicada no existe. Ajusta primero la cantidad de estaciones.', 'error');
+          return;
+        }
+
+        try {
+          var result = await requestJSON('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId) + '&action=provisionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId, estacion_id: estacionId, observaciones: 'Provisionamiento seguro desde panel empresa' })
+          });
+          var provisioning = result && result.provisioning ? result.provisioning : {};
+          var token = result && result.device_token ? String(result.device_token) : '';
+          document.getElementById('deviceId').value = String(result.device_id || deviceId || '');
+          document.getElementById('deviceToken').value = token;
+          if (output) {
+            output.value = [
+              'device_id=' + String(result.device_id || ''),
+              'device_token=' + token,
+              '',
+              'Ejemplo curl:',
+              String(provisioning.curl || ''),
+              '',
+              'Ejemplo Python:',
+              String(provisioning.python || '')
+            ].join('\n');
+          }
+          showMessage('Sensor provisionado. Copia el token en la Raspberry Pi antes de cerrar esta pagina.', 'success');
+          await loadDevices();
+        } catch (err) {
+          showMessage(err.message || 'No se pudo provisionar el sensor.', 'error');
+        }
+      }
+
+      function generateToken() {
+        try {
+          var arr = new Uint8Array(24);
+          window.crypto.getRandomValues(arr);
+          document.getElementById('deviceToken').value = Array.from(arr).map(function (b) {
+            return b.toString(16).padStart(2, '0');
+          }).join('');
+        } catch (e) {
+          showMessage('No se pudo generar token: ' + String(e), 'error');
+        }
+      }
+
+      function setEndpointExample() {
+        var box = document.getElementById('heartbeatExample');
+        if (!box) return;
+        box.value = [
+          'POST /api/public/sensor_puertas?action=heartbeat',
+          'Header: X-Device-Token: <token-del-dispositivo>',
+          'Content-Type: application/json',
+          '',
+          '{"device_id":"RPI-ABC-1234","state":"open"}'
+        ].join('\n');
+      }
+
+      function wireEvents() {
+        document.getElementById('saveBtn').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          saveDevice();
+        });
+        document.getElementById('provisionBtn').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          provisionDevice();
+        });
+        document.getElementById('reloadBtn').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          loadDevices();
+        });
+        document.getElementById('generateToken').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          generateToken();
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        wireEvents();
+        setEndpointExample();
+        cargarEmpresa();
+        loadDevices();
+      });
+    })();
+  </script>
+</body>
+</html>

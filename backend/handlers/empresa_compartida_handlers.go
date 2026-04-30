@@ -362,6 +362,40 @@ func targetAdminAlreadyHasEmpresaAccess(dbSuper *sql.DB, empresa *dbpkg.Empresa,
 	return access != nil, nil
 }
 
+func registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp *sql.DB, r *http.Request, empresaID int64, accion string, recurso string, recursoID int64, statusCode int, metadata map[string]interface{}, observaciones string) {
+	if dbEmp == nil || r == nil || empresaID <= 0 {
+		return
+	}
+	raw, _ := json.Marshal(metadata)
+	resultado := "ok"
+	if statusCode >= 400 {
+		resultado = "error"
+	}
+	usuario := strings.TrimSpace(adminEmailFromRequest(r))
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	_, _ = dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
+		EmpresaID:      empresaID,
+		Modulo:         "empresas_compartidas",
+		Accion:         strings.TrimSpace(accion),
+		Recurso:        strings.TrimSpace(recurso),
+		RecursoID:      recursoID,
+		MetodoHTTP:     r.Method,
+		Endpoint:       r.URL.Path,
+		Resultado:      resultado,
+		CodigoHTTP:     int64(statusCode),
+		RequestID:      utils.RequestIDFromContext(r.Context()),
+		IPOrigen:       strings.TrimSpace(r.RemoteAddr),
+		UserAgent:      r.UserAgent(),
+		MetadataJSON:   string(raw),
+		RetencionDias:  3650,
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  strings.TrimSpace(observaciones),
+	})
+}
+
 func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -409,13 +443,23 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id invalido", http.StatusBadRequest)
 				return
 			}
-			_, _, owner, err := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, empresaID)
+			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+			if requesterEmail == "" || requesterEmail == "sistema" {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
+			principalEmail, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, empresaID)
 			if err != nil {
 				http.Error(w, "no se pudo validar empresa: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			if !owner {
-				http.Error(w, "solo el administrador propietario puede gestionar accesos compartidos", http.StatusForbidden)
+			if !ok {
+				http.Error(w, "no tienes acceso a esta empresa", http.StatusForbidden)
+				return
+			}
+			_, _, owner, ownerErr := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, empresaID)
+			if ownerErr != nil {
+				http.Error(w, "no se pudo validar propietario: "+ownerErr.Error(), http.StatusInternalServerError)
 				return
 			}
 			accesos, err := dbpkg.ListAdminEmpresaCompartidaAccesosByEmpresa(dbSuper, empresaID)
@@ -432,7 +476,14 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			for _, item := range invitaciones {
 				normalized = append(normalized, normalizeAdminEmpresaCompartidaInvitation(item))
 			}
-			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accesos": accesos, "invitaciones": normalized})
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":              true,
+				"accesos":         accesos,
+				"invitaciones":    normalized,
+				"is_owner":        owner,
+				"requester_email": requesterEmail,
+				"principal_email": strings.TrimSpace(principalEmail),
+			})
 			return
 
 		case http.MethodPost:
@@ -669,19 +720,40 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "acceso compartido no encontrado", http.StatusNotFound)
 					return
 				}
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
 				_, principalEmail, owner, ownErr := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, access.EmpresaID)
 				if ownErr != nil {
 					http.Error(w, "no se pudo validar empresa: "+ownErr.Error(), http.StatusInternalServerError)
 					return
 				}
-				if !owner {
-					http.Error(w, "solo el administrador propietario puede revocar accesos compartidos", http.StatusForbidden)
+				canRevoke := owner ||
+					strings.EqualFold(strings.TrimSpace(access.AdminEmail), requesterEmail) ||
+					strings.EqualFold(strings.TrimSpace(access.CompartidoPorEmail), requesterEmail)
+				if !canRevoke {
+					http.Error(w, "solo el propietario, quien compartio o el administrador receptor pueden revocar este acceso", http.StatusForbidden)
 					return
 				}
-				if err := dbpkg.RevokeAdminEmpresaCompartidaAcceso(dbSuper, access.ID, principalEmail); err != nil {
+				actorEmail := strings.TrimSpace(principalEmail)
+				if actorEmail == "" {
+					actorEmail = requesterEmail
+				}
+				if err := dbpkg.RevokeAdminEmpresaCompartidaAcceso(dbSuper, access.ID, actorEmail); err != nil {
 					http.Error(w, "no se pudo revocar acceso compartido", http.StatusInternalServerError)
 					return
 				}
+				registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp, r, access.EmpresaID, "revocar_acceso", "admin_empresa_compartida", access.ID, http.StatusOK, map[string]interface{}{
+					"admin_email":          strings.TrimSpace(access.AdminEmail),
+					"compartido_por_email": strings.TrimSpace(access.CompartidoPorEmail),
+					"actor_email":          requesterEmail,
+					"actor_es_propietario": owner,
+					"invitacion_id":        access.InvitacionID,
+					"estado_anterior":      strings.TrimSpace(access.Estado),
+					"fecha_aceptada":       strings.TrimSpace(access.FechaAceptada),
+				}, "Acceso compartido revocado desde el lapiz de empresa.")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			}
@@ -690,19 +762,39 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invitación compartida no encontrada", http.StatusNotFound)
 				return
 			}
+			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+			if requesterEmail == "" || requesterEmail == "sistema" {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
 			_, principalEmail, owner, ownErr := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, inv.EmpresaID)
 			if ownErr != nil {
 				http.Error(w, "no se pudo validar empresa: "+ownErr.Error(), http.StatusInternalServerError)
 				return
 			}
-			if !owner {
-				http.Error(w, "solo el administrador propietario puede revocar invitaciones", http.StatusForbidden)
+			canRevokeInvitation := owner ||
+				strings.EqualFold(strings.TrimSpace(inv.AdminEmail), requesterEmail) ||
+				strings.EqualFold(strings.TrimSpace(inv.InvitadoPorEmail), requesterEmail)
+			if !canRevokeInvitation {
+				http.Error(w, "solo el propietario, quien invito o el administrador invitado pueden revocar esta invitacion", http.StatusForbidden)
 				return
 			}
-			if err := dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "revocada", principalEmail); err != nil {
+			actorEmail := strings.TrimSpace(principalEmail)
+			if actorEmail == "" {
+				actorEmail = requesterEmail
+			}
+			if err := dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "revocada", actorEmail); err != nil {
 				http.Error(w, "no se pudo revocar invitación compartida", http.StatusInternalServerError)
 				return
 			}
+			registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp, r, inv.EmpresaID, "revocar_invitacion", "admin_empresa_compartida_invitaciones", inv.ID, http.StatusOK, map[string]interface{}{
+				"admin_email":          strings.TrimSpace(inv.AdminEmail),
+				"invitado_por_email":   strings.TrimSpace(inv.InvitadoPorEmail),
+				"actor_email":          requesterEmail,
+				"actor_es_propietario": owner,
+				"estado_anterior":      strings.TrimSpace(inv.Estado),
+				"expira_en":            strings.TrimSpace(inv.ExpiraEn),
+			}, "Invitacion compartida revocada desde el lapiz de empresa.")
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 			return
 		}

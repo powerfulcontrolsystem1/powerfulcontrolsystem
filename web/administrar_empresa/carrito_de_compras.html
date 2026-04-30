@@ -9,7 +9,7 @@
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <button id="backToStationsHeaderBtn" class="btn secondary is-hidden" type="button">Volver a estaciones</button>
+      <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
       <h1 id="pageTitle">Carrito de compras</h1>
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
@@ -671,7 +671,7 @@
           stationContext +
           '<div class="form-actions mt-14">' +
             '<button type="button" id="retryInitialLoadBtn" class="btn">Reintentar carga</button>' +
-            (state.stationMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Volver a estaciones</button>' : '') +
+            (state.stationMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Regresar a estaciones</button>' : '') +
           '</div>' +
         '</div>';
 
@@ -858,6 +858,36 @@
       container.style.display = visible ? '' : 'none';
     }
 
+    function setPaymentCheckoutVisibility(ui) {
+      const cfg = normalizeUnifiedCartUIConfig(ui);
+      const showPayButton = Boolean(cfg.mostrar_boton_pagar);
+      const showPaymentMeans = Boolean(cfg.mostrar_tarjetas_pago);
+      const carritoPayBtn = document.getElementById('carritoBtnPagar');
+      const stationPayBtn = document.getElementById('btnPagarCarrito');
+      const stationPaymentAmountsRow = document.getElementById('stationPaymentAmountsRow');
+      const paymentMethodsCards = document.getElementById('paymentMethodsCards');
+
+      if (carritoPayBtn) {
+        carritoPayBtn.style.display = showPayButton ? '' : 'none';
+      }
+      if (stationPayBtn) {
+        stationPayBtn.style.display = showPayButton ? '' : 'none';
+      }
+      if (stationPaymentAmountsRow) {
+        stationPaymentAmountsRow.style.display = showPaymentMeans ? '' : 'none';
+        stationPaymentAmountsRow.hidden = !showPaymentMeans;
+      }
+      if (paymentMethodsCards) {
+        paymentMethodsCards.classList.toggle('is-hidden', !showPaymentMeans);
+        paymentMethodsCards.hidden = !showPaymentMeans;
+        paymentMethodsCards.setAttribute('aria-hidden', showPaymentMeans ? 'false' : 'true');
+        paymentMethodsCards.style.display = showPaymentMeans ? '' : 'none';
+      }
+
+      setFieldColumnVisibility('paymentMethod', showPaymentMeans);
+      setFieldColumnVisibility('paymentReference', showPaymentMeans);
+    }
+
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
@@ -917,24 +947,7 @@
         stationPaymentBreakdown.style.display = ui.mostrar_desglose_cobro ? '' : 'none';
       }
 
-      const carritoPayBtn = document.getElementById('carritoBtnPagar');
-      if (carritoPayBtn) {
-        carritoPayBtn.style.display = ui.mostrar_boton_pagar ? '' : 'none';
-      }
-
-      const stationPayBtn = document.getElementById('btnPagarCarrito');
-      if (stationPayBtn) {
-        stationPayBtn.style.display = ui.mostrar_boton_pagar ? '' : 'none';
-      }
-
-      const stationPaymentAmountsRow = document.getElementById('stationPaymentAmountsRow');
-      if (stationPaymentAmountsRow) {
-        stationPaymentAmountsRow.style.display = ui.mostrar_tarjetas_pago ? '' : 'none';
-      }
-      const paymentMethodsCards = document.getElementById('paymentMethodsCards');
-      if (paymentMethodsCards) {
-        paymentMethodsCards.style.display = 'none';
-      }
+      setPaymentCheckoutVisibility(ui);
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
@@ -1070,6 +1083,72 @@
       const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'mixto', 'codigo_descuento'];
       return ordered.filter(function(method) {
         return isPaymentMethodAllowed(method);
+      });
+    }
+
+    function getPaymentMethodLabel(method) {
+      const labels = {
+        efectivo: 'Efectivo',
+        tarjeta_credito: 'Tarjeta credito',
+        tarjeta_debito: 'Tarjeta debito',
+        transferencia_bancaria: 'Transferencia',
+        mixto: 'Pago mixto',
+        codigo_descuento: 'Codigo descuento'
+      };
+      return labels[normalize(method).toLowerCase()] || normalize(method).replace(/_/g, ' ');
+    }
+
+    function renderPaymentMethodsCards(carrito) {
+      const wrap = document.getElementById('paymentMethodsCards');
+      if (!wrap) return;
+
+      const stationUI = getCurrentStationCartUIConfig();
+      const showPaymentMeans = Boolean(stationUI.mostrar_tarjetas_pago);
+      wrap.classList.toggle('is-hidden', !showPaymentMeans);
+      wrap.hidden = !showPaymentMeans;
+      wrap.setAttribute('aria-hidden', showPaymentMeans ? 'false' : 'true');
+      wrap.style.display = showPaymentMeans ? '' : 'none';
+      if (!showPaymentMeans) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      const allowed = getAllowedPaymentMethods();
+      const selectedActive = carrito ? isCarritoOperativoActivo(carrito) : false;
+      const paymentMethodEl = document.getElementById('paymentMethod');
+      const currentMethod = normalize((paymentMethodEl && paymentMethodEl.value) || state.stationDiscount.paymentMethod || allowed[0] || '').toLowerCase();
+      wrap.innerHTML = '';
+
+      if (!allowed.length) {
+        const empty = document.createElement('div');
+        empty.className = 'form-help carrito-payment-empty';
+        empty.textContent = 'No hay medios de pago habilitados para este rol.';
+        wrap.appendChild(empty);
+        return;
+      }
+
+      allowed.forEach(function(method) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn secondary carrito-payment-card';
+        btn.dataset.paymentMethod = method;
+        btn.textContent = getPaymentMethodLabel(method);
+        btn.disabled = !selectedActive;
+        if (method === currentMethod) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+        } else {
+          btn.setAttribute('aria-pressed', 'false');
+        }
+        btn.addEventListener('click', function() {
+          if (btn.disabled) return;
+          if (paymentMethodEl) {
+            paymentMethodEl.value = method;
+          }
+          state.stationDiscount.paymentMethod = method;
+          renderStationPaymentPanel(getSelectedCarrito() || carrito);
+        });
+        wrap.appendChild(btn);
       });
     }
 
@@ -1897,15 +1976,21 @@
       const panel = document.getElementById('stationCheckoutPanel');
       if (!state.stationMode || !carrito) {
         panel.style.display = 'none';
+        panel.hidden = true;
+        panel.classList.add('is-hidden');
         syncStationPaymentDisplayInputs(null);
+        renderPaymentMethodsCards(null);
         return;
       }
 
+      panel.classList.remove('is-hidden');
+      panel.hidden = false;
       panel.style.display = '';
 
       const caps = getDiscountCapabilities();
       const stationUI = getCurrentStationCartUIConfig();
       const selectedActive = isCarritoOperativoActivo(carrito);
+      setPaymentCheckoutVisibility(stationUI);
 
       const block = document.getElementById('stationDiscountSettings');
       const breakdownEl = document.getElementById('stationPaymentBreakdown');
@@ -1918,7 +2003,7 @@
       const applyTipEl = document.getElementById('applyTipCheckbox');
 
       block.style.display = '';
-      btnPay.style.display = selectedActive ? '' : 'none';
+      btnPay.style.display = selectedActive && stationUI.mostrar_boton_pagar ? '' : 'none';
       btnActivate.style.display = selectedActive ? 'none' : '';
 
       const discountTypeEl = document.getElementById('discountType');
@@ -1951,14 +2036,16 @@
       setFieldColumnVisibility('discountCode', stationUI.mostrar_descuentos);
       setFieldColumnVisibility('applyTipCheckbox', stationUI.mostrar_propina);
       setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision);
+      setFieldColumnVisibility('paymentMethod', stationUI.mostrar_tarjetas_pago);
+      setFieldColumnVisibility('paymentReference', stationUI.mostrar_tarjetas_pago);
       ensurePaymentMethodInputsFromOperativa();
       const hasAllowedPaymentMethods = getAllowedPaymentMethods().length > 0;
 
       discountTypeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
       discountValueEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
       discountCodeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
-      paymentMethodEl.disabled = !selectedActive || !hasAllowedPaymentMethods;
-      paymentReferenceEl.disabled = !selectedActive;
+      paymentMethodEl.disabled = !selectedActive || !hasAllowedPaymentMethods || !stationUI.mostrar_tarjetas_pago;
+      paymentReferenceEl.disabled = !selectedActive || !stationUI.mostrar_tarjetas_pago;
       devolucionEl.disabled = !selectedActive;
       if (commissionWorkerEl) {
         commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision;
@@ -1988,11 +2075,12 @@
 
       const pay = getStationPaymentBreakdown(carrito);
       const isMixedMethod = pay.paymentMethod === 'mixto';
+      renderPaymentMethodsCards(carrito);
 
-      mixedBlockEl.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock2El.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock3El.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedHintEl.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlockEl.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlock2El.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlock3El.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedHintEl.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
 
       ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2', 'mixedMethod3', 'mixedAmount3', 'mixedReference3'].forEach(function(id) {
         const el = document.getElementById(id);
@@ -3300,7 +3388,7 @@
       }
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {
-        backToStationsHeaderBtn.style.display = stationMode ? '' : 'none';
+        backToStationsHeaderBtn.hidden = !state.empresaID;
       }
       document.getElementById('moduleHelp').textContent =
         'Este módulo usa un solo carrito operativo y configurable por empresa y por estación, manteniendo la base preparada para facturación electrónica.';

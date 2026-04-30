@@ -335,6 +335,8 @@ En sandbox se documentaron como referencia estos telefonos:
 
 Cuando configures Epayco para el checkout de licencias debes registrar tanto la pagina publica de respuesta como la URL de confirmacion del webhook.
 
+El sistema usa Smart Checkout v2 como primera opcion. Si Epayco no devuelve token y esta configurado `epayco.customer_id`, el backend genera un formulario clasico firmado y el navegador lo envia por POST a `https://secure.payco.co/checkout.php`. No se debe configurar ni usar una redireccion GET a `https://checkout.epayco.co/checkout.php`, porque puede mostrar XML `AccessDenied`.
+
 ### 8.1 URLs que debes registrar en Epayco
 
 Produccion:
@@ -364,6 +366,8 @@ Importante:
 - La URL de respuesta no activa la licencia por si sola; solo recibe la vuelta de Epayco y redirige a `pagar_licencia.html` para que el sistema consulte el estado real del pago.
 - La URL de confirmacion si debe permanecer apuntando al backend porque recibe la notificacion servidor a servidor de la pasarela.
 - No registres `localhost`, `127.0.0.1` ni URLs temporales de ngrok en produccion.
+- Guarda tambien `epayco.customer_id` en la configuracion super; es obligatorio para el fallback clasico firmado.
+- Si `/epayco/create_transaction` responde `409` por autenticacion Smart Checkout y falta de fallback, revisa credenciales y `epayco.customer_id` antes de probar de nuevo.
 
 ### 8.3 Flujo esperado
 
@@ -383,6 +387,7 @@ Importante:
   - `https://powerfulcontrolsystem.com/epayco/respuesta.html`
   - y luego por `https://powerfulcontrolsystem.com/pagar_licencia.html`
 4. Confirma que el sistema muestre el resultado final del pago y no solo el retorno visual de la pasarela.
+5. Si se usa fallback clasico, confirma en DevTools que el envio sea POST a `https://secure.payco.co/checkout.php` y que no aparezca XML `AccessDenied`.
 
 ## 9) Confirmacion de correo para usuarios de empresa con Gmail SMTP
 

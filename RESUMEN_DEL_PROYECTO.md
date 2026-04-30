@@ -1,6 +1,6 @@
 # Resumen del proyecto Powerful Control System
 
-Actualizacion: 2026-04-26
+Actualizacion: 2026-04-30
 
 Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, inventario, finanzas, facturacion, reportes, soporte remoto y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
 
@@ -11,10 +11,10 @@ Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a 
 - **Base de datos:** PostgreSQL como motor canonico. El sistema usa dos contextos principales: `pcs_superadministrador` para configuracion global, administradores, licencias y contrato; y `pcs_empresas` para operacion por empresa.
 - **Autenticacion:** Google OAuth para administradores, login por correo/contraseña para administradores confirmados y portal de usuarios internos de empresa con confirmacion por correo, contrato y recuperacion de contraseña.
 - **Correo:** envio por SMTP/Gmail configurable desde super administrador para confirmaciones, recuperacion de contraseña, activacion de licencias, alertas y plantillas editables.
-- **Pagos:** integraciones con Wompi y Epayco para licencias y venta publica, con configuracion global y por empresa segun el flujo.
+- **Pagos:** integraciones con Wompi y Epayco para licencias y venta publica, con configuracion global y por empresa segun el flujo. El checkout de licencias usa Smart Checkout v2 cuando hay sesion valida y fallback clasico firmado por POST a `https://secure.payco.co/checkout.php` para evitar redirecciones GET que terminan en `AccessDenied`; el fallback clasico resuelve produccion/pruebas con `Customer ID` + `P_KEY` para no enviar comercios reales como prueba.
 - **Facturacion electronica:** modulo por empresa con configuracion por pais. Para Colombia incluye preparacion DIAN, datos tributarios, resoluciones, consecutivos, firma y trazabilidad documental.
-- **Inteligencia artificial:** chat IA empresarial, chat IA global para super administrador y chat publico comercial del portal. Soporta adjuntos/fotos en flujos empresariales, acciones confirmables (`PCS_ACTION`), voz natural por servidor abierto configurable y consumo controlado por proveedor/modelo.
-- **Documentos:** OnlyOffice para documentos por empresa y Nextcloud como almacenamiento/colaboracion configurable. Ambos se controlan desde super y empresa con manejo de errores cuando estan desactivados o desconfigurados.
+- **Inteligencia artificial:** chat IA empresarial, chat IA global para super administrador y chat publico comercial del portal. Soporta adjuntos/fotos en flujos empresariales, acciones confirmables (`PCS_ACTION`), voz natural por servidor abierto configurable, avatar robot, secretaria IA estilo caricatura ejecutiva con voz femenina y consumo controlado por proveedor/modelo.
+- **Documentos:** OnlyOffice para documentos por empresa, Nextcloud como almacenamiento/colaboracion configurable y generacion dinamica de documentos asistida por IA (`/generate`, `/download`) con salida HTML/PDF/DOCX/XLSX/TXT/JSON. Las integraciones se controlan desde super y empresa con manejo de errores cuando estan desactivadas o desconfiguradas.
 - **Soporte remoto:** RustDesk como flujo recomendado, con configuracion super del servicio y configuracion empresarial para publicar datos de conexion, instrucciones y acceso remoto.
 - **Servidor y operacion:** despliegue a VPS con scripts PowerShell/Bash, Nginx como reverse proxy esperado, certificados HTTPS wildcard, servicio opcional de voz IA streaming con Piper TTS y herramientas de diagnostico del backend.
 
@@ -28,9 +28,15 @@ El portal publico presenta la oferta comercial, tarjetas configurables, informac
 
 El panel super administra empresas, licencias, tipos de empresa, administradores, contrato, configuracion avanzada, pasarelas de pago, correo SMTP, IA, pagina principal, errores del sistema, metricas del VPS, seguridad, roles, permisos y descarga consolidada de informacion empresarial. Desde este panel tambien se editan plantillas de correo, configuracion de OnlyOffice, Nextcloud, consumos externos y datos oficiales para alimentar la IA del portal.
 
+Desde 2026-04-30, el flujo de pago de licencias por Epayco conserva Smart Checkout v2 como ruta primaria y solo usa checkout clasico mediante formulario POST firmado. Si Smart Checkout falla y no existen `epayco.customer_id` y `epayco.checkout_key`/`epayco.p_key`, el backend devuelve error controlado en vez de redirigir al usuario a una URL remota invalida. El formulario clasico usa modo independiente de Smart Checkout y debe salir como produccion cuando las credenciales son reales.
+
 ### Administracion por empresa
 
 Cada empresa opera su propio panel con aislamiento por `empresa_id`. El panel incluye usuarios internos, roles, clientes, productos, bodegas, inventario, compras, ventas, carritos, estaciones, facturacion, finanzas, reportes, auditoria, asistencia de empleados, backups, venta publica, soporte remoto, integraciones y chat/tareas.
+
+La administracion empresarial tambien permite ver desde el editor de empresa a que administradores se compartio el acceso, tanto para quien comparte como para quien recibe. Cualquier administrador con acceso vigente puede retirar otro acceso compartido con trazabilidad y registro del actor.
+
+La hoja de vida operativa universal permite llevar historial de motos de taller, pacientes, vehiculos, equipos, activos o mascotas dentro de Administrar empresa. Cada ficha concentra eventos, servicios, alertas, recurrencias y resumen operativo para seguimiento empresarial.
 
 ### Ventas, carritos y estaciones
 
@@ -64,8 +70,10 @@ La IA empresarial puede responder preguntas de operacion, analizar adjuntos, pro
 
 - Chat IA empresarial con contexto de `empresa_id`, restricciones de modelo y uso, y soporte para adjuntos/fotos en consultas avanzadas.
 - Chat IA global para super administrador con consolidacion multinivel de datos entre empresas, vision holistica y capacidades de diagnostico de sistema.
+- Chat flotante configurable por empresa entre ventana cuadrada, robot IA y secretaria IA. La secretaria usa apariencia de caricatura ejecutiva joven y voz femenina automaticamente; el robot conserva voz configurable.
 - Contexto IA por auditoria en tiempo real: GPT-5.4 mini o el modelo asociado recibe actividad reciente, busqueda profunda por intencion y resultados de consultas DB seguras ya resueltas por el backend.
 - Voz IA streaming: servicio abierto FastAPI + Piper TTS desplegable en VPS, desactivado por defecto y configurable desde Super Administrador; el chat usa proxy backend para no exponer la URL interna y degrada a voz del navegador/texto si el servicio no responde.
+- Generacion dinamica de documentos: el backend recibe contenido o prompt IA, aplica variables con templates Go, renderiza HTML profesional y permite descargar el resultado en PDF, DOCX, XLSX, HTML, TXT o JSON.
 - Descubrimiento de musica YouTube asistido por IA en la tarjeta de estaciones: sugiere playlists y videos actuales, permite cargar enlaces validos y ofrece busquedas inteligentes cuando no hay fuente directa.
 - Integracion profesional con OpenAI/GPT gestionando modelo preferido, limites diarios, registro de consumo y configuracion centralizada desde super administrador.
 

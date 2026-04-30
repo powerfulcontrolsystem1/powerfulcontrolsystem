@@ -7,59 +7,198 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
+    html { width: 100%; min-width: 0 !important; overflow-x: hidden; }
     body {
       margin: 0;
+      width: 100%;
+      min-width: 0 !important;
+      min-height: 100vh;
+      overflow-x: hidden;
       background:
-        radial-gradient(circle at top center, color-mix(in srgb, var(--accent) 12%, transparent 88%), transparent 40%),
+        radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent 84%), transparent 34rem),
         linear-gradient(180deg, var(--bg-alt), var(--bg));
       color: var(--text);
-      min-height: 100vh;
     }
-    .games-shell { max-width: 980px; margin: 0 auto; padding: 96px 20px 40px; }
-    .games-hero { text-align: center; margin-bottom: 28px; }
-    .games-hero p { color: var(--muted); max-width: 720px; margin: 0.75rem auto 0; }
-    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .games-card { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 86%, var(--surface) 14%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%)); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
-    .games-card h2 { margin-top: 0; }
-    .games-card p { color: var(--muted); line-height: 1.6; }
-    .games-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .games-note { margin-top: 28px; color: var(--muted); text-align: center; }
+    .games-shell { max-width: 1120px; margin: 0 auto; padding: 92px 20px 42px; box-sizing: border-box; }
+    .games-hero { margin-bottom: 24px; }
+    .games-hero h1 { margin: 0; font-size: clamp(2rem, 5vw, 4.2rem); letter-spacing: 0; }
+    .games-hero p { color: var(--muted); max-width: 760px; margin: 0.75rem 0 0; line-height: 1.6; }
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; align-items: stretch; min-width: 0; }
+    .games-card {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 88%, var(--surface) 12%), color-mix(in srgb, var(--surface) 92%, var(--bg) 8%));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-sizing: border-box;
+      box-shadow: 0 18px 34px rgba(0,0,0,0.14);
+      display: flex;
+      flex-direction: column;
+      min-height: 190px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .games-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
+    .games-card p { color: var(--muted); line-height: 1.55; margin: 0; }
+    .games-hero p, .games-card h2, .games-card p, .games-actions .btn {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal !important;
+    }
+    .games-card.is-featured { grid-column: span 2; border-color: color-mix(in srgb, var(--accent) 48%, var(--border) 52%); }
+    .games-badge { display: inline-flex; align-items: center; width: max-content; gap: 6px; color: var(--accent-yellow); font-weight: 800; font-size: .82rem; margin-bottom: 10px; }
+    .games-actions { margin-top: auto; padding-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .games-note { margin-top: 24px; color: var(--muted); }
+    @media (max-width: 720px) {
+      .games-shell { width: 100%; max-width: 100%; padding: 76px 12px 28px; }
+      .games-hero,
+      .games-hero p {
+        max-width: min(100%, 330px);
+      }
+      .games-grid {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: calc(100vw - 24px);
+      }
+      .games-card {
+        width: 100%;
+        max-width: calc(100vw - 24px);
+        padding: 18px;
+      }
+      .games-card p {
+        max-width: min(100%, 310px);
+        font-size: 0.94rem;
+      }
+      .games-actions .btn {
+        max-width: 100%;
+      }
+      .games-card.is-featured { grid-column: auto; }
+    }
   </style>
 </head>
 <body>
   <main class="games-shell">
     <header class="games-hero">
       <h1>Centro de juegos</h1>
-      <p>Accesos restaurados para las experiencias ligeras del sistema. La apariencia global se mantiene sincronizada con tu cuenta.</p>
+      <p>Experiencias ligeras del sistema, listas para PC y celular. La apariencia global se mantiene sincronizada con tu cuenta.</p>
     </header>
 
-    <section class="games-grid">
+    <section class="games-grid" aria-label="Juegos disponibles">
+      <article class="games-card is-featured">
+        <span class="games-badge">Arcade completo</span>
+        <h2>Pacman Arcade</h2>
+        <p>Version abierta integrada desde daleharvey/pacman, con laberinto clasico, niveles, fantasmas, powerpills, vidas, puntaje, sonido local, teclado y controles tactiles.</p>
+        <div class="games-actions">
+          <a class="btn" href="/Juegos/pacman_arcade/index.html">Jugar Pacman Arcade</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Cube Runner 3D</h2>
+        <p>Runner WebGL MIT con profundidad real, carriles, salto, obstaculos progresivos y controles tactiles/teclado.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/cube_runner_3d/index.html">Jugar Cube Runner 3D</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Space Dock 3D</h2>
+        <p>Juego WebGL MIT de nave espacial con objetos 3D reales, energia, asteroides y movimiento en dos ejes.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/space_dock_3d/index.html">Jugar Space Dock 3D</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Buscaminas Arcade</h2>
+        <p>Clasico de logica MIT con banderas, temporizador, reinicio y tablero adaptable para celular.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/minesweeper_arcade/index.html">Jugar Buscaminas</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Memoria Arcade</h2>
+        <p>Juego MIT de parejas con racha visual, conteo de movimientos y tarjetas responsivas para toque.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/memory_arcade/index.html">Jugar Memoria</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Frogger Calle</h2>
+        <p>Arcade MIT de cruce de carriles con niveles, autos animados, vidas y cruceta movil.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/frogger_arcade/index.html">Jugar Frogger Calle</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Tetris Arcade</h2>
+        <p>Version HTML5 MIT con controles de teclado, tactil, seleccion de nivel, pausa, hard drop y pieza fantasma.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/tetris_arcade/index.html">Jugar Tetris</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Space Invaders</h2>
+        <p>Clon arcade MIT con tres niveles, vidas, disparos, enemigos animados y efectos de sonido locales.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/space_invaders/index.html">Jugar Space Invaders</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Asteroids</h2>
+        <p>Asteroids vectorial MIT en JavaScript puro, con nave, disparos, asteroides y sonido local.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/asteroids_arcade/index.html">Jugar Asteroids</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Breakout</h2>
+        <p>Rompe ladrillos HTML5 MIT con colisiones, puntaje, vidas, paleta y controles por teclado.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/breakout_arcade/index.html">Jugar Breakout</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Snake</h2>
+        <p>Serpiente clasica MIT responsive, con puntaje, comida, velocidad progresiva y reinicio.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/snake_arcade/index.html">Jugar Snake</a>
+        </div>
+      </article>
+
+      <article class="games-card">
+        <h2>Pong</h2>
+        <p>Pong completo MIT con modo un jugador, dos jugadores, IA, sonido y ajustes visuales.</p>
+        <div class="games-actions">
+          <a class="btn secondary" href="/Juegos/pong_arcade/index.html">Jugar Pong</a>
+        </div>
+      </article>
+
       <article class="games-card">
         <h2>Patito Volando</h2>
-        <p>Clásico juego arcade de superar obstáculos. Optimizado para jugar en celular mediante toques y en PC con la tecla espacio.</p>
+        <p>Arcade de superar obstaculos. Optimizado para celular con toques y para PC con la tecla espacio.</p>
         <div class="games-actions">
-          <a class="btn" href="/juegos/patito_volando.html">Jugar Patito Volando</a>
+          <a class="btn secondary" href="/Juegos/patito_volando.html">Jugar Patito Volando</a>
         </div>
       </article>
 
       <article class="games-card">
         <h2>Arcade N64</h2>
-        <p>Entrada rápida a la colección recreativa restaurada para pruebas visuales y navegación interna.</p>
+        <p>Entrada rapida a la coleccion recreativa restaurada para pruebas visuales y navegacion interna.</p>
         <div class="games-actions">
-          <a class="btn" href="/Juegos/n64/index.html">Abrir N64</a>
-        </div>
-      </article>
-
-      <article class="games-card">
-        <h2>Acceso rápido</h2>
-        <p>Este módulo queda disponible desde el menú flotante y responde a los seis modos de apariencia, igual que el resto del portal.</p>
-        <div class="games-actions">
-          <a class="btn secondary" href="/index.html">Volver al portal</a>
+          <a class="btn secondary" href="/Juegos/n64/index.html">Abrir N64</a>
         </div>
       </article>
     </section>
 
-    <p class="games-note">Si se agregan más juegos, deben publicarse desde este menú para conservar un punto de entrada estable.</p>
+    <p class="games-note">El acceso queda publicado desde el menu flotante para conservar un punto de entrada estable.</p>
   </main>
 </body>
 </html>

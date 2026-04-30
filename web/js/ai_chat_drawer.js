@@ -33,6 +33,7 @@
 
   var state = {
     proposals: [],
+    exportables: [],
     loading: false,
     selectedAttachment: null,
     chatEnabled: true,
@@ -44,7 +45,10 @@
     voiceServerChecked: false,
     voiceServerAudio: null,
     voicePlaybackVersion: 0,
+    activeSpeechRecognition: null,
+    activeSpeechSource: '',
     robotVoice: 'es-CO',
+    robotAssistantVisible: false,
     robotMoodTimer: null
   };
 
@@ -88,6 +92,51 @@
     '<span class="robot-3d-arm robot-3d-arm-right"></span>' +
     '<span class="robot-3d-leg robot-3d-leg-left"></span>' +
     '<span class="robot-3d-leg robot-3d-leg-right"></span>' +
+    '</div>' +
+    '</div>';
+  var SECRETARY_SVG = '<div id="robotAvatarGraphic" class="secretary-3d-avatar robot-mood-idle" aria-hidden="true" data-mood="idle">' +
+    '<div class="secretary-3d-stage">' +
+    '<span class="secretary-3d-shadow"></span>' +
+    '<span class="secretary-3d-side-light secretary-3d-side-light-a"></span>' +
+    '<span class="secretary-3d-side-light secretary-3d-side-light-b"></span>' +
+    '<div class="secretary-3d-hair secretary-3d-hair-back"></div>' +
+    '<span class="secretary-3d-hair-side secretary-3d-hair-side-left"></span>' +
+    '<span class="secretary-3d-hair-side secretary-3d-hair-side-right"></span>' +
+    '<div class="secretary-3d-head">' +
+    '<span class="secretary-3d-hair secretary-3d-bang-a"></span>' +
+    '<span class="secretary-3d-hair secretary-3d-bang-b"></span>' +
+    '<div class="secretary-3d-face">' +
+    '<span class="secretary-3d-lash secretary-3d-lash-left"></span>' +
+    '<span class="secretary-3d-lash secretary-3d-lash-right"></span>' +
+    '<span class="secretary-3d-eye secretary-3d-eye-left"></span>' +
+    '<span class="secretary-3d-eye secretary-3d-eye-right"></span>' +
+    '<span class="secretary-3d-cheek secretary-3d-cheek-left"></span>' +
+    '<span class="secretary-3d-cheek secretary-3d-cheek-right"></span>' +
+    '<span class="secretary-3d-mouth"></span>' +
+    '</div>' +
+    '<span class="secretary-3d-ear secretary-3d-ear-left"></span>' +
+    '<span class="secretary-3d-ear secretary-3d-ear-right"></span>' +
+    '</div>' +
+    '<span class="secretary-3d-neck"></span>' +
+    '<div class="secretary-3d-body">' +
+    '<span class="secretary-3d-blazer"></span>' +
+    '<span class="secretary-3d-shirt"></span>' +
+    '<span class="secretary-3d-lapel secretary-3d-lapel-left"></span>' +
+    '<span class="secretary-3d-lapel secretary-3d-lapel-right"></span>' +
+    '<span class="secretary-3d-scarf"></span>' +
+    '<span class="secretary-3d-badge"></span>' +
+    '<span class="secretary-3d-nameplate"></span>' +
+    '<span class="secretary-3d-button secretary-3d-button-a"></span>' +
+    '<span class="secretary-3d-button secretary-3d-button-b"></span>' +
+    '</div>' +
+    '<span class="secretary-3d-arm secretary-3d-arm-left"></span>' +
+    '<span class="secretary-3d-arm secretary-3d-arm-right"></span>' +
+    '<span class="secretary-3d-tablet"></span>' +
+    '<span class="secretary-3d-skirt"></span>' +
+    '<span class="secretary-3d-leg secretary-3d-leg-left"></span>' +
+    '<span class="secretary-3d-leg secretary-3d-leg-right"></span>' +
+    '<span class="secretary-3d-shoe secretary-3d-shoe-left"></span>' +
+    '<span class="secretary-3d-shoe secretary-3d-shoe-right"></span>' +
     '</div>' +
     '</div>';
 
@@ -184,7 +233,11 @@
   var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
 
   function normalizeChatPersonalityMode(value) {
-    return normalize(value).toLowerCase() === 'robot' && state.robotEnabled ? 'robot' : 'normal';
+    var mode = normalize(value).toLowerCase();
+    if ((mode === 'robot' || mode === 'secretary' || mode === 'secretaria') && state.robotEnabled) {
+      return mode === 'secretaria' ? 'secretary' : mode;
+    }
+    return 'normal';
   }
 
   function normalizeRobotVoice(value) {
@@ -193,7 +246,7 @@
     if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
     if (lower === 'es-co-male' || lower === 'masculina' || lower === 'hombre') return 'es-CO-male';
     if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
-    if (lower === 'es-es' || lower === 'espana' || lower === 'españa' || lower === 'castellano') return 'es-ES';
+    if (lower === 'es-es' || lower === 'espana' || lower === 'espaÃ±a' || lower === 'castellano') return 'es-ES';
     return 'es-CO';
   }
 
@@ -201,8 +254,8 @@
     switch (normalizeRobotVoice(value)) {
       case 'es-CO-female': return 'Colombiana femenina';
       case 'es-CO-male': return 'Colombiana masculina';
-      case 'es-MX': return 'Español latino';
-      case 'es-ES': return 'Español castellano';
+      case 'es-MX': return 'EspaÃ±ol latino';
+      case 'es-ES': return 'EspaÃ±ol castellano';
       default: return 'Colombiana natural';
     }
   }
@@ -212,6 +265,10 @@
     if (voice === 'es-MX') return 'es-MX';
     if (voice === 'es-ES') return 'es-ES';
     return 'es-CO';
+  }
+
+  function getEffectiveRobotVoice() {
+    return getChatPersonalityMode() === 'secretary' ? 'es-CO-female' : normalizeRobotVoice(state.robotVoice);
   }
 
   function readEnabledPreference(key, fallback) {
@@ -288,7 +345,7 @@
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[¿?¡!.,;:]+/g, ' ')
+      .replace(/[Â¿?Â¡!.,;:]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -307,6 +364,13 @@
       /\brobot\b.*\b(activo|activado|encendido|prendido|habilitado)\b/.test(normalized);
   }
 
+  function shouldAutoEnableSecretary(text) {
+    var normalized = normalizeVoiceCommandText(text);
+    if (!normalized) return false;
+    return /\b(activa|activar|enciende|prende|habilita|pon)\b.*\b(la\s+)?secretaria\b/.test(normalized) ||
+      /\bsecretaria\b.*\b(activa|activada|encendida|prendida|habilitada)\b/.test(normalized);
+  }
+
   function isOnlyLocalPreferenceCommand(text) {
     var normalized = normalizeVoiceCommandText(text);
     normalized = normalized
@@ -316,7 +380,7 @@
       .replace(/\b(y|e|tambien|ademas)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return /^(activa|activar|enciende|prende|habilita|pon)(\s+(robot|voz))+$/.test(normalized);
+    return /^(activa|activar|enciende|prende|habilita|pon)(\s+(robot|secretaria|voz))+$/.test(normalized);
   }
 
   function isOnlyVoiceEnableCommand(text) {
@@ -453,6 +517,13 @@
     setNotice('Robot IA activado y guardado.');
   }
 
+  function activateSecretaryFromCommand() {
+    persistRobotEnabledPreference(true);
+    persistChatPersonalityPreference('secretary');
+    persistRobotVoicePreference('es-CO-female');
+    setNotice('Secretaria IA 3D activada con voz femenina y guardada.');
+  }
+
   function buildPreferenceCommandMessage(wantsRobot, wantsVoice) {
     if (wantsRobot && wantsVoice) {
       return 'Listo. Active el robot IA y la voz del asistente. Guarde estas preferencias para los proximos reinicios.';
@@ -478,7 +549,22 @@
     if ((raw === 'robot' || raw === 'clippy') && state.robotEnabled) {
       return 'robot';
     }
+    if ((raw === 'secretary' || raw === 'secretaria' || raw === 'recepcionista') && state.robotEnabled) {
+      return 'secretary';
+    }
     return 'normal';
+  }
+
+  function isAvatarPersonalityMode(mode) {
+    return mode === 'robot' || mode === 'secretary';
+  }
+
+  function getAvatarLabel(mode) {
+    return mode === 'secretary' ? 'secretaria IA 3D' : 'robot IA 3D';
+  }
+
+  function getAvatarMarkup(mode) {
+    return mode === 'secretary' ? SECRETARY_SVG : ROBOT_SVG;
   }
 
   function getRobotInlineElements() {
@@ -541,12 +627,20 @@
 
   function setRobotInlineVisible(on) {
     var els = getRobotInlineElements();
+    state.robotAssistantVisible = !!on;
+    if (els.host && isAvatarPersonalityMode(getChatPersonalityMode())) {
+      els.host.style.display = on ? 'inline-flex' : 'none';
+      els.host.setAttribute('aria-hidden', on ? 'false' : 'true');
+    }
     if (els.panel) {
       els.panel.hidden = !on;
       els.panel.setAttribute('aria-hidden', on ? 'false' : 'true');
     }
     if (els.hideBtn) {
       els.hideBtn.style.display = on ? 'inline-flex' : 'none';
+    }
+    if (els.showBtn) {
+      els.showBtn.style.display = on ? 'none' : 'inline-flex';
     }
     setRobotMood(on ? 'idle' : 'hidden');
   }
@@ -613,6 +707,40 @@
     ]);
   }
 
+  function renderRobotDocumentExportActions(text) {
+    var els = getRobotInlineElements();
+    if (!els.actions) return;
+    if (!shouldShowDocumentExports(text)) {
+      clearRobotActionChips();
+      return;
+    }
+    var item = {
+      content: String(text || ''),
+      document_type: inferDocumentExportType(text),
+      source_module: inferCurrentSourceModule(),
+      title: inferDocumentExportTitle(text)
+    };
+    els.actions.innerHTML = '';
+    [
+      ['pdf', 'PDF'],
+      ['docx', 'Word'],
+      ['xlsx', 'Excel'],
+      ['txt', 'TXT'],
+      ['json', 'JSON']
+    ].forEach(function (entry) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'robot-assistant-action-chip';
+      btn.textContent = entry[1];
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        exportChatDocumentContent(item, entry[0], btn);
+      });
+      els.actions.appendChild(btn);
+    });
+    els.actions.hidden = false;
+  }
+
   function setRobotUserText(text) {
     var els = getRobotInlineElements();
     if (!els.userBubble) return;
@@ -651,6 +779,7 @@
     setRobotInlineVisible(false);
     if (toggleBtn) {
       toggleBtn.style.display = 'none';
+      toggleBtn.setAttribute('aria-hidden', 'true');
     }
     var showBtn = document.getElementById(ROBOT_SHOW_ID);
     if (showBtn) showBtn.style.display = 'inline-flex';
@@ -660,6 +789,7 @@
     if (!state.chatEnabled || !state.robotEnabled) return false;
     if (toggleBtn) {
       toggleBtn.style.display = 'inline-flex';
+      toggleBtn.setAttribute('aria-hidden', 'false');
       toggleBtn.classList.remove('robot-appear');
       void toggleBtn.offsetWidth;
       toggleBtn.classList.add('robot-appear');
@@ -686,7 +816,7 @@
         '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
         '<form id="' + ROBOT_INLINE_FORM_ID + '" class="robot-cloud robot-cloud-input">' +
         '<textarea id="' + ROBOT_INLINE_INPUT_ID + '" rows="1" maxlength="2000"></textarea>' +
-        '<button id="' + ROBOT_INLINE_STOP_VOICE_ID + '" class="robot-inline-stop-voice" type="button" aria-label="Detener voz del robot" title="Detener voz"></button>' +
+      '<button id="' + ROBOT_INLINE_STOP_VOICE_ID + '" class="robot-inline-stop-voice" type="button" aria-label="Detener voz del avatar" title="Detener voz"></button>' +
         '<button id="' + ROBOT_INLINE_MIC_ID + '" class="robot-inline-mic" type="button" aria-label="Dictar mensaje al robot"></button>' +
         '<button id="' + ROBOT_INLINE_SEND_ID + '" type="submit" aria-label="Enviar al robot">Enviar</button>' +
         '</form>';
@@ -703,11 +833,7 @@
         input.addEventListener('keydown', function (event) {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            if (form && typeof form.requestSubmit === 'function') {
-              form.requestSubmit();
-            } else if (form) {
-              handleRobotInlineSubmit(event);
-            }
+            submitFormSafely(form, handleRobotInlineSubmit);
           }
         });
         input.addEventListener('input', function () {
@@ -716,12 +842,20 @@
         });
       }
       if (stopVoiceBtn) {
-        stopVoiceBtn.innerHTML = ICON_STOP;
+        stopVoiceBtn.innerHTML = '';
         stopVoiceBtn.addEventListener('click', function (event) {
           event.preventDefault();
           event.stopPropagation();
           stopAssistantVoiceForMoment();
           focusRobotInput();
+        });
+      }
+      var sendBtn = document.getElementById(ROBOT_INLINE_SEND_ID);
+      if (sendBtn) {
+        sendBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          submitFormSafely(form, handleRobotInlineSubmit);
         });
       }
       setupSpeechRecognition(input, micBtn, document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
@@ -733,7 +867,6 @@
       hideBtn = document.createElement('button');
       hideBtn.id = ROBOT_HIDE_ID;
       hideBtn.type = 'button';
-      hideBtn.textContent = 'Ocultar robot';
       hideBtn.addEventListener('click', function (event) {
         event.stopPropagation();
         hideRobotAssistant(toggleBtn || document.getElementById(TOGGLE_ID));
@@ -746,7 +879,6 @@
       showBtn = document.createElement('button');
       showBtn.id = ROBOT_SHOW_ID;
       showBtn.type = 'button';
-      showBtn.textContent = 'Mostrar robot';
       showBtn.style.display = 'none';
       showBtn.addEventListener('click', function (event) {
         event.stopPropagation();
@@ -755,9 +887,13 @@
       document.body.appendChild(showBtn);
     }
 
-    setRobotAssistantText(getDefaultAssistantGreeting());
-    setRobotInlineVisible(true);
-    setRobotMood('happy', 1600);
+    var avatarLabel = getAvatarLabel(getChatPersonalityMode());
+      if (hideBtn) hideBtn.textContent = 'Ocultar ' + avatarLabel;
+      if (showBtn) showBtn.textContent = 'Mostrar ' + avatarLabel;
+
+      setRobotAssistantText(getDefaultAssistantGreeting());
+      setRobotInlineVisible(state.robotAssistantVisible);
+      setRobotMood(state.robotAssistantVisible ? 'happy' : 'hidden', state.robotAssistantVisible ? 1600 : 0);
   }
 
   function applyChatPersonalityMode() {
@@ -769,7 +905,7 @@
 
     if (!state.chatEnabled) {
       closeChatDrawerFully();
-      if (drawer) drawer.classList.remove('robot-mode');
+      if (drawer) drawer.classList.remove('robot-mode', 'secretary-mode');
       setRobotInlineVisible(false);
       if (toggleBtn) {
         toggleBtn.style.display = 'none';
@@ -787,40 +923,38 @@
     }
 
     if (drawer) {
-      drawer.classList.toggle('robot-mode', mode === 'robot');
+      drawer.classList.toggle('robot-mode', isAvatarPersonalityMode(mode));
+      drawer.classList.toggle('secretary-mode', mode === 'secretary');
     }
     if (titleEl) {
-      titleEl.textContent = mode === 'robot' ? 'Ejecutivo IA 3D' : 'Asistente IA';
+      titleEl.textContent = isAvatarPersonalityMode(mode) ? (mode === 'secretary' ? 'Secretaria IA 3D' : 'Robot IA 3D') : 'Asistente IA';
     }
     if (input) {
-      input.placeholder = mode === 'robot'
-        ? 'Pregúntale al Ejecutivo Asistente...'
-        : 'Escribe tu consulta para el asistente IA...';
+      input.placeholder = 'Escribele al asistente IA...';
     }
 
-    if (input && mode === 'robot') {
-      input.placeholder = 'Escribele al robot IA...';
+    if (input && isAvatarPersonalityMode(mode)) {
+      input.placeholder = mode === 'secretary' ? 'Escribele a la secretaria IA...' : 'Escribele al robot IA...';
     }
-    if (mode !== 'robot') {
+    if (!isAvatarPersonalityMode(mode)) {
       setRobotInlineVisible(false);
     }
 
     if (toggleBtn) {
-       if (mode === 'robot') {
+       if (isAvatarPersonalityMode(mode)) {
           toggleBtn.classList.add('is-robot-avatar');
+          toggleBtn.classList.toggle('is-secretary-avatar', mode === 'secretary');
           if (typeof toggleBtn.dataset.originalHtml === 'undefined') {
              toggleBtn.dataset.originalHtml = toggleBtn.innerHTML;
           }
-          toggleBtn.innerHTML = ROBOT_SVG;
-          toggleBtn.style.display = 'inline-flex';
-          closeChatDrawerFully();
-          ensureRobotInlineUI(toggleBtn);
-          setRobotMood('idle');
-          var robotShowBtn = document.getElementById(ROBOT_SHOW_ID);
-          if (robotShowBtn) robotShowBtn.style.display = 'none';
+           toggleBtn.innerHTML = getAvatarMarkup(mode);
+           toggleBtn.setAttribute('aria-label', mode === 'secretary' ? 'Abrir secretaria IA' : 'Abrir robot IA');
+           closeChatDrawerFully();
+           ensureRobotInlineUI(toggleBtn);
+          setRobotInlineVisible(state.robotAssistantVisible);
           return;
        }
-       toggleBtn.classList.toggle('is-robot-avatar', mode === 'robot');
+       toggleBtn.classList.remove('is-robot-avatar', 'is-secretary-avatar');
        if (mode === 'robot') {
           if (!document.getElementById('robotAvatarGraphic')) {
              if (typeof toggleBtn.dataset.originalHtml === 'undefined') {
@@ -870,7 +1004,7 @@
              
              var showBtn = document.createElement('button');
              showBtn.id = 'robotShowBtn';
-             showBtn.innerHTML = '💼 Aparecer Ejecutivo';
+             showBtn.innerHTML = 'ðŸ’¼ Aparecer Ejecutivo';
              showBtn.style.display = 'none';
              showBtn.onclick = function(e) {
                 e.stopPropagation();
@@ -904,13 +1038,14 @@
   }
 
   function getDefaultAssistantGreeting() {
-    if (getChatPersonalityMode() === 'robot') {
-      return 'Hola. Soy tu ejecutivo IA 3D, listo para ayudarte en este panel.';
+    var mode = getChatPersonalityMode();
+    if (mode === 'secretary') {
+      return 'Hola. Soy tu secretaria IA 3D, lista para ayudarte a organizar tareas, ventas y configuraciones.';
+    }
+    if (mode === 'robot') {
+      return 'Hola. Soy tu robot IA 3D, listo para ayudarte en este panel.';
     }
     return 'Hola. Soy tu Asistente IA, listo para ayudarte en el panel.';
-    return getChatPersonalityMode() === 'robot'
-      ? '¡Hola! Soy tu Ejecutivo Asistente, listo para optimizar la gestión en tu empresa.'
-      : '¡Hola! Soy tu Asistente IA, listo para ayudarte en el panel.';
   }
 
   function getCompactConfigMode() {
@@ -940,7 +1075,7 @@
       robotInput.disabled = !state.chatEnabled;
     }
     modeInputs.forEach(function (input) {
-      input.disabled = !state.chatEnabled || (input.value === 'robot' && !state.robotEnabled);
+      input.disabled = !state.chatEnabled || ((input.value === 'robot' || input.value === 'secretary') && !state.robotEnabled);
     });
     if (modeInput) {
       modeInput.checked = true;
@@ -950,7 +1085,7 @@
       voiceInput.disabled = !state.chatEnabled;
     }
     if (robotVoiceInput) {
-      robotVoiceInput.value = normalizeRobotVoice(robotVoice || state.robotVoice);
+      robotVoiceInput.value = normalizedMode === 'secretary' ? 'es-CO-female' : normalizeRobotVoice(robotVoice || state.robotVoice);
       robotVoiceInput.disabled = !state.chatEnabled || !state.robotEnabled;
     }
   }
@@ -967,15 +1102,16 @@
       '<div class="ai-chat-compact-config-card" role="dialog" aria-modal="false" aria-labelledby="aiChatCompactConfigTitle">' +
       '<div class="ai-chat-compact-config-header">' +
       '<strong id="aiChatCompactConfigTitle">Configuracion del chat</strong>' +
-      '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuracion">×</button>' +
+      '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuracion">Ã—</button>' +
       '</div>' +
       '<div class="ai-chat-compact-config-body">' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>Activar chat IA</b><small>Muestra u oculta el chat flotante completo.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_ROBOT_ENABLED_ID + '" type="checkbox"><span><b>Activar robot IA</b><small>Permite el avatar 3D, la guia inicial y avisos de recordatorios.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="normal"><span><b>Chat cuadrado</b><small>Ventana lateral tradicional con historial y controles completos.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="robot"><span><b>Robot IA</b><small>Avatar 3D con conversacion en globos sobre el robot.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="secretary"><span><b>Secretaria IA 3D</b><small>Avatar estilo caricatura ejecutiva joven con voz femenina.</small></span></label>' +
       '<label class="ai-chat-compact-option ai-chat-compact-option-voice"><input id="' + CONFIG_VOICE_ID + '" type="checkbox"><span><b>Activar modo voz</b><small>Lee las respuestas con el servicio de voz o la voz del navegador.</small></span></label>' +
-      '<label class="ai-chat-compact-option"><span><b>Voz del robot</b><small>Selecciona el timbre para las respuestas habladas.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">Español latino</option><option value="es-ES">Español castellano</option></select></span></label>' +
+      '<label class="ai-chat-compact-option"><span><b>Voz del avatar</b><small>La secretaria usa automaticamente voz femenina.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">EspaÃ±ol latino</option><option value="es-ES">EspaÃ±ol castellano</option></select></span></label>' +
       '</div>' +
       '<div class="ai-chat-compact-config-actions">' +
       '<button id="' + CONFIG_SAVE_ID + '" type="button" class="btn primary small">Guardar</button>' +
@@ -999,11 +1135,11 @@
       var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
       var chatOn = setChatEnabledPreference(chatInput ? chatInput.checked : state.chatEnabled);
       var robotOn = setRobotEnabledPreference(robotInput ? robotInput.checked : state.robotEnabled);
-      setChatPersonalityMode(getCompactConfigMode());
+      var mode = setChatPersonalityMode(getCompactConfigMode());
       applyVoicePreference(!!document.getElementById(CONFIG_VOICE_ID).checked);
-      setRobotVoicePreference(document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
+      setRobotVoicePreference(mode === 'secretary' ? 'es-CO-female' : document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
       setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, chatOn, robotOn);
-      setConfigStatus('Vista previa aplicada. Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Voz del robot: ' + labelForRobotVoice(state.robotVoice) + '. Presiona Guardar para persistirla.');
+      setConfigStatus('Vista previa aplicada. Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(getEffectiveRobotVoice()) + '. Presiona Guardar para persistirla.');
     }
 
     var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
@@ -1041,7 +1177,7 @@
         var robotOn = setRobotEnabledPreference(!!document.getElementById(CONFIG_ROBOT_ENABLED_ID).checked);
         var mode = setChatPersonalityMode(getCompactConfigMode());
         var voice = !!document.getElementById(CONFIG_VOICE_ID).checked;
-        var robotVoice = setRobotVoicePreference(document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
+        var robotVoice = setRobotVoicePreference(mode === 'secretary' ? 'es-CO-female' : document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
         applyVoicePreference(voice);
         setConfigStatus('Guardando configuracion...');
         fetch(CHAT_PREFS_ENDPOINT, {
@@ -1060,7 +1196,7 @@
           var savedRobotVoice = setRobotVoicePreference(data && data.robot_voice ? data.robot_voice : robotVoice);
           applyVoicePreference(savedVoice);
           setCompactConfigState(savedMode, savedVoice, savedRobotVoice, savedChat, savedRobot);
-          setConfigStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del robot: ' + labelForRobotVoice(savedRobotVoice) + '.');
+          setConfigStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(savedMode === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
         }).catch(function (err) {
           setConfigStatus('Configuracion aplicada localmente, pero no se pudo guardar. ' + String(err && err.message ? err.message : ''), true);
         });
@@ -1200,7 +1336,7 @@
         window.speechSynthesis.cancel();
       }
     } catch (err) {}
-    if (getChatPersonalityMode() === 'robot') {
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
       setRobotMood('idle', 900);
     }
     setNotice('Voz detenida por ahora. La siguiente respuesta volvera a hablar si el modo voz sigue activo.');
@@ -1209,7 +1345,7 @@
   function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
     if (micBtn) {
       micBtn.innerHTML = ICON_MIC;
-      micBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrófono';
+      micBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrÃ³fono';
       micBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje');
       micBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
       micBtn.disabled = state.loading || !isSpeechRecognitionSupported();
@@ -1233,8 +1369,8 @@
     var robotStopVoiceBtn = document.getElementById(ROBOT_INLINE_STOP_VOICE_ID);
     if (robotStopVoiceBtn) {
       robotStopVoiceBtn.innerHTML = ICON_STOP;
-      robotStopVoiceBtn.title = 'Detener voz del robot por ahora';
-      robotStopVoiceBtn.setAttribute('aria-label', 'Detener voz del robot por ahora');
+      robotStopVoiceBtn.title = 'Detener voz del avatar por ahora';
+      robotStopVoiceBtn.setAttribute('aria-label', 'Detener voz del avatar por ahora');
       robotStopVoiceBtn.disabled = !isVoiceOutputSupported();
     }
     if (voiceBtn) {
@@ -1249,16 +1385,78 @@
     }
     if (convBtn) {
       convBtn.innerHTML = ICON_CONV;
-      convBtn.title = state.conversationMode ? 'Modo conversación activo' : 'Modo conversación (dictado y voz del asistente)';
-      convBtn.setAttribute('aria-label', 'Modo conversación');
+      convBtn.title = state.conversationMode ? 'Modo conversaciÃ³n activo' : 'Modo conversaciÃ³n (dictado y voz del asistente)';
+      convBtn.setAttribute('aria-label', 'Modo conversaciÃ³n');
       convBtn.setAttribute('aria-pressed', state.conversationMode ? 'true' : 'false');
     }
+  }
+
+  function stopActiveSpeechRecognition(silent) {
+    var active = state.activeSpeechRecognition;
+    if (active) {
+      try { active.stop(); } catch (err) {}
+    }
+    state.activeSpeechRecognition = null;
+    state.activeSpeechSource = '';
+    state.listening = false;
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
+      setRobotMood('idle', 700);
+    }
+    if (!silent) {
+      setNotice('Dictado detenido.');
+    }
+  }
+
+  function submitFormSafely(form, fallbackSubmit) {
+    if (state.listening) {
+      stopActiveSpeechRecognition(true);
+    }
+    if (form && typeof form.requestSubmit === 'function') {
+      form.requestSubmit();
+      return;
+    }
+    if (typeof fallbackSubmit === 'function') {
+      fallbackSubmit({ preventDefault: function () {} });
+    }
+  }
+
+  function normalizeSpeechCommandText(text) {
+    return String(text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function stripSendVoiceCommand(text) {
+    var raw = String(text || '').trim();
+    if (!raw) {
+      return { text: '', shouldSend: false };
+    }
+    var normalized = normalizeSpeechCommandText(raw);
+    var words = normalized ? normalized.split(' ') : [];
+    var last = words.length ? words[words.length - 1] : '';
+    if (last !== 'enviar' && last !== 'envia') {
+      return { text: raw, shouldSend: false };
+    }
+    var withoutCommand = raw.replace(/(?:^|\s)(enviar|envia|envía)[\s.!?¿¡,;:]*$/i, '').trim();
+    return { text: withoutCommand, shouldSend: true };
+  }
+
+  function getSubmitFallbackForInput(input) {
+    if (input && input.id === ROBOT_INLINE_INPUT_ID) {
+      return handleRobotInlineSubmit;
+    }
+    return handleSubmit;
   }
 
   function speakAssistantText(text) {
     var readAloud = state.voiceEnabled || state.conversationMode;
     if (!text) return;
-    if (getChatPersonalityMode() === 'robot') {
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
       setRobotMood('speaking', readAloud ? 0 : 2200);
     }
     if (!readAloud) return;
@@ -1299,10 +1497,11 @@
       if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) return;
       window.speechSynthesis.cancel();
       var utterance = new SpeechSynthesisUtterance(String(text));
-      utterance.lang = robotVoiceLang(state.robotVoice);
+      var effectiveVoice = getEffectiveRobotVoice();
+      utterance.lang = robotVoiceLang(effectiveVoice);
       utterance.rate = 1;
-      utterance.pitch = 1;
-      var desiredVoice = pickBrowserSpeechVoice(state.robotVoice);
+      utterance.pitch = getChatPersonalityMode() === 'secretary' ? 1.08 : 1;
+      var desiredVoice = pickBrowserSpeechVoice(effectiveVoice);
       if (desiredVoice) {
         utterance.voice = desiredVoice;
       }
@@ -1311,18 +1510,18 @@
           try { window.speechSynthesis.cancel(); } catch (e) {}
           return;
         }
-        if (getChatPersonalityMode() === 'robot') setRobotMood('speaking');
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
       };
       utterance.onend = function () {
-        if (getChatPersonalityMode() === 'robot') setRobotMood('happy', 1200);
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('happy', 1200);
       };
       utterance.onerror = function () {
-        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
       };
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn('No se pudo reproducir voz:', err);
-      if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
+      if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
     }
   }
 
@@ -1382,7 +1581,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: String(text).slice(0, 4000), voice: state.robotVoice }),
+      body: JSON.stringify({ text: String(text).slice(0, 4000), voice: getEffectiveRobotVoice() }),
       signal: controller ? controller.signal : undefined
     }).then(function (res) {
       if (timer) window.clearTimeout(timer);
@@ -1405,12 +1604,12 @@
       audio.onended = function () {
         URL.revokeObjectURL(url);
         if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
-        if (getChatPersonalityMode() === 'robot') setRobotMood('happy', 1200);
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('happy', 1200);
       };
       audio.onerror = function () {
         URL.revokeObjectURL(url);
         if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
-        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
       };
       if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
         URL.revokeObjectURL(url);
@@ -1418,11 +1617,11 @@
         return false;
       }
       return audio.play().then(function () {
-        if (getChatPersonalityMode() === 'robot') setRobotMood('speaking');
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
         return true;
       }).catch(function () {
         URL.revokeObjectURL(url);
-        if (getChatPersonalityMode() === 'robot') setRobotMood('error', 1600);
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
         return false;
       });
     }).catch(function (err) {
@@ -1456,6 +1655,12 @@
 
   function setupSpeechRecognition(input, micBtn, voiceBtn, convBtn) {
     if (!micBtn || !input || !isSpeechRecognitionSupported()) return;
+    if (micBtn.dataset && micBtn.dataset.pcsSpeechBound === '1') {
+      return;
+    }
+    if (micBtn.dataset) {
+      micBtn.dataset.pcsSpeechBound = '1';
+    }
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     var recognition = new SpeechRecognition();
     recognition.lang = 'es-CO';
@@ -1464,9 +1669,17 @@
     var finalText = '';
     var baseText = String(input.value || '').trim();
     var isRobotMic = micBtn.id === ROBOT_INLINE_MIC_ID;
+    var sendCommandQueued = false;
 
     function setListening(on) {
       state.listening = !!on;
+      if (on) {
+        state.activeSpeechRecognition = recognition;
+        state.activeSpeechSource = micBtn.id || '';
+      } else if (state.activeSpeechRecognition === recognition) {
+        state.activeSpeechRecognition = null;
+        state.activeSpeechSource = '';
+      }
       updateVoiceButtons(micBtn, voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
       if (isRobotMic) {
         setRobotMood(on ? 'listening' : 'idle', on ? 0 : 800);
@@ -1488,15 +1701,30 @@
       if (updatedFinalText) {
         finalText += updatedFinalText;
       }
+      var dictatedFinal = String(finalText || '').trim();
+      var sendCommand = stripSendVoiceCommand(dictatedFinal);
+      if (sendCommand.shouldSend) {
+        finalText = sendCommand.text;
+        interimText = '';
+      }
       input.value = (baseText ? baseText + ' ' : '') + String((finalText + interimText).trim());
       try {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       } catch (e) {}
+      if (sendCommand.shouldSend && !sendCommandQueued) {
+        sendCommandQueued = true;
+        setNotice('Comando de voz recibido: enviando mensaje.');
+        window.setTimeout(function () {
+          var form = input.form || (input.closest ? input.closest('form') : null);
+          submitFormSafely(form, getSubmitFallbackForInput(input));
+          sendCommandQueued = false;
+        }, 80);
+      }
     };
 
     recognition.onerror = function () {
       setListening(false);
-      setNotice('Error de micrófono.');
+      setNotice('Error de micrÃ³fono.');
     };
 
     recognition.onend = function () {
@@ -1504,14 +1732,20 @@
       finalText = '';
     };
 
-    micBtn.addEventListener('click', function () {
+    micBtn.addEventListener('click', function (event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
       if (state.loading) return;
-      if (state.listening) {
+      if (state.listening && state.activeSpeechRecognition && state.activeSpeechRecognition !== recognition) {
+        stopActiveSpeechRecognition(true);
+      }
+      if (state.listening && state.activeSpeechRecognition === recognition) {
         try { recognition.stop(); } catch (e) { }
         setListening(false);
         return;
       }
       finalText = '';
+      sendCommandQueued = false;
       baseText = String(input.value || '').trim();
       try {
         recognition.start();
@@ -1538,7 +1772,7 @@
         }
         persistVoicePreference(state.voiceEnabled);
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
-        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: síntesis).' : 'Respuestas de voz desactivadas.');
+        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: sÃ­ntesis).' : 'Respuestas de voz desactivadas.');
       });
     }
     if (convBtn) {
@@ -1548,9 +1782,9 @@
         if (state.conversationMode) {
           state.voiceEnabled = true;
           persistVoicePreference(true);
-          setNotice('Modo conversación: lectura automática de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
+          setNotice('Modo conversaciÃ³n: lectura automÃ¡tica de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
         } else {
-          setNotice('Modo conversación desactivado.');
+          setNotice('Modo conversaciÃ³n desactivado.');
         }
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
       });
@@ -1608,6 +1842,7 @@
       messagesEl.innerHTML = '';
     }
     state.proposals = [];
+    state.exportables = [];
     clearAttachmentSelection();
     var input = document.getElementById(INPUT_ID);
     if (input) {
@@ -1714,6 +1949,167 @@
     return section;
   }
 
+  function inferDocumentExportType(text) {
+    var value = normalizeVoiceCommandText(text);
+    if (/\bfactura\b/.test(value)) return 'factura';
+    if (/\bcontrato\b/.test(value)) return 'contrato';
+    if (/\bcotizacion\b|\bcotizacion\b|\bcotización\b/.test(value)) return 'cotizacion';
+    if (/\bacta\b/.test(value)) return 'acta';
+    if (/\breporte\b|\binforme\b/.test(value)) return 'reporte';
+    if (/\btabla\b|\bexcel\b/.test(value) || String(text || '').indexOf('|') >= 0) return 'tabla';
+    return 'documento';
+  }
+
+  function shouldShowDocumentExports(text) {
+    var raw = String(text || '').trim();
+    if (!raw) return false;
+    var value = normalizeVoiceCommandText(raw);
+    var hasDocumentKeyword = /\b(documento|contrato|factura|reporte|informe|acta|cotizacion|cotización|tabla|excel|presupuesto|propuesta|certificado)\b/.test(value);
+    if (raw.length < 120 && raw.indexOf('|') < 0 && !hasDocumentKeyword) return false;
+    return raw.indexOf('|') >= 0 ||
+      hasDocumentKeyword ||
+      raw.length > 650;
+  }
+
+  function createDocumentExportElement(text, sourceModule) {
+    var exportIndex = state.exportables.length;
+    state.exportables.push({
+      content: String(text || ''),
+      document_type: inferDocumentExportType(text),
+      source_module: sourceModule || inferCurrentSourceModule(),
+      title: inferDocumentExportTitle(text)
+    });
+
+    var section = document.createElement('section');
+    section.className = 'ai-document-export-card';
+    section.dataset.exportIndex = String(exportIndex);
+
+    var title = document.createElement('div');
+    title.className = 'ai-action-title';
+    title.textContent = 'Exportar documento';
+    section.appendChild(title);
+
+    var note = document.createElement('div');
+    note.className = 'ai-action-note';
+    note.textContent = 'Descarga esta respuesta como archivo profesional generado por el sistema.';
+    section.appendChild(note);
+
+    var actionsBar = document.createElement('div');
+    actionsBar.className = 'ai-document-export-actions';
+    [
+      ['pdf', 'PDF'],
+      ['docx', 'Word'],
+      ['xlsx', 'Excel'],
+      ['txt', 'TXT'],
+      ['json', 'JSON']
+    ].forEach(function (item) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn secondary ai-document-export-btn';
+      btn.dataset.documentExport = String(exportIndex);
+      btn.dataset.exportFormat = item[0];
+      btn.textContent = item[1];
+      actionsBar.appendChild(btn);
+    });
+    section.appendChild(actionsBar);
+    return section;
+  }
+
+  function inferCurrentSourceModule() {
+    var path = String(window.location.pathname || '').toLowerCase();
+    if (path.indexOf('reportes') >= 0) return 'reportes';
+    if (path.indexOf('chat_tareas') >= 0 || path.indexOf('chat_y_tareas') >= 0) {
+      if (path.indexOf('agenda') >= 0) return 'agenda';
+      if (path.indexOf('tareas') >= 0) return 'tareas';
+      return 'chat_tareas';
+    }
+    return isSuperContext() ? 'chat_ia_global' : 'chat_ia';
+  }
+
+  function inferDocumentExportTitle(text) {
+    var type = inferDocumentExportType(text);
+    var firstLine = String(text || '').split(/\r?\n/).map(function (line) {
+      return normalize(line).replace(/^#+\s*/, '');
+    }).filter(Boolean)[0] || '';
+    if (firstLine && firstLine.length <= 90) return firstLine;
+    switch (type) {
+      case 'factura': return 'Factura generada desde chat IA';
+      case 'contrato': return 'Contrato generado desde chat IA';
+      case 'cotizacion': return 'Cotizacion generada desde chat IA';
+      case 'acta': return 'Acta generada desde chat IA';
+      case 'reporte': return 'Reporte generado desde chat IA';
+      case 'tabla': return 'Tabla generada desde chat IA';
+      default: return 'Documento generado desde chat IA';
+    }
+  }
+
+  function exportChatDocumentByIndex(exportIndex, format, button) {
+    var item = state.exportables[Number(exportIndex)];
+    if (!item) return Promise.resolve();
+    return exportChatDocumentContent(item, format, button);
+  }
+
+  function exportChatDocumentContent(item, format, button) {
+    if (isSuperContext()) {
+      setNotice('La exportacion documental desde el chat requiere una empresa activa.', true);
+      return Promise.resolve();
+    }
+    var empresaId = getCurrentEmpresaId();
+    if (!empresaId) {
+      setNotice('No se encontro empresa activa para exportar el documento.', true);
+      return Promise.resolve();
+    }
+    var originalText = button ? button.textContent : '';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Generando...';
+    }
+    return fetch('/api/empresa/chat_documentos/exportar', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-PCS-Source': 'ai_drawer'
+      },
+      body: JSON.stringify({
+        empresa_id: parsePositiveInt(empresaId),
+        title: item.title || inferDocumentExportTitle(item.content),
+        content: item.content,
+        input_format: String(item.content || '').indexOf('|') >= 0 ? 'markdown' : 'text',
+        format: format,
+        document_type: item.document_type || inferDocumentExportType(item.content),
+        source_module: item.source_module || inferCurrentSourceModule(),
+        metadata: {
+          page_context: String(window.location.pathname || '') + String(window.location.search || ''),
+          origin: 'chat_ia'
+        }
+      })
+    }).then(function (resp) {
+      if (!resp.ok) return parseErrorResponse(resp);
+      return resp.json();
+    }).then(function (data) {
+      if (!data || data.ok === false) {
+        throw new Error((data && data.error) ? String(data.error) : 'No se pudo exportar el documento.');
+      }
+      if (data.warning) {
+        setNotice(String(data.warning), true);
+      } else {
+        setNotice('Documento generado. Iniciando descarga...');
+      }
+      var url = normalize(data.download_url);
+      if (url) {
+        window.location.href = url;
+      }
+    }).catch(function (err) {
+      setNotice('No se pudo exportar: ' + String(err && err.message ? err.message : err), true);
+    }).finally(function () {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText || String(format || '').toUpperCase();
+      }
+    });
+  }
+
   function appendMessage(author, text, messageType, actionProposal) {
     var messagesEl = document.getElementById(MESSAGES_ID);
     if (!messagesEl || !text) return;
@@ -1733,10 +2129,13 @@
       item.dataset.proposalIndex = String(proposalIndex);
       item.appendChild(createActionProposalElement(actionProposal, proposalIndex));
     }
+    if (author === 'assistant' && messageType !== 'error' && shouldShowDocumentExports(text)) {
+      item.appendChild(createDocumentExportElement(text, inferCurrentSourceModule()));
+    }
 
     messagesEl.appendChild(item);
     scrollChatToBottom();
-    if (getChatPersonalityMode() === 'robot') {
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
       if (author === 'assistant') {
         setRobotAssistantText(text, messageType === 'error');
       } else if (author === 'user') {
@@ -1909,6 +2308,9 @@
     }
     if (!state.chatEnabled || !state.robotEnabled) return;
     if (state.loading) return;
+    if (state.listening) {
+      stopActiveSpeechRecognition(true);
+    }
     var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
     if (!input) return;
     var query = String(input.value || '').trim();
@@ -1918,16 +2320,19 @@
     input.style.height = 'auto';
     setRobotInlineVisible(true);
     setRobotUserText(query);
-    var wantsRobot = shouldAutoEnableRobot(query);
+    var wantsSecretary = shouldAutoEnableSecretary(query);
+    var wantsRobot = !wantsSecretary && shouldAutoEnableRobot(query);
     var wantsVoice = shouldAutoEnableVoice(query);
-    if (wantsRobot) {
+    if (wantsSecretary) {
+      activateSecretaryFromCommand();
+    } else if (wantsRobot) {
       activateRobotFromCommand();
     }
     if (wantsVoice) {
       activateVoiceFromCommand(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     }
-    if ((wantsRobot || wantsVoice) && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
-      var preferenceReadyMessage = buildPreferenceCommandMessage(wantsRobot, wantsVoice);
+    if ((wantsSecretary || wantsRobot || wantsVoice) && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
+      var preferenceReadyMessage = wantsSecretary ? 'Listo. Active la secretaria IA 3D con voz femenina y guarde esta preferencia para los proximos reinicios.' : buildPreferenceCommandMessage(wantsRobot, wantsVoice);
       setRobotAssistantText(preferenceReadyMessage);
       speakAssistantText(preferenceReadyMessage);
       focusRobotInput();
@@ -1948,7 +2353,7 @@
         setRobotMood('action', 3200);
         renderRobotProposalActions(result.proposal);
       } else {
-        clearRobotActionChips();
+        renderRobotDocumentExportActions(answer);
       }
       speakAssistantText(answer);
       setNotice('Respuesta lista desde el robot.');
@@ -2078,6 +2483,9 @@
     event.preventDefault();
     if (!state.chatEnabled) return;
     if (state.loading) return;
+    if (state.listening) {
+      stopActiveSpeechRecognition(true);
+    }
     var input = document.getElementById(INPUT_ID);
     if (!input) return;
 
@@ -2087,23 +2495,26 @@
 
     input.value = '';
     appendMessage('user', attachment ? (query + '\n\n[Adjunto: ' + describeAttachment(attachment) + ']') : query);
-    var wantsRobot = shouldAutoEnableRobot(query);
+    var wantsSecretary = shouldAutoEnableSecretary(query);
+    var wantsRobot = !wantsSecretary && shouldAutoEnableRobot(query);
     var wantsVoice = shouldAutoEnableVoice(query);
-    if (wantsRobot) {
+    if (wantsSecretary) {
+      activateSecretaryFromCommand();
+    } else if (wantsRobot) {
       activateRobotFromCommand();
     }
     if (wantsVoice) {
       activateVoiceFromCommand(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
     }
-    if ((wantsRobot || wantsVoice) && !attachment && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
-      var preferenceReadyMessage = buildPreferenceCommandMessage(wantsRobot, wantsVoice);
+    if ((wantsSecretary || wantsRobot || wantsVoice) && !attachment && (isOnlyLocalPreferenceCommand(query) || isOnlyVoiceEnableCommand(query))) {
+      var preferenceReadyMessage = wantsSecretary ? 'Listo. Active la secretaria IA 3D con voz femenina y guarde esta preferencia para los proximos reinicios.' : buildPreferenceCommandMessage(wantsRobot, wantsVoice);
       appendMessage('assistant', preferenceReadyMessage);
       setRobotAssistantText(preferenceReadyMessage);
       speakAssistantText(preferenceReadyMessage);
       return;
     }
     setNotice(attachment ? 'Procesando consulta con adjunto...' : 'Procesando tu consulta...');
-    if (getChatPersonalityMode() === 'robot') setRobotMood('thinking');
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('thinking');
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
@@ -2115,7 +2526,7 @@
       setNotice('Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
-      if (getChatPersonalityMode() === 'robot') setRobotMood('error', 2600);
+      if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 2600);
       appendMessage('assistant', err.message || 'Error al procesar la consulta.', 'error');
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
     }).finally(function () {
@@ -2289,13 +2700,13 @@
     var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
+    var submitBtn = form.querySelector('button[type="submit"]');
 
     toggle.addEventListener('click', function () {
       if (!state.chatEnabled) return;
-      if (getChatPersonalityMode() === 'robot') {
+      if (isAvatarPersonalityMode(getChatPersonalityMode())) {
         closeChatDrawerFully();
-        setRobotInlineVisible(true);
-        focusRobotInput();
+        showRobotAssistant(toggle);
         return;
       }
       if (drawer.classList.contains('open')) {
@@ -2328,6 +2739,13 @@
     }
 
     form.addEventListener('submit', handleSubmit);
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        submitFormSafely(form, handleSubmit);
+      });
+    }
     if (modeEl) {
       modeEl.addEventListener('change', function () {
         syncModeUI();
@@ -2398,10 +2816,13 @@
       if (!target) return;
       var confirmButton = target.closest('button[data-action-confirm]');
       var cancelButton = target.closest('button[data-action-cancel]');
+      var exportButton = target.closest('button[data-document-export]');
       if (confirmButton) {
         executeActionProposal(parseInt(confirmButton.dataset.actionConfirm, 10));
       } else if (cancelButton) {
         cancelActionProposal(parseInt(cancelButton.dataset.actionCancel, 10));
+      } else if (exportButton) {
+        exportChatDocumentByIndex(exportButton.dataset.documentExport, exportButton.dataset.exportFormat, exportButton);
       }
     });
 
@@ -2415,7 +2836,7 @@
       input.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' && !event.shiftKey) {
           event.preventDefault();
-          form.requestSubmit();
+          submitFormSafely(form, handleSubmit);
         }
       });
     }
@@ -2455,9 +2876,9 @@
       }
       if (data.type !== 'pcs-ai-drawer-open') return;
       if (!state.chatEnabled) return;
-      if (getChatPersonalityMode() === 'robot') {
+      if (isAvatarPersonalityMode(getChatPersonalityMode())) {
         closeChatDrawerFully();
-        setRobotInlineVisible(true);
+        showRobotAssistant(document.getElementById(TOGGLE_ID));
       } else {
         openChatDrawerFromUser();
       }
@@ -2468,14 +2889,14 @@
       if (input && normalize(data.prompt)) {
         input.value = normalize(data.prompt);
       }
-      if (getChatPersonalityMode() === 'robot') {
+      if (isAvatarPersonalityMode(getChatPersonalityMode())) {
         var robotInput = document.getElementById(ROBOT_INLINE_INPUT_ID);
         if (robotInput && normalize(data.prompt)) {
           robotInput.value = normalize(data.prompt);
         }
       }
       window.setTimeout(function () {
-        if (getChatPersonalityMode() === 'robot') {
+        if (isAvatarPersonalityMode(getChatPersonalityMode())) {
           focusRobotInput();
         } else if (input) {
           input.focus();

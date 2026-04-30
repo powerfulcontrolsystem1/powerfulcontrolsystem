@@ -5,10 +5,184 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Buscar productos por botones</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .product-button-catalog-page {
+      --catalog-accent: #2563eb;
+      --catalog-accent-2: #0f766e;
+      --catalog-ink: color-mix(in srgb, var(--text) 92%, #111827 8%);
+      --catalog-muted: color-mix(in srgb, var(--muted) 82%, var(--text) 18%);
+      --catalog-panel: color-mix(in srgb, var(--card) 92%, var(--surface, #ffffff) 8%);
+      --catalog-border: color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+    }
+
+    .product-button-catalog-page .empresa-module {
+      max-width: 1280px;
+    }
+
+    .product-catalog-hero {
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+      border: 1px solid var(--catalog-border);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--catalog-accent) 12%, transparent), transparent 44%),
+        linear-gradient(120deg, var(--catalog-panel), color-mix(in srgb, var(--catalog-panel) 82%, var(--catalog-accent-2) 18%));
+      box-shadow: 0 16px 38px color-mix(in srgb, var(--bg) 22%, transparent);
+    }
+
+    .product-catalog-hero h1 {
+      margin-bottom: 5px;
+      color: var(--catalog-ink);
+      font-weight: 900;
+    }
+
+    .product-catalog-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .product-catalog-search {
+      padding: 14px;
+      border: 1px solid var(--catalog-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface, var(--card)) 86%, transparent);
+    }
+
+    .product-catalog-hint {
+      margin: 0;
+      color: var(--catalog-muted);
+      font-size: .9rem;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .product-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+      gap: 12px;
+      align-items: stretch;
+      min-height: 120px;
+    }
+
+    .product-pick-btn {
+      --product-tone: #2563eb;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 126px;
+      width: 100%;
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--product-tone) 58%, var(--border) 42%);
+      border-radius: 8px;
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--product-tone) 22%, var(--card) 78%), var(--card) 62%),
+        var(--card);
+      color: var(--catalog-ink);
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 12px 26px color-mix(in srgb, var(--product-tone) 12%, transparent);
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .product-pick-btn:hover,
+    .product-pick-btn:focus-visible {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--product-tone) 78%, var(--border) 22%);
+      box-shadow: 0 16px 34px color-mix(in srgb, var(--product-tone) 20%, transparent);
+      outline: none;
+    }
+
+    .product-pick-btn.is-selected {
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--product-tone) 38%, var(--card) 62%), color-mix(in srgb, var(--product-tone) 12%, var(--card) 88%));
+      border-width: 2px;
+    }
+
+    .product-pick-name {
+      display: block;
+      color: var(--catalog-ink);
+      font-size: 1rem;
+      font-weight: 900;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+
+    .product-pick-meta {
+      display: grid;
+      gap: 4px;
+      color: var(--catalog-muted);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .product-pick-price {
+      color: color-mix(in srgb, var(--product-tone) 78%, var(--catalog-ink) 22%);
+      font-size: .98rem;
+      font-weight: 900;
+    }
+
+    .product-pick-qty {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--product-tone) 86%, #111827 14%);
+      color: #ffffff;
+      font-size: .78rem;
+      font-weight: 900;
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--product-tone) 28%, transparent);
+    }
+
+    @media (max-width: 760px) {
+      .product-catalog-hero {
+        padding: 12px;
+      }
+
+      .product-catalog-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .product-catalog-hint {
+        text-align: left;
+      }
+
+      .product-buttons-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .product-pick-btn {
+        min-height: 116px;
+        padding: 11px;
+      }
+
+      .product-pick-name {
+        font-size: .88rem;
+      }
+
+      .product-pick-meta {
+        font-size: .68rem;
+      }
+    }
+  </style>
 </head>
-<body class="super-page form-bg-dark empresa-subpage">
+<body class="super-page form-bg-dark empresa-subpage product-button-catalog-page">
   <div class="container empresa-module">
-    <div class="empresa-module-header">
+    <div class="empresa-module-header product-catalog-hero">
       <div>
         <h1 id="pageTitle">Buscar productos por botones</h1>
         <p id="carritoContext" class="form-help" style="margin:0;">Cargando contexto del carrito...</p>
@@ -25,14 +199,14 @@
         <span id="catalogoTotal" class="form-help">Productos: 0</span>
       </div>
 
-      <div class="form-row" style="margin-bottom:10px;">
-        <div class="form-col">
+      <div class="product-catalog-toolbar">
+        <div class="product-catalog-search">
           <label class="form-label" for="filtroProductoInput">Buscar en botones</label>
           <input id="filtroProductoInput" class="form-input" placeholder="Filtra por nombre, SKU o código de barras">
         </div>
+        <p class="product-catalog-hint">Cada clic suma 1 unidad. Para cantidad 2, presiona el producto dos veces.</p>
       </div>
 
-      <p class="form-help" style="margin:0 0 10px 0;">Cada clic suma 1 unidad. Si necesitas cantidad 2, presiona el botón dos veces.</p>
       <div id="productosButtonsGrid" class="product-buttons-grid">Cargando productos...</div>
     </section>
 
@@ -227,14 +401,16 @@
         return;
       }
 
-      box.innerHTML = rows.map(function(p) {
+      const tones = ['#2563eb', '#0f766e', '#7c3aed', '#be123c', '#b45309', '#047857', '#0369a1', '#9333ea', '#c2410c', '#15803d'];
+      box.innerHTML = rows.map(function(p, index) {
         const qty = Number(state.seleccion.get(Number(p.id)) || 0);
         const badge = qty > 0 ? '<span class="product-pick-qty">x' + qty + '</span>' : '';
-        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + '" data-id="' + Number(p.id) + '">' +
+        const tone = tones[(Number(p.id || index) + index) % tones.length];
+        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + '" style="--product-tone:' + tone + ';" data-id="' + Number(p.id) + '">' +
           '<span class="product-pick-name">' + escapeHtml(normalize(p.nombre) || 'Producto') + '</span>' +
           '<span class="product-pick-meta">' +
-            'SKU: ' + escapeHtml(normalize(p.sku) || '-') +
-            ' | Precio: ' + escapeHtml(formatAmount(p.precio, (state.carrito && state.carrito.moneda) || 'COP')) +
+            '<span>SKU: ' + escapeHtml(normalize(p.sku) || normalize(p.codigo_barras) || '-') + '</span>' +
+            '<span class="product-pick-price">' + escapeHtml(formatAmount(p.precio, (state.carrito && state.carrito.moneda) || 'COP')) + '</span>' +
           '</span>' +
           badge +
         '</button>';

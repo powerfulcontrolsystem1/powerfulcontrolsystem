@@ -1,6 +1,6 @@
 # Indice documental del proyecto
 
-Fecha: 2026-04-18
+Fecha: 2026-04-30
 Estado: vigente
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
@@ -16,6 +16,16 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 7. `documentos/historial_de_cambios`
 8. `CHANGELOG.md`
 
+## Estado documental reciente
+
+- 2026-04-30: pagos Epayco documentados con Smart Checkout v2 y fallback clasico firmado por POST a `secure.payco.co`.
+- 2026-04-30: pagos Epayco actualizados para separar modo Smart Checkout y modo fallback clasico; el POST clasico usa `Customer ID` + `P_KEY` para decidir produccion/pruebas y evitar "El comercio no fue reconocido".
+- 2026-04-30: chat IA actualizado para exportar respuestas y conversaciones como PDF, DOCX, XLSX, TXT o JSON mediante el generador dinamico y auditoria de origen `chat_ia`.
+- 2026-04-30: chat flotante documentado con robot IA, secretaria IA estilo caricatura ejecutiva joven y voz femenina automatica para secretaria.
+- 2026-04-30: empresas compartidas documentadas con listado/revocacion de administradores compartidos y trazabilidad.
+- 2026-04-30: hoja de vida operativa universal documentada para motos de taller, pacientes, vehiculos, equipos, activos o mascotas.
+- 2026-04-30: documentos dinamicos asistidos por IA documentados con endpoints `/generate` y `/download`.
+
 ## Fuentes canonicas por tema
 
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
@@ -27,6 +37,9 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Historial detallado de trabajo: `documentos/historial_de_cambios`
 - Resumen ejecutivo de cambios: `CHANGELOG.md`
 - Gobernanza tecnica, ADRs, contratos y runbooks: `documentos/gobernanza_tecnica/README.md`
+- Runbook actualizado de pagos de licencias: `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`
+- Contrato actualizado de checkout publico: `documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md`
+- Contrato de documentos dinamicos IA: `documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md`
 
 ## Paquetes documentales complementarios
 

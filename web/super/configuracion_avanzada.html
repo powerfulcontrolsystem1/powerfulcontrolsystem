@@ -196,11 +196,23 @@
     <section class="card form advanced-card" data-brand="system" id="empresaLimitacionesCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 6v6l4 2"></path></svg>
-        Limitaciones por empresa (RustDesk, IA, GPS y Nextcloud)
+        Limitaciones por empresa (API, DB, IA, GPS, Nextcloud y RustDesk)
       </h2>
-      <p class="form-help">Define topes globales por empresa para RustDesk, chat con IA, dispositivos GPS y cuota de almacenamiento de Nextcloud. Se guardan en la base <strong>superadministrador</strong>.</p>
+      <p class="form-help">Define topes globales por empresa para consumo de API, consultas de base de datos, RustDesk, chat con IA, dispositivos GPS y cuota de almacenamiento de Nextcloud. Se guardan en la base <strong>superadministrador</strong>.</p>
 
       <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaLimitAPIRequests">API protegida (solicitudes por minuto)</label>
+          <input id="empresaLimitAPIRequests" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="600">
+          <div class="form-help">Por defecto: 600. Usa 0 para no limitar por minuto las rutas protegidas de empresa.</div>
+          <div id="empresaLimitAPIStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaLimitDBQueries">Base de datos IA/Admin (consultas por minuto)</label>
+          <input id="empresaLimitDBQueries" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="120">
+          <div class="form-help">Por defecto: 120. Aplica especialmente a `/api/empresa/db_admin` para proteger consultas directas por empresa.</div>
+          <div id="empresaLimitDBStatus" class="form-help">Cargando estado...</div>
+        </div>
         <div class="form-col">
           <label class="form-label" for="empresaLimitRustDeskMinutes">Uso de RustDesk (minutos por empresa)</label>
           <input id="empresaLimitRustDeskMinutes" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="30">
@@ -387,10 +399,13 @@
           <div id="epaycoCustomerIdSet" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Opciones</label>
-          <div class="form-help">Smart Checkout de Epayco requiere Public Key y Private Key. Customer ID sigue siendo recomendado para validaciones y conciliacion del webhook.</div>
+          <label class="form-label">P_KEY / llave secreta checkout</label>
+          <input id="epaycoCheckoutKey" class="form-input" type="password" placeholder="Llave secreta del checkout estándar">
+          <div id="epaycoCheckoutKeySet" class="form-help">Cargando estado...</div>
         </div>
       </div>
+
+      <div class="form-help">Smart Checkout requiere Public Key y Private Key API. Si Smart Checkout falla, el sistema usa el checkout estándar por POST con Customer ID + P_KEY para evitar el error de comercio no reconocido.</div>
 
       <div class="form-row">
         <div class="form-col">
@@ -955,16 +970,20 @@
 
       async function loadEmpresaLimitacionesConfig(){
         const msgEl = document.getElementById('empresaLimitacionesMsg');
+        const apiInput = document.getElementById('empresaLimitAPIRequests');
+        const dbInput = document.getElementById('empresaLimitDBQueries');
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
         const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
         const nextcloudInput = document.getElementById('empresaLimitNextcloudGB');
+        const apiStatus = document.getElementById('empresaLimitAPIStatus');
+        const dbStatus = document.getElementById('empresaLimitDBStatus');
         const rustdeskStatus = document.getElementById('empresaLimitRustDeskStatus');
         const aiStatus = document.getElementById('empresaLimitAIStatus');
         const gpsStatus = document.getElementById('empresaLimitGPSStatus');
         const nextcloudStatus = document.getElementById('empresaLimitNextcloudStatus');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
+        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
 
         if (msgEl) msgEl.innerText = 'Cargando limitaciones...';
         try {
@@ -975,21 +994,31 @@
           const defaults = data.defaults || {};
           const values = data.values || {};
 
+          const apiInfo = values.api_max_requests_minuto || {};
+          const dbInfo = values.db_max_consultas_minuto || {};
           const rustdeskInfo = values.rustdesk_max_minutos || {};
           const aiInfo = values.ai_max_consultas || {};
           const gpsInfo = values.gps_max_dispositivos || {};
           const nextcloudInfo = values.nextcloud_max_gb || {};
 
+          const apiDefault = normalizeNonNegativeInt(defaults.api_max_requests_minuto, 600);
+          const dbDefault = normalizeNonNegativeInt(defaults.db_max_consultas_minuto, 120);
           const rustdeskDefault = normalizeNonNegativeInt(defaults.rustdesk_max_minutos, 30);
           const aiDefault = normalizeNonNegativeInt(defaults.ai_max_consultas, 10);
           const gpsDefault = normalizeNonNegativeInt(defaults.gps_max_dispositivos, 2);
           const nextcloudDefault = normalizeNonNegativeInt(defaults.nextcloud_max_gb, 1);
 
+          apiInput.value = String(normalizeNonNegativeInt(apiInfo.value, apiDefault));
+          dbInput.value = String(normalizeNonNegativeInt(dbInfo.value, dbDefault));
           rustdeskInput.value = String(normalizeNonNegativeInt(rustdeskInfo.value, rustdeskDefault));
           aiInput.value = String(normalizeNonNegativeInt(aiInfo.value, aiDefault));
           gpsInput.value = String(normalizeNonNegativeInt(gpsInfo.value, gpsDefault));
           nextcloudInput.value = String(normalizeNonNegativeInt(nextcloudInfo.value, nextcloudDefault));
 
+          const apiUpdatedAt = String(apiInfo.updated_at || '').trim();
+          const apiUpdatedBy = String(apiInfo.updated_by || '').trim();
+          const dbUpdatedAt = String(dbInfo.updated_at || '').trim();
+          const dbUpdatedBy = String(dbInfo.updated_by || '').trim();
           const rustdeskUpdatedAt = String(rustdeskInfo.updated_at || '').trim();
           const rustdeskUpdatedBy = String(rustdeskInfo.updated_by || '').trim();
           const aiUpdatedAt = String(aiInfo.updated_at || '').trim();
@@ -999,6 +1028,16 @@
           const nextcloudUpdatedAt = String(nextcloudInfo.updated_at || '').trim();
           const nextcloudUpdatedBy = String(nextcloudInfo.updated_by || '').trim();
 
+          if (apiStatus) {
+            apiStatus.innerText = apiUpdatedAt
+              ? ('Última actualización: ' + apiUpdatedAt + (apiUpdatedBy ? (' - ' + apiUpdatedBy) : ''))
+              : 'Valor por defecto o no configurado todavía.';
+          }
+          if (dbStatus) {
+            dbStatus.innerText = dbUpdatedAt
+              ? ('Última actualización: ' + dbUpdatedAt + (dbUpdatedBy ? (' - ' + dbUpdatedBy) : ''))
+              : 'Valor por defecto o no configurado todavía.';
+          }
           if (rustdeskStatus) {
             rustdeskStatus.innerText = rustdeskUpdatedAt
               ? ('Última actualización: ' + rustdeskUpdatedAt + (rustdeskUpdatedBy ? (' - ' + rustdeskUpdatedBy) : ''))
@@ -1023,6 +1062,8 @@
           if (msgEl) msgEl.innerText = 'Limitaciones cargadas.';
         } catch (err) {
           if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar limitaciones.';
+          if (apiStatus) apiStatus.innerText = 'Error al leer.';
+          if (dbStatus) dbStatus.innerText = 'Error al leer.';
           if (rustdeskStatus) rustdeskStatus.innerText = 'Error al leer.';
           if (aiStatus) aiStatus.innerText = 'Error al leer.';
           if (gpsStatus) gpsStatus.innerText = 'Error al leer.';
@@ -1032,12 +1073,14 @@
 
       async function saveEmpresaLimitacionesConfig(){
         const msgEl = document.getElementById('empresaLimitacionesMsg');
+        const apiInput = document.getElementById('empresaLimitAPIRequests');
+        const dbInput = document.getElementById('empresaLimitDBQueries');
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
         const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
         const nextcloudInput = document.getElementById('empresaLimitNextcloudGB');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
+        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
 
         const prevText = btn.innerText;
         btn.disabled = true;
@@ -1045,6 +1088,8 @@
         if (msgEl) msgEl.innerText = 'Guardando limitaciones...';
         try {
           const payload = {
+            api_max_requests_minuto: normalizeNonNegativeInt(apiInput.value, 600),
+            db_max_consultas_minuto: normalizeNonNegativeInt(dbInput.value, 120),
             rustdesk_max_minutos: normalizeNonNegativeInt(rustdeskInput.value, 30),
             ai_max_consultas: normalizeNonNegativeInt(aiInput.value, 10),
             gps_max_dispositivos: normalizeNonNegativeInt(gpsInput.value, 2),
@@ -2080,15 +2125,18 @@
         const publicKey = (document.getElementById('epaycoPublicKey').value || '').trim();
         const customerId = (document.getElementById('epaycoCustomerId').value || '').trim();
         const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
+        const checkoutKey = (document.getElementById('epaycoCheckoutKey').value || '').trim();
         if (publicKey) payload.public_key = publicKey;
         if (customerId) payload.customer_id = customerId;
         if (privateKey) payload.private_key = privateKey;
+        if (checkoutKey) payload.checkout_key = checkoutKey;
         const res = await fetch('/super/api/config/epayco', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const raw = await res.text();
         if (!res.ok) throw new Error('Epayco: ' + (raw || res.status));
         document.getElementById('epaycoPrivateKey').value = '';
         document.getElementById('epaycoPublicKey').value = '';
         document.getElementById('epaycoCustomerId').value = '';
+        document.getElementById('epaycoCheckoutKey').value = '';
       }
 
       async function persistGmailConfig(){
@@ -2345,6 +2393,7 @@
         const statusPublic = document.getElementById('epaycoPublicSet');
         const statusPrivate = document.getElementById('epaycoPrivateSet');
         const statusCustomerId = document.getElementById('epaycoCustomerIdSet');
+        const statusCheckoutKey = document.getElementById('epaycoCheckoutKeySet');
         const msg = document.getElementById('epaycoMsg');
         try {
           const res = await fetch('/super/api/config/epayco');
@@ -2352,6 +2401,7 @@
             statusPublic.innerText = 'Error al leer configuración Epayco';
             statusPrivate.innerText = 'Error al leer configuración Epayco';
             statusCustomerId.innerText = 'Error al leer configuración Epayco';
+            statusCheckoutKey.innerText = 'Error al leer configuración Epayco';
             return;
           }
           const cfg = await res.json();
@@ -2378,6 +2428,15 @@
           document.getElementById('epaycoCustomerId').disabled = false;
         }
 
+        if (cfg.checkout_key_set) {
+          const tsCheckoutKey = cfg.checkout_key_updated ? (' - Última actualización: ' + cfg.checkout_key_updated) : '';
+          statusCheckoutKey.innerText = 'P_KEY guardada (' + (cfg.checkout_key_masked || '****') + ')' + tsCheckoutKey;
+          document.getElementById('epaycoCheckoutKey').disabled = true;
+        } else {
+          statusCheckoutKey.innerText = 'No configurada';
+          document.getElementById('epaycoCheckoutKey').disabled = false;
+        }
+
         if (cfg.private_key_set) {
           const tsPrivate = cfg.private_key_updated ? (' - Última actualización: ' + cfg.private_key_updated) : '';
           statusPrivate.innerText = 'Private Key guardada (' + (cfg.private_key_masked || '****') + ')' + tsPrivate;
@@ -2387,14 +2446,16 @@
           document.getElementById('epaycoPrivateKey').disabled = false;
         }
 
-        const hasEpaycoConfig = !!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set);
+        const hasEpaycoConfig = !!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set || cfg.checkout_key_set);
           document.getElementById('editEpaycoBtn').style.display = hasEpaycoConfig ? '' : 'none';
           document.getElementById('cancelEpaycoBtn').style.display = 'none';
+          document.getElementById('saveEpaycoBtn').style.display = hasEpaycoConfig ? 'none' : '';
           document.getElementById('saveEpaycoBtn').disabled = false;
         } catch (err) {
           statusPublic.innerText = 'Error cargando Epayco: ' + (err.message || err);
           statusPrivate.innerText = statusPublic.innerText;
           statusCustomerId.innerText = statusPublic.innerText;
+          statusCheckoutKey.innerText = statusPublic.innerText;
           refreshEpaycoEnabledHint();
         }
       }
@@ -2406,9 +2467,10 @@
         const publicKey = (document.getElementById('epaycoPublicKey').value || '').trim();
         const customerId = (document.getElementById('epaycoCustomerId').value || '').trim();
         const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
+        const checkoutKey = (document.getElementById('epaycoCheckoutKey').value || '').trim();
         const enabled = !!document.getElementById('epaycoEnabledToggle').checked;
 
-	      if (!publicKey && !customerId && !privateKey) {
+	      if (!publicKey && !customerId && !privateKey && !checkoutKey) {
           if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
         }
 
@@ -2416,6 +2478,7 @@
 	      if (publicKey) payload.public_key = publicKey;
 	      if (customerId) payload.customer_id = customerId;
 	      if (privateKey) payload.private_key = privateKey;
+	      if (checkoutKey) payload.checkout_key = checkoutKey;
 
         btn.disabled = true; btn.innerText = 'Guardando...'; msg.innerText = '';
         try {
@@ -2429,6 +2492,7 @@
           document.getElementById('epaycoPrivateKey').value = '';
           document.getElementById('epaycoPublicKey').value = '';
           document.getElementById('epaycoCustomerId').value = '';
+          document.getElementById('epaycoCheckoutKey').value = '';
           await loadEpaycoConfig();
         } catch (err) {
           msg.innerText = 'Error guardando Epayco: ' + (err.message || err);
@@ -2441,7 +2505,9 @@
         document.getElementById('epaycoPublicKey').disabled = false;
         document.getElementById('epaycoCustomerId').disabled = false;
         document.getElementById('epaycoPrivateKey').disabled = false;
+        document.getElementById('epaycoCheckoutKey').disabled = false;
         document.getElementById('saveEpaycoBtn').disabled = false;
+        document.getElementById('saveEpaycoBtn').style.display = '';
         document.getElementById('editEpaycoBtn').style.display = 'none';
         document.getElementById('cancelEpaycoBtn').style.display = '';
         document.getElementById('epaycoMsg').innerText = 'Modo edición activo: ingresa las nuevas credenciales y guarda.';
@@ -2541,11 +2607,21 @@
           const issues = [];
 	      if (!cfg.public_key_set) issues.push('Falta la Public Key');
 	      if (!cfg.private_key_set) issues.push('Falta la Private Key');
-	      if (!cfg.customer_id_set) issues.push('Customer ID no configurado (recomendado para validaciones/webhook)');
+	      if (!cfg.customer_id_set) issues.push('Customer ID no configurado para checkout estándar');
+	      if (!cfg.checkout_key_set) issues.push('P_KEY no configurada para checkout estándar');
           if (!cfg.enabled) issues.push('Pasarela marcada como desactivada');
           if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
           if (!out) return;
-	      if (!issues.length) out.innerText = 'OK: Epayco parece listo para Smart Checkout.'; else out.innerText = 'Aviso: ' + issues.join('; ');
+          const smartReady = !!(cfg.public_key_set && cfg.private_key_set);
+          const classicReady = !!(cfg.customer_id_set && cfg.checkout_key_set);
+	      if (cfg.enabled && (smartReady || classicReady) && (typeof cfg.encryption_available === 'undefined' || cfg.encryption_available)) {
+            const flows = [];
+            if (smartReady) flows.push('Smart Checkout');
+            if (classicReady) flows.push('checkout estándar');
+            out.innerText = 'OK: Epayco listo para ' + flows.join(' y ') + '.';
+          } else {
+            out.innerText = 'Aviso: ' + issues.join('; ');
+          }
         } catch (err) {
           if (out) out.innerText = 'Error: ' + (err.message || err);
         }

@@ -1,7 +1,7 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-04-17
+Actualizacion: 2026-04-30
 
 Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
 
@@ -20,6 +20,8 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Frontend: HTML + JavaScript + CSS.
 - Base de datos: PostgreSQL (dos bases separadas por contexto en VPS).
 - Integraciones: Google OAuth, SMTP (correo), Wompi y Epayco.
+- IA y voz: GPT-5.4 mini/modelo activo para chat, contexto de auditoria, documentos dinamicos y voz natural por Piper/FastAPI con fallback de navegador.
+- Documentos dinamicos: generacion con IA o contenido recibido, variables, templates Go/HTML y descarga PDF/DOCX/XLSX/HTML/TXT/JSON.
 
 ## Arquitectura por capas
 
@@ -87,7 +89,8 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Configuracion avanzada de licencias con activacion independiente de Epayco y Wompi; el checkout publico consulta `GET /api/public/licencias/payment_methods` sin requerir sesion para mostrar solo pasarelas activas y configuradas.
 - La pagina publica `pagar_licencia.html` destaca visualmente el metodo disponible por defecto: si solo una pasarela esta activa, queda preseleccionada de forma explicita y ya no se renderiza el cuadro de seleccion; ademas, Epayco concentra el pago en una tarjeta compacta y centrada, sin campo visible de correo, usando solo aceptacion de terminos antes de abrir el checkout.
 - En el checkout publico de licencias, Epayco ya no depende de una pestaña emergente para continuar el cobro: `pagar_licencia.html` guarda el contexto pendiente y redirige la misma pestaña al checkout externo, dejando que `/epayco/respuesta.html` retome la verificacion al volver.
-- El checkout de licencias con Epayco envia `p_key` cuando la `private_key` esta configurada, manteniendo `customer_id` solo como dato opcional; con esto se evita el `AccessDenied` del checkout remoto cuando la cuenta exige ambos parametros legacy (`p_cust_id_cliente` + `p_key`).
+- El checkout de licencias con Epayco usa Smart Checkout v2 como ruta primaria. Si Smart Checkout no autentica o no crea sesion, el backend genera un fallback clasico firmado por POST hacia `https://secure.payco.co/checkout.php`; ya no redirige por GET a `checkout.epayco.co/checkout.php`, evitando el XML `AccessDenied`. Para fallback clasico se requiere `epayco.customer_id`/`epayco.cust_id` y `epayco.checkout_key`/`epayco.p_key`; si falta alguno, el sistema devuelve error controlado y no rompe el servidor.
+- El modo del fallback clasico de Epayco se calcula con las credenciales clasicas y queda separado del modo Smart Checkout. En cuentas reales debe enviar `p_test_request=false`, evitando el error de Epayco `El comercio no fue reconocido` causado por marcar una cuenta de produccion como prueba.
 - El modo operativo de Epayco acepta aliases de pruebas como `sandbox`, `sambox`, `test` y `pruebas`; cualquiera de ellos debe conservar el checkout publico en modo de pruebas (`test=true`) para evitar cobros reales durante validaciones locales o UAT.
 - Se publica ademas el subdominio dedicado `venta-digital.powerfulcontrolsystem.com` como prueba controlada de wildcard HTTPS para la pagina publica global `/venta_digital.html`, sin reemplazar la raiz generica de subdominios empresariales orientada a `venta_publica.html`.
 - Configuracion avanzada de Epayco alineada al contrato real de checkout: `public_key`, `private_key` cifrada opcional para el checkout actual y `customer_id` opcional; el backend conserva compatibilidad con claves legacy (`epayco.cust_id`, `epayco.key`) mientras migra instalaciones existentes. Para disponibilidad operativa del checkout de licencias, Epayco exige como minimo `public_key` valida.
@@ -99,6 +102,8 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - IA contextual por auditoria: el chat empresarial y el chat global reciben una ventana reciente de `empresa_auditoria_eventos` con actividad de usuarios, modulos, endpoints, resultados y errores. La integracion se hace en la capa central de auditoria y construccion de prompt, no en cada funcionalidad. Si la auditoria o el proveedor IA fallan/deshabilitan, el servidor mantiene operacion normal y la IA informa contexto degradado cuando aplique.
 - Auditoria profunda para GPT-5.4 mini/modelo activo: cuando la pregunta lo requiere, el backend busca eventos auditados relevantes, ejecuta consultas DB seguras por whitelist y `empresa_id` (usuarios activos, ventas, finanzas, inventario y clientes) y entrega esos resultados ya resueltos al prompt. Cada preparacion queda trazada en `empresa_auditoria_ia_consultas`; la IA no recibe permiso para generar ni ejecutar SQL libre.
 - Lectura total DB para chat empresarial: por defecto el super administrador mantiene activo `ai.chat.empresa.db_query_enabled`, permitiendo que GPT-5.4 mini/modelo activo reciba tablas con `empresa_id`, columnas no sensibles y filas recientes/relevantes consultadas por el backend con SELECT parametrizado. Desde la misma configuracion logica del chat IA se ajustan el maximo de tablas y filas por pregunta.
+- Chat flotante por empresa: `Configuracion del chat flotante` permite activar/desactivar el chat, elegir ventana cuadrada, robot IA o secretaria IA, activar modo voz y seleccionar voz del avatar. La secretaria IA 3D usa apariencia estilo caricatura ejecutiva joven y voz femenina automatica (`es-CO-female`), mientras el robot conserva la voz configurada por el administrador.
+- Documentos dinamicos asistidos por IA: `/generate` recibe `content` o `prompt`, aplica variables, transforma Markdown/HTML/texto en una estructura HTML profesional con templates Go y guarda un documento temporal. `/download?id=...&type=pdf|docx|xlsx|html|txt|json` entrega el archivo con `Content-Type` y `Content-Disposition` adecuados. PDF puede usar `wkhtmltopdf` si esta disponible; DOCX y XLSX se generan con librerias Go compatibles, incluyendo `excelize`.
 - Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`), con interruptor explicito en configuracion avanzada para activar o desactivar la alerta (`gmail.restart_alert_enabled`) sin perder el correo destino.
 - Monitor centralizado de errores del sistema con recuperacion de panicos, sanitizacion de respuestas `5xx`, persistencia en base super (`super_errores_sistema`) y panel dedicado para super en `/super/errores.html` consumiendo `/super/api/errores`.
 - Seguridad VPS Linux (super): auditoria operativa del servidor Ubuntu desde `/super/seguridad.html`, con configuracion persistente en `backend/secure/vps_security_config.json`, ejecucion de Lynis/Nmap/Trivy + chequeos propios, historial en filesystem `backend/logs/vps_security/`, comparacion contra el escaneo anterior y exportes `JSON`, `TXT`, `HTML`, `CSV`, `PDF` y `XLS`. La API protegida vive bajo `/super/api/security/vps/*` y el soporte de consola se apoya en `backend/tools/vps_security_scan/main.go` y scripts Linux de instalacion/cron.

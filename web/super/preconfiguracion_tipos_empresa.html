@@ -7,20 +7,36 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .preconfig-layout { display:grid; grid-template-columns:minmax(240px,320px) 1fr; gap:16px; align-items:start; }
+    .preconfig-toolbar { display:grid; gap:10px; margin-bottom:12px; }
+    .preconfig-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .preconfig-stat { border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); padding:10px; }
+    .preconfig-stat strong { display:block; font-size:1.25rem; line-height:1; }
+    .preconfig-stat span { color:var(--muted); font-size:.82rem; }
     .preconfig-list { display:grid; gap:8px; }
     .preconfig-type { width:100%; text-align:left; border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); color:var(--text); padding:12px; cursor:pointer; }
     .preconfig-type.active { border-color:var(--primary); box-shadow:0 0 0 1px var(--primary); }
+    .preconfig-type:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
     .preconfig-type strong { display:block; }
     .preconfig-type span { display:block; color:var(--muted); font-size:.9rem; margin-top:4px; }
     .preconfig-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .preconfig-badge { border:1px solid var(--content-soft-border); border-radius:999px; padding:3px 8px; color:var(--muted); font-size:.78rem; }
     .preconfig-editor { display:grid; gap:14px; }
+    .preconfig-section { border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); padding:14px; }
+    .preconfig-section h3 { margin-top:0; }
     .preconfig-products-preview { display:grid; gap:8px; margin-top:10px; }
     .preconfig-product-row { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; border:1px solid var(--content-soft-border); border-radius:8px; padding:10px; background:var(--content-soft-bg); }
     .preconfig-product-row small { color:var(--muted); }
+    .preconfig-empty { border:1px dashed var(--content-soft-border); border-radius:8px; color:var(--muted); padding:16px; text-align:center; }
     .preconfig-message.error { color:#fca5a5; }
     .preconfig-message.success { color:#86efac; }
-    @media (max-width: 860px) { .preconfig-layout { grid-template-columns:1fr; } }
+    @media (max-width: 860px) {
+      .preconfig-layout { grid-template-columns:1fr; }
+      .preconfig-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .preconfig-product-row { grid-template-columns:1fr; }
+    }
+    @media (max-width: 560px) {
+      .preconfig-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -33,6 +49,15 @@
     <div class="preconfig-layout">
       <aside class="card form">
         <h2>Tipos de empresa</h2>
+        <div class="preconfig-toolbar">
+          <input id="typeSearch" class="form-input" type="search" placeholder="Buscar tipo de empresa">
+          <div class="preconfig-summary" aria-label="Resumen de preconfiguraciones">
+            <div class="preconfig-stat"><strong id="statTipos">0</strong><span>Tipos</span></div>
+            <div class="preconfig-stat"><strong id="statActivas">0</strong><span>Activas</span></div>
+            <div class="preconfig-stat"><strong id="statGuardadas">0</strong><span>Guardadas</span></div>
+            <div class="preconfig-stat"><strong id="statProductos">0</strong><span>Productos</span></div>
+          </div>
+        </div>
         <div id="typeList" class="preconfig-list">Cargando...</div>
       </aside>
 
@@ -67,7 +92,7 @@
             </div>
           </div>
 
-          <section class="card" style="padding:14px;">
+          <section class="preconfig-section">
             <h3>Estaciones iniciales</h3>
             <div class="form-row">
               <div class="form-col">
@@ -101,7 +126,7 @@
             </div>
           </section>
 
-          <section class="card" style="padding:14px;">
+          <section class="preconfig-section">
             <h3>Productos guia</h3>
             <label class="form-label" for="productosText">Un producto por linea</label>
             <textarea id="productosText" class="form-textarea" rows="8" spellcheck="false"></textarea>
@@ -109,14 +134,14 @@
             <div id="productsPreview" class="preconfig-products-preview"></div>
           </section>
 
-          <section class="card" style="padding:14px;">
+          <section class="preconfig-section">
             <h3>Usuarios guia</h3>
             <label class="form-label" for="usuariosText">Un usuario por linea</label>
             <textarea id="usuariosText" class="form-textarea" rows="5" spellcheck="false"></textarea>
             <div class="form-help">Formato: Nombre | Rol | Email opcional | Observaciones. Se crean inactivos y sin clave para que luego se conviertan en usuarios reales.</div>
           </section>
 
-          <section class="card" style="padding:14px;">
+          <section class="preconfig-section">
             <h3>Asistente IA guia</h3>
             <div class="form-row">
               <div class="form-col">
@@ -134,7 +159,7 @@
             <div class="form-help">Una instruccion por linea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guia operativa.</div>
           </section>
 
-          <section class="card" style="padding:14px;">
+          <section class="preconfig-section">
             <h3>Tareas guia iniciales</h3>
             <label class="form-label" for="tareasText">Una tarea por linea</label>
             <textarea id="tareasText" class="form-textarea" rows="6" spellcheck="false"></textarea>
@@ -163,6 +188,8 @@
       var usuariosText = document.getElementById('usuariosText');
       var instruccionesText = document.getElementById('instruccionesText');
       var tareasText = document.getElementById('tareasText');
+      var typeSearch = document.getElementById('typeSearch');
+      var saveBtn = form.querySelector('button[type="submit"]');
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (match) {
@@ -185,6 +212,47 @@
         msg.textContent = text || '';
         msg.classList.toggle('error', type === 'error');
         msg.classList.toggle('success', type === 'success');
+      }
+
+      function normalizeText(value) {
+        return String(value == null ? '' : value).toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      }
+
+      function parseNumber(value) {
+        var text = String(value == null ? '' : value).trim();
+        if (!text) return 0;
+        text = text.replace(/\s/g, '');
+        if (text.indexOf(',') >= 0 && text.indexOf('.') >= 0) {
+          text = text.replace(/\./g, '').replace(',', '.');
+        } else if (text.indexOf(',') >= 0) {
+          text = text.replace(',', '.');
+        } else if (/^\d{1,3}(\.\d{3})+$/.test(text)) {
+          text = text.replace(/\./g, '');
+        }
+        var num = Number(text);
+        return Number.isFinite(num) ? num : 0;
+      }
+
+      function getTemplate(item) {
+        return (item && item.template && typeof item.template === 'object') ? item.template : {};
+      }
+
+      function updateSummary() {
+        var activeCount = 0;
+        var savedCount = 0;
+        var productsCount = 0;
+        items.forEach(function (item) {
+          var preconfig = item.preconfig || {};
+          var template = getTemplate(item);
+          if (preconfig.enabled) activeCount++;
+          if (!item.es_default) savedCount++;
+          productsCount += Array.isArray(template.productos) ? template.productos.length : 0;
+        });
+        document.getElementById('statTipos').textContent = items.length;
+        document.getElementById('statActivas').textContent = activeCount;
+        document.getElementById('statGuardadas').textContent = savedCount;
+        document.getElementById('statProductos').textContent = productsCount;
       }
 
       function productToLine(p) {
@@ -225,10 +293,11 @@
           return {
             sku: sku.toUpperCase(),
             nombre: nombre,
-            precio: Number(parts[2] || 0),
+            precio: parseNumber(parts[2]),
             categoria: parts[3] || '',
-            costo: Number(parts[4] || 0),
-            stock_minimo: Number(parts[5] || 0),
+            costo: parseNumber(parts[4]),
+            stock_minimo: parseNumber(parts[5]),
+            stock_inicial: parseNumber(parts[6]),
             unidad_medida: 'unidad',
             impuesto_porcentaje: 0
           };
@@ -285,12 +354,20 @@
         selected = item;
         var tipo = item && item.tipo_empresa ? item.tipo_empresa : {};
         var preconfig = item && item.preconfig ? item.preconfig : {};
-        var template = item && item.template ? item.template : {};
+        var template = getTemplate(item);
         var estaciones = template.estaciones || {};
         var asistente = template.asistente_ia || {};
+        var hasSelection = !!(tipo && tipo.id);
+        form.classList.toggle('is-disabled', !hasSelection);
+        saveBtn.disabled = !hasSelection;
+        document.getElementById('resetDefaultBtn').disabled = !hasSelection;
         document.getElementById('tipoEmpresaID').value = tipo.id || '';
         document.getElementById('editorTitle').textContent = tipo.nombre || 'Tipo de empresa';
-        document.getElementById('editorSubtitle').textContent = item && item.es_default ? 'Plantilla sugerida aun no guardada.' : 'Plantilla guardada para empresas nuevas.';
+        document.getElementById('editorSubtitle').textContent = !hasSelection
+          ? 'Crea o activa un tipo de empresa para configurar su plantilla inicial.'
+          : item && item.config_error
+            ? 'La plantilla guardada tenia errores y se esta mostrando una version sugerida para repararla.'
+            : item && item.es_default ? 'Plantilla sugerida aun no guardada.' : 'Plantilla guardada para empresas nuevas.';
         document.getElementById('enabled').checked = !!preconfig.enabled;
         document.getElementById('nombre').value = preconfig.nombre || '';
         document.getElementById('descripcion').value = preconfig.descripcion || '';
@@ -310,22 +387,40 @@
       }
 
       function renderTypeList() {
+        updateSummary();
         if (!items.length) {
           listEl.innerHTML = '<div class="form-help">No hay tipos de empresa registrados.</div>';
           return;
         }
-        listEl.innerHTML = items.map(function (item, idx) {
+        var query = normalizeText(typeSearch.value);
+        var filtered = items.map(function (item, idx) {
+          return { item: item, idx: idx };
+        }).filter(function (entry) {
+          if (!query) return true;
+          var tipo = entry.item.tipo_empresa || {};
+          var preconfig = entry.item.preconfig || {};
+          return normalizeText((tipo.nombre || '') + ' ' + (preconfig.nombre || '') + ' ' + (preconfig.descripcion || '')).indexOf(query) >= 0;
+        });
+        if (!filtered.length) {
+          listEl.innerHTML = '<div class="preconfig-empty">No hay tipos que coincidan con la busqueda.</div>';
+          return;
+        }
+        listEl.innerHTML = filtered.map(function (entry) {
+          var item = entry.item;
+          var idx = entry.idx;
           var tipo = item.tipo_empresa || {};
           var preconfig = item.preconfig || {};
-          var template = item.template || {};
+          var template = getTemplate(item);
           var estaciones = template.estaciones || {};
-          var products = template.productos || [];
-          var usuarios = template.usuarios || [];
-          var tareas = template.tareas_guia || [];
+          var products = Array.isArray(template.productos) ? template.productos : [];
+          var usuarios = Array.isArray(template.usuarios) ? template.usuarios : [];
+          var tareas = Array.isArray(template.tareas_guia) ? template.tareas_guia : [];
           var active = selected && selected.tipo_empresa && Number(selected.tipo_empresa.id) === Number(tipo.id);
+          var status = preconfig.enabled ? 'Activa' : 'Inactiva';
+          if (item.config_error) status = 'Requiere guardar';
           return '<button type="button" class="preconfig-type' + (active ? ' active' : '') + '" data-index="' + idx + '">' +
             '<strong>' + escapeHtml(tipo.nombre || ('Tipo #' + tipo.id)) + '</strong>' +
-            '<span>' + (preconfig.enabled ? 'Activa' : 'Inactiva') + (item.es_default ? ' - sugerida' : ' - guardada') + '</span>' +
+            '<span>' + escapeHtml(status + (item.es_default ? ' - sugerida' : ' - guardada')) + '</span>' +
             '<div class="preconfig-badges">' +
               '<span class="preconfig-badge">' + Number(estaciones.cantidad || 0) + ' estaciones</span>' +
               '<span class="preconfig-badge">' + products.length + ' productos</span>' +
@@ -346,7 +441,11 @@
         try {
           var data = await fetchJSON('/super/api/tipos_empresas/preconfiguracion');
           items = data && Array.isArray(data.items) ? data.items : [];
-          setForm(items[0] || null);
+          var currentID = selected && selected.tipo_empresa ? Number(selected.tipo_empresa.id || 0) : 0;
+          var next = items.find(function (item) {
+            return item && item.tipo_empresa && Number(item.tipo_empresa.id || 0) === currentID;
+          }) || items[0] || null;
+          setForm(next);
           setMessage('');
         } catch (err) {
           setMessage(err.message || 'No se pudo cargar.', 'error');
@@ -410,6 +509,7 @@
       });
 
       productsText.addEventListener('input', renderProductsPreview);
+      typeSearch.addEventListener('input', renderTypeList);
       load();
     })();
   </script>

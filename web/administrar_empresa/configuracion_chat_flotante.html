@@ -83,7 +83,7 @@
   <div class="container">
     <div class="page-header">
       <h1>Configuracion del chat flotante</h1>
-      <p class="form-help">Elige como se abre el asistente IA en Administrar Empresa: ventana cuadrada tradicional o robot 3D conversacional.</p>
+      <p class="form-help">Elige como se abre el asistente IA en Administrar Empresa: ventana cuadrada tradicional, robot 3D o secretaria 3D conversacional.</p>
     </div>
 
     <section class="card form advanced-card">
@@ -98,8 +98,8 @@
       <label class="chat-voice-toggle" for="robotEnabled">
         <input id="robotEnabled" type="checkbox">
         <span>
-          <span class="chat-appearance-title">Activar robot IA</span>
-          <span class="chat-appearance-copy">Permite usar el avatar 3D, los globos del robot, la guia inicial y los avisos hablados de recordatorios.</span>
+          <span class="chat-appearance-title">Activar avatares IA 3D</span>
+          <span class="chat-appearance-copy">Permite usar el robot o la secretaria 3D, los globos conversacionales, la guia inicial y los avisos hablados de recordatorios.</span>
         </span>
       </label>
 
@@ -119,6 +119,13 @@
             <span class="chat-appearance-copy">Usa el avatar 3D con globos de conversacion integrados en el mismo robot.</span>
           </span>
         </label>
+        <label class="chat-appearance-option" for="chatModeSecretary">
+          <input id="chatModeSecretary" type="radio" name="chatMode" value="secretary">
+          <span>
+            <span class="chat-appearance-title">Secretaria IA 3D</span>
+            <span class="chat-appearance-copy">Usa una secretaria estilo caricatura, joven, con ropa ejecutiva, globos de conversacion y voz femenina.</span>
+          </span>
+        </label>
       </div>
 
       <label class="chat-voice-toggle" for="chatVoiceEnabled">
@@ -130,7 +137,7 @@
       </label>
 
       <div class="chat-voice-select-card">
-        <label class="form-label" for="chatRobotVoice">Voz del robot</label>
+        <label class="form-label" for="chatRobotVoice">Voz del avatar</label>
         <select id="chatRobotVoice" class="form-input">
           <option value="es-CO">Colombiana natural (predeterminada)</option>
           <option value="es-CO-female">Colombiana femenina</option>
@@ -138,7 +145,7 @@
           <option value="es-MX">Español latino</option>
           <option value="es-ES">Español castellano</option>
         </select>
-        <div class="form-help">Se usa para la voz del robot IA. Si el servidor de voz no tiene ese modelo, el navegador usara la voz en español mas cercana.</div>
+        <div class="form-help">Se usa para la voz del avatar IA. La secretaria usa voz femenina automaticamente. Si el servidor de voz no tiene ese modelo, el navegador usara la voz en español mas cercana.</div>
       </div>
 
       <div class="form-actions" style="margin-top:16px;">
@@ -170,11 +177,17 @@
       var currentRobotEnabled = true;
 
       function normalize(value) {
-        return String(value || '').trim().toLowerCase() === 'robot' && currentRobotEnabled ? 'robot' : 'normal';
+        var mode = String(value || '').trim().toLowerCase();
+        if ((mode === 'robot' || mode === 'secretary' || mode === 'secretaria') && currentRobotEnabled) {
+          return mode === 'secretaria' ? 'secretary' : mode;
+        }
+        return 'normal';
       }
 
       function labelFor(value) {
-        return normalize(value) === 'robot' ? 'Robot IA' : 'Chat cuadrado';
+        var mode = normalize(value);
+        if (mode === 'secretary') return 'Secretaria IA 3D';
+        return mode === 'robot' ? 'Robot IA' : 'Chat cuadrado';
       }
 
       function normalizeRobotVoice(value) {
@@ -203,6 +216,7 @@
       }
 
       function getSelectedRobotVoice() {
+        if (getSelectedMode() === 'secretary') return 'es-CO-female';
         return normalizeRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
       }
 
@@ -211,6 +225,9 @@
         modeInputs.forEach(function (input) {
           input.checked = input.value === mode;
         });
+        if (mode === 'secretary') {
+          setSelectedRobotVoice('es-CO-female');
+        }
         return mode;
       }
 
@@ -218,9 +235,9 @@
         var chatOn = !!currentChatEnabled;
         var robotOn = !!currentRobotEnabled;
         modeInputs.forEach(function (input) {
-          input.disabled = !chatOn || (input.value === 'robot' && !robotOn);
+          input.disabled = !chatOn || ((input.value === 'robot' || input.value === 'secretary') && !robotOn);
         });
-        if (!robotOn && getSelectedMode() === 'robot') {
+        if (!robotOn && (getSelectedMode() === 'robot' || getSelectedMode() === 'secretary')) {
           setSelectedMode('normal');
         }
         if (voiceCheckbox) voiceCheckbox.disabled = !chatOn;
@@ -369,7 +386,7 @@
         setSelectedMode(current);
         setVoiceEnabled(currentVoice);
         setSelectedRobotVoice(currentRobotVoice);
-        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(currentRobotVoice) + '.');
+        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '.');
 
         fetch(PREFS_ENDPOINT, { credentials: 'same-origin' })
           .then(function (res) {
@@ -389,10 +406,10 @@
             notifyChatMode(mode);
             notifyChatVoice(voice);
             notifyRobotVoice(robotVoice);
-            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(robotVoice) + '.');
+            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(mode === 'secretary' ? 'es-CO-female' : robotVoice) + '.');
           })
           .catch(function () {
-            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
+            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
           });
       }
 
@@ -428,7 +445,7 @@
           notifyChatMode(saved);
           notifyChatVoice(savedVoice);
           notifyRobotVoice(savedRobotVoice);
-          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del robot: ' + labelForRobotVoice(savedRobotVoice) + '.');
+          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(saved === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
         }).catch(function (err) {
           updateStatus('Configuracion aplicada localmente, pero no se pudo guardar en servidor. ' + String(err && err.message ? err.message : ''), true);
         });
@@ -476,7 +493,7 @@
         robotVoiceSelect.addEventListener('change', function () {
           var voice = setSelectedRobotVoice(robotVoiceSelect.value);
           notifyRobotVoice(voice);
-          updateStatus('Vista previa aplicada: voz del robot ' + labelForRobotVoice(voice) + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: voz del avatar ' + labelForRobotVoice(getSelectedMode() === 'secretary' ? 'es-CO-female' : voice) + '. Presiona Guardar configuracion para persistirla.');
         });
       }
       loadMode();

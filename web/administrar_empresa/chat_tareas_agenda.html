@@ -3,47 +3,74 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Agenda — Chat y tareas</title>
+  <title>Agenda - Chat y tareas</title>
   <link rel="stylesheet" href="/estilos.css">
   <script>
     (function () {
       try {
-        var k = "theme";
         var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
         var t = "";
-        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
         if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
         t = String(t || "").trim().toLowerCase();
         var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
         if (!ok[t]) t = "dark";
-        var root = document.documentElement;
-        root.setAttribute("data-theme", t);
-        root.classList.toggle("theme-light", t.indexOf("light") === 0);
-        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);
+        document.documentElement.classList.toggle("theme-dark", t.indexOf("light") !== 0);
       } catch (err) {}
     })();
   </script>
-  <style>
-    .cta-nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .cta-nav a{padding:10px 14px;border-radius:999px;border:1px solid var(--border);text-decoration:none;font-weight:900;color:var(--text);background:var(--surface-soft)}
-    .cta-nav a.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
-  </style>
 </head>
-<body class="super-page chat-tareas-shell">
-  <div class="container chat-tareas-page">
-    <div class="page-header chat-tareas-page-header">
-      <div class="chat-tareas-page-headcopy">
-        <h1 id="pageTitle">Agenda</h1>
-        <p class="form-help" style="margin:6px 0 0 0;">Planeación de reuniones, citas y recordatorios de la empresa.</p>
+<body class="chat-workspace-shell chat-workspace--agenda">
+  <main class="container chat-workspace-page">
+    <section class="chat-workspace-hero">
+      <nav class="chat-workspace-subnav" aria-label="Submenu Chat y tareas">
+        <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_chats.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">C</span>
+          <span><strong>Chat</strong><small>Correo interno, conversaciones y mensajes.</small></span>
+        </a>
+        <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_tareas.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">T</span>
+          <span><strong>Tareas</strong><small>Asignaciones, responsables y seguimiento.</small></span>
+        </a>
+        <a class="chat-workspace-tab active" href="/administrar_empresa/chat_tareas_agenda.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">A</span>
+          <span><strong>Agenda</strong><small>Citas, reuniones y calendario empresarial.</small></span>
+        </a>
+      </nav>
+    </section>
+
+    <section class="chat-workspace-stage">
+      <div class="chat-workspace-stage-head">
+        <div></div>
+        <span class="chat-workspace-stage-pill">Agenda</span>
       </div>
-      <div class="cta-nav" aria-label="Menú de módulo">
-        <a href="/administrar_empresa/chat_tareas_chats.html">Chats</a>
-        <a href="/administrar_empresa/chat_tareas_tareas.html">Tareas</a>
-        <a class="active" href="/administrar_empresa/chat_tareas_agenda.html">Agenda</a>
-        <a class="btn secondary" href="/administrar_empresa/chat_tareas_papelera.html" style="border-radius:999px;">Papelera</a>
-      </div>
-    </div>
-    <iframe class="iframe-remote" src="/administrar_empresa/chat_y_tareas.html?view=agenda" title="Agenda"></iframe>
-  </div>
+      <iframe id="chatWorkspaceFrame" class="chat-workspace-frame" data-src="/administrar_empresa/chat_y_tareas.html?view=agenda" title="Agenda"></iframe>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      function syncFrame() {
+        var frame = document.getElementById("chatWorkspaceFrame");
+        if (!frame) return;
+        var current = new URLSearchParams(window.location.search || "");
+        var target = new URL(frame.getAttribute("data-src"), window.location.origin);
+        current.forEach(function (value, key) {
+          if (key !== "view") target.searchParams.set(key, value);
+        });
+        document.querySelectorAll(".chat-workspace-tab").forEach(function (link) {
+          var url = new URL(link.getAttribute("href"), window.location.origin);
+          current.forEach(function (value, key) {
+            if (key !== "view") url.searchParams.set(key, value);
+          });
+          link.href = url.pathname + url.search;
+        });
+        frame.src = target.pathname + target.search;
+      }
+      syncFrame();
+    })();
+  </script>
 </body>
 </html>

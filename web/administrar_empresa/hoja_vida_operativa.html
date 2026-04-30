@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hoja de vida operativa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Hoja de vida operativa</h1>
+        <p class="form-help">Historial universal para motos en taller, pacientes, equipos, vehiculos, mascotas, maquinaria o cualquier activo trazable.</p>
+      </div>
+      <button id="newEntityBtn" class="btn add" type="button">Nueva hoja de vida</button>
+    </div>
+
+    <section class="grid-4" id="summaryCards" style="margin-bottom:14px;"></section>
+
+    <section class="form" style="margin-bottom:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label" for="filterQ">Buscar</label>
+          <input id="filterQ" class="form-input" placeholder="Codigo, placa, paciente, cliente, marca, serie">
+        </div>
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="filterTipo">Tipo</label>
+          <select id="filterTipo" class="form-input">
+            <option value="">Todos</option>
+            <option value="moto">Moto</option>
+            <option value="vehiculo">Vehiculo</option>
+            <option value="paciente">Paciente</option>
+            <option value="equipo">Equipo</option>
+            <option value="mascota">Mascota</option>
+            <option value="maquinaria">Maquinaria</option>
+            <option value="activo">Activo</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+          <button id="reloadBtn" class="btn secondary" type="button" style="width:100%;">Recargar</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-2" style="align-items:start;">
+      <section class="form">
+        <h2 style="margin-top:0;">Registro principal</h2>
+        <form id="entityForm">
+          <input type="hidden" id="entityId">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="tipo_entidad">Tipo</label>
+              <select id="tipo_entidad" class="form-input">
+                <option value="moto">Moto</option>
+                <option value="vehiculo">Vehiculo</option>
+                <option value="paciente">Paciente</option>
+                <option value="equipo">Equipo</option>
+                <option value="mascota">Mascota</option>
+                <option value="maquinaria">Maquinaria</option>
+                <option value="activo">Activo</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="codigo">Codigo / placa / historia</label>
+              <input id="codigo" class="form-input" placeholder="Ej: MOTO-001, ABC12F, PAC-100">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="estado_operativo">Estado</label>
+              <select id="estado_operativo" class="form-input">
+                <option value="activo">Activo</option>
+                <option value="en_servicio">En servicio</option>
+                <option value="en_observacion">En observacion</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="cerrado">Cerrado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="nombre">Nombre / descripcion principal</label>
+              <input id="nombre" class="form-input" required placeholder="Ej: Moto AKT negra, Juan Perez, Compresor 2">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="cliente_nombre">Cliente / propietario / acudiente</label>
+              <input id="cliente_nombre" class="form-input" placeholder="Nombre relacionado">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="identificacion">Identificacion</label>
+              <input id="identificacion" class="form-input" placeholder="Documento, VIN, historia clinica, serial">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="marca">Marca</label>
+              <input id="marca" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="modelo">Modelo</label>
+              <input id="modelo" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="serie">Serie / serial</label>
+              <input id="serie" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="color">Color / rasgo</label>
+              <input id="color" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="fecha_ingreso">Fecha ingreso</label>
+              <input id="fecha_ingreso" type="date" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="observaciones">Observaciones</label>
+              <textarea id="observaciones" class="form-textarea" rows="3" placeholder="Notas generales de la hoja de vida"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn" type="submit">Guardar</button>
+            <button id="cancelEntityBtn" class="btn secondary" type="button">Cancelar</button>
+          </div>
+          <div id="entityMsg" class="form-help"></div>
+        </form>
+      </section>
+
+      <section class="form">
+        <h2 style="margin-top:0;">Hojas de vida</h2>
+        <div id="entitiesTable" class="table-block">Cargando...</div>
+      </section>
+    </div>
+
+    <div class="grid-2" style="align-items:start;margin-top:14px;">
+      <section class="form">
+        <h2 style="margin-top:0;">Eventos y servicios</h2>
+        <p id="selectedEntityLabel" class="form-help">Selecciona una hoja de vida para ver o agregar eventos.</p>
+        <form id="eventForm">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="tipo_evento">Tipo evento</label>
+              <select id="tipo_evento" class="form-input">
+                <option value="servicio">Servicio</option>
+                <option value="mantenimiento">Mantenimiento</option>
+                <option value="consulta">Consulta</option>
+                <option value="diagnostico">Diagnostico</option>
+                <option value="reparacion">Reparacion</option>
+                <option value="alerta">Alerta</option>
+                <option value="reporte">Reporte</option>
+                <option value="evento">Evento</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="evento_titulo">Titulo</label>
+              <input id="evento_titulo" class="form-input" placeholder="Ej: Cambio de aceite, control medico">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="fecha_evento">Fecha evento</label>
+              <input id="fecha_evento" type="datetime-local" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="fecha_proxima">Proxima fecha</label>
+              <input id="fecha_proxima" type="datetime-local" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="costo">Costo</label>
+              <input id="costo" type="number" min="0" step="0.01" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="responsable">Responsable</label>
+              <input id="responsable" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="documento_referencia">Referencia</label>
+              <input id="documento_referencia" class="form-input" placeholder="Factura, OT, historia, reporte">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="evento_descripcion">Descripcion</label>
+              <textarea id="evento_descripcion" class="form-textarea" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col" style="display:flex;align-items:center;gap:8px;">
+              <input id="recurrente" type="checkbox">
+              <label class="form-label" for="recurrente" style="margin:0;">Recurrente</label>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="recurrencia_dias">Cada cuantos dias</label>
+              <input id="recurrencia_dias" type="number" min="0" class="form-input" placeholder="30">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="saveEventBtn" class="btn secondary" type="submit">Agregar evento</button>
+          </div>
+          <div id="eventMsg" class="form-help"></div>
+        </form>
+        <div id="eventsTable" class="table-block" style="margin-top:12px;">Sin seleccion.</div>
+      </section>
+
+      <section class="form">
+        <h2 style="margin-top:0;">Alertas y reportes recurrentes</h2>
+        <form id="alertForm">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="alerta_titulo">Titulo</label>
+              <input id="alerta_titulo" class="form-input" placeholder="Ej: Proximo cambio de aceite">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="fecha_programada">Fecha programada</label>
+              <input id="fecha_programada" type="datetime-local" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="prioridad">Prioridad</label>
+              <select id="prioridad" class="form-input">
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="alerta_responsable">Responsable</label>
+              <input id="alerta_responsable" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="alerta_descripcion">Descripcion</label>
+              <textarea id="alerta_descripcion" class="form-textarea" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn secondary" type="submit">Agregar alerta</button>
+            <button id="loadAllAlertsBtn" class="btn secondary" type="button">Ver todas</button>
+          </div>
+          <div id="alertMsg" class="form-help"></div>
+        </form>
+        <div id="alertsTable" class="table-block" style="margin-top:12px;">Sin seleccion.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var empresaId = getEmpresaId();
+      var entities = [];
+      var selectedEntity = null;
+
+      function getEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          return params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || sessionStorage.getItem('empresa_id') || '';
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function esc(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[ch];
+        });
+      }
+
+      function api(action, extra) {
+        var url = new URL('/api/empresa/hoja_vida_operativa', window.location.origin);
+        url.searchParams.set('empresa_id', empresaId);
+        if (action) url.searchParams.set('action', action);
+        Object.keys(extra || {}).forEach(function (key) {
+          var value = extra[key];
+          if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        });
+        return url.pathname + url.search;
+      }
+
+      async function requestJSON(url, options) {
+        var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var contentType = response.headers.get('content-type') || '';
+        var data = contentType.indexOf('application/json') !== -1 ? await response.json() : await response.text();
+        if (!response.ok) {
+          var msg = typeof data === 'string' ? data : (data && (data.error || data.message));
+          throw new Error(msg || ('HTTP ' + response.status));
+        }
+        return data;
+      }
+
+      function formValue(id) {
+        var el = document.getElementById(id);
+        return el ? String(el.value || '').trim() : '';
+      }
+
+      function setMsg(id, text, isError) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.color = isError ? '#dc2626' : '';
+      }
+
+      function toInputDateTime(value) {
+        if (!value) return '';
+        return String(value).replace(' ', 'T').slice(0, 16);
+      }
+
+      function currentEntityPayload() {
+        return {
+          id: Number(formValue('entityId') || 0),
+          empresa_id: Number(empresaId || 0),
+          tipo_entidad: formValue('tipo_entidad'),
+          codigo: formValue('codigo'),
+          nombre: formValue('nombre'),
+          cliente_nombre: formValue('cliente_nombre'),
+          identificacion: formValue('identificacion'),
+          marca: formValue('marca'),
+          modelo: formValue('modelo'),
+          serie: formValue('serie'),
+          color: formValue('color'),
+          fecha_ingreso: formValue('fecha_ingreso'),
+          estado_operativo: formValue('estado_operativo'),
+          observaciones: formValue('observaciones')
+        };
+      }
+
+      function resetEntityForm() {
+        document.getElementById('entityForm').reset();
+        document.getElementById('entityId').value = '';
+        document.getElementById('tipo_entidad').value = 'moto';
+        document.getElementById('estado_operativo').value = 'activo';
+        setMsg('entityMsg', '', false);
+      }
+
+      function editEntity(item) {
+        selectedEntity = item;
+        document.getElementById('entityId').value = item.id || '';
+        ['tipo_entidad','codigo','nombre','cliente_nombre','identificacion','marca','modelo','serie','color','fecha_ingreso','estado_operativo','observaciones'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.value = item[id] || '';
+        });
+        selectEntity(item);
+      }
+
+      function selectEntity(item) {
+        selectedEntity = item;
+        document.getElementById('selectedEntityLabel').textContent = item ? ('Seleccionado: ' + (item.codigo ? item.codigo + ' - ' : '') + item.nombre) : 'Selecciona una hoja de vida para ver o agregar eventos.';
+        renderEntities();
+        loadEvents();
+        loadAlerts();
+      }
+
+      async function loadSummary() {
+        try {
+          var data = await requestJSON(api('reporte'));
+          var cards = [
+            ['Hojas activas', data.entidades_activas || 0],
+            ['Eventos', data.eventos_activos || 0],
+            ['Alertas pendientes', data.alertas_pendientes || 0],
+            ['Alertas vencidas', data.alertas_vencidas || 0]
+          ];
+          document.getElementById('summaryCards').innerHTML = cards.map(function (card) {
+            return '<article class="card"><h3 style="margin:0 0 6px 0;">' + esc(card[0]) + '</h3><strong style="font-size:1.8rem;">' + esc(card[1]) + '</strong></article>';
+          }).join('');
+        } catch (err) {
+          document.getElementById('summaryCards').innerHTML = '';
+        }
+      }
+
+      async function loadEntities() {
+        if (!empresaId) {
+          document.getElementById('entitiesTable').textContent = 'Falta empresa_id.';
+          return;
+        }
+        var tipo = formValue('filterTipo');
+        var q = formValue('filterQ');
+        entities = await requestJSON(api('', { tipo_entidad: tipo, q: q, limit: 300 }));
+        renderEntities();
+        await loadSummary();
+      }
+
+      function renderEntities() {
+        var box = document.getElementById('entitiesTable');
+        if (!entities.length) {
+          box.innerHTML = '<p class="form-help">No hay hojas de vida registradas.</p>';
+          return;
+        }
+        var rows = entities.map(function (item) {
+          var active = selectedEntity && Number(selectedEntity.id) === Number(item.id);
+          return '<tr' + (active ? ' class="selected-row"' : '') + '>' +
+            '<td><strong>' + esc(item.codigo || item.id) + '</strong><br><span class="form-help">' + esc(item.tipo_entidad || '') + '</span></td>' +
+            '<td>' + esc(item.nombre || '') + '<br><span class="form-help">' + esc(item.cliente_nombre || '') + '</span></td>' +
+            '<td>' + esc(item.estado_operativo || '') + '</td>' +
+            '<td>' + esc(item.eventos_total || 0) + '</td>' +
+            '<td>' + esc(item.alertas_pendientes || 0) + '</td>' +
+            '<td class="actions">' +
+              '<button class="btn secondary small" type="button" data-action="select" data-id="' + esc(item.id) + '">Ver</button> ' +
+              '<button class="btn secondary small" type="button" data-action="edit" data-id="' + esc(item.id) + '">Editar</button> ' +
+              '<button class="btn danger small" type="button" data-action="delete" data-id="' + esc(item.id) + '">Eliminar</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+        box.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr><th>Codigo</th><th>Nombre</th><th>Estado</th><th>Eventos</th><th>Alertas</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+        box.querySelectorAll('button[data-action]').forEach(function (btn) {
+          btn.addEventListener('click', onEntityAction);
+        });
+      }
+
+      async function onEntityAction(ev) {
+        var id = Number(ev.currentTarget.getAttribute('data-id') || 0);
+        var action = ev.currentTarget.getAttribute('data-action');
+        var item = entities.find(function (row) { return Number(row.id) === id; });
+        if (!item) return;
+        if (action === 'select') selectEntity(item);
+        if (action === 'edit') editEntity(item);
+        if (action === 'delete') {
+          if (!confirm('Eliminar esta hoja de vida?')) return;
+          await requestJSON(api('', { id: id }), { method: 'DELETE' });
+          if (selectedEntity && Number(selectedEntity.id) === id) selectedEntity = null;
+          await loadEntities();
+          await loadEvents();
+          await loadAlerts();
+        }
+      }
+
+      async function saveEntity(ev) {
+        ev.preventDefault();
+        var payload = currentEntityPayload();
+        if (!payload.nombre) {
+          setMsg('entityMsg', 'El nombre es obligatorio.', true);
+          return;
+        }
+        try {
+          var method = payload.id > 0 ? 'PUT' : 'POST';
+          await requestJSON(api(), { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          setMsg('entityMsg', 'Hoja de vida guardada.', false);
+          resetEntityForm();
+          await loadEntities();
+        } catch (err) {
+          setMsg('entityMsg', err.message || 'No se pudo guardar.', true);
+        }
+      }
+
+      async function loadEvents() {
+        var box = document.getElementById('eventsTable');
+        if (!selectedEntity) {
+          box.textContent = 'Sin seleccion.';
+          return;
+        }
+        var rows = await requestJSON(api('eventos', { entidad_id: selectedEntity.id, limit: 200 }));
+        if (!rows.length) {
+          box.innerHTML = '<p class="form-help">Sin eventos registrados.</p>';
+          return;
+        }
+        box.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Titulo</th><th>Proxima</th><th>Costo</th><th></th></tr></thead><tbody>' + rows.map(function (item) {
+          return '<tr><td>' + esc(item.fecha_evento || '') + '</td><td>' + esc(item.tipo_evento || '') + '</td><td><strong>' + esc(item.titulo || '') + '</strong><br><span class="form-help">' + esc(item.descripcion || '') + '</span></td><td>' + esc(item.fecha_proxima || '') + '</td><td>' + esc(item.costo || 0) + '</td><td><button class="btn danger small" data-event-id="' + esc(item.id) + '" type="button">Eliminar</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+        box.querySelectorAll('button[data-event-id]').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            await requestJSON(api('evento', { id: btn.getAttribute('data-event-id') }), { method: 'DELETE' });
+            await loadEvents();
+            await loadEntities();
+          });
+        });
+      }
+
+      async function saveEvent(ev) {
+        ev.preventDefault();
+        if (!selectedEntity) {
+          setMsg('eventMsg', 'Selecciona una hoja de vida.', true);
+          return;
+        }
+        var payload = {
+          empresa_id: Number(empresaId || 0),
+          entidad_id: Number(selectedEntity.id),
+          tipo_evento: formValue('tipo_evento'),
+          titulo: formValue('evento_titulo'),
+          descripcion: formValue('evento_descripcion'),
+          fecha_evento: formValue('fecha_evento'),
+          fecha_proxima: formValue('fecha_proxima'),
+          costo: Number(formValue('costo') || 0),
+          responsable: formValue('responsable'),
+          documento_referencia: formValue('documento_referencia'),
+          recurrente: document.getElementById('recurrente').checked,
+          recurrencia_dias: Number(formValue('recurrencia_dias') || 0)
+        };
+        if (!payload.titulo) {
+          setMsg('eventMsg', 'El titulo del evento es obligatorio.', true);
+          return;
+        }
+        await requestJSON(api('evento'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        document.getElementById('eventForm').reset();
+        setMsg('eventMsg', 'Evento agregado.', false);
+        await loadEvents();
+        await loadEntities();
+      }
+
+      async function loadAlerts(all) {
+        var box = document.getElementById('alertsTable');
+        if (!selectedEntity && !all) {
+          box.textContent = 'Sin seleccion.';
+          return;
+        }
+        var params = { estado_alerta: '', limit: 200 };
+        if (!all && selectedEntity) params.entidad_id = selectedEntity.id;
+        var rows = await requestJSON(api('alertas', params));
+        if (!rows.length) {
+          box.innerHTML = '<p class="form-help">Sin alertas registradas.</p>';
+          return;
+        }
+        box.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Titulo</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead><tbody>' + rows.map(function (item) {
+          return '<tr><td>' + esc(item.fecha_programada || '') + '</td><td><strong>' + esc(item.titulo || '') + '</strong><br><span class="form-help">' + esc(item.descripcion || '') + '</span></td><td>' + esc(item.prioridad || '') + '</td><td>' + esc(item.estado_alerta || '') + '</td><td><button class="btn secondary small" data-alert-done="' + esc(item.id) + '" type="button">Completar</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+        box.querySelectorAll('button[data-alert-done]').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            await requestJSON(api('completar_alerta', { id: btn.getAttribute('data-alert-done') }), { method: 'PUT' });
+            await loadAlerts(all);
+            await loadEntities();
+            await loadSummary();
+          });
+        });
+      }
+
+      async function saveAlert(ev) {
+        ev.preventDefault();
+        if (!selectedEntity) {
+          setMsg('alertMsg', 'Selecciona una hoja de vida.', true);
+          return;
+        }
+        var payload = {
+          empresa_id: Number(empresaId || 0),
+          entidad_id: Number(selectedEntity.id),
+          titulo: formValue('alerta_titulo'),
+          descripcion: formValue('alerta_descripcion'),
+          fecha_programada: formValue('fecha_programada'),
+          prioridad: formValue('prioridad'),
+          responsable: formValue('alerta_responsable')
+        };
+        if (!payload.titulo) {
+          setMsg('alertMsg', 'El titulo de la alerta es obligatorio.', true);
+          return;
+        }
+        await requestJSON(api('alerta'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        document.getElementById('alertForm').reset();
+        setMsg('alertMsg', 'Alerta agregada.', false);
+        await loadAlerts();
+        await loadEntities();
+        await loadSummary();
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('entityForm').addEventListener('submit', saveEntity);
+        document.getElementById('eventForm').addEventListener('submit', saveEvent);
+        document.getElementById('alertForm').addEventListener('submit', saveAlert);
+        document.getElementById('newEntityBtn').addEventListener('click', resetEntityForm);
+        document.getElementById('cancelEntityBtn').addEventListener('click', resetEntityForm);
+        document.getElementById('reloadBtn').addEventListener('click', loadEntities);
+        document.getElementById('filterQ').addEventListener('input', function () { window.clearTimeout(window.__hvSearchTimer); window.__hvSearchTimer = window.setTimeout(loadEntities, 250); });
+        document.getElementById('filterTipo').addEventListener('change', loadEntities);
+        document.getElementById('loadAllAlertsBtn').addEventListener('click', function () { loadAlerts(true); });
+        resetEntityForm();
+        loadEntities().catch(function (err) {
+          document.getElementById('entitiesTable').textContent = err.message || 'No se pudo cargar.';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

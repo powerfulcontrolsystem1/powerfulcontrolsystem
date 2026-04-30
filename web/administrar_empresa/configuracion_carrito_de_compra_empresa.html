@@ -91,6 +91,9 @@
             </label>
           </div>
         </div>
+        <div class="form-actions">
+          <button id="btnGuardarVisibilidadPagoCarrito" type="button" class="btn secondary">Guardar cambios</button>
+        </div>
 
         <div class="form-row">
           <div class="form-col">
@@ -217,7 +220,9 @@
         permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : !!src.permitir_pago_mixto,
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
-        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos,
+        mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : !!src.mostrar_boton_pagar,
+        mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : !!src.mostrar_tarjetas_pago
       };
     }
 
@@ -361,6 +366,8 @@
           'carritoCfgImpuestos',
           'carritoCfgLector',
           'carritoCfgResumenProductos',
+          'carritoCfgMostrarPagar',
+          'carritoCfgMostrarTarjetasPago',
           'carritoCfgDescuentos',
           'carritoCfgPropina',
           'carritoCfgComision',
@@ -393,6 +400,8 @@
           mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
           mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
           mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
+          mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
+          mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,
           mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
           mostrar_propina: document.getElementById('carritoCfgPropina').checked,
           mostrar_comision: document.getElementById('carritoCfgComision').checked,
@@ -406,6 +415,10 @@
       } catch (err) {
         setMessage(err.message || 'No se pudo guardar la configuracion.', 'error');
       }
+    });
+
+    document.getElementById('btnGuardarVisibilidadPagoCarrito').addEventListener('click', function() {
+      document.getElementById('btnGuardarConfigCarrito').click();
     });
 
     bootstrap();

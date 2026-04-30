@@ -279,8 +279,8 @@
         nombre: document.getElementById('nombre').value.trim(),
         documento_identidad: document.getElementById('documento_identidad').value.trim(),
         rol_usuario_id: Number(document.getElementById('rol_usuario_id').value || 0),
-        observaciones: document.getElementById('observaciones').value.trim()
-          mensaje_invitacion: document.getElementById('mensaje_invitacion').value.trim()
+        observaciones: document.getElementById('observaciones').value.trim(),
+        mensaje_invitacion: document.getElementById('mensaje_invitacion').value.trim()
       };
 
       if (!payload.empresa_id || !payload.email || !payload.nombre || !payload.rol_usuario_id) {

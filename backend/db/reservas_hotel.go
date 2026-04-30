@@ -508,7 +508,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 		usuarioCreador = "portal_reservas"
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO reservas_hotel (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO reservas_hotel (
 		empresa_id,
 		carrito_id,
 		estacion_id,
@@ -561,10 +561,6 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 		if strings.Contains(strings.ToLower(err.Error()), "ux_reservas_hotel_empresa_codigo") {
 			return 0, fmt.Errorf("codigo_reserva duplicado")
 		}
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
 		return 0, err
 	}
 

@@ -1,78 +1,38 @@
-Pendiente Notas depurado
-Fecha de corte: 2026-04-20
 
-Regla de este archivo
-- No guardar aqui credenciales, tokens, contraseñas, claves privadas ni datos sensibles.
-- Este archivo queda solo como backlog vigente y plan de trabajo.
 
-Quitado del pendiente por ya estar implementado
-- Base de datos relacional y migracion operativa a PostgreSQL en VPS.
-- Pagina de mantenimiento.
-- Subdominios por empresa para venta publica.
-- Agenda de citas con calendario grande dentro de chat y tareas.
-- Tarjetas del index configurables desde super con almacenamiento en base super y CTA Explorar oferta.
-- Modulo de horarios de trabajadores.
-- Responsive general y ajustes moviles principales del portal y paneles.
-- Login por correo y Google con obligacion de crear contraseña local despues del flujo Google.
-- Modulo de creditos y cartera para prestamista.
-- Soporte remoto tipo AnyDesk/TeamViewer simplificado, evolucionado a portal RustDesk por empresa y mesa tecnica super.
-- Pagina de cuenta de usuario para editar perfil y contraseña.
-- Red social comercial operativa.
-- Base DIAN con checklist, diagnostico, set de pruebas y herramientas base ya documentadas.
-- Voz IA streaming en VPS con Piper/FastAPI, servicio systemd `pcs-voice-stream`, modelo espanol `es_ES-sharvard-medium`, proxy backend, configuracion desde Super Administrador y fallback de chat.
-- Depurar postmigracion PostgreSQL. Estado: completado el 2026-04-20.
-	- Resultado: se elimino el artefacto SQLite legacy restante del repositorio y se ajusto la documentacion activa para dejar PostgreSQL como unica base operativa canonica.
-	- Inventario final: SQLite queda solo como referencia historica de migracion o para pruebas puntuales fuera del repositorio activo.
 
-Pendiente vigente
 
-1. Prioridad alta
-- Exportar e importar configuracion completa por empresa.
-	- Alcance minimo: datos de configuracion, modulos, permisos, integraciones, apariencia y parametros operativos por empresa.
-	- Entregable: flujo real desde panel empresa con exporte y carga validada.
-	- Primer desglose: inventario de configuraciones persistidas, formato canonico de exportacion, endpoint de exporte, endpoint de importacion con validacion/vista previa y prueba dirigida desde panel.
 
-- Control de consumo y proteccion por empresa sobre la API y la base de datos.
-	- Alcance minimo: rate limit por empresa, metricas de consultas por minuto, alertas por abuso y trazabilidad de bloqueos.
-	- Entregable: middleware o capa de control con panel basico de observabilidad.
-	- Primer desglose: clave de limite por `empresa_id`, cuota por ventana, bitacora de excesos, metricas operativas y panel basico super.
+- Implementado y validado el 2026-04-30: exportar documentos generados desde el chat IA.
+	- Objetivo: permitir que una conversacion del chat se convierta en documento descargable, por ejemplo contrato, factura, reporte, acta, cotizacion, tabla de Excel u otro archivo.
+	- Flujo para el usuario:
+		1. En el chat, pedir el documento con el mayor contexto posible. Ejemplo: "crea un contrato para el cliente Juan Perez con fecha de hoy y estos productos...".
+		2. La IA debe organizar el contenido y, si hay datos faltantes, preguntarlos antes de generar el archivo final.
+		3. El sistema debe mostrar botones de exportacion: PDF, Word/DOCX, Excel/XLSX, TXT y JSON cuando aplique.
+		4. Al presionar el formato, el backend debe llamar al generador dinamico de documentos.
+		5. El sistema debe descargar el archivo con nombre profesional, fecha, empresa y tipo de documento.
+	- Flujo tecnico:
+		1. Recibir el texto o estructura generada por la IA desde el chat.
+		2. Convertir el contenido a HTML o Markdown canonico.
+		3. Renderizar con templates Go usando `html/template`.
+		4. Si es PDF, convertir el HTML con wkhtmltopdf o equivalente.
+		5. Si es DOCX, usar una libreria compatible en Go para construir el documento.
+		6. Si es XLSX, usar `excelize` y mapear tablas/filas/columnas.
+		7. Si es TXT o JSON, serializar directamente el contenido validado.
+		8. Guardar temporalmente el archivo y devolverlo por `/download?type=pdf|docx|xlsx|txt|json`.
+	- Reglas importantes:
+		- La exportacion no debe romper el chat si falla la IA o falla un conversor; debe mostrar fallback y mensaje claro.
+		- No guardar secretos ni credenciales en el documento.
+		- Registrar auditoria: usuario, empresa, formato, nombre del archivo, fecha, origen chat, exito/error.
+		- Para Excel, si la IA devuelve una tabla, el sistema debe preservar encabezados, totales y columnas numericas.
+		- Para PDF o Word, usar plantilla empresarial con logo, datos de empresa, fecha, numeracion y pie de pagina.
+		- Debe funcionar tambien desde reportes, tareas, agenda y cualquier modulo donde el chat genere informacion exportable.
 
-- Prueba real de facturacion DIAN con la firma ya registrada.
-	- Alcance minimo: ejecutar flujo real o semirreal controlado, capturar respuesta oficial y documentar resultado exacto.
-	- Entregable: evidencia tecnica y runbook actualizado con el estado real alcanzado.
-
-2. Prioridad media
-- Integracion opcional con proveedor tecnologico adicional para facturacion electronica.
-	- Primera fase: analisis comparativo funcional, tecnico y legal frente al flujo DIAN actual.
-	- Decidir si el segundo metodo sera por proveedor tecnologico externo o por fortalecimiento del flujo propio.
-
-- Pagina super vps_hostinger para estado del servidor via API oficial, si Hostinger lo permite.
-	- Primera fase: investigacion de API disponible, autenticacion, limites y datos expuestos.
-	- Si no existe API suficiente, definir alternativa con telemetria propia desde VPS.
-
-- Backup con destinos seleccionables por el usuario.
-	- Alcance objetivo: descarga local directa y opcion futura de subir a carpeta cloud del administrador.
-	- Primera fase: separar claramente backup local ya existente de integracion pendiente con nube del usuario.
-
-- Reservas publicas por empresa sin registro previo.
-	- Alcance minimo: disponibilidad publica, creacion de reserva y validaciones basicas sin comprometer seguridad.
-	- Dependencia: revisar acople con venta publica, pagos y permisos.
-
-- Subida de fotos o soportes para facturas de compra, gastos y egresos.
-	- Alcance minimo: adjuntar archivos a compras/egresos con almacenamiento, consulta y trazabilidad por empresa.
-
-3. Prioridad media-baja y de arquitectura
-- Configuracion total por empresa y por rol a nivel fino. Estado: fase 1 implementada.
-	- Implementado: techo fino por empresa para modulo, accion y pagina; se combina con licencia y permisos por rol existentes.
-	- Gestion: Administrar empresa > Configuracion > Permisos permite consultar el contexto real y guardar restricciones por empresa.
-	- Pendiente por etapas: agregar componentes internos especificos de cada pantalla cuando tengan sentido operativo.
-
-- Modulo universal de historial para cliente, vehiculo u otro activo trazable.
-	- Objetivo: hoja de vida operativa con eventos, servicios, alertas y reportes recurrentes.
-	- Primera fase recomendada: definir modelo canonico antes de construir UI.
+- Implementado y documentado el 2026-04-30: hoja de vida operativa universal en Administrar empresa para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con eventos, servicios, alertas y resumen.
 
 - Integracion SSH con raspberry o sensores para asignacion y sincronizacion de identificadores unicos desde el sistema.
-	- Primera fase: definir contrato del dispositivo, seguridad, provisioning y trazabilidad.
+	- Primera fase completada el 2026-04-30: contrato de dispositivo con `device_id`, token `X-Device-Token`, provisionamiento desde panel empresa, ejemplo curl/Python, trazabilidad por auditoria de ruta protegida y bloqueo de heartbeats sin token cuando el sensor ya tiene token configurado.
+	- Siguiente fase pendiente: si se requiere SSH real, definir alcance exacto: instalar servicio en Raspberry, rotar token remotamente, leer estado local o sincronizar inventario de dispositivos.
 
 - Herramienta auxiliar Word a PDF orientada a ayudas o documentos DIAN, solo si sigue siendo necesaria.
 	- Primera fase: confirmar si el caso de uso real es convertir plantillas internas o exportes descargables.
@@ -97,14 +57,14 @@ Criterio de cierre de cada punto
 
 
 - configura una tarifa de 2 horas por 80000  y uahora extra 50000 por cada hora adicional. esta tarifa la configuras para la estacion uno y dos
-- quitar venta digital de super administrador, dejarlo para las empresas, que la empresa puedra crear la pagina con su nombre ejemplo motelcalips8.powerfulcontrolsystem.com/panareria_juana. y que pueda publicar en esa pagina. 
+- quitar venta digital de super administrador, dejarlo para las empresas, que la empresa puedra crear la pagina con su nombre ejemplo motelcalips8.powerfulcontrolsystem.com/panareria_juana. y que pueda publicar en esa pagina.
 
 para github pro 39
 https://github.com/github-copilot/pro-plus/signup?utm_source=vscode
 
-- añadir administradores
+- aÃ±adir administradores
 - firma electronica requisitos camara de comercio mia
--escanear documentos de 
+-escanear documentos de
 que cada empresa tenga una cantidad de espacio disponible, para su base de datos, imagenes etc, con su modulo de mantenimiento y que muetre una barra o una especie de equipo con la informcion del discp duro
 
 - modulo para enviar mensajes a todo los correosdelos administradores.
@@ -113,7 +73,7 @@ que cada empresa tenga una cantidad de espacio disponible, para su base de datos
 - reparar los textos los titulos
 - reparar los cambios de modo oscuro a modo claro, en alguas paginas los textos ty demas no constranstan ocn el color. por ejemplo en modo claro algunas paginas tienen el texto de color blanco
 
-- repara los textos de todo el proycto que ahora cuando hay tilde pone un caracter raro, repara los modo oscuro y claro, revisa todas las paginas (contraste). Repara los pagos con epayco (error al pagar licencia). Luego compruebas funcionalidades end-to-end con una empresa de prueba (credenciales: **NO documentar aquí**; usar variables de entorno/gestor seguro).
+- repara los textos de todo el proycto que ahora cuando hay tilde pone un caracter raro, repara los modo oscuro y claro, revisa todas las paginas (contraste). Repara los pagos con epayco (error al pagar licencia). Luego compruebas funcionalidades end-to-end con una empresa de prueba (credenciales: **NO documentar aquÃ­**; usar variables de entorno/gestor seguro).
 
 
 - habilitar la clave ssh en conf avanzada
@@ -148,13 +108,13 @@ agregar las restricciones por empresa para el uso de la IA.
 agregrar el logo de open AI o chat gtp
 
 
-- Compras 
+- Compras
 angelica codigo de barras
 firma electronica
 factura electronica sin nombre
 comparlectorde codigo de barras
 
-- un solo chat para todo el sistema, 
+- un solo chat para todo el sistema,
 la pagina configuracion avanzada hacerle subpaginas
 
 - modulo de integracion telefonica
@@ -174,7 +134,7 @@ agregar agente al proyecto.
 
 que en recaptcha soporte iphone
 
-que el chat flotante , se oculte solo en pc, y que tambien tenga un boton para ocultar o minimizar, que el chat flotante tenga las esquiar curvada, que sea algo mas pequeño que la pantalla.  en movil debe tener una opcion para ocultar, en movil el chat o pagina debe ocupar la pantalla entera en movil,  que el chat este en el cebtro con barras de desplazamiento si es necesario , que todo los botones del chat permanescan en el mismo lugar mientras se chatea. agrega la opcion de que el chat nos hable, coloca un icono para activarlo.  coloca un icono de conversacion, busca que tecnologia de codigo libre nos permite hablar fluidamente con el chat, que haga las conversiones automaticamente.
+que el chat flotante , se oculte solo en pc, y que tambien tenga un boton para ocultar o minimizar, que el chat flotante tenga las esquiar curvada, que sea algo mas pequeÃ±o que la pantalla.  en movil debe tener una opcion para ocultar, en movil el chat o pagina debe ocupar la pantalla entera en movil,  que el chat este en el cebtro con barras de desplazamiento si es necesario , que todo los botones del chat permanescan en el mismo lugar mientras se chatea. agrega la opcion de que el chat nos hable, coloca un icono para activarlo.  coloca un icono de conversacion, busca que tecnologia de codigo libre nos permite hablar fluidamente con el chat, que haga las conversiones automaticamente.
 
 
 plan de agrupacion por categorias de administrar empresas
@@ -183,7 +143,7 @@ plan de agrupacion por categorias de administrar empresas
 
 
 vps code http://194.113.195.95:11434
-- Credenciales retiradas de este archivo; usar gestor seguro o variables de entorno.
+- Credenciales retiradas de este archivo; usar gestor seguro, variables de entorno o archivo protegido fuera del repositorio.
 
 - organizar por modulo: administrar empresa
 - 2000011314292025
@@ -195,39 +155,38 @@ vps code http://194.113.195.95:11434
 
 ---
 
-Generación de claves secretas para OnlyOffice y Nextcloud
+GeneraciÃ³n de claves secretas para OnlyOffice y Nextcloud
 
 OnlyOffice (Document Server):
 1. Genera una clave segura en el servidor, por ejemplo:
    - PowerShell: `pwsh -NoProfile -Command "[System.BitConverter]::ToString((New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32)).Replace('-', '')"`
    - Linux/macOS: `openssl rand -hex 32`
-2. Guarda la clave en un lugar seguro, preferiblemente en una variable de entorno o gestor de secretos, no en un archivo público.
-3. En el archivo de configuración de OnlyOffice Document Server (por ejemplo `default.json` o la configuración del contenedor), asigna el valor a la propiedad `secret` o `jwt.secret` según corresponda.
-4. En la configuración de integración de OnlyOffice en tu aplicación/Nextcloud, usa la misma clave secreta para firmar y validar las solicitudes.
-5. Reinicia Document Server y la aplicación que consume la integración para que tomen la nueva clave.
-6. Verifica la conexión abriendo un documento desde Nextcloud o desde el módulo que use OnlyOffice.
+2. Guarda la clave en un lugar seguro, preferiblemente en una variable de entorno o gestor de secretos, no en un archivo pÃºblico.
+3. En el archivo de configuraciÃ³n de OnlyOffice Document Server (por ejemplo `default.json` o la configuraciÃ³n del contenedor), asigna el valor a la propiedad `secret` o `jwt.secret` segÃºn corresponda.
+4. En la configuraciÃ³n de integraciÃ³n de OnlyOffice en tu aplicaciÃ³n/Nextcloud, usa la misma clave secreta para firmar y validar las solicitudes.
+5. Reinicia Document Server y la aplicaciÃ³n que consume la integraciÃ³n para que tomen la nueva clave.
+6. Verifica la conexiÃ³n abriendo un documento desde Nextcloud o desde el mÃ³dulo que use OnlyOffice.
 
-Nextcloud (App Password / clave de integración):
+Nextcloud (App Password / clave de integraciÃ³n):
 1. En Nextcloud ve a tu perfil de administrador y luego a `Seguridad`.
-2. Crea una nueva `Contraseña de aplicación` con un nombre claro como `Integración OnlyOffice` o `API externa`.
-3. Copia el valor generado y guárdalo en un gestor seguro; no lo copies en archivos públicos.
-4. Si necesitas una clave compartida para una app externa o webhook, usa el método de `Contraseña de aplicación` o la configuración de la app específica en Nextcloud.
-5. En la integración, configura la URL de Nextcloud y la contraseña de aplicación en las variables de entorno o en el archivo de configuración de la aplicación consumidora.
+2. Crea una nueva `ContraseÃ±a de aplicaciÃ³n` con un nombre claro como `IntegraciÃ³n OnlyOffice` o `API externa`.
+3. Copia el valor generado y guÃ¡rdalo en un gestor seguro; no lo copies en archivos pÃºblicos.
+4. Si necesitas una clave compartida para una app externa o webhook, usa el mÃ©todo de `ContraseÃ±a de aplicaciÃ³n` o la configuraciÃ³n de la app especÃ­fica en Nextcloud.
+5. En la integraciÃ³n, configura la URL de Nextcloud y la contraseÃ±a de aplicaciÃ³n en las variables de entorno o en el archivo de configuraciÃ³n de la aplicaciÃ³n consumidora.
 6. Prueba el acceso con un cliente autorizado o desde la app externa para confirmar que la clave funciona.
 
 Nota importante:
 - Nunca documentes las claves reales en este archivo.
-- Usa variables de entorno, un gestor de secretos o un archivo de configuración protegido para almacenar los valores.
+- Usa variables de entorno, un gestor de secretos o un archivo de configuraciÃ³n protegido para almacenar los valores.
 - Si hay un valor rotativo, actualiza ambas partes (OnlyOffice y Nextcloud) al mismo tiempo y prueba inmediatamente.
 
-La preconfiguracion para cada tipo de empresa, que la preconfiguracion heste hecha por defecto, pero que de la opcion de elimiarla. que la ia funcione como un asistente o guia para todas las tareas.
 
-- implementar toda la ia en todo el proyecto, que la ia esta en cada funcionalidad del proyecto, es importante que si se deshabilita o falla la iA que no rompa rl servidor. pero la ia no va a estar en todo el codigo, la ia obtendra la informacion de la auditoria en tiempo real. asi la ia sabe en todo momento lo que el usuario o usuarios hacen en el sistema y asi la ia siempre sabe lo que se esta haciendo.  mejora la auditoria general del proyecto para que se integre de la mejor manera profesional , escalable con la ia.
 
-agregar la api de CodeGeeX para continuo.
-
--Añade una apariencia super oscupar para proteger la vista
 
 . probar pago de epayco
 
-- 
+- modo  offline (probar)
+
+- probar secretaria
+- implementar onlyOffice
+- implementar nextcloud

@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
@@ -313,12 +314,19 @@ func getDecryptedConfigValue(dbSuper *sql.DB, key string) (string, error) {
 
 func isApprovedPaymentStatus(status string) bool {
 	status = strings.ToLower(strings.TrimSpace(status))
-	return status == "approved" || status == "accredited"
+	switch status {
+	case "approved", "accredited", "accepted", "success", "ok", "1":
+		return true
+	case "aceptada", "aceptado", "aprobada", "aprobado", "acreditada", "acreditado":
+		return true
+	default:
+		return false
+	}
 }
 
 func isRejectedPaymentStatus(status string) bool {
 	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "declined", "rejected", "failed", "failure", "voided", "canceled", "cancelled", "error":
+	case "declined", "rejected", "failed", "failure", "voided", "canceled", "cancelled", "error", "rechazada", "rechazado", "cancelada", "cancelado", "fallida", "fallido", "2", "4":
 		return true
 	default:
 		return false
@@ -1476,7 +1484,7 @@ func normalizeEpaycoMode(raw string) string {
 
 func epaycoModeFromKeys(custID, key string) string {
 	combined := strings.ToLower(strings.TrimSpace(custID) + " " + strings.TrimSpace(key))
-	if strings.Contains(combined, "test") || strings.Contains(combined, "sandbox") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(custID)), "pub_test_") {
+	if strings.Contains(combined, "test") || strings.Contains(combined, "sandbox") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(custID)), "pub_test_") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(key)), "prv_test_") {
 		return "sandbox"
 	}
 	if strings.TrimSpace(custID) != "" || strings.TrimSpace(key) != "" {
@@ -1497,6 +1505,20 @@ func resolveEpaycoMode(dbSuper *sql.DB, custID, key string) (string, string) {
 	return "sandbox", "default"
 }
 
+func resolveEpaycoClassicMode(dbSuper *sql.DB, customerID, checkoutKey string) (string, string) {
+	if dbSuper != nil {
+		if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.mode"); err == nil {
+			if normalized := normalizeEpaycoMode(configuredMode); normalized != "" {
+				return normalized, "manual"
+			}
+		}
+	}
+	if inferred := epaycoModeFromKeys(customerID, checkoutKey); inferred != "" {
+		return inferred, "classic_credentials"
+	}
+	return "sandbox", "default"
+}
+
 func parseBoolConfigValue(raw string) bool {
 	v := strings.ToLower(strings.TrimSpace(raw))
 	return v == "1" || v == "true" || v == "si" || v == "yes" || v == "on" || v == "activo"
@@ -1511,6 +1533,24 @@ func firstNonEmptyString(values ...string) string {
 	return ""
 }
 
+func uniqueNonEmptyStrings(values ...string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		key := strings.ToLower(trimmed)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, trimmed)
+	}
+	return out
+}
+
 func getConfigEntryTrimmed(dbSuper *sql.DB, key string) (string, error) {
 	value, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, key)
 	if err != nil {
@@ -1522,44 +1562,115 @@ func getConfigEntryTrimmed(dbSuper *sql.DB, key string) (string, error) {
 	return strings.TrimSpace(value), nil
 }
 
-func resolveEpaycoCredentials(dbSuper *sql.DB) (publicKey, customerID, privateKey string, err error) {
-	publicKey, err = getConfigEntryTrimmed(dbSuper, "epayco.public_key")
-	if err != nil {
-		return "", "", "", err
+type epaycoCredentialSet struct {
+	PublicKey   string
+	CustomerID  string
+	PrivateKey  string
+	CheckoutKey string
+}
+
+func looksLikeEpaycoAPIPrivateKey(raw string) bool {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	return strings.HasPrefix(v, "prv_")
+}
+
+func looksLikeEpaycoCheckoutKey(raw string) bool {
+	v := strings.TrimSpace(raw)
+	if len(v) < 20 {
+		return false
 	}
-	customerID, err = getConfigEntryTrimmed(dbSuper, "epayco.customer_id")
-	if err != nil {
-		return "", "", "", err
+	if looksLikeEpaycoPublicKey(v) || looksLikeEpaycoAPIPrivateKey(v) {
+		return false
 	}
-	privateKey, err = getDecryptedConfigValue(dbSuper, "epayco.private_key")
+	return !strings.ContainsAny(v, " \t\r\n")
+}
+
+func epaycoSmartCheckoutReady(publicKey, privateKey string) bool {
+	return strings.TrimSpace(publicKey) != "" && looksLikeEpaycoAPIPrivateKey(privateKey)
+}
+
+func epaycoClassicCheckoutReady(customerID, checkoutKey string) bool {
+	return strings.TrimSpace(customerID) != "" && !looksLikeEpaycoPublicKey(customerID) && looksLikeEpaycoCheckoutKey(checkoutKey)
+}
+
+func epaycoCustomCheckoutReady(publicKey, customerID, checkoutKey string) bool {
+	return strings.TrimSpace(publicKey) != "" && epaycoClassicCheckoutReady(customerID, checkoutKey)
+}
+
+func resolveEpaycoCredentialSet(dbSuper *sql.DB) (epaycoCredentialSet, error) {
+	var creds epaycoCredentialSet
+	var err error
+
+	creds.PublicKey, err = getConfigEntryTrimmed(dbSuper, "epayco.public_key")
 	if err != nil {
-		return "", "", "", err
+		return creds, err
 	}
-	privateKey = strings.TrimSpace(privateKey)
+	creds.CustomerID, err = getConfigEntryTrimmed(dbSuper, "epayco.customer_id")
+	if err != nil {
+		return creds, err
+	}
+	creds.PrivateKey, err = getDecryptedConfigValue(dbSuper, "epayco.private_key")
+	if err != nil {
+		return creds, err
+	}
+	creds.PrivateKey = strings.TrimSpace(creds.PrivateKey)
+
+	if checkoutKey, keyErr := getDecryptedConfigValue(dbSuper, "epayco.checkout_key"); keyErr != nil {
+		return creds, keyErr
+	} else {
+		creds.CheckoutKey = strings.TrimSpace(checkoutKey)
+	}
+	if creds.CheckoutKey == "" {
+		if checkoutKey, keyErr := getDecryptedConfigValue(dbSuper, "epayco.p_key"); keyErr != nil {
+			return creds, keyErr
+		} else {
+			creds.CheckoutKey = strings.TrimSpace(checkoutKey)
+		}
+	}
 
 	legacyCustID, err := getConfigEntryTrimmed(dbSuper, "epayco.cust_id")
 	if err != nil {
-		return "", "", "", err
+		return creds, err
 	}
-	legacyKey, err := getConfigEntryTrimmed(dbSuper, "epayco.key")
+	legacyKey, err := getDecryptedConfigValue(dbSuper, "epayco.key")
+	if err != nil {
+		return creds, err
+	}
+	legacyKey = strings.TrimSpace(legacyKey)
+
+	if creds.PublicKey == "" && looksLikeEpaycoPublicKey(legacyCustID) {
+		creds.PublicKey = legacyCustID
+	}
+	if creds.PublicKey == "" && looksLikeEpaycoPublicKey(legacyKey) {
+		creds.PublicKey = legacyKey
+	}
+	if creds.CustomerID == "" && legacyCustID != "" && !looksLikeEpaycoPublicKey(legacyCustID) {
+		creds.CustomerID = legacyCustID
+	}
+	if creds.PrivateKey == "" && legacyKey != "" && looksLikeEpaycoAPIPrivateKey(legacyKey) {
+		creds.PrivateKey = legacyKey
+	}
+	if creds.CheckoutKey == "" && legacyKey != "" && !looksLikeEpaycoPublicKey(legacyKey) && !looksLikeEpaycoAPIPrivateKey(legacyKey) {
+		creds.CheckoutKey = legacyKey
+	}
+	if creds.CheckoutKey == "" && creds.PrivateKey != "" && !looksLikeEpaycoAPIPrivateKey(creds.PrivateKey) {
+		creds.CheckoutKey = creds.PrivateKey
+		creds.PrivateKey = ""
+	}
+
+	creds.PublicKey = strings.TrimSpace(creds.PublicKey)
+	creds.CustomerID = strings.TrimSpace(creds.CustomerID)
+	creds.PrivateKey = strings.TrimSpace(creds.PrivateKey)
+	creds.CheckoutKey = strings.TrimSpace(creds.CheckoutKey)
+	return creds, nil
+}
+
+func resolveEpaycoCredentials(dbSuper *sql.DB) (publicKey, customerID, privateKey string, err error) {
+	creds, err := resolveEpaycoCredentialSet(dbSuper)
 	if err != nil {
 		return "", "", "", err
 	}
-
-	if publicKey == "" && looksLikeEpaycoPublicKey(legacyCustID) {
-		publicKey = legacyCustID
-	}
-	if publicKey == "" && looksLikeEpaycoPublicKey(legacyKey) {
-		publicKey = legacyKey
-	}
-	if customerID == "" && legacyCustID != "" && !looksLikeEpaycoPublicKey(legacyCustID) {
-		customerID = legacyCustID
-	}
-	if privateKey == "" && legacyKey != "" && !looksLikeEpaycoPublicKey(legacyKey) {
-		privateKey = legacyKey
-	}
-
-	return publicKey, customerID, privateKey, nil
+	return creds.PublicKey, creds.CustomerID, creds.PrivateKey, nil
 }
 
 func resolveEnabledConfigValue(dbSuper *sql.DB, key string, defaultValue bool) (bool, error) {
@@ -1629,16 +1740,17 @@ func resolveCountryProviderEnabled(dbSuper *sql.DB, paisCodigo, providerID strin
 }
 
 func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]licenciaPaymentMethodStatus, error) {
-	epaycoPublicKey, _, epaycoPrivateKey, err := resolveEpaycoCredentials(dbSuper)
+	epaycoCreds, err := resolveEpaycoCredentialSet(dbSuper)
 	if err != nil {
 		return nil, err
 	}
-	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != "" && strings.TrimSpace(epaycoPrivateKey) != ""
+	epaycoSmartConfigured := epaycoSmartCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.PrivateKey)
+	epaycoClassicConfigured := epaycoCustomCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.CustomerID, epaycoCreds.CheckoutKey)
+	epaycoConfigured := epaycoSmartConfigured || epaycoClassicConfigured
 	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
 	if err != nil {
 		return nil, err
 	}
-	_ = epaycoPrivateKey
 
 	wompiPublicKey, err := getConfigEntryTrimmed(dbSuper, "wompi.public_key")
 	if err != nil {
@@ -1788,8 +1900,9 @@ func resolveRequestHost(r *http.Request) string {
 const canonicalPaymentPublicBaseURL = "https://powerfulcontrolsystem.com"
 
 var (
-	epaycoApifyBaseURL           = "https://apify.epayco.co"
-	epaycoSmartCheckoutScriptURL = "https://checkout.epayco.co/checkout-v2.js"
+	epaycoApifyBaseURL             = "https://apify.epayco.co"
+	epaycoSmartCheckoutScriptURL   = "https://checkout.epayco.co/checkout-v2.js"
+	epaycoClassicCheckoutScriptURL = "https://checkout.epayco.co/checkout.js"
 )
 
 func splitHostPortLoose(rawHost string) string {
@@ -1961,7 +2074,61 @@ func buildEpaycoResponseURL(baseURL, status, reference string, licenciaID, empre
 	return parsed.String()
 }
 
-func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, privateKey, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) string {
+type epaycoClassicCheckoutForm struct {
+	Method string            `json:"method"`
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields"`
+}
+
+type epaycoClassicCheckoutPayload struct {
+	ScriptURL string                 `json:"script_url"`
+	Config    map[string]interface{} `json:"config"`
+	Data      map[string]interface{} `json:"data"`
+}
+
+func formatEpaycoClassicAmount(amount float64) string {
+	return strconv.FormatFloat(roundLicenciaCheckoutAmount(amount), 'f', 2, 64)
+}
+
+func buildEpaycoSmartCheckoutSessionPayload(baseURL, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail string) map[string]interface{} {
+	title := strings.TrimSpace(licenciaNombre)
+	if title == "" {
+		title = "Licencia"
+	}
+	responseURL := buildEpaycoResponseURL(baseURL, "pending", reference, licenciaID, empresaID)
+	confirmationURL := strings.TrimRight(strings.TrimSpace(baseURL), "/") + "/epayco/webhook"
+	payload := map[string]interface{}{
+		"checkout_version":         "2",
+		"name":                     "Powerful Control System",
+		"description":              "Pago de licencia " + title,
+		"currency":                 "COP",
+		"amount":                   roundLicenciaCheckoutAmount(amount),
+		"lang":                     "ES",
+		"invoice":                  strings.TrimSpace(reference),
+		"country":                  "CO",
+		"taxBase":                  0,
+		"tax":                      0,
+		"taxIco":                   0,
+		"response":                 responseURL,
+		"confirmation":             confirmationURL,
+		"method":                   "POST",
+		"forceResponse":            true,
+		"uniqueTransactionPerBill": true,
+		"extras": map[string]interface{}{
+			"extra1": strconv.FormatInt(licenciaID, 10),
+			"extra2": strconv.FormatInt(empresaID, 10),
+			"extra3": strings.TrimSpace(reference),
+		},
+	}
+	if strings.TrimSpace(customerEmail) != "" {
+		payload["billing"] = map[string]interface{}{
+			"email": strings.TrimSpace(customerEmail),
+		}
+	}
+	return payload
+}
+
+func buildEpaycoClassicCheckoutForm(baseURL, customerID, checkoutKey, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) epaycoClassicCheckoutForm {
 	title := strings.TrimSpace(licenciaNombre)
 	if title == "" {
 		title = "Licencia"
@@ -1969,38 +2136,106 @@ func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, privateKey, referenc
 	trimmedBaseURL := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	responseURL := buildEpaycoResponseURL(baseURL, "pending", reference, licenciaID, empresaID)
 	confirmationURL := trimmedBaseURL + "/epayco/webhook"
+	amountText := formatEpaycoClassicAmount(amount)
+	currency := "COP"
+	signatureSource := strings.Join([]string{
+		strings.TrimSpace(customerID),
+		strings.TrimSpace(checkoutKey),
+		strings.TrimSpace(reference),
+		amountText,
+		currency,
+	}, "^")
+	signature := fmt.Sprintf("%x", md5.Sum([]byte(signatureSource)))
 
-	v := url.Values{}
-	v.Set("public_key", strings.TrimSpace(publicKey))
-	if strings.TrimSpace(customerID) != "" {
-		v.Set("p_cust_id_cliente", strings.TrimSpace(customerID))
+	fields := map[string]string{
+		"p_cust_id_cliente":  strings.TrimSpace(customerID),
+		"p_key":              strings.TrimSpace(checkoutKey),
+		"p_id_invoice":       strings.TrimSpace(reference),
+		"p_description":      "Pago de licencia " + title,
+		"p_currency_code":    currency,
+		"p_amount":           amountText,
+		"p_amount_base":      amountText,
+		"p_tax":              "0",
+		"p_tax_ico":          "0",
+		"p_signature":        signature,
+		"p_url_response":     responseURL,
+		"p_url_confirmation": confirmationURL,
+		"p_confirm_method":   "POST",
+		"p_test_request":     map[bool]string{true: "TRUE", false: "FALSE"}[normalizeEpaycoMode(mode) == "sandbox"],
+		"p_extra1":           strconv.FormatInt(licenciaID, 10),
+		"p_extra2":           strconv.FormatInt(empresaID, 10),
+		"p_extra3":           strings.TrimSpace(reference),
 	}
-	if strings.TrimSpace(privateKey) != "" {
-		v.Set("p_key", strings.TrimSpace(privateKey))
-	}
-	v.Set("name", "Licencia "+title)
-	v.Set("description", "Pago de licencia "+title)
-	v.Set("invoice", reference)
-	v.Set("currency", "cop")
-	v.Set("amount", strconv.FormatFloat(amount, 'f', 2, 64))
-	v.Set("tax", "0")
-	v.Set("tax_base", "0")
-	v.Set("country", "co")
-	v.Set("lang", "es")
-	v.Set("external", "false")
-	v.Set("response", responseURL)
-	v.Set("confirmation", confirmationURL)
-	v.Set("test", strconv.FormatBool(normalizeEpaycoMode(mode) == "sandbox"))
 	if strings.TrimSpace(customerEmail) != "" {
-		v.Set("email_billing", strings.TrimSpace(customerEmail))
+		fields["p_email"] = strings.TrimSpace(customerEmail)
 	}
 
-	return "https://checkout.epayco.co/checkout.php?" + v.Encode()
+	return epaycoClassicCheckoutForm{
+		Method: "POST",
+		Action: "https://secure.payco.co/checkout.php",
+		Fields: fields,
+	}
+}
+
+func buildEpaycoClassicCheckoutPayload(baseURL, publicKey, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) epaycoClassicCheckoutPayload {
+	title := strings.TrimSpace(licenciaNombre)
+	if title == "" {
+		title = "Licencia"
+	}
+	responseURL := buildEpaycoResponseURL(baseURL, "pending", reference, licenciaID, empresaID)
+	confirmationURL := strings.TrimRight(strings.TrimSpace(baseURL), "/") + "/epayco/webhook"
+	amountText := formatEpaycoClassicAmount(amount)
+	data := map[string]interface{}{
+		"name":                        "Powerful Control System",
+		"description":                 "Pago de licencia " + title,
+		"invoice":                     strings.TrimSpace(reference),
+		"currency":                    "cop",
+		"amount":                      amountText,
+		"tax_base":                    amountText,
+		"tax":                         "0",
+		"tax_ico":                     "0",
+		"country":                     "co",
+		"lang":                        "es",
+		"external":                    "true",
+		"response":                    responseURL,
+		"confirmation":                confirmationURL,
+		"unique_transaction_per_bill": true,
+		"extra1":                      strconv.FormatInt(licenciaID, 10),
+		"extra2":                      strconv.FormatInt(empresaID, 10),
+		"extra3":                      strings.TrimSpace(reference),
+	}
+	if strings.TrimSpace(customerEmail) != "" {
+		data["email_billing"] = strings.TrimSpace(customerEmail)
+	}
+	return epaycoClassicCheckoutPayload{
+		ScriptURL: epaycoClassicCheckoutScriptURL,
+		Config: map[string]interface{}{
+			"key":  strings.TrimSpace(publicKey),
+			"test": normalizeEpaycoMode(mode) == "sandbox",
+		},
+		Data: data,
+	}
+}
+
+func sanitizeEpaycoClassicCheckoutForm(form epaycoClassicCheckoutForm) epaycoClassicCheckoutForm {
+	fields := make(map[string]string, len(form.Fields))
+	for key, value := range form.Fields {
+		if strings.EqualFold(key, "p_key") {
+			fields[key] = "********"
+			continue
+		}
+		fields[key] = value
+	}
+	return epaycoClassicCheckoutForm{
+		Method: form.Method,
+		Action: form.Action,
+		Fields: fields,
+	}
 }
 
 func fetchEpaycoApifyToken(publicKey, privateKey string) (string, string, error) {
 	loginURL := strings.TrimRight(strings.TrimSpace(epaycoApifyBaseURL), "/") + "/login"
-	req, err := http.NewRequest(http.MethodPost, loginURL, nil)
+	req, err := http.NewRequest(http.MethodPost, loginURL, strings.NewReader("{}"))
 	if err != nil {
 		return "", "", err
 	}
@@ -2025,9 +2260,9 @@ func fetchEpaycoApifyToken(publicKey, privateKey string) (string, string, error)
 			return "", rawBody, fmt.Errorf("invalid epayco login response: %w", err)
 		}
 	}
-	token := strings.TrimSpace(pickEpaycoField(payload, "token", "access_token"))
+	token := strings.TrimSpace(pickEpaycoField(payload, "token", "access_token", "accessToken", "jwt", "bearer_token", "bearerToken", "auth_token", "authToken"))
 	if token == "" {
-		return "", rawBody, errors.New("epayco login did not return token")
+		return "", rawBody, fmt.Errorf("epayco login did not return token; verifica que PUBLIC_KEY y PRIVATE_KEY API pertenezcan al mismo comercio y que no estes usando P_KEY de checkout estandar como private_key API")
 	}
 	return token, rawBody, nil
 }
@@ -2062,7 +2297,7 @@ func createEpaycoSmartCheckoutSession(apifyToken string, sessionPayload map[stri
 			return "", rawBody, fmt.Errorf("invalid epayco session response: %w", err)
 		}
 	}
-	sessionID := strings.TrimSpace(pickEpaycoField(payload, "sessionId", "session_id"))
+	sessionID := strings.TrimSpace(pickEpaycoField(payload, "sessionId", "session_id", "sessionID", "checkout_session_id", "checkoutSessionId", "id"))
 	if sessionID == "" {
 		return "", rawBody, errors.New("epayco session create did not return sessionId")
 	}
@@ -2073,26 +2308,74 @@ func pickEpaycoField(payload map[string]interface{}, keys ...string) string {
 	if payload == nil {
 		return ""
 	}
-	sources := make([]map[string]interface{}, 0, 2)
-	if data, ok := payload["data"].(map[string]interface{}); ok && len(data) > 0 {
-		sources = append(sources, data)
-	}
-	sources = append(sources, payload)
 
-	for _, source := range sources {
-		for _, key := range keys {
-			value, ok := source[key]
-			if !ok {
-				continue
-			}
-			s := strings.TrimSpace(fmt.Sprint(value))
-			if s != "" && s != "<nil>" {
-				return s
-			}
+	wanted := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		if normalized := normalizeEpaycoFieldKey(key); normalized != "" {
+			wanted[normalized] = struct{}{}
 		}
 	}
 
-	return ""
+	var visit func(interface{}, int) string
+	visit = func(node interface{}, depth int) string {
+		if node == nil || depth > 6 {
+			return ""
+		}
+		switch value := node.(type) {
+		case map[string]interface{}:
+			for _, key := range keys {
+				if candidate, ok := value[key]; ok {
+					if s := scalarEpaycoFieldValue(candidate); s != "" {
+						return s
+					}
+				}
+			}
+			for rawKey, candidate := range value {
+				if _, ok := wanted[normalizeEpaycoFieldKey(rawKey)]; ok {
+					if s := scalarEpaycoFieldValue(candidate); s != "" {
+						return s
+					}
+				}
+			}
+			for _, nestedKey := range []string{"data", "result", "response", "body", "payload", "session", "checkout"} {
+				if candidate, ok := value[nestedKey]; ok {
+					if s := visit(candidate, depth+1); s != "" {
+						return s
+					}
+				}
+			}
+			for _, candidate := range value {
+				if s := visit(candidate, depth+1); s != "" {
+					return s
+				}
+			}
+		case []interface{}:
+			for _, item := range value {
+				if s := visit(item, depth+1); s != "" {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+
+	return visit(payload, 0)
+}
+
+func normalizeEpaycoFieldKey(raw string) string {
+	return strings.NewReplacer("_", "", "-", "", " ", "").Replace(strings.ToLower(strings.TrimSpace(raw)))
+}
+
+func scalarEpaycoFieldValue(value interface{}) string {
+	switch value.(type) {
+	case nil, map[string]interface{}, []interface{}:
+		return ""
+	}
+	s := strings.TrimSpace(fmt.Sprint(value))
+	if s == "" || s == "<nil>" || strings.EqualFold(s, "null") {
+		return ""
+	}
+	return s
 }
 
 func paymentContextFromInternalReference(values ...string) (int64, int64, bool) {
@@ -2116,6 +2399,22 @@ func paymentContextFromInternalReference(values ...string) (int64, int64, bool) 
 	return 0, 0, false
 }
 
+func paymentContextFromEpaycoPayload(payload map[string]interface{}) (int64, int64, bool) {
+	if len(payload) == 0 {
+		return 0, 0, false
+	}
+	licRaw := strings.TrimSpace(pickEpaycoField(payload, "x_extra1", "extra1", "p_extra1", "licencia_id", "license_id"))
+	empRaw := strings.TrimSpace(pickEpaycoField(payload, "x_extra2", "extra2", "p_extra2", "empresa_id"))
+	licenciaID, licErr := strconv.ParseInt(licRaw, 10, 64)
+	empresaID, empErr := strconv.ParseInt(empRaw, 10, 64)
+	if licErr == nil && empErr == nil && licenciaID > 0 && empresaID > 0 {
+		return licenciaID, empresaID, true
+	}
+	return paymentContextFromInternalReference(
+		pickEpaycoField(payload, "invoice", "x_id_invoice", "reference", "x_ref_payco", "ref_payco", "extra3", "x_extra3", "p_extra3"),
+	)
+}
+
 func expectedPaymentContextFromRequest(r *http.Request) (int64, int64, bool) {
 	if r == nil || r.URL == nil {
 		return 0, 0, false
@@ -2136,15 +2435,15 @@ func paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, ex
 }
 
 func parseEpaycoPaymentStatus(payload map[string]interface{}) string {
-	cod := strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "cod_response", "status_code")))
+	cod := strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "cod_response", "x_cod_transaction_state", "cod_transaction_state", "status_code")))
 	switch cod {
-	case "1", "APPROVED", "ACCEPTED", "ACEPTADA", "APROBADA":
+	case "1", "APPROVED", "ACCEPTED", "SUCCESS", "OK", "ACEPTADA", "ACEPTADO", "APROBADA", "APROBADO", "ACREDITADA", "ACREDITADO":
 		return "APPROVED"
-	case "2", "DECLINED", "REJECTED", "RECHAZADA":
+	case "2", "DECLINED", "REJECTED", "RECHAZADA", "RECHAZADO", "CANCELADA", "CANCELADO", "ANULADA", "ANULADO":
 		return "DECLINED"
 	case "3", "PENDING":
 		return "PENDING"
-	case "4", "ERROR", "FAILED":
+	case "4", "ERROR", "FAILED", "FALLIDA", "FALLIDO":
 		return "ERROR"
 	}
 
@@ -2163,6 +2462,23 @@ func parseEpaycoPaymentStatus(payload map[string]interface{}) string {
 	}
 }
 
+func hasStrongEpaycoApprovedReturnEvidence(payload map[string]interface{}, signatureVerified bool) bool {
+	if !isApprovedPaymentStatus(parseEpaycoPaymentStatus(payload)) {
+		return false
+	}
+	if signatureVerified {
+		return true
+	}
+	transactionID := strings.TrimSpace(pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id", "tx_id"))
+	gatewayReference := strings.TrimSpace(pickEpaycoField(payload, "x_ref_payco", "ref_payco"))
+	invoiceReference := strings.TrimSpace(pickEpaycoField(payload, "invoice", "x_id_invoice", "reference"))
+	code := strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "cod_response", "x_cod_transaction_state", "cod_transaction_state", "status_code")))
+	responseText := strings.ToLower(strings.TrimSpace(pickEpaycoField(payload, "x_response", "x_transaction_state", "x_respuesta", "response", "status", "state")))
+	hasApprovedCode := code == "1" || code == "APPROVED" || code == "ACCEPTED" || code == "ACEPTADA" || code == "APROBADA"
+	hasApprovedText := strings.Contains(responseText, "acept") || strings.Contains(responseText, "aprobad") || strings.Contains(responseText, "approved") || strings.Contains(responseText, "accredited")
+	return transactionID != "" && gatewayReference != "" && invoiceReference != "" && (hasApprovedCode || hasApprovedText)
+}
+
 func shouldPreservePendingEpaycoStatus(storedStatus string, payload map[string]interface{}) bool {
 	if strings.ToUpper(strings.TrimSpace(storedStatus)) != "PENDING" || len(payload) == 0 {
 		return false
@@ -2177,6 +2493,36 @@ func shouldPreservePendingEpaycoStatus(storedStatus string, payload map[string]i
 	}
 
 	return strings.Contains(combined, "dato") || strings.Contains(combined, "conex") || strings.Contains(combined, "verifique")
+}
+
+func buildEpaycoConfirmationSignature(customerID, checkoutKey string, payload map[string]interface{}) (string, bool) {
+	customerID = strings.TrimSpace(customerID)
+	checkoutKey = strings.TrimSpace(checkoutKey)
+	xRefPayco := strings.TrimSpace(pickEpaycoField(payload, "x_ref_payco", "ref_payco", "reference"))
+	xTransactionID := strings.TrimSpace(pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id", "tx_id"))
+	xAmount := strings.TrimSpace(pickEpaycoField(payload, "x_amount", "amount"))
+	xCurrency := strings.TrimSpace(pickEpaycoField(payload, "x_currency_code", "currency", "p_currency_code"))
+	if customerID == "" || checkoutKey == "" || xRefPayco == "" || xTransactionID == "" || xAmount == "" || xCurrency == "" {
+		return "", false
+	}
+	source := strings.Join([]string{customerID, checkoutKey, xRefPayco, xTransactionID, xAmount, xCurrency}, "^")
+	sum := sha256.Sum256([]byte(source))
+	return hex.EncodeToString(sum[:]), true
+}
+
+func verifyEpaycoConfirmationSignature(customerID, checkoutKey string, payload map[string]interface{}) (bool, bool, string, string) {
+	provided := strings.ToLower(strings.TrimSpace(pickEpaycoField(payload, "x_signature", "signature")))
+	if provided == "" {
+		return false, false, "", ""
+	}
+	expected, ready := buildEpaycoConfirmationSignature(customerID, checkoutKey, payload)
+	if !ready {
+		return false, true, provided, ""
+	}
+	if len(expected) != len(provided) {
+		return false, true, provided, expected
+	}
+	return subtle.ConstantTimeCompare([]byte(expected), []byte(provided)) == 1, true, provided, expected
 }
 
 func extractEpaycoPaymentInfo(payload map[string]interface{}) (string, string, string) {
@@ -2371,6 +2717,8 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			publicKeyRaw, _, _, publicKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.public_key")
 			customerIDRaw, _, _, customerIDUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.customer_id")
 			privateKeyRaw, privateKeyEnc, _, privateKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.private_key")
+			checkoutKeyRaw, checkoutKeyEnc, _, checkoutKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.checkout_key")
+			legacyPKeyRaw, legacyPKeyEnc, _, legacyPKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.p_key")
 			legacyCustRaw, _, _, legacyCustUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.cust_id")
 			legacyKeyRaw, legacyKeyEnc, _, legacyKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.key")
 			enabledVal, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.enabled")
@@ -2402,10 +2750,40 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				privateKeyUpdatedAt = legacyKeyUpdated
 				privateKeyEncrypted = legacyKeyEnc
 			}
+			if privateKey != "" && !looksLikeEpaycoAPIPrivateKey(privateKey) {
+				privateKey = ""
+				privateKeyEncrypted = false
+			}
+
+			checkoutKey := strings.TrimSpace(checkoutKeyRaw)
+			checkoutKeyUpdatedAt := checkoutKeyUpdated
+			checkoutKeyEncrypted := checkoutKeyEnc
+			if checkoutKey == "" && strings.TrimSpace(legacyPKeyRaw) != "" {
+				checkoutKey = strings.TrimSpace(legacyPKeyRaw)
+				checkoutKeyUpdatedAt = legacyPKeyUpdated
+				checkoutKeyEncrypted = legacyPKeyEnc
+			}
+			if checkoutKey == "" && strings.TrimSpace(legacyKeyRaw) != "" && !looksLikeEpaycoPublicKey(legacyKeyRaw) && !looksLikeEpaycoAPIPrivateKey(legacyKeyRaw) {
+				checkoutKey = strings.TrimSpace(legacyKeyRaw)
+				checkoutKeyUpdatedAt = legacyKeyUpdated
+				checkoutKeyEncrypted = legacyKeyEnc
+			}
+			if checkoutKey == "" && strings.TrimSpace(privateKeyRaw) != "" && !looksLikeEpaycoAPIPrivateKey(privateKeyRaw) {
+				checkoutKey = strings.TrimSpace(privateKeyRaw)
+				checkoutKeyUpdatedAt = privateKeyUpdated
+				checkoutKeyEncrypted = privateKeyEnc
+			}
+			if resolvedCreds, resolveErr := resolveEpaycoCredentialSet(dbSuper); resolveErr == nil {
+				publicKey = resolvedCreds.PublicKey
+				customerID = resolvedCreds.CustomerID
+				privateKey = resolvedCreds.PrivateKey
+				checkoutKey = resolvedCreds.CheckoutKey
+			}
 
 			publicKeySet := publicKey != ""
 			customerIDSet := customerID != ""
 			privateKeySet := privateKey != ""
+			checkoutKeySet := checkoutKey != ""
 
 			enabled := parseBoolConfigValue(enabledVal)
 
@@ -2430,7 +2808,16 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"customer_id_set":     customerIDSet,
 				"customer_id_masked":  maskConfigValue(customerID, 2, 3),
 				"customer_id_updated": customerIDUpdatedAt,
-				"private_key_set":     privateKeySet,
+				"checkout_key_set":    checkoutKeySet,
+				"checkout_key_masked": func() string {
+					if checkoutKeySet {
+						return "********"
+					}
+					return ""
+				}(),
+				"checkout_key_encrypted": checkoutKeyEncrypted,
+				"checkout_key_updated":   checkoutKeyUpdatedAt,
+				"private_key_set":        privateKeySet,
 				"private_key_masked": func() string {
 					if privateKeySet {
 						return "********"
@@ -2482,6 +2869,8 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Enabled          *bool           `json:"enabled"`
 				Mode             string          `json:"mode"`
 				Encrypt          bool            `json:"encrypt"`
+				CheckoutKey      string          `json:"checkout_key"`
+				PKey             string          `json:"p_key"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -2509,9 +2898,17 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if privateKey == "" {
 				privateKey = strings.TrimSpace(payload.Key)
 			}
+			checkoutKey := strings.TrimSpace(payload.CheckoutKey)
+			if checkoutKey == "" {
+				checkoutKey = strings.TrimSpace(payload.PKey)
+			}
+			if checkoutKey == "" && privateKey != "" && !looksLikeEpaycoAPIPrivateKey(privateKey) && !looksLikeEpaycoPublicKey(privateKey) {
+				checkoutKey = privateKey
+				privateKey = ""
+			}
 
-			if publicKey == "" && customerID == "" && privateKey == "" && payload.Enabled == nil && normalizedMode == "" {
-				http.Error(w, "at least one of public_key, customer_id, private_key, enabled or mode is required", http.StatusBadRequest)
+			if publicKey == "" && customerID == "" && privateKey == "" && checkoutKey == "" && payload.Enabled == nil && normalizedMode == "" {
+				http.Error(w, "at least one of public_key, customer_id, private_key, checkout_key, enabled or mode is required", http.StatusBadRequest)
 				return
 			}
 
@@ -2542,6 +2939,10 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if privateKey != "" {
+				if !looksLikeEpaycoAPIPrivateKey(privateKey) {
+					http.Error(w, "private_key invalida: debe ser la llave API de Epayco que inicia por prv_. Para el checkout estandar usa checkout_key / P_KEY.", http.StatusBadRequest)
+					return
+				}
 				if !utils.EncryptionAvailable() {
 					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusInternalServerError)
 					return
@@ -2555,8 +2956,28 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "failed to save epayco.private_key: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				if err := dbpkg.SetConfigValue(dbSuper, "epayco.key", encVal, true); err != nil {
-					http.Error(w, "failed to save epayco.key: "+err.Error(), http.StatusInternalServerError)
+			}
+
+			if checkoutKey != "" {
+				if !looksLikeEpaycoCheckoutKey(checkoutKey) {
+					http.Error(w, "checkout_key/P_KEY invalida: usa la P_KEY real de ePayco tomada desde Configuracion > Personalizaciones > Llaves secretas; no uses contrasenas ni Public/Private Key API.", http.StatusBadRequest)
+					return
+				}
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusInternalServerError)
+					return
+				}
+				encVal, err := utils.EncryptString(checkoutKey)
+				if err != nil {
+					http.Error(w, "failed to encrypt epayco.checkout_key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.checkout_key", encVal, true); err != nil {
+					http.Error(w, "failed to save epayco.checkout_key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.p_key", encVal, true); err != nil {
+					http.Error(w, "failed to save epayco.p_key: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}
@@ -3537,7 +3958,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		publicKey, _, privateKey, err := resolveEpaycoCredentials(dbSuper)
+		epaycoCreds, err := resolveEpaycoCredentialSet(dbSuper)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
@@ -3547,14 +3968,28 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			})
 			return
 		}
-		publicKey = strings.TrimSpace(publicKey)
-		privateKey = strings.TrimSpace(privateKey)
-		if publicKey == "" {
+		publicKey := strings.TrimSpace(epaycoCreds.PublicKey)
+		customerID := strings.TrimSpace(epaycoCreds.CustomerID)
+		privateKey := strings.TrimSpace(epaycoCreds.PrivateKey)
+		checkoutKey := strings.TrimSpace(epaycoCreds.CheckoutKey)
+		smartCheckoutReady := epaycoSmartCheckoutReady(publicKey, privateKey)
+		classicCheckoutReady := epaycoCustomCheckoutReady(publicKey, customerID, checkoutKey)
+		if !smartCheckoutReady && !classicCheckoutReady {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "epayco.public_key no configurada",
-				"provider": "epayco",
+				"error":                     "Epayco no esta configurado completamente: Smart Checkout requiere Public Key y Private Key API; el checkout estandar requiere Public Key, Customer ID y P_KEY.",
+				"provider":                  "epayco",
+				"smart_checkout_ready":      smartCheckoutReady,
+				"classic_checkout_ready":    classicCheckoutReady,
+				"public_key_set":            publicKey != "",
+				"private_key_set":           privateKey != "",
+				"customer_id_set":           customerID != "",
+				"checkout_key_set":          checkoutKey != "",
+				"checkout_key_format_valid": looksLikeEpaycoCheckoutKey(checkoutKey),
+				"private_key_api_valid":     looksLikeEpaycoAPIPrivateKey(privateKey),
+				"classic_credentials_valid": classicCheckoutReady,
+				"configuration_required":    true,
 			})
 			return
 		}
@@ -3620,65 +4055,117 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if privateKey == "" {
+		if !smartCheckoutReady && !classicCheckoutReady {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "Epayco requiere Public Key y Private Key para Smart Checkout",
+				"error":    "Epayco requiere credenciales completas para iniciar el checkout",
 				"provider": "epayco",
 			})
 			return
 		}
 
-		mode, modeSource := resolveEpaycoMode(dbSuper, publicKey, privateKey)
+		smartMode, smartModeSource := resolveEpaycoMode(dbSuper, publicKey, privateKey)
+		classicMode, classicModeSource := resolveEpaycoClassicMode(dbSuper, customerID, checkoutKey)
+		mode, modeSource := smartMode, smartModeSource
+		if !smartCheckoutReady {
+			mode, modeSource = classicMode, classicModeSource
+		}
 		reference := fmt.Sprintf("EPAYCO-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 		responseURL := buildEpaycoResponseURL(paymentBaseURL, "pending", reference, payload.LicenciaID, payload.EmpresaID)
 		confirmationURL := strings.TrimRight(strings.TrimSpace(paymentBaseURL), "/") + "/epayco/webhook"
-		sessionPayload := map[string]interface{}{
-			"checkout_version": "2",
-			"name":             "Powerful Control System",
-			"description":      "Pago de licencia " + strings.TrimSpace(lic.Nombre),
-			"currency":         "COP",
-			"amount":           summary.TotalValue,
-			"lang":             "ES",
-			"invoice":          reference,
-			"country":          "CO",
-			"taxBase":          0,
-			"tax":              0,
-			"taxIco":           0,
-			"response":         responseURL,
-			"confirmation":     confirmationURL,
-			"method":           "POST",
-			"extras": map[string]interface{}{
-				"extra1": strconv.FormatInt(payload.LicenciaID, 10),
-				"extra2": strconv.FormatInt(payload.EmpresaID, 10),
-				"extra3": reference,
-			},
-		}
-		if email != "" {
-			sessionPayload["billing"] = map[string]interface{}{
-				"email": email,
+		sessionPayload := buildEpaycoSmartCheckoutSessionPayload(paymentBaseURL, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, summary.TotalValue, email)
+		classicCheckoutPayload := buildEpaycoClassicCheckoutPayload(paymentBaseURL, publicKey, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, summary.TotalValue, email, classicMode)
+		writeClassicCheckoutFallback := func(reason, loginRaw, sessionRaw string) {
+			log.Println("warning: Epayco Smart Checkout unavailable, using checkout.js fallback:", reason)
+			if !classicCheckoutReady {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"error":                     "Epayco Smart Checkout fallo y el checkout estandar no esta listo. Registra PUBLIC_KEY, Customer ID y P_KEY para checkout estandar en configuracion avanzada de Epayco.",
+					"provider":                  "epayco",
+					"smart_checkout_error":      reason,
+					"classic_checkout_ready":    false,
+					"customer_id_set":           strings.TrimSpace(customerID) != "",
+					"checkout_key_set":          strings.TrimSpace(checkoutKey) != "",
+					"checkout_key_format_valid": looksLikeEpaycoCheckoutKey(checkoutKey),
+					"private_key_api_valid":     looksLikeEpaycoAPIPrivateKey(privateKey),
+					"classic_credentials_valid": classicCheckoutReady,
+				})
+				return
 			}
+			rawMap := map[string]interface{}{
+				"provider":             "epayco",
+				"mode":                 classicMode,
+				"mode_source":          classicModeSource,
+				"smart_mode":           smartMode,
+				"smart_mode_source":    smartModeSource,
+				"payment_base_url":     paymentBaseURL,
+				"checkout_type":        "classic_js",
+				"checkout_script":      classicCheckoutPayload.ScriptURL,
+				"checkout_data":        classicCheckoutPayload.Data,
+				"response":             responseURL,
+				"confirmation":         confirmationURL,
+				"license_id":           payload.LicenciaID,
+				"empresa_id":           payload.EmpresaID,
+				"customer_email":       email,
+				"discount_code":        payload.DiscountCode,
+				"valor_pagado":         summary.TotalValue,
+				"asesor_id":            payload.AsesorID,
+				"summary":              summary,
+				"created_at":           time.Now().Format(time.RFC3339),
+				"integration_flow":     "classic_checkout_js_fallback",
+				"smart_checkout_error": reason,
+				"apify_login_raw":      loginRaw,
+				"session_raw":          sessionRaw,
+			}
+			rawBytes, _ := json.Marshal(rawMap)
+			if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+				log.Println("warning: failed to record Epayco fallback transaction in DB:", err)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"provider":                "epayco",
+				"payment_method":          "CLASSIC_CHECKOUT",
+				"mode":                    classicMode,
+				"mode_source":             classicModeSource,
+				"smart_mode":              smartMode,
+				"smart_mode_source":       smartModeSource,
+				"transaction_id":          reference,
+				"reference":               reference,
+				"status":                  "PENDING",
+				"asesor_id":               payload.AsesorID,
+				"checkout_type":           "classic_js",
+				"checkout_script_url":     classicCheckoutPayload.ScriptURL,
+				"checkout_config":         classicCheckoutPayload.Config,
+				"checkout_data":           classicCheckoutPayload.Data,
+				"customer_email":          email,
+				"smart_checkout_fallback": true,
+				"smart_checkout_error":    reason,
+				"data": map[string]interface{}{
+					"id":              reference,
+					"reference":       reference,
+					"checkout_script": classicCheckoutPayload.ScriptURL,
+					"checkout_config": classicCheckoutPayload.Config,
+					"checkout_data":   classicCheckoutPayload.Data,
+					"type":            "classic_js",
+				},
+			})
+		}
+		if !smartCheckoutReady {
+			writeClassicCheckoutFallback("Smart Checkout no configurado; usando checkout estandar con checkout.js", "", "")
+			return
 		}
 
 		apifyToken, loginRaw, err := fetchEpaycoApifyToken(publicKey, privateKey)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "failed to authenticate with Epayco Smart Checkout: " + err.Error(),
-				"provider": "epayco",
-			})
+			writeClassicCheckoutFallback("failed to authenticate with Epayco Smart Checkout: "+err.Error(), loginRaw, "")
 			return
 		}
 		sessionID, sessionRaw, err := createEpaycoSmartCheckoutSession(apifyToken, sessionPayload)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "failed to create Epayco Smart Checkout session: " + err.Error(),
-				"provider": "epayco",
-			})
+			writeClassicCheckoutFallback("failed to create Epayco Smart Checkout session: "+err.Error(), loginRaw, sessionRaw)
 			return
 		}
 
@@ -3753,6 +4240,27 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		expectedLicenciaID, expectedEmpresaID, hasExpectedContext := expectedPaymentContextFromRequest(r)
 		originalTransactionID := transactionID
 		originalReference := reference
+		queryPayload := map[string]interface{}{}
+		for key, values := range r.URL.Query() {
+			if len(values) > 0 {
+				queryPayload[key] = values[0]
+			}
+		}
+		queryStatus := parseEpaycoPaymentStatus(queryPayload)
+		queryInvoiceReference := strings.TrimSpace(pickEpaycoField(queryPayload, "invoice", "x_id_invoice"))
+		queryGatewayReference := strings.TrimSpace(pickEpaycoField(queryPayload, "x_ref_payco", "ref_payco"))
+		querySignatureVerified := false
+		if strings.TrimSpace(pickEpaycoField(queryPayload, "x_signature", "signature")) != "" {
+			if creds, credErr := resolveEpaycoCredentialSet(dbSuper); credErr != nil {
+				log.Println("warning: failed to read Epayco credentials for return signature validation:", credErr)
+			} else if valid, _, _, _ := verifyEpaycoConfirmationSignature(creds.CustomerID, creds.CheckoutKey, queryPayload); valid {
+				querySignatureVerified = true
+			}
+		}
+		queryApprovedEvidence := hasStrongEpaycoApprovedReturnEvidence(queryPayload, querySignatureVerified)
+		if reference == "" {
+			reference = firstNonEmptyString(queryInvoiceReference, queryGatewayReference)
+		}
 		if transactionID == "" && reference == "" {
 			http.Error(w, "id o reference requerido", http.StatusBadRequest)
 			return
@@ -3767,8 +4275,8 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 		}
-		if rec == nil && reference != "" {
-			rec, err = dbpkg.GetEpaycoPaymentByReference(dbSuper, reference)
+		if rec == nil {
+			rec, err = findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, queryInvoiceReference, queryGatewayReference})
 			if err != nil {
 				http.Error(w, "failed to read pagos_epayco: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -3807,15 +4315,19 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if transactionID == "" {
 			transactionID = recordTransactionID
 		}
+		if queryInvoiceReference == "" {
+			queryInvoiceReference = recordReference
+		}
 
 		status := ""
 		validationPayload := map[string]interface{}{}
 		rawValidation := ""
 		gatewayTransactionID := ""
-		gatewayReference := ""
-		invoiceReference := ""
-		if recordReference != "" {
-			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(recordReference)
+		gatewayReference := queryGatewayReference
+		invoiceReference := queryInvoiceReference
+		validationReferences := uniqueNonEmptyStrings(gatewayReference, recordReference)
+		for _, validationReference := range validationReferences {
+			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(validationReference)
 			req, err := http.NewRequest("GET", validationURL, nil)
 			if err == nil {
 				client := &http.Client{Timeout: 15 * time.Second}
@@ -3842,13 +4354,33 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 								gatewayReference = refFromGateway
 								reference = refFromGateway
 							}
+							if strings.TrimSpace(status) != "" {
+								break
+							}
 						}
 					} else {
-						log.Printf("warning: epayco validation API returned %s for reference %s: %s", resp.Status, recordReference, string(body))
+						log.Printf("warning: epayco validation API returned %s for reference %s: %s", resp.Status, validationReference, string(body))
 					}
 				} else {
-					log.Printf("warning: epayco validation request failed for reference %s: %v", recordReference, reqErr)
+					log.Printf("warning: epayco validation request failed for reference %s: %v", validationReference, reqErr)
 				}
+			}
+		}
+
+		if strings.TrimSpace(status) == "" && strings.TrimSpace(queryStatus) != "" && !isApprovedPaymentStatus(queryStatus) {
+			status = queryStatus
+			validationPayload = queryPayload
+			if rawBytes, err := json.Marshal(queryPayload); err == nil {
+				rawValidation = string(rawBytes)
+			}
+			if transactionID == "" {
+				transactionID = strings.TrimSpace(pickEpaycoField(queryPayload, "x_transaction_id", "transaction_id", "id", "tx_id"))
+			}
+			if invoiceReference == "" {
+				invoiceReference = strings.TrimSpace(pickEpaycoField(queryPayload, "invoice", "x_id_invoice"))
+			}
+			if gatewayReference == "" {
+				gatewayReference = strings.TrimSpace(pickEpaycoField(queryPayload, "x_ref_payco", "ref_payco", "reference"))
 			}
 		}
 
@@ -3870,6 +4402,40 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if err != nil {
 				log.Println("warning: failed to reload Epayco payment record before payload merge:", err)
 				rec = nil
+			}
+		}
+
+		preLicenciaID := int64(0)
+		preEmpresaID := int64(0)
+		preHasContext := false
+		preLookupCombos := [][2]string{
+			{recordTransactionID, recordReference},
+			{"", recordReference},
+			{"", invoiceReference},
+			{"", queryInvoiceReference},
+			{"", originalReference},
+			{originalTransactionID, originalReference},
+			{transactionID, reference},
+		}
+		preLicenciaID, preEmpresaID, preHasContext = resolveEpaycoPaymentContextCandidates(dbSuper, preLookupCombos)
+		if !preHasContext {
+			preLicenciaID, preEmpresaID, preHasContext = paymentContextFromInternalReference(recordReference, invoiceReference, queryInvoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
+		}
+		if !preHasContext {
+			preLicenciaID, preEmpresaID, preHasContext = paymentContextFromEpaycoPayload(queryPayload)
+		}
+		if queryApprovedEvidence && preHasContext && (!hasExpectedContext || paymentContextMatchesExpected(preLicenciaID, preEmpresaID, expectedLicenciaID, expectedEmpresaID)) && !isRejectedPaymentStatus(status) {
+			if !isApprovedPaymentStatus(status) {
+				log.Printf("info: Epayco return approved payment using trusted browser return evidence; reference=%q gateway_ref=%q transaction=%q", firstNonEmptyString(recordReference, queryInvoiceReference, originalReference), queryGatewayReference, transactionID)
+			}
+			status = "APPROVED"
+			if len(validationPayload) == 0 {
+				validationPayload = queryPayload
+			} else {
+				validationPayload = mergePaymentPayloadMaps(validationPayload, queryPayload)
+			}
+			if rawBytes, err := json.Marshal(validationPayload); err == nil {
+				rawValidation = string(rawBytes)
 			}
 		}
 
@@ -3910,13 +4476,20 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			{recordTransactionID, recordReference},
 			{"", recordReference},
 			{"", invoiceReference},
+			{"", queryInvoiceReference},
 			{"", originalReference},
 			{originalTransactionID, originalReference},
 			{transactionID, reference},
 		}
 		licenciaID, empresaID, hasContext = resolveEpaycoPaymentContextCandidates(dbSuper, lookupCombos)
 		if !hasContext {
-			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(recordReference, invoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
+			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(recordReference, invoiceReference, queryInvoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
+		}
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromEpaycoPayload(validationPayload)
+		}
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromEpaycoPayload(queryPayload)
 		}
 		if hasExpectedContext && hasContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
 			w.Header().Set("Content-Type", "application/json")
@@ -4073,6 +4646,24 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 		}
 
+		signatureVerified := false
+		signatureProvided := false
+		if strings.TrimSpace(pickEpaycoField(payload, "x_signature", "signature")) != "" {
+			signatureProvided = true
+			creds, credErr := resolveEpaycoCredentialSet(dbSuper)
+			if credErr != nil {
+				log.Println("warning: failed to read Epayco credentials for webhook signature validation:", credErr)
+			} else if strings.TrimSpace(creds.CustomerID) == "" || strings.TrimSpace(creds.CheckoutKey) == "" {
+				log.Println("warning: Epayco webhook included x_signature but Customer ID/P_KEY are not configured; payment will be processed without local signature validation")
+			} else if valid, _, _, expected := verifyEpaycoConfirmationSignature(creds.CustomerID, creds.CheckoutKey, payload); !valid {
+				log.Printf("warning: rejected Epayco webhook due invalid x_signature; expected=%t transaction=%q reference=%q", expected != "", pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id"), pickEpaycoField(payload, "x_ref_payco", "ref_payco", "reference", "invoice"))
+				http.Error(w, "invalid epayco signature", http.StatusBadRequest)
+				return
+			} else {
+				signatureVerified = true
+			}
+		}
+
 		transactionID, reference, status := extractEpaycoPaymentInfo(payload)
 		invoiceReference := strings.TrimSpace(pickEpaycoField(payload, "invoice", "x_id_invoice"))
 		if transactionID == "" && reference == "" {
@@ -4106,6 +4697,12 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		licenciaID, empresaID, hasContext := resolveEpaycoPaymentContextCandidates(dbSuper, [][2]string{{transactionID, reference}, {"", reference}, {"", invoiceReference}, {transactionID, invoiceReference}})
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(invoiceReference, reference, transactionID)
+		}
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromEpaycoPayload(payload)
+		}
 
 		activated := false
 		discountBlocked := false
@@ -4189,6 +4786,8 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			"empresa_id":                  empresaID,
 			"activated":                   activated,
 			"discount_blocked":            discountBlocked,
+			"signature_provided":          signatureProvided,
+			"signature_verified":          signatureVerified,
 			"venta_publica_context_found": ventaPublicaContextFound,
 		})
 	}
@@ -4243,6 +4842,9 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		now := time.Now()
+		if lic.DuracionDias <= 0 {
+			lic.DuracionDias = 30
+		}
 		fechaInicio := now.Format("2006-01-02 15:04:05")
 		fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
 		if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo); err != nil {

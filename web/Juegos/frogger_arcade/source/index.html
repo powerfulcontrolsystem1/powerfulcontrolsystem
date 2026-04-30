@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Frogger Calle</title>
+  <link rel="stylesheet" href="/Juegos/open_game_source.css">
+  <script src="/Juegos/open_game_embed.js"></script>
+  <style>
+    #game { width:min(96vw, 680px); height:min(66vh, 560px); border:1px solid rgba(250,204,21,.32); border-radius:8px; background:#020617; }
+  </style>
+</head>
+<body>
+  <div class="game-root">
+    <div class="game-hud"><span><strong>Frogger Calle</strong></span><span>Nivel: <strong id="level">1</strong></span><span>Vidas: <strong id="lives">3</strong></span><span>Puntos: <strong id="score">0</strong></span></div>
+    <div class="game-board-wrap"><canvas id="game"></canvas><div id="message" class="game-message">Cruza hasta la zona verde.</div></div>
+    <div class="game-actions">
+      <button class="game-btn" data-move="up">Arriba</button><button class="game-btn" data-move="left">Izq</button><button class="game-btn" data-move="down">Abajo</button><button class="game-btn" data-move="right">Der</button><button id="reset" class="game-btn">Nuevo</button>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var canvas=document.getElementById("game"), ctx=canvas.getContext("2d"), rows=10, cols=9, frog, cars, level=1, lives=3, score=0, over=false;
+      var levelEl=document.getElementById("level"), livesEl=document.getElementById("lives"), scoreEl=document.getElementById("score"), msg=document.getElementById("message");
+      function resize(){ var r=canvas.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2); canvas.width=Math.floor(r.width*d); canvas.height=Math.floor(r.height*d); ctx.setTransform(d,0,0,d,0,0); }
+      function cellW(){ return canvas.getBoundingClientRect().width/cols; } function cellH(){ return canvas.getBoundingClientRect().height/rows; }
+      function resetFrog(){ frog={x:4,y:9}; }
+      function makeCars(){
+        cars=[]; for(var y=2;y<9;y++){ if(y===5) continue; var dir=y%2?1:-1, count=2+(y+level)%3; for(var i=0;i<count;i++) cars.push({x:i*3+(Math.random()*2), y:y, dir:dir, speed:(.018+.006*level+.003*y)*dir, w:1.15}); }
+      }
+      function newGame(){ level=1; lives=3; score=0; over=false; resetFrog(); makeCars(); msg.textContent="Cruza hasta la zona verde."; msg.hidden=false; }
+      function move(dx,dy){ if(over){ newGame(); return; } frog.x=Math.max(0,Math.min(cols-1,frog.x+dx)); frog.y=Math.max(0,Math.min(rows-1,frog.y+dy)); if(frog.y===0){ score+=100*level; level++; resetFrog(); makeCars(); msg.textContent="Nivel "+level; msg.hidden=false; setTimeout(function(){msg.hidden=true;},700); } }
+      function hit(){
+        lives--; if(navigator.vibrate) navigator.vibrate(80); resetFrog();
+        if(lives<=0){ over=true; msg.textContent="Fin de partida. Puntos: "+score+". Pulsa Nuevo."; msg.hidden=false; }
+      }
+      function update(){
+        if(!over){ cars.forEach(function(c){ c.x+=c.speed; if(c.dir>0 && c.x>cols+1)c.x=-2; if(c.dir<0 && c.x<-2)c.x=cols+1; if(Math.abs(c.y-frog.y)<.4 && frog.x+.35>c.x && frog.x-.35<c.x+c.w) hit(); }); }
+        draw(); requestAnimationFrame(update);
+      }
+      function draw(){
+        resize(); var w=cellW(), h=cellH(), vw=canvas.getBoundingClientRect().width, vh=canvas.getBoundingClientRect().height;
+        ctx.clearRect(0,0,vw,vh);
+        for(var y=0;y<rows;y++){ ctx.fillStyle = y===0 ? "#166534" : (y===1 || y===5 || y===9 ? "#14532d" : "#1f2937"); ctx.fillRect(0,y*h,vw,h-1); }
+        ctx.fillStyle="#f97316"; cars.forEach(function(c){ ctx.fillRect(c.x*w,c.y*h+h*.18,c.w*w,h*.62); ctx.fillStyle="#fde68a"; ctx.fillRect(c.x*w+w*.18,c.y*h+h*.28,w*.22,h*.12); ctx.fillStyle="#f97316"; });
+        ctx.fillStyle="#22c55e"; ctx.beginPath(); ctx.arc(frog.x*w+w/2,frog.y*h+h/2,Math.min(w,h)*.34,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#052e16"; ctx.fillRect(frog.x*w+w*.31,frog.y*h+h*.28,w*.12,h*.12); ctx.fillRect(frog.x*w+w*.57,frog.y*h+h*.28,w*.12,h*.12);
+        levelEl.textContent=level; livesEl.textContent=lives; scoreEl.textContent=score;
+      }
+      window.addEventListener("keydown",function(e){ if(e.key==="ArrowUp")move(0,-1); if(e.key==="ArrowDown")move(0,1); if(e.key==="ArrowLeft")move(-1,0); if(e.key==="ArrowRight")move(1,0); if(e.key==="r"||e.key==="R")newGame(); });
+      document.querySelectorAll("[data-move]").forEach(function(b){ b.onclick=function(){ var m=b.dataset.move; move(m==="right"?1:m==="left"?-1:0,m==="down"?1:m==="up"?-1:0); }; });
+      document.getElementById("reset").onclick=newGame; newGame(); update();
+    }());
+  </script>
+</body>
+</html>

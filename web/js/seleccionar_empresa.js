@@ -27,6 +27,13 @@
     }
   }
 
+  function isStandaloneFrameHref(href) {
+    var normalized = normalizeHref(href);
+    if (!normalized) return false;
+    var path = normalized.split("?")[0].toLowerCase();
+    return path === "/editar_empresa.html" || path === "/editar_empresa.htm";
+  }
+
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (match) {
       return {
@@ -738,11 +745,11 @@
     });
 
     var div = document.createElement("div");
-    div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone;
+    div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone + (hasLicense ? " empresa-card--license-active" : " empresa-card--license-inactive");
     div.setAttribute('data-tone', visual.tone || 'generic');
     var licenseCellHTML = hasLicense
       ? '<span class="empresa-card-footer-license-spacer" aria-hidden="true"></span>'
-      : '<span class="license-indicator inactive">Sin licencia</span>';
+      : '<span class="empresa-card-footer-license-spacer" aria-hidden="true"></span>';
     div.innerHTML =
       '<span class="empresa-card-badge">' +
       escapeHtml(visual.label || "Empresa") +
@@ -787,10 +794,10 @@
 
     var editBtn = document.createElement("button");
     editBtn.type = "button";
-    editBtn.className = "license-indicator active edit-empresa";
+    editBtn.className = "license-indicator edit-empresa " + (hasLicense ? "active" : "inactive");
     editBtn.setAttribute("data-empresa-id", String(empresa.id || ""));
-    editBtn.setAttribute("aria-label", "Editar empresa " + String(empresa.nombre || ""));
-    editBtn.setAttribute("title", "Editar empresa");
+    editBtn.setAttribute("aria-label", (isSharedEmpresa(empresa) ? "Ver administradores de " : "Editar empresa ") + String(empresa.nombre || ""));
+    editBtn.setAttribute("title", isSharedEmpresa(empresa) ? "Ver administradores compartidos" : "Editar empresa");
     editBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l9.06-9.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>';
     editBtn.addEventListener("click", function (ev) {
       ev.preventDefault();
@@ -800,12 +807,11 @@
         window.alert("Primero crea o selecciona una empresa para editarla.");
         return;
       }
-      if (empresa && String(empresa.access_source || "owner").toLowerCase() === "shared") {
-        window.alert("Solo el administrador propietario puede editar o eliminar la ficha de una empresa compartida.");
-        return;
-      }
       persistEmpresaContext(empresaId);
-      window.location.href = "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId));
+      openInRightFrame(
+        "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId)),
+        null
+      );
     });
     if (dlCell) {
       dlCell.appendChild(editBtn);
@@ -901,7 +907,7 @@
   function appendEmpresasGroup(container, title, empresas, activeByEmpresa) {
     if (!empresas.length) return;
     var section = document.createElement("section");
-    section.className = "card empresa-section";
+    section.className = "card empresa-section selector-company-group";
 
     var header = document.createElement("div");
     header.className = "empresa-section-header";
@@ -1118,6 +1124,10 @@
 
     if (view.mode === "frame" && view.href) {
       var targetLink = findLinkByHref(view.href);
+      if (!targetLink && isStandaloneFrameHref(view.href)) {
+        openInRightFrame(view.href, null);
+        return;
+      }
       if (!targetLink || !isSidebarLinkVisible(targetLink)) {
         showEmpresasPanel();
         setActiveNav(linkAgregar);

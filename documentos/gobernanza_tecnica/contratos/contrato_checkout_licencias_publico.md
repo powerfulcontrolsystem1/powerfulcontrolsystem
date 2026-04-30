@@ -1,11 +1,15 @@
 # Contrato tecnico: checkout publico de licencias
 
-Fecha: 2026-04-18
+Fecha: 2026-04-30
 Estado: vigente
 
 ## Alcance
 
 Este contrato cubre el flujo publico de checkout de licencias administrativas por Epayco y Wompi, incluyendo creacion de transaccion, retorno, polling, webhook, activacion de licencia y correo de activacion.
+
+Para Epayco, el flujo preferido es Smart Checkout v2. Si Smart Checkout no devuelve token y la configuracion tiene `epayco.customer_id` mas `epayco.checkout_key`/`epayco.p_key`, el backend puede entregar un formulario clasico firmado para POST directo a `https://secure.payco.co/checkout.php`.
+
+Las credenciales no son intercambiables: Smart Checkout v2 usa `PUBLIC_KEY` + `PRIVATE_KEY` API de Apify, mientras que el checkout estandar usa `P_CUST_ID_CLIENTE` + `P_KEY`. El backend no debe tratar una `P_KEY` clasica como `private_key` API.
 
 ## Rutas implicadas
 
@@ -51,6 +55,21 @@ Errores de contrato esperados:
 - `400` por parametros insuficientes o invalidos.
 - `404` si el pago no existe.
 - `409` si el pago resuelto no coincide con la `empresa_id` o `licencia_id` esperadas.
+- `409` si Smart Checkout de Epayco falla y el fallback clasico no puede construirse por falta de `epayco.customer_id` o `epayco.checkout_key`/`epayco.p_key`.
+
+### Respuesta Epayco con fallback clasico
+
+Cuando aplica fallback clasico, `POST /epayco/create_transaction` puede responder:
+
+- `checkout_type: "classic_form"`
+- `checkout_url: "https://secure.payco.co/checkout.php"`
+- `checkout_form.action`: URL segura de Epayco para POST.
+- `checkout_form.method`: `POST`.
+- `checkout_form.fields`: campos firmados requeridos por Epayco.
+- `mode`: modo efectivo del fallback clasico.
+- `mode_source`: origen del modo clasico; para credenciales reales debe ser `classic_credentials`.
+
+El frontend debe crear un formulario temporal y enviarlo por POST. No debe abrir esa URL con GET.
 
 ## Invariantes
 
@@ -59,6 +78,11 @@ Errores de contrato esperados:
 3. El backend debe validar ese contexto esperado antes de dar por bueno el polling.
 4. El correo de activacion debe resolver la empresa por alcance logico, no solo por el id fisico de la fila.
 5. Webhook y polling deben ser idempotentes respecto a activacion de licencia y envio de correo.
+6. El fallback clasico de Epayco debe usar POST firmado a `https://secure.payco.co/checkout.php`.
+7. El sistema no debe redirigir al usuario por GET a `https://checkout.epayco.co/checkout.php`, porque ese flujo puede devolver XML `AccessDenied`.
+8. Los logs o `raw_payload` no deben persistir `p_key` sin enmascarar.
+9. El modo del fallback clasico debe resolverse con las credenciales clasicas (`customer_id` + `P_KEY`) y no heredar automaticamente el modo de Smart Checkout; en produccion debe emitir `p_test_request=FALSE` y en pruebas `p_test_request=TRUE`.
+10. Smart Checkout solo se considera listo cuando existe `public_key` y una `private_key` API valida. El checkout estandar solo se considera listo cuando existe `customer_id` y `checkout_key`/`p_key`.
 
 ## Side effects
 
@@ -77,6 +101,7 @@ Errores de contrato esperados:
 - pruebas focalizadas del handler de pagos del checkout.
 - diagnostico del editor limpio en frontend y backend tocados.
 - validacion de contexto esperado en polling cuando el cambio afecte empresa/licencia.
+- prueba del formulario clasico firmado y saneamiento de `p_key` cuando el cambio afecte Epayco.
 
 ## ADRs relacionados
 

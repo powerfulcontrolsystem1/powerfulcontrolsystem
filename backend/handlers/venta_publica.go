@@ -1360,8 +1360,10 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 	items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, resolvedEmpresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
 		IncludeInactive: false,
 		PaginaID:        pageID,
-		Limit:           500,
-		Offset:          0,
+		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
+		Sort:            strings.TrimSpace(r.URL.Query().Get("sort")),
+		Limit:           firstPositiveInt(limitFromRequest(r), 18),
+		Offset:          offsetFromRequest(r),
 	})
 	if err != nil {
 		http.Error(w, "No se pudo cargar catalogo publico", http.StatusInternalServerError)
@@ -1381,6 +1383,32 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 			"produccion": "/" + cfg.EmpresaSlug + "/venta_publica.html",
 		},
 	})
+}
+
+func limitFromRequest(r *http.Request) int {
+	limit, err := parseIntQueryOptional(r, "limit")
+	if err != nil || limit <= 0 {
+		return 0
+	}
+	if limit > 100 {
+		return 100
+	}
+	return limit
+}
+
+func offsetFromRequest(r *http.Request) int {
+	offset, err := parseIntQueryOptional(r, "offset")
+	if err != nil || offset < 0 {
+		return 0
+	}
+	return offset
+}
+
+func firstPositiveInt(value, fallback int) int {
+	if value > 0 {
+		return value
+	}
+	return fallback
 }
 
 func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {

@@ -14,6 +14,14 @@ import (
 // EmpresaReservasHotelHandler gestiona el modulo de reservas por empresa.
 func EmpresaReservasHotelHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+			http.Error(w, "No se pudo preparar los carritos para reservas", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmp); err != nil {
+			http.Error(w, "No se pudo preparar el modulo de reservas", http.StatusInternalServerError)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			handleReservasHotelGet(w, r, dbEmp)

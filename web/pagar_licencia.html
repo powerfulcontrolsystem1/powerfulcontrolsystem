@@ -51,7 +51,7 @@
       function normalizeStatus(raw){
         const value = String(raw || '').trim().toUpperCase();
         if (!value) return '';
-        if (['SUCCESS','APPROVED','ACCEPTED','ACREDITADA','ACREDITADO','ACEPTADA','APROBADA','1'].indexOf(value) >= 0) return 'APPROVED';
+        if (['SUCCESS','APPROVED','ACCEPTED','OK','ACREDITADA','ACREDITADO','ACEPTADA','ACEPTADO','APROBADA','APROBADO','1'].indexOf(value) >= 0) return 'APPROVED';
         if (['FAILURE','DECLINED','REJECTED','RECHAZADA','RECHAZADO','CANCELADA','CANCELADO','ANULADA','ANULADO','2'].indexOf(value) >= 0) return 'DECLINED';
         if (['PENDING','PENDIENTE','EN_PROCESO','3'].indexOf(value) >= 0) return 'PENDING';
         if (['ERROR','FAILED','FALLIDA','FALLIDO','4'].indexOf(value) >= 0) return 'ERROR';
@@ -105,14 +105,16 @@
         let provider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
         let status = normalizeStatus(params.get('x_response') || params.get('x_transaction_state') || params.get('response') || params.get('status'));
         if (!status) status = normalizeStatus(params.get('x_cod_response') || params.get('cod_response'));
-        let transactionId = String(params.get('x_transaction_id') || params.get('transaction_id') || params.get('id') || '').trim();
-        let reference = String(params.get('x_ref_payco') || params.get('ref_payco') || params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || '').trim();
+        const epaycoGatewayReference = String(params.get('x_ref_payco') || params.get('ref_payco') || '').trim();
+        const invoiceReference = String(params.get('x_id_invoice') || params.get('invoice') || '').trim();
+        let transactionId = String(params.get('x_transaction_id') || params.get('transaction_id') || params.get('id') || epaycoGatewayReference || '').trim();
+        let reference = String(invoiceReference || params.get('reference') || params.get('ref') || epaycoGatewayReference || '').trim();
 
-        if ((!provider || (!transactionId && !reference)) && matchesPendingContext(pending, licenciaId, empresaId)) {
+        if (matchesPendingContext(pending, licenciaId, empresaId)) {
           if (!provider) provider = normalizeProvider(pending.provider);
           if (!status) status = normalizeStatus(pending.status);
           if (!transactionId) transactionId = String(pending.transactionId || '').trim();
-          if (!reference) reference = String(pending.reference || '').trim();
+          if (!reference || reference === epaycoGatewayReference) reference = String(pending.reference || reference || '').trim();
         }
 
         return {
@@ -120,6 +122,8 @@
           status: status,
           transactionId: transactionId,
           reference: reference,
+          gatewayReference: epaycoGatewayReference,
+          rawParams: Object.fromEntries(params.entries()),
           hasReturn: !!(provider || status || transactionId || reference)
         };
       }
@@ -151,35 +155,43 @@
           provider: normalizeProvider((data && data.provider) || context.provider),
           status: normalizeStatus((data && data.status) || (payload && payload.status) || context.status),
           transactionId: String((data && (data.transaction_id || data.id)) || (payload && (payload.id || payload.transaction_id)) || context.transactionId || '').trim(),
-          reference: String((data && (data.reference || data.ref)) || (payload && (payload.reference || payload.invoice || payload.x_ref_payco)) || context.reference || '').trim()
+          reference: String((data && (data.reference || data.ref)) || (payload && (payload.reference || payload.invoice || payload.x_id_invoice)) || context.reference || '').trim(),
+          gatewayReference: String((data && (data.x_ref_payco || data.ref_payco || data.gateway_reference)) || (payload && (payload.x_ref_payco || payload.ref_payco)) || context.gatewayReference || '').trim()
         };
       }
-      let epaycoCheckoutScriptPromise = null;
+      function hasBackendActivationDecision(data){
+        return !!(data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'activated'));
+      }
+      let epaycoCheckoutScriptPromises = {};
       function loadEpaycoSmartCheckoutScript(scriptURL){
         const resolvedURL = String(scriptURL || 'https://checkout.epayco.co/checkout-v2.js').trim();
-        if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+        const loadedForURL = Array.prototype.some.call(document.scripts || [], function(existing){
+          return existing && existing.getAttribute && existing.getAttribute('data-epayco-checkout-url') === resolvedURL;
+        });
+        if (loadedForURL && window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
           return Promise.resolve(window.ePayco);
         }
-        if (epaycoCheckoutScriptPromise) return epaycoCheckoutScriptPromise;
-        epaycoCheckoutScriptPromise = new Promise(function(resolve, reject){
+        if (epaycoCheckoutScriptPromises[resolvedURL]) return epaycoCheckoutScriptPromises[resolvedURL];
+        epaycoCheckoutScriptPromises[resolvedURL] = new Promise(function(resolve, reject){
           const script = document.createElement('script');
           script.src = resolvedURL;
           script.async = true;
+          script.setAttribute('data-epayco-checkout-url', resolvedURL);
           script.onload = function(){
             if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
               resolve(window.ePayco);
               return;
             }
-            epaycoCheckoutScriptPromise = null;
-            reject(new Error('Epayco Smart Checkout no quedó disponible en la página.'));
+            delete epaycoCheckoutScriptPromises[resolvedURL];
+            reject(new Error('La librería de Epayco no quedó disponible en la página.'));
           };
           script.onerror = function(){
-            epaycoCheckoutScriptPromise = null;
-            reject(new Error('No se pudo cargar checkout-v2.js de Epayco.'));
+            delete epaycoCheckoutScriptPromises[resolvedURL];
+            reject(new Error('No se pudo cargar la librería de checkout de Epayco.'));
           };
           document.head.appendChild(script);
         });
-        return epaycoCheckoutScriptPromise;
+        return epaycoCheckoutScriptPromises[resolvedURL];
       }
       function preferredEpaycoCheckoutType(rawType){
         const requested = String(rawType || '').trim().toLowerCase();
@@ -224,12 +236,84 @@
         }
         throw lastError || new Error('No se pudo abrir Epayco Smart Checkout.');
       }
+      function openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData){
+        if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
+          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout estándar.');
+        }
+        const config = checkoutConfig && typeof checkoutConfig === 'object' ? checkoutConfig : {};
+        const data = checkoutData && typeof checkoutData === 'object' ? checkoutData : {};
+        if (!config.key || !data.amount || !data.name) {
+          throw new Error('La configuración de Epayco está incompleta para abrir el checkout estándar.');
+        }
+        const checkout = epaycoRuntime.checkout.configure({
+          key: String(config.key || '').trim(),
+          test: !!config.test
+        });
+        if (!checkout || typeof checkout.open !== 'function') {
+          throw new Error('Epayco no devolvió una instancia válida del checkout estándar.');
+        }
+        checkout.open(data);
+        return true;
+      }
+      function isSafeEpaycoCheckoutAction(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          return parsed.protocol === 'https:' &&
+            parsed.hostname.toLowerCase() === 'secure.payco.co' &&
+            parsed.pathname.replace(/\/+$/, '') === '/checkout.php';
+        } catch (err) {
+          return false;
+        }
+      }
+      function isSafeEpaycoRedirectURL(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          const host = parsed.hostname.toLowerCase();
+          const path = parsed.pathname.replace(/\/+$/, '');
+          if (parsed.protocol !== 'https:') return false;
+          if ((host === 'secure.payco.co' || host === 'checkout.epayco.co') && path === '/checkout.php') return false;
+          return host === 'secure.payco.co' || host === 'checkout.epayco.co' || host.endsWith('.epayco.co') || host.endsWith('.payco.co');
+        } catch (err) {
+          return false;
+        }
+      }
+      function submitEpaycoClassicCheckoutForm(formSpec){
+        const spec = formSpec && typeof formSpec === 'object' ? formSpec : null;
+        if (!spec || !spec.action || !spec.fields || typeof spec.fields !== 'object') return false;
+        if (!isSafeEpaycoCheckoutAction(spec.action)) return false;
+
+        const form = document.createElement('form');
+        form.method = String(spec.method || 'POST').trim().toUpperCase() === 'GET' ? 'GET' : 'POST';
+        form.action = String(spec.action || '').trim();
+        form.style.display = 'none';
+        Object.keys(spec.fields).forEach(function(key){
+          if (!Object.prototype.hasOwnProperty.call(spec.fields, key)) return;
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(spec.fields[key] == null ? '' : spec.fields[key]);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return true;
+      }
       async function fetchProviderStatus(provider, context, licenciaId, empresaId){
         const normalizedProvider = normalizeProvider(provider);
         if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
         const search = new URLSearchParams();
         if (context && context.transactionId) search.set('id', String(context.transactionId));
-        else search.set('reference', String((context && context.reference) || ''));
+        if (context && context.reference) search.set('reference', String(context.reference));
+        if (context && context.gatewayReference) search.set('x_ref_payco', String(context.gatewayReference));
+        if (context && context.rawParams && typeof context.rawParams === 'object') {
+          Object.keys(context.rawParams).forEach(function(key){
+            if (!key || search.has(key)) return;
+            const value = context.rawParams[key];
+            if (value == null || value === '') return;
+            search.set(key, String(value));
+          });
+        }
+        if (!search.get('id') && !search.get('reference')) throw new Error('No hay referencia suficiente para consultar el pago.');
         if (licenciaId) search.set('licencia_id', String(licenciaId));
         if (empresaId) search.set('empresa_id', String(empresaId));
         let endpoint = '';
@@ -337,7 +421,7 @@
           const unavailableMessages = [];
           if (epaycoProvider && !epaycoProvider.available) {
             unavailableMessages.push(epaycoProvider.enabled
-              ? 'Epayco está activado, pero Smart Checkout requiere al menos Public Key y Private Key en configuración avanzada.'
+              ? 'Epayco está activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estándar.'
               : 'Epayco está desactivado en configuración avanzada.');
           }
           if (wompiProvider && !wompiProvider.available) {
@@ -609,10 +693,6 @@
 
           renderCheckoutSummary(summaryPayload);
 
-          if (epaycoProvider && epaycoProvider.available) {
-            loadEpaycoSmartCheckoutScript().catch(function () {});
-          }
-
           function scheduleCheckoutSummaryRefresh(){
             if (summaryTimer) window.clearTimeout(summaryTimer);
             summaryTimer = window.setTimeout(refreshCheckoutSummary, 220);
@@ -682,12 +762,46 @@
                 empresaId: empresaId || '',
                 transactionId: resolved.transactionId || '',
                 reference: resolved.reference || '',
+                gatewayReference: resolved.gatewayReference || '',
                 status: normalizedStatus || 'PENDING',
                 createdAt: Date.now()
               });
             }
 
             if (isSuccessStatus(normalizedStatus)) {
+              const backendDecision = hasBackendActivationDecision(statusData);
+              if (normalizedProvider === 'epayco' && !backendDecision && (resolved.reference || resolved.transactionId)) {
+                updateUrlState({
+                  provider: normalizedProvider,
+                  status: 'pending',
+                  transaction_id: resolved.transactionId || null,
+                  reference: resolved.reference || null,
+                  licencia_id: licenciaId,
+                  empresa_id: empresaId || null
+                });
+                renderFeedback(ui.feedback, 'muted', 'Activando licencia', 'Epayco aprobó el pago. Estamos confirmando el registro con el servidor para activar la licencia. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': verificando activación');
+                return { done: false, context: resolved };
+              }
+              if (backendDecision && statusData && statusData.discount_blocked) {
+                clearPendingPayment();
+                renderFeedback(ui.feedback, 'error', 'Pago aprobado sin activar', 'El pago fue aprobado, pero el código de descuento ya había sido usado por esta empresa. Contacta soporte para revisar la licencia. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': descuento bloqueado');
+                resetProvider(normalizedProvider);
+                return { done: true, context: resolved };
+              }
+              if (normalizedProvider === 'epayco' && backendDecision && statusData && statusData.activated !== true) {
+                if (statusData.context_found === false) {
+                  clearPendingPayment();
+                  renderFeedback(ui.feedback, 'error', 'Pago aprobado sin licencia asociada', 'Epayco aprobó el pago, pero el servidor no encontró la empresa y licencia para activar. Conserva la referencia y contacta soporte. ' + referenceText);
+                  syncStatusText(statusElement, 'Estado ' + label + ': falta contexto de licencia');
+                  resetProvider(normalizedProvider);
+                  return { done: true, context: resolved };
+                }
+                renderFeedback(ui.feedback, 'muted', 'Activación en proceso', 'Epayco aprobó el pago. Estamos reintentando activar la licencia en el servidor. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': reintentando activación');
+                return { done: false, context: resolved };
+              }
               clearPendingPayment();
               updateUrlState({
                 provider: normalizedProvider,
@@ -998,6 +1112,9 @@
               const checkoutType = String(data && (data.checkout_type || (data.data && data.data.type) || 'standard') || 'standard').trim().toLowerCase();
               const checkoutScriptURL = String(data && (data.checkout_script_url || (data.data && data.data.script_url) || 'https://checkout.epayco.co/checkout-v2.js') || 'https://checkout.epayco.co/checkout-v2.js').trim();
               const checkoutUrl = data && (data.checkout_url || (data.data && data.data.checkout_url));
+              const checkoutForm = data && (data.checkout_form || (data.data && data.data.checkout_form));
+              const checkoutConfig = data && (data.checkout_config || (data.data && data.data.checkout_config));
+              const checkoutData = data && (data.checkout_data || (data.data && data.data.checkout_data));
               if (sessionId) {
                 setProviderBusy('epayco', 'Abriendo checkout seguro...');
                 renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciará el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
@@ -1006,7 +1123,32 @@
                 openEpaycoSmartCheckout(epaycoRuntime, sessionId, checkoutType, data && data.mode);
                 return;
               }
+              if (checkoutType === 'classic_js' && checkoutConfig && checkoutData) {
+                setProviderBusy('epayco', 'Abriendo checkout seguro...');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se abrirá el checkout estándar seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Preparando checkout estándar de Epayco...');
+                const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL || 'https://checkout.epayco.co/checkout.js');
+                openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData);
+                startPolling('epayco', context, 60);
+                return;
+              }
+              if (checkoutForm) {
+                setProviderBusy('epayco', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta pagina retomara la verificacion automatica con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Enviando el formulario seguro de Epayco...');
+                if (submitEpaycoClassicCheckoutForm(checkoutForm)) {
+                  return;
+                }
+                syncStatusText(ui.epaycoStatus, 'No se pudo enviar el formulario seguro de Epayco. Revisa la configuracion de la pasarela.');
+                resetProvider('epayco');
+                return;
+              }
               if (checkoutUrl) {
+                if (!isSafeEpaycoRedirectURL(checkoutUrl)) {
+                  syncStatusText(ui.epaycoStatus, 'Epayco devolvio una URL de checkout no valida o requiere formulario POST. No se redirigio para evitar el error AccessDenied.');
+                  resetProvider('epayco');
+                  return;
+                }
                 setProviderBusy('epayco', 'Redirigiendo...');
                 renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
                 if (ui.epaycoStatus) {

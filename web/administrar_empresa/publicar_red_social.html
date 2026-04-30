@@ -70,10 +70,81 @@
   </div>
 
   <script>
-    async function cargarPublicaciones() {
+    function parsePositiveInt(raw) {
+      var n = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(n)) return 0;
+      n = Math.trunc(n);
+      return n > 0 ? n : 0;
+    }
+
+    function resolveEmpresaId() {
       try {
-        const res = await fetch('/api/empresa/publicaciones', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }});
-        if (!res.ok) throw new Error('Error al cargar');
+        var params = new URLSearchParams(window.location.search || '');
+        var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (e) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          var parentParams = new URLSearchParams(window.parent.location.search || '');
+          var fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+          if (fromParent > 0) return fromParent;
+        }
+      } catch (e) {}
+      try {
+        var stores = [window.sessionStorage, window.localStorage];
+        var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+        for (var s = 0; s < stores.length; s += 1) {
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = parsePositiveInt(stores[s].getItem(keys[k]));
+            if (value > 0) return value;
+          }
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    var empresaId = resolveEmpresaId();
+
+    function empresaApiURL(path, extra) {
+      var url = new URL(path, window.location.origin);
+      if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+      if (extra && typeof extra === 'object') {
+        Object.keys(extra).forEach(function(key) {
+          if (extra[key] !== undefined && extra[key] !== null && String(extra[key]) !== '') {
+            url.searchParams.set(key, String(extra[key]));
+          }
+        });
+      }
+      return url.pathname + url.search;
+    }
+
+    async function readErrorMessage(res, fallback) {
+      var text = '';
+      try { text = await res.text(); } catch (e) {}
+      if (!text) return fallback || ('HTTP ' + res.status);
+      try {
+        var data = JSON.parse(text);
+        return data.error || data.message || text;
+      } catch (e) {
+        return text;
+      }
+    }
+
+    async function cargarPublicaciones() {
+      if (!empresaId) {
+        document.getElementById('misPublicaciones').innerHTML = 'No se encontró empresa_id para cargar publicaciones.';
+        return;
+      }
+      try {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones'), {
+          credentials: 'same-origin',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }
+        });
+        if (!res.ok) throw new Error(await readErrorMessage(res, 'Error al cargar'));
         const pubs = await res.json();
         const div = document.getElementById('misPublicaciones');
         div.innerHTML = '';
@@ -100,6 +171,10 @@
     }
 
     async function crearPublicacion() {
+      if (!empresaId) {
+        alert('No se encontró empresa_id. Abre esta página desde Administrar empresa.');
+        return;
+      }
       const nombre = document.getElementById('pubNombre').value;
       const desc = document.getElementById('pubDesc').value;
       const foto = document.getElementById('pubFoto').value;
@@ -111,13 +186,14 @@
       }
       
       try {
-        const res = await fetch('/api/empresa/publicaciones', {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones'), {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + localStorage.getItem('session_token')
           },
-          body: JSON.stringify({ nombre: nombre, descripcion: desc, foto_url: foto, youtube_url: youtube, estado: 'activo' })
+          body: JSON.stringify({ empresa_id: empresaId, nombre: nombre, descripcion: desc, foto_url: foto, youtube_url: youtube, estado: 'activo' })
         });
         
         if (res.ok) {
@@ -129,7 +205,7 @@
           alert('Publicado con éxito.');
           cargarPublicaciones();
         } else {
-          alert('Error al publicar');
+          alert(await readErrorMessage(res, 'Error al publicar'));
         }
       } catch (e) {
         console.error(e);
@@ -140,14 +216,15 @@
     async function eliminarPublicacion(id) {
       if (!confirm('¿Seguro que deseas eliminar esta publicación?')) return;
       try {
-        const res = await fetch('/api/empresa/publicaciones/' + id, {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones/' + encodeURIComponent(id)), {
           method: 'DELETE',
+          credentials: 'same-origin',
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }
         });
         if (res.ok) {
           cargarPublicaciones();
         } else {
-          alert('Error al eliminar');
+          alert(await readErrorMessage(res, 'Error al eliminar'));
         }
       } catch (e) {
         console.error(e);
@@ -182,14 +259,17 @@
 
       btn.addEventListener("click", async function(){
         try{
+          if (!empresaId) { alert("No se encontró empresa_id. Abre esta página desde Administrar empresa."); return; }
           var f = file.files && file.files[0];
           if (!f) { alert("Selecciona un archivo de imagen."); return; }
           btn.disabled = true;
           btn.textContent = "Subiendo...";
           var fd = new FormData();
           fd.append("archivo", f, f.name);
-          const res = await fetch('/api/empresa/publicaciones?action=upload_media', {
+          fd.append("empresa_id", String(empresaId));
+          const res = await fetch(empresaApiURL('/api/empresa/publicaciones', { action: 'upload_media' }), {
             method: 'POST',
+            credentials: 'same-origin',
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') },
             body: fd
           });

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -42,6 +43,16 @@ type permissionApprovalEvidence struct {
 	ApprovalCode string
 	Reason       string
 }
+
+type empresaRateLimitBucket struct {
+	WindowStart time.Time
+	Count       int64
+}
+
+var (
+	empresaRateLimitMu      sync.Mutex
+	empresaRateLimitBuckets = map[string]empresaRateLimitBucket{}
+)
 
 var permissionModulesCatalogOrdered = []string{
 	permModuleVentas,
@@ -117,6 +128,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Finanzas y nómina"},
 	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehículos", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación y venta"},
 	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
@@ -133,6 +145,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobación: configuración de estaciones", Grupo: "Operación y venta"},
+	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
 	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
@@ -470,6 +483,94 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func empresaRateLimitScopeForRequest(r *http.Request) string {
+	path := ""
+	if r != nil && r.URL != nil {
+		path = strings.TrimSpace(r.URL.Path)
+	}
+	if strings.HasPrefix(path, "/api/empresa/db_admin") {
+		return "db_admin"
+	}
+	return "api"
+}
+
+func empresaRateLimitMaxForRequest(dbSuper *sql.DB, r *http.Request) int64 {
+	if dbSuper == nil {
+		if empresaRateLimitScopeForRequest(r) == "db_admin" {
+			return defaultEmpresaDBQueriesPerMinute
+		}
+		return defaultEmpresaAPIRequestsPerMinute
+	}
+	switch empresaRateLimitScopeForRequest(r) {
+	case "db_admin":
+		value, _, _, err := getLimitacionInt64(dbSuper, superEmpresaLimitDBQueriesPerMinuteKey, defaultEmpresaDBQueriesPerMinute)
+		if err != nil {
+			log.Printf("[rate_limit] no se pudo leer limite db_admin: %v", err)
+			return defaultEmpresaDBQueriesPerMinute
+		}
+		return value
+	default:
+		value, _, _, err := getLimitacionInt64(dbSuper, superEmpresaLimitAPIRequestsPerMinuteKey, defaultEmpresaAPIRequestsPerMinute)
+		if err != nil {
+			log.Printf("[rate_limit] no se pudo leer limite api: %v", err)
+			return defaultEmpresaAPIRequestsPerMinute
+		}
+		return value
+	}
+}
+
+func checkEmpresaRateLimitAt(now time.Time, empresaID int64, scope string, maxPerMinute int64) (allowed bool, remaining int64, retryAfterSeconds int64, current int64) {
+	if empresaID <= 0 || maxPerMinute <= 0 {
+		return true, 0, 0, 0
+	}
+	scope = strings.TrimSpace(strings.ToLower(scope))
+	if scope == "" {
+		scope = "api"
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	windowStart := now.Truncate(time.Minute)
+	key := scope + ":" + strconv.FormatInt(empresaID, 10)
+
+	empresaRateLimitMu.Lock()
+	defer empresaRateLimitMu.Unlock()
+
+	bucket := empresaRateLimitBuckets[key]
+	if bucket.WindowStart.IsZero() || !bucket.WindowStart.Equal(windowStart) {
+		bucket = empresaRateLimitBucket{WindowStart: windowStart}
+	}
+	if bucket.Count >= maxPerMinute {
+		retryAfter := int64(bucket.WindowStart.Add(time.Minute).Sub(now).Seconds())
+		if retryAfter < 1 {
+			retryAfter = 1
+		}
+		empresaRateLimitBuckets[key] = bucket
+		return false, 0, retryAfter, bucket.Count
+	}
+
+	bucket.Count++
+	empresaRateLimitBuckets[key] = bucket
+	remaining = maxPerMinute - bucket.Count
+	if remaining < 0 {
+		remaining = 0
+	}
+	return true, remaining, 0, bucket.Count
+}
+
+func applyEmpresaRateLimitHeaders(w http.ResponseWriter, limit, remaining, retryAfterSeconds int64) {
+	if w == nil {
+		return
+	}
+	if limit > 0 {
+		w.Header().Set("X-Empresa-RateLimit-Limit", strconv.FormatInt(limit, 10))
+		w.Header().Set("X-Empresa-RateLimit-Remaining", strconv.FormatInt(remaining, 10))
+	}
+	if retryAfterSeconds > 0 {
+		w.Header().Set("Retry-After", strconv.FormatInt(retryAfterSeconds, 10))
+	}
+}
+
 func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAction func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID := extractEmpresaIDForPermissions(r)
@@ -481,6 +582,21 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		action := defaultPermissionActionFromMethod(r.Method)
 		if resolveAction != nil {
 			action = normalizePermissionAction(resolveAction(r), action)
+		}
+
+		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
+		rateScope := empresaRateLimitScopeForRequest(r)
+		allowedByRate, remaining, retryAfter, current := checkEmpresaRateLimitAt(time.Now(), empresaID, rateScope, rateLimit)
+		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
+		if !allowedByRate {
+			path := ""
+			if r.URL != nil {
+				path = strings.TrimSpace(r.URL.Path)
+			}
+			log.Printf("[rate_limit] empresa_id=%d scope=%s limite=%d actual=%d path=%s", empresaID, rateScope, rateLimit, current, path)
+			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusTooManyRequests, 0)
+			return
 		}
 
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))

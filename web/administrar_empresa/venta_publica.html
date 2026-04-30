@@ -127,8 +127,38 @@
     function money(v,c){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:c||'COP',maximumFractionDigits:0}).format(Number(v||0)); }
     function resolveEmpresaId(){ try{ const p=new URLSearchParams(location.search); const id=n(p.get('empresa_id')||p.get('id')); if(id) return id; }catch(_){} try{ if(parent&&parent.__resolveEmpresaIdContext) return n(parent.__resolveEmpresaIdContext()); }catch(_){} return n(sessionStorage.getItem('empresa_id')||localStorage.getItem('empresa_id')); }
     async function api(path, opts){ const res=await fetch(path, Object.assign({credentials:'same-origin'}, opts||{})); const text=await res.text(); let data={}; try{ data=text?JSON.parse(text):{}; }catch(_){ data={raw:text}; } if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status)); return data; }
-    function pageUrl(page){ const slug=txt(state.config.empresa_slug); const ps=page&&page.slug ? '&pagina_slug='+encodeURIComponent(page.slug) : ''; return '/venta_publica.html?empresa_slug='+encodeURIComponent(slug)+ps; }
-    function fillConfig(cfg){ state.config=cfg||{}; storeName.value=txt(cfg.nombre_tienda); storeSlug.value=txt(cfg.empresa_slug); storeDomain.value=txt(cfg.dominio_publico); storeCurrency.value=txt(cfg.moneda||'COP'); storeDesc.value=txt(cfg.descripcion_tienda); wompiActivo.checked=!!cfg.wompi_activo; wompiMode.value=txt(cfg.wompi_mode||'sandbox')==='production'?'production':'sandbox'; wompiPublicKey.value=txt(cfg.wompi_public_key); wompiPrivateRef.value=txt(cfg.wompi_private_key_ref); wompiIntegrityRef.value=txt(cfg.wompi_integrity_key_ref); epaycoActivo.checked=!!cfg.epayco_activo; epaycoMode.value=txt(cfg.epayco_mode||'sandbox')==='production'?'production':'sandbox'; epaycoPublicKey.value=txt(cfg.epayco_public_key); epaycoPrivateRef.value=txt(cfg.epayco_private_key_ref); epaycoCustomerId.value=txt(cfg.epayco_customer_id); }
+    function publicBaseUrl(){
+      const slug=txt(state.config.empresa_slug);
+      const custom=txt(state.config.dominio_publico);
+      if(custom){
+        try{ const u=new URL(custom.indexOf('://')===-1?'https://'+custom:custom); return u.origin; }catch(_){}
+      }
+      try{
+        const u=new URL(location.href);
+        const host=String(u.hostname||'').toLowerCase();
+        if(slug && (host==='powerfulcontrolsystem.com' || host==='www.powerfulcontrolsystem.com' || host.endsWith('.powerfulcontrolsystem.com'))){
+          u.protocol='https:';
+          u.hostname=slug+'.powerfulcontrolsystem.com';
+          u.pathname='/';
+          u.search='';
+          u.hash='';
+          return u.origin;
+        }
+      }catch(_){}
+      return '';
+    }
+    function pageUrl(page){
+      const slug=txt(state.config.empresa_slug);
+      const base=publicBaseUrl();
+      if(base){
+        const u=new URL('/venta_publica.html', base);
+        if(page&&page.slug) u.searchParams.set('pagina_slug', page.slug);
+        return u.toString();
+      }
+      const ps=page&&page.slug ? '&pagina_slug='+encodeURIComponent(page.slug) : '';
+      return '/venta_publica.html?empresa_slug='+encodeURIComponent(slug)+ps;
+    }
+    function fillConfig(cfg){ state.config=cfg||{}; storeName.value=txt(cfg.nombre_tienda); storeSlug.value=txt(cfg.empresa_slug); storeDomain.value=txt(cfg.dominio_publico); storeCurrency.value=txt(cfg.moneda||'COP'); storeDesc.value=txt(cfg.descripcion_tienda); wompiActivo.checked=!!cfg.wompi_activo; wompiMode.value=(txt(cfg.wompi_mode||'sandbox')==='production'||txt(cfg.wompi_mode)==='real')?'production':'sandbox'; wompiPublicKey.value=txt(cfg.wompi_public_key); wompiPrivateRef.value=txt(cfg.wompi_private_key_ref); wompiIntegrityRef.value=txt(cfg.wompi_integrity_key_ref); epaycoActivo.checked=!!cfg.epayco_activo; epaycoMode.value=txt(cfg.epayco_mode||'sandbox')==='production'?'production':'sandbox'; epaycoPublicKey.value=txt(cfg.epayco_public_key); epaycoPrivateRef.value=txt(cfg.epayco_private_key_ref); epaycoCustomerId.value=txt(cfg.epayco_customer_id); }
     function configPayload(){ return {empresa_id:state.empresaId, nombre_tienda:txt(storeName.value), empresa_slug:txt(storeSlug.value), dominio_publico:txt(storeDomain.value), moneda:txt(storeCurrency.value)||'COP', descripcion_tienda:txt(storeDesc.value), mostrar_stock:true, wompi_activo:wompiActivo.checked, wompi_mode:wompiMode.value, wompi_public_key:txt(wompiPublicKey.value), wompi_private_key_ref:txt(wompiPrivateRef.value), wompi_integrity_key_ref:txt(wompiIntegrityRef.value), epayco_activo:epaycoActivo.checked, epayco_mode:epaycoMode.value, epayco_public_key:txt(epaycoPublicKey.value), epayco_private_key_ref:txt(epaycoPrivateRef.value), epayco_customer_id:txt(epaycoCustomerId.value)}; }
     async function loadConfig(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config'); fillConfig(data.config||{}); }
     async function saveConfig(){ setMsg('Guardando configuración...',false); const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(configPayload())}); fillConfig(data.config||configPayload()); setMsg('Configuración guardada.',false); }
@@ -145,7 +175,7 @@
     function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
     async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); }
     async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
-    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ location.href=pageUrl(state.selectedPage); }; previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); }; previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
     init();
   </script>
 </body>

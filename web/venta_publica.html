@@ -153,12 +153,14 @@
         if(state.slug)qs+='&empresa_slug='+encodeURIComponent(state.slug);
         if(state.page)qs+='&pagina_slug='+encodeURIComponent(state.page);
         if(state.q)qs+='&q='+encodeURIComponent(state.q);
+        if(state.sort)qs+='&sort='+encodeURIComponent(state.sort);
         qs+='&limit='+encodeURIComponent(state.paging.limit)+'&offset='+encodeURIComponent(state.paging.offset);
         const res=await fetch('/api/public/venta_publica?'+qs);
         const text=await res.text();
         const data=text?JSON.parse(text):{};
         if(!res.ok)throw new Error(data.error||text||'No se pudo cargar');
         state.data=data;
+        if(!state.slug && data.empresa_slug) state.slug=data.empresa_slug;
         if(reset) renderHeader(data);
         const tienda=data.tienda||{};
         const items=data.items||[];
@@ -214,8 +216,10 @@
 
     function applySearch(){
       state.q = String(q.value||'').trim();
+      state.sort = String(sort.value||'relevancia').trim();
       const u = new URL(location.href);
       if(state.q) u.searchParams.set('q', state.q); else u.searchParams.delete('q');
+      if(state.sort && state.sort !== 'relevancia') u.searchParams.set('sort', state.sort); else u.searchParams.delete('sort');
       u.searchParams.set('empresa_slug', state.slug||'');
       if(state.page) u.searchParams.set('pagina_slug', state.page); else u.searchParams.delete('pagina_slug');
       history.replaceState({}, '', u.pathname + '?' + u.searchParams.toString());
@@ -285,6 +289,7 @@
     clearCartBtn.onclick=function(){ if(!confirm('¿Vaciar carrito?')) return; saveCart([]); updateCartBadge(); renderCart(); };
     checkoutBtn.onclick=function(){ location.href = checkoutCartUrl(); };
     searchBtn.onclick=applySearch;
+    sort.onchange=applySearch;
     q.addEventListener('keydown', function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); applySearch(); } });
   </script>
 </body>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pong Arcade</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/Juegos/arcade_embed.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <main class="arcade-shell">
+    <header class="arcade-header">
+      <a class="btn secondary" href="/Juegos/menu_juegos.html">Volver a juegos</a>
+      <div><h1>Pong Arcade</h1><p>Version completa con un jugador, dos jugadores, IA, sonido y ajustes visuales.</p></div>
+      <span class="arcade-license">MIT</span>
+    </header>
+    <section class="arcade-panel">
+      <iframe class="arcade-frame" data-arcade-frame title="Pong Arcade" src="./source/index.html"></iframe>
+      <div class="arcade-controls">
+        <button class="arcade-key" type="button" data-key="49" data-mode="tap">1 Jug.</button>
+        <button class="arcade-key" type="button" data-key="50" data-mode="tap">2 Jug.</button>
+        <button class="arcade-key" type="button" data-key="81">P1 Up</button>
+        <button class="arcade-key" type="button" data-key="65">P1 Down</button>
+        <button class="arcade-key" type="button" data-key="80">P2 Up</button>
+        <button class="arcade-key" type="button" data-key="76">P2 Down</button>
+      </div>
+    </section>
+  </main>
+  <script src="/Juegos/arcade_embed.js"></script>
+</body>
+</html>

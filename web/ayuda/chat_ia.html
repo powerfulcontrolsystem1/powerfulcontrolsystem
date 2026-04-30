@@ -37,6 +37,7 @@
       <ul>
         <li>Opera <b>solo</b> sobre la empresa seleccionada (aislamiento por <code>empresa_id</code>).</li>
         <li>Puede proponer CRUD por empresa usando el endpoint <code>/api/empresa/db_admin</code> (tablas con <code>empresa_id</code>).</li>
+        <li>Recibe contexto de auditoria reciente y consultas seguras resueltas por backend; la IA no ejecuta SQL libre.</li>
         <li><b>Solo usuarios con rol administrador</b> pueden ejecutar operaciones de base de datos/CRUD desde el chat.</li>
       </ul>
       <p class="form-help">Todas las operaciones quedan registradas en auditoría empresarial.</p>
@@ -56,6 +57,16 @@
         <li>“Lista las tablas disponibles para mi empresa y dime cuáles son las más importantes.”</li>
         <li>“Busca el producto ‘Coca Cola’ y actualiza el precio a 3500 (muéstrame antes el producto encontrado).”</li>
         <li>“Crea un código de descuento del 10% llamado PROMO10 y dime cómo desactivarlo después.”</li>
+      </ul>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Voz, robot y secretaria</h2>
+      <ul>
+        <li>La configuracion del chat flotante se administra por empresa desde Administrar empresa &gt; Configuracion.</li>
+        <li>El administrador puede desactivar el chat/robot, elegir chat cuadrado, robot IA o secretaria IA, y activar el modo voz.</li>
+        <li>La secretaria usa voz femenina automaticamente; el robot conserva la voz elegida.</li>
+        <li>Si el servidor de voz streaming esta apagado o falla, el chat cae a voz del navegador o texto sin romper el servidor.</li>
       </ul>
     </section>
 
@@ -86,4 +97,3 @@
   </script>
 </body>
 </html>
-

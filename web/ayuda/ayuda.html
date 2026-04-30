@@ -17,6 +17,8 @@
       <div class="empresa-inline-actions mt-10 actions-wrap-gap-8">
         <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
         <a class="btn secondary" href="#menu-tutorial-modulos">Tutorial por módulos</a>
+        <a class="btn secondary" href="#menu-pagos-licencias">Pagos de licencias</a>
+        <a class="btn secondary" href="#menu-documentos-ia">Documentos IA</a>
         <a class="btn secondary" href="#menu-ventas-rapidas">Ventas paso a paso</a>
         <a class="btn secondary" href="#menu-productos-impuestos">Productos e impuestos</a>
         <a class="btn secondary" href="#menu-ventas-rapidas">Ventas paso a paso</a>
@@ -94,6 +96,15 @@
         <li>Crea o renueva licencia para la empresa seleccionada.</li>
         <li>Valida fecha de vigencia y estado de activación.</li>
         <li>Verifica en el resumen que la licencia quede aplicada.</li>
+      </ol>
+
+      <h4 id="menu-pagos-licencias" class="subheading-block">3.1) Pago publico de licencias</h4>
+      <p class="form-help help-top-0">Rutas de apoyo: <a href="/elegir_licencia.html">/elegir_licencia.html</a> y <a href="/pagar_licencia.html">/pagar_licencia.html</a></p>
+      <ol>
+        <li>El cliente elige licencia, acepta terminos y usa la pasarela activa.</li>
+        <li>En Epayco, el sistema intenta Smart Checkout v2; si falla, usa un formulario clasico firmado por POST a <code>https://secure.payco.co/checkout.php</code>.</li>
+        <li>Para el fallback clasico deben estar configurados <code>Customer ID</code> y <code>P_KEY</code>. En cuentas reales el formulario debe salir en modo produccion, no como prueba.</li>
+        <li>Si Epayco muestra <strong>El comercio no fue reconocido</strong>, revisar la configuracion de Epayco en Super Administrador y confirmar que las llaves reales no esten marcadas como modo de pruebas.</li>
       </ol>
 
       <h4 class="subheading-block">4) Seguridad y administradores</h4>
@@ -232,6 +243,14 @@
         <li>Selecciona modelo configurado para la empresa.</li>
         <li>Realiza consulta operativa con contexto del negocio.</li>
         <li>Revisa historial para continuidad de soporte y decisiones.</li>
+      </ol>
+
+      <h4 id="menu-documentos-ia" class="subheading-block">20.1) Documentos dinamicos con IA</h4>
+      <ol>
+        <li>Usa <code>/generate</code> para enviar contenido, prompt o variables de negocio.</li>
+        <li>El backend renderiza una plantilla HTML profesional con Go templates y deja el archivo temporal listo.</li>
+        <li>Descarga con <code>/download?id=...&amp;type=pdf|docx|xlsx|html|txt|json</code>.</li>
+        <li>El sistema debe devolver <code>Content-Type</code> y <code>Content-Disposition</code> correctos para que el navegador descargue el archivo.</li>
       </ol>
 
       <h4 class="subheading-block">21) Chat y tareas</h4>

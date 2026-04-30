@@ -140,6 +140,9 @@
       function onSubmit(ev) {
         ev.preventDefault();
         if (state.loading) return;
+        if (typeof state.stopMic === "function") {
+          state.stopMic(true);
+        }
         var text = norm(document.getElementById("txt").value);
         if (!text) {
           hint("Escribe o dicta un pedido.", true);
@@ -202,10 +205,45 @@
         recognition.continuous = false;
         var listening = false;
         var finalText = "";
+        var baseText = "";
+        var sendQueued = false;
+        function speechNorm(text) {
+          return String(text || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}\s]/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+        function stripSendCommand(text) {
+          var raw = String(text || "").trim();
+          var words = speechNorm(raw).split(" ").filter(Boolean);
+          var last = words.length ? words[words.length - 1] : "";
+          if (last !== "enviar" && last !== "envia") return { text: raw, send: false };
+          return { text: raw.replace(/(?:^|\s)(enviar|envia|envía)[\s.!?¿¡,;:]*$/i, "").trim(), send: true };
+        }
+        function submitVoiceCommand() {
+          if (sendQueued) return;
+          sendQueued = true;
+          hint("Comando de voz recibido: enviando pedido.", false);
+          window.setTimeout(function () {
+            if (typeof state.stopMic === "function") state.stopMic(true);
+            if (typeof form.requestSubmit === "function") form.requestSubmit();
+            else onSubmit({ preventDefault: function () {} });
+            sendQueued = false;
+          }, 80);
+        }
         function setL(on) {
           listening = !!on;
           btn.textContent = listening ? "Detener" : "Dictar";
         }
+        state.stopMic = function (silent) {
+          if (!listening) return;
+          try { recognition.stop(); } catch (e) {}
+          setL(false);
+          if (!silent) hint("Dictado detenido.", false);
+        };
         recognition.onresult = function (ev) {
           var interim = "";
           for (var i = ev.resultIndex; i < ev.results.length; i++) {
@@ -214,19 +252,27 @@
             if (r.isFinal) finalText += tx;
             else interim += tx;
           }
-          var base = norm(input.value);
-          input.value = (base ? base + " " : "") + norm(finalText + interim);
+          var sendCommand = stripSendCommand(finalText);
+          if (sendCommand.send) {
+            finalText = sendCommand.text;
+            interim = "";
+          }
+          input.value = (baseText ? baseText + " " : "") + norm(finalText + interim);
+          if (sendCommand.send) submitVoiceCommand();
         };
         recognition.onerror = function () { setL(false); hint("Error de micrófono.", true); };
-        recognition.onend = function () { setL(false); finalText = ""; };
-        btn.addEventListener("click", function () {
+        recognition.onend = function () { setL(false); finalText = ""; sendQueued = false; };
+        btn.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
           if (state.loading) return;
           if (listening) {
-            try { recognition.stop(); } catch (e) {}
-            setL(false);
+            state.stopMic(false);
             return;
           }
           finalText = "";
+          sendQueued = false;
+          baseText = norm(input.value);
           try {
             setL(true);
             recognition.start();
@@ -247,7 +293,23 @@
           hint(err.message || "No se pudo cargar IA.", true);
         });
       }
-      document.getElementById("f").addEventListener("submit", onSubmit);
+      var form = document.getElementById("f");
+      var submitBtn = document.getElementById("go");
+      form.addEventListener("submit", onSubmit);
+      if (submitBtn) {
+        submitBtn.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (typeof state.stopMic === "function") {
+            state.stopMic(true);
+          }
+          if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+          } else {
+            onSubmit({ preventDefault: function () {} });
+          }
+        });
+      }
       setupMic();
     })();
   </script>

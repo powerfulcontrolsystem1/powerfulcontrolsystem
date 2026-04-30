@@ -616,6 +616,11 @@ func main() {
 		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
 		}
+		if seedResult, err := dbpkg.SeedDefaultTipoEmpresaPreconfiguraciones(dbSuper, "sistema.arranque", false); err != nil {
+			log.Printf("warning: no se pudieron registrar preconfiguraciones por tipo de empresa: %v", err)
+		} else {
+			log.Printf("INFO: preconfiguraciones por tipo verificadas: tipos=%d creadas=%d omitidas=%d errores=%d", seedResult.TotalTipos, seedResult.Creadas, seedResult.Omitidas, seedResult.Errores)
+		}
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -629,6 +634,12 @@ func main() {
 	}
 	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure nextcloud schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
 	}
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
@@ -794,6 +805,7 @@ func main() {
 	http.HandleFunc("/api/empresa/chat_tareas/papelera", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasPapeleraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/hoja_vida_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaHojaVidaOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos/comprobante", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
@@ -874,6 +886,9 @@ func main() {
 	http.HandleFunc("/api/voice_stream/status", handlers.VoiceStreamStatusHandler(dbSuper))
 	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
 	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper))
+	// Endpoints para generar y descargar documentos dinamicos asistidos por IA.
+	http.HandleFunc("/generate", handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbSuper))
 	// Endpoint para configurar Nextcloud en el VPS (GET/PUT)
 	http.HandleFunc("/super/api/config/nextcloud", handlers.NextcloudConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)

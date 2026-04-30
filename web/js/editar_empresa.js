@@ -4,6 +4,11 @@
     impacto: null,
     accesos: [],
     invitaciones: [],
+    shareMeta: {
+      is_owner: false,
+      requester_email: "",
+      principal_email: "",
+    },
   };
 
   function $(id) {
@@ -15,6 +20,16 @@
     var raw = params.get("id") || params.get("empresa_id") || "";
     var id = parseInt(raw, 10);
     return Number.isFinite(id) && id > 0 ? id : 0;
+  }
+
+  function redirectToSeleccionarEmpresa() {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.location.href = "/seleccionar_empresa.html";
+        return;
+      }
+    } catch (e) {}
+    window.location.href = "/seleccionar_empresa.html";
   }
 
   async function fetchJSON(url, options) {
@@ -41,6 +56,50 @@
     node.textContent = text || "";
     node.classList.toggle("error", !!isError);
     node.classList.toggle("success", !isError && !!text);
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (match) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[match];
+    });
+  }
+
+  function normalizeEmail(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function isSharedEmpresa() {
+    return String(state.empresa && state.empresa.access_source ? state.empresa.access_source : "owner").toLowerCase() === "shared";
+  }
+
+  function canRevokeAccess(item) {
+    if (!item) return false;
+    if (state.shareMeta && state.shareMeta.is_owner) return true;
+    var requester = normalizeEmail(state.shareMeta && state.shareMeta.requester_email);
+    return requester && (
+      requester === normalizeEmail(item.admin_email) ||
+      requester === normalizeEmail(item.compartido_por_email)
+    );
+  }
+
+  function canRevokeInvitation(item) {
+    if (!item) return false;
+    if (state.shareMeta && state.shareMeta.is_owner) return true;
+    var requester = normalizeEmail(state.shareMeta && state.shareMeta.requester_email);
+    return requester && (
+      requester === normalizeEmail(item.admin_email) ||
+      requester === normalizeEmail(item.invitado_por_email)
+    );
+  }
+
+  function displayPerson(name, email) {
+    return String(name || email || "Administrador").trim();
   }
 
   function clearMessageActions() {
@@ -85,6 +144,9 @@
     if (!empresa) return;
     var isShared = String(empresa.access_source || "owner").toLowerCase() === "shared";
     var shareCard = document.querySelector('.empresa-edit-share-card');
+    var shareTitle = shareCard ? shareCard.querySelector('h2') : null;
+    var shareCopy = shareCard ? shareCard.querySelector('.empresa-edit-panel-copy') : null;
+    var shareForm = $("empresaShareForm");
     var saveButton = document.querySelector('#empresaEditForm button[type="submit"]');
     $("empresaEditTitle").textContent = empresa.nombre || "Editar empresa";
     $("empresaEditSubtitle").textContent = isShared
@@ -107,7 +169,18 @@
       $("empresaDeleteBtn").disabled = !!isShared;
     }
     if (shareCard) {
-      shareCard.style.display = isShared ? 'none' : '';
+      shareCard.style.display = '';
+    }
+    if (shareTitle) {
+      shareTitle.textContent = isShared ? "Administradores con acceso" : "Compartir con otro administrador";
+    }
+    if (shareCopy) {
+      shareCopy.textContent = isShared
+        ? "Consulta quien compartio esta empresa y quien tiene acceso administrativo. Puedes quitar tu propio acceso compartido desde esta vista."
+        : "Envia una invitacion por correo a otro administrador ya registrado para que, despues de aceptarla, tambien vea esta empresa en su selector.";
+    }
+    if (shareForm) {
+      shareForm.style.display = isShared ? 'none' : '';
     }
     if (isShared) {
       setMessage("empresaEditMessage", "Esta empresa fue compartida contigo. La edición estructural solo está disponible para el propietario.", true);
@@ -144,15 +217,24 @@
   function renderShares() {
     var accessList = $("empresaShareAccessList");
     var inviteList = $("empresaShareInviteList");
+    var ownerCanManage = !!(state.shareMeta && state.shareMeta.is_owner);
     if (accessList) {
       if (!state.accesos.length) {
         accessList.innerHTML = '<p class="muted">No hay administradores con acceso compartido activo.</p>';
       } else {
         accessList.innerHTML = state.accesos.map(function (item) {
+          var sharedTo = displayPerson(item.admin_name, item.admin_email);
+          var sharedBy = displayPerson(item.compartido_por_name, item.compartido_por_email);
+          var accepted = String(item.fecha_aceptada || item.fecha_creacion || '').trim();
+          var status = String(item.estado || 'activo').trim().toLowerCase();
+          var action = canRevokeAccess(item)
+            ? buildShareActionButton(isSharedEmpresa() && normalizeEmail(item.admin_email) === normalizeEmail(state.shareMeta.requester_email) ? 'Eliminar mi acceso' : 'Revocar', 'revoke', item.id, 'access')
+            : '';
           return '<article class="empresa-share-item">'
-            + '<div><strong>' + String(item.admin_name || item.admin_email || 'Administrador') + '</strong><div class="muted">' + String(item.admin_email || '') + '</div></div>'
-            + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-active">Activo</span>'
-            + buildShareActionButton('Revocar', 'revoke', item.id, 'access')
+            + '<div><strong>' + escapeHtml(sharedTo) + '</strong><div class="muted">' + escapeHtml(item.admin_email || '') + '</div>'
+            + '<div class="muted">Compartido por: ' + escapeHtml(sharedBy) + (accepted ? ' - Desde: ' + escapeHtml(accepted) : '') + '</div></div>'
+            + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-' + escapeHtml(status || 'activo') + '">' + escapeHtml(status || 'activo') + '</span>'
+            + action
             + '</div></article>';
         }).join('');
       }
@@ -163,11 +245,21 @@
       } else {
         inviteList.innerHTML = state.invitaciones.map(function (item) {
           var status = normalizeInviteStatus(item);
+          var invitedTo = displayPerson(item.admin_name, item.admin_email);
+          var invitedBy = displayPerson(item.invitado_por_name, item.invitado_por_email);
+          var expira = String(item.expira_en || '').trim();
+          var actions = '';
+          if (ownerCanManage && (status === 'pendiente' || status === 'expirada')) {
+            actions += buildShareActionButton('Reenviar', 'resend', item.id, 'invitation');
+          }
+          if (canRevokeInvitation(item)) {
+            actions += buildShareActionButton('Revocar', 'revoke', item.id, 'invitation');
+          }
           return '<article class="empresa-share-item">'
-            + '<div><strong>' + String(item.admin_name || item.admin_email || 'Administrador') + '</strong><div class="muted">' + String(item.admin_email || '') + '</div></div>'
-            + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-' + status + '">' + status + '</span>'
-            + (status === 'pendiente' || status === 'expirada' ? buildShareActionButton('Reenviar', 'resend', item.id, 'invitation') : '')
-            + buildShareActionButton('Revocar', 'revoke', item.id, 'invitation')
+            + '<div><strong>' + escapeHtml(invitedTo) + '</strong><div class="muted">' + escapeHtml(item.admin_email || '') + '</div>'
+            + '<div class="muted">Invitado por: ' + escapeHtml(invitedBy) + (expira ? ' - Expira: ' + escapeHtml(expira) : '') + '</div></div>'
+            + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-' + escapeHtml(status) + '">' + escapeHtml(status) + '</span>'
+            + actions
             + '</div></article>';
         }).join('');
       }
@@ -177,15 +269,14 @@
 
   async function loadShares() {
     if (!state.empresa) return;
-    if (String(state.empresa.access_source || 'owner').toLowerCase() === 'shared') {
-      state.accesos = [];
-      state.invitaciones = [];
-      renderShares();
-      return;
-    }
     var data = await fetchJSON('/super/api/empresas/compartidos?empresa_id=' + encodeURIComponent(state.empresa.id), { credentials: 'same-origin' });
     state.accesos = Array.isArray(data && data.accesos) ? data.accesos : [];
     state.invitaciones = Array.isArray(data && data.invitaciones) ? data.invitaciones : [];
+    state.shareMeta = {
+      is_owner: !!(data && data.is_owner),
+      requester_email: String(data && data.requester_email ? data.requester_email : '').trim(),
+      principal_email: String(data && data.principal_email ? data.principal_email : '').trim(),
+    };
     renderShares();
   }
 
@@ -275,7 +366,7 @@
         false
       );
       window.setTimeout(function () {
-        window.location.href = "/seleccionar_empresa.html";
+        redirectToSeleccionarEmpresa();
       }, 900);
     } catch (err) {
       setMessage("empresaDeleteMessage", err.message || "No se pudo eliminar la empresa.", true);
@@ -285,6 +376,10 @@
   async function inviteAdmin(ev) {
     ev.preventDefault();
     if (!state.empresa) return;
+    if (isSharedEmpresa()) {
+      setMessage("empresaShareMessageBox", "Solo el propietario puede invitar nuevos administradores.", true);
+      return;
+    }
 
     var email = $("empresaShareEmail").value.trim();
     var mensaje = $("empresaShareMessage").value.trim();
@@ -332,6 +427,12 @@
           credentials: 'same-origin'
         });
         setMessage('empresaShareMessageBox', kind === 'access' ? 'Acceso compartido revocado.' : 'Invitación revocada.', false);
+        if (kind === 'access' && isSharedEmpresa()) {
+          window.setTimeout(function () {
+            redirectToSeleccionarEmpresa();
+          }, 900);
+          return;
+        }
       }
       await loadShares();
     } catch (err) {

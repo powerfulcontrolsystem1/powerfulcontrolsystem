@@ -6,7 +6,7 @@
   <title>Últimos movimientos de caja</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
-<body class="admin-empresa-shell">
+<body class="admin-empresa-shell caja-movements-page">
   <div class="container">
     <section class="card">
       <div class="header">
@@ -170,12 +170,12 @@
         const tr = document.createElement('tr');
         const fecha = m.fecha_movimiento || m.fecha_creacion || '';
         const bodega = (m.bodega_origen_nombre || '') + (m.bodega_destino_nombre ? (' / ' + m.bodega_destino_nombre) : '');
-        tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
-                       '<td>' + sanitize(m.producto_nombre || m.producto_nombre || '') + '</td>' +
-                       '<td>' + sanitize(String(m.cantidad || '')) + '</td>' +
-                       '<td>' + sanitize(String(m.tipo || '')) + '</td>' +
-                       '<td>' + sanitize(bodega) + '</td>' +
-                       '<td>' + sanitize(m.referencia || '') + '</td>';
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(fecha)) + '</td>' +
+                       '<td data-label="Producto">' + sanitize(m.producto_nombre || m.producto_nombre || '') + '</td>' +
+                       '<td data-label="Cantidad">' + sanitize(String(m.cantidad || '')) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize(String(m.tipo || '')) + '</td>' +
+                       '<td data-label="Bodega origen / destino">' + sanitize(bodega) + '</td>' +
+                       '<td data-label="Referencia">' + sanitize(m.referencia || '') + '</td>';
         tbody.appendChild(tr);
       });
       loading.textContent = '';
@@ -209,12 +209,12 @@
         const tr = document.createElement('tr');
         const fecha = it.fecha_documento || it.fecha_creacion || '';
         const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' · ' + it.cliente_documento) : '');
-        tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
-                       '<td>' + sanitize(it.tipo_documento || '') + '</td>' +
-                       '<td>' + sanitize(it.documento_codigo || '') + '</td>' +
-                       '<td>' + sanitize(cliente) + '</td>' +
-                       '<td>' + sanitize(formatMoney(it.monto_total || 0)) + '</td>' +
-                       '<td>' + sanitize(it.estado_documento || '') + '</td>';
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(fecha)) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize(it.tipo_documento || '') + '</td>' +
+                       '<td data-label="Código">' + sanitize(it.documento_codigo || '') + '</td>' +
+                       '<td data-label="Cliente">' + sanitize(cliente) + '</td>' +
+                       '<td data-label="Total">' + sanitize(formatMoney(it.monto_total || 0)) + '</td>' +
+                       '<td data-label="Estado">' + sanitize(it.estado_documento || '') + '</td>';
         tbody.appendChild(tr);
       });
       loading.textContent = '';

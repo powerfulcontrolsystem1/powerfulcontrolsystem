@@ -1,3 +1,22 @@
+## Actualizacion 2026-04-30 (pagos, chat IA, documentos y empresas compartidas)
+
+- Checkout Epayco:
+  - `backend/handlers/payments_handlers.go` intenta Smart Checkout v2 como flujo principal.
+  - Si Smart Checkout no autentica y existe `epayco.customer_id`, construye un formulario clasico firmado por POST hacia `https://secure.payco.co/checkout.php`.
+  - `web/pagar_licencia.html` valida que la accion sea segura y envia el formulario POST; no redirige por GET a URLs legacy que devuelven XML `AccessDenied`.
+- Chat flotante IA:
+  - `web/js/ai_chat_drawer.js` concentra la experiencia del chat cuadrado, robot y secretaria.
+  - La secretaria IA usa avatar 3D/caricatura ejecutiva y voz efectiva `es-CO-female`; el robot conserva voz configurable por empresa.
+  - La Web Speech API y el servicio de voz streaming mantienen fallback: si voz IA o microfono fallan, el chat sigue funcionando por texto.
+- Empresas compartidas:
+  - `backend/handlers/empresa_compartida_handlers.go` expone consulta y revocacion de administradores compartidos.
+  - `web/js/editar_empresa.js` muestra dentro del lapiz de empresa los administradores compartidos y permite retirar acceso con trazabilidad.
+  - `web/js/seleccionar_empresa.js` mantiene el contexto visible para propietario y receptor.
+- Documentos dinamicos con IA:
+  - `backend/handlers/dynamic_documents.go` expone `POST /generate` y `GET /download`.
+  - El flujo recibe prompt/contenido, aplica variables y templates Go/HTML, y exporta PDF, DOCX, XLSX, HTML, TXT o JSON.
+  - Las rutas quedan protegidas por sesion y guardan archivos temporales descargables por `document_id`.
+
 ## Actualizacion 2026-04-29 (navegacion empresarial por modulos)
 
 - `web/administrar_empresa.html` mantiene el shell iframe, pero el menu lateral queda agrupado por categorias empresariales: colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion.

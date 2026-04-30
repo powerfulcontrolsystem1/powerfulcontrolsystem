@@ -32,9 +32,9 @@
       try{
         var p = new URLSearchParams(location.search);
         if (p.get('view')) return;
-        // Si se abre directamente esta página (sin view), el nuevo entrypoint es chat_tareas_agenda.html
+        // Si se abre directamente esta página (sin view), el nuevo entrypoint es chat_tareas_chats.html
         if (location.pathname && location.pathname.indexOf('chat_y_tareas.html') >= 0) {
-          location.replace('/administrar_empresa/chat_tareas_agenda.html' + (location.search || ''));
+          location.replace('/administrar_empresa/chat_tareas_chats.html' + (location.search || ''));
         }
       }catch(e){}
     })();
@@ -60,6 +60,100 @@
     body[data-view="agenda"] .conversaciones-panel,
     body[data-view="agenda"] .mensajes-panel,
     body[data-view="agenda"] .tareas-panel{display:none !important;}
+    body[data-view]{
+      background:var(--bg);
+    }
+    body[data-view] .chat-tareas-page{
+      width:100%;
+      padding:0;
+    }
+    body[data-view] .chat-tareas-page > .chat-tareas-page-header,
+    body[data-view] .chat-dashboard-strip{
+      display:none !important;
+    }
+    body[data-view="chats"] .chat-tareas-layout{
+      display:grid;
+      grid-template-columns:minmax(290px, 34%) minmax(420px, 1fr);
+      gap:0;
+      min-height:720px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+      background:var(--surface);
+    }
+    body[data-view="chats"] .chat-panel{
+      min-height:720px;
+      border:0;
+      border-radius:0;
+      box-shadow:none;
+      background:var(--surface);
+    }
+    body[data-view="chats"] .conversaciones-panel{
+      border-right:1px solid var(--border);
+      background:color-mix(in srgb,var(--surface-soft) 72%,var(--surface));
+    }
+    body[data-view="chats"] .mensajes-panel{
+      background:linear-gradient(180deg,var(--surface),var(--bg-alt));
+    }
+    body[data-view="chats"] .chat-messages-list{
+      min-height:320px;
+      max-height:360px;
+    }
+    body[data-view="tareas"] .chat-tareas-layout{
+      display:block;
+    }
+    body[data-view="tareas"] .tareas-panel{
+      min-height:720px;
+      display:grid;
+      grid-template-columns:minmax(320px, 390px) minmax(420px, 1fr);
+      grid-template-areas:
+        "header header"
+        "form list"
+        "filters list"
+        "msg list";
+      gap:14px;
+      align-items:start;
+      border-radius:8px;
+    }
+    body[data-view="tareas"] .tareas-panel > .chat-panel-header{grid-area:header;}
+    body[data-view="tareas"] #taskForm{grid-area:form;}
+    body[data-view="tareas"] .tareas-panel > .chat-search-row{grid-area:filters;}
+    body[data-view="tareas"] #taskList{grid-area:list;max-height:620px;}
+    body[data-view="tareas"] #taskMsg{grid-area:msg;}
+    body[data-view="agenda"] .chat-calendar-card{
+      margin:0;
+      border-radius:8px;
+      min-height:720px;
+    }
+    body[data-view="agenda"] .chat-calendar-layout{
+      grid-template-columns:minmax(560px, 1.55fr) minmax(320px, .9fr);
+    }
+    body[data-view="agenda"] .chat-calendar-hero{
+      grid-template-columns:minmax(340px, 1fr) minmax(280px, .8fr);
+    }
+    body[data-view="agenda"] .chat-tareas-layout{
+      display:none !important;
+    }
+    @media (max-width: 900px) {
+      body[data-view="chats"] .chat-tareas-layout,
+      body[data-view="tareas"] .tareas-panel,
+      body[data-view="agenda"] .chat-calendar-layout,
+      body[data-view="agenda"] .chat-calendar-hero{
+        display:block;
+      }
+      body[data-view="chats"] .chat-panel,
+      body[data-view="tareas"] .tareas-panel,
+      body[data-view="agenda"] .chat-calendar-card{
+        min-height:unset;
+      }
+      body[data-view="chats"] .conversaciones-panel{
+        border-right:0;
+        border-bottom:1px solid var(--border);
+      }
+      body[data-view="tareas"] #taskList{
+        max-height:unset;
+      }
+    }
   </style>
   <div class="container chat-tareas-page">
     <div class="page-header chat-tareas-page-header">

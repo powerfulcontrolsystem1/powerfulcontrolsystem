@@ -1,4 +1,8 @@
-﻿- **Flujo Git + VPS**: `scripts/pcs_deployment.local.ps1` (plantilla `pcs_deployment.local.ps1.example`, ignorada en git) centraliza `PcsGitRemoteUrl` y `PcsVpsHost` / ruta / puerto / SSH. `sync_to_vps.ps1` aplica la parte VPS; `publicar_git_y_vps.ps1` ejecuta `actualizar_repositorio.ps1` y luego el sync.
+- **Pagos ePayco de licencias**: el fallback estandar se actualiza a la integracion oficial `checkout.js` con `external: "true"` y `PUBLIC_KEY`, evitando el POST legacy a `secure.payco.co/checkout.php` que podia terminar en "comercio no reconocido". `P_KEY` queda reservado al backend para confirmar webhooks con firma SHA256 y no se expone al navegador. Verificacion: `go test ./handlers -run Test.*Epayco -count=1` y `go test ./... -count=1`.
+
+- **Administrar empresa - Hoja de vida operativa**: nuevo modulo universal para llevar historial de motos en taller, pacientes, vehiculos, equipos, mascotas, maquinaria o activos. Incluye ficha principal, eventos/servicios, alertas, recurrencia y resumen operativo. Archivos: `backend/db/hoja_vida_operativa.go`, `backend/handlers/hoja_vida_operativa.go`, `web/administrar_empresa/hoja_vida_operativa.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `backend/main.go`.
+
+- **Flujo Git + VPS**: `scripts/pcs_deployment.local.ps1` (plantilla `pcs_deployment.local.ps1.example`, ignorada en git) centraliza `PcsGitRemoteUrl` y `PcsVpsHost` / ruta / puerto / SSH. `sync_to_vps.ps1` aplica la parte VPS; `publicar_git_y_vps.ps1` ejecuta `actualizar_repositorio.ps1` y luego el sync.
 
 - **Despliegue Git local**: `scripts/actualizar_repositorio.ps1` admite fijar el repositorio remoto con `-RepoUrl`, variables `PCS_REPO_URL` / `REPO_URL`, o el archivo local `scripts/actualizar_repositorio.repo_url` (plantilla `*.repo_url.example`). Si `origin` apunta a otra URL, el script exige `-SetOrigin` para actualizar el remoto antes del push. Archivos: `scripts/actualizar_repositorio.ps1`, `scripts/actualizar_repositorio.repo_url.example`, `.gitignore`, documentación relacionada.
 
@@ -54,6 +58,37 @@
 	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
+
+## 2026-04-30
+- Raspberry Pi y sensores: provisionamiento seguro por empresa.
+	- Archivos: `backend/db/sensor_puertas.go`, `backend/handlers/sensor_puertas.go`, `web/administrar_empresa/configuracion_sensores_raspberry.html`, pruebas y documentacion relacionada.
+	- Descripcion: la configuracion de sensores ahora permite provisionar desde el servidor un `device_id` normalizado y un token de 64 caracteres para `X-Device-Token`, con ejemplos curl/Python para instalar en Raspberry Pi. Los dispositivos con token configurado ya no aceptan heartbeats ni mensajes publicos enviados solo con `device_id`.
+	- Verificacion: `go test ./db -run "TestNormalizeEmpresaSensor|TestGenerateEmpresaSensor" -count=1`, `go test ./handlers -run "TestBuildEmpresaSensorProvisioningPayload" -count=1`, validacion del script embebido de la pagina y `go test ./... -count=1`.
+
+- Chat IA: exportacion de documentos generados desde conversaciones.
+	- Archivos: `backend/handlers/dynamic_documents.go`, `backend/handlers/chat_con_inteligencia_artificial_router.go`, `backend/handlers/dynamic_documents_test.go`, `web/js/ai_chat_drawer.js`, `web/estilos.css`, documentacion relacionada.
+	- Descripcion: las respuestas del chat IA que parecen documentos, reportes, contratos, cotizaciones, actas o tablas muestran botones de exportacion PDF, Word/DOCX, Excel/XLSX, TXT y JSON. El frontend llama a `/api/empresa/chat_documentos/exportar`, el backend reutiliza el generador dinamico, redacta patrones de secretos, prepara nombres profesionales con empresa/tipo/fecha, registra auditoria con origen `chat_ia` y conserva fallback TXT/JSON si falla un conversor.
+	- Verificacion: `go test ./handlers -run "TestDynamicDocument" -count=1`, `go test ./handlers -count=1`, `node --check web/js/ai_chat_drawer.js` con runtime Node empaquetado.
+
+- Checkout de licencias Epayco: fallback clasico seguro por POST.
+	- Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, documentacion relacionada.
+	- Descripcion: cuando Smart Checkout v2 no autentica o no crea sesion, el backend ya no entrega una URL GET a `checkout.epayco.co/checkout.php`. Ahora genera un formulario clasico firmado para `https://secure.payco.co/checkout.php`, devuelve `checkout_form` al frontend y registra en `raw_payload` una version sanitizada sin exponer `p_key`. El modo del formulario clasico se resuelve con `epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`, separado del modo Smart Checkout, para evitar enviar comercios reales como solicitud de pruebas (`p_test_request=true`) y provocar "El comercio no fue reconocido". Si falta `epayco.customer_id` o `P_KEY`, devuelve error controlado.
+	- Verificacion: `go test ./handlers -run "TestBuildEpaycoClassicCheckoutForm|TestResolveEpaycoClassicMode|TestPickEpaycoField|TestSanitizeEpaycoClassicCheckoutForm" -count=1`, `go test ./handlers -count=1`, `go test ./...` en `backend/`, `node --check` del script inline de `web/pagar_licencia.html` y `git diff --check`.
+
+- Chat flotante: secretaria IA rediseñada y voz femenina.
+	- Archivos: `web/js/ai_chat_drawer.js`, `web/estilos.css`, `web/administrar_empresa/configuracion_chat_flotante.html`, documentacion relacionada.
+	- Descripcion: el avatar `Secretaria IA 3D` pasa a una apariencia estilo caricatura ejecutiva joven, con rostro mas amable, ropa ejecutiva, detalles visuales y animaciones existentes. Cuando el modo activo es secretaria, la voz efectiva se fuerza a `es-CO-female` para el proxy de voz y para Web Speech; el robot conserva la voz configurable.
+	- Verificacion: `node --check web/js/ai_chat_drawer.js` y `git diff --check`.
+
+- Empresas compartidas: visibilidad y eliminacion de accesos.
+	- Archivos: `backend/handlers/empresa_compartida_handlers.go`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js`, documentacion relacionada.
+	- Descripcion: el editor de empresa lista los administradores con quienes se compartio la empresa y permite retirar accesos compartidos. La informacion queda visible para quien compartio y para quien recibio acceso; la revocacion mantiene trazabilidad del actor y del motivo operativo.
+	- Verificacion: `go test ./...`.
+
+- Documentos dinamicos asistidos por IA.
+	- Archivos: `backend/handlers/dynamic_documents.go`, `backend/handlers/dynamic_documents_test.go`, `backend/main.go`, documentacion relacionada.
+	- Descripcion: se agregan endpoints protegidos `/generate` y `/download` para recibir contenido o prompt IA, aplicar variables, renderizar HTML con templates Go y descargar PDF, DOCX, XLSX, HTML, TXT o JSON. La generacion usa GPT-5.4 mini cuando se solicita IA y conserva flujo temporal de archivos sin exponer credenciales al modelo.
+	- Verificacion: pruebas unitarias dirigidas del handler de documentos dinamicos.
 
 ## 2026-04-29
 - Reportes globales y busqueda en configuracion avanzada.

@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	chatFlotanteChatEnabledKey     = "chat_flotante.chat_enabled"
-	chatFlotanteRobotEnabledKey    = "chat_flotante.robot_enabled"
-	chatFlotanteVoiceEnabledKey    = "chat_flotante.voice_enabled"
-	chatFlotanteRobotVoiceKey      = "chat_flotante.robot_voice"
-	chatFlotantePersonalityModeKey = "chat_flotante.personality_mode"
-	chatFlotantePersonalityNormal  = "normal"
-	chatFlotantePersonalityRobot   = "robot"
+	chatFlotanteChatEnabledKey       = "chat_flotante.chat_enabled"
+	chatFlotanteRobotEnabledKey      = "chat_flotante.robot_enabled"
+	chatFlotanteVoiceEnabledKey      = "chat_flotante.voice_enabled"
+	chatFlotanteRobotVoiceKey        = "chat_flotante.robot_voice"
+	chatFlotantePersonalityModeKey   = "chat_flotante.personality_mode"
+	chatFlotantePersonalityNormal    = "normal"
+	chatFlotantePersonalityRobot     = "robot"
+	chatFlotantePersonalitySecretary = "secretary"
 )
 
 func parseChatFlotanteBool(raw string) bool {
@@ -90,6 +91,8 @@ func normalizeChatFlotantePersonalityMode(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case chatFlotantePersonalityRobot, "ejecutivo", "avatar", "3d":
 		return chatFlotantePersonalityRobot
+	case chatFlotantePersonalitySecretary, "secretaria", "asistente-secretaria", "recepcionista":
+		return chatFlotantePersonalitySecretary
 	default:
 		return chatFlotantePersonalityNormal
 	}

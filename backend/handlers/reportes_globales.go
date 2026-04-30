@@ -78,7 +78,7 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		empresas, err := superReportesEmpresasPermitidas(dbSuper, adminEmail)
+		empresas, err := superReportesEmpresasPermitidas(dbEmp, dbSuper, adminEmail)
 		if err != nil {
 			http.Error(w, "no se pudieron cargar las empresas del administrador", http.StatusInternalServerError)
 			return
@@ -279,11 +279,21 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-func superReportesEmpresasPermitidas(dbSuper *sql.DB, adminEmail string) ([]dbpkg.Empresa, error) {
-	if utils.AdminShouldUseSuperRole(adminEmail) {
-		return dbpkg.GetEmpresas(dbSuper)
+func superReportesEmpresasPermitidas(dbEmp, dbSuper *sql.DB, adminEmail string) ([]dbpkg.Empresa, error) {
+	adminEmail = strings.ToLower(strings.TrimSpace(adminEmail))
+	empresas, err := dbpkg.GetEmpresas(dbEmp)
+	if err != nil {
+		return nil, err
 	}
-	return dbpkg.GetEmpresasByUsuarioCreador(dbSuper, adminEmail)
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		for i := range empresas {
+			if strings.TrimSpace(empresas[i].AccessSource) == "" {
+				empresas[i].AccessSource = "super"
+			}
+		}
+		return empresas, nil
+	}
+	return decorateEmpresasByEffectiveAccess(dbSuper, adminEmail, adminEmail, empresas)
 }
 
 func superReportesResolveEmpresasSeleccionadas(empresas []dbpkg.Empresa, r *http.Request) ([]dbpkg.Empresa, error) {

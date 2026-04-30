@@ -361,7 +361,7 @@
             '<p><strong>Total:</strong> '+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</p>' +
             (notas ? ('<hr><small>'+esc(notas)+'</small>') : '') +
             (pie ? ('<p><small>'+esc(pie)+'</small></p>') : '') +
-            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)</script>' +
+            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)<\/script>' +
             '</body></html>';
         }
 
@@ -516,24 +516,5 @@
       })();
     })();
   </script>
-</body>
-</html>
-
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ventas</title>
-  <link rel="stylesheet" href="/estilos.css">
-</head>
-<body class="empresa-subpage">
-  <div class="container">
-    <section class="card empresa-section">
-      <h1>Módulo de Ventas</h1>
-      <p>Esta sección quedó preparada en el nuevo directorio de subpáginas de empresa.</p>
-      <p>Se integrará al flujo comercial de cada empresa sin mezclar datos entre empresas.</p>
-    </section>
-  </div>
 </body>
 </html>

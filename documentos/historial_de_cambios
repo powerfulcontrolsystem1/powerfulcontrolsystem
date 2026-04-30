@@ -1,22 +1,31 @@
-- 2026-04-27: carrito de compras — panel estación (layout cobro).
+- 2026-04-30: documentacion y ayuda actualizadas tras ajuste de Epayco.
+    - Archivos: `CHANGELOG.md`, `documentos/README.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/estructura_bd.md`, `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`, `documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md`, `RESUMEN_DEL_PROYECTO.md`, `web/ayuda/ayuda.html`, `web/ayuda/chat_ia.html`.
+    - Descripcion: se documenta que el fallback clasico de Epayco usa `Customer ID` + `P_KEY` para resolver modo produccion/pruebas de forma independiente de Smart Checkout, evitando `p_test_request=true` con comercios reales y el error "El comercio no fue reconocido". La ayuda del proyecto agrega guia de pagos de licencias, documentos IA y uso de voz/robot/secretaria.
+
+- 2026-04-30: pagos Epayco, secretaria IA, empresas compartidas, hoja de vida operativa y documentos dinamicos.
+    - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, `web/js/ai_chat_drawer.js`, `web/estilos.css`, `web/administrar_empresa/configuracion_chat_flotante.html`, `backend/handlers/empresa_compartida_handlers.go`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js`, `backend/db/hoja_vida_operativa.go`, `backend/handlers/hoja_vida_operativa.go`, `web/administrar_empresa/hoja_vida_operativa.html`, `backend/handlers/dynamic_documents.go`, `backend/handlers/dynamic_documents_test.go`, `backend/main.go`.
+    - Descripcion: Epayco mantiene Smart Checkout v2 y agrega fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`, evitando XML `AccessDenied`; la secretaria IA se rediseña como avatar estilo caricatura ejecutiva joven con voz femenina efectiva; el editor de empresa permite ver y retirar administradores compartidos con trazabilidad; se agrega generacion de documentos dinamicos con IA/templates y descarga en PDF, DOCX, XLSX, HTML, TXT o JSON mediante `/generate` y `/download`.
+    - Hoja de vida operativa: modulo universal en Administrar empresa para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con eventos, servicios, alertas y resumen.
+    - Verificacion: pruebas focalizadas de pagos/documentos, `go test ./...` en `backend/`, validacion estatica JS y `git diff --check`.
+- 2026-04-27: carrito de compras â€” panel estaciÃ³n (layout cobro).
     - Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
     - Descripcion: barra superior con acciones en una sola fila mas checkbox para activar/desactivar la alerta visual cada 10 min; tabla de items de altura fija y tarjeta de totales en la misma fila (entrada/salida, descuentos implicitos en lineas, horas extras desde tarifa tiempo, montos por servicios vs productos); cuatro inputs de solo lectura por forma de pago (efectivo, debito, credito, otro) sincronizados con el desglose de cobro; en modo estacion se oculta la rejilla inferior duplicada; auto-refresco mas frecuente con carrito activo en estacion (y 3s si viene `tarifa_por_minutos` con consumo en el JSON).
 
-- 2026-04-27: seleccionar empresa — panel compartir por correo (apariencia).
+- 2026-04-27: seleccionar empresa â€” panel compartir por correo (apariencia).
     - Archivos: `web/estilos.css`, `web/js/seleccionar_empresa.js`, `documentos/historial_de_cambios`
     - Descripcion: el formulario de invitacion deja de posicionarse con `position:absolute` (recortado por el `overflow` de la tarjeta) y pasa a flujo normal bajo la barra de acciones; estilos para avisos globales de comparticion; clase `empresa-card--share-open` para stacking; textos UTF-8 corregidos; feedback en `div` para admitir boton Reenviar.
 
-- 2026-04-27: carrito de compras (estación) — búsqueda rápida, botones e impresión al pagar.
+- 2026-04-27: carrito de compras (estaciÃ³n) â€” bÃºsqueda rÃ¡pida, botones e impresiÃ³n al pagar.
     - Archivos: `web/administrar_empresa/carrito_de_compras.html`, `documentos/historial_de_cambios`
-    - Descripcion: en el bloque de cobro se añade una fila con campo de código/SKU (Enter reutiliza el flujo del lector) y boton "Buscar (botones)" hacia `buscar_producto_botones.html`. Tras un pago exitoso (`pagar_estacion`), si en configuracion general de empresa está activo **Imprimir orden de servicio**, se abre el dialogo de impresion con un recibo resumido del cobro (impresora objetivo opcional por funcionalidad `ticket_cobro`).
+    - Descripcion: en el bloque de cobro se aÃ±ade una fila con campo de cÃ³digo/SKU (Enter reutiliza el flujo del lector) y boton "Buscar (botones)" hacia `buscar_producto_botones.html`. Tras un pago exitoso (`pagar_estacion`), si en configuracion general de empresa estÃ¡ activo **Imprimir orden de servicio**, se abre el dialogo de impresion con un recibo resumido del cobro (impresora objetivo opcional por funcionalidad `ticket_cobro`).
 
-- 2026-04-27: chat flotante IA — layout responsive, minimizar, voz (Web Speech API).
+- 2026-04-27: chat flotante IA â€” layout responsive, minimizar, voz (Web Speech API).
     - Archivos: `web/estilos.css`, `web/js/ai_chat_drawer.js`, `web/administrar_empresa.html`, `web/super_administrador.html`, `web/seleccionar_empresa.html`, `documentos/historial_de_cambios`
     - Descripcion: en escritorio el panel es una tarjeta con bordes redondeados menor que la pantalla, boton minimizar (barra compacta) y cierre, fondo semitransparente al abrir; el boton flotante se atenua ligeramente cuando el chat esta cerrado. En movil el chat ocupa pantalla completa con scroll solo en el area de mensajes y controles inferiores fijos; iconos para modo conversacion, dictado y lectura de respuestas usando la Web Speech API del navegador (sin dependencias nuevas).
 
-- 2026-04-27: integración IA para super administrador.
+- 2026-04-27: integraciÃ³n IA para super administrador.
     - Archivos: `web/super/integracion_ia.html`, `web/super_administrador.html`, `documentos/historial_de_cambios`
-    - Descripcion: se crea una página central de Integración IA en el panel super administrador con estado global de IA, gestión de proveedores OpenAI, edición de credenciales y accesos directos a las configuraciones de lógica de chat y contenido para portal. Se enlaza al menú principal de super administrador.
+    - Descripcion: se crea una pÃ¡gina central de IntegraciÃ³n IA en el panel super administrador con estado global de IA, gestiÃ³n de proveedores OpenAI, ediciÃ³n de credenciales y accesos directos a las configuraciones de lÃ³gica de chat y contenido para portal. Se enlaza al menÃº principal de super administrador.
 
 - 2026-04-27: estaciones YouTube ? IA musical y busqueda inteligente.
     - Archivos: `web/administrar_empresa/estaciones.html`, `RESUMEN_DEL_PROYECTO.md`, `documentos/historial_de_cambios`
@@ -51,60 +60,60 @@
 
 - 2026-04-26: red social comercial ? feed compacto, multimedia y scroll infinito.
     - Archivos: `web/red_social_comercial.html`, `web/administrar_empresa/publicar_red_social.html`, `backend/handlers/red_social.go`, `backend/db/red_social.go`
-    - Descripcion: la red social pública se renombra a **Red Social Comercial**, reduce tamaño visual de posts, agrega barra superior tipo portal, soporta YouTube (URL -> embed), carga incremental por `limit/offset` al hacer scroll y permite publicar fotos desde archivo (celular/PC) o por URL mediante `action=upload_media` guardando en `web/uploads/red_social/empresa_<id>/`.
-    - Verificacion: revisión estática HTML/JS + `go test ./...` en `backend/`.
+    - Descripcion: la red social pÃºblica se renombra a **Red Social Comercial**, reduce tamaÃ±o visual de posts, agrega barra superior tipo portal, soporta YouTube (URL -> embed), carga incremental por `limit/offset` al hacer scroll y permite publicar fotos desde archivo (celular/PC) o por URL mediante `action=upload_media` guardando en `web/uploads/red_social/empresa_<id>/`.
+    - Verificacion: revisiÃ³n estÃ¡tica HTML/JS + `go test ./...` en `backend/`.
 
 - 2026-04-26: administrar empresa ? impuestos (CO/EC/PA) + reporte de deuda estimada.
     - Archivos: `web/administrar_empresa/impuestos.html`, `web/administrar_empresa/configuracion_menu.html`, `backend/handlers/impuestos.go`, `backend/db/impuestos.go`, `backend/main.go`, `backend/handlers/reportes.go`, `web/administrar_empresa/reportes_menu.html`, `web/administrar_empresa/reportes.html`
-    - Descripcion: se crea la pantalla `impuestos.html` para gestionar impuestos por empresa (habilitar/deshabilitar y tasa) con detección automática del país (CO/EC/PA) y bandera; se expone API `/api/empresa/impuestos` (context + upsert) con persistencia por empresa en `empresa_impuestos_config`; se agrega un dataset de reportes `operativo_impuestos_deuda` que suma `impuesto_total` de ventas pagadas por día y un acceso directo en el menú de reportes.
+    - Descripcion: se crea la pantalla `impuestos.html` para gestionar impuestos por empresa (habilitar/deshabilitar y tasa) con detecciÃ³n automÃ¡tica del paÃ­s (CO/EC/PA) y bandera; se expone API `/api/empresa/impuestos` (context + upsert) con persistencia por empresa en `empresa_impuestos_config`; se agrega un dataset de reportes `operativo_impuestos_deuda` que suma `impuesto_total` de ventas pagadas por dÃ­a y un acceso directo en el menÃº de reportes.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-26: super administrador ? métricas VPS (procesos y servicios) + menú impuestos.
+- 2026-04-26: super administrador ? mÃ©tricas VPS (procesos y servicios) + menÃº impuestos.
     - Archivos: `backend/handlers/super_vps_processes.go`, `backend/main.go`, `backend/handlers/super_servidores_handlers.go`, `web/super/metricas_de_trafico_general.html`, `web/administrar_empresa.html`
-    - Descripcion: en métricas del super admin se agrega una tabla de procesos del VPS ordenada por memoria (RSS desc) vía `/super/api/vps/procesos`; además se amplía el catálogo de servicios para mostrar RustDesk/OnlyOffice/Backend/Nginx/PostgreSQL con consumo aproximado; se agrega el acceso a `Impuestos` en el menú principal de `Administrar Empresa`.
+    - Descripcion: en mÃ©tricas del super admin se agrega una tabla de procesos del VPS ordenada por memoria (RSS desc) vÃ­a `/super/api/vps/procesos`; ademÃ¡s se amplÃ­a el catÃ¡logo de servicios para mostrar RustDesk/OnlyOffice/Backend/Nginx/PostgreSQL con consumo aproximado; se agrega el acceso a `Impuestos` en el menÃº principal de `Administrar Empresa`.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-26: OnlyOffice ? editor full-width, logos y JWT estable (guardar Excel/Word/PPT).
     - Archivos: `web/administrar_empresa/documentos_onlyoffice.html`, `backend/handlers/onlyoffice.go`, `backend/handlers/onlyoffice_super_config.go`, `documentos/historial_de_cambios`
-    - Descripcion: el editor de OnlyOffice ahora se muestra debajo del listado de archivos ocupando todo el ancho; se agregan íconos tipo Word/Excel/PowerPoint en la lista; se corrige la firma/compatibilidad de token agregando `documentType`, duplicando `token` en `document/editorConfig` y priorizando `ONLYOFFICE_JWT_SECRET` (ENV) para evitar desalineación con el Document Server; el callback descarga el archivo editado usando `Authorization: Bearer <JWT>` cuando aplica, asegurando que los cambios se guarden en `/data/empresas/<empresa_id>/documentos/`.
+    - Descripcion: el editor de OnlyOffice ahora se muestra debajo del listado de archivos ocupando todo el ancho; se agregan Ã­conos tipo Word/Excel/PowerPoint en la lista; se corrige la firma/compatibilidad de token agregando `documentType`, duplicando `token` en `document/editorConfig` y priorizando `ONLYOFFICE_JWT_SECRET` (ENV) para evitar desalineaciÃ³n con el Document Server; el callback descarga el archivo editado usando `Authorization: Bearer <JWT>` cuando aplica, asegurando que los cambios se guarden en `/data/empresas/<empresa_id>/documentos/`.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-26: Nextcloud ? servicio VPS configurable + cuota por empresa (default 1GB) + módulo empresa.
+- 2026-04-26: Nextcloud ? servicio VPS configurable + cuota por empresa (default 1GB) + mÃ³dulo empresa.
     - Archivos: `backend/handlers/nextcloud_super_config.go`, `backend/handlers/nextcloud_empresa.go`, `backend/db/nextcloud.go`, `backend/handlers/super_limitaciones_empresa.go`, `web/super/configuracion_avanzada.html`, `web/administrar_empresa/nextcloud.html`, `web/administrar_empresa.html`, `deploy/nextcloud/docker-compose.yml`, `backend/main.go`
-    - Descripcion: se agrega Nextcloud como servicio del VPS configurable desde configuración avanzada (enabled, URL, credenciales admin cifradas) con prueba `/status.php`; se implementa aprovisionamiento por empresa vía OCS (usuario `empresa_<id>`) y guardado de credenciales cifradas en `pcs_empresas`; se agrega limitación global editable `empresa.limitaciones.nextcloud.max_gb` (default 1 GB) usada para cuota por empresa; se integra el acceso en el menú de administrar empresa y una página dedicada para aprovisionar/resetear y abrir Nextcloud.
+    - Descripcion: se agrega Nextcloud como servicio del VPS configurable desde configuraciÃ³n avanzada (enabled, URL, credenciales admin cifradas) con prueba `/status.php`; se implementa aprovisionamiento por empresa vÃ­a OCS (usuario `empresa_<id>`) y guardado de credenciales cifradas en `pcs_empresas`; se agrega limitaciÃ³n global editable `empresa.limitaciones.nextcloud.max_gb` (default 1 GB) usada para cuota por empresa; se integra el acceso en el menÃº de administrar empresa y una pÃ¡gina dedicada para aprovisionar/resetear y abrir Nextcloud.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-26: estaciones ? evitar que checks especiales se reviertan por sync de carritos.
     - Archivos: `backend/handlers/empresa_estacion_prefs.go`
-    - Descripcion: al guardar `estaciones_config`, si la sincronización automática de carritos falla, el endpoint ya no devuelve 500 (lo que hacía que la UI revirtiera checks como Caja/YouTube/Notas/IA). Ahora responde `ok=true` y reporta `sync_error` para diagnóstico, manteniendo el guardado de preferencias.
+    - Descripcion: al guardar `estaciones_config`, si la sincronizaciÃ³n automÃ¡tica de carritos falla, el endpoint ya no devuelve 500 (lo que hacÃ­a que la UI revirtiera checks como Caja/YouTube/Notas/IA). Ahora responde `ok=true` y reporta `sync_error` para diagnÃ³stico, manteniendo el guardado de preferencias.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-26: super ? información editable para IA del portal + precios de licencias en prompt.
+- 2026-04-26: super ? informaciÃ³n editable para IA del portal + precios de licencias en prompt.
     - Archivos: `web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`, `web/super_administrador.html`, `backend/handlers/super_portal_chat_ia_info.go`, `backend/handlers/public_chat_portal.go`, `backend/main.go`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega una página en el panel super para editar y persistir información “oficial” que alimenta el chat público del index; se expone API super para guardar/cargar el texto (configuraciones); el chat del portal inyecta ese texto al system prompt y además agrega un resumen automático de precios de licencias desde la base de datos.
+    - Descripcion: se agrega una pÃ¡gina en el panel super para editar y persistir informaciÃ³n â€œoficialâ€ que alimenta el chat pÃºblico del index; se expone API super para guardar/cargar el texto (configuraciones); el chat del portal inyecta ese texto al system prompt y ademÃ¡s agrega un resumen automÃ¡tico de precios de licencias desde la base de datos.
 
 - 2026-04-26: chat IA empresa ? importar productos/egresos desde foto (admin-only).
     - Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `backend/handlers/empresa_ia_importar_desde_foto.go`, `backend/handlers/chat_con_inteligencia_artificial_router.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `documentos/historial_de_cambios`
-    - Descripcion: se habilita en el chat empresarial adjuntar/tomar foto (cámara) y se agrega un endpoint admin-only para aplicar importaciones masivas de productos y/o egresos sugeridas por IA desde una imagen, usando flujo PCS_ACTION con confirmación humana.
+    - Descripcion: se habilita en el chat empresarial adjuntar/tomar foto (cÃ¡mara) y se agrega un endpoint admin-only para aplicar importaciones masivas de productos y/o egresos sugeridas por IA desde una imagen, usando flujo PCS_ACTION con confirmaciÃ³n humana.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-26: OnlyOffice ? autogeneración/persistencia de JWT secret al abrir editor.
+- 2026-04-26: OnlyOffice ? autogeneraciÃ³n/persistencia de JWT secret al abrir editor.
     - Archivos: `backend/handlers/onlyoffice.go`
-    - Descripcion: al solicitar `action=editor_config`, el backend asegura que exista `onlyoffice.jwt_secret` (si hay cifrado disponible) para que el editor no falle con el mensaje de que el token de seguridad no está configurado.
+    - Descripcion: al solicitar `action=editor_config`, el backend asegura que exista `onlyoffice.jwt_secret` (si hay cifrado disponible) para que el editor no falle con el mensaje de que el token de seguridad no estÃ¡ configurado.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-26: pagos/licencias ? ePayco (descuento + asesor) y correo en licencias gratis.
     - Archivos: `backend/handlers/payments_handlers.go`, `backend/handlers/super_email_templates.go`, `documentos/historial_de_cambios`
-    - Descripcion: el correo de activación de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/código, valor original y código de asesor comercial cuando exista); las licencias de prueba (15 días) y la activación sin pago envían correo de bienvenida/activación usando un registro sintético en `pagos_epayco` para trazabilidad y evitar duplicados.
+    - Descripcion: el correo de activaciÃ³n de licencia ahora incluye datos de compra (valor pagado, descuento aplicado/cÃ³digo, valor original y cÃ³digo de asesor comercial cuando exista); las licencias de prueba (15 dÃ­as) y la activaciÃ³n sin pago envÃ­an correo de bienvenida/activaciÃ³n usando un registro sintÃ©tico en `pagos_epayco` para trazabilidad y evitar duplicados.
     - Verificacion: `go test ./...` en `backend/`.
 
 - 2026-04-26: seleccionar empresa ? licencias (mostrar vencidas) + renovar/cambiar.
     - Archivos: `web/super/licencias.html`, `documentos/historial_de_cambios`
     - Descripcion: en el modo historial (`scope=mine&con_empresa=1`) se muestran licencias asociadas a todas las empresas del administrador, incluso vencidas, y se agregan acciones directas **Renovar licencia** (abre `pagar_licencia.html` con `licencia_id`/`empresa_id`) y **Cambiar licencia** (abre `elegir_licencia.html` para seleccionar una nueva).
 
-- 2026-04-26: seleccionar empresa ? tarjetas desaparecían al volver (back).
+- 2026-04-26: seleccionar empresa ? tarjetas desaparecÃ­an al volver (back).
     - Archivos: `web/js/seleccionar_empresa.js`, `documentos/historial_de_cambios`
-    - Descripcion: se ajusta la restauración de vista para que al volver con "atrás/adelante" se priorice mostrar el panel de empresas y refrescar el render, evitando quedar atrapado en modo iframe (licencias/reportes) que ocultaba las tarjetas.
+    - Descripcion: se ajusta la restauraciÃ³n de vista para que al volver con "atrÃ¡s/adelante" se priorice mostrar el panel de empresas y refrescar el render, evitando quedar atrapado en modo iframe (licencias/reportes) que ocultaba las tarjetas.
 
 - 2026-04-25: scripts ? config unificada Git+VPS (pcs_deployment) y publicar_git_y_vps.ps1.
     - Archivos: `scripts/pcs_deployment.local.ps1.example`, `scripts/publicar_git_y_vps.ps1`, `scripts/actualizar_repositorio.ps1`, `scripts/sync_to_vps.ps1`, `.gitignore`, `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`
@@ -141,65 +150,65 @@
     - Descripcion: catalogo CO/EC/PA con metadatos `vista` y `ListFacturacionPaisesConVista`; deteccion `licencia_activa`; bloques EC (SRI) y PA (DGI) que se guardan en `campos_pais_json`; Colombia enlaza al modulo DIAN ERP sin mezclar otros paises; moneda por defecto en dispatch al proveedor si payload vacio.
     - Verificacion: `go build` en `backend/`.
 
-- 2026-04-25: portal / index — orden de contenido en tarjetas (logo+título, imagen, descripción).
+- 2026-04-25: portal / index â€” orden de contenido en tarjetas (logo+tÃ­tulo, imagen, descripciÃ³n).
     - Archivos: `web/index.html`, `documentos/historial_de_cambios`
-    - Descripcion: en `index` las tarjetas de ofertas muestran arriba logo pequeño y título, debajo la imagen secundaria centrada, luego el texto; estilos locales ajustan cabecera e ilustración sin perder CTA.
+    - Descripcion: en `index` las tarjetas de ofertas muestran arriba logo pequeÃ±o y tÃ­tulo, debajo la imagen secundaria centrada, luego el texto; estilos locales ajustan cabecera e ilustraciÃ³n sin perder CTA.
     - Verificacion: revision estatica HTML/CSS.
 
-- 2026-04-25: super — consola de permisos por rol y cobertura de licencia (UI + catálogo).
+- 2026-04-25: super â€” consola de permisos por rol y cobertura de licencia (UI + catÃ¡logo).
     - Archivos: `web/super/permisos_rol.html`, `web/super/licencias.html`, `web/estilos.css`, `backend/handlers/empresa_permisos.go`, `backend/handlers/roles_tipos_usuario.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`, `CHANGELOG.md`
-    - Descripcion: pantalla de permisos con resumen, tarjetas por módulo (acciones R/C/U/D/A con etiquetas), funciones del menú agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por función; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de módulos, rol = matriz y overrides de menú.
+    - Descripcion: pantalla de permisos con resumen, tarjetas por mÃ³dulo (acciones R/C/U/D/A con etiquetas), funciones del menÃº agrupadas y filtro que no destruye el estado; API enriquecida con `acciones_etiqueta`, `modulos_etiqueta`, `titulo` y `grupo` por funciÃ³n; licencias con textos de negocio y enlace a gobernanza de roles. Sin nuevo modelo de permisos universal duplicado: licencia = techo de mÃ³dulos, rol = matriz y overrides de menÃº.
     - Verificacion: `go build` en `backend/`.
 
-- 2026-04-24: chat IA — UI tipo Gemini (sidebar, modelo visible, compartir, límites).
+- 2026-04-24: chat IA â€” UI tipo Gemini (sidebar, modelo visible, compartir, lÃ­mites).
     - Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: conversaciones locales en barra izquierda mas historial API; encabezado con selector de modelo y pastilla de uso; boton Compartir en respuestas del asistente; mensajes claros al superar limite diario (429 y codigos conocidos); eliminacion de titulo descriptivo largo y tarjeta de contexto en chat empresarial; ajustes de contraste en modo claro para burbujas y banners.
     - Verificacion: revision estatica HTML/CSS/JS.
 
-- 2026-04-25: chat IA — acciones operativas confirmables (productos, precios, finanzas, tarifas).
+- 2026-04-25: chat IA â€” acciones operativas confirmables (productos, precios, finanzas, tarifas).
     - Archivos: `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/auditoria_empresa.go`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: el asistente puede proponer cambios como bloque `PCS_ACTION` (JSON) y el usuario confirma en UI; el frontend ejecuta contra endpoints reales del sistema y la auditoria critica registra la fuente `chat_ia` y el id de conversacion en metadata.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: super — panel inicial, contador empresas y fix CRUD frecuencia_fp.
+- 2026-04-25: super â€” panel inicial, contador empresas y fix CRUD frecuencia_fp.
     - Archivos: `web/super_administrador.html`, `web/super/licencias_resumen.html`, `backend/handlers/administradores_frecuencia_fe_handlers.go`, `web/super/administradores_frecuencia_fe.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: agrega botón superior `Panel` en el menú super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesión/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
+    - Descripcion: agrega botÃ³n superior `Panel` en el menÃº super (apunta a `licencias_resumen`); el panel muestra licencias activas y total de empresas registradas; se corrige el guardado de correos autorizados para Frecuencia FP validando sesiÃ³n/rol super en backend y se mejora la UI a estilo CRUD (agregar/eliminar + tabla + guardar/recargar). Los admins en esta lista siguen habilitando la vista `Frecuencia FP` dentro de `administrar_empresa/configuracion_menu.html`.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: pagos/licencias — registrar codigo asesor en pago de licencia.
+- 2026-04-25: pagos/licencias â€” registrar codigo asesor en pago de licencia.
     - Archivos: `backend/handlers/payments_handlers.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`
-    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo envía). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
+    - Descripcion: el endpoint de crear pago (Wompi/Epayco) ahora normaliza y valida `asesor_id` (solo asesores aceptados) y asegura `empresa_id` (fallback desde la licencia si el frontend no lo envÃ­a). Esto garantiza que el pago guarde el codigo del asesor y luego se registre la comision al aprobarse el pago.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: pedidos VIP públicos por estación (código temporal) — PushStatus: PENDIENTE
+- 2026-04-25: pedidos VIP pÃºblicos por estaciÃ³n (cÃ³digo temporal) â€” PushStatus: PENDIENTE
     - Archivos: `backend/db/estacion_vip_codigos.go`, `backend/handlers/public_estacion_vip.go`, `backend/handlers/carritos_compras.go`, `backend/main.go`, `backend/utils/utils.go`, `web/productos_estacion_clientes_publico.html`, `web/administrar_empresa/carrito_de_compras.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega un flujo público para clientes VIP por estación: el administrador genera un código temporal desde el carrito de estación, el cliente entra a `productos_estacion_clientes_publico.html` y puede pedir productos (con nota) que se agregan al carrito de la estación. Al pagar la cuenta, los códigos asociados se inactivan automáticamente en backend.
+    - Descripcion: se agrega un flujo pÃºblico para clientes VIP por estaciÃ³n: el administrador genera un cÃ³digo temporal desde el carrito de estaciÃ³n, el cliente entra a `productos_estacion_clientes_publico.html` y puede pedir productos (con nota) que se agregan al carrito de la estaciÃ³n. Al pagar la cuenta, los cÃ³digos asociados se inactivan automÃ¡ticamente en backend.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: chat IA (empresa) — CRUD de base de datos por empresa con confirmación y auditoría — PushStatus: PENDIENTE
+- 2026-04-25: chat IA (empresa) â€” CRUD de base de datos por empresa con confirmaciÃ³n y auditorÃ­a â€” PushStatus: PENDIENTE
     - Archivos: `backend/db/db_admin_crud.go`, `backend/handlers/empresa_db_admin.go`, `backend/main.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se habilita que el chat IA empresarial proponga consultas y operaciones CRUD sobre tablas con `empresa_id` mediante `/api/empresa/db_admin` (solo rol administrador). La ejecución siempre requiere confirmación; `DELETE` exige confirmación adicional (“ELIMINAR”). Toda operación queda registrada en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
+    - Descripcion: se habilita que el chat IA empresarial proponga consultas y operaciones CRUD sobre tablas con `empresa_id` mediante `/api/empresa/db_admin` (solo rol administrador). La ejecuciÃ³n siempre requiere confirmaciÃ³n; `DELETE` exige confirmaciÃ³n adicional (â€œELIMINARâ€). Toda operaciÃ³n queda registrada en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: permisos por rol — opciones Chat IA (empresa y global) + rol administrador total — PushStatus: PENDIENTE
+- 2026-04-25: permisos por rol â€” opciones Chat IA (empresa y global) + rol administrador total â€” PushStatus: PENDIENTE
     - Archivos: `backend/handlers/empresa_permisos.go`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega al catálogo de permisos por rol las opciones `Asistente IA (chat empresarial)` y `Chat IA global (super)` para control de visibilidad/habilitación en la consola de permisos. Se agrega el rol `administrador_total` con acceso completo a todos los módulos y acciones (R/C/U/D/A), sujeto a restricciones por licencia.
+    - Descripcion: se agrega al catÃ¡logo de permisos por rol las opciones `Asistente IA (chat empresarial)` y `Chat IA global (super)` para control de visibilidad/habilitaciÃ³n en la consola de permisos. Se agrega el rol `administrador_total` con acceso completo a todos los mÃ³dulos y acciones (R/C/U/D/A), sujeto a restricciones por licencia.
     - Verificacion: `go test ./...` en `backend/`.
 
-- 2026-04-25: chats IA — botón Ayuda y guía de uso — PushStatus: PENDIENTE
+- 2026-04-25: chats IA â€” botÃ³n Ayuda y guÃ­a de uso â€” PushStatus: PENDIENTE
     - Archivos: `web/ayuda/chat_ia.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`
-    - Descripcion: se agrega un botón **Ayuda** en ambos chats IA (empresa y global) que abre una página corta explicando cómo usar el chat, cómo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con “ELIMINAR”), y ejemplos de consultas/acciones.
-    - Verificacion: revisi�n est�tica HTML/JS.
+    - Descripcion: se agrega un botÃ³n **Ayuda** en ambos chats IA (empresa y global) que abre una pÃ¡gina corta explicando cÃ³mo usar el chat, cÃ³mo funcionan las confirmaciones `PCS_ACTION` (incluyendo DELETE con â€œELIMINARâ€), y ejemplos de consultas/acciones.
+    - Verificacion: revisiï¿½n estï¿½tica HTML/JS.
 
-- 2026-04-25: inventario — documento/imprimir/exportar formatos comunes — PushStatus: PENDIENTE
+- 2026-04-25: inventario â€” documento/imprimir/exportar formatos comunes â€” PushStatus: PENDIENTE
     - Archivos: `web/administrar_empresa/reportes_inventario.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`
-    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vía PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
-    - Verificacion: revisi�n est�tica HTML/JS.
+    - Descripcion: la vista `reportes_inventario` ahora carga el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes` y permite visualizar inventario en tabla, abrir como PDF, imprimir (vÃ­a PDF) y exportar a CSV/XLS/JSON/TXT/PDF.
+    - Verificacion: revisiï¿½n estï¿½tica HTML/JS.
 
-- 2026-04-25: portal público — texto del footer actualizado — PushStatus: PENDIENTE
+- 2026-04-25: portal pÃºblico â€” texto del footer actualizado â€” PushStatus: PENDIENTE
     - Archivos: `web/index.html`, `documentos/historial_de_cambios`
-    - Descripcion: se actualiza el texto del pie de página del portal para reflejar “Plataforma SaaS POS Multiempresa”, derechos reservados y el correo `powerfulcontrolsystem@gmail.com`.
-    - Verificacion: revisi�n est�tica HTML.
+    - Descripcion: se actualiza el texto del pie de pÃ¡gina del portal para reflejar â€œPlataforma SaaS POS Multiempresaâ€, derechos reservados y el correo `powerfulcontrolsystem@gmail.com`.
+    - Verificacion: revisiï¿½n estï¿½tica HTML.
 
 - 2026-04-24: super ? pagina principal: tema claro/oscuro y contraste mp-card.
     - Archivos: `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`
@@ -5320,7 +5329,7 @@
         - web/administrar_empresa/administrar_productos_menu.html (modificado: enlace a subp?ginas)
     - Descripcion: Se convirti? `administrar_productos` en subp?gina dentro de `administrar_productos_menu.html` y se agreg? la subp?gina `bodegas.html` cargada en el iframe derecho (`productosContentFrame`).
     - Verificacion: Navegaci?n manual en panel; la subp?gina `bodegas.html` carga correctamente en el iframe del men? de productos.
- 
+
  - 2026-04-11: Independizar Reportes
      - Archivos a?adidos/modificados:
           - web/administrar_empresa/reportes_menu.html (nuevo)
@@ -5344,7 +5353,7 @@
         - web/img/price-tag-color.svg (nuevo)
         - web/img/analytics-color.svg (nuevo)
         - Descripci?n: Se a?adieron variantes coloreadas para consistencia visual; los men?s de Productos y Reportes fueron actualizados para usarlas.
-    
+
  - 2026-04-11: Independizar Configuraci?n
      - Archivos a?adidos/modificados:
          - web/administrar_empresa/configuracion_menu.html (nuevo)
@@ -10915,7 +10924,7 @@
 - `scripts/actualizar_repositorio.ps1`: a?ade, commitea y hace push de cambios al remoto; actualiza `documentos/historial_de_cambios` autom?ticamente a menos que se use `-SkipChangeLog`.
 
 2026-03-25: Script 'actualizar_repositorio.ps1' ejecutado. Mensaje: Actualizaci?n autom?tica desde script: a?adir/actualizar archivos
-- Archivos: (ver commit) 
+- Archivos: (ver commit)
 
 
 2026-03-25: Actualizaci?n autom?tica desde script: a?adir/actualizar archivos
@@ -11416,7 +11425,7 @@ Archivos modificados:
 - backend/tools/query_users.go
 - backend/tools/set_admin_role.go
 - backend/tools/sync_users_to_super.go
- 
+
 2026-03-27: Men? flotante unificado en frontend
 - Acci?n: Se unific? el men? flotante en p?ginas principales. El men? contiene enlaces a `Portal` (/index.html), `Ayuda` (/ayuda.html) y un enlace de sesi?n que muestra din?micamente "Iniciar sesi?n" o "Cerrar sesi?n" seg?n exista la cookie `session_token`.
 - Archivos modificados:
@@ -14770,15 +14779,15 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
-- Descripcion: Se endurece el m�dulo de chat IA para que las acciones sugeridas/ejecutadas desde `PCS_ACTION` **no permitan `DELETE`**. Se bloquea `DELETE` en UI (antes de ejecutar `fetch`) y se instruye al modelo en los prompts del backend para proponer solo `GET/OPEN/POST/PUT`. El chat de empresa conserva aislamiento por `empresa_id` y el chat global aplica la misma pol�tica de no eliminaci�n.
-- Nota: Se habilita `PCS_ACTION` con m�todo `OPEN` (abrir URL relativa en nueva pesta�a) para que la IA pueda ejecutar funciones del sistema que son vistas/pantallas (por ejemplo abrir `facturas_electronicas.html`). En `facturas_electronicas.html` se agrega `auto_print=1` para que al abrir la vista con `documento=...` se dispare la visualizaci�n/impresi�n del documento autom�ticamente.
+- Descripcion: Se endurece el mï¿½dulo de chat IA para que las acciones sugeridas/ejecutadas desde `PCS_ACTION` **no permitan `DELETE`**. Se bloquea `DELETE` en UI (antes de ejecutar `fetch`) y se instruye al modelo en los prompts del backend para proponer solo `GET/OPEN/POST/PUT`. El chat de empresa conserva aislamiento por `empresa_id` y el chat global aplica la misma polï¿½tica de no eliminaciï¿½n.
+- Nota: Se habilita `PCS_ACTION` con mï¿½todo `OPEN` (abrir URL relativa en nueva pestaï¿½a) para que la IA pueda ejecutar funciones del sistema que son vistas/pantallas (por ejemplo abrir `facturas_electronicas.html`). En `facturas_electronicas.html` se agrega `auto_print=1` para que al abrir la vista con `documento=...` se dispare la visualizaciï¿½n/impresiï¿½n del documento automï¿½ticamente.
 
-2026-04-25: Administrar empresa: mostrar Frecuencia FP cuando el admin est� autorizado
+2026-04-25: Administrar empresa: mostrar Frecuencia FP cuando el admin estï¿½ autorizado
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/configuracion_menu.html
 - documentos/historial_de_cambios
-- Descripcion: El check de visibilidad del enlace `Frecuencia FP` ahora llama `/api/empresa/frecuencia_fp/permitido` incluyendo `empresa_id` en querystring, para que el wrapper de permisos por empresa valide el alcance y el men� no quede oculto por falta de contexto.
+- Descripcion: El check de visibilidad del enlace `Frecuencia FP` ahora llama `/api/empresa/frecuencia_fp/permitido` incluyendo `empresa_id` en querystring, para que el wrapper de permisos por empresa valide el alcance y el menï¿½ no quede oculto por falta de contexto.
 
 2026-04-25: Administrar empresa: renombrar Frecuencia FP a Frecuencia FE
 PushStatus: PENDIENTE
@@ -14790,15 +14799,15 @@ Archivos modificados:
 - backend/handlers/administradores_frecuencia_fe_handlers.go
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: La p�gina empresarial de frecuencia se renombra a `frecuencia_fe.html` (visible para administradores incluidos en la lista de super). Se conserva `frecuencia_fp.html` como redirecci�n de compatibilidad. El men� de Configuraci�n ahora muestra �Frecuencia FE� y apunta a la nueva ruta, manteniendo el check `/api/empresa/frecuencia_fp/permitido`.
+- Descripcion: La pï¿½gina empresarial de frecuencia se renombra a `frecuencia_fe.html` (visible para administradores incluidos en la lista de super). Se conserva `frecuencia_fp.html` como redirecciï¿½n de compatibilidad. El menï¿½ de Configuraciï¿½n ahora muestra ï¿½Frecuencia FEï¿½ y apunta a la nueva ruta, manteniendo el check `/api/empresa/frecuencia_fp/permitido`.
 
-2026-04-25: Administrar empresa: soporte remoto sin c�digo visible
+2026-04-25: Administrar empresa: soporte remoto sin cï¿½digo visible
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/soporte_remoto.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se reconstruye `soporte_remoto.html` para eliminar un bloque de JavaScript que hab�a quedado pegado despu�s del cierre `</html>` y se renderizaba como texto/c�digo en la p�gina. La vista queda en modo operativo (descargas RustDesk + gu�a corta).
+- Descripcion: Se reconstruye `soporte_remoto.html` para eliminar un bloque de JavaScript que habï¿½a quedado pegado despuï¿½s del cierre `</html>` y se renderizaba como texto/cï¿½digo en la pï¿½gina. La vista queda en modo operativo (descargas RustDesk + guï¿½a corta).
 
 2026-04-25: Super: crear roles desde Permisos por rol
 PushStatus: PENDIENTE
@@ -14806,7 +14815,7 @@ Archivos modificados:
 - web/super/permisos_rol.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: En `Permisos por rol` se agrega un bloque para crear un rol nuevo (nombre + descripci�n) desde la misma p�gina. Al crear, se llama `POST /super/api/roles_de_usuario`, se recarga el selector y se abre el rol reci�n creado para configurar sus permisos sin salir de la vista.
+- Descripcion: En `Permisos por rol` se agrega un bloque para crear un rol nuevo (nombre + descripciï¿½n) desde la misma pï¿½gina. Al crear, se llama `POST /super/api/roles_de_usuario`, se recarga el selector y se abre el rol reciï¿½n creado para configurar sus permisos sin salir de la vista.
 
 2026-04-25: Index: tarjetas inferiores iguales a las superiores
 PushStatus: PENDIENTE
@@ -14815,28 +14824,28 @@ Archivos modificados:
 - web/super/pagina_principal.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Las tarjetas tipo banner renderizadas debajo de las tarjetas principales del `index.html` ahora usan el mismo grid y estilo (`portal-grid` + `home-offer-card`). Se eliminan los controles de ancho/alto fijo de banner en el editor super (`pagina_principal.html`) para que la secci�n inferior herede el tama�o elegido para las tarjetas superiores.
+- Descripcion: Las tarjetas tipo banner renderizadas debajo de las tarjetas principales del `index.html` ahora usan el mismo grid y estilo (`portal-grid` + `home-offer-card`). Se eliminan los controles de ancho/alto fijo de banner en el editor super (`pagina_principal.html`) para que la secciï¿½n inferior herede el tamaï¿½o elegido para las tarjetas superiores.
 
-2026-04-25: Configuraci�n de estaciones: corregir carga de checks
+2026-04-25: Configuraciï¿½n de estaciones: corregir carga de checks
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/configuracion_de_estaciones.html
 - documentos/historial_de_cambios
-- Descripcion: Se corrige un bug en `renderRows()` donde se usaba una variable inexistente (`body`) al renderizar la tabla sin estaciones, lo que romp�a el JavaScript y evitaba que los checks se cargaran. Ahora se usa `tbody.innerHTML` correctamente.
+- Descripcion: Se corrige un bug en `renderRows()` donde se usaba una variable inexistente (`body`) al renderizar la tabla sin estaciones, lo que rompï¿½a el JavaScript y evitaba que los checks se cargaran. Ahora se usa `tbody.innerHTML` correctamente.
 
-2026-04-25: Tarifas por minutos: secci�n visible de tarifas configuradas por estaci�n
+2026-04-25: Tarifas por minutos: secciï¿½n visible de tarifas configuradas por estaciï¿½n
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/tarifas_por_minutos.html
 - documentos/historial_de_cambios
-- Descripcion: En la vista `tarifas_por_minutos.html` se agrega una secci�n �Tarifas configuradas� y se mejora el listado para mostrar de forma expl�cita la estaci�n objetivo (nombre, ID y c�digo) para cada regla de tarifa por minutos.
+- Descripcion: En la vista `tarifas_por_minutos.html` se agrega una secciï¿½n ï¿½Tarifas configuradasï¿½ y se mejora el listado para mostrar de forma explï¿½cita la estaciï¿½n objetivo (nombre, ID y cï¿½digo) para cada regla de tarifa por minutos.
 
-2026-04-25: Tarifas por d�a: secci�n visible de tarifas configuradas por estaci�n
+2026-04-25: Tarifas por dï¿½a: secciï¿½n visible de tarifas configuradas por estaciï¿½n
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/tarifas_por_dia.html
 - documentos/historial_de_cambios
-- Descripcion: En `tarifas_por_dia.html` se agrega la secci�n �Tarifas configuradas� y se mejora el listado para que cada regla muestre claramente la estaci�n objetivo (nombre, ID y c�digo), junto con prioridad y estado.
+- Descripcion: En `tarifas_por_dia.html` se agrega la secciï¿½n ï¿½Tarifas configuradasï¿½ y se mejora el listado para que cada regla muestre claramente la estaciï¿½n objetivo (nombre, ID y cï¿½digo), junto con prioridad y estado.
 
 2026-04-25: Estaciones: estados visuales ampliados (disponible/ocupada/sucia/alerta) + opciones por config
 PushStatus: PENDIENTE
@@ -14846,22 +14855,22 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/administrar_empresa/carrito_de_compras.html
 - documentos/historial_de_cambios
-- Descripcion: Se ampl�a la configuraci�n de colores por empresa para manejar 4 estados de estaciones (limpia/disponible, activa/ocupada, sucia, alerta de tiempo) y se agregan checks en Configuraci�n de estaciones para mostrar cliente, resumen de tarifa, hora extra y activar alerta 10 minutos. Al pagar una estaci�n (si est� habilitado) se marca como sucia y al hacer clic en una estaci�n sucia se limpia sin abrir el carrito.
+- Descripcion: Se amplï¿½a la configuraciï¿½n de colores por empresa para manejar 4 estados de estaciones (limpia/disponible, activa/ocupada, sucia, alerta de tiempo) y se agregan checks en Configuraciï¿½n de estaciones para mostrar cliente, resumen de tarifa, hora extra y activar alerta 10 minutos. Al pagar una estaciï¿½n (si estï¿½ habilitado) se marca como sucia y al hacer clic en una estaciï¿½n sucia se limpia sin abrir el carrito.
 
-2026-04-25: Licencias: endpoint para crear licencia de prueba 15 d�as (valor 0)
+2026-04-25: Licencias: endpoint para crear licencia de prueba 15 dï¿½as (valor 0)
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/payments_handlers.go
 - documentos/historial_de_cambios
-- Descripcion: Se agrega acci�n `POST /super/api/licencias?action=crear_prueba_15_dias&empresa_id=...` que crea una licencia de prueba por 15 d�as (valor 0) y la activa para la empresa indicada, registrando la activaci�n gratis.
+- Descripcion: Se agrega acciï¿½n `POST /super/api/licencias?action=crear_prueba_15_dias&empresa_id=...` que crea una licencia de prueba por 15 dï¿½as (valor 0) y la activa para la empresa indicada, registrando la activaciï¿½n gratis.
 
-2026-04-25: Seed Motel Calipso: herramienta para registrar tarifas por minutos y por d�a
+2026-04-25: Seed Motel Calipso: herramienta para registrar tarifas por minutos y por dï¿½a
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/tools/seed_motel_calipso_tarifas/main.go
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega una herramienta `go run backend/tools/seed_motel_calipso_tarifas/main.go` que crea/actualiza tarifas por minutos y por d�a para todas las estaciones de la empresa (por defecto `empresa_id=7`), leyendo la cantidad de estaciones desde `estaciones_config`. Requiere configurar `DB_EMPRESAS_DSN` para apuntar a PostgreSQL.
+- Descripcion: Se agrega una herramienta `go run backend/tools/seed_motel_calipso_tarifas/main.go` que crea/actualiza tarifas por minutos y por dï¿½a para todas las estaciones de la empresa (por defecto `empresa_id=7`), leyendo la cantidad de estaciones desde `estaciones_config`. Requiere configurar `DB_EMPRESAS_DSN` para apuntar a PostgreSQL.
 
 2026-04-25: Actualizacion automatica desde script: anadir/actualizar archivos
 PushStatus: OK
@@ -14893,7 +14902,7 @@ PushStatus: OK
 Archivos modificados:
 - web/index.html
 
-2026-04-25: Portal p�blico: chat IA comercial en index (10 consultas / 5 min)
+2026-04-25: Portal pï¿½blico: chat IA comercial en index (10 consultas / 5 min)
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/chat_con_inteligencia_artificial_controller.go
@@ -14918,7 +14927,7 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega un chat IA p�blico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (m�dulos, planes/precios, contrataci�n). El backend expone `POST /api/public/chat_portal` con limitaci�n por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el l�mite. El chat no ejecuta acciones ni expone datos sensibles.
+- Descripcion: Se agrega un chat IA pï¿½blico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mï¿½dulos, planes/precios, contrataciï¿½n). El backend expone `POST /api/public/chat_portal` con limitaciï¿½n por usuario (10 consultas cada 5 minutos) y respuesta 429 con `retry_after_seconds` al superar el lï¿½mite. El chat no ejecuta acciones ni expone datos sensibles.
 
 2026-04-25: Chat IA (empresa y super): streaming (respuesta en vivo) configurable
 PushStatus: PENDIENTE
@@ -14933,9 +14942,9 @@ Archivos modificados:
 - web/super/configuracion_logica_del_chat_con_ia.html
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
-- Descripcion: Se agrega modo streaming (SSE) para mostrar la respuesta en vivo en los chats de empresa y super cuando se usa OpenAI chat completions. Se controla desde Super por switches `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled`. Si el streaming est� apagado, el chat opera en modo normal.
+- Descripcion: Se agrega modo streaming (SSE) para mostrar la respuesta en vivo en los chats de empresa y super cuando se usa OpenAI chat completions. Se controla desde Super por switches `ai.chat.empresa.streaming_enabled` y `ai.chat.super.streaming_enabled`. Si el streaming estï¿½ apagado, el chat opera en modo normal.
 
-2026-04-25: Portal: chat IA p�blico index + switch; mensajes privados; eliminar banners; mejorar t�tulo
+2026-04-25: Portal: chat IA pï¿½blico index + switch; mensajes privados; eliminar banners; mejorar tï¿½tulo
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/pagina_principal_handlers.go
@@ -15041,7 +15050,7 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 
-2026-04-26: Menú flotante: agregar Calculadora + nueva página calculadora.html
+2026-04-26: MenÃº flotante: agregar Calculadora + nueva pÃ¡gina calculadora.html
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/menu.js
@@ -15049,14 +15058,14 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 
-2026-04-26: OnlyOffice (UI): botones Nuevo Word/Excel/Presentación (crear .docx/.xlsx/.pptx)
+2026-04-26: OnlyOffice (UI): botones Nuevo Word/Excel/PresentaciÃ³n (crear .docx/.xlsx/.pptx)
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/onlyoffice.go
 - web/administrar_empresa/documentos_onlyoffice.html
 - documentos/historial_de_cambios
 
-2026-04-26: OnlyOffice (UI): compactar creación en selector “Nuevo documento” + botón Crear
+2026-04-26: OnlyOffice (UI): compactar creaciÃ³n en selector â€œNuevo documentoâ€ + botÃ³n Crear
 PushStatus: PENDIENTE
 Archivos modificados:
 - web/administrar_empresa/documentos_onlyoffice.html
@@ -15074,7 +15083,7 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 
-2026-04-26: OnlyOffice VPS (automatización): generar JWT secret automáticamente y persistir en DB desde ENV
+2026-04-26: OnlyOffice VPS (automatizaciÃ³n): generar JWT secret automÃ¡ticamente y persistir en DB desde ENV
 PushStatus: PENDIENTE
 Archivos modificados:
 - backend/handlers/onlyoffice_super_config.go
@@ -15190,39 +15199,39 @@ Archivos modificados:
 - backend/handlers/nextcloud_empresa.go
 - web/administrar_empresa/nextcloud.html
 Descripcion:
-- Nextcloud: `context` ahora expone `enabled`/`configured` y `provision` devuelve `ok:false` con mensaje claro cuando el servicio está desactivado o incompleto, evitando errores genéricos en UI.
-- OnlyOffice: endpoints devuelven JSON consistente cuando está desactivado o falta `onlyoffice.jwt_secret` / `onlyoffice.document_server_url`, evitando 401/500 engañosos.
+- Nextcloud: `context` ahora expone `enabled`/`configured` y `provision` devuelve `ok:false` con mensaje claro cuando el servicio estÃ¡ desactivado o incompleto, evitando errores genÃ©ricos en UI.
+- OnlyOffice: endpoints devuelven JSON consistente cuando estÃ¡ desactivado o falta `onlyoffice.jwt_secret` / `onlyoffice.document_server_url`, evitando 401/500 engaÃ±osos.
 
-2026-04-26: Fix checks especiales en configuración de estaciones (Caja/YouTube/Notas/IA)
+2026-04-26: Fix checks especiales en configuraciÃ³n de estaciones (Caja/YouTube/Notas/IA)
 Archivos modificados:
 - web/administrar_empresa/configuracion_de_estaciones.html
 Descripcion:
-- Se añadió `normalizeNotesRepeatMinutes()` (faltante) para evitar excepción en `normalizeConfig()`, que disparaba el `catch` y revertía automáticamente los toggles al intentar guardarlos.
+- Se aÃ±adiÃ³ `normalizeNotesRepeatMinutes()` (faltante) para evitar excepciÃ³n en `normalizeConfig()`, que disparaba el `catch` y revertÃ­a automÃ¡ticamente los toggles al intentar guardarlos.
 
-2026-04-26: Tarjetas del index sin "..." en títulos
+2026-04-26: Tarjetas del index sin "..." en tÃ­tulos
 Archivos modificados:
 - web/index.html
 Descripcion:
-- Se removió el line-clamp/ellipsis del título y se implementó auto-ajuste de tamaño de fuente para que el texto quepa en 2 líneas sin cambiar el tamaño uniforme de las tarjetas.
+- Se removiÃ³ el line-clamp/ellipsis del tÃ­tulo y se implementÃ³ auto-ajuste de tamaÃ±o de fuente para que el texto quepa en 2 lÃ­neas sin cambiar el tamaÃ±o uniforme de las tarjetas.
 
-2026-04-26: Títulos de tarjetas del index hasta 3 líneas
+2026-04-26: TÃ­tulos de tarjetas del index hasta 3 lÃ­neas
 Archivos modificados:
 - web/index.html
 Descripcion:
-- Se amplió el alto permitido de los títulos de tarjetas públicas a 3 líneas y se ajustó el cálculo de reducción de fuente para evitar puntos suspensivos manteniendo tarjetas uniformes.
+- Se ampliÃ³ el alto permitido de los tÃ­tulos de tarjetas pÃºblicas a 3 lÃ­neas y se ajustÃ³ el cÃ¡lculo de reducciÃ³n de fuente para evitar puntos suspensivos manteniendo tarjetas uniformes.
 
-2026-04-26: Panel super — consumos OpenAI/Hostinger/Cursor + contador de errores + gráficas en curva
+2026-04-26: Panel super â€” consumos OpenAI/Hostinger/Cursor + contador de errores + grÃ¡ficas en curva
 Archivos modificados:
 - backend/handlers/super_consumos_handlers.go
 - backend/main.go
 - web/super/licencias_resumen.html
 - web/super/metricas_de_trafico_general.html
 Descripcion:
-- Se agregó `/super/api/consumos` (protegido) que expone tokens/consultas OpenAI del día (super y empresas), estimación opcional en USD por costo/1M tokens, consumos manuales de Hostinger (ancho de banda y disco) y Cursor, y el contador total de errores del sistema.
-- Se añadieron tarjetas en el panel del super (`licencias_resumen`) para visualizar estos consumos y un formulario para configurar valores/tokens (guardados cifrados si aplica).
-- Se ajustaron las gráficas de métricas a curva (tension + interpolación monotone).
+- Se agregÃ³ `/super/api/consumos` (protegido) que expone tokens/consultas OpenAI del dÃ­a (super y empresas), estimaciÃ³n opcional en USD por costo/1M tokens, consumos manuales de Hostinger (ancho de banda y disco) y Cursor, y el contador total de errores del sistema.
+- Se aÃ±adieron tarjetas en el panel del super (`licencias_resumen`) para visualizar estos consumos y un formulario para configurar valores/tokens (guardados cifrados si aplica).
+- Se ajustaron las grÃ¡ficas de mÃ©tricas a curva (tension + interpolaciÃ³n monotone).
 
-2026-04-26: UI — OnlyOffice tipo Office 365 + íconos de menú + ajustes visuales super/index/selector
+2026-04-26: UI â€” OnlyOffice tipo Office 365 + Ã­conos de menÃº + ajustes visuales super/index/selector
 Archivos modificados:
 - web/administrar_empresa/documentos_onlyoffice.html
 - web/administrar_empresa.html
@@ -15246,11 +15255,11 @@ Archivos modificados:
 - web/img/social.svg
 - web/img/ecommerce.svg
 Descripcion:
-- OnlyOffice: se agregaron tiles de creación (Word/Excel/PowerPoint) y se aumentó el tamaño de iconos para una experiencia tipo Office 365 en la nube.
-- Menú administrar empresa: se actualizaron íconos y etiquetas (OnlyOffice, Nextcloud, Chat con IA, Configuración, Estaciones, Facturación, Finanzas, Backups, Impuestos, GPS, Reportes, Códigos, Auditoría, Clientes, Red social, Venta pública).
-- Super admin: el botón “Seleccionar empresa” ahora es verde; “Configuración avanzada” usa tuerca roja (sin inversión en modo oscuro).
-- Index: el título del header en tema oscuro se fuerza a color claro.
-- Selector de empresa: tarjetas más compactas verticalmente.
+- OnlyOffice: se agregaron tiles de creaciÃ³n (Word/Excel/PowerPoint) y se aumentÃ³ el tamaÃ±o de iconos para una experiencia tipo Office 365 en la nube.
+- MenÃº administrar empresa: se actualizaron Ã­conos y etiquetas (OnlyOffice, Nextcloud, Chat con IA, ConfiguraciÃ³n, Estaciones, FacturaciÃ³n, Finanzas, Backups, Impuestos, GPS, Reportes, CÃ³digos, AuditorÃ­a, Clientes, Red social, Venta pÃºblica).
+- Super admin: el botÃ³n â€œSeleccionar empresaâ€ ahora es verde; â€œConfiguraciÃ³n avanzadaâ€ usa tuerca roja (sin inversiÃ³n en modo oscuro).
+- Index: el tÃ­tulo del header en tema oscuro se fuerza a color claro.
+- Selector de empresa: tarjetas mÃ¡s compactas verticalmente.
 
 2026-04-26: Formato legal empresarial para recibos/facturas (POS y Carta) por empresa
 Archivos modificados:
@@ -15259,18 +15268,18 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/administrar_empresa/reportes.html
 Descripcion:
-- Ventas y Facturas: ahora cargan `configuracion_avanzada` por empresa y aplican logo (`logo_url` + `mostrar_logo`), datos fiscales y textos (`notas_legales`, `pie_factura`) en la vista previa y en la impresión.
-- Se soporta automáticamente el formato según `formato_impresion` (`pos` para impresora pequeña / `carta` para impresora grande).
+- Ventas y Facturas: ahora cargan `configuracion_avanzada` por empresa y aplican logo (`logo_url` + `mostrar_logo`), datos fiscales y textos (`notas_legales`, `pie_factura`) en la vista previa y en la impresiÃ³n.
+- Se soporta automÃ¡ticamente el formato segÃºn `formato_impresion` (`pos` para impresora pequeÃ±a / `carta` para impresora grande).
 - Reportes: la vista previa POS incorpora header legal y notas/pie configurables por empresa.
 
-2026-04-26: QA — runner de pruebas operativas automatizables de finanzas (Motel Calipso)
+2026-04-26: QA â€” runner de pruebas operativas automatizables de finanzas (Motel Calipso)
 Archivos agregados:
 - backend/tools/pruebas_finanzas_motel_calipso/main.go
 Descripcion:
-- Se agregó un runner CLI que valida sobre PostgreSQL: configuración finanzas, creación de ingresos/egresos con retenciones y total neto, cierre/reapertura de periodo contable (bloqueo de movimientos en periodo cerrado) y transiciones/bloqueos de cierres de caja.
+- Se agregÃ³ un runner CLI que valida sobre PostgreSQL: configuraciÃ³n finanzas, creaciÃ³n de ingresos/egresos con retenciones y total neto, cierre/reapertura de periodo contable (bloqueo de movimientos en periodo cerrado) y transiciones/bloqueos de cierres de caja.
 - Requiere `DB_EMPRESAS_DSN` (no se ejecuta sin DSN definido; no imprime secretos).
 
-2026-04-26: Finanzas ERP MVP — plan de cuentas, cartera, extractos y reportes
+2026-04-26: Finanzas ERP MVP â€” plan de cuentas, cartera, extractos y reportes
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - backend/handlers/reportes.go
@@ -15286,34 +15295,34 @@ Descripcion:
 - Reportes agrega datasets contables exportables para plan de cuentas, cartera por cobrar/pagar y conciliacion bancaria, evitando depender solo de datos cargados en navegador.
 - El runner QA de Motel Calipso se amplio para cubrir plan de cuentas, cartera, abonos, extractos y conciliacion bancaria. `go test ./...` pasa; la ejecucion contra DB real queda bloqueada si las credenciales locales de PostgreSQL no autentican.
 
-2026-04-26: Tarifas estaciones — 2 horas $35.000 y hora extra/fracción $20.000 (tarifa por minutos)
+2026-04-26: Tarifas estaciones â€” 2 horas $35.000 y hora extra/fracciÃ³n $20.000 (tarifa por minutos)
 Archivos modificados:
 - backend/tools/seed_motel_calipso_tarifas/main.go
 - web/administrar_empresa/tarifas_por_minutos.html
 Descripcion:
-- Se ajustó el preset por defecto para tarifa por minutos a: `minutos_base=120`, `valor_base=35000`, `minutos_extra=60`, `valor_extra=20000`.
-- La lógica de “fracción” ya queda cubierta porque el cálculo usa `ceil` para los bloques extra cuando se excede el tiempo base.
+- Se ajustÃ³ el preset por defecto para tarifa por minutos a: `minutos_base=120`, `valor_base=35000`, `minutos_extra=60`, `valor_extra=20000`.
+- La lÃ³gica de â€œfracciÃ³nâ€ ya queda cubierta porque el cÃ¡lculo usa `ceil` para los bloques extra cuando se excede el tiempo base.
 
-2026-04-26: Red social comercial — comentarios, reacciones y feed más profesional
+2026-04-26: Red social comercial â€” comentarios, reacciones y feed mÃ¡s profesional
 Archivos modificados:
 - backend/db/red_social.go
 - backend/handlers/red_social.go
 - backend/main.go
 - web/red_social_comercial.html
 Descripcion:
-- Se agregaron interacciones tipo “Facebook”: comentarios por publicación y reacciones con varios estados (me gusta, me encanta, etc.).
-- El feed público ahora muestra conteos/resumen de reacciones, total de comentarios y permite comentar/reaccionar sin autenticación (identidad anónima por `actor_key` local).
-- UI más compacta y carga por lotes mantiene navegación fluida.
+- Se agregaron interacciones tipo â€œFacebookâ€: comentarios por publicaciÃ³n y reacciones con varios estados (me gusta, me encanta, etc.).
+- El feed pÃºblico ahora muestra conteos/resumen de reacciones, total de comentarios y permite comentar/reaccionar sin autenticaciÃ³n (identidad anÃ³nima por `actor_key` local).
+- UI mÃ¡s compacta y carga por lotes mantiene navegaciÃ³n fluida.
 
-2026-04-26: Venta pública — experiencia tipo tienda (carrito, búsqueda y paginación)
+2026-04-26: Venta pÃºblica â€” experiencia tipo tienda (carrito, bÃºsqueda y paginaciÃ³n)
 Archivos modificados:
 - web/venta_publica.html
 - web/pagar_productos_de_venta_publica.html
 Descripcion:
-- Catálogo público con búsqueda, carga incremental (limit/offset) y carrito lateral.
-- Checkout soporta pago por carrito (múltiples ítems) además del pago individual.
+- CatÃ¡logo pÃºblico con bÃºsqueda, carga incremental (limit/offset) y carrito lateral.
+- Checkout soporta pago por carrito (mÃºltiples Ã­tems) ademÃ¡s del pago individual.
 
-2026-04-26: Chat y tareas — subpáginas (Chats/Tareas/Agenda) + papelera temporal
+2026-04-26: Chat y tareas â€” subpÃ¡ginas (Chats/Tareas/Agenda) + papelera temporal
 Archivos modificados:
 - backend/db/chat_tareas.go
 - backend/handlers/chat_tareas.go
@@ -15327,8 +15336,8 @@ Archivos agregados:
 - web/administrar_empresa/chat_tareas_agenda.html
 - web/administrar_empresa/chat_tareas_papelera.html
 Descripcion:
-- Se subdividió el módulo en tres entradas con menú: Chats, Tareas y Agenda (cada una carga la vista correspondiente).
-- Se cambió la eliminación a “papelera” (soft-delete) para conservar temporalmente conversaciones, mensajes, tareas y citas, y se agregó endpoint y UI para restaurar desde papelera.
+- Se subdividiÃ³ el mÃ³dulo en tres entradas con menÃº: Chats, Tareas y Agenda (cada una carga la vista correspondiente).
+- Se cambiÃ³ la eliminaciÃ³n a â€œpapeleraâ€ (soft-delete) para conservar temporalmente conversaciones, mensajes, tareas y citas, y se agregÃ³ endpoint y UI para restaurar desde papelera.
 
 2026-04-26: Actualizacion automatica desde script: anadir/actualizar archivos
 PushStatus: OK
@@ -15475,11 +15484,11 @@ Archivos modificados:
     - Archivos: `backend/db/auditoria_empresa.go`, `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/auditoria_empresa.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/super_chat_ia_logica.go`, `web/super/configuracion_logica_del_chat_con_ia.html`, `RESUMEN_DEL_PROYECTO.md`, `documentos/estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`
     - Descripcion: la IA empresarial y global ahora recibe contexto de auditoria en tiempo real, busqueda profunda por intencion y resultados de consultas DB seguras ejecutadas por el backend. Se agrega la bitacora `empresa_auditoria_ia_consultas` y, para el chat empresarial, una lectura total controlada de base de datos activada por defecto desde super (`ai.chat.empresa.db_query_enabled`) con limites configurables de tablas/filas. La IA no ejecuta SQL libre; usa resultados preparados por SELECT parametrizado y acotados por `empresa_id`.
     - Verificacion: `go test ./...` en `backend/` usando `GOTMPDIR=.gotmp4`.
-- 2026-04-29: pagina principal — tarjetas de informacion/foto o banner.
+- 2026-04-29: pagina principal â€” tarjetas de informacion/foto o banner.
     - Archivos: `backend/handlers/pagina_principal_handlers.go`, `web/super/pagina_principal.html`, `web/index.html`, `web/estilos.css`, documentacion relacionada.
     - Descripcion: el editor super de Pagina principal agrega un selector por tarjeta con dos modos: `tarjeta informacion mas foto` (valor por defecto y compatible con tarjetas existentes) y `tarjeta banner`. El banner usa solo la imagen principal, permite subir imagenes nuevas a `web/img`, la muestra ocupando toda la tarjeta del index y la configuracion incluye guia de medidas recomendadas 4:3 (640x480, 800x600, 1000x750 segun tamano).
 
-- 2026-04-29: administrar empresa y configuracion — navegacion empresarial por modulos.
+- 2026-04-29: administrar empresa y configuracion â€” navegacion empresarial por modulos.
     - Archivos: `web/administrar_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/configuracion.html`, `web/js/administrar_empresa.js`, `web/estilos.css`, documentacion relacionada.
     - Descripcion: el panel de Administrar Empresa se reorganiza en grupos profesionales por tema: trabajo colaborativo, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion. El menu de Configuracion se separa en base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado. Se elimina el enlace duplicado de soporte remoto, se conservan IDs/rutas/targets existentes y el JS oculta grupos vacios cuando los permisos dejan sin opciones una categoria.
 - 2026-04-29: Estaciones - tarjetas compactas sin filas vacias.
@@ -15558,6 +15567,36 @@ Archivos modificados:
 - web/super/configuracion_logica_del_chat_con_ia.html
 - web/super/pagina_principal.html
 - web/super/preconfiguracion_tipos_empresa.html
+
+2026-04-30: Continuacion plan integral - documentos dinamicos desde chat IA
+PushStatus: Pendiente
+Archivos modificados:
+- backend/handlers/dynamic_documents.go
+- backend/handlers/dynamic_documents_test.go
+- web/js/ai_chat_drawer.js
+- Pendiente Notas
+- documentos/gobernanza_tecnica/runbooks/plan_revision_integral_modulos.md
+Detalle:
+- Se valida exportacion desde chat IA a PDF, DOCX, XLSX, TXT y JSON.
+- Se corrige fallback de nombre de descarga para evitar `nil.docx`.
+- Se permite mostrar exportacion para tablas cortas y documentos explicitos.
+- Se refuerza sanitizacion HTML contra scripts, eventos y URLs javascript.
+
+2026-04-30: Continuacion plan integral - Raspberry Pi y sensores
+PushStatus: Pendiente
+Archivos modificados:
+- backend/db/sensor_puertas.go
+- backend/db/sensor_puertas_test.go
+- backend/handlers/sensor_puertas.go
+- backend/handlers/sensor_puertas_test.go
+- web/administrar_empresa/configuracion_sensores_raspberry.html
+- Pendiente Notas
+- documentos/gobernanza_tecnica/runbooks/plan_revision_integral_modulos.md
+Detalle:
+- Se agrega provisionamiento seguro desde la pagina de configuracion por empresa.
+- El servidor genera `device_id` y token, devuelve ejemplos curl/Python y marca si el sensor tiene token activo.
+- El endpoint publico exige `X-Device-Token` para dispositivos que ya tienen token configurado.
+- Se validan pruebas unitarias y regresion completa de backend.
 - web/super/reportes_globales.html
 - web/super/voz_streaming_ia.html
 - web/super_administrador.html

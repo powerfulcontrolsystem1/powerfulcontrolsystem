@@ -16,6 +16,9 @@ const empresaBackupsSchemaVersion = "empresa-backup.v1"
 const empresaBackupsConfigScope = "configuracion_empresa"
 
 var empresaConfigBackupDefaultTables = []string{
+	"admin_empresa_compartida",
+	"admin_empresa_compartida_invitaciones",
+	"empresa_ai_modelo_preferido",
 	"empresa_asistencia_configuracion",
 	"empresa_calculadora_configuracion",
 	"empresa_comisiones_servicio_configuracion",
@@ -26,12 +29,30 @@ var empresaConfigBackupDefaultTables = []string{
 	"empresa_configuracion_operativa_roles",
 	"empresa_dian_configuracion",
 	"empresa_estacion_prefs",
+	"empresa_finanzas_configuracion",
 	"empresa_impresoras",
 	"empresa_impresoras_funcionalidades",
 	"empresa_impresoras_productos",
+	"empresa_integraciones_apis",
+	"empresa_integraciones_bancos",
+	"empresa_inventario_configuracion",
+	"empresa_nextcloud_accounts",
+	"empresa_nomina_configuracion",
+	"empresa_payment_settings",
+	"empresa_permisos_modulos",
+	"empresa_permisos_paginas",
 	"empresa_propinas_configuracion",
+	"empresa_reportes_plantillas",
+	"empresa_reportes_programaciones",
+	"empresa_sensor_puertas_devices",
 	"empresa_soporte_remoto_configuracion",
+	"empresa_tarifas_por_dia",
+	"empresa_tarifas_por_minutos",
+	"empresa_tarifas_por_minutos_configuracion",
+	"empresa_vehiculos_configuracion",
 	"empresa_venta_publica_configuracion",
+	"empresa_venta_publica_items",
+	"empresa_venta_publica_paginas",
 }
 
 // EmpresaBackup representa un snapshot empresarial persistido para restauracion.
@@ -732,8 +753,8 @@ func CreateEmpresaConfigBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, 
 		return 0, err
 	}
 	metadata := map[string]string{
-		"scope":        empresaBackupsConfigScope,
-		"version":      empresaBackupsSchemaVersion,
+		"scope":         empresaBackupsConfigScope,
+		"version":       empresaBackupsSchemaVersion,
 		"config_backup": "1",
 	}
 	return createEmpresaBackupSnapshotFromPayload(dbConn, empresaID, nombre, descripcion, usuario, empresaBackupsConfigScope, "config", includeTables, nil, payload, metadata)

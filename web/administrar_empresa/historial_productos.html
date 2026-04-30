@@ -26,19 +26,45 @@
     </section>
   </div>
 
-  <script type="module">
-    import { reqBuilder } from '/js/administrar_empresa.js';
-
+  <script>
     const state = { limit: 100, offset: 0 };
     const listContainer = document.getElementById('historialList');
+
+    function getEmpresaId() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const own = Number(params.get('empresa_id') || params.get('id') || 0);
+        if (own > 0) return Math.trunc(own);
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+          const parentID = Number(window.parent.__resolveEmpresaIdContext() || 0);
+          if (parentID > 0) return Math.trunc(parentID);
+        }
+      } catch (_) {}
+      try {
+        const stored = Number(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id') || 0);
+        if (stored > 0) return Math.trunc(stored);
+      } catch (_) {}
+      return 0;
+    }
+
+    function buildEmpresaURL(endpoint) {
+      const url = new URL(endpoint, window.location.origin);
+      const empresaID = getEmpresaId();
+      if (empresaID > 0 && !url.searchParams.has('empresa_id')) {
+        url.searchParams.set('empresa_id', String(empresaID));
+      }
+      return url;
+    }
 
     async function loadHistorial() {
       try {
         listContainer.innerHTML = '<p class="empty-state">Cargando...</p>';
-        const b = reqBuilder('/api/empresa/productos/precios_historial')
-          .qs('limit', state.limit)
-          .qs('offset', state.offset);
-        const res = await fetch(b.url, { headers: b.headers });
+        const url = buildEmpresaURL('/api/empresa/productos/precios_historial');
+        url.searchParams.set('limit', String(state.limit));
+        url.searchParams.set('offset', String(state.offset));
+        const res = await fetch(url.pathname + url.search, { credentials: 'same-origin' });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         renderHistorial(data || []);

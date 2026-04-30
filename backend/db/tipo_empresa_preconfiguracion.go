@@ -72,6 +72,25 @@ type TipoEmpresaPreconfigTareaGuia struct {
 	Descripcion string `json:"descripcion,omitempty"`
 }
 
+type TipoEmpresaPreconfigSeedItem struct {
+	TipoEmpresaID     int64  `json:"tipo_empresa_id"`
+	TipoEmpresaNombre string `json:"tipo_empresa_nombre"`
+	PreconfigID       int64  `json:"preconfig_id,omitempty"`
+	Accion            string `json:"accion"`
+	Nombre            string `json:"nombre,omitempty"`
+	Enabled           bool   `json:"enabled"`
+	Error             string `json:"error,omitempty"`
+}
+
+type TipoEmpresaPreconfigSeedResult struct {
+	TotalTipos   int                            `json:"total_tipos"`
+	Creadas      int                            `json:"creadas"`
+	Actualizadas int                            `json:"actualizadas"`
+	Omitidas     int                            `json:"omitidas"`
+	Errores      int                            `json:"errores"`
+	Items        []TipoEmpresaPreconfigSeedItem `json:"items"`
+}
+
 // EnsureTipoEmpresaPreconfiguracionSchema crea/migra la tabla de plantillas por tipo de empresa.
 func EnsureTipoEmpresaPreconfiguracionSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
@@ -150,7 +169,7 @@ func ListTipoEmpresaPreconfiguraciones(dbConn *sql.DB) ([]TipoEmpresaPreconfigur
 	rows, err := querySQLCompat(dbConn, `SELECT
 		p.id, p.tipo_empresa_id, COALESCE(t.nombre, ''), COALESCE(p.enabled, 0),
 		COALESCE(p.nombre, ''), COALESCE(p.descripcion, ''), COALESCE(p.config_json, ''),
-		COALESCE(p.fecha_creacion, ''), COALESCE(p.fecha_actualizacion, ''),
+		COALESCE(CAST(p.fecha_creacion AS TEXT), ''), COALESCE(CAST(p.fecha_actualizacion AS TEXT), ''),
 		COALESCE(p.usuario_creador, ''), COALESCE(NULLIF(TRIM(p.estado), ''), 'activo')
 	FROM tipo_empresa_preconfiguraciones p
 	LEFT JOIN tipos_de_empresas t ON t.id = p.tipo_empresa_id
@@ -182,7 +201,7 @@ func GetTipoEmpresaPreconfiguracionByTipoID(dbConn *sql.DB, tipoEmpresaID int64)
 	row := queryRowSQLCompat(dbConn, `SELECT
 		p.id, p.tipo_empresa_id, COALESCE(t.nombre, ''), COALESCE(p.enabled, 0),
 		COALESCE(p.nombre, ''), COALESCE(p.descripcion, ''), COALESCE(p.config_json, ''),
-		COALESCE(p.fecha_creacion, ''), COALESCE(p.fecha_actualizacion, ''),
+		COALESCE(CAST(p.fecha_creacion AS TEXT), ''), COALESCE(CAST(p.fecha_actualizacion AS TEXT), ''),
 		COALESCE(p.usuario_creador, ''), COALESCE(NULLIF(TRIM(p.estado), ''), 'activo')
 	FROM tipo_empresa_preconfiguraciones p
 	LEFT JOIN tipos_de_empresas t ON t.id = p.tipo_empresa_id
@@ -240,6 +259,78 @@ func UpsertTipoEmpresaPreconfiguracion(dbConn *sql.DB, item TipoEmpresaPreconfig
 		return 0, fmt.Errorf("upsert tipo empresa preconfiguracion: %w", err)
 	}
 	return id, nil
+}
+
+// SeedDefaultTipoEmpresaPreconfiguraciones registra plantillas base para todos
+// los tipos existentes. Por defecto respeta configuraciones ya personalizadas.
+func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, overwrite bool) (*TipoEmpresaPreconfigSeedResult, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
+		return nil, err
+	}
+	tipos, err := GetTiposEmpresas(dbConn)
+	if err != nil {
+		return nil, err
+	}
+	saved, err := ListTipoEmpresaPreconfiguraciones(dbConn)
+	if err != nil {
+		return nil, err
+	}
+	byTipo := make(map[int64]TipoEmpresaPreconfiguracion, len(saved))
+	for _, item := range saved {
+		byTipo[item.TipoEmpresaID] = item
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema.preconfiguracion"
+	}
+	result := &TipoEmpresaPreconfigSeedResult{
+		TotalTipos: len(tipos),
+		Items:      make([]TipoEmpresaPreconfigSeedItem, 0, len(tipos)),
+	}
+	for _, tipo := range tipos {
+		item := TipoEmpresaPreconfigSeedItem{
+			TipoEmpresaID:     tipo.ID,
+			TipoEmpresaNombre: strings.TrimSpace(tipo.Nombre),
+		}
+		if existing, ok := byTipo[tipo.ID]; ok && !overwrite {
+			item.PreconfigID = existing.ID
+			item.Accion = "omitida"
+			item.Nombre = existing.Nombre
+			item.Enabled = existing.Enabled
+			result.Omitidas++
+			result.Items = append(result.Items, item)
+			continue
+		}
+
+		preconfig := DefaultTipoEmpresaPreconfiguracion(tipo.ID, tipo.Nombre)
+		preconfig.UsuarioCreador = usuario
+		preconfig.Estado = "activo"
+		id, err := UpsertTipoEmpresaPreconfiguracion(dbConn, preconfig)
+		if err != nil {
+			item.Accion = "error"
+			item.Nombre = preconfig.Nombre
+			item.Enabled = preconfig.Enabled
+			item.Error = err.Error()
+			result.Errores++
+			result.Items = append(result.Items, item)
+			continue
+		}
+		item.PreconfigID = id
+		item.Nombre = preconfig.Nombre
+		item.Enabled = preconfig.Enabled
+		if _, existed := byTipo[tipo.ID]; existed {
+			item.Accion = "actualizada"
+			result.Actualizadas++
+		} else {
+			item.Accion = "creada"
+			result.Creadas++
+		}
+		result.Items = append(result.Items, item)
+	}
+	return result, nil
 }
 
 // DefaultTipoEmpresaPreconfiguracion entrega una plantilla profesional sugerida para tipos conocidos.

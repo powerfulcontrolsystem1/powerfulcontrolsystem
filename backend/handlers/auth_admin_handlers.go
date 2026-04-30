@@ -313,7 +313,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, admin.Email)
 		if appearanceErr != nil {
 			log.Println("AdminLoginHandler get appearance error:", appearanceErr)
-                  apariencia = ""
+			apariencia = ""
 		}
 		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "apariencia": apariencia})
 	}
@@ -1250,8 +1250,20 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to create tipo_empresa: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			preconfig := dbpkg.DefaultTipoEmpresaPreconfiguracion(id, payload.Nombre)
+			preconfig.UsuarioCreador = "sistema.preconfiguracion"
+			preconfigID, preconfigErr := dbpkg.UpsertTipoEmpresaPreconfiguracion(dbSuper, preconfig)
+			if preconfigErr != nil {
+				log.Printf("warning: no se pudo crear preconfiguracion inicial para tipo_empresa_id=%d: %v", id, preconfigErr)
+			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			response := map[string]interface{}{"id": id}
+			if preconfigErr == nil {
+				response["preconfiguracion_id"] = preconfigID
+			} else {
+				response["preconfiguracion_error"] = preconfigErr.Error()
+			}
+			json.NewEncoder(w).Encode(response)
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
