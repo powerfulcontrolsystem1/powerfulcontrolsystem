@@ -102,19 +102,39 @@ canvas,
 }
 
 @media (max-width: 700px) {
+  body {
+    min-height: 100dvh;
+  }
+
+  .game-root {
+    min-height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
   .game-hud {
     font-size: 0.86rem;
-    padding: 8px;
+    padding: 6px 8px;
     gap: 6px 10px;
   }
 
   .game-board-wrap {
-    padding: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    align-content: start;
+    padding: 4px;
+  }
+
+  canvas,
+  .game-board {
+    width: min(100%, 100vw);
+    height: auto;
+    max-height: calc(100dvh - 54px);
+    object-fit: contain;
   }
 
   .game-actions {
     gap: 6px;
-    padding: 8px 6px;
+    padding: 6px 5px calc(6px + env(safe-area-inset-bottom));
   }
 
   .game-btn {

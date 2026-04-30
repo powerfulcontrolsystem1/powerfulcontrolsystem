@@ -17,6 +17,8 @@ scripts/pcs_deployment.local.ps1
 tmp/*.txt
 backend/.env.local
 .env.local
+juegos/roms/*
+!juegos/roms/README.md
 # VSCode
 .vscode/
 # Archivos compilados

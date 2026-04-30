@@ -320,6 +320,25 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, err.Error(), http.StatusConflict)
 						return
 					}
+					if !isCarritoVentaPagada(carrito) {
+						hasActiveItems := false
+						items, errItems := dbpkg.GetCarritoCompraItems(dbEmp, empresaID, id, false)
+						if errItems != nil {
+							log.Printf("[carritos] get items for cancelar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errItems)
+							http.Error(w, "No se pudo validar si el carrito tiene productos o servicios", http.StatusInternalServerError)
+							return
+						}
+						for _, item := range items {
+							if strings.EqualFold(strings.TrimSpace(item.Estado), "activo") {
+								hasActiveItems = true
+								break
+							}
+						}
+						if hasActiveItems || roundMoneyCarritoHandler(carrito.Total) > 0 || roundMoneyCarritoHandler(carrito.Subtotal) > 0 {
+							http.Error(w, "no se puede cancelar este carrito porque tiene productos, servicios o valores cargados; primero devuelve los productos o servicios agregados", http.StatusConflict)
+							return
+						}
+					}
 				}
 				if err := dbpkg.ActivateCarritoStationSession(dbEmp, empresaID, id, resetItems); err != nil {
 					log.Printf("[carritos] activar_estacion empresa_id=%d id=%d reset_items=%v error: %v", empresaID, id, resetItems, err)
@@ -1803,16 +1822,16 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 || carrito.ID <= 0 {
 		return nil, nil
 	}
-	if carrito.ItemCount <= 0 && roundMoneyCarritoHandler(carrito.Total) <= 0 {
+	if roundMoneyCarritoHandler(carrito.Total) <= 0 {
 		return &carritoBusinessPrerequisite{
-			Code:         "carrito_sin_productos",
-			Title:        "Carrito sin productos o tarifa",
-			Message:      "Antes de pagar debes agregar al menos un producto, servicio o tarifa al carrito. Asi el cierre queda trazable y el documento de venta sale con detalle.",
-			RobotMessage: "No cierres todavia este carrito. Primero agrega productos o configura una tarifa para esta estacion. Pasos: entra a Buscar productos, agrega el producto o servicio, revisa el total y despues vuelve a presionar Pagar.",
+			Code:         "carrito_total_cero",
+			Title:        "Carrito con cuenta en cero",
+			Message:      "No se puede pagar ni cerrar este carrito porque la cuenta esta en cero. Agrega al menos un producto, servicio o tarifa antes de cerrar la venta.",
+			RobotMessage: "No cierres todavia este carrito: la cuenta esta en cero. Primero agrega productos, servicios o configura una tarifa para esta estacion; revisa que el total sea mayor que cero y despues vuelve a presionar Pagar.",
 			Scope:        "pagar_estacion",
 			Steps: []string{
 				"Agrega un producto, combo, servicio o tarifa al carrito.",
-				"Verifica que el total a pagar sea mayor o igual al valor esperado.",
+				"Verifica que el total del carrito sea mayor que cero.",
 				"Vuelve a presionar Pagar cuando el detalle este completo.",
 			},
 			Actions: []map[string]interface{}{

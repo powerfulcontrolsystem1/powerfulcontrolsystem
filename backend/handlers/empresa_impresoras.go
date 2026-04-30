@@ -143,22 +143,24 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo cargar resumen de impresoras", http.StatusInternalServerError)
 					return
 				}
+				warnings := make([]string, 0)
 				funcionalidades, err := dbpkg.ListEmpresaImpresoraFuncionalidadesByEmpresa(dbEmp, empresaID)
 				if err != nil {
 					log.Printf("[empresa_impresoras] resumen funcionalidades empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo cargar resumen de impresoras", http.StatusInternalServerError)
-					return
+					funcionalidades = []dbpkg.EmpresaImpresoraFuncionalidad{}
+					warnings = append(warnings, "No se pudieron cargar asignaciones por funcionalidad")
 				}
 				productos, err := dbpkg.ListEmpresaImpresoraProductosByEmpresa(dbEmp, empresaID)
 				if err != nil {
 					log.Printf("[empresa_impresoras] resumen productos empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo cargar resumen de impresoras", http.StatusInternalServerError)
-					return
+					productos = []dbpkg.EmpresaImpresoraProducto{}
+					warnings = append(warnings, "No se pudieron cargar asignaciones por producto")
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"impresoras":      impresoras,
 					"funcionalidades": funcionalidades,
 					"productos":       productos,
+					"warnings":        warnings,
 				})
 				return
 

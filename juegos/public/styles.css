@@ -239,14 +239,21 @@ button:disabled {
 }
 
 @media (max-width: 860px) {
+  html,
+  body {
+    min-height: 100dvh;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
   }
 
   .games-panel {
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    max-height: 42vh;
+    max-height: 34dvh;
+    padding: 10px;
   }
 
   .rom-grid {
@@ -254,16 +261,26 @@ button:disabled {
   }
 
   .player-panel {
-    padding: 12px;
+    width: 100vw;
+    padding: 8px 0 10px;
+    gap: 7px;
   }
 
   .player-toolbar {
     align-items: flex-start;
+    padding: 0 8px;
   }
 
   .player-shell {
-    min-height: 58vh;
-    border-radius: 8px;
+    width: 100vw;
+    min-height: min(62dvh, calc(100dvh - 190px));
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+
+  .message {
+    padding: 0 8px;
   }
 }
 

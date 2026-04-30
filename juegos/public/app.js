@@ -3,7 +3,8 @@ const state = {
   roms: [],
   selected: "",
   loaded: false,
-  loaderUrl: "/emulator/data/loader.js",
+  basePath: normalizeBasePath(window.JUEGOS_BASE_PATH || inferBasePath()),
+  loaderPath: "/emulator/data/loader.js",
   dataPath: "/emulator/data/"
 };
 
@@ -23,6 +24,27 @@ const els = {
   game: document.getElementById("game")
 };
 
+function inferBasePath() {
+  const currentPath = window.location.pathname || "/";
+  if (currentPath === "/" || currentPath === "/index.html") return "";
+  const withoutSlash = currentPath.endsWith("/") ? currentPath.slice(0, -1) : currentPath;
+  const base = withoutSlash.slice(0, withoutSlash.lastIndexOf("/"));
+  return base || withoutSlash;
+}
+
+function normalizeBasePath(path) {
+  const value = String(path || "").trim();
+  if (!value || value === "/") return "";
+  const withSlash = value.startsWith("/") ? value : `/${value}`;
+  return withSlash.replace(/\/+$/, "");
+}
+
+function appPath(path) {
+  const clean = String(path || "");
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `${state.basePath}${clean.startsWith("/") ? clean : `/${clean}`}`;
+}
+
 function setMessage(text, isError = false) {
   els.message.textContent = text || "";
   els.message.classList.toggle("is-error", Boolean(isError));
@@ -41,7 +63,7 @@ function getRomFromUrl() {
 
 function persistSelectedRom(file) {
   try {
-    localStorage.setItem("jeugos.selectedRom", file || "");
+    localStorage.setItem("juegos.selectedRom", file || "");
   } catch (_) {
     /* localStorage can be unavailable in restricted browsers. */
   }
@@ -49,7 +71,7 @@ function persistSelectedRom(file) {
 
 function getPersistedRom() {
   try {
-    return localStorage.getItem("jeugos.selectedRom") || "";
+    return localStorage.getItem("juegos.selectedRom") || "";
   } catch (_) {
     return "";
   }
@@ -64,7 +86,7 @@ function selectRom(file) {
 
 async function loadROMs() {
   setMessage("Cargando ROMs...");
-  const response = await fetch("/api/roms", { credentials: "same-origin" });
+  const response = await fetch(appPath("/api/roms"), { credentials: "same-origin" });
   if (!response.ok) throw new Error("No fue posible cargar /api/roms");
   const data = await response.json();
   state.core = data.core || "snes";
@@ -121,7 +143,7 @@ function renderROMCards() {
     button.className = `rom-card${rom.file === state.selected ? " is-selected" : ""}`;
     button.innerHTML = `<strong></strong><small></small>`;
     button.querySelector("strong").textContent = rom.name;
-    button.querySelector("small").textContent = `${formatBytes(rom.size)} · ${rom.file}`;
+    button.querySelector("small").textContent = `${formatBytes(rom.size)} - ${rom.file}`;
     button.addEventListener("click", () => {
       selectRom(rom.file);
       startSelectedGame();
@@ -133,13 +155,15 @@ function renderROMCards() {
 function configureEmulator(rom) {
   window.EJS_player = "#game";
   window.EJS_core = state.core || "snes";
-  window.EJS_gameUrl = rom.url;
+  window.EJS_gameUrl = appPath(rom.url);
   window.EJS_gameName = rom.name;
-  window.EJS_pathtodata = state.dataPath;
+  window.EJS_pathtodata = appPath(state.dataPath);
   window.EJS_startOnLoaded = true;
   window.EJS_AdUrl = "";
   window.EJS_color = "#38bdf8";
   window.EJS_backgroundColor = "#000000";
+  window.EJS_fullscreenOnLoaded = false;
+  window.EJS_volume = 0.65;
 }
 
 function resetPlayerDOM() {
@@ -150,7 +174,7 @@ function resetPlayerDOM() {
 function injectLoader() {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `${state.loaderUrl}?v=${Date.now()}`;
+    script.src = `${appPath(state.loaderPath)}?v=${Date.now()}`;
     script.async = true;
     script.onload = resolve;
     script.onerror = () => reject(new Error("No se pudo cargar EmulatorJS. Verifica /emulator/data/loader.js"));
@@ -224,4 +248,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap().catch((err) => setMessage(err.message || "Error inicializando Jeugos.", true));
+bootstrap().catch((err) => setMessage(err.message || "Error inicializando Juegos.", true));

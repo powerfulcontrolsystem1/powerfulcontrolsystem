@@ -1,5 +1,58 @@
 <head>
   <script src='classic-tetris.js'></script>
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .tetris-root {
+      user-select: none;
+      color: #fff;
+      background-color: #000;
+      font: 17px georgia;
+      min-height: 100dvh;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+    }
+
+    .tetris-panel {
+      width: min(100vw, 520px);
+    }
+
+    #tetris-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: calc(100dvh - 42px);
+    }
+
+    .tetris-actions {
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 700px) {
+      .tetris-actions {
+        font-size: 0.78rem;
+        padding: 3px 5px;
+      }
+
+      .tetris-actions input,
+      .tetris-actions button {
+        min-height: 28px;
+      }
+    }
+  </style>
   <script>
   window.addEventListener('load', event => {
     const canvas = document.getElementById('tetris-canvas');
@@ -16,10 +69,10 @@
   </script>
 </head>
 <body>
-  <div style='user-select:none; color:#fff; background-color:#000; font:17px georgia'>
-    <div style='display:table; margin:0 auto;'>
+  <div class='tetris-root'>
+    <div class='tetris-panel'>
       <canvas id='tetris-canvas' class='canvas' width='520' height='600'></canvas>
-      <div style='padding:0px 30px 15px 30px;'>
+      <div class='tetris-actions'>
         <label for='level-input'>Start level:</label>
         <input id='level-input' name='level-input' type='number' min='0' max='19' value='5'></input>
         <button id='start-stop-btn'>Play/Pause</button>

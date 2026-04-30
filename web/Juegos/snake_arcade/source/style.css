@@ -17,8 +17,8 @@ body {
 
 .game-container {
     position: relative;
-    width: 90vw;
-    height: 90vw;
+    width: min(100vw, 600px);
+    height: min(100vw, 600px);
     max-width: 600px;
     max-height: 600px;
     background: linear-gradient(135deg, #0d1117, #161b22);
@@ -73,4 +73,17 @@ canvas {
 
 .game-over button:hover {
     background: #d62839;
+}
+
+@media (max-width: 700px) {
+    body {
+        align-items: flex-start;
+        min-height: 100dvh;
+    }
+
+    .game-container {
+        border-radius: 0;
+        width: 100vw;
+        height: min(100vw, 100dvh);
+    }
 }

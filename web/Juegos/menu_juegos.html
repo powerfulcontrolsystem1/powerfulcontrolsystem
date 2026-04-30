@@ -190,6 +190,20 @@
         radial-gradient(circle, rgba(255,255,255,.55), transparent 38%),
         #111827;
     }
+    .games-cover-emulator {
+      background:
+        radial-gradient(circle at 72% 30%, #38bdf8 0 7%, transparent 7.5%),
+        linear-gradient(90deg, transparent 0 12%, #f8fafc 12% 15%, transparent 15% 85%, #f8fafc 85% 88%, transparent 88%),
+        linear-gradient(180deg, #111827 0 22%, #0f172a 22% 76%, #020617 76%),
+        repeating-linear-gradient(90deg, rgba(56,189,248,.18) 0 20px, transparent 20px 40px),
+        #020617;
+    }
+    .games-cover-emulator::before {
+      inset: 36% 18% 22%;
+      background:
+        linear-gradient(90deg, #ef4444 0 12%, transparent 12% 18%, #22c55e 18% 30%, transparent 30% 36%, #facc15 36% 48%, transparent 48%),
+        radial-gradient(circle at 78% 48%, #f8fafc 0 8%, transparent 8.5%);
+    }
     .games-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
     .games-card p { color: var(--muted); line-height: 1.55; margin: 0; }
     .games-hero p, .games-card h2, .games-card p, .games-actions .btn {
@@ -353,6 +367,16 @@
         <p>Arcade de superar obstaculos. Optimizado para celular con toques y para PC con la tecla espacio.</p>
         <div class="games-actions">
           <a class="btn secondary" href="/Juegos/patito_volando.html">Jugar Patito Volando</a>
+        </div>
+      </article>
+
+      <article class="games-card is-featured">
+        <div class="games-cover games-cover-emulator" role="img" aria-label="Imagen representativa del emulador SNES"><span>EmulatorJS</span></div>
+        <span class="games-badge">Emulador web</span>
+        <h2>Emulador SNES</h2>
+        <p>Emulador multiplataforma con EmulatorJS, ROMs listadas desde el servidor Go, pantalla completa, controles tactiles y soporte para gamepad.</p>
+        <div class="games-actions">
+          <a class="btn" href="/emulador/">Abrir emulador</a>
         </div>
       </article>
 

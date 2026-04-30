@@ -230,6 +230,18 @@ type empresaImpresoraScanner interface {
 	Scan(dest ...interface{}) error
 }
 
+func empresaImpresoraDefaultSelectExpr(alias string) string {
+	prefix := ""
+	if strings.TrimSpace(alias) != "" {
+		prefix = strings.TrimSpace(alias) + "."
+	}
+	return "CASE WHEN lower(COALESCE(CAST(" + prefix + "es_predeterminada AS TEXT), '')) IN ('1', 'true', 't', 'yes', 'si') THEN 1 ELSE 0 END"
+}
+
+func empresaImpresoraDefaultWhereExpr(alias string) string {
+	return empresaImpresoraDefaultSelectExpr(alias) + " = 1"
+}
+
 func scanEmpresaImpresora(row empresaImpresoraScanner) (*EmpresaImpresora, error) {
 	item := EmpresaImpresora{}
 	var esPredeterminadaInt int
@@ -369,7 +381,7 @@ func ListEmpresaImpresorasByEmpresa(dbConn *sql.DB, empresaID int64, includeInac
 		COALESCE(direccion, ''),
 		COALESCE(area_operativa, ''),
 		COALESCE(formato_impresion, 'pos'),
-		COALESCE(es_predeterminada, 0),
+		` + empresaImpresoraDefaultSelectExpr("") + `,
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -380,7 +392,7 @@ func ListEmpresaImpresorasByEmpresa(dbConn *sql.DB, empresaID int64, includeInac
 	if !includeInactive {
 		query += ` AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo'`
 	}
-	query += ` ORDER BY es_predeterminada DESC, nombre ASC, id ASC`
+	query += ` ORDER BY ` + empresaImpresoraDefaultSelectExpr("") + ` DESC, nombre ASC, id ASC`
 
 	rows, err := querySQLCompat(dbConn, query, empresaID)
 	if err != nil {
@@ -413,7 +425,7 @@ func GetEmpresaImpresoraByID(dbConn *sql.DB, empresaID, impresoraID int64) (*Emp
 		COALESCE(direccion, ''),
 		COALESCE(area_operativa, ''),
 		COALESCE(formato_impresion, 'pos'),
-		COALESCE(es_predeterminada, 0),
+		`+empresaImpresoraDefaultSelectExpr("")+`,
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -427,13 +439,13 @@ func GetEmpresaImpresoraByID(dbConn *sql.DB, empresaID, impresoraID int64) (*Emp
 
 func ensureEmpresaImpresoraDefaultConsistency(dbConn *sql.DB, empresaID int64) error {
 	var defaultCount int64
-	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_impresoras WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo' AND COALESCE(es_predeterminada, 0) = 1`, empresaID).Scan(&defaultCount); err != nil {
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_impresoras WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo' AND `+empresaImpresoraDefaultWhereExpr(""), empresaID).Scan(&defaultCount); err != nil {
 		return err
 	}
 
 	if defaultCount > 1 {
 		var keepID int64
-		if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo' AND COALESCE(es_predeterminada, 0) = 1 ORDER BY id ASC LIMIT 1`, empresaID).Scan(&keepID); err != nil {
+		if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo' AND `+empresaImpresoraDefaultWhereExpr("")+` ORDER BY id ASC LIMIT 1`, empresaID).Scan(&keepID); err != nil {
 			return err
 		}
 		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo'`, keepID, empresaID); err != nil {
@@ -890,7 +902,7 @@ func resolveEmpresaImpresoraByProducto(dbConn *sql.DB, empresaID, productoID int
 		COALESCE(i.direccion, ''),
 		COALESCE(i.area_operativa, ''),
 		COALESCE(i.formato_impresion, 'pos'),
-		COALESCE(i.es_predeterminada, 0),
+		`+empresaImpresoraDefaultSelectExpr("i")+`,
 		COALESCE(i.fecha_creacion, ''),
 		COALESCE(i.fecha_actualizacion, ''),
 		COALESCE(i.usuario_creador, ''),
@@ -920,7 +932,7 @@ func resolveEmpresaImpresoraByFuncionalidad(dbConn *sql.DB, empresaID int64, fun
 		COALESCE(i.direccion, ''),
 		COALESCE(i.area_operativa, ''),
 		COALESCE(i.formato_impresion, 'pos'),
-		COALESCE(i.es_predeterminada, 0),
+		`+empresaImpresoraDefaultSelectExpr("i")+`,
 		COALESCE(i.fecha_creacion, ''),
 		COALESCE(i.fecha_actualizacion, ''),
 		COALESCE(i.usuario_creador, ''),
@@ -951,7 +963,7 @@ func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*Em
 		COALESCE(direccion, ''),
 		COALESCE(area_operativa, ''),
 		COALESCE(formato_impresion, 'pos'),
-		COALESCE(es_predeterminada, 0),
+		`+empresaImpresoraDefaultSelectExpr("")+`,
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -960,7 +972,7 @@ func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*Em
 	FROM empresa_impresoras
 	WHERE empresa_id = ?
 		AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo'
-	ORDER BY COALESCE(es_predeterminada, 0) DESC, id ASC
+	ORDER BY `+empresaImpresoraDefaultSelectExpr("")+` DESC, id ASC
 	LIMIT 1`, empresaID)
 	item, err := scanEmpresaImpresora(row)
 	if err != nil {

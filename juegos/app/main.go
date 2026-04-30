@@ -62,7 +62,7 @@ func main() {
 		ReadHeaderTimeout: 8 * time.Second,
 	}
 
-	log.Printf("jeugos emulator server listening on %s", cfg.addr)
+	log.Printf("juegos emulator server listening on %s", cfg.addr)
 	log.Printf("public=%s emulator=%s roms=%s core=%s", cfg.publicDir, cfg.emulatorDir, cfg.romsDir, cfg.core)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
@@ -70,11 +70,11 @@ func main() {
 }
 
 func loadConfig() serverConfig {
-	addr := flag.String("addr", envDefault("JEUGOS_ADDR", ":8099"), "HTTP bind address")
-	publicDir := flag.String("public", envDefault("JEUGOS_PUBLIC_DIR", "./public"), "public static directory")
-	emulatorDir := flag.String("emulator", envDefault("JEUGOS_EMULATOR_DIR", "./emulator"), "EmulatorJS static directory")
-	romsDir := flag.String("roms", envDefault("JEUGOS_ROMS_DIR", "./roms"), "read-only ROM directory")
-	core := flag.String("core", envDefault("JEUGOS_CORE", "snes"), "EmulatorJS core")
+	addr := flag.String("addr", envDefault("JUEGOS_ADDR", ":8099"), "HTTP bind address")
+	publicDir := flag.String("public", envDefault("JUEGOS_PUBLIC_DIR", "./public"), "public static directory")
+	emulatorDir := flag.String("emulator", envDefault("JUEGOS_EMULATOR_DIR", "./emulator"), "EmulatorJS static directory")
+	romsDir := flag.String("roms", envDefault("JUEGOS_ROMS_DIR", "./roms"), "read-only ROM directory")
+	core := flag.String("core", envDefault("JUEGOS_CORE", "snes"), "EmulatorJS core")
 	flag.Parse()
 
 	return serverConfig{
@@ -199,7 +199,29 @@ func (cfg serverConfig) handleROMFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func secureStaticFileServer(root string) http.Handler {
-	return http.FileServer(http.Dir(root))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		cleanPath := path.Clean("/" + strings.TrimPrefix(r.URL.Path, "/"))
+		if strings.Contains(cleanPath, "..") {
+			http.NotFound(w, r)
+			return
+		}
+		fullPath, ok := safeJoin(root, strings.TrimPrefix(cleanPath, "/"))
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		info, err := os.Stat(fullPath)
+		if err != nil || info.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, max-age=604800")
+		http.ServeFile(w, r, fullPath)
+	})
 }
 
 func secureSPAFileServer(root string) http.HandlerFunc {
@@ -212,6 +234,10 @@ func secureSPAFileServer(root string) http.HandlerFunc {
 		cleanPath := path.Clean("/" + r.URL.Path)
 		if strings.Contains(cleanPath, "..") {
 			http.NotFound(w, r)
+			return
+		}
+		if cleanPath == "/" {
+			http.ServeFile(w, r, filepath.Join(root, "index.html"))
 			return
 		}
 		fullPath, ok := safeJoin(root, strings.TrimPrefix(cleanPath, "/"))
@@ -268,7 +294,7 @@ func safeJoin(root, name string) (string, bool) {
 	full := filepath.Join(rootAbs, filepath.Clean(name))
 	fullAbs := cleanRoot(full)
 	rel, err := filepath.Rel(rootAbs, fullAbs)
-	if err != nil || rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+	if err != nil || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
 		return "", false
 	}
 	return fullAbs, true

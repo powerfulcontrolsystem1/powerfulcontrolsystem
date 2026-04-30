@@ -3709,8 +3709,8 @@ body.has-floating-menu .header .form-actions{
 /* Tarjetas de estaciones (administrar empresa): color dinámico por estado de carrito */
 #estacionesGrid{
   --station-card-scale: 1;
-  --station-card-min: 10.5em;
-  --station-card-height: 8.4em;
+  --station-card-min: 12.6em;
+  --station-card-height: 8.82em;
   --station-gap: 8px;
   /* font-size here controls scaling of card internals (use em in children) */
   font-size: calc(1rem * var(--station-card-scale));
@@ -3721,9 +3721,9 @@ body.has-floating-menu .header .form-actions{
   justify-items: center;
   width: 100%;
 }
-#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 9.5em; --station-card-height: 7.2em; }
-#estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 10.5em; --station-card-height: 8.4em; }
-#estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 12.5em; --station-card-height: 10.0em; }
+#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 11.4em; --station-card-height: 7.56em; }
+#estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 12.6em; --station-card-height: 8.82em; }
+#estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 15em; --station-card-height: 10.5em; }
 
 #estacionesGrid .portal-card{
   background: var(--station-state-bg, #fff9ef);
@@ -3915,7 +3915,7 @@ body.has-floating-menu .header .form-actions{
     --station-card-scale: 1;
     font-size: clamp(0.78rem, 2.9vw + 0.2rem, 0.95rem);
     --station-card-min: 0;
-    --station-card-height: 5.4em;
+    --station-card-height: 5.67em;
     --station-gap: 6px;
   }
   #estacionesGrid.estaciones-thumb-mobile .portal-card{
@@ -7784,7 +7784,7 @@ html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
 
 /* Revision integral: estaciones con tamano uniforme en PC, movil y miniaturas. */
 .estaciones-thumb-toggle{
-  display:inline-flex;
+  display:none;
 }
 
 #estacionesGrid{
@@ -7801,12 +7801,12 @@ html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
 #estacionesGrid.estaciones-thumb-mobile{
   container-type:inline-size;
   container-name:estaciones-thumb;
-  grid-template-columns:repeat(auto-fit, minmax(7.2em, 1fr));
+  grid-template-columns:repeat(auto-fit, minmax(8.64em, 1fr));
   grid-auto-rows:var(--station-card-height);
   --station-card-scale:1;
   font-size:clamp(0.78rem, 1vw + 0.28rem, 0.95rem);
   --station-card-min:0;
-  --station-card-height:5.4em;
+  --station-card-height:5.67em;
   --station-gap:6px;
 }
 
@@ -7850,7 +7850,7 @@ html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
 
 @media (max-width:640px){
   #estacionesGrid.estaciones-thumb-mobile{
-    grid-template-columns:repeat(3, minmax(0, 1fr));
+    grid-template-columns:repeat(auto-fit, minmax(8.64em, 1fr));
     font-size:clamp(0.78rem, 2.9vw + 0.2rem, 0.95rem);
   }
 

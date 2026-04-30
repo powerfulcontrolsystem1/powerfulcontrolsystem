@@ -649,6 +649,7 @@
             <div class="form-col">
               <label class="form-label" for="printerFuncionalidad">Funcionalidad</label>
               <select id="printerFuncionalidad" class="form-input">
+                <option value="ticket_cobro">Recibo de venta / ticket de cobro</option>
                 <option value="orden_servicio">Orden de servicio</option>
                 <option value="factura_caja">Factura de caja</option>
                 <option value="reporte_caja">Reporte de caja</option>
@@ -1943,9 +1944,12 @@
     async function loadImpresorasConfig(showSuccessMessage) {
       if (!empresaId) return;
       try {
-        const results = await Promise.all([fetchImpresorasResumen(), fetchImpresorasCatalogoProductos()]);
-        const resumen = results[0] && typeof results[0] === 'object' ? results[0] : {};
-        const catalogo = results[1] && typeof results[1] === 'object' ? results[1] : {};
+        const results = await Promise.allSettled([fetchImpresorasResumen(), fetchImpresorasCatalogoProductos()]);
+        if (results[0].status !== 'fulfilled') {
+          throw results[0].reason || new Error('No se pudo cargar el resumen de impresoras.');
+        }
+        const resumen = results[0].value && typeof results[0].value === 'object' ? results[0].value : {};
+        const catalogo = results[1].status === 'fulfilled' && results[1].value && typeof results[1].value === 'object' ? results[1].value : {};
         impresorasState.impresoras = Array.isArray(resumen.impresoras) ? resumen.impresoras : [];
         impresorasState.funcionalidades = Array.isArray(resumen.funcionalidades) ? resumen.funcionalidades : [];
         impresorasState.productos = Array.isArray(resumen.productos) ? resumen.productos : [];
@@ -1962,7 +1966,8 @@
           resetImpresoraForm();
         }
         if (showSuccessMessage) {
-          setImpresorasMessage('Configuracion de impresoras actualizada.', 'success');
+          const catalogWarning = results[1].status !== 'fulfilled' ? ' El catalogo de productos no se pudo cargar, pero las impresoras quedaron disponibles.' : '';
+          setImpresorasMessage('Configuracion de impresoras actualizada.' + catalogWarning, results[1].status !== 'fulfilled' ? 'error' : 'success');
         }
       } catch (err) {
         setImpresorasMessage('No se pudo cargar configuración de impresoras: ' + (err && err.message ? err.message : err), 'error');

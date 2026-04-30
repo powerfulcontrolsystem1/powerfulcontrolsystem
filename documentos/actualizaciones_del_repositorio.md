@@ -1,4 +1,4 @@
-ï»¿# Actualizaciones del repositorio
+# Actualizaciones del repositorio
 
 Este documento registra las actualizaciones automaticas realizadas por el script scripts/actualizar_repositorio.ps1.
 
@@ -667,7 +667,7 @@ Archivos modificados:
 - web/index.html
 - web/super/pagina_principal.html
 
-2026-04-24 16:52:40 - Mensaje: Portal index: subtÃ­tulo IA; documentaciÃ³n; retiro banner promocional fijo; Commit: fe6844c; PushStatus: OK
+2026-04-24 16:52:40 - Mensaje: Portal index: subtítulo IA; documentación; retiro banner promocional fijo; Commit: fe6844c; PushStatus: OK
 Archivos modificados:
 - Pendiente Notas
 - documentos/descripcion_de_archivos
@@ -855,7 +855,7 @@ Archivos modificados:
 Archivos modificados:
 - web/index.html
 
-2026-04-25 15:44:16 - Mensaje: Portal: chat IA pÃºblico index + switch; mensajes privados; eliminar banners; mejorar tÃ­tulo; Commit: 84e7e09; PushStatus: OK
+2026-04-25 15:44:16 - Mensaje: Portal: chat IA público index + switch; mensajes privados; eliminar banners; mejorar título; Commit: 84e7e09; PushStatus: OK
 Archivos modificados:
 - backend/handlers/pagina_principal_handlers.go
 - backend/handlers/public_chat_portal.go
@@ -2744,17 +2744,17 @@ Archivos modificados:
 - backend/handlers/tarifas_por_minutos.go
 - backend/main.go
 - backend/utils/utils.go
-- jeugos/README.md
-- jeugos/app/main.go
-- jeugos/deploy/fetch_emulatorjs.sh
-- jeugos/deploy/jeugos.service
-- jeugos/deploy/nginx.conf
-- jeugos/emulator/README.md
-- jeugos/go.mod
-- jeugos/public/app.js
-- jeugos/public/index.html
-- jeugos/public/styles.css
-- jeugos/roms/README.md
+- juegos/README.md
+- juegos/app/main.go
+- juegos/deploy/fetch_emulatorjs.sh
+- juegos/deploy/juegos.service
+- juegos/deploy/nginx.conf
+- juegos/emulator/README.md
+- juegos/go.mod
+- juegos/public/app.js
+- juegos/public/index.html
+- juegos/public/styles.css
+- juegos/roms/README.md
 - web/Juegos/menu_juegos.html
 - web/Juegos/pacman_arcade/pacman.js
 - web/Juegos/pacman_arcade/pcs-pacman-arcade.css

@@ -92,7 +92,6 @@
 
     <div class="form carrito-workspace-card">
       <div class="page-header carrito-workspace-header">
-        <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
         <h2 id="itemsTitle" class="section-heading">Items del carrito</h2>
       </div>
       <div id="carritoResumen" class="form-help"></div>
@@ -100,7 +99,7 @@
       <div class="carrito-primary-layout">
         <div class="carrito-primary-main">
       <div id="buscarProductosActions" class="form-actions mt-10">
-        <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
+        <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
         <button type="button" id="carritoBtnBuscarBotones" class="btn secondary">Buscar (botones)</button>
       </div>
 
@@ -139,7 +138,7 @@
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
-          <button type="button" id="carritoBtnCancelarCarrito" class="btn danger">Cancelar carrito</button>
+          <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label class="form-help inline-check carrito-alert10-check">
             <input type="checkbox" id="carritoAlerta10Enable" checked>
             Alerta visual 10 min
@@ -1019,7 +1018,7 @@
 
       const searchActions = document.getElementById('buscarProductosActions');
       if (searchActions) {
-        searchActions.style.display = ui.mostrar_boton_buscar_productos ? '' : 'none';
+        searchActions.style.display = '';
       }
 
       const btnBuscarToolbar = document.getElementById('carritoBtnBuscarBotones');
@@ -1962,6 +1961,7 @@
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
+      const printFormat = normalize(printerTarget && printerTarget.formato_impresion).toLowerCase() === 'carta' ? 'carta' : 'pos';
 
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Orden de servicio</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}p{margin:4px 0}hr{margin:10px 0}.muted{color:#666;font-size:12px}</style>' +
@@ -1981,7 +1981,7 @@
         '<hr><p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias configuradas: ' + escapeHtml(copias) + '</p>' +
         '</body></html>';
 
-      const printWindow = window.open('', '_blank', 'width=420,height=720');
+      const printWindow = window.open('', '_blank', printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900');
       if (!printWindow) {
         setMessage('itemMsg', 'El navegador bloqueó la impresión automática de la orden de servicio.', true);
         return;
@@ -2110,6 +2110,7 @@
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
+      const printFormat = normalize(printerTarget && printerTarget.formato_impresion).toLowerCase() === 'carta' ? 'carta' : 'pos';
       const copias = Math.max(1, Math.min(5, Number(productos.copias_orden_servicio || 1) || 1));
       const now = new Date();
 
@@ -2123,12 +2124,19 @@
         rowsHtml += '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(line, moneda)) + '</td></tr>';
       });
 
+      const pageStyle = printFormat === 'pos'
+        ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
+        : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
+      const baseStyle = printFormat === 'pos'
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
-        '<style>body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}</style>' +
+        '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
         '<h1>Recibo de cobro</h1>' +
         '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' +
         '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' +
+        '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' +
         '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' +
         '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' +
         '<hr>' +
@@ -2138,7 +2146,7 @@
         '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
         '</body></html>';
 
-      const printWindow = window.open('', '_blank', 'width=420,height=720');
+      const printWindow = window.open('', '_blank', printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900');
       if (!printWindow) {
         setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
         return;
@@ -2539,6 +2547,15 @@
 
       const pay = getStationPaymentBreakdown(selected);
 
+      if (Number(pay.totalBase || 0) <= 0) {
+        setStationPaymentMessage('No se puede pagar ni cerrar este carrito porque la cuenta esta en cero. Agrega productos, servicios o una tarifa antes de cerrar la venta.', true);
+        const scannerInput = document.getElementById('scannerCodigo');
+        if (scannerInput && typeof scannerInput.focus === 'function') {
+          scannerInput.focus();
+        }
+        return;
+      }
+
       if (!pay.paymentMethod || !isPaymentMethodAllowed(pay.paymentMethod)) {
         setStationPaymentMessage(pay.operativaMessage || 'El método de pago seleccionado no está habilitado para este rol.', true);
         return;
@@ -2687,6 +2704,22 @@
       return state.carritos.find(function(x) { return Number(x.id) === Number(state.selectedCarritoID); }) || null;
     }
 
+    function cartHasItemsOrTotalsForCancel(carrito) {
+      if (!carrito) return false;
+      const total = Math.max(
+        0,
+        roundMoney(carrito.total),
+        roundMoney(carrito.subtotal),
+        roundMoney(carrito.impuesto_total)
+      );
+      if (total > 0) return true;
+      if (Number(carrito.item_count || 0) > 0) return true;
+      return Array.isArray(state.items) && state.items.some(function(item) {
+        if (normalize(item.estado || 'activo').toLowerCase() !== 'activo') return false;
+        return Number(item.cantidad || 0) !== 0 || roundMoney(item.total_linea) !== 0;
+      });
+    }
+
     function ensureSelectedCarritoFromLoadedList() {
       if (!Array.isArray(state.carritos) || !state.carritos.length) {
         return null;
@@ -2755,15 +2788,6 @@
 
     function syncBuscarProductosButton() {
       const selected = getSelectedCarrito();
-      const mainBtn = document.getElementById('buscarProductosBtn');
-      if (mainBtn) {
-        mainBtn.disabled = !selected;
-        if (!selected) {
-          mainBtn.textContent = 'Buscar productos';
-        } else {
-          mainBtn.textContent = 'Buscar productos en ' + (normalize(selected.nombre) || ('carrito #' + selected.id));
-        }
-      }
       const toolbarBtn = document.getElementById('carritoBtnBuscarBotones');
       if (toolbarBtn) {
         toolbarBtn.disabled = !selected;
@@ -3619,32 +3643,27 @@
       const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
       let thead = '<thead><tr>' +
         '<th>ID</th>' +
-        '<th>Tipo</th>' +
         '<th>Descripción</th>' +
         '<th>Cant.</th>' +
         '<th>Precio</th>' +
         '<th>Desc %</th>' +
         '<th>Imp %</th>' +
         (showTotal ? '<th>Total línea</th>' : '') +
-        '<th>Estado</th>' +
         '<th>Acciones</th>' +
         '</tr></thead>';
       table.innerHTML = thead;
 
       const tbody = document.createElement('tbody');
       state.items.forEach(function(item) {
-        const estado = normalize(item.estado) || 'activo';
         const tr = document.createElement('tr');
         let row = '<td>' + item.id + '</td>' +
-          '<td>' + (normalize(item.tipo_item) || '') + '</td>' +
           '<td>' + (normalize(item.descripcion) || '') + '</td>' +
           '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
         if (showTotal) row += '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>';
-        row += '<td>' + estado + '</td>' +
-          '<td class="actions">' +
+        row += '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
               : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver</button>') +
@@ -4163,15 +4182,6 @@
       document.getElementById('buscarCarritoBtn').click();
     });
 
-    document.getElementById('buscarProductosBtn').addEventListener('click', function() {
-      const selected = getSelectedCarrito();
-      if (!selected) {
-        setMessage('itemMsg', 'Selecciona un carrito para buscar productos.', true);
-        return;
-      }
-      openBuscarProductosForCarrito(selected);
-    });
-
     const carritoBtnBuscarBotones = document.getElementById('carritoBtnBuscarBotones');
     if (carritoBtnBuscarBotones) {
       carritoBtnBuscarBotones.addEventListener('click', function() {
@@ -4200,6 +4210,10 @@
     });
     document.getElementById('carritoBtnCancelarCarrito').addEventListener('click', async function() {
       const selected = getSelectedCarrito();
+      if (cartHasItemsOrTotalsForCancel(selected)) {
+        setStationPaymentMessage('No se puede cancelar este carrito porque tiene productos, servicios o valores cargados. Primero devuelve los productos o servicios agregados; despues podras cancelar la estacion.', true);
+        return;
+      }
       const marginState = getStationCancelMarginState(selected);
       if (marginState.expired) {
         setStationPaymentMessage('El margen para cancelar o desactivar la estacion vencio. Debes usar Pagar y cerrar carrito.', true);

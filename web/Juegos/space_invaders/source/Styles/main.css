@@ -5,13 +5,15 @@
 
 html, body {
   height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 canvas {
@@ -20,6 +22,9 @@ canvas {
 
 #game-canvas {
   outline: 1px solid white;
+  width: min(100vw, 700px);
+  height: auto;
+  max-height: 100dvh;
 }
 
 #background-canvas {
