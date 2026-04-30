@@ -9,14 +9,11 @@
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
       <h1 id="pageTitle">Carrito de compras</h1>
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
 
-    <p id="moduleHelp" class="form-help my-0-12">
-      Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.
-    </p>
+    <p id="moduleHelp" class="form-help my-0-12" hidden></p>
 
     <form id="carritoForm" class="form">
       <input type="hidden" id="carritoId">
@@ -93,8 +90,9 @@
 
     <div id="carritosList" class="mt-14">Cargando carritos...</div>
 
-    <div class="form mt-16 carrito-workspace-card">
-      <div class="page-header mb-10">
+    <div class="form carrito-workspace-card">
+      <div class="page-header carrito-workspace-header">
+        <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
         <h2 id="itemsTitle" class="section-heading">Items del carrito</h2>
       </div>
       <div id="carritoResumen" class="form-help"></div>
@@ -438,13 +436,15 @@
       </div>
         </div>
 
-        <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
-          <h3 class="section-heading">Totales y detalles</h3>
-          <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
-          <div class="carrito-summary-pay-actions">
-            <button type="button" id="btnPagarCarrito" class="btn w-full">Pagar y cerrar carrito</button>
-          </div>
-        </aside>
+        <div id="carritoSideColumn" class="carrito-side-column">
+          <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
+            <h3 class="section-heading">Totales y detalles</h3>
+            <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
+            <div class="carrito-summary-pay-actions">
+              <button type="button" id="btnPagarCarrito" class="btn w-full">Pagar y cerrar carrito</button>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   </div>
@@ -954,6 +954,29 @@
       el.classList.toggle('is-hidden', !visible);
       el.hidden = !visible;
       el.style.display = visible ? '' : 'none';
+      updateCarritoSideColumnVisibility();
+    }
+
+    function placeVipCardBelowTotals() {
+      const vipCard = document.getElementById('stationVipAccessCard');
+      const totalsPanel = document.getElementById('carritoTotalsPanel');
+      const sideColumn = document.getElementById('carritoSideColumn');
+      if (!vipCard || !totalsPanel || !sideColumn) return;
+      if (vipCard.previousElementSibling === totalsPanel) return;
+      sideColumn.insertBefore(vipCard, totalsPanel.nextSibling);
+    }
+
+    function updateCarritoSideColumnVisibility() {
+      const sideColumn = document.getElementById('carritoSideColumn');
+      if (!sideColumn) return;
+      const totalsPanel = document.getElementById('carritoTotalsPanel');
+      const vipCard = document.getElementById('stationVipAccessCard');
+      const isShown = function(el) {
+        return !!(el && !el.hidden && el.style.display !== 'none' && !el.classList.contains('is-hidden'));
+      };
+      const showSide = isShown(totalsPanel) || isShown(vipCard);
+      sideColumn.hidden = !showSide;
+      sideColumn.style.display = showSide ? '' : 'none';
     }
 
     function setPaymentCheckoutVisibility(ui) {
@@ -992,6 +1015,7 @@
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
+      placeVipCardBelowTotals();
 
       const searchActions = document.getElementById('buscarProductosActions');
       if (searchActions) {
@@ -2243,6 +2267,7 @@
     }
 
     function renderStationPaymentPanel(carrito) {
+      placeVipCardBelowTotals();
       const panel = document.getElementById('stationCheckoutPanel');
       const actionsCard = document.getElementById('stationCartActionsCard');
       const vipCard = document.getElementById('stationVipAccessCard');
@@ -2309,6 +2334,7 @@
         vipCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_vip_cliente);
         vipCard.hidden = !stationUI.mostrar_tarjeta_vip_cliente;
         vipCard.style.display = stationUI.mostrar_tarjeta_vip_cliente ? '' : 'none';
+        updateCarritoSideColumnVisibility();
       }
 
       const block = document.getElementById('stationDiscountSettings');
@@ -3154,6 +3180,7 @@
       const box = document.getElementById('carritosList');
 
       if (state.stationMode) {
+        box.style.display = 'none';
         const selected = getSelectedCarrito();
         if (!selected) {
           box.textContent = 'No se encontró el carrito asociado a esta estación.';
@@ -3170,6 +3197,7 @@
         return;
       }
 
+      box.style.display = '';
       if (!state.carritos.length) {
         box.textContent = 'No hay carritos registrados para esta empresa.';
         if (!state.selectedCarritoID) {
@@ -3867,8 +3895,11 @@
       if (backToStationsHeaderBtn) {
         backToStationsHeaderBtn.hidden = !state.empresaID || state.directSaleMode;
       }
-      document.getElementById('moduleHelp').textContent =
-        'Este módulo usa un solo carrito operativo y configurable por empresa y por estación, manteniendo la base preparada para facturación electrónica.';
+      const moduleHelp = document.getElementById('moduleHelp');
+      if (moduleHelp) {
+        moduleHelp.textContent = '';
+        moduleHelp.hidden = true;
+      }
       applyStationCartUIConfig();
     }
 

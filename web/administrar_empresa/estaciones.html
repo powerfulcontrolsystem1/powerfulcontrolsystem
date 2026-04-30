@@ -465,7 +465,7 @@
 
     function parseStationConfigValue(raw) {
       let current = raw;
-      for (let i = 0; i < 3; i += 1) {
+      for (let i = 0; i < 8; i += 1) {
         if (typeof current !== 'string') break;
         const trimmed = current.trim();
         if (!trimmed) return null;
@@ -711,12 +711,22 @@
             tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null,
             tarifaPorDia: item && item.tarifa_por_dia ? item.tarifa_por_dia : null
           };
+          const shouldReplaceStationInfo = function(current, candidate) {
+            if (!current) return true;
+            if (candidate.activo && !current.activo) return true;
+            if (!candidate.activo && current.activo) return false;
+            const candidateTime = Date.parse(String(candidate.activadoEn || candidate.pagadoEn || '').replace(' ', 'T')) || 0;
+            const currentTime = Date.parse(String(current.activadoEn || current.pagadoEn || '').replace(' ', 'T')) || 0;
+            return candidateTime >= currentTime;
+          };
           const code = normalizeCode(item && item.codigo);
           const ref = normalizeCode(item && item.referencia_externa);
           const canonical = stationID > 0 ? normalizeCode(getCarritoCodeForStation(stationID)) : '';
           const stationKey = stationID > 0 ? ('station:' + stationID) : '';
           [code, ref, canonical, stationKey].forEach(key => {
-            if (key) state.carritosPorCodigo[key] = info;
+            if (key && shouldReplaceStationInfo(state.carritosPorCodigo[key], info)) {
+              state.carritosPorCodigo[key] = info;
+            }
           });
         });
       } catch (err) {
@@ -875,13 +885,15 @@
         if (cfg) {
           stationConfig = cfg;
           applyCardSize(stationConfig);
-          renderEstaciones(stationConfig);
         }
         await Promise.all([
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),
           loadSensorStates()
         ]);
+        if (stationConfig) {
+          renderEstaciones(stationConfig);
+        }
         refreshStationCardSummaries();
       } catch (err) {
         console.warn('No se pudo refrescar estado de estaciones:', err);

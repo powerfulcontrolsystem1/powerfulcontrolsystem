@@ -419,10 +419,41 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 		"youtube_enabled":    false,
 		"notas_enabled":      false,
 		"ia_pedidos_enabled": false,
-		"carrito_ui_global":  map[string]any{"mostrar_imagen": true, "mostrar_precio": true},
+		"carrito_ui_global":  defaultEmpresaPreconfigCarritoUI(),
 		"station_card_ui":    map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
 	})
 	return string(raw), cantidad
+}
+
+func defaultEmpresaPreconfigCarritoUI() map[string]any {
+	return map[string]any{
+		"mostrar_boton_buscar_productos":   true,
+		"mostrar_busqueda_catalogo":        true,
+		"mostrar_codigo_manual_item":       true,
+		"mostrar_observaciones_item":       true,
+		"mostrar_selector_cliente":         true,
+		"mostrar_impuestos_item":           true,
+		"mostrar_lector_codigo_barras":     true,
+		"mostrar_descuentos":               true,
+		"mostrar_propina":                  true,
+		"mostrar_comision":                 true,
+		"permitir_pago_mixto":              true,
+		"mostrar_resumen_totales_carrito":  true,
+		"mostrar_desglose_cobro":           true,
+		"mostrar_resumen_productos":        true,
+		"mostrar_boton_pagar":              true,
+		"mostrar_tarjetas_pago":            true,
+		"mostrar_tarjeta_lector_codigo":    true,
+		"mostrar_tarjeta_items_carrito":    true,
+		"mostrar_tarjeta_totales_detalles": true,
+		"mostrar_tarjeta_cobro_estados":    true,
+		"mostrar_tarjeta_acciones_carrito": true,
+		"mostrar_tarjeta_valores_pago":     true,
+		"mostrar_tarjeta_comision":         true,
+		"mostrar_tarjeta_vip_cliente":      true,
+		"mostrar_imagen":                   true,
+		"mostrar_precio":                   true,
+	}
 }
 
 func buildPreconfigUsuarioEmail(u dbpkg.TipoEmpresaPreconfigUsuario, empresaID int64, idx int) string {
