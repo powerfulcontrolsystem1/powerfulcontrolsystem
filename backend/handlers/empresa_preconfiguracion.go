@@ -21,6 +21,8 @@ type empresaPreconfigApplyResult struct {
 	EstacionesCreadas int      `json:"estaciones_creadas"`
 	ProductosCreados  int      `json:"productos_creados"`
 	UsuariosCreados   int      `json:"usuarios_creados"`
+	VentaDirecta      bool     `json:"venta_directa"`
+	Comisiones        bool     `json:"comisiones"`
 	ProductosError    []string `json:"productos_error,omitempty"`
 	UsuariosError     []string `json:"usuarios_error,omitempty"`
 	CarritosSync      any      `json:"carritos_sync,omitempty"`
@@ -62,6 +64,11 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 			return result, err
 		}
 	}
+	if err := applyEmpresaPreconfigOperacion(dbEmp, empresaID, template.Operacion, usuario); err != nil {
+		return result, err
+	}
+	result.VentaDirecta = template.Operacion.VentaDirectaEnabled
+	result.Comisiones = template.Operacion.ComisionesEnabled
 
 	productIDs := make([]int64, 0, len(template.Productos))
 	productSKUs := make([]string, 0, len(template.Productos))
@@ -159,6 +166,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"tipo_empresa_id":     tipoEmpresaID,
 		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
 		"preconfiguracion":    strings.TrimSpace(preconfig.Nombre),
+		"operacion":           template.Operacion,
 		"asistente_ia":        template.Asistente,
 		"tareas_guia":         template.TareasGuia,
 		"usuarios_guia":       template.Usuarios,
@@ -181,6 +189,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
 		"preconfiguracion_id": preconfig.ID,
 		"preconfiguracion":    strings.TrimSpace(preconfig.Nombre),
+		"operacion":           template.Operacion,
 		"aplicada_en":         time.Now().Format(time.RFC3339),
 		"estaciones_creadas":  result.EstacionesCreadas,
 		"productos_creados":   result.ProductosCreados,
@@ -205,6 +214,171 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	result.Aplicada = true
 	result.Mensaje = "Empresa creada con preconfiguracion inicial. Puedes conservarla o eliminar la configuracion guia."
 	return result, nil
+}
+
+func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion dbpkg.TipoEmpresaPreconfigOperacion, usuario string) error {
+	if empresaID <= 0 || dbEmp == nil {
+		return nil
+	}
+	rawOperacion, _ := json.Marshal(map[string]any{
+		"tipo_negocio":              strings.TrimSpace(operacion.TipoNegocio),
+		"nombre_estacion_singular":  strings.TrimSpace(operacion.NombreEstacionSingular),
+		"nombre_estacion_plural":    strings.TrimSpace(operacion.NombreEstacionPlural),
+		"usa_estaciones":            operacion.UsaEstaciones,
+		"venta_directa_enabled":     operacion.VentaDirectaEnabled,
+		"venta_directa_nombre":      strings.TrimSpace(operacion.VentaDirectaNombre),
+		"venta_directa_url":         "/administrar_empresa/venta_directa.html",
+		"carrito_rapido_url":        "/administrar_empresa/carrito_de_compras.html?modo=venta_directa",
+		"comisiones_enabled":        operacion.ComisionesEnabled,
+		"comision_rol":              strings.TrimSpace(operacion.ComisionRol),
+		"comision_filtro":           strings.TrimSpace(operacion.ComisionFiltro),
+		"comision_porcentaje":       operacion.ComisionPorcentaje,
+		"roles_operativos":          operacion.RolesOperativos,
+		"preconfiguracion_aplicada": true,
+		"fecha_actualizacion":       time.Now().Format(time.RFC3339),
+	})
+	if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          "preconfiguracion_tipo_empresa_operacion",
+		Valor:          string(rawOperacion),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " reglas operativas por tipo de empresa",
+	}); err != nil {
+		return err
+	}
+
+	if operacion.VentaDirectaEnabled {
+		rawVentaDirecta, _ := json.Marshal(map[string]any{
+			"enabled":        true,
+			"nombre":         strings.TrimSpace(defaultString(operacion.VentaDirectaNombre, "Venta directa")),
+			"url":            "/administrar_empresa/venta_directa.html",
+			"carrito_url":    "/administrar_empresa/carrito_de_compras.html?modo=venta_directa",
+			"modo":           "venta_directa",
+			"crear_carrito":  true,
+			"usa_estaciones": operacion.UsaEstaciones,
+			"tipo_negocio":   strings.TrimSpace(operacion.TipoNegocio),
+		})
+		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+			EmpresaID:      empresaID,
+			EstacionID:     0,
+			Clave:          "venta_directa_config",
+			Valor:          string(rawVentaDirecta),
+			UsuarioCreador: usuario,
+			Estado:         "activo",
+			Observaciones:  empresaPreconfigMarker + " carrito rapido para venta directa",
+		}); err != nil {
+			return err
+		}
+		if err := ensureEmpresaPreconfigVentaDirectaCarrito(dbEmp, empresaID, usuario); err != nil {
+			log.Printf("[empresa_preconfiguracion] venta directa carrito empresa_id=%d error: %v", empresaID, err)
+		}
+	}
+
+	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmp); err != nil {
+		return err
+	}
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+		EmpresaID:                       empresaID,
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               false,
+		HabilitarComisiones:             operacion.ComisionesEnabled,
+		UsuarioCreador:                  usuario,
+		Estado:                          "activo",
+		Observaciones:                   empresaPreconfigMarker + " configuracion operativa inicial por tipo de empresa",
+	}); err != nil {
+		return err
+	}
+	for _, role := range operacion.RolesOperativos {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			continue
+		}
+		if _, err := dbpkg.UpsertEmpresaConfiguracionOperativaRol(dbEmp, dbpkg.EmpresaConfiguracionOperativaRol{
+			EmpresaID:                       empresaID,
+			Rol:                             role,
+			MetodoPagoEfectivo:              true,
+			MetodoPagoTarjetaCredito:        true,
+			MetodoPagoTarjetaDebito:         true,
+			MetodoPagoTransferenciaBancaria: true,
+			MetodoPagoMixto:                 true,
+			MetodoPagoCodigoDescuento:       true,
+			HabilitarPropinas:               false,
+			HabilitarComisiones:             operacion.ComisionesEnabled && strings.EqualFold(role, operacion.ComisionRol),
+			UsuarioCreador:                  usuario,
+			Estado:                          "activo",
+			Observaciones:                   empresaPreconfigMarker + " rol operativo inicial",
+		}); err != nil {
+			return err
+		}
+	}
+
+	if operacion.ComisionesEnabled {
+		if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmp); err != nil {
+			return err
+		}
+		porcentaje := operacion.ComisionPorcentaje
+		if porcentaje <= 0 {
+			porcentaje = 10
+		}
+		filtro := strings.TrimSpace(operacion.ComisionFiltro)
+		if filtro == "" {
+			filtro = "servicio"
+		}
+		if _, err := dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
+			EmpresaID:              empresaID,
+			HabilitarComisiones:    true,
+			PorcentajeComision:     porcentaje,
+			FiltroServicio:         filtro,
+			AplicarAutomaticamente: true,
+			UsuarioCreador:         usuario,
+			Estado:                 "activo",
+			Observaciones:          empresaPreconfigMarker + " comisiones automaticas por tipo de empresa",
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureEmpresaPreconfigVentaDirectaCarrito(dbEmp *sql.DB, empresaID int64, usuario string) error {
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		return err
+	}
+	code := fmt.Sprintf("VENTA-DIRECTA-%d", empresaID)
+	existing, err := dbpkg.GetCarritoCompraByCodigo(dbEmp, empresaID, code)
+	if err == nil && existing != nil {
+		return nil
+	}
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("[empresa_preconfiguracion] buscar carrito venta directa empresa_id=%d codigo=%s error: %v", empresaID, code, err)
+	}
+	_, err = dbpkg.CreateCarritoCompra(dbEmp, dbpkg.CarritoCompra{
+		EmpresaID:         empresaID,
+		Codigo:            code,
+		Nombre:            "Venta directa",
+		CanalVenta:        "mostrador",
+		EstadoCarrito:     "abierto",
+		ReferenciaExterna: "VENTA_DIRECTA",
+		UsuarioCreador:    usuario,
+		Estado:            "activo",
+		Observaciones:     empresaPreconfigMarker + " carrito rapido generado para venta directa",
+	})
+	return err
+}
+
+func defaultString(value, fallback string) string {
+	value = strings.TrimSpace(value)
+	if value != "" {
+		return value
+	}
+	return fallback
 }
 
 func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaciones) (string, int) {
@@ -302,16 +476,54 @@ func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[strin
 		"estaciones_config",
 		"preconfiguracion_tipo_empresa_aplicada",
 		"preconfiguracion_tipo_empresa_asistente_ia",
+		"preconfiguracion_tipo_empresa_operacion",
+		"venta_directa_config",
 	})
 	if err != nil {
 		return nil, err
 	}
+	_ = clearEmpresaPreconfigOperacion(dbEmp, empresaID)
 	return map[string]any{
 		"productos_eliminados":    productosEliminados,
 		"usuarios_eliminados":     usuariosEliminados,
 		"preferencias_eliminadas": prefsEliminadas,
 		"mensaje":                 "Preconfiguracion eliminada. La empresa quedo sin datos guia personalizados.",
 	}, nil
+}
+
+func clearEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64) error {
+	if dbEmp == nil || empresaID <= 0 {
+		return nil
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmp); err == nil {
+		_, _ = dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+			EmpresaID:                       empresaID,
+			MetodoPagoEfectivo:              true,
+			MetodoPagoTarjetaCredito:        true,
+			MetodoPagoTarjetaDebito:         true,
+			MetodoPagoTransferenciaBancaria: true,
+			MetodoPagoMixto:                 true,
+			MetodoPagoCodigoDescuento:       true,
+			HabilitarPropinas:               true,
+			HabilitarComisiones:             false,
+			UsuarioCreador:                  "sistema.preconfiguracion",
+			Estado:                          "activo",
+			Observaciones:                   empresaPreconfigMarker + " limpieza de reglas operativas guia",
+		})
+	}
+	if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmp); err == nil {
+		_, _ = dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
+			EmpresaID:              empresaID,
+			HabilitarComisiones:    false,
+			PorcentajeComision:     10,
+			FiltroServicio:         "servicio",
+			AplicarAutomaticamente: false,
+			UsuarioCreador:         "sistema.preconfiguracion",
+			Estado:                 "inactivo",
+			Observaciones:          empresaPreconfigMarker + " limpieza de comisiones guia",
+		})
+	}
+	return nil
 }
 
 // SuperTipoEmpresaPreconfiguracionHandler administra plantillas iniciales por tipo de empresa.
@@ -386,6 +598,7 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Nombre        string                                `json:"nombre"`
 				Descripcion   string                                `json:"descripcion"`
 				Estaciones    dbpkg.TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
+				Operacion     dbpkg.TipoEmpresaPreconfigOperacion   `json:"operacion"`
 				Productos     []dbpkg.TipoEmpresaPreconfigProducto  `json:"productos"`
 				Usuarios      []dbpkg.TipoEmpresaPreconfigUsuario   `json:"usuarios"`
 				Asistente     dbpkg.TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia"`
@@ -409,6 +622,7 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			configJSON, err := dbpkg.MarshalTipoEmpresaPreconfigTemplate(dbpkg.TipoEmpresaPreconfigTemplate{
 				Estaciones: payload.Estaciones,
+				Operacion:  payload.Operacion,
 				Productos:  payload.Productos,
 				Usuarios:   payload.Usuarios,
 				Asistente:  payload.Asistente,

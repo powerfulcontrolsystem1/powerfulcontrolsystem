@@ -99,6 +99,8 @@
       </div>
       <div id="carritoResumen" class="form-help"></div>
 
+      <div class="carrito-primary-layout">
+        <div class="carrito-primary-main">
       <div id="buscarProductosActions" class="form-actions mt-10">
         <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
       </div>
@@ -107,8 +109,8 @@
         <div class="empresa-section-header">
           <h3 class="section-heading">Lector de código de barras</h3>
         </div>
-        <div id="carritoClienteRow" class="form-row">
-          <div class="form-col">
+        <div id="carritoClienteRow" class="form-row carrito-scanner-stack">
+          <div class="form-col carrito-scanner-column">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
             <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea y presiona Enter">
           </div>
@@ -121,6 +123,13 @@
           </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
+      </div>
+
+      <div id="productsSummaryCard" class="card empresa-section mt-12">
+        <div class="empresa-section-header">
+          <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
+        </div>
+        <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
       </div>
 
       <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
@@ -421,15 +430,11 @@
         <div class="carrito-grid-main">
           <div id="itemsList" class="carrito-items-box">Selecciona un carrito para gestionar sus items.</div>
 
-          <div id="productsSummaryCard" class="card empresa-section mt-12">
-            <div class="empresa-section-header">
-              <h3 class="section-heading">Tabla de productos y combos del carrito</h3>
-            </div>
-            <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
-          </div>
+        </div>
+      </div>
         </div>
 
-        <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-12">
+        <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
           <h3 class="section-heading">Totales y detalles</h3>
           <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
         </aside>
@@ -441,6 +446,7 @@
     const state = {
       empresaID: 0,
       stationMode: false,
+      directSaleMode: false,
       stationID: 0,
       stationName: '',
       empresaGeneralConfig: null,
@@ -671,7 +677,7 @@
           stationContext +
           '<div class="form-actions mt-14">' +
             '<button type="button" id="retryInitialLoadBtn" class="btn">Reintentar carga</button>' +
-            (state.stationMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Regresar a estaciones</button>' : '') +
+            (state.stationMode && !state.directSaleMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Regresar a estaciones</button>' : '') +
           '</div>' +
         '</div>';
 
@@ -3315,7 +3321,9 @@
         if (!res.ok) return;
         const empresa = await res.json();
         if (empresa && empresa.nombre) {
-          if (state.stationMode) {
+          if (state.directSaleMode) {
+            document.getElementById('pageTitle').textContent = 'Venta directa - ' + empresa.nombre;
+          } else if (state.stationMode) {
             document.getElementById('pageTitle').textContent = 'Carrito de estación - ' + empresa.nombre;
           } else {
             document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
@@ -3388,7 +3396,7 @@
       }
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {
-        backToStationsHeaderBtn.hidden = !state.empresaID;
+        backToStationsHeaderBtn.hidden = !state.empresaID || state.directSaleMode;
       }
       document.getElementById('moduleHelp').textContent =
         'Este módulo usa un solo carrito operativo y configurable por empresa y por estación, manteniendo la base preparada para facturación electrónica.';
@@ -3801,6 +3809,7 @@
       const empresaID = Number(getQueryParam('empresa_id') || 0);
       const carritoID = Number(getQueryParam('carrito_id') || 0);
       const carritoCode = normalizedCode(getQueryParam('carrito_codigo') || '');
+      const directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
       const stationID = Number(getQueryParam('estacion_id') || 0);
       const stationName = normalize(getQueryParam('estacion_nombre') || '');
       if (!empresaID) {
@@ -3810,6 +3819,7 @@
       }
 
       state.empresaID = empresaID;
+      state.directSaleMode = directSaleMode;
       state.stationMode = stationID > 0 || !!carritoCode;
       state.stationID = stationID;
       state.stationName = stationName;

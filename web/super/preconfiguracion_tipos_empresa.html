@@ -127,6 +127,63 @@
           </section>
 
           <section class="preconfig-section">
+            <h3>Operacion por tipo de empresa</h3>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="operacionTipoNegocio">Tipo operativo</label>
+                <input id="operacionTipoNegocio" class="form-input" placeholder="restaurante, motel, punto_venta">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="operacionSingular">Nombre singular</label>
+                <input id="operacionSingular" class="form-input" placeholder="Mesa, Habitacion, Silla">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="operacionPlural">Nombre plural</label>
+                <input id="operacionPlural" class="form-input" placeholder="Mesas, Habitaciones, Sillas">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label">
+                  <input id="operacionUsaEstaciones" type="checkbox"> Usa estaciones
+                </label>
+                <div class="form-help">Si se desactiva, no se crean estaciones. Ideal para tecnico independiente.</div>
+              </div>
+              <div class="form-col">
+                <label class="form-label">
+                  <input id="ventaDirectaEnabled" type="checkbox"> Activar venta directa
+                </label>
+                <div class="form-help">Crea acceso a carrito rapido para vender sin entrar por estaciones.</div>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="ventaDirectaNombre">Nombre venta directa</label>
+                <input id="ventaDirectaNombre" class="form-input" value="Venta directa">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label">
+                  <input id="comisionesEnabled" type="checkbox"> Activar comisiones
+                </label>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comisionRol">Rol que gana comision</label>
+                <input id="comisionRol" class="form-input" placeholder="estilista, tecnico, operacion">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comisionPorcentaje">Porcentaje</label>
+                <input id="comisionPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comisionFiltro">Filtro servicio</label>
+                <input id="comisionFiltro" class="form-input" placeholder="servicio, lavado">
+              </div>
+            </div>
+            <label class="form-label" for="rolesOperativosText">Roles operativos</label>
+            <textarea id="rolesOperativosText" class="form-textarea" rows="3" spellcheck="false" placeholder="Un rol por linea: mesero, caja, estilista"></textarea>
+          </section>
+
+          <section class="preconfig-section">
             <h3>Productos guia</h3>
             <label class="form-label" for="productosText">Un producto por linea</label>
             <textarea id="productosText" class="form-textarea" rows="8" spellcheck="false"></textarea>
@@ -188,6 +245,7 @@
       var usuariosText = document.getElementById('usuariosText');
       var instruccionesText = document.getElementById('instruccionesText');
       var tareasText = document.getElementById('tareasText');
+      var rolesOperativosText = document.getElementById('rolesOperativosText');
       var typeSearch = document.getElementById('typeSearch');
       var saveBtn = form.querySelector('button[type="submit"]');
 
@@ -339,6 +397,17 @@
         }).filter(Boolean);
       }
 
+      function parseRolesOperativos() {
+        var seen = {};
+        return String(rolesOperativosText.value || '').split(/\r?\n/)
+          .map(function (line) { return line.trim().toLowerCase(); })
+          .filter(function (line) {
+            if (!line || seen[line]) return false;
+            seen[line] = true;
+            return true;
+          });
+      }
+
       function renderProductsPreview() {
         var products = parseProducts();
         productsPreview.innerHTML = products.length ? products.map(function (p) {
@@ -356,6 +425,7 @@
         var preconfig = item && item.preconfig ? item.preconfig : {};
         var template = getTemplate(item);
         var estaciones = template.estaciones || {};
+        var operacion = template.operacion || {};
         var asistente = template.asistente_ia || {};
         var hasSelection = !!(tipo && tipo.id);
         form.classList.toggle('is-disabled', !hasSelection);
@@ -376,6 +446,17 @@
         document.getElementById('estacionesPrefijo').value = estaciones.prefijo || 'Estacion';
         document.getElementById('cardSize').value = estaciones.card_size || 'medium';
         document.getElementById('cajaEnabled').checked = !!estaciones.caja_enabled;
+        document.getElementById('operacionTipoNegocio').value = operacion.tipo_negocio || '';
+        document.getElementById('operacionSingular').value = operacion.nombre_estacion_singular || estaciones.prefijo || 'Estacion';
+        document.getElementById('operacionPlural').value = operacion.nombre_estacion_plural || '';
+        document.getElementById('operacionUsaEstaciones').checked = operacion.usa_estaciones !== false && !!estaciones.enabled;
+        document.getElementById('ventaDirectaEnabled').checked = !!operacion.venta_directa_enabled;
+        document.getElementById('ventaDirectaNombre').value = operacion.venta_directa_nombre || 'Venta directa';
+        document.getElementById('comisionesEnabled').checked = !!operacion.comisiones_enabled;
+        document.getElementById('comisionRol').value = operacion.comision_rol || '';
+        document.getElementById('comisionPorcentaje').value = Number(operacion.comision_porcentaje || 0);
+        document.getElementById('comisionFiltro').value = operacion.comision_filtro || '';
+        rolesOperativosText.value = (operacion.roles_operativos || []).join('\n');
         productsText.value = (template.productos || []).map(productToLine).join('\n');
         usuariosText.value = (template.usuarios || []).map(usuarioToLine).join('\n');
         document.getElementById('asistenteEnabled').checked = !!asistente.enabled;
@@ -423,6 +504,9 @@
             '<span>' + escapeHtml(status + (item.es_default ? ' - sugerida' : ' - guardada')) + '</span>' +
             '<div class="preconfig-badges">' +
               '<span class="preconfig-badge">' + Number(estaciones.cantidad || 0) + ' estaciones</span>' +
+              '<span class="preconfig-badge">' + escapeHtml((template.operacion && template.operacion.nombre_estacion_plural) || 'Estaciones') + '</span>' +
+              '<span class="preconfig-badge">' + ((template.operacion && template.operacion.venta_directa_enabled) ? 'Venta directa' : 'Sin venta directa') + '</span>' +
+              '<span class="preconfig-badge">' + ((template.operacion && template.operacion.comisiones_enabled) ? 'Comisiones' : 'Sin comisiones') + '</span>' +
               '<span class="preconfig-badge">' + products.length + ' productos</span>' +
               '<span class="preconfig-badge">' + usuarios.length + ' usuarios</span>' +
               '<span class="preconfig-badge">' + tareas.length + ' tareas IA</span>' +
@@ -470,6 +554,19 @@
             prefijo: document.getElementById('estacionesPrefijo').value.trim(),
             card_size: document.getElementById('cardSize').value,
             caja_enabled: !!document.getElementById('cajaEnabled').checked
+          },
+          operacion: {
+            tipo_negocio: document.getElementById('operacionTipoNegocio').value.trim(),
+            nombre_estacion_singular: document.getElementById('operacionSingular').value.trim(),
+            nombre_estacion_plural: document.getElementById('operacionPlural').value.trim(),
+            usa_estaciones: !!document.getElementById('operacionUsaEstaciones').checked,
+            venta_directa_enabled: !!document.getElementById('ventaDirectaEnabled').checked,
+            venta_directa_nombre: document.getElementById('ventaDirectaNombre').value.trim(),
+            comisiones_enabled: !!document.getElementById('comisionesEnabled').checked,
+            comision_rol: document.getElementById('comisionRol').value.trim(),
+            comision_filtro: document.getElementById('comisionFiltro').value.trim(),
+            comision_porcentaje: parseNumber(document.getElementById('comisionPorcentaje').value),
+            roles_operativos: parseRolesOperativos()
           },
           productos: parseProducts(),
           usuarios: parseUsuarios(),

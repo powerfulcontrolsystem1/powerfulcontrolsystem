@@ -167,10 +167,10 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 18px;
+      gap: 16px;
       min-width: 0;
       max-width: 100%;
-      padding: 20px;
+      padding: 17px;
       border-radius: 8px;
       border: 1px solid var(--panel-glass-border);
       background: var(--panel-glass-bg);
@@ -218,13 +218,13 @@
       display: grid;
       place-items: center;
       flex: 0 0 auto;
-      width: 72px;
-      height: 72px;
+      width: 63px;
+      height: 63px;
       border-radius: 50%;
       background: var(--panel-icon-bg);
       border: 1px solid var(--panel-icon-border);
       color: var(--panel-icon-text);
-      font-size: 2.6rem;
+      font-size: 2.28rem;
       line-height: 1;
       box-shadow: 0 12px 30px var(--panel-card-shadow);
     }
@@ -233,7 +233,7 @@
       margin: 0;
       color: var(--panel-text);
       max-width: 100%;
-      font-size: clamp(2.45rem, 5vw, 3.6rem);
+      font-size: clamp(2.15rem, 4.65vw, 3.15rem);
       line-height: 1;
       font-weight: 900;
       letter-spacing: 0;
@@ -253,11 +253,11 @@
     .empresa-weather-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
+      gap: 7px;
     }
 
     .empresa-weather-stat {
-      padding: 10px;
+      padding: 8px;
       border-radius: 8px;
       background: var(--panel-stat-bg);
       border: 1px solid var(--panel-glass-border);
@@ -275,9 +275,9 @@
 
     .empresa-weather-stat strong {
       display: block;
-      margin-top: 4px;
+      margin-top: 3px;
       color: var(--panel-text);
-      font-size: 1.05rem;
+      font-size: .98rem;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -387,6 +387,130 @@
       color: color-mix(in srgb, var(--danger) 82%, var(--text) 18%);
     }
 
+    .empresa-favorites-panel {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-favorites-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .empresa-favorites-kicker {
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-favorites-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.18rem;
+      line-height: 1.25;
+    }
+
+    .empresa-favorites-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent-yellow, #facc15) 20%, var(--surface) 80%);
+      color: var(--text);
+      font-weight: 900;
+      font-size: .84rem;
+    }
+
+    .empresa-favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .empresa-favorite-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 62px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, var(--accent-yellow, #facc15) 12%);
+      color: var(--text);
+      text-decoration: none;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    .empresa-favorite-card:hover,
+    .empresa-favorite-card:focus-visible {
+      border-color: color-mix(in srgb, var(--accent-yellow, #facc15) 64%, var(--border));
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .empresa-favorite-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent-yellow, #facc15) 24%, var(--surface) 76%);
+      color: var(--accent-yellow, #facc15);
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .empresa-favorite-text {
+      min-width: 0;
+    }
+
+    .empresa-favorite-text strong {
+      display: block;
+      color: var(--text);
+      font-size: .94rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empresa-favorite-text span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empresa-favorites-empty {
+      margin: 0;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
     .empresa-home-actions {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -483,7 +607,7 @@
         height: 100dvh;
         padding: 6px 0;
         display: grid;
-        grid-template-rows: auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto;
         gap: 6px;
         box-sizing: border-box;
         overflow: hidden;
@@ -504,7 +628,7 @@
 
       .empresa-home-kicker {
         margin-bottom: 3px;
-        font-size: .62rem;
+        font-size: .72rem;
         line-height: 1.1;
       }
 
@@ -519,8 +643,8 @@
 
       .empresa-home-subtitle {
         margin-top: 4px;
-        font-size: .72rem;
-        line-height: 1.18;
+        font-size: .82rem;
+        line-height: 1.22;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -530,8 +654,8 @@
       .empresa-weather-panel {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(64px, auto);
-        gap: 6px 8px;
-        padding: 8px;
+        gap: 5px 7px;
+        padding: 7px;
         border-radius: 7px;
         overflow: hidden;
       }
@@ -542,12 +666,12 @@
       }
 
       .empresa-weather-label {
-        font-size: .58rem;
+        font-size: .68rem;
       }
 
       .empresa-weather-place {
         margin-top: 2px;
-        font-size: .72rem;
+        font-size: .82rem;
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -556,20 +680,20 @@
       }
 
       .empresa-weather-icon {
-        width: 38px;
-        height: 38px;
-        font-size: 1.35rem;
+        width: 34px;
+        height: 34px;
+        font-size: 1.18rem;
       }
 
       .empresa-weather-temp {
-        font-size: clamp(1.08rem, 6vw, 1.65rem);
+        font-size: clamp(1rem, 5.4vw, 1.48rem);
         text-align: right;
         max-width: 30vw;
       }
 
       .empresa-weather-desc {
         margin-top: 2px;
-        font-size: clamp(.56rem, 2.8vw, .68rem);
+        font-size: clamp(.68rem, 3vw, .78rem);
         line-height: 1.1;
         text-align: right;
         max-width: 30vw;
@@ -581,22 +705,22 @@
       .empresa-weather-grid {
         grid-column: 1 / -1;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 4px;
+        gap: 3px;
       }
 
       .empresa-weather-stat {
-        padding: 5px 4px;
+        padding: 4px 3px;
         border-radius: 6px;
       }
 
       .empresa-weather-stat span {
-        font-size: .52rem;
+        font-size: .62rem;
         line-height: 1;
       }
 
       .empresa-weather-stat strong {
         margin-top: 2px;
-        font-size: clamp(.54rem, 2.8vw, .68rem);
+        font-size: clamp(.68rem, 3vw, .8rem);
         line-height: 1.05;
         white-space: nowrap;
         overflow: hidden;
@@ -623,8 +747,8 @@
       }
 
       .empresa-market-title {
-        font-size: .82rem;
-        line-height: 1.05;
+        font-size: .94rem;
+        line-height: 1.08;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -633,8 +757,8 @@
       .empresa-market-scope {
         max-width: 44vw;
         text-align: right;
-        font-size: .58rem;
-        line-height: 1.05;
+        font-size: .68rem;
+        line-height: 1.1;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -653,7 +777,7 @@
       }
 
       .empresa-market-name {
-        font-size: .5rem;
+        font-size: .62rem;
         line-height: 1;
         white-space: nowrap;
         overflow: hidden;
@@ -662,7 +786,7 @@
 
       .empresa-market-value {
         margin-top: 3px;
-        font-size: .68rem;
+        font-size: .82rem;
         line-height: 1.05;
         white-space: nowrap;
         overflow: hidden;
@@ -676,8 +800,71 @@
       .empresa-market-change {
         margin-top: 3px;
         padding: 1px 4px;
-        font-size: .52rem;
+        font-size: .64rem;
         line-height: 1;
+      }
+
+      .empresa-favorites-panel {
+        margin-top: 0;
+        padding: 7px;
+        border-radius: 7px;
+        box-shadow: 0 8px 18px var(--panel-card-shadow);
+        overflow: hidden;
+      }
+
+      .empresa-favorites-head {
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .empresa-favorites-kicker {
+        display: none;
+      }
+
+      .empresa-favorites-title {
+        font-size: .94rem;
+        line-height: 1.08;
+      }
+
+      .empresa-favorites-count {
+        min-width: 28px;
+        height: 22px;
+        padding: 0 7px;
+        font-size: .72rem;
+      }
+
+      .empresa-favorites-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .empresa-favorite-card {
+        min-height: 42px;
+        padding: 5px;
+        gap: 5px;
+        border-radius: 6px;
+      }
+
+      .empresa-favorite-icon {
+        width: 24px;
+        height: 24px;
+        font-size: .78rem;
+      }
+
+      .empresa-favorite-text strong {
+        font-size: .72rem;
+        line-height: 1.08;
+      }
+
+      .empresa-favorite-text span {
+        display: none;
+      }
+
+      .empresa-favorites-empty {
+        padding: 7px;
+        font-size: .74rem;
+        line-height: 1.16;
       }
 
       .empresa-home-actions {
@@ -696,8 +883,8 @@
       }
 
       .empresa-home-action strong {
-        font-size: .62rem;
-        line-height: 1.05;
+        font-size: .72rem;
+        line-height: 1.08;
         overflow-wrap: anywhere;
       }
 
@@ -709,8 +896,8 @@
         margin-top: 0;
         flex-direction: row;
         gap: 6px;
-        font-size: .6rem;
-        line-height: 1.1;
+        font-size: .7rem;
+        line-height: 1.14;
         min-width: 0;
       }
 
@@ -730,7 +917,8 @@
 
       .empresa-home-hero-inner,
       .empresa-weather-panel,
-      .empresa-market-panel {
+      .empresa-market-panel,
+      .empresa-favorites-panel {
         padding: 5px;
       }
 
@@ -750,18 +938,22 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
+      .empresa-favorites-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .empresa-weather-stat {
         padding: 4px 3px;
       }
 
       .empresa-weather-stat span,
       .empresa-market-name {
-        font-size: .48rem;
+        font-size: .58rem;
       }
 
       .empresa-weather-stat strong,
       .empresa-market-value {
-        font-size: .62rem;
+        font-size: .72rem;
       }
 
       .empresa-home-action {
@@ -833,6 +1025,19 @@
       </div>
     </section>
 
+    <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
+      <div class="empresa-favorites-head">
+        <div>
+          <p class="empresa-favorites-kicker">Accesos rapidos</p>
+          <h2 id="empresaFavoritesTitle" class="empresa-favorites-title">Favoritos</h2>
+        </div>
+        <span id="empresaFavoritesCount" class="empresa-favorites-count">0</span>
+      </div>
+      <div id="empresaFavoritesList" class="empresa-favorites-grid" aria-live="polite">
+        <p class="empresa-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
+      </div>
+    </section>
+
     <div class="empresa-home-footer">
       <span id="homeDate"></span>
       <span id="homeStatus" class="empresa-home-status">Clima por Open-Meteo.</span>
@@ -845,6 +1050,8 @@
       var statusEl = document.getElementById("homeStatus");
       var marketScopeEl = document.getElementById("marketScope");
       var marketGridEl = document.getElementById("marketGrid");
+      var favoritesListEl = document.getElementById("empresaFavoritesList");
+      var favoritesCountEl = document.getElementById("empresaFavoritesCount");
       var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
       var detectedLocation = null;
       var weatherCodeMap = {
@@ -968,6 +1175,81 @@
             url.searchParams.set("empresa_id", empresaId);
             link.setAttribute("href", url.pathname + url.search);
           } catch (e) {}
+        });
+      }
+
+      function favoritesStorageKey() {
+        return "admin_empresa:favorites:" + String(empresaId || "global");
+      }
+
+      function isAllowedAdminHref(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          return url.pathname.indexOf("/administrar_empresa/") === 0;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function favoriteHrefWithEmpresa(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          if (empresaId) url.searchParams.set("empresa_id", empresaId);
+          return url.pathname + url.search;
+        } catch (e) {
+          return href || "#";
+        }
+      }
+
+      function favoritePageName(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          var name = url.pathname.split("/").pop().replace(/\.html?$/i, "").replace(/[_-]+/g, " ");
+          return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Pagina";
+        } catch (e) {
+          return "Pagina";
+        }
+      }
+
+      function readFavorites() {
+        try {
+          var raw = window.localStorage.getItem(favoritesStorageKey()) || "[]";
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed.filter(function (item) {
+            return item && isAllowedAdminHref(item.href);
+          }) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function renderFavorites() {
+        if (!favoritesListEl) return;
+        var favorites = readFavorites().slice(0, 8);
+        if (favoritesCountEl) favoritesCountEl.textContent = String(favorites.length);
+        favoritesListEl.innerHTML = "";
+        if (!favorites.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "Marca cualquier pagina con la estrella para verla aqui.";
+          favoritesListEl.appendChild(empty);
+          return;
+        }
+        favorites.forEach(function (favorite) {
+          var link = document.createElement("a");
+          var href = favoriteHrefWithEmpresa(favorite.href);
+          link.className = "empresa-favorite-card";
+          link.href = href;
+          link.innerHTML =
+            '<span class="empresa-favorite-icon" aria-hidden="true">&#9733;</span>' +
+            '<span class="empresa-favorite-text"><strong></strong><span></span></span>';
+          link.querySelector("strong").textContent = text(favorite.title) || favoritePageName(href);
+          link.querySelector(".empresa-favorite-text span").textContent = favoritePageName(href);
+          link.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            window.location.href = href;
+          });
+          favoritesListEl.appendChild(link);
         });
       }
 
@@ -1187,47 +1469,61 @@
             currency: data.currency && (data.currency.code || data.currency),
             latitude: data.latitude,
             longitude: data.longitude,
-            source: "ip"
+            source: "navegador"
           });
+        });
+      }
+
+      function detectLocationByGPS() {
+        return getBrowserLocation().then(function (pos) {
+          var coords = pos && pos.coords ? pos.coords : {};
+          var latitude = Number(coords.latitude || 0);
+          var longitude = Number(coords.longitude || 0);
+          if (!latitude || !longitude) throw new Error("gps coords unavailable");
+          return reverseGeocodeLocation(latitude, longitude).catch(function () {
+            return buildLocation({
+              city: "",
+              country: "",
+              latitude: latitude,
+              longitude: longitude,
+              displayName: "Ubicacion autorizada por el navegador",
+              source: "gps"
+            });
+          });
+        });
+      }
+
+      function detectLocationByBrowser() {
+        var cached = readCachedLocation();
+        if (cached) {
+          cached.source = cached.source || "navegador";
+          return Promise.resolve(cached);
+        }
+        return detectLocationByIP().catch(function () {
+          try {
+            var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+            var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
+            if (!cityFromTZ) throw new Error("timezone city unavailable");
+            return buildLocation({
+              city: cityFromTZ,
+              displayName: cityFromTZ,
+              source: "navegador"
+            });
+          } catch (e) {
+            throw new Error("browser location unavailable");
+          }
         });
       }
 
       function detectLocation(admin, empresa) {
         var profileLocation = registeredLocationProfile(admin, empresa);
-        if (hasRegisteredLocation(profileLocation)) {
-          detectedLocation = fallbackLocationFromAdmin(profileLocation);
-          saveCachedLocation(detectedLocation);
-          return Promise.resolve(detectedLocation);
-        }
-
-        return getBrowserLocation()
-          .then(function (pos) {
-            var coords = pos && pos.coords ? pos.coords : {};
-            var latitude = Number(coords.latitude || 0);
-            var longitude = Number(coords.longitude || 0);
-            if (!latitude || !longitude) throw new Error("gps coords unavailable");
-            return reverseGeocodeLocation(latitude, longitude).catch(function () {
-              return buildLocation({
-                city: "",
-                country: "",
-                latitude: latitude,
-                longitude: longitude,
-                displayName: "Ubicacion autorizada por el navegador",
-                source: "gps"
-              });
-            });
+        return detectLocationByGPS()
+          .catch(function () {
+            return detectLocationByBrowser();
           })
           .catch(function () {
-            var cached = readCachedLocation();
-            if (cached) return cached;
             if (hasRegisteredLocation(profileLocation)) return fallbackLocationFromAdmin(profileLocation);
-            throw new Error("profile location unavailable");
-          })
-          .catch(function () {
-            return detectLocationByIP();
-          })
-          .catch(function () {
-            return fallbackLocationFromAdmin(profileLocation || admin);
+            return fallbackLocationFromAdmin(admin);
           })
           .then(function (location) {
             detectedLocation = location || fallbackLocationFromAdmin(profileLocation || admin);
@@ -1272,7 +1568,7 @@
         source = text(source);
         if (source === "perfil") return "Clima basado en la ciudad registrada en tu perfil.";
         if (source === "gps") return "Clima basado en la ubicacion autorizada por el navegador.";
-        if (source === "ip") return "Clima basado en deteccion automatica por internet.";
+        if (source === "navegador" || source === "ip") return "Clima basado en deteccion automatica del navegador.";
         return "Clima actualizado desde internet con Open-Meteo.";
       }
 
@@ -1491,6 +1787,7 @@
       function init() {
         setDateText();
         applyEmpresaLinks();
+        renderFavorites();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var empresaPromise = empresaId
           ? fetchJSON("/super/api/empresas?id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
@@ -1505,6 +1802,20 @@
           });
         });
       }
+
+      window.addEventListener("storage", function (event) {
+        if (event && event.key === favoritesStorageKey()) {
+          renderFavorites();
+        }
+      });
+
+      window.addEventListener("message", function (event) {
+        if (event.origin !== window.location.origin) return;
+        var data = event.data || {};
+        if (data.type === "pcs-admin-favorites-changed") {
+          renderFavorites();
+        }
+      });
 
       init();
     })();

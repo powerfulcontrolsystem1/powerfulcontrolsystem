@@ -25,6 +25,7 @@ type TipoEmpresaPreconfiguracion struct {
 
 type TipoEmpresaPreconfigTemplate struct {
 	Estaciones TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
+	Operacion  TipoEmpresaPreconfigOperacion   `json:"operacion,omitempty"`
 	Productos  []TipoEmpresaPreconfigProducto  `json:"productos"`
 	Usuarios   []TipoEmpresaPreconfigUsuario   `json:"usuarios,omitempty"`
 	Asistente  TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia,omitempty"`
@@ -37,6 +38,20 @@ type TipoEmpresaPreconfigEstaciones struct {
 	Prefijo     string `json:"prefijo"`
 	CardSize    string `json:"card_size"`
 	CajaEnabled bool   `json:"caja_enabled"`
+}
+
+type TipoEmpresaPreconfigOperacion struct {
+	TipoNegocio            string   `json:"tipo_negocio,omitempty"`
+	NombreEstacionSingular string   `json:"nombre_estacion_singular,omitempty"`
+	NombreEstacionPlural   string   `json:"nombre_estacion_plural,omitempty"`
+	UsaEstaciones          bool     `json:"usa_estaciones"`
+	VentaDirectaEnabled    bool     `json:"venta_directa_enabled"`
+	VentaDirectaNombre     string   `json:"venta_directa_nombre,omitempty"`
+	ComisionesEnabled      bool     `json:"comisiones_enabled"`
+	ComisionRol            string   `json:"comision_rol,omitempty"`
+	ComisionFiltro         string   `json:"comision_filtro,omitempty"`
+	ComisionPorcentaje     float64  `json:"comision_porcentaje,omitempty"`
+	RolesOperativos        []string `json:"roles_operativos,omitempty"`
 }
 
 type TipoEmpresaPreconfigProducto struct {
@@ -83,12 +98,16 @@ type TipoEmpresaPreconfigSeedItem struct {
 }
 
 type TipoEmpresaPreconfigSeedResult struct {
-	TotalTipos   int                            `json:"total_tipos"`
-	Creadas      int                            `json:"creadas"`
-	Actualizadas int                            `json:"actualizadas"`
-	Omitidas     int                            `json:"omitidas"`
-	Errores      int                            `json:"errores"`
-	Items        []TipoEmpresaPreconfigSeedItem `json:"items"`
+	TotalTipos             int                            `json:"total_tipos"`
+	Creadas                int                            `json:"creadas"`
+	Actualizadas           int                            `json:"actualizadas"`
+	Omitidas               int                            `json:"omitidas"`
+	Errores                int                            `json:"errores"`
+	RolesCreados           int                            `json:"roles_creados"`
+	RolesActualizados      int                            `json:"roles_actualizados"`
+	PermisosConfigurados   int                            `json:"permisos_configurados"`
+	PermisosPersonalizados int                            `json:"permisos_personalizados"`
+	Items                  []TipoEmpresaPreconfigSeedItem `json:"items"`
 }
 
 // EnsureTipoEmpresaPreconfiguracionSchema crea/migra la tabla de plantillas por tipo de empresa.
@@ -270,6 +289,9 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
 		return nil, err
 	}
+	if err := EnsureCanonicalTiposEmpresaPreconfigurables(dbConn); err != nil {
+		return nil, err
+	}
 	tipos, err := GetTiposEmpresas(dbConn)
 	if err != nil {
 		return nil, err
@@ -330,7 +352,59 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 		}
 		result.Items = append(result.Items, item)
 	}
+	rolesCreados, rolesActualizados, permisosConfigurados, permisosPersonalizados, err := EnsureDefaultRolesForTipoEmpresaPreconfiguraciones(dbConn, usuario)
+	if err != nil {
+		return nil, err
+	}
+	result.RolesCreados = rolesCreados
+	result.RolesActualizados = rolesActualizados
+	result.PermisosConfigurados = permisosConfigurados
+	result.PermisosPersonalizados = permisosPersonalizados
 	return result, nil
+}
+
+// EnsureCanonicalTiposEmpresaPreconfigurables registra tipos operativos base
+// cuando aun no existen, para que la preconfiguracion no dependa de captura manual.
+func EnsureCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
+	tipos, err := GetTiposEmpresas(dbConn)
+	if err != nil {
+		return err
+	}
+	canonicos := []struct {
+		nombre        string
+		observaciones string
+		matches       func(string) bool
+	}{
+		{"Restaurante", "Mesas, cocina, pedidos y venta directa.", isTipoEmpresaRestaurante},
+		{"Motel", "Habitaciones por turnos, minibar, tarifas y recepcion.", isTipoEmpresaMotel},
+		{"Hotel", "Habitaciones por noche, reservas, consumos y recepcion.", isTipoEmpresaHotel},
+		{"Bar", "Mesas, barra, bebidas, eventos y caja.", isTipoEmpresaBar},
+		{"Salon de belleza", "Sillas, estilistas, agenda, servicios y comisiones.", isTipoEmpresaSalonBelleza},
+		{"Lavadero de autos", "Bahias, lavado, vehiculos, tiempos y comisiones.", isTipoEmpresaLavaderoAutos},
+		{"Pymes", "Empresa general con venta directa, productos, servicios y caja.", isTipoEmpresaPyme},
+		{"Punto de venta", "Una estacion principal y venta directa por mostrador.", isTipoEmpresaPuntoVenta},
+		{"Taller mecanico", "Bahias, tecnicos, ordenes de servicio y comisiones.", isTipoEmpresaTaller},
+		{"Tecnico independiente", "Sin estaciones; venta directa, agenda y servicios.", isTipoEmpresaIndependiente},
+		{"Redes sociales", "Clientes, paquetes, tareas, contenidos y reportes.", isTipoEmpresaRedesSociales},
+		{"Sensores y monitoreo", "Accesos, sensores, instalaciones y monitoreo.", isTipoEmpresaSensores},
+	}
+	for _, canonical := range canonicos {
+		exists := false
+		for _, tipo := range tipos {
+			if canonical.matches(tipo.Nombre) {
+				exists = true
+				break
+			}
+		}
+		if exists {
+			continue
+		}
+		if _, err := CreateTipoEmpresa(dbConn, canonical.nombre, canonical.observaciones); err != nil {
+			return fmt.Errorf("crear tipo de empresa %q: %w", canonical.nombre, err)
+		}
+		tipos = append(tipos, TipoEmpresa{Nombre: canonical.nombre, Observaciones: canonical.observaciones, Estado: "activo"})
+	}
+	return nil
 }
 
 // DefaultTipoEmpresaPreconfiguracion entrega una plantilla profesional sugerida para tipos conocidos.
@@ -370,7 +444,7 @@ func ResolveTipoEmpresaPreconfiguracion(dbConn *sql.DB, tipoEmpresaID int64, tip
 
 func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfigTemplate {
 	if isTipoEmpresaMotel(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
 			productoPreconfig("DEMO-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
 			productoPreconfig("DEMO-MOTEL-003", "Suite jacuzzi", "Habitaciones", "Servicio premium por turno", 42000, 110000, 0),
@@ -381,10 +455,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion principal", "recepcion", "Gestiona ingresos, salidas y disponibilidad."),
 			usuarioPreconfig("Caja turno", "caja", "Registra cobros y cierres de turno."),
 			usuarioPreconfig("Limpieza habitaciones", "operacion", "Actualiza estados de limpieza y alistamiento."),
-		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion.")
+		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion."), operacionPreconfig("motel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaHotel(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
 			productoPreconfig("DEMO-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
 			productoPreconfig("DEMO-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
@@ -394,10 +468,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion hotel", "recepcion", "Atiende reservas, check-in y check-out."),
 			usuarioPreconfig("Caja hotel", "caja", "Controla pagos, anticipos y facturacion."),
 			usuarioPreconfig("Ama de llaves", "operacion", "Coordina limpieza y disponibilidad."),
-		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario.")
+		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario."), operacionPreconfig("hotel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaBar(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-BAR-001", "Cerveza nacional", "Bebidas", "Botella o lata nacional", 3000, 7000, 24),
 			productoPreconfig("DEMO-BAR-002", "Coctel de la casa", "Cocteles", "Preparacion estandar del bar", 9000, 22000, 6),
 			productoPreconfig("DEMO-BAR-003", "Gaseosa personal", "Bebidas", "Bebida sin alcohol", 2200, 5000, 18),
@@ -407,10 +481,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Mesero turno", "mesero", "Toma pedidos y atiende mesas."),
 			usuarioPreconfig("Barra principal", "barra", "Prepara bebidas y controla inventario."),
 			usuarioPreconfig("Caja bar", "caja", "Cobra cuentas y cierra turno."),
-		}, "Asistente de pedidos, mesas, inventario de bebidas, promociones y cierre de caja.")
+		}, "Asistente de pedidos, mesas, inventario de bebidas, promociones y cierre de caja."), operacionPreconfig("bar", "Mesa", "Mesas", true, false, false, "", "", 0, []string{"mesero", "barra", "caja"}))
 	}
 	if isTipoEmpresaSalonBelleza(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("BELLEZA", "Silla", 6, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BELLEZA", "Silla", 6, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-BELLEZA-001", "Corte dama", "Peluqueria", "Servicio de corte para dama", 12000, 30000, 0),
 			productoPreconfig("DEMO-BELLEZA-002", "Corte caballero", "Peluqueria", "Servicio de corte para caballero", 8000, 22000, 0),
 			productoPreconfig("DEMO-BELLEZA-003", "Manicure tradicional", "Unas", "Servicio de manicure", 9000, 25000, 0),
@@ -418,12 +492,13 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			productoPreconfig("DEMO-BELLEZA-005", "Tratamiento capilar", "Tratamientos", "Hidratacion o reparacion", 18000, 45000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion salon", "recepcion", "Agenda citas y recibe clientes."),
-			usuarioPreconfig("Estilista principal", "operacion", "Atiende servicios de belleza."),
+			usuarioPreconfig("Estilista principal", "estilista", "Atiende servicios de belleza y gana comision por servicio."),
+			usuarioPreconfig("Manicurista", "estilista", "Atiende servicios de unas y gana comision por servicio."),
 			usuarioPreconfig("Caja salon", "caja", "Registra pagos y paquetes."),
-		}, "Asistente para agenda, servicios, recordatorios, inventario de insumos y ventas.")
+		}, "Asistente para agenda, servicios, recordatorios, inventario de insumos y ventas."), operacionPreconfig("salon_belleza", "Silla", "Sillas", true, true, true, "estilista", "servicio", 35, []string{"recepcion", "estilista", "caja"}))
 	}
 	if isTipoEmpresaLavaderoAutos(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("LAVADERO", "Bahia", 6, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("LAVADERO", "Bahia", 6, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-LAV-001", "Lavado basico carro", "Lavado", "Lavado exterior basico", 8000, 22000, 0),
 			productoPreconfig("DEMO-LAV-002", "Lavado premium carro", "Lavado", "Exterior, interior y aspirado", 15000, 38000, 0),
 			productoPreconfig("DEMO-LAV-003", "Lavado camioneta", "Lavado", "Servicio para camioneta", 18000, 45000, 0),
@@ -433,10 +508,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion vehiculos", "recepcion", "Recibe vehiculos y asigna bahias."),
 			usuarioPreconfig("Operario lavado", "operacion", "Actualiza estados de lavado."),
 			usuarioPreconfig("Caja lavadero", "caja", "Cobra servicios y controla turnos."),
-		}, "Asistente para turnos, bahias, servicios por vehiculo, tiempos y facturacion.")
+		}, "Asistente para turnos, bahias, servicios por vehiculo, tiempos y facturacion."), operacionPreconfig("lavadero_autos", "Bahia", "Bahias", true, true, true, "operacion", "lavado", 20, []string{"recepcion", "operacion", "caja"}))
 	}
 	if isTipoEmpresaRestaurante(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("REST", "Mesa", 8, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("REST", "Mesa", 8, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-REST-001", "Hamburguesa clasica", "Comidas", "Producto guia de cocina", 9000, 18000, 5),
 			productoPreconfig("DEMO-REST-002", "Perro caliente", "Comidas", "Producto guia de cocina", 6000, 12000, 5),
 			productoPreconfig("DEMO-REST-003", "Gaseosa personal", "Bebidas", "Bebida personal", 2200, 4000, 12),
@@ -447,10 +522,22 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Mesero principal", "mesero", "Toma pedidos y atiende mesas."),
 			usuarioPreconfig("Cocina", "operacion", "Gestiona preparacion y despacho."),
 			usuarioPreconfig("Caja restaurante", "caja", "Cobra cuentas y cierres."),
-		}, "Asistente para pedidos, mesas, cocina, inventario, descuentos y facturacion.")
+		}, "Asistente para pedidos, mesas, cocina, inventario, descuentos y facturacion."), operacionPreconfig("restaurante", "Mesa", "Mesas", true, true, false, "", "", 0, []string{"mesero", "operacion", "caja"}))
+	}
+	if isTipoEmpresaPyme(tipoNombre) {
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("PYME", "Punto de venta", 2, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-PYME-001", "Producto comercial guia", "General", "Producto base para venta directa o mostrador", 7000, 16000, 8),
+			productoPreconfig("DEMO-PYME-002", "Servicio profesional guia", "Servicios", "Servicio configurable para la pyme", 0, 60000, 0),
+			productoPreconfig("DEMO-PYME-003", "Paquete mensual guia", "Paquetes", "Paquete de servicio recurrente", 0, 180000, 0),
+			productoPreconfig("DEMO-PYME-004", "Entrega local", "Servicios", "Cargo guia de entrega o domicilio", 0, 8000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Administrador pyme", "administrador", "Configura empresa, usuarios, reportes y parametros generales."),
+			usuarioPreconfig("Vendedor pyme", "vendedor", "Registra ventas, clientes y cotizaciones."),
+			usuarioPreconfig("Caja pyme", "caja", "Controla pagos, descuentos y cierres diarios."),
+		}, "Asistente para configuracion empresarial, venta directa, caja, clientes, documentos y reportes."), operacionPreconfig("pyme", "Punto de venta", "Puntos de venta", true, true, false, "", "", 0, []string{"administrador", "vendedor", "caja"}))
 	}
 	if isTipoEmpresaPuntoVenta(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("PV", "Caja", 3, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("PV", "Punto de venta", 1, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-PV-001", "Producto general A", "General", "Producto de inventario inicial", 5000, 10000, 10),
 			productoPreconfig("DEMO-PV-002", "Producto general B", "General", "Producto de inventario inicial", 8000, 16000, 10),
 			productoPreconfig("DEMO-PV-003", "Servicio domicilio", "Servicios", "Cargo por domicilio", 0, 5000, 0),
@@ -459,32 +546,33 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Vendedor mostrador", "vendedor", "Registra ventas y clientes."),
 			usuarioPreconfig("Caja principal", "caja", "Controla pagos y cierre."),
 			usuarioPreconfig("Administrador inventario", "administrador", "Ajusta inventario y precios."),
-		}, "Asistente para ventas, inventario, alertas de stock, descuentos y reportes.")
+		}, "Asistente para ventas, inventario, alertas de stock, descuentos y reportes."), operacionPreconfig("punto_venta", "Punto de venta", "Puntos de venta", true, true, false, "", "", 0, []string{"vendedor", "caja", "administrador"}))
 	}
 	if isTipoEmpresaTaller(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("TALLER", "Bahia", 5, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("TALLER", "Bahia", 5, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-TALLER-001", "Revision general", "Diagnostico", "Revision inicial del vehiculo", 12000, 30000, 0),
 			productoPreconfig("DEMO-TALLER-002", "Cambio de aceite", "Mantenimiento", "Mano de obra cambio de aceite", 10000, 25000, 0),
 			productoPreconfig("DEMO-TALLER-003", "Alineacion", "Servicios", "Servicio de alineacion", 22000, 55000, 0),
 			productoPreconfig("DEMO-TALLER-004", "Filtro de aceite", "Repuestos", "Repuesto guia", 12000, 26000, 4),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion taller", "recepcion", "Recibe vehiculos y ordenes."),
-			usuarioPreconfig("Tecnico taller", "operacion", "Ejecuta servicios y reporta avances."),
+			usuarioPreconfig("Tecnico taller", "tecnico", "Ejecuta servicios, reporta avances y gana comision por servicio."),
 			usuarioPreconfig("Caja taller", "caja", "Cobra ordenes y repuestos."),
-		}, "Asistente para ordenes de servicio, repuestos, tiempos, diagnosticos y cobros.")
+		}, "Asistente para ordenes de servicio, repuestos, tiempos, diagnosticos y cobros."), operacionPreconfig("taller", "Bahia", "Bahias", true, true, true, "tecnico", "servicio", 25, []string{"recepcion", "tecnico", "caja"}))
 	}
 	if isTipoEmpresaIndependiente(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("IND", "Agenda", 3, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("IND", "Venta directa", 0, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-IND-001", "Consulta inicial", "Servicios", "Servicio profesional inicial", 0, 50000, 0),
 			productoPreconfig("DEMO-IND-002", "Servicio especializado", "Servicios", "Servicio principal del profesional", 0, 120000, 0),
 			productoPreconfig("DEMO-IND-003", "Paquete mensual", "Paquetes", "Plan mensual de acompanamiento", 0, 350000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Administrador profesional", "administrador", "Configura agenda, clientes y servicios."),
 			usuarioPreconfig("Asistente administrativo", "operacion", "Ayuda con agenda, cobros y seguimiento."),
-		}, "Asistente para agenda, clientes, cobros, recordatorios y tareas administrativas.")
+			usuarioPreconfig("Caja profesional", "caja", "Registra cobros, comprobantes y cartera simple."),
+		}, "Asistente para agenda, clientes, cobros, recordatorios y tareas administrativas."), operacionPreconfig("independiente", "Venta directa", "Ventas directas", false, true, false, "", "", 0, []string{"administrador", "operacion", "caja"}))
 	}
 	if isTipoEmpresaRedesSociales(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("SOCIAL", "Canal", 4, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("SOCIAL", "Cliente", 4, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-SOCIAL-001", "Plan publicaciones basico", "Marketing", "Gestion de publicaciones basicas", 0, 180000, 0),
 			productoPreconfig("DEMO-SOCIAL-002", "Campana pauta", "Publicidad", "Gestion inicial de pauta", 0, 300000, 0),
 			productoPreconfig("DEMO-SOCIAL-003", "Diseno pieza grafica", "Diseno", "Pieza individual para redes", 0, 45000, 0),
@@ -493,27 +581,29 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Community manager", "operacion", "Gestiona canales, tareas y publicaciones."),
 			usuarioPreconfig("Asesor comercial", "vendedor", "Cotiza planes y atiende clientes."),
 			usuarioPreconfig("Caja servicios", "caja", "Registra cobros de servicios y planes."),
-		}, "Asistente para tareas de clientes, contenidos, cotizaciones, reportes y seguimiento comercial.")
+		}, "Asistente para tareas de clientes, contenidos, cotizaciones, reportes y seguimiento comercial."), operacionPreconfig("servicios_digitales", "Cliente", "Clientes", true, true, false, "", "", 0, []string{"operacion", "vendedor", "caja"}))
 	}
 	if isTipoEmpresaSensores(tipoNombre) {
-		return newDefaultTipoEmpresaPreconfigTemplate("SENSOR", "Acceso", 4, []TipoEmpresaPreconfigProducto{
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("SENSOR", "Acceso", 4, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-SENSOR-001", "Instalacion sensor", "Instalacion", "Servicio de instalacion inicial", 25000, 80000, 0),
 			productoPreconfig("DEMO-SENSOR-002", "Mantenimiento sensor", "Mantenimiento", "Revision tecnica programada", 15000, 45000, 0),
 			productoPreconfig("DEMO-SENSOR-003", "Sensor magnetico", "Dispositivos", "Dispositivo guia de inventario", 18000, 42000, 5),
 			productoPreconfig("DEMO-SENSOR-004", "Monitoreo mensual", "Servicios", "Servicio mensual de monitoreo", 0, 65000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
-			usuarioPreconfig("Tecnico instalador", "operacion", "Instala y revisa sensores."),
+			usuarioPreconfig("Tecnico instalador", "tecnico", "Instala y revisa sensores."),
 			usuarioPreconfig("Monitoreo", "operacion", "Revisa eventos y alertas."),
 			usuarioPreconfig("Caja sensores", "caja", "Registra pagos y contratos."),
-		}, "Asistente para instalaciones, alertas, mantenimientos, contratos y seguimiento tecnico.")
+		}, "Asistente para instalaciones, alertas, mantenimientos, contratos y seguimiento tecnico."), operacionPreconfig("sensores", "Acceso", "Accesos", true, true, false, "", "", 0, []string{"tecnico", "operacion", "caja"}))
 	}
-	return newDefaultTipoEmpresaPreconfigTemplate("GEN", "Estacion", 4, []TipoEmpresaPreconfigProducto{
+	return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GEN", "Estacion", 4, []TipoEmpresaPreconfigProducto{
 		productoPreconfig("DEMO-GEN-001", "Producto guia", "General", "Producto inicial de ejemplo", 5000, 12000, 5),
 		productoPreconfig("DEMO-GEN-002", "Servicio guia", "Servicios", "Servicio inicial de ejemplo", 0, 25000, 0),
+		productoPreconfig("DEMO-GEN-003", "Paquete guia", "Paquetes", "Paquete inicial de ejemplo", 0, 75000, 0),
 	}, []TipoEmpresaPreconfigUsuario{
 		usuarioPreconfig("Administrador operativo", "administrador", "Configura la empresa y revisa reportes."),
+		usuarioPreconfig("Vendedor operativo", "vendedor", "Atiende clientes y registra ventas."),
 		usuarioPreconfig("Caja principal", "caja", "Registra ventas y pagos."),
-	}, "Asistente guia para configuracion inicial, ventas, auditoria, reportes y tareas diarias.")
+	}, "Asistente guia para configuracion inicial, ventas, auditoria, reportes y tareas diarias."), operacionPreconfig("general", "Estacion", "Estaciones", true, true, false, "", "", 0, []string{"administrador", "vendedor", "caja"}))
 }
 
 func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, stationCount int, productos []TipoEmpresaPreconfigProducto, usuarios []TipoEmpresaPreconfigUsuario, iaRol string) TipoEmpresaPreconfigTemplate {
@@ -525,6 +615,7 @@ func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, statio
 			CardSize:    "medium",
 			CajaEnabled: true,
 		},
+		Operacion: operacionPreconfig(strings.ToLower(prefix), stationPrefix, pluralizeTipoEmpresaStationName(stationPrefix), stationCount > 0, false, false, "", "", 0, nil),
 		Productos: productos,
 		Usuarios:  usuarios,
 		Asistente: TipoEmpresaPreconfigAsistenteIA{
@@ -545,6 +636,221 @@ func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, statio
 			{Modulo: "IA", Titulo: "Usar el asistente como guia", Descripcion: "Pedirle pasos de configuracion, revision de auditoria, reportes y ayuda operativa diaria."},
 		},
 	})
+}
+
+func withPreconfigOperacion(template TipoEmpresaPreconfigTemplate, operacion TipoEmpresaPreconfigOperacion) TipoEmpresaPreconfigTemplate {
+	template.Operacion = operacion
+	return NormalizeTipoEmpresaPreconfigTemplate(template)
+}
+
+func operacionPreconfig(tipoNegocio, singular, plural string, usaEstaciones, ventaDirecta, comisiones bool, comisionRol, comisionFiltro string, comisionPorcentaje float64, roles []string) TipoEmpresaPreconfigOperacion {
+	return TipoEmpresaPreconfigOperacion{
+		TipoNegocio:            tipoNegocio,
+		NombreEstacionSingular: singular,
+		NombreEstacionPlural:   plural,
+		UsaEstaciones:          usaEstaciones,
+		VentaDirectaEnabled:    ventaDirecta,
+		VentaDirectaNombre:     "Venta directa",
+		ComisionesEnabled:      comisiones,
+		ComisionRol:            comisionRol,
+		ComisionFiltro:         comisionFiltro,
+		ComisionPorcentaje:     comisionPorcentaje,
+		RolesOperativos:        roles,
+	}
+}
+
+// EnsureDefaultRolesForTipoEmpresaPreconfiguraciones crea roles base por tipo de empresa
+// y solo inicializa permisos cuando el rol no tiene una matriz personalizada.
+func EnsureDefaultRolesForTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string) (rolesCreados, rolesActualizados, permisosConfigurados, permisosPersonalizados int, err error) {
+	if dbConn == nil {
+		err = errors.New("db connection is nil")
+		return
+	}
+	if err = EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+		return
+	}
+	if err = EnsureRolesPermisosSchema(dbConn); err != nil {
+		return
+	}
+	tipos, err := GetTiposEmpresas(dbConn)
+	if err != nil {
+		return
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema.preconfiguracion.roles"
+	}
+	for _, tipo := range tipos {
+		preconfig, resolveErr := ResolveTipoEmpresaPreconfiguracion(dbConn, tipo.ID, tipo.Nombre)
+		if resolveErr != nil {
+			err = resolveErr
+			return
+		}
+		if preconfig == nil {
+			continue
+		}
+		template, parseErr := ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
+		if parseErr != nil {
+			err = parseErr
+			return
+		}
+		for _, rolNombre := range rolesFromTipoEmpresaPreconfigTemplate(template) {
+			rolID, created, upsertErr := UpsertRolDeUsuarioByTipoNombre(dbConn, tipo.ID, rolNombre, descripcionRolPreconfig(rolNombre, tipo.Nombre), usuario)
+			if upsertErr != nil {
+				err = upsertErr
+				return
+			}
+			if created {
+				rolesCreados++
+			} else {
+				rolesActualizados++
+			}
+			existentes, listErr := ListRolPermisosModuloByRolID(dbConn, rolID)
+			if listErr != nil {
+				err = listErr
+				return
+			}
+			if len(existentes) > 0 {
+				permisosPersonalizados++
+				continue
+			}
+			if replaceErr := ReplaceRolPermisosDeUsuario(dbConn, rolID, permisosModuloPreconfigRol(rolID, rolNombre), nil, usuario); replaceErr != nil {
+				err = replaceErr
+				return
+			}
+			permisosConfigurados++
+		}
+	}
+	return
+}
+
+func rolesFromTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) []string {
+	roles := make([]string, 0, len(template.Usuarios)+len(template.Operacion.RolesOperativos)+3)
+	add := func(value string) {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" {
+			return
+		}
+		for _, existing := range roles {
+			if existing == value {
+				return
+			}
+		}
+		roles = append(roles, value)
+	}
+	add("administrador")
+	for _, usuario := range template.Usuarios {
+		add(usuario.Rol)
+	}
+	for _, rol := range template.Operacion.RolesOperativos {
+		add(rol)
+	}
+	if template.Operacion.VentaDirectaEnabled {
+		add("caja")
+	}
+	return roles
+}
+
+func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModulo {
+	rol := strings.ToLower(strings.TrimSpace(rolNombre))
+	allActions := []string{"R", "C", "U", "D", "A"}
+	readCreateUpdate := []string{"R", "C", "U"}
+	readCreate := []string{"R", "C"}
+	readOnly := []string{"R"}
+	permisos := make([]RolPermisoModulo, 0, 32)
+	add := func(modulo string, acciones []string) {
+		for _, accion := range acciones {
+			permisos = append(permisos, RolPermisoModulo{RolID: rolID, Modulo: modulo, Accion: accion, Permitido: true})
+		}
+	}
+	switch rol {
+	case "administrador", "admin", "admin_empresa", "supervisor":
+		for _, modulo := range []string{"ventas", "inventario", "finanzas", "clientes", "compras", "facturacion", "seguridad"} {
+			add(modulo, allActions)
+		}
+	case "caja", "cajero":
+		add("ventas", []string{"R", "C", "U", "A"})
+		add("finanzas", readCreate)
+		add("clientes", readCreateUpdate)
+		add("facturacion", readCreate)
+		add("inventario", readOnly)
+	case "recepcion":
+		add("ventas", readCreateUpdate)
+		add("clientes", readCreateUpdate)
+		add("finanzas", readCreate)
+		add("facturacion", readCreate)
+		add("inventario", readOnly)
+	case "mesero", "barra", "vendedor", "operacion", "tecnico", "estilista":
+		add("ventas", readCreateUpdate)
+		add("clientes", readCreate)
+		add("inventario", readOnly)
+		add("facturacion", readOnly)
+	case "compras":
+		add("compras", readCreateUpdate)
+		add("inventario", readCreateUpdate)
+		add("finanzas", readOnly)
+	case "auditor":
+		for _, modulo := range []string{"ventas", "inventario", "finanzas", "clientes", "compras", "facturacion", "seguridad"} {
+			add(modulo, readOnly)
+		}
+	default:
+		add("ventas", readCreateUpdate)
+		add("clientes", readCreate)
+		add("inventario", readOnly)
+	}
+	return permisos
+}
+
+func descripcionRolPreconfig(rolNombre, tipoEmpresaNombre string) string {
+	rol := strings.ToLower(strings.TrimSpace(rolNombre))
+	tipo := strings.TrimSpace(tipoEmpresaNombre)
+	if tipo == "" {
+		tipo = "este tipo de empresa"
+	}
+	switch rol {
+	case "administrador", "admin", "admin_empresa":
+		return "Rol administrador para configurar " + tipo + ", usuarios, permisos, reportes e integraciones."
+	case "caja", "cajero":
+		return "Rol de caja para ventas, cobros, cierres, descuentos y comprobantes."
+	case "recepcion":
+		return "Rol de recepcion para atender clientes, turnos, reservas, ingresos y salidas."
+	case "mesero":
+		return "Rol de mesero para tomar pedidos, gestionar mesas y entregar cuentas."
+	case "barra":
+		return "Rol de barra para preparar productos, controlar bebidas e inventario operativo."
+	case "vendedor":
+		return "Rol vendedor para atender clientes, cotizar y registrar ventas."
+	case "operacion":
+		return "Rol operativo para ejecutar servicios, actualizar estados y apoyar la atencion diaria."
+	case "tecnico":
+		return "Rol tecnico para diagnosticos, servicios, instalaciones y avances operativos."
+	case "estilista":
+		return "Rol de estilista para servicios de belleza, agenda y comisiones."
+	case "compras":
+		return "Rol de compras para proveedores, ordenes e inventario."
+	case "auditor":
+		return "Rol auditor para consultar trazabilidad, reportes y cumplimiento."
+	default:
+		return "Rol operativo guia para " + tipo + "."
+	}
+}
+
+func pluralizeTipoEmpresaStationName(singular string) string {
+	singular = strings.TrimSpace(singular)
+	if singular == "" {
+		return "Estaciones"
+	}
+	lower := strings.ToLower(singular)
+	if strings.HasSuffix(lower, "s") {
+		return singular
+	}
+	if strings.HasSuffix(lower, "z") {
+		return singular[:len(singular)-1] + "ces"
+	}
+	if strings.HasSuffix(lower, "a") || strings.HasSuffix(lower, "e") || strings.HasSuffix(lower, "i") || strings.HasSuffix(lower, "o") || strings.HasSuffix(lower, "u") {
+		return singular + "s"
+	}
+	return singular + "es"
 }
 
 func productoPreconfig(sku, nombre, categoria, descripcion string, costo, precio, stockMinimo float64) TipoEmpresaPreconfigProducto {
@@ -588,6 +894,21 @@ func MarshalTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) 
 }
 
 func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) TipoEmpresaPreconfigTemplate {
+	template.Operacion.TipoNegocio = strings.ToLower(strings.TrimSpace(template.Operacion.TipoNegocio))
+	template.Operacion.NombreEstacionSingular = strings.TrimSpace(template.Operacion.NombreEstacionSingular)
+	template.Operacion.NombreEstacionPlural = strings.TrimSpace(template.Operacion.NombreEstacionPlural)
+	template.Operacion.VentaDirectaNombre = strings.TrimSpace(template.Operacion.VentaDirectaNombre)
+	template.Operacion.ComisionRol = strings.ToLower(strings.TrimSpace(template.Operacion.ComisionRol))
+	template.Operacion.ComisionFiltro = strings.ToLower(strings.TrimSpace(template.Operacion.ComisionFiltro))
+	if template.Operacion.VentaDirectaNombre == "" {
+		template.Operacion.VentaDirectaNombre = "Venta directa"
+	}
+	if template.Operacion.ComisionPorcentaje < 0 {
+		template.Operacion.ComisionPorcentaje = 0
+	}
+	if template.Operacion.ComisionPorcentaje > 100 {
+		template.Operacion.ComisionPorcentaje = 100
+	}
 	if template.Estaciones.Cantidad < 0 {
 		template.Estaciones.Cantidad = 0
 	}
@@ -596,7 +917,23 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 	}
 	template.Estaciones.Prefijo = strings.TrimSpace(template.Estaciones.Prefijo)
 	if template.Estaciones.Prefijo == "" {
+		template.Estaciones.Prefijo = template.Operacion.NombreEstacionSingular
+	}
+	if template.Estaciones.Prefijo == "" {
 		template.Estaciones.Prefijo = "Estacion"
+	}
+	if template.Operacion.NombreEstacionSingular == "" {
+		template.Operacion.NombreEstacionSingular = template.Estaciones.Prefijo
+	}
+	if template.Operacion.NombreEstacionPlural == "" {
+		template.Operacion.NombreEstacionPlural = pluralizeTipoEmpresaStationName(template.Operacion.NombreEstacionSingular)
+	}
+	if !template.Operacion.UsaEstaciones && template.Estaciones.Enabled && template.Estaciones.Cantidad > 0 {
+		template.Operacion.UsaEstaciones = true
+	}
+	if !template.Operacion.UsaEstaciones {
+		template.Estaciones.Enabled = false
+		template.Estaciones.Cantidad = 0
 	}
 	template.Estaciones.CardSize = strings.ToLower(strings.TrimSpace(template.Estaciones.CardSize))
 	if template.Estaciones.CardSize == "" {
@@ -605,6 +942,17 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 	if !template.Estaciones.Enabled {
 		template.Estaciones.Cantidad = 0
 	}
+	roles := make([]string, 0, len(template.Operacion.RolesOperativos))
+	seenRole := map[string]bool{}
+	for _, role := range template.Operacion.RolesOperativos {
+		role = strings.ToLower(strings.TrimSpace(role))
+		if role == "" || seenRole[role] {
+			continue
+		}
+		seenRole[role] = true
+		roles = append(roles, role)
+	}
+	template.Operacion.RolesOperativos = roles
 
 	productos := make([]TipoEmpresaPreconfigProducto, 0, len(template.Productos))
 	seenSKU := map[string]bool{}
@@ -727,6 +1075,10 @@ func isTipoEmpresaLavaderoAutos(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "lavadero", "autolavado", "lavado de autos", "car wash")
 }
 
+func isTipoEmpresaPyme(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "pyme", "pymes", "microempresa", "empresa general", "negocio general")
+}
+
 func isTipoEmpresaPuntoVenta(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "tienda", "punto de venta", "retail", "minimercado", "supermercado", "miscelanea", "miscelanea", "almacen", "almacen")
 }
@@ -761,14 +1113,16 @@ func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
 		return "Lavadero de autos con bahias guia"
 	case isTipoEmpresaRestaurante(tipoNombre):
 		return "Restaurante con mesas guia"
+	case isTipoEmpresaPyme(tipoNombre):
+		return "Pyme con venta directa guia"
 	case isTipoEmpresaPuntoVenta(tipoNombre):
 		return "Punto de venta guia"
 	case isTipoEmpresaTaller(tipoNombre):
 		return "Taller con bahias guia"
 	case isTipoEmpresaIndependiente(tipoNombre):
-		return "Independiente con agenda guia"
+		return "Independiente con venta directa guia"
 	case isTipoEmpresaRedesSociales(tipoNombre):
-		return "Redes sociales con canales guia"
+		return "Redes sociales con clientes guia"
 	case isTipoEmpresaSensores(tipoNombre):
 		return "Sensores y accesos guia"
 	default:

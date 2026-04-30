@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta directa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Venta directa</h1>
+      <p class="form-help">Carrito rapido para vender por mostrador sin depender de una estacion.</p>
+    </div>
+    <div class="card">
+      <p class="form-help">Abriendo el carrito de venta directa...</p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || "");
+      params.set("modo", "venta_directa");
+      if (!params.get("carrito_codigo")) {
+        var empresaID = String(params.get("empresa_id") || params.get("id") || "").trim();
+        params.set("carrito_codigo", empresaID ? ("VENTA-DIRECTA-" + empresaID) : "VENTA_DIRECTA");
+      }
+      window.location.replace("/administrar_empresa/carrito_de_compras.html?" + params.toString());
+    })();
+  </script>
+</body>
+</html>

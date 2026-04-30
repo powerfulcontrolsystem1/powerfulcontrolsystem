@@ -1431,6 +1431,51 @@
       .trim();
   }
 
+  function splitTextForFastSpeech(text) {
+    var clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return [];
+    var maxChunkLength = 200;
+    var chunks = [];
+
+    function pushChunk(value) {
+      var chunk = String(value || '').replace(/\s+/g, ' ').trim();
+      if (!chunk) return;
+      if (chunk.length <= maxChunkLength) {
+        chunks.push(chunk);
+        return;
+      }
+      var words = chunk.split(' ');
+      var current = '';
+      words.forEach(function (word) {
+        var next = current ? (current + ' ' + word) : word;
+        if (next.length > maxChunkLength && current) {
+          chunks.push(current);
+          current = word;
+        } else {
+          current = next;
+        }
+      });
+      if (current) chunks.push(current);
+    }
+
+    var sentences = clean.match(/[^.!?;:]+[.!?;:]?/g) || [clean];
+    var current = '';
+    sentences.forEach(function (sentence) {
+      var part = String(sentence || '').trim();
+      if (!part) return;
+      var next = current ? (current + ' ' + part) : part;
+      if (next.length > maxChunkLength && current) {
+        pushChunk(current);
+        current = part;
+      } else {
+        current = next;
+      }
+    });
+    if (current) pushChunk(current);
+    if (!chunks.length) pushChunk(clean);
+    return chunks.slice(0, 18);
+  }
+
   function stripSendVoiceCommand(text) {
     var raw = String(text || '').trim();
     if (!raw) {
@@ -1572,65 +1617,120 @@
       }
     } catch (e) {}
 
-    var controller = window.AbortController ? new AbortController() : null;
-    var timer = controller ? window.setTimeout(function () {
-      try { controller.abort(); } catch (e) {}
-    }, 15000) : null;
+    var chunks = splitTextForFastSpeech(String(text).slice(0, 4000));
+    if (!chunks.length) {
+      return Promise.resolve(false);
+    }
 
-    return fetch('/api/voice_stream/tts', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: String(text).slice(0, 4000), voice: getEffectiveRobotVoice() }),
-      signal: controller ? controller.signal : undefined
-    }).then(function (res) {
-      if (timer) window.clearTimeout(timer);
-      if (!res.ok) {
-        if (res.status === 503 || res.status === 502 || res.status === 504) {
-          state.voiceServerAvailable = false;
-          updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+    var firstChunkPlayed = false;
+    var nextBlobPromise = null;
+
+    function fetchVoiceChunk(chunk, timeoutMs) {
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        return Promise.resolve(null);
+      }
+      var controller = window.AbortController ? new AbortController() : null;
+      var timer = controller ? window.setTimeout(function () {
+        try { controller.abort(); } catch (e) {}
+      }, timeoutMs || 12000) : null;
+
+      return fetch('/api/voice_stream/tts', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: String(chunk).slice(0, 800), voice: getEffectiveRobotVoice() }),
+        signal: controller ? controller.signal : undefined
+      }).then(function (res) {
+        if (timer) window.clearTimeout(timer);
+        if (!res.ok) {
+          if (res.status === 503 || res.status === 502 || res.status === 504) {
+            state.voiceServerAvailable = false;
+            updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+          }
+          return null;
         }
-        return false;
-      }
-      return res.blob();
-    }).then(function (blob) {
-      if (!blob || typeof blob.size !== 'number' || blob.size <= 0) return false;
-      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
-        return false;
-      }
-      var url = URL.createObjectURL(blob);
-      var audio = new Audio(url);
-      state.voiceServerAudio = audio;
-      audio.onended = function () {
-        URL.revokeObjectURL(url);
-        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('happy', 1200);
-      };
-      audio.onerror = function () {
-        URL.revokeObjectURL(url);
-        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
-      };
-      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
-        URL.revokeObjectURL(url);
-        if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
-        return false;
-      }
-      return audio.play().then(function () {
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
-        return true;
-      }).catch(function () {
-        URL.revokeObjectURL(url);
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
-        return false;
+        return res.blob();
+      }).then(function (blob) {
+        if (!blob || typeof blob.size !== 'number' || blob.size <= 0) return null;
+        return blob;
+      }).catch(function (err) {
+        if (timer) window.clearTimeout(timer);
+        if (err && err.name !== 'AbortError') {
+          console.warn('No se pudo usar el servidor de voz:', err);
+        }
+        return null;
       });
-    }).catch(function (err) {
-      if (timer) window.clearTimeout(timer);
-      if (err && err.name !== 'AbortError') {
-        console.warn('No se pudo usar el servidor de voz:', err);
+    }
+
+    function playVoiceChunk(blob, isLastChunk) {
+      if (!blob || playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        return Promise.resolve(false);
       }
-      state.voiceServerAvailable = false;
-      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      return new Promise(function (resolve) {
+        var url = URL.createObjectURL(blob);
+        var audio = new Audio(url);
+        var settled = false;
+        state.voiceServerAudio = audio;
+
+        function finish(played) {
+          if (settled) return;
+          settled = true;
+          URL.revokeObjectURL(url);
+          if (state.voiceServerAudio === audio) state.voiceServerAudio = null;
+          resolve(!!played);
+        }
+
+        audio.onended = function () {
+          if (isLastChunk && isAvatarPersonalityMode(getChatPersonalityMode())) {
+            setRobotMood('happy', 1200);
+          }
+          finish(true);
+        };
+        audio.onerror = function () {
+          if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
+          finish(false);
+        };
+        if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+          finish(false);
+          return;
+        }
+        audio.play().then(function () {
+          if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
+        }).catch(function () {
+          if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
+          finish(false);
+        });
+      });
+    }
+
+    function playChunkAt(index, blob) {
+      if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+        return Promise.resolve(firstChunkPlayed);
+      }
+      if (!blob) {
+        return Promise.resolve(firstChunkPlayed);
+      }
+      if (index + 1 < chunks.length) {
+        nextBlobPromise = fetchVoiceChunk(chunks[index + 1], 12000);
+      } else {
+        nextBlobPromise = null;
+      }
+      return playVoiceChunk(blob, index + 1 >= chunks.length).then(function (played) {
+        if (index === 0 && played) {
+          firstChunkPlayed = true;
+        }
+        if (!played || index + 1 >= chunks.length) {
+          return firstChunkPlayed;
+        }
+        return (nextBlobPromise || fetchVoiceChunk(chunks[index + 1], 12000)).then(function (nextBlob) {
+          return playChunkAt(index + 1, nextBlob);
+        });
+      });
+    }
+
+    return fetchVoiceChunk(chunks[0], chunks.length > 1 ? 6500 : 15000).then(function (blob) {
+      return playChunkAt(0, blob);
+    }).catch(function () {
       return false;
     });
   }

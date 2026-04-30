@@ -1067,7 +1067,11 @@ p{color:var(--muted);line-height:1.5}
 .admin-menu-visibility-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px dashed var(--border);background:var(--surface-soft);color:var(--text);font-weight:800;font-size:0.95rem;min-height:44px;cursor:pointer;box-sizing:border-box}
 .admin-menu-visibility-toggle:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}
 .admin-menu-visibility-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:1rem;line-height:1}
-.admin-content{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
+.admin-content{position:relative;flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
+.admin-frame-toolbar{position:absolute;right:18px;top:18px;z-index:12;display:flex;align-items:center;gap:8px;pointer-events:none}
+.admin-favorite-btn{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:999px;border:1px solid color-mix(in srgb,var(--border) 76%,var(--accent-yellow,#facc15) 24%);background:color-mix(in srgb,var(--surface) 88%,transparent);color:color-mix(in srgb,var(--muted) 78%,var(--text) 22%);font-size:1.28rem;line-height:1;box-shadow:0 14px 34px rgba(0,0,0,.16);cursor:pointer;transition:transform .16s ease,background .16s ease,color .16s ease,border-color .16s ease}
+.admin-favorite-btn:hover,.admin-favorite-btn:focus-visible{transform:translateY(-1px);background:var(--surface-soft);color:var(--accent-yellow,#facc15);outline:none}
+.admin-favorite-btn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent-yellow,#facc15) 22%,var(--surface) 78%);border-color:var(--accent-yellow,#facc15);color:var(--accent-yellow,#facc15);box-shadow:0 16px 36px color-mix(in srgb,var(--accent-yellow,#facc15) 26%,transparent)}
 .ai-chat-backdrop{position:fixed;inset:0;z-index:1648;background:rgba(8,12,24,.42);opacity:0;pointer-events:none;transition:opacity .22s ease}
 .ai-chat-backdrop.is-visible{opacity:1;pointer-events:auto}
 .ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;gap:8px;padding:12px 16px;font-weight:800;border:none;border-radius:999px;background:var(--accent);color:var(--btn-primary-text);cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.18);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
@@ -1228,6 +1232,8 @@ p{color:var(--muted);line-height:1.5}
   .admin-sidebar .nav .admin-nav-sublist li{width:100%;flex:0 0 auto}
   .admin-sidebar .nav .admin-nav-sublist a{width:100%;box-sizing:border-box}
   .admin-content{padding:8px;min-width:0}
+  .admin-frame-toolbar{right:12px;top:12px}
+  .admin-favorite-btn{width:38px;height:38px;font-size:1.12rem}
 
   .admin-empresa-shell{overflow:auto}
   .admin-empresa-shell .admin-layout{height:auto;min-height:100vh;overflow:visible}
@@ -4778,6 +4784,7 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 90%, var(--accent-yellow) 10%), var(--surface));
   box-shadow:0 18px 38px rgba(8,16,28,.18);
+  color:var(--text);
 }
 .checkout-license-card::before,
 .checkout-discount-card::before{
@@ -4821,6 +4828,15 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   color:var(--text);
   font-size:.78rem;
   font-weight:800;
+}
+.checkout-licencia-page .checkout-home-card h3,
+.checkout-licencia-page .checkout-home-card .card-title{
+  color:var(--text);
+  text-shadow:none;
+}
+.checkout-licencia-page .checkout-home-card p,
+.checkout-licencia-page .checkout-home-card .card-desc{
+  color:color-mix(in srgb, var(--muted) 86%, var(--text) 14%);
 }
 .checkout-card-kicker{
   display:inline-flex;
@@ -4919,6 +4935,9 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 .checkout-free-activation{
   max-width:1100px;
   margin:14px auto 0;
+  color:var(--text);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 88%, var(--surface) 12%), var(--surface));
+  border:1px solid var(--border);
 }
 .checkout-totals-grid{
   display:grid;
@@ -4978,10 +4997,12 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 .checkout-payment-header .payment-method-title{
   margin:4px 0 0;
   font-size:1.3rem;
+  color:var(--text);
 }
 .checkout-payment-copy{
   max-width:32rem;
   margin:0;
+  color:color-mix(in srgb, var(--muted) 86%, var(--text) 14%);
 }
 .checkout-single-method-help{
   margin-top:-4px;
@@ -5012,6 +5033,7 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   text-align:left;
   cursor:pointer;
   color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
   transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
 .payment-method-card-licenses{
@@ -5033,9 +5055,10 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   letter-spacing:.04em;
   text-transform:uppercase;
   margin-bottom:2px;
+  color:#fff;
 }
-.payment-method-card .method-name{display:block;font-weight:800;margin-bottom:4px}
-.payment-method-card .method-desc{display:block;font-size:.88rem;opacity:.95}
+.payment-method-card .method-name{display:block;font-weight:800;margin-bottom:4px;color:#fff}
+.payment-method-card .method-desc{display:block;font-size:.88rem;opacity:.95;color:rgba(255,255,255,.92)}
 .payment-method-logo{
   display:block;
   width:140px;
@@ -5119,6 +5142,7 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   padding:12px;
   border-radius:12px;
   border:1px solid transparent;
+  color:var(--text);
 }
 .payment-method-panel.active{display:block}
 .payment-method-panel-mp{
@@ -5198,9 +5222,9 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   text-align:center;
 }
 .payment-method-hint{margin-bottom:10px}
-.payment-method-check{display:block;margin-bottom:8px}
-.payment-method-links{margin-bottom:8px}
-.payment-method-status{margin-top:8px}
+.payment-method-check{display:block;margin-bottom:8px;color:inherit}
+.payment-method-links{margin-bottom:8px;color:inherit}
+.payment-method-status{margin-top:8px;color:inherit}
 .payment-method-input{
   width:100%;
   margin-top:6px;
@@ -6131,15 +6155,22 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
 
-.carrito-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
-.carrito-grid-main{flex:1;min-width:0;}
-.carrito-summary-card{flex:0 0 320px;min-width:280px;max-width:360px;}
+.carrito-primary-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:18px;align-items:start;}
+.carrito-primary-main{min-width:0;}
+.carrito-grid{display:block;}
+.carrito-grid-main{min-width:0;width:100%;}
+.carrito-summary-card{min-width:280px;max-width:360px;width:100%;}
+#carritoTotalsPanel{position:sticky;top:12px;align-self:start;}
 .carrito-items-box{min-height:260px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--content-soft-bg);}
+.carrito-scanner-stack{display:grid;grid-template-columns:minmax(220px,440px);gap:10px;align-items:start;}
+.carrito-scanner-stack .form-col{max-width:440px;width:100%;}
+.carrito-scanner-stack .form-label{margin-top:0;}
+.carrito-scanner-stack .btn{width:100%;}
 .carrito-station-toolbar{flex-wrap:wrap;align-items:center;}
 .carrito-station-toolbar .carrito-alert10-check{margin-left:4px;white-space:nowrap;}
 .carrito-station-split{display:flex;flex-wrap:wrap;gap:18px;align-items:stretch;}
 .carrito-station-split-main{flex:2;min-width:280px;}
-.carrito-station-totals-aside{flex:1;min-width:240px;margin-top:0;}
+.carrito-station-totals-aside{display:none;}
 .carrito-items-box--station-fixed{min-height:220px;max-height:min(52vh,420px);}
 .carrito-station-payment-inputs-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
 .carrito-station-payment-inputs-row .form-col{flex:1;min-width:140px;}
@@ -6153,6 +6184,12 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
 .action-toolbar{justify-content:flex-start;align-items:flex-start;}
 .action-toolbar .btn{min-width:130px;}
 .carrito-summary-card .section-heading{margin-bottom:0;}
+
+@media (max-width:900px){
+  .carrito-primary-layout{grid-template-columns:1fr;}
+  #carritoTotalsPanel{position:static;max-width:none;order:-1;}
+  .carrito-scanner-stack{grid-template-columns:1fr;}
+}
 
 /* Modulo ERP extendido */
 .erp-title,

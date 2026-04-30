@@ -3,24 +3,33 @@ package db
 import "testing"
 
 func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.T) {
-	tipos := []string{
-		"Restaurante",
-		"Motel",
-		"Hotel",
-		"Bar",
-		"Salon de belleza",
-		"Lavadero de autos",
-		"Tienda punto de venta",
-		"Taller mecanico",
-		"Profesional independiente",
-		"Agencia de redes sociales",
-		"Sensores y monitoreo",
-		"Tipo personalizado",
+	tipos := []struct {
+		nombre             string
+		prefijo            string
+		estaciones         int
+		ventaDirecta       bool
+		comisiones         bool
+		nombreSingular     string
+		permiteSinEstacion bool
+	}{
+		{nombre: "Restaurante", prefijo: "Mesa", estaciones: 8, ventaDirecta: true, nombreSingular: "Mesa"},
+		{nombre: "Motel", prefijo: "Habitacion", estaciones: 10, nombreSingular: "Habitacion"},
+		{nombre: "Hotel", prefijo: "Habitacion", estaciones: 12, nombreSingular: "Habitacion"},
+		{nombre: "Bar", prefijo: "Mesa", estaciones: 10, nombreSingular: "Mesa"},
+		{nombre: "Salon de belleza", prefijo: "Silla", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Silla"},
+		{nombre: "Lavadero de autos", prefijo: "Bahia", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
+		{nombre: "Pymes", prefijo: "Punto de venta", estaciones: 2, ventaDirecta: true, nombreSingular: "Punto de venta"},
+		{nombre: "Tienda punto de venta", prefijo: "Punto de venta", estaciones: 1, ventaDirecta: true, nombreSingular: "Punto de venta"},
+		{nombre: "Taller mecanico", prefijo: "Bahia", estaciones: 5, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
+		{nombre: "Profesional independiente", prefijo: "Venta directa", estaciones: 0, ventaDirecta: true, nombreSingular: "Venta directa", permiteSinEstacion: true},
+		{nombre: "Agencia de redes sociales", prefijo: "Cliente", estaciones: 4, ventaDirecta: true, nombreSingular: "Cliente"},
+		{nombre: "Sensores y monitoreo", prefijo: "Acceso", estaciones: 4, ventaDirecta: true, nombreSingular: "Acceso"},
+		{nombre: "Tipo personalizado", prefijo: "Estacion", estaciones: 4, ventaDirecta: true, nombreSingular: "Estacion"},
 	}
 
-	for _, nombre := range tipos {
-		t.Run(nombre, func(t *testing.T) {
-			preconfig := DefaultTipoEmpresaPreconfiguracion(123, nombre)
+	for _, tc := range tipos {
+		t.Run(tc.nombre, func(t *testing.T) {
+			preconfig := DefaultTipoEmpresaPreconfiguracion(123, tc.nombre)
 			if !preconfig.Enabled {
 				t.Fatalf("preconfiguracion default no quedo habilitada")
 			}
@@ -28,17 +37,32 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 			if err != nil {
 				t.Fatalf("config json invalido: %v", err)
 			}
-			if template.Estaciones.Cantidad <= 0 {
-				t.Fatalf("sin estaciones guia")
+			if template.Estaciones.Cantidad != tc.estaciones {
+				t.Fatalf("estaciones guia incorrectas: got %d want %d", template.Estaciones.Cantidad, tc.estaciones)
 			}
-			if template.Estaciones.Prefijo == "" {
-				t.Fatalf("sin prefijo de estaciones")
+			if !tc.permiteSinEstacion && !template.Operacion.UsaEstaciones {
+				t.Fatalf("debe usar estaciones")
 			}
-			if len(template.Productos) == 0 {
-				t.Fatalf("sin productos guia")
+			if template.Estaciones.Prefijo != tc.prefijo {
+				t.Fatalf("prefijo incorrecto: got %q want %q", template.Estaciones.Prefijo, tc.prefijo)
 			}
-			if len(template.Usuarios) == 0 {
-				t.Fatalf("sin usuarios guia")
+			if template.Operacion.NombreEstacionSingular != tc.nombreSingular {
+				t.Fatalf("nombre singular incorrecto: got %q want %q", template.Operacion.NombreEstacionSingular, tc.nombreSingular)
+			}
+			if template.Operacion.VentaDirectaEnabled != tc.ventaDirecta {
+				t.Fatalf("venta directa incorrecta: got %v want %v", template.Operacion.VentaDirectaEnabled, tc.ventaDirecta)
+			}
+			if template.Operacion.ComisionesEnabled != tc.comisiones {
+				t.Fatalf("comisiones incorrectas: got %v want %v", template.Operacion.ComisionesEnabled, tc.comisiones)
+			}
+			if len(template.Productos) < 3 {
+				t.Fatalf("productos guia insuficientes: got %d want >= 3", len(template.Productos))
+			}
+			if len(template.Usuarios) < 3 {
+				t.Fatalf("usuarios guia insuficientes: got %d want >= 3", len(template.Usuarios))
+			}
+			if len(rolesFromTipoEmpresaPreconfigTemplate(template)) < 3 {
+				t.Fatalf("roles guia insuficientes: got %d want >= 3", len(rolesFromTipoEmpresaPreconfigTemplate(template)))
 			}
 			if !template.Asistente.Enabled {
 				t.Fatalf("asistente IA guia deshabilitado")

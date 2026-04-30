@@ -2133,7 +2133,7 @@ func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int
 	err = tx.QueryRow(`SELECT bodega_id FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? ORDER BY cantidad DESC, bodega_id ASC LIMIT 1`, empresaID, productoID).Scan(&bodegaID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, 0, fmt.Errorf("producto %d sin bodega de inventario", productoID)
+			return 0, costo, nil
 		}
 		return 0, 0, err
 	}
@@ -2166,6 +2166,9 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		if err != nil {
 			return err
 		}
+		if bodegaID <= 0 {
+			continue
+		}
 
 		ctx := carritoStockContext{
 			ProductoID:    component.ProductoID,
@@ -2175,6 +2178,9 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		}
 
 		contexts = append(contexts, ctx)
+	}
+	if len(contexts) == 0 {
+		return nil
 	}
 
 	normalizedTipo := strings.TrimSpace(strings.ToLower(tipoItem))

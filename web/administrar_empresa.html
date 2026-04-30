@@ -31,6 +31,7 @@
           <div class="admin-nav-group-title">Operacion y ventas</div>
           <ul class="admin-nav-sublist">
             <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
+            <li><a id="linkVentaDirecta" href="/administrar_empresa/venta_directa.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Venta directa</a></li>
             <li><a id="linkReservasHotel" href="/administrar_empresa/reservas_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reservas</a></li>
             <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
             <li><a id="linkVentaPublica" href="/administrar_empresa/venta_publica.html" target="contentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Venta publica</a></li>
@@ -104,6 +105,9 @@
     </aside>
 
     <main class="admin-content">
+      <div class="admin-frame-toolbar" aria-label="Acciones de pagina">
+        <button id="adminFavoriteBtn" class="admin-favorite-btn" type="button" aria-pressed="false" title="Agregar a favoritos" aria-label="Agregar pagina a favoritos">&#9733;</button>
+      </div>
       <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame" allow="geolocation"></iframe>
     </main>
   </div>

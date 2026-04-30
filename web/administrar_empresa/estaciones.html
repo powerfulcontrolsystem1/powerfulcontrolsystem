@@ -89,7 +89,8 @@
         mostrar_tarifa_resumen: true,
         mostrar_hora_extra: true,
         alerta_10_min: true,
-        marcar_sucia_al_pagar: true
+        marcar_sucia_al_pagar: true,
+        abrir_carrito_al_activar: true
       },
       dirtyByEstacion: {}
     };
@@ -495,7 +496,8 @@
           mostrar_tarifa_resumen: ui.mostrar_tarifa_resumen === undefined ? true : !!ui.mostrar_tarifa_resumen,
           mostrar_hora_extra: ui.mostrar_hora_extra === undefined ? true : !!ui.mostrar_hora_extra,
           alerta_10_min: ui.alerta_10_min === undefined ? true : !!ui.alerta_10_min,
-          marcar_sucia_al_pagar: ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar
+          marcar_sucia_al_pagar: ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar,
+          abrir_carrito_al_activar: ui.abrir_carrito_al_activar === undefined ? true : !!ui.abrir_carrito_al_activar
         });
 
         state.dirtyByEstacion = {};
@@ -678,8 +680,12 @@
           const code = normalizeCode(item && item.codigo);
           if (!code) return;
           state.carritosPorCodigo[code] = {
+            id: Number(item && item.id ? item.id : 0),
             activo: isCarritoOperativoActivo(item),
+            estado: String((item && item.estado) || ''),
+            estadoCarrito: String((item && item.estado_carrito) || ''),
             activadoEn: String((item && item.activado_en) || ''),
+            pagadoEn: String((item && item.pagado_en) || ''),
             total: Number(item && item.total ? item.total : 0),
             clienteNombre: String((item && item.cliente_nombre) || ''),
             tarifaPorMinutos: item && item.tarifa_por_minutos ? item.tarifa_por_minutos : null,
@@ -882,6 +888,98 @@
       if (!state.dirtyByEstacion) state.dirtyByEstacion = {};
       delete state.dirtyByEstacion[id];
       refreshStationCardSummaries();
+    }
+
+    function shouldOpenCartWhenStationClicked() {
+      return !state.stationCardUI || state.stationCardUI.abrir_carrito_al_activar !== false;
+    }
+
+    function findStationCarritoInfo(stationID) {
+      const code = normalizeCode(getCarritoCodeForStation(stationID));
+      return state.carritosPorCodigo && state.carritosPorCodigo[code] ? state.carritosPorCodigo[code] : null;
+    }
+
+    function isNoopStationActivationError(message) {
+      const msg = normalizeText(message);
+      return msg.indexOf('ya se encuentra activa') !== -1 ||
+        msg.indexOf('ya se encuentra activa y abierta') !== -1 ||
+        msg.indexOf('venta ya se encuentra activa') !== -1;
+    }
+
+    async function activateStationWithoutOpening(stationID, stationName) {
+      const id = Number(stationID || 0);
+      if (!empresaId || id <= 0) return;
+      let info = findStationCarritoInfo(id);
+      if (!info || !Number(info.id || 0)) {
+        await loadEstadoCarritosEstacion();
+        info = findStationCarritoInfo(id);
+      }
+      const carritoID = Number(info && info.id ? info.id : 0);
+      if (!carritoID) {
+        throw new Error('No se encontro el carrito asociado a ' + (stationName || ('estacion ' + id)) + '. Guarda o sincroniza las estaciones primero.');
+      }
+      if (info && info.activo) {
+        refreshStationCardSummaries();
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('id', String(carritoID));
+      params.set('action', 'activar_estacion');
+      if (info && String(info.pagadoEn || '').trim()) {
+        params.set('reset_items', '1');
+      }
+
+      try {
+        await requestJSON('/api/empresa/carritos_compra?' + params.toString(), { method: 'PUT' });
+      } catch (err) {
+        const message = err && err.message ? err.message : String(err || '');
+        if (!isNoopStationActivationError(message)) {
+          throw err;
+        }
+      }
+      await Promise.all([
+        loadColoresEstadoCarrito(),
+        loadEstadoCarritosEstacion()
+      ]);
+      refreshStationCardSummaries();
+      setStatus('');
+    }
+
+    function handleStationCardActivation(ev, card) {
+      const stationID = Number(card.getAttribute('data-estacion-id') || 0);
+      const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+      if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        clearDirtyState(stationID).catch(function(err) {
+          console.warn('No se pudo limpiar estacion sucia', err);
+        });
+        return;
+      }
+
+      if (shouldOpenCartWhenStationClicked()) {
+        openStationCarrito(stationID, stationName);
+        return;
+      }
+
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      card.setAttribute('aria-busy', 'true');
+      setStatus('Activando ' + (stationName || ('estacion ' + stationID)) + '...');
+      activateStationWithoutOpening(stationID, stationName)
+        .catch(function(err) {
+          console.warn('No se pudo activar estacion sin abrir carrito', err);
+          setStatus('No se pudo activar la estacion: ' + (err && err.message ? err.message : 'error de servidor'));
+        })
+        .finally(function() {
+          card.removeAttribute('aria-busy');
+        });
     }
 
     // readConfig replaced by server-backed getConfigFromServer
@@ -1593,31 +1691,12 @@
       grid.querySelectorAll('.station-launch-card').forEach(card => {
         card.style.cursor = 'pointer';
         card.addEventListener('click', ev => {
-          const stationID = Number(card.getAttribute('data-estacion-id') || 0);
-          const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            clearDirtyState(stationID).catch(function(err) {
-              console.warn('No se pudo limpiar estación sucia', err);
-            });
-            return;
-          }
-          openStationCarrito(stationID, stationName);
+          handleStationCardActivation(ev, card);
         });
         card.addEventListener('keydown', ev => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();
-          const stationID = Number(card.getAttribute('data-estacion-id') || 0);
-          const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
-            ev.stopPropagation();
-            clearDirtyState(stationID).catch(function(err) {
-              console.warn('No se pudo limpiar estación sucia', err);
-            });
-            return;
-          }
-          openStationCarrito(stationID, stationName);
+          handleStationCardActivation(ev, card);
         });
       });
 

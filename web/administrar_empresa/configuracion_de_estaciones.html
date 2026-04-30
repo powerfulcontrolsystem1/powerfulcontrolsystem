@@ -219,6 +219,13 @@
             </label>
             <p class="form-help">Cuando esta opción está activa, al hacer clic en una estación sucia se limpiará (volverá a disponible) sin abrir el carrito.</p>
           </div>
+          <div class="form-col">
+            <label class="form-label">Abrir carrito al activar</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="stOpenCartOnActivate" checked> Al hacer clic en una estación, activarla y entrar de una al carrito
+            </label>
+            <p class="form-help">Si desactivas esta opción, el clic solo activa la estación, cambia su color y muestra sus datos en la tarjeta.</p>
+          </div>
         </div>
         <div class="form-actions">
           <button id="btnGuardarStationCardFlags" class="btn secondary" type="button">Guardar opciones de visualización</button>
@@ -875,7 +882,8 @@
           mostrar_tarifa_resumen: !!document.getElementById('stShowTarifaResumen').checked,
           mostrar_hora_extra: !!document.getElementById('stShowHoraExtra').checked,
           alerta_10_min: !!document.getElementById('stAlert10Min').checked,
-          marcar_sucia_al_pagar: !!document.getElementById('stMarkDirtyOnPay').checked
+          marcar_sucia_al_pagar: !!document.getElementById('stMarkDirtyOnPay').checked,
+          abrir_carrito_al_activar: !!document.getElementById('stOpenCartOnActivate').checked
         });
         await saveConfigToServer(cfg);
         if (msg) msg.textContent = 'Opciones guardadas.';
@@ -1795,6 +1803,7 @@
         document.getElementById('stShowHoraExtra').checked = ui.mostrar_hora_extra === undefined ? true : !!ui.mostrar_hora_extra;
         document.getElementById('stAlert10Min').checked = ui.alerta_10_min === undefined ? true : !!ui.alerta_10_min;
         document.getElementById('stMarkDirtyOnPay').checked = ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar;
+        document.getElementById('stOpenCartOnActivate').checked = ui.abrir_carrito_al_activar === undefined ? true : !!ui.abrir_carrito_al_activar;
       } catch (_) {}
       renderRows(cfg);
       fillCarritoConfigTargetOptions(cfg);

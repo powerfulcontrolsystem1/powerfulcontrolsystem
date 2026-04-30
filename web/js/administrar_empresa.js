@@ -97,6 +97,7 @@ try {
   var empresaNameMenu = document.getElementById("empresaNameMenu");
   var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
+  var favoriteBtn = document.getElementById("adminFavoriteBtn");
   var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
   var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
@@ -110,6 +111,7 @@ try {
   var links = [
     document.getElementById("linkPanelEmpresa"),
     document.getElementById("linkEstaciones"),
+    document.getElementById("linkVentaDirecta"),
     document.getElementById("linkProductos"),
     document.getElementById("linkCompras"),
     document.getElementById("linkConfiguracion"),
@@ -185,6 +187,7 @@ try {
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
+    linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
@@ -284,6 +287,143 @@ try {
     } catch (e) {
       return "";
     }
+  }
+
+  function favoritesStorageKey(empresaId) {
+    return "admin_empresa:favorites:" + String(empresaId || "global");
+  }
+
+  function readFavorites(empresaId) {
+    try {
+      var raw = window.localStorage.getItem(favoritesStorageKey(empresaId)) || "[]";
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter(function (item) {
+        return item && isAllowedFrameHref(item.href);
+      }) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeFavorites(empresaId, favorites) {
+    try {
+      window.localStorage.setItem(favoritesStorageKey(empresaId), JSON.stringify(favorites.slice(0, 24)));
+    } catch (e) {}
+  }
+
+  function stripEmpresaParam(href) {
+    var normalized = normalizeHref(href);
+    if (!normalized) return "";
+    try {
+      var url = new URL(normalized, window.location.origin);
+      url.searchParams.delete("empresa_id");
+      url.searchParams.delete("id");
+      return url.pathname + url.search;
+    } catch (e) {
+      return normalized.split("?")[0];
+    }
+  }
+
+  function getCurrentFrameHref() {
+    if (!frame) return "";
+    try {
+      return normalizeHref(frame.contentWindow.location.pathname + frame.contentWindow.location.search);
+    } catch (e) {
+      return normalizeHref(frame.getAttribute("src") || frame.src || "");
+    }
+  }
+
+  function findMenuLinkByHref(href) {
+    var current = stripEmpresaParam(href);
+    var activeLinks = frameLinks.length > 0 ? frameLinks : getFrameLinks();
+    for (var i = 0; i < activeLinks.length; i += 1) {
+      var link = activeLinks[i];
+      if (!link) continue;
+      if (stripEmpresaParam(link.getAttribute("href")) === current) {
+        return link;
+      }
+    }
+    return null;
+  }
+
+  function favoriteTitleFromFrame(href) {
+    var link = findMenuLinkByHref(href);
+    if (link) {
+      return String(link.textContent || "").replace(/\s+/g, " ").trim();
+    }
+    try {
+      var doc = frame && frame.contentDocument ? frame.contentDocument : null;
+      var heading = doc ? doc.querySelector("h1,h2,.page-title") : null;
+      var titleText = heading ? String(heading.textContent || "").trim() : "";
+      if (titleText) return titleText;
+      if (doc && doc.title) return String(doc.title).trim();
+    } catch (e) {}
+    try {
+      var url = new URL(href, window.location.origin);
+      var name = url.pathname.split("/").pop().replace(/\.html?$/i, "").replace(/[_-]+/g, " ");
+      return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Pagina";
+    } catch (e) {
+      return "Pagina";
+    }
+  }
+
+  function isFavoriteHref(href, empresaId) {
+    var current = stripEmpresaParam(href);
+    if (!current) return false;
+    return readFavorites(empresaId).some(function (item) {
+      return stripEmpresaParam(item.href) === current;
+    });
+  }
+
+  function notifyFavoritesChanged(empresaId) {
+    try {
+      window.dispatchEvent(new CustomEvent("pcs-admin-favorites-changed", { detail: { empresa_id: empresaId } }));
+    } catch (e) {}
+    try {
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "pcs-admin-favorites-changed", empresa_id: empresaId }, window.location.origin);
+      }
+    } catch (e) {}
+  }
+
+  function updateFavoriteButton(href) {
+    if (!favoriteBtn) return;
+    var currentHref = normalizeHref(href || getCurrentFrameHref());
+    var allowed = isAllowedFrameHref(currentHref);
+    favoriteBtn.hidden = !allowed;
+    if (!allowed) return;
+    var active = isFavoriteHref(currentHref, id);
+    favoriteBtn.setAttribute("aria-pressed", active ? "true" : "false");
+    favoriteBtn.setAttribute("title", active ? "Quitar de favoritos" : "Agregar a favoritos");
+    favoriteBtn.setAttribute("aria-label", active ? "Quitar pagina de favoritos" : "Agregar pagina a favoritos");
+  }
+
+  function toggleCurrentFavorite() {
+    if (!favoriteBtn) return;
+    var currentHref = getCurrentFrameHref();
+    if (!isAllowedFrameHref(currentHref)) return;
+    var href = withEmpresaParam(currentHref, id) || currentHref;
+    var currentKey = stripEmpresaParam(href);
+    var favorites = readFavorites(id);
+    var existingIndex = -1;
+    for (var i = 0; i < favorites.length; i += 1) {
+      if (stripEmpresaParam(favorites[i].href) === currentKey) {
+        existingIndex = i;
+        break;
+      }
+    }
+    if (existingIndex >= 0) {
+      favorites.splice(existingIndex, 1);
+    } else {
+      favorites.unshift({
+        href: href,
+        title: favoriteTitleFromFrame(href),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    writeFavorites(id, favorites);
+    updateFavoriteButton(href);
+    notifyFavoritesChanged(id);
   }
 
   function buildPortalUsuariosURL(empresaId, config) {
@@ -615,6 +755,14 @@ try {
     refreshMenuGroups();
   }
 
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      toggleCurrentFavorite();
+    });
+    updateFavoriteButton("");
+  }
+
   function describePermissionContext(permissionContext) {
     if (!permissionContext || typeof permissionContext !== "object") {
       return "Permisos de menú: sin contexto disponible.";
@@ -802,6 +950,7 @@ try {
         frame.setAttribute("src", linkHref);
         persistFrameSrc(linkHref, empresaId);
         setActiveByHref(linkHref);
+        updateFavoriteButton(linkHref);
       });
     });
   }
@@ -941,6 +1090,7 @@ try {
 
       persistFrameSrc(currentHref, id);
       setActiveByHref(currentHref);
+      updateFavoriteButton(currentHref);
     });
     // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpágina activa.
     // Si el foco está en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.

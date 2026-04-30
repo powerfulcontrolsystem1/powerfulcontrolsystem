@@ -589,17 +589,25 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
-	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
-	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
 
-	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
-	if err != nil {
-		if isProviderLimitError(err) {
-			c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
+	var respuesta string
+	var promptTokens int64
+	var completionTokens int64
+	if direct, handled := buildEmpresaAIDirectDocumentResponse(c.dbEmp, payload.EmpresaID, payload.Pregunta); handled {
+		respuesta = direct
+		completionTokens = int64(len([]rune(respuesta)) / 4)
+	} else {
+		modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
+		systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
+		respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
+		if err != nil {
+			if isProviderLimitError(err) {
+				c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
 	}
 
 	respuesta = strings.TrimSpace(respuesta)
@@ -1380,6 +1388,137 @@ func buildAIAssistantModeInstruction(mode string) string {
 		"Si el usuario pide ejecutar cambios, separa claramente lo que requiere confirmacion humana antes de cualquier PCS_ACTION. "
 }
 
+func buildEmpresaAIDirectDocumentResponse(dbEmp *sql.DB, empresaID int64, pregunta string) (string, bool) {
+	folded := foldEmpresaAICommandText(pregunta)
+	if empresaID <= 0 || dbEmp == nil || folded == "" {
+		return "", false
+	}
+	wantsSpreadsheet := strings.Contains(folded, "excel") ||
+		strings.Contains(folded, "xlsx") ||
+		strings.Contains(folded, "hoja de calculo") ||
+		strings.Contains(folded, "tabla")
+	wantsGenerate := strings.Contains(folded, "genera") ||
+		strings.Contains(folded, "generar") ||
+		strings.Contains(folded, "crea") ||
+		strings.Contains(folded, "crear") ||
+		strings.Contains(folded, "exporta") ||
+		strings.Contains(folded, "exportar") ||
+		strings.Contains(folded, "descarga") ||
+		strings.Contains(folded, "descargar")
+	wantsProducts := strings.Contains(folded, "producto") ||
+		strings.Contains(folded, "productos") ||
+		strings.Contains(folded, "articulo") ||
+		strings.Contains(folded, "articulos")
+	if !wantsSpreadsheet || !wantsGenerate || !wantsProducts {
+		return "", false
+	}
+
+	productos, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, "", "", 0, 0, 500, 0)
+	if err != nil {
+		return "No pude consultar los productos para generar el Excel. El chat sigue disponible; intenta de nuevo o revisa el modulo de productos.", true
+	}
+	if len(productos) == 0 {
+		return "No encontre productos registrados para generar el Excel.\n\n| Nombre | Precio |\n|---|---|", true
+	}
+
+	includeSKU := strings.Contains(folded, "sku") || strings.Contains(folded, "codigo")
+	includeCategoria := strings.Contains(folded, "categoria")
+	includeStock := strings.Contains(folded, "stock") || strings.Contains(folded, "existencia") || strings.Contains(folded, "inventario")
+	onlyNamePrice := strings.Contains(folded, "solo nombre y precio") ||
+		strings.Contains(folded, "nombre y precio") ||
+		strings.Contains(folded, "nombres y precios")
+	if onlyNamePrice {
+		includeSKU = false
+		includeCategoria = false
+		includeStock = false
+	}
+
+	var b strings.Builder
+	b.WriteString("Listo. Prepare la tabla de productos para Excel. Usa el boton Excel que aparece debajo de esta respuesta para descargar el archivo.\n\n")
+	if includeSKU {
+		b.WriteString("| SKU ")
+	}
+	b.WriteString("| Nombre | Precio |")
+	if includeCategoria {
+		b.WriteString(" Categoria |")
+	}
+	if includeStock {
+		b.WriteString(" Stock |")
+	}
+	b.WriteString("\n")
+	if includeSKU {
+		b.WriteString("|---")
+	}
+	b.WriteString("|---|---:|")
+	if includeCategoria {
+		b.WriteString("---|")
+	}
+	if includeStock {
+		b.WriteString("---:|")
+	}
+	b.WriteString("\n")
+
+	for _, p := range productos {
+		if includeSKU {
+			b.WriteString("| ")
+			b.WriteString(markdownTableCell(p.SKU))
+			b.WriteString(" ")
+		}
+		b.WriteString("| ")
+		b.WriteString(markdownTableCell(p.Nombre))
+		b.WriteString(" | ")
+		b.WriteString(fmt.Sprintf("%.2f", p.Precio))
+		b.WriteString(" |")
+		if includeCategoria {
+			b.WriteString(" ")
+			b.WriteString(markdownTableCell(p.Categoria))
+			b.WriteString(" |")
+		}
+		if includeStock {
+			b.WriteString(" ")
+			b.WriteString(fmt.Sprintf("%.2f", p.StockTotal))
+			b.WriteString(" |")
+		}
+		b.WriteString("\n")
+	}
+	if len(productos) >= 500 {
+		b.WriteString("\nNota: se incluyeron los primeros 500 productos para mantener estable la exportacion desde el chat.\n")
+	}
+	return b.String(), true
+}
+
+func foldEmpresaAICommandText(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	replacer := strings.NewReplacer(
+		"\u00e1", "a",
+		"\u00e9", "e",
+		"\u00ed", "i",
+		"\u00f3", "o",
+		"\u00fa", "u",
+		"\u00fc", "u",
+		"\u00f1", "n",
+		"\u00c3\u00a1", "a",
+		"\u00c3\u00a9", "e",
+		"\u00c3\u00ad", "i",
+		"\u00c3\u00b3", "o",
+		"\u00c3\u00ba", "u",
+		"\u00c3\u00bc", "u",
+		"\u00c3\u00b1", "n",
+	)
+	return replacer.Replace(value)
+}
+
+func markdownTableCell(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Sin dato"
+	}
+	value = strings.ReplaceAll(value, "|", "/")
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	return strings.Join(strings.Fields(value), " ")
+}
+
 func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 	assistantInstruction := buildAIAssistantModeInstruction(modoAsistente)
 	return "Eres un asistente empresarial para el sistema POS multiempresa. " +
@@ -1387,6 +1526,8 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"No inventes consultas SQL ni afirmes acceso a otras empresas. " +
 		"Cuando el usuario pida ejecutar acciones operativas o de base de datos (consultar, crear, editar o eliminar), NO ejecutes nada directamente. " +
 		"En su lugar, debes proponer una accion como una sugerencia estructurada para que el usuario la confirme. " +
+		"Cuando el usuario pida generar, crear o exportar un Excel, XLSX, tabla, reporte o documento con datos ya disponibles en el contexto validado, NO entres en ciclo de preguntas: genera la tabla o documento directamente. Solo pregunta si falta un dato indispensable que no pueda inferirse del pedido. " +
+		"Para solicitudes como 'genera un excel con los productos, solo nombre y precio', responde con una tabla Markdown clara con esas columnas para que el sistema muestre los botones de exportacion. " +
 		"Regla de seguridad: puedes proponer acciones GET/OPEN/POST/PUT/DELETE, pero TODA accion debe pedir confirmacion previa; y si es DELETE o afecta muchos datos, pide confirmacion adicional. " +
 		"Para operaciones de base de datos genericas, usa el endpoint protegido /api/empresa/db_admin con action=schema|columns|select|insert|update|delete (siempre aislado por empresa_id). " +
 		"Importante (foto de carta/lista de precios y egresos): cuando el usuario adjunte una foto y pida registrar productos o egresos, primero extrae y presenta una lista estructurada para revision humana. " +

@@ -105,6 +105,16 @@
       border-width: 2px;
     }
 
+    .product-pick-btn.is-adding {
+      cursor: progress;
+      opacity: .78;
+      transform: translateY(0);
+    }
+
+    .product-button-catalog-page #btnAplicarSeleccion {
+      display: none;
+    }
+
     .product-pick-name {
       display: block;
       color: var(--catalog-ink);
@@ -212,10 +222,10 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Productos seleccionados</h2>
-        <span id="seleccionCount" class="form-help">Items seleccionados: 0</span>
+        <h2 style="margin:0;">Estado del carrito</h2>
+        <span id="seleccionCount" class="form-help">Listo para agregar</span>
       </div>
-      <div id="seleccionResumen" class="table-wrap">No hay productos seleccionados.</div>
+      <div id="seleccionResumen" class="table-wrap">Presiona un producto para agregarlo automaticamente al carrito.</div>
       <div id="pageMsg" class="form-help" ></div>
     </section>
   </div>
@@ -227,9 +237,13 @@
       carritoCodigo: '',
       returnURL: '',
       carrito: null,
+      carritoItems: [],
       productos: [],
       filtro: '',
-      seleccion: new Map()
+      seleccion: new Map(),
+      addingProductos: new Set(),
+      touchedItems: new Map(),
+      touchSeq: 0
     };
 
     function getQueryParam(name) {
@@ -270,7 +284,12 @@
     async function ensureOk(res) {
       if (res.ok) return;
       const t = await res.text();
-      throw new Error(t || ('HTTP ' + res.status));
+      let detail = t || ('HTTP ' + res.status);
+      try {
+        const parsed = JSON.parse(t);
+        detail = normalize(parsed.error) || normalize(parsed.message) || detail;
+      } catch (err) {}
+      throw new Error(detail);
     }
 
     function safeReturnURL(raw) {
@@ -311,23 +330,58 @@
     }
 
     function updateSelectionCount() {
-      const rows = getSelectedRows();
-      const totalUnidades = rows.reduce(function(acc, row) { return acc + row.cantidad; }, 0);
-      document.getElementById('seleccionCount').textContent = 'Items seleccionados: ' + totalUnidades;
+      const rows = getCarritoDisplayRows();
+      const totalUnidades = rows.reduce(function(acc, row) { return acc + Number(row.cantidad || 0); }, 0);
+      document.getElementById('seleccionCount').textContent = rows.length > 0
+        ? 'Productos en carrito: ' + rows.length + ' | Unidades: ' + totalUnidades.toFixed(2)
+        : 'Listo para agregar';
+    }
+
+    function itemTouchKey(item) {
+      return normalize(item.tipo_item || 'producto') + ':' + Number(item.referencia_id || 0);
+    }
+
+    function markItemTouched(productoID) {
+      const key = 'producto:' + Number(productoID || 0);
+      state.touchSeq += 1;
+      state.touchedItems.set(key, state.touchSeq);
+    }
+
+    function itemTimeValue(item) {
+      const raw = normalize(item.fecha_actualizacion || item.FechaActualizacion || item.fecha_creacion || item.FechaCreacion);
+      if (!raw) return 0;
+      const normalized = raw.indexOf('T') >= 0 ? raw : raw.replace(' ', 'T');
+      const ts = Date.parse(normalized);
+      return Number.isFinite(ts) ? ts : 0;
+    }
+
+    function getCarritoDisplayRows() {
+      const rows = Array.isArray(state.carritoItems) ? state.carritoItems.slice() : [];
+      return rows.filter(function(item) {
+        return normalize(item.estado || 'activo') !== 'inactivo' && normalize(item.tipo_item || 'producto') === 'producto';
+      }).sort(function(a, b) {
+        const touchA = Number(state.touchedItems.get(itemTouchKey(a)) || 0);
+        const touchB = Number(state.touchedItems.get(itemTouchKey(b)) || 0);
+        if (touchA !== touchB) return touchB - touchA;
+        const timeA = itemTimeValue(a);
+        const timeB = itemTimeValue(b);
+        if (timeA !== timeB) return timeB - timeA;
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
     }
 
     function renderSelectionTable() {
       const box = document.getElementById('seleccionResumen');
-      const rows = getSelectedRows();
+      const rows = getCarritoDisplayRows();
       if (!rows.length) {
-        box.textContent = 'No hay productos seleccionados.';
+        box.textContent = 'Presiona un producto para agregarlo automaticamente al carrito.';
         updateSelectionCount();
         return;
       }
 
       const moneda = (state.carrito && state.carrito.moneda) || 'COP';
       const total = rows.reduce(function(acc, row) {
-        return acc + (Number(row.producto.precio || 0) * Number(row.cantidad || 0));
+        return acc + Number(row.total_linea || row.TotalLinea || (Number(row.precio_unitario || 0) * Number(row.cantidad || 0)));
       }, 0);
 
       const table = document.createElement('table');
@@ -337,44 +391,26 @@
         '<th>Precio</th>' +
         '<th>Cantidad</th>' +
         '<th>Subtotal</th>' +
-        '<th>Acción</th>' +
         '</tr></thead>';
 
       const tbody = document.createElement('tbody');
       rows.forEach(function(row) {
         const tr = document.createElement('tr');
-        const subtotal = Number(row.producto.precio || 0) * Number(row.cantidad || 0);
-        tr.innerHTML = '<td>' + escapeHtml(normalize(row.producto.nombre) || 'Producto') + '</td>' +
-          '<td>' + formatAmount(row.producto.precio, moneda) + '</td>' +
+        const subtotal = Number(row.total_linea || row.TotalLinea || (Number(row.precio_unitario || 0) * Number(row.cantidad || 0)));
+        tr.innerHTML = '<td>' + escapeHtml(normalize(row.descripcion) || 'Producto') + '</td>' +
+          '<td>' + formatAmount(row.precio_unitario, moneda) + '</td>' +
           '<td>' + Number(row.cantidad).toFixed(2) + '</td>' +
-          '<td>' + formatAmount(subtotal, moneda) + '</td>' +
-          '<td class="actions"><button type="button" class="btn secondary reduceProductoBtn" data-id="' + Number(row.producto.id) + '">Quitar 1</button></td>';
+          '<td>' + formatAmount(subtotal, moneda) + '</td>';
         tbody.appendChild(tr);
       });
 
       const trTotal = document.createElement('tr');
-      trTotal.innerHTML = '<td colspan="3"><strong>Total selección</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td><td></td>';
+      trTotal.innerHTML = '<td colspan="3"><strong>Total carrito</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td>';
       tbody.appendChild(trTotal);
 
       table.appendChild(tbody);
       box.innerHTML = '';
       box.appendChild(table);
-
-      document.querySelectorAll('.reduceProductoBtn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          const id = Number(btn.getAttribute('data-id'));
-          const actual = Number(state.seleccion.get(id) || 0);
-          const next = Math.max(0, actual - 1);
-          if (next <= 0) {
-            state.seleccion.delete(id);
-          } else {
-            state.seleccion.set(id, next);
-          }
-          renderProductsButtons();
-          renderSelectionTable();
-          setMessage('', false);
-        });
-      });
 
       updateSelectionCount();
     }
@@ -390,6 +426,15 @@
       });
     }
 
+    function carritoQuantityForProduct(productID) {
+      return (Array.isArray(state.carritoItems) ? state.carritoItems : []).reduce(function(acc, item) {
+        if (normalize(item.estado || 'activo') === 'inactivo') return acc;
+        if (normalize(item.tipo_item || 'producto') !== 'producto') return acc;
+        if (Number(item.referencia_id || 0) !== Number(productID || 0)) return acc;
+        return acc + Number(item.cantidad || 0);
+      }, 0);
+    }
+
     function renderProductsButtons() {
       const box = document.getElementById('productosButtonsGrid');
       const rows = filterProducts();
@@ -403,10 +448,11 @@
 
       const tones = ['#2563eb', '#0f766e', '#7c3aed', '#be123c', '#b45309', '#047857', '#0369a1', '#9333ea', '#c2410c', '#15803d'];
       box.innerHTML = rows.map(function(p, index) {
-        const qty = Number(state.seleccion.get(Number(p.id)) || 0);
+        const qty = carritoQuantityForProduct(Number(p.id));
+        const isAdding = state.addingProductos.has(Number(p.id));
         const badge = qty > 0 ? '<span class="product-pick-qty">x' + qty + '</span>' : '';
         const tone = tones[(Number(p.id || index) + index) % tones.length];
-        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + '" style="--product-tone:' + tone + ';" data-id="' + Number(p.id) + '">' +
+        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + (isAdding ? ' is-adding' : '') + '" style="--product-tone:' + tone + ';" data-id="' + Number(p.id) + '"' + (isAdding ? ' disabled' : '') + '>' +
           '<span class="product-pick-name">' + escapeHtml(normalize(p.nombre) || 'Producto') + '</span>' +
           '<span class="product-pick-meta">' +
             '<span>SKU: ' + escapeHtml(normalize(p.sku) || normalize(p.codigo_barras) || '-') + '</span>' +
@@ -417,13 +463,9 @@
       }).join('');
 
       document.querySelectorAll('.product-pick-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           const id = Number(btn.getAttribute('data-id'));
-          const current = Number(state.seleccion.get(id) || 0);
-          state.seleccion.set(id, current + 1);
-          renderProductsButtons();
-          renderSelectionTable();
-          setMessage('Producto agregado a selección. Puedes seguir presionando para aumentar cantidad.', false);
+          await addProductDirectToCarrito(id);
         });
       });
     }
@@ -476,6 +518,12 @@
       return Array.isArray(rows) ? rows : [];
     }
 
+    async function refreshCarritoItems() {
+      state.carritoItems = await getCurrentCarritoItems();
+      renderSelectionTable();
+      return state.carritoItems;
+    }
+
     function buildProductoPayload(producto, cantidad, currentItem) {
       const productCode = normalize(producto.codigo_barras) || normalize(producto.sku);
       const existingQty = currentItem ? Number(currentItem.cantidad || 0) : 0;
@@ -498,6 +546,84 @@
       };
     }
 
+    async function saveProductoToCarrito(producto, cantidad, existingItems) {
+      const currentItem = existingItems.find(function(item) {
+        return normalize(item.tipo_item) === 'producto' &&
+          normalize(item.estado || 'activo') !== 'inactivo' &&
+          Number(item.referencia_id || 0) === Number(producto.id || 0);
+      });
+
+      const payload = buildProductoPayload(producto, cantidad, currentItem);
+      const method = currentItem ? 'PUT' : 'POST';
+      const res = await fetch('/api/empresa/carritos_compra/items', {
+        method: method,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+      let saved = null;
+      try {
+        saved = await res.json();
+      } catch (err) {
+        saved = null;
+      }
+
+      if (currentItem) {
+        currentItem.cantidad = Number(payload.cantidad || 0);
+        currentItem.precio_unitario = Number(payload.precio_unitario || 0);
+        currentItem.total_linea = Number(saved && (saved.total_linea || saved.TotalLinea) || (payload.precio_unitario * payload.cantidad));
+        currentItem.fecha_actualizacion = new Date().toISOString();
+      } else {
+        existingItems.push({
+          id: Number(saved && (saved.id || saved.ID) || 0),
+          tipo_item: 'producto',
+          referencia_id: Number(producto.id || 0),
+          cantidad: Number(payload.cantidad || 0),
+          precio_unitario: Number(payload.precio_unitario || 0),
+          total_linea: Number(saved && (saved.total_linea || saved.TotalLinea) || (payload.precio_unitario * payload.cantidad)),
+          codigo_item: payload.codigo_item,
+          descripcion: payload.descripcion,
+          unidad_medida: payload.unidad_medida,
+          descuento_porcentaje: payload.descuento_porcentaje,
+          impuesto_porcentaje: payload.impuesto_porcentaje,
+          impuesto_codigo: payload.impuesto_codigo,
+          observaciones: payload.observaciones,
+          fecha_creacion: new Date().toISOString(),
+          fecha_actualizacion: new Date().toISOString(),
+          estado: 'activo'
+        });
+      }
+
+      return Number(payload.cantidad || 0);
+    }
+
+    async function addProductDirectToCarrito(productID) {
+      const producto = state.productos.find(function(p) {
+        return Number(p.id || 0) === Number(productID || 0);
+      });
+      if (!producto || state.addingProductos.has(Number(productID || 0))) return;
+
+      state.addingProductos.add(Number(productID));
+      renderProductsButtons();
+      setMessage('Agregando ' + (normalize(producto.nombre) || 'producto') + ' al carrito...', false);
+
+      try {
+        const existingItems = await getCurrentCarritoItems();
+        const nuevaCantidad = await saveProductoToCarrito(producto, 1, existingItems);
+        state.carritoItems = existingItems;
+        markItemTouched(producto.id);
+        state.seleccion.clear();
+        renderSelectionTable();
+        setMessage((normalize(producto.nombre) || 'Producto') + ' agregado al carrito. Cantidad actual: ' + nuevaCantidad.toFixed(2) + '.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo agregar el producto al carrito.', true);
+      } finally {
+        state.addingProductos.delete(Number(productID));
+        renderProductsButtons();
+      }
+    }
+
     async function applySelectionToCarrito() {
       const rows = getSelectedRows();
       if (!rows.length) {
@@ -514,44 +640,12 @@
         const existingItems = await getCurrentCarritoItems();
 
         for (const row of rows) {
-          const currentItem = existingItems.find(function(item) {
-            return normalize(item.tipo_item) === 'producto' &&
-              normalize(item.estado || 'activo') !== 'inactivo' &&
-              Number(item.referencia_id || 0) === Number(row.producto.id || 0);
-          });
-
-          const payload = buildProductoPayload(row.producto, row.cantidad, currentItem);
-          const method = currentItem ? 'PUT' : 'POST';
-          const res = await fetch('/api/empresa/carritos_compra/items', {
-            method: method,
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          await ensureOk(res);
-
-          if (currentItem) {
-            currentItem.cantidad = Number(payload.cantidad || 0);
-          } else {
-            existingItems.push({
-              id: 0,
-              tipo_item: 'producto',
-              referencia_id: Number(row.producto.id || 0),
-              cantidad: Number(payload.cantidad || 0),
-              precio_unitario: Number(payload.precio_unitario || 0),
-              codigo_item: payload.codigo_item,
-              descripcion: payload.descripcion,
-              unidad_medida: payload.unidad_medida,
-              descuento_porcentaje: payload.descuento_porcentaje,
-              impuesto_porcentaje: payload.impuesto_porcentaje,
-              impuesto_codigo: payload.impuesto_codigo,
-              observaciones: payload.observaciones
-            });
-          }
+          await saveProductoToCarrito(row.producto, row.cantidad, existingItems);
         }
 
         const totalUnidades = rows.reduce(function(acc, row) { return acc + row.cantidad; }, 0);
         state.seleccion.clear();
+        state.carritoItems = existingItems;
         renderProductsButtons();
         renderSelectionTable();
         setMessage('Se agregaron ' + totalUnidades + ' unidades al carrito correctamente.', false);
@@ -619,8 +713,8 @@
         await resolveCarrito();
         renderContext();
         await loadProducts();
+        await refreshCarritoItems();
         renderProductsButtons();
-        renderSelectionTable();
       } catch (err) {
         document.getElementById('productosButtonsGrid').textContent = 'No se pudo cargar el catálogo de productos.';
         setMessage(err.message || 'Error cargando contexto de carrito/productos.', true);
