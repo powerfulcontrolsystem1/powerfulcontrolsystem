@@ -528,6 +528,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/estilos.css":                                          {},
 			"/menu.js":                                              {},
 			"/favicon.ico":                                          {},
+			"/emulador":                                             {},
 		}
 		if _, ok := publicExact[path]; ok {
 			next.ServeHTTP(w, r)
@@ -555,7 +556,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/descargas/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/descargas/", "/emulador/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {
