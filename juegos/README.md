@@ -61,7 +61,11 @@ Debe quedar disponible:
 
 ```text
 /opt/juegos/emulator/data/loader.js
+/opt/juegos/emulator/data/emulator.min.js
+/opt/juegos/emulator/data/cores/snes9x-wasm.data
 ```
+
+El script tambien descarga cores locales basicos para las ROMs incluidas en este proyecto: SNES (`snes9x`), NES (`fceumm`), Game Boy/Game Boy Color (`gambatte`), Game Boy Advance (`mgba`) y Mega Drive (`genesis_plus_gx`). Puedes ajustar la lista con la variable `PCS_EMULATORJS_CORES`.
 
 ## Agregar ROMs
 

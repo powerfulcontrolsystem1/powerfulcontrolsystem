@@ -153,6 +153,9 @@ func cleanRoot(root string) string {
 }
 
 func mustRegisterMIMETypes() {
+	_ = mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
+	_ = mime.AddExtensionType(".mjs", "application/javascript; charset=utf-8")
+	_ = mime.AddExtensionType(".css", "text/css; charset=utf-8")
 	_ = mime.AddExtensionType(".wasm", "application/wasm")
 	_ = mime.AddExtensionType(".data", "application/octet-stream")
 	_ = mime.AddExtensionType(".sfc", "application/octet-stream")

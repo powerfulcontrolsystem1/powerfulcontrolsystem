@@ -11,6 +11,7 @@ import (
 func TestLocalEmulatorHandlerServesIndexAndROMCatalog(t *testing.T) {
 	juegosDir := filepath.Join("..", "juegos")
 	handler := http.StripPrefix("/emulador", localEmulatorHandler(juegosDir))
+	mustRegisterLocalEmulatorMIMETypes()
 
 	indexReq := httptest.NewRequest(http.MethodGet, "/emulador/", nil)
 	indexRec := httptest.NewRecorder()
@@ -30,5 +31,18 @@ func TestLocalEmulatorHandlerServesIndexAndROMCatalog(t *testing.T) {
 	}
 	if contentType := romsRec.Header().Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 		t.Fatalf("GET /emulador/api/roms content-type = %q, want json", contentType)
+	}
+
+	loaderReq := httptest.NewRequest(http.MethodGet, "/emulador/emulator/data/loader.js", nil)
+	loaderRec := httptest.NewRecorder()
+	handler.ServeHTTP(loaderRec, loaderReq)
+	if loaderRec.Code != http.StatusOK {
+		t.Fatalf("GET /emulador/emulator/data/loader.js status = %d, want %d", loaderRec.Code, http.StatusOK)
+	}
+	if contentType := loaderRec.Header().Get("Content-Type"); !strings.Contains(contentType, "javascript") {
+		t.Fatalf("GET /emulador/emulator/data/loader.js content-type = %q, want javascript", contentType)
+	}
+	if body := loaderRec.Body.String(); !strings.Contains(body, "EJS_pathtodata") {
+		t.Fatalf("GET /emulador/emulator/data/loader.js did not return EmulatorJS loader")
 	}
 }

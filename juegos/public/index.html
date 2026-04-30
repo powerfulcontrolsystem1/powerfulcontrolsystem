@@ -24,7 +24,7 @@
       </div>
 
       <section class="selector-card">
-        <label for="romSelect">Juego</label>
+        <label for="romSelect">Seleccionar juego</label>
         <select id="romSelect"></select>
         <button id="playButton" class="primary-button" type="button">Jugar</button>
       </section>
@@ -41,12 +41,6 @@
           <p class="eyebrow">SNES</p>
           <h2 id="currentTitle">Selecciona un juego</h2>
         </div>
-        <div class="toolbar-actions">
-          <button id="saveNowButton" type="button">Guardar avance</button>
-          <button id="loadSaveButton" type="button">Retomar partida</button>
-          <button id="fullscreenButton" type="button">Pantalla completa</button>
-          <button id="reloadButton" type="button">Reiniciar</button>
-        </div>
       </div>
 
       <div id="playerShell" class="player-shell">
@@ -55,6 +49,13 @@
           <strong>Sin juego cargado</strong>
           <span>Agrega ROMs SNES en la carpeta <code>/roms</code> y presiona Jugar.</span>
         </div>
+      </div>
+
+      <div class="toolbar-actions">
+        <button id="saveNowButton" type="button">Guardar avance</button>
+        <button id="loadSaveButton" type="button">Retomar partida</button>
+        <button id="fullscreenButton" type="button">Pantalla completa</button>
+        <button id="reloadButton" type="button">Reiniciar</button>
       </div>
 
       <p id="message" class="message" role="status" aria-live="polite"></p>

@@ -2785,6 +2785,14 @@ body.super-page{
 .theme-option.active { background:var(--focus); border-color:var(--accent); color:var(--accent); font-weight:800; }
 
 @media(max-width: 640px) {
+  .floating-menu .fm-submenu {
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border) 66%);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface-soft) 82%, var(--surface) 18%);
+  }
+  .floating-menu .fm-submenu-toggle {
+    color: var(--accent-yellow);
+  }
   .floating-menu .fm-submenu-popup {
     position: static;
     width: 100%;

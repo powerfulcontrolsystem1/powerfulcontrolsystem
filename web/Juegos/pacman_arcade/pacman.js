@@ -796,13 +796,43 @@ Pacman.Audio = function(game) {
             }
         }        
     };
+
+    function unlock() {
+        for (var name in files) {
+            if (!files.hasOwnProperty(name) || !files[name]) {
+                continue;
+            }
+            try {
+                files[name].muted = true;
+                var playback = files[name].play();
+                if (playback && typeof playback.then === "function") {
+                    (function (file) {
+                        playback.then(function () {
+                            file.pause();
+                            file.currentTime = 0;
+                            file.muted = false;
+                        }).catch(function () {
+                            file.muted = false;
+                        });
+                    }(files[name]));
+                } else {
+                    files[name].pause();
+                    files[name].currentTime = 0;
+                    files[name].muted = false;
+                }
+            } catch (ignore) {
+                files[name].muted = false;
+            }
+        }
+    };
     
     return {
         "disableSound" : disableSound,
         "load"         : load,
         "play"         : play,
         "pause"        : pause,
-        "resume"       : resume
+        "resume"       : resume,
+        "unlock"       : unlock
     };
 };
 
@@ -1131,9 +1161,16 @@ var PACMAN = (function () {
         
         timer = window.setInterval(mainLoop, 1000 / Pacman.FPS);
     };
+
+    function unlockAudio() {
+        if (audio && typeof audio.unlock === "function" && !soundDisabled()) {
+            audio.unlock();
+        }
+    };
     
     return {
-        "init" : init
+        "init" : init,
+        "unlockAudio" : unlockAudio
     };
     
 }());

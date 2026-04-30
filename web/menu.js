@@ -415,6 +415,7 @@
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
             '<a class="fm-item fm-subitem" href="/calculadora.html">Calculadora</a>' +
             '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html">Juegos</a>' +
+            '<a class="fm-item fm-subitem" href="/emulador/">Emulador</a>' +
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +

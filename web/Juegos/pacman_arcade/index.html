@@ -51,6 +51,12 @@
         });
       }
 
+      function unlockGameAudio() {
+        if (window.PACMAN && typeof PACMAN.unlockAudio === "function") {
+          PACMAN.unlockAudio();
+        }
+      }
+
       function handleSwipe(deltaX, deltaY) {
         if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 18) {
           dispatchGameKey(80);
@@ -64,7 +70,10 @@
       }
 
       document.querySelectorAll(".arcade-key").forEach(function (button) {
+        button.addEventListener("pointerdown", unlockGameAudio, { passive: true });
+
         button.addEventListener("click", function () {
+          unlockGameAudio();
           dispatchGameKey(Number(button.dataset.key));
           if (navigator.vibrate && button.dataset.key !== "83") {
             navigator.vibrate(18);
@@ -73,6 +82,7 @@
       });
 
       gameHost.addEventListener("pointerdown", function (event) {
+        unlockGameAudio();
         touchStart = { x: event.clientX, y: event.clientY };
       }, { passive: true });
 

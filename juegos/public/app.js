@@ -244,6 +244,7 @@ function configureEmulator(rom, latestSave) {
   window.EJS_backgroundColor = "#000000";
   window.EJS_fullscreenOnLoaded = false;
   window.EJS_volume = 0.65;
+  window.EJS_language = "es";
   window.EJS_fixedSaveInterval = 10000;
   if (latestSave && latestSave.state_url) {
     window.EJS_loadStateURL = `${appPath(latestSave.state_url)}&t=${Date.now()}`;
@@ -512,7 +513,12 @@ function updateGamepadStatus() {
 }
 
 function bindEvents() {
-  els.romSelect.addEventListener("change", () => selectRom(els.romSelect.value));
+  els.romSelect.addEventListener("change", () => {
+    selectRom(els.romSelect.value);
+    if (els.romSelect.value) {
+      startSelectedGame();
+    }
+  });
   els.playButton.addEventListener("click", startSelectedGame);
   els.saveNowButton.addEventListener("click", () => {
     captureAndUploadCurrentState("manual").catch((error) => setSaveStatus(error.message || "No se pudo guardar el avance.", true));

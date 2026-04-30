@@ -16,10 +16,10 @@ body {
 }
 
 .pacman-page {
-  width: fit-content;
+  width: min(100%, 1120px);
   max-width: 100%;
   margin: 0 auto;
-  padding: 66px 14px 14px;
+  padding: 54px 12px 12px;
   box-sizing: border-box;
 }
 
@@ -28,8 +28,8 @@ body {
   grid-template-columns: 1fr auto;
   gap: 8px 12px;
   align-items: center;
-  margin-bottom: 10px;
-  max-width: 684px;
+  margin-bottom: 8px;
+  max-width: 1120px;
 }
 
 .pacman-kicker {
@@ -59,11 +59,13 @@ body {
 
 .pacman-stage {
   display: grid;
+  grid-template-columns: minmax(0, 820px) 176px;
   justify-items: center;
-  gap: 12px;
-  width: fit-content;
+  align-items: start;
+  gap: 10px;
+  width: min(100%, 1030px);
   max-width: 100%;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid color-mix(in srgb, var(--accent-yellow) 36%, var(--border) 64%);
   border-radius: 8px;
   background:
@@ -79,8 +81,9 @@ body {
 }
 
 .pacman-canvas-host {
-  width: min(100%, 684px);
-  height: 900px;
+  width: min(76vw, 820px);
+  height: auto;
+  line-height: 0;
   touch-action: none;
   user-select: none;
 }
@@ -101,18 +104,18 @@ body {
 }
 
 .pacman-touch-controls {
-  width: min(100%, 684px);
+  width: 176px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-areas:
     "start up sound"
     "left down right"
     "pause pause pause";
-  gap: 8px;
+  gap: 6px;
 }
 
 .arcade-key {
-  min-height: 44px;
+  min-height: 46px;
   border: 1px solid rgba(255, 223, 51, 0.34);
   border-radius: 8px;
   background: linear-gradient(180deg, #252b36, #111722);
@@ -173,6 +176,7 @@ body {
   }
 
   .pacman-stage {
+    grid-template-columns: 1fr;
     width: 100vw;
     max-width: 100vw;
     margin-left: calc(50% - 50vw);
@@ -186,7 +190,7 @@ body {
 
   .pacman-canvas-host {
     width: min(100%, 420px);
-    height: min(131.5vw, calc(100dvh - 178px));
+    height: auto;
     max-height: 520px;
   }
 
@@ -204,7 +208,7 @@ body {
 @media (max-width: 520px) {
   .pacman-canvas-host {
     width: min(85vw, 357px);
-    height: min(111.8vw, calc(100dvh - 164px));
+    height: auto;
     max-height: 442px;
   }
 
@@ -216,7 +220,7 @@ body {
 @media (max-width: 420px) {
   .pacman-canvas-host {
     width: 85vw;
-    height: min(111.8vw, calc(100dvh - 164px));
+    height: auto;
   }
 
   .pacman-touch-controls {
