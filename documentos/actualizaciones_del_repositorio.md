@@ -2681,3 +2681,14 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 - web/super/preconfiguracion_tipos_empresa.html
 - web/venta_publica.html
+
+2026-04-30 10:51:37 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bad4aeb; PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/db/licencias_estado_empresas.go
+- backend/db/licencias_gratis.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- pendiete new
+- web/index.html
