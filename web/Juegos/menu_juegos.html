@@ -4,6 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Juegos</title>
+  <script>
+    (function(){
+      var allowed = {dark:1,'dark-violet':1,'dark-emerald':1,light:1,'light-rose':1,'light-gold':1};
+      function cookie(name){
+        var match = String(document.cookie || '').match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? decodeURIComponent(match.pop()) : '';
+      }
+      var theme = '';
+      try { theme = localStorage.getItem('theme') || cookie('pcs_theme') || ''; } catch (error) { theme = cookie('pcs_theme') || ''; }
+      theme = String(theme || '').trim().toLowerCase();
+      if (theme === 'dark-protect') theme = 'dark';
+      document.documentElement.setAttribute('data-theme', allowed[theme] ? theme : 'light');
+    })();
+  </script>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>

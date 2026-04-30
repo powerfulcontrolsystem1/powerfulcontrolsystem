@@ -106,7 +106,7 @@ func normalizeStaticResourceReference(reference string) string {
 	lowerReference := strings.ToLower(reference)
 	skippedPrefixes := []string{
 		"http:", "https:", "mailto:", "tel:", "javascript:", "data:", "blob:", "about:", "#",
-		"/api/", "/super/api/", "/epayco/", "/wompi/", "/nequi/", "/auth/",
+		"/api/", "/super/api/", "/epayco/", "/wompi/", "/nequi/", "/auth/", "/emulador/",
 	}
 	for _, prefix := range skippedPrefixes {
 		if strings.HasPrefix(lowerReference, prefix) {

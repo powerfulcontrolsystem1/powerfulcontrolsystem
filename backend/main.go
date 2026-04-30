@@ -984,6 +984,7 @@ func main() {
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
 	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
+	registerLocalEmulatorRoutes(backendDir, webDir)
 
 	// Servir pÃ¡ginas estÃ¡ticas desde la carpeta `web` detectada
 	// Verificar existencia de index.html y loguear la ruta usada
