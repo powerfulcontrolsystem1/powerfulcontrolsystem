@@ -17409,3 +17409,11 @@ PushStatus: OK
 Archivos modificados:
 - backend/utils/auth_middleware_test.go
 - backend/utils/utils.go
+
+2026-04-30: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/productos.go
+- backend/handlers/productos.go
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/bodega.html

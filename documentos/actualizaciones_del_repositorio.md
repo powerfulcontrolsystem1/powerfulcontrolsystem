@@ -2983,3 +2983,10 @@ Archivos modificados:
 Archivos modificados:
 - backend/utils/auth_middleware_test.go
 - backend/utils/utils.go
+
+2026-04-30 20:20:45 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bbf4f6b; PushStatus: OK
+Archivos modificados:
+- backend/db/productos.go
+- backend/handlers/productos.go
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/bodega.html
