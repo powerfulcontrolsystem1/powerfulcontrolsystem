@@ -2990,3 +2990,21 @@ Archivos modificados:
 - backend/handlers/productos.go
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/bodega.html
+
+2026-04-30 20:35:18 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: ea96402; PushStatus: OK
+Archivos modificados:
+- backend/handlers/market_public.go
+- backend/main.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/categorias.html
+- web/administrar_empresa/combos_productos.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/productos/administrar_productos.html
+- web/administrar_empresa/productos/administrar_proveedores.html
+- web/administrar_empresa/productos/categorias.html
+- web/administrar_empresa/productos/combos_productos.html
+- web/administrar_empresa/productos/compras.html
+- web/administrar_empresa/productos/precios.html
