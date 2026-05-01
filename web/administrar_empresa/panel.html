@@ -1711,7 +1711,7 @@
       }
 
       function fetchMarketSymbol(symbol, label) {
-        var url = "https://stooq.com/q/l/?s=" + encodeURIComponent(symbol) + "&f=sd2t2ohlcvn&h&e=json";
+        var url = "/api/public/market_symbol?s=" + encodeURIComponent(symbol);
         return fetchJSON(url).then(function (data) {
           var row = data && Array.isArray(data.symbols) ? data.symbols[0] : null;
           if (!row || row.close == null) throw new Error("market symbol unavailable");

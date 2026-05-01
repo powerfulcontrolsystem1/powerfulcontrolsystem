@@ -988,14 +988,27 @@
         if (own > 0) return own;
       } catch (_) {}
       try {
-        if (window.parent && window.parent !== window) {
-          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
-            const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
-            if (parentResolved > 0) return parentResolved;
+        let ctx = window.parent;
+        let depth = 0;
+        while (ctx && ctx !== window && depth < 4) {
+          try {
+            if (typeof ctx.__resolveEmpresaIdContext === 'function') {
+              const parentResolved = parsePositiveInt(ctx.__resolveEmpresaIdContext());
+              if (parentResolved > 0) return parentResolved;
+            }
+          } catch (_) {}
+          try {
+            const parentParams = new URLSearchParams(ctx.location.search || '');
+            const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+            if (fromParent > 0) return fromParent;
+          } catch (_) {}
+          try {
+            if (!ctx.parent || ctx.parent === ctx) break;
+            ctx = ctx.parent;
+          } catch (_) {
+            break;
           }
-          const parentParams = new URLSearchParams(window.parent.location.search || '');
-          const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
-          if (fromParent > 0) return fromParent;
+          depth += 1;
         }
       } catch (_) {}
       try {
@@ -1760,10 +1773,13 @@
 
     async function accionProducto(action, id, activo) {
       if (action === 'edit-producto') {
-        await ensureProveedoresDisponibles();
         const p = state.productos.find(x => Number(x.id) === Number(id));
         fillProductoForm(p || null);
         openCRUDForm('productoForm', 'productoNombre');
+        await ensureProveedoresDisponibles();
+        if (p) {
+          document.getElementById('productoProveedorPrincipal').value = String(p.proveedor_principal_id || '');
+        }
         return;
       }
       if (action === 'delete-producto') {
@@ -2864,9 +2880,9 @@
       });
 
       document.getElementById('btnNuevoProducto').addEventListener('click', async () => {
-        await ensureProveedoresDisponibles();
         fillProductoForm(null);
         openCRUDForm('productoForm', 'productoNombre');
+        await ensureProveedoresDisponibles();
       });
       document.getElementById('btnBuscarProductos').addEventListener('click', async () => {
         try {
@@ -3093,13 +3109,13 @@
     }
 
     async function bootstrap() {
-      if (!empresaId) {
-        showMessage('No se encontró empresa_id en la URL.', 'error');
-        return;
-      }
       hideCRUDForms();
       wireEvents();
       applyViewMode();
+      if (!empresaId) {
+        showMessage('No se encontro empresa_id en la URL. Puedes abrir el formulario, pero no se podra guardar hasta cargar la empresa correctamente.', 'error');
+        return;
+      }
       await loadEmpresaInfo();
       if (viewMode === 'categorias') {
         await loadCategoriasProductos();

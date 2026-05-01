@@ -123,6 +123,47 @@
       return p.get(name);
     }
 
+    function parseEmpresaId(raw) {
+      const n = Number(String(raw || '').trim());
+      if (!Number.isFinite(n)) return 0;
+      const v = Math.trunc(n);
+      return v > 0 ? v : 0;
+    }
+
+    function resolveEmpresaId() {
+      const own = parseEmpresaId(getQueryParam('empresa_id') || getQueryParam('id'));
+      if (own > 0) return own;
+      try {
+        let ctx = window.parent;
+        let depth = 0;
+        while (ctx && ctx !== window && depth < 4) {
+          try {
+            if (typeof ctx.__resolveEmpresaIdContext === 'function') {
+              const resolved = parseEmpresaId(ctx.__resolveEmpresaIdContext());
+              if (resolved > 0) return resolved;
+            }
+          } catch (_) {}
+          try {
+            const parentParams = new URLSearchParams(ctx.location.search || '');
+            const fromParent = parseEmpresaId(parentParams.get('empresa_id') || parentParams.get('id'));
+            if (fromParent > 0) return fromParent;
+          } catch (_) {}
+          try {
+            if (!ctx.parent || ctx.parent === ctx) break;
+            ctx = ctx.parent;
+          } catch (_) {
+            break;
+          }
+          depth += 1;
+        }
+      } catch (_) {}
+      try {
+        return parseEmpresaId(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id'));
+      } catch (_) {
+        return 0;
+      }
+    }
+
     function normalize(v) {
       return (v || '').toString().trim();
     }
@@ -331,14 +372,32 @@
       renderComboCostInfo(null);
       setMessage('comboMsg', '', false);
       if (hide) {
-        document.getElementById('comboForm').style.display = 'none';
+        const form = document.getElementById('comboForm');
+        form.hidden = true;
+        form.setAttribute('hidden', 'hidden');
+        form.setAttribute('aria-hidden', 'true');
+        form.style.display = 'none';
+      }
+    }
+
+    function showComboForm() {
+      const form = document.getElementById('comboForm');
+      form.hidden = false;
+      form.removeAttribute('hidden');
+      form.setAttribute('aria-hidden', 'false');
+      form.style.display = 'block';
+      const nombre = document.getElementById('comboNombre');
+      if (nombre && typeof nombre.focus === 'function') nombre.focus();
+      if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
     function openCreateComboForm() {
       resetComboForm(false);
-      document.getElementById('comboForm').style.display = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showComboForm();
     }
 
     function buildComboPayload() {
@@ -430,7 +489,6 @@
           if (comboID <= 0) return;
           try {
             const combo = await loadComboForEdit(comboID);
-            document.getElementById('comboForm').style.display = '';
             document.getElementById('comboId').value = String(combo.id || '');
             document.getElementById('comboNombre').value = normalize(combo.nombre);
             document.getElementById('comboCodigo').value = normalize(combo.codigo);
@@ -451,7 +509,7 @@
             renderIngredientesDraft();
             renderComboCostInfo(combo);
             setMessage('comboMsg', '', false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showComboForm();
           } catch (err) {
             setMessage('comboMsg', err.message || 'No se pudo cargar el combo para editar.', true);
           }
@@ -572,10 +630,10 @@
     });
 
     (async function init() {
-      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      const empresaID = resolveEmpresaId();
       if (!empresaID) {
         document.getElementById('combosList').textContent = 'empresa_id requerido en la URL';
-        document.getElementById('nuevoComboBtn').disabled = true;
+        setMessage('comboMsg', 'No se encontro empresa_id. Puedes abrir el formulario, pero no se podra guardar hasta cargar la empresa correctamente.', true);
         return;
       }
       state.empresaID = empresaID;

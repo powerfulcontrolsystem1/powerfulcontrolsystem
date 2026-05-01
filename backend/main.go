@@ -768,6 +768,7 @@ func main() {
 	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido
 	http.HandleFunc("/api/empresa/publicaciones/", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/publicaciones", handlers.PublicacionesRedSocialHandler(dbEmpresas)) // Publico
+	http.HandleFunc("/api/public/market_symbol", handlers.PublicMarketSymbolHandler())
 	http.HandleFunc("/api/public/publicaciones/", handlers.PublicRedSocialInteraccionesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
