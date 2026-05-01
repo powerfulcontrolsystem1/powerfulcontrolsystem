@@ -227,11 +227,18 @@
         <div class="empresa-inline-actions">
           <input id="filtroCategoriasProducto" class="form-input" placeholder="Buscar por nombre/código">
           <button id="btnBuscarCategoriasProducto" type="button" class="btn secondary">Buscar</button>
-          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevaCategoria ? window.PCSInventarioNuevaCategoria(event) : true;">Nueva</button>
+          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevaCategoriaProducto ? window.PCSInventarioNuevaCategoriaProducto(event) : false;">Nueva</button>
         </div>
       </div>
 
       <form id="categoriaProductoForm" class="form is-hidden">
+        <div class="producto-inline-form-header">
+          <div>
+            <h3 id="categoriaProductoFormTitle">Nueva categoria</h3>
+            <p class="form-help">Registra la categoria directamente en esta pagina.</p>
+          </div>
+          <button id="btnCerrarCategoriaProductoForm" class="btn secondary" type="button">Cerrar formulario</button>
+        </div>
         <input type="hidden" id="categoriaProductoId">
         <div class="form-row">
           <div class="form-col">
@@ -293,14 +300,14 @@
           </select>
           <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
           <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
-          <button id="btnNuevoProducto" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoProducto ? window.PCSInventarioNuevoProducto(event) : false;">Nuevo Producto</button>
+          <button id="btnNuevoProducto" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoProducto ? window.PCSInventarioNuevoProducto(event) : false;">Nuevo producto</button>
         </div>
       </div>
 
       <form id="productoForm" class="form producto-inline-form is-hidden">
         <div class="producto-inline-form-header">
           <div>
-            <h3 id="productoFormTitle">Nuevo Producto</h3>
+            <h3 id="productoFormTitle">Nuevo producto</h3>
             <p class="form-help">Registra el producto directamente en esta pagina, sin abrir ventanas encima.</p>
           </div>
           <button id="btnCerrarProductoForm" class="btn secondary" type="button">Cerrar formulario</button>
@@ -1202,11 +1209,20 @@
       return consumeOpenEvent(ev);
     };
 
-    window.PCSInventarioNuevaCategoria = function(ev) {
-      fillCategoriaProductoForm(null);
+    window.PCSInventarioNuevaCategoriaProducto = function(ev) {
+      try {
+        applyViewMode();
+        fillCategoriaProductoForm(null);
+      } catch (err) {
+        reportOpenFormError('No se pudo limpiar el formulario de categoria', err);
+      }
+      const title = document.getElementById('categoriaProductoFormTitle');
+      if (title) title.textContent = 'Nueva categoria';
       openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
+      showMessage('Formulario de nueva categoria listo para registrar.', 'success');
       return consumeOpenEvent(ev);
     };
+    window.PCSInventarioNuevaCategoria = window.PCSInventarioNuevaCategoriaProducto;
 
     let lastNuevoProductoOpenAt = 0;
 
@@ -1222,7 +1238,7 @@
         reportOpenFormError('No se pudo limpiar el formulario de producto', err);
       }
       const title = document.getElementById('productoFormTitle');
-      if (title) title.textContent = 'Nuevo Producto';
+      if (title) title.textContent = 'Nuevo producto';
       openCRUDForm('productoForm', 'productoNombre');
       showMessage('Formulario de nuevo producto listo para registrar.', 'success');
       ensureProveedoresDisponibles().catch(function(err) {
@@ -1243,7 +1259,7 @@
       const openers = {
         btnNuevaBodega: window.PCSInventarioNuevoBodega,
         btnNuevoProveedor: window.PCSInventarioNuevoProveedor,
-        btnNuevaCategoriaProducto: window.PCSInventarioNuevaCategoria,
+        btnNuevaCategoriaProducto: window.PCSInventarioNuevaCategoriaProducto,
         btnNuevoProducto: window.PCSInventarioNuevoProducto,
         btnNuevoServicio: window.PCSInventarioNuevoServicio
       };
@@ -1618,6 +1634,10 @@
 
     async function saveCategoriaProducto(ev) {
       ev.preventDefault();
+      if (!empresaId) {
+        showMessage('No se encontro la empresa activa para guardar la categoria. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Categorias de productos.', 'error');
+        return;
+      }
       const id = Number(document.getElementById('categoriaProductoId').value || 0);
       const payload = {
         id,
@@ -1660,6 +1680,8 @@
       if (action === 'edit-categoria-producto') {
         const c = state.categoriasProductos.find(x => Number(x.id) === Number(id));
         fillCategoriaProductoForm(c || null);
+        const title = document.getElementById('categoriaProductoFormTitle');
+        if (title) title.textContent = 'Editar categoria';
         openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
         return;
       }
@@ -1825,6 +1847,10 @@
 
     async function saveProducto(ev) {
       ev.preventDefault();
+      if (!empresaId) {
+        showMessage('No se encontro la empresa activa para guardar el producto. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Inventario (Productos).', 'error');
+        return;
+      }
       const id = Number(document.getElementById('productoId').value || 0);
       const categoriaID = Number(document.getElementById('productoCategoria').value || 0);
       const categoria = state.categoriasProductos.find(c => Number(c.id) === categoriaID);
@@ -2986,9 +3012,18 @@
         }
       });
 
-      document.getElementById('btnNuevaCategoriaProducto').addEventListener('click', () => {
+      document.getElementById('btnNuevaCategoriaProducto').addEventListener('click', ev => {
+        if (typeof window.PCSInventarioNuevaCategoriaProducto === 'function') {
+          window.PCSInventarioNuevaCategoriaProducto(ev);
+          return;
+        }
         fillCategoriaProductoForm(null);
         openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
+      });
+      document.getElementById('btnCerrarCategoriaProductoForm').addEventListener('click', ev => {
+        ev.preventDefault();
+        setCRUDFormVisible('categoriaProductoForm', false);
+        showMessage('', '');
       });
       document.getElementById('btnBuscarCategoriasProducto').addEventListener('click', async () => {
         try {

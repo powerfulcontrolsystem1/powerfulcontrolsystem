@@ -3,759 +3,433 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ayuda - Powerful Control System - Sistema POS Multiempresa</title>
+  <title>Centro de ayuda - Powerful Control System</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
+  <style>
+    .help-hero {
+      background:
+        linear-gradient(135deg, rgba(37,99,235,.16), rgba(16,185,129,.10)),
+        var(--card-bg, #fff);
+      border: 1px solid var(--content-soft-border, rgba(148,163,184,.35));
+      border-radius: 8px;
+      display: grid;
+      gap: 16px;
+      padding: 22px;
+    }
+    .help-hero h1 { margin: 0; font-size: clamp(1.8rem, 2.6vw, 2.7rem); letter-spacing: 0; }
+    .help-hero p { max-width: 980px; }
+    .help-search-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      max-width: 920px;
+    }
+    .help-layout {
+      align-items: start;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+      margin-top: 16px;
+    }
+    .help-nav {
+      position: sticky;
+      top: 74px;
+    }
+    .help-nav a {
+      align-items: center;
+      border-bottom: 1px solid var(--content-soft-border, rgba(148,163,184,.22));
+      color: var(--text, #111827);
+      display: flex;
+      font-weight: 700;
+      justify-content: space-between;
+      padding: 10px 0;
+      text-decoration: none;
+    }
+    .help-nav a span {
+      color: var(--muted, #64748b);
+      font-size: .82rem;
+      font-weight: 600;
+    }
+    .help-content {
+      display: grid;
+      gap: 14px;
+    }
+    .help-section {
+      scroll-margin-top: 88px;
+    }
+    .help-section h2 {
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+    .help-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+    .help-mini-card {
+      background: var(--content-soft-bg, rgba(148,163,184,.08));
+      border: 1px solid var(--content-soft-border, rgba(148,163,184,.26));
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .help-mini-card h3 {
+      font-size: 1rem;
+      margin: 0 0 6px;
+    }
+    .help-mini-card p,
+    .help-mini-card ul,
+    .help-mini-card ol {
+      margin-bottom: 0;
+    }
+    .help-route {
+      color: var(--muted, #64748b);
+      display: block;
+      font-size: .88rem;
+      font-weight: 700;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+    .help-step-list {
+      display: grid;
+      gap: 9px;
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+    .help-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .help-chip-row a,
+    .help-chip-row span {
+      background: var(--content-soft-bg, rgba(148,163,184,.10));
+      border: 1px solid var(--content-soft-border, rgba(148,163,184,.30));
+      border-radius: 999px;
+      color: var(--text, #111827);
+      font-size: .9rem;
+      font-weight: 700;
+      padding: 7px 10px;
+      text-decoration: none;
+    }
+    .help-hidden {
+      display: none !important;
+    }
+    @media (max-width: 860px) {
+      .help-search-row { grid-template-columns: 1fr; }
+      .help-layout { grid-template-columns: 1fr; }
+      .help-nav { position: static; }
+    }
+  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h1 class="m-0">Centro de ayuda</h1>
+    <section class="help-hero">
+      <div>
+        <h1>Centro de ayuda Powerful Control System</h1>
+        <p class="form-help mt-8">Guia operativa moderna para administrar empresas, vender, controlar inventario, facturar electronicamente, usar IA, gestionar licencias y resolver bloqueos frecuentes sin romper el flujo diario.</p>
       </div>
-      <p class="form-help mt-8">Guía funcional y técnica para operación de inventario, carritos, reportes y configuración por empresa.</p>
-      <div class="empresa-inline-actions mt-10 actions-wrap-gap-8">
-        <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
-        <a class="btn secondary" href="#menu-tutorial-modulos">Tutorial por módulos</a>
-        <a class="btn secondary" href="#menu-pagos-licencias">Pagos de licencias</a>
-        <a class="btn secondary" href="#menu-documentos-ia">Documentos IA</a>
-        <a class="btn secondary" href="#menu-ventas-rapidas">Ventas paso a paso</a>
-        <a class="btn secondary" href="#menu-productos-impuestos">Productos e impuestos</a>
-        <a class="btn secondary" href="#menu-ventas-rapidas">Ventas paso a paso</a>
-        <a class="btn secondary" href="#menu-creditos">Créditos y cartera</a>
-        <a class="btn secondary" href="#menu-apis">APIs</a>
-        <a class="btn secondary" href="#menu-inventario">Inventario</a>
-        <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
-        <a class="btn secondary" href="#menu-propinas-comisiones">Propinas y comisiones</a>
-        <a class="btn secondary" href="#menu-erp-operativo">ERP extendido</a>
-        <a class="btn secondary" href="#menu-configuracion">Configuración por empresa</a>
-        <a class="btn secondary" href="#menu-dian">Configuración DIAN Colombia</a>
+      <div class="help-search-row">
+        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
+        <button id="helpClear" class="btn secondary" type="button">Limpiar</button>
+      </div>
+      <div class="help-chip-row">
+        <a href="/ayuda/chat_ia.html">Ayuda Chat IA</a>
+        <a href="/ayuda/login_administradores.html">Ayuda login</a>
+        <a href="/administrar_empresa.html">Administrar empresa</a>
+        <a href="/super_administrador.html">Super administrador</a>
       </div>
     </section>
 
-    <section id="menu-rapido" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Guía rápida</h2>
-      </div>
-      <ul>
-        <li>Ingreso administrativo: <a href="/login.html">/login.html</a></li>
-        <li>Panel super administrador: <a href="/super_administrador.html">/super_administrador.html</a></li>
-        <li>Selector de empresas (super): <a href="/seleccionar_empresa.html">/seleccionar_empresa.html</a></li>
-        <li>Panel de empresa: <a href="/administrar_empresa.html">/administrar_empresa.html</a></li>
-        <li>Módulo de productos e inventario: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></li>
-        <li>Módulo de bodegas: <a href="/administrar_empresa/bodega.html">/administrar_empresa/bodega.html</a></li>
-        <li>Módulo de combos de productos: <a href="/administrar_empresa/combos_productos.html">/administrar_empresa/combos_productos.html</a></li>
-        <li>Módulo de códigos de descuento: <a href="/administrar_empresa/codigos_de_descuento.html">/administrar_empresa/codigos_de_descuento.html</a></li>
-        <li>Módulo de carrito: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></li>
-        <li>Módulo de propinas: <a href="/administrar_empresa/propinas.html">/administrar_empresa/propinas.html</a></li>
-        <li>Módulo de comisiones: <a href="/administrar_empresa/comisiones.html">/administrar_empresa/comisiones.html</a></li>
-        <li>Módulo ERP extendido: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></li>
-        <li>Módulo de asistencia de empleados: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></li>
-        <li>Módulo de créditos y cartera: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></li>
-        <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
-        <li>Módulo de gráficos y estadísticas: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></li>
-        <li>Configuración de empresa: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></li>
-      </ul>
-    </section>
-
-    <section id="menu-tutorial-modulos" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Tutorial por módulos</h2>
-      </div>
-      <p class="form-help mt-8">Secuencia recomendada para operar cada módulo de forma segura y separada por empresa.</p>
-
-      <h3 class="heading-block">Módulos de administración global</h3>
-
-      <h4 class="subheading-block">1) Panel super administrador</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/super_administrador.html">/super_administrador.html</a></p>
-      <ol>
-        <li>Inicia sesión como super administrador desde <a href="/login.html">/login.html</a>.</li>
-        <li>Verifica empresa, licencias y estado de módulos globales.</li>
-        <li>Aplica cambios administrativos y confirma que impacten solo la empresa objetivo.</li>
-      </ol>
-
-      <h4 class="subheading-block">1.1) Seleccionar empresa (tarjetas)</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/seleccionar_empresa.html">/seleccionar_empresa.html</a></p>
-      <ol>
-        <li>Cada empresa se muestra como una tarjeta del mismo tamaño; en el pie, en una sola fila, aparecen (de izquierda a derecha) el estado de licencia o un espacio reservado con el mismo ancho, el botón de <strong>Descargar datos</strong> y el de <strong>Compartir</strong>, con la misma posición en todas las tarjetas.</li>
-        <li>Si la empresa tiene licencia activa, la tarjeta abre directamente su administración (no muestra el rótulo “Sin licencia”; se reserva el hueco para mantener alineada la fila de acciones).</li>
-        <li>Todas las tarjetas incluyen el botón de <strong>Descargar datos</strong> para abrir el módulo de exportación de la empresa.</li>
-      </ol>
-
-      <h4 class="subheading-block">2) Empresas y tipos de empresa</h4>
-      <p class="form-help help-top-0">Ruta de apoyo: <a href="/super/tipos_empresas.html">/super/tipos_empresas.html</a></p>
-      <ol>
-        <li>Crea o actualiza tipo de empresa según el modelo operativo.</li>
-        <li>Relaciona cada empresa con su tipo y valida estado activo.</li>
-        <li>Confirma que la empresa aparezca disponible para administración.</li>
-      </ol>
-
-      <h4 class="subheading-block">3) Licencias</h4>
-      <p class="form-help help-top-0">Ruta de apoyo: <a href="/super/licencias.html">/super/licencias.html</a></p>
-      <ol>
-        <li>Crea o renueva licencia para la empresa seleccionada.</li>
-        <li>Valida fecha de vigencia y estado de activación.</li>
-        <li>Verifica en el resumen que la licencia quede aplicada.</li>
-      </ol>
-
-      <h4 id="menu-pagos-licencias" class="subheading-block">3.1) Pago publico de licencias</h4>
-      <p class="form-help help-top-0">Rutas de apoyo: <a href="/elegir_licencia.html">/elegir_licencia.html</a> y <a href="/pagar_licencia.html">/pagar_licencia.html</a></p>
-      <ol>
-        <li>El cliente elige licencia, acepta terminos y usa la pasarela activa.</li>
-        <li>En Epayco, el sistema intenta Smart Checkout v2; si falla, usa un formulario clasico firmado por POST a <code>https://secure.payco.co/checkout.php</code>.</li>
-        <li>Para el fallback clasico deben estar configurados <code>Customer ID</code> y <code>P_KEY</code>. En cuentas reales el formulario debe salir en modo produccion, no como prueba.</li>
-        <li>Si Epayco muestra <strong>El comercio no fue reconocido</strong>, revisar la configuracion de Epayco en Super Administrador y confirmar que las llaves reales no esten marcadas como modo de pruebas.</li>
-      </ol>
-
-      <h4 class="subheading-block">4) Seguridad y administradores</h4>
-      <p class="form-help help-top-0">Rutas de apoyo: <a href="/super/seguridad.html">/super/seguridad.html</a> y <a href="/super/administradores.html">/super/administradores.html</a></p>
-      <ol>
-        <li>Asigna roles y permisos a administradores globales.</li>
-        <li>Configura políticas de acceso y revisa eventos de seguridad.</li>
-        <li>Prueba acceso con un usuario no privilegiado para validar restricciones.</li>
-      </ol>
-
-      <h3 class="heading-block">Módulos del panel de empresa</h3>
-
-      <h4 class="subheading-block">5) Productos</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/administrar_productos_menu.html">/administrar_empresa/administrar_productos_menu.html</a></p>
-      <ol>
-        <li>Confirma empresa activa y usuario autenticado.</li>
-        <li>Ingresa al submenú de inventario para productos, bodegas, categorías, proveedores y precios.</li>
-        <li>Usa este módulo como punto de entrada del frente comercial e inventario.</li>
-      </ol>
-
-      <h4 class="subheading-block">6) Ventas</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/ventas.html">/administrar_empresa/ventas.html</a></p>
-      <ol>
-        <li>Selecciona cliente, productos y condiciones de venta.</li>
-        <li>Valida totales, descuentos y medio de pago.</li>
-        <li>Cierra la venta y confirma trazabilidad en reportes y finanzas.</li>
-      </ol>
-
-      <h4 class="subheading-block">7) Carrito de compras</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></p>
-      <ol>
-        <li>Crea o selecciona carrito por empresa y estación.</li>
-        <li>Agrega ítems manualmente o por lector de código de barras.</li>
-        <li>Finaliza pago del carrito y valida estado cerrado.</li>
-      </ol>
-
-      <h4 class="subheading-block">8) Productos e inventario</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></p>
-      <ol>
-        <li>Gestiona catálogo de productos, categorías, proveedores y servicios.</li>
-        <li>Ejecuta movimientos de inventario (ajuste, transferencia, análisis).</li>
-        <li>Revisa alertas de quiebre y plan de reposición por proveedor.</li>
-      </ol>
-
-      <h4 class="subheading-block">9) Compras</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/compras.html">/administrar_empresa/compras.html</a></p>
-      <ol>
-        <li>Crea documento de compra en borrador o emitido.</li>
-        <li>Ejecuta transición documental (emitir, recepcionar, contabilizar).</li>
-        <li>Confirma estado final y evento contable asociado.</li>
-      </ol>
-
-      <h4 class="subheading-block">10) Clientes</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/administrar_clientes.html">/administrar_empresa/administrar_clientes.html</a></p>
-      <ol>
-        <li>Registra y actualiza clientes por empresa.</li>
-        <li>Consulta perfil comercial e historial de compras del cliente.</li>
-        <li>Usa la segmentación para decisiones comerciales y seguimiento.</li>
-      </ol>
-
-      <h4 class="subheading-block">11) Facturación electrónica</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a></p>
-      <ol>
-        <li>Configura país, resolución y datos fiscales por empresa.</li>
-        <li>Ejecuta emitir, anular o nota crédito según ciclo documental (en emitir usa cliente_id o cliente_email para despacho automático).</li>
-        <li>Valida número legal, código de validación y estado de envío al cliente en la respuesta.</li>
-      </ol>
-
-      <h4 class="subheading-block">12) Finanzas</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/finanzas.html">/administrar_empresa/finanzas.html</a></p>
-      <ol>
-        <li>Consulta configuración financiera, períodos y cierres de caja.</li>
-        <li>Revisa movimientos, asientos y conciliación por período.</li>
-        <li>Corrige desbalances antes de cierre operativo diario.</li>
-      </ol>
-
-      <h4 class="subheading-block">13) Reportes</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></p>
-      <ol>
-        <li>Selecciona rango de fechas y empresa objetivo.</li>
-        <li>Genera indicadores de ventas, inventario y resultado operativo.</li>
-        <li>Exporta reporte para seguimiento directivo y auditoría.</li>
-      </ol>
-
-      <h4 class="subheading-block">14) Usuarios de empresa</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/administrar_usuarios.html">/administrar_empresa/administrar_usuarios.html</a></p>
-      <ol>
-        <li>Crea usuario y asigna rol según funciones operativas.</li>
-        <li>Activa/desactiva accesos por estado y perfil.</li>
-        <li>Valida permisos en menú y acceso a endpoints del módulo.</li>
-      </ol>
-
-      <h4 class="subheading-block">15) Auditoría</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/auditoria.html">/administrar_empresa/auditoria.html</a></p>
-      <ol>
-        <li>Filtra eventos por módulo, usuario y rango de fechas.</li>
-        <li>Revisa request_id, código HTTP y recurso afectado.</li>
-        <li>Exporta evidencia para control interno o revisión externa.</li>
-      </ol>
-
-      <h4 class="subheading-block">16) Configuración general</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></p>
-      <ol>
-        <li>Ajusta parámetros operativos de la empresa.</li>
-        <li>Guarda cambios y valida persistencia por empresa_id.</li>
-        <li>Confirma impacto en módulos dependientes.</li>
-      </ol>
-
-      <h4 class="subheading-block">17) Configuración avanzada (integrada)</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a> (sección Configuración avanzada)</p>
-      <ol>
-        <li>Configura parámetros fiscales y técnicos avanzados.</li>
-        <li>Valida formatos y consistencia de datos críticos.</li>
-        <li>Ejecuta prueba funcional antes de operar en producción.</li>
-      </ol>
-
-      <h4 class="subheading-block">18) Estaciones y configuración de estaciones</h4>
-      <p class="form-help help-top-0">Rutas: <a href="/administrar_empresa/estaciones.html">/administrar_empresa/estaciones.html</a> y <a href="/administrar_empresa/configuracion_de_estaciones.html">/administrar_empresa/configuracion_de_estaciones.html</a></p>
-      <ol>
-        <li>Registra estaciones de trabajo por punto de operación.</li>
-        <li>Asigna carritos o flujos según la estación.</li>
-        <li>Verifica sincronización con el módulo de carrito de compras.</li>
-      </ol>
-
-      <h4 class="subheading-block">19) Ubicación GPS</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/ubicacion_gps.html">/administrar_empresa/ubicacion_gps.html</a></p>
-      <ol>
-        <li>Configura dispositivo o fuente de geolocalización.</li>
-        <li>Consulta recorridos y posiciones recientes por empresa.</li>
-        <li>Cruza eventos de ubicación con operación y auditoría.</li>
-      </ol>
-
-      <h4 class="subheading-block">20) Chat con inteligencia artificial</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/chat_con_inteligencia_artificial.html">/administrar_empresa/chat_con_inteligencia_artificial.html</a></p>
-      <ol>
-        <li>Selecciona modelo configurado para la empresa.</li>
-        <li>Realiza consulta operativa con contexto del negocio.</li>
-        <li>Revisa historial para continuidad de soporte y decisiones.</li>
-      </ol>
-
-      <h4 id="menu-documentos-ia" class="subheading-block">20.1) Documentos dinamicos con IA</h4>
-      <ol>
-        <li>Usa <code>/generate</code> para enviar contenido, prompt o variables de negocio.</li>
-        <li>El backend renderiza una plantilla HTML profesional con Go templates y deja el archivo temporal listo.</li>
-        <li>Descarga con <code>/download?id=...&amp;type=pdf|docx|xlsx|html|txt|json</code>.</li>
-        <li>El sistema debe devolver <code>Content-Type</code> y <code>Content-Disposition</code> correctos para que el navegador descargue el archivo.</li>
-      </ol>
-
-      <h4 class="subheading-block">21) Chat y tareas</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/chat_y_tareas.html">/administrar_empresa/chat_y_tareas.html</a></p>
-      <ol>
-        <li>Los botones rápidos (nueva conversación, tarea, reunión) van arriba; debajo, un resumen compacto en tabla con métricas y sincronización.</li>
-        <li>La vista respeta la apariencia clara u oscura elegida en el menú (tema y variables del sistema).</li>
-        <li>Crea conversación y registra tareas por responsable; asigna prioridades y estado de ejecución.</li>
-        <li>Monitorea cumplimiento de actividades del equipo.</li>
-      </ol>
-
-      <h4 class="subheading-block">22) Asistencia de empleados</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></p>
-      <ol>
-        <li>Registra asistencia diaria por empleado (fecha, turno y estado).</li>
-        <li>Marca entrada y salida para calcular horas trabajadas del turno.</li>
-        <li>Aplica activación/desactivación y filtra por rango de fechas para control operativo.</li>
-      </ol>
-
-      <h4 class="subheading-block">23) Gráficos y estadísticas</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></p>
-      <ol>
-        <li>Define rango de fechas y cantidad de elementos top para el análisis visual.</li>
-        <li>Revisa series de ventas, finanzas, compras y asistencia para detectar tendencias.</li>
-        <li>Analiza distribuciones y rankings para priorizar decisiones operativas y comerciales.</li>
-      </ol>
-
-      <h4 class="subheading-block">24) Combos de productos</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/combos_productos.html">/administrar_empresa/combos_productos.html</a></p>
-      <ol>
-        <li>Crea un combo con nombre, precio único e impuesto de venta.</li>
-        <li>Agrega ingredientes del catálogo de productos con sus cantidades por receta.</li>
-        <li>Usa el combo en carrito como <strong>tipo item = combo</strong> para descontar inventario por ingrediente automáticamente.</li>
-      </ol>
-
-      <h4 class="subheading-block">25) Códigos de descuento</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/codigos_de_descuento.html">/administrar_empresa/codigos_de_descuento.html</a></p>
-      <ol>
-        <li>Crea códigos promocionales por empresa con tipo de descuento en valor fijo o porcentaje.</li>
-        <li>Configura monto mínimo, fecha de vencimiento y usos máximos para control comercial.</li>
-        <li>Aplica el código en el cierre de carrito y valida método de pago según reglas operativas.</li>
-      </ol>
-
-      <h4 class="subheading-block">26) Propinas</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/propinas.html">/administrar_empresa/propinas.html</a></p>
-      <ol>
-        <li>Define si la propina está habilitada, porcentaje y modo de distribución por empresa.</li>
-        <li>Guarda la configuración y valida en carrito el hint operativo de propina.</li>
-        <li>Consulta reporte por fecha/usuario/modo para reconciliación financiera.</li>
-      </ol>
-
-      <h4 class="subheading-block">27) Comisiones por servicio</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/comisiones.html">/administrar_empresa/comisiones.html</a></p>
-      <ol>
-        <li>Configura porcentaje de comisión y filtro de servicio aplicable.</li>
-        <li>Valida que el cobro del carrito registre la comisión al usuario lavador.</li>
-        <li>Consulta acumulados y movimientos para liquidación por responsable.</li>
-      </ol>
-
-      <h4 class="subheading-block">28) ERP extendido por dominios</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></p>
-      <ol>
-        <li>Selecciona dominio (ventas, finanzas, inventario/compras/RRHH, CRM, producción, logística o documental/integraciones/DIAN).</li>
-        <li>Opera cada submódulo con listar, detalle, crear, actualizar, activar/desactivar y eliminación lógica.</li>
-        <li>Para DIAN, usa utilidades de checklist, validar, CUFE demo y XML demo.</li>
-      </ol>
-
-      <h4 class="subheading-block">29) Créditos y cartera</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></p>
-      <ol>
-        <li>Crea la línea de crédito seleccionando cliente, monto aprobado, plazo, tasa y tipo de crédito.</li>
-        <li>Consulta cartera con filtros por cliente/estado/clasificación y revisa el resumen operativo (saldo, vencidos, mora).</li>
-        <li>Registra abonos (total o parcial), valida la aplicación a cuotas y confirma el estado de cuenta antes del cierre diario.</li>
-      </ol>
-
-      <h4 class="subheading-block">30) Venta pública por empresa</h4>
-      <p class="form-help help-top-0">Rutas: este módulo fue retirado del panel de empresa.</p>
-      <ol>
-        <li>Configura slug, branding y llaves Wompi por empresa en el módulo de administración.</li>
-        <li>Publica items con precio, imagen y descripción, y verifica la URL pública por slug.</li>
-        <li>Ejecuta pago de prueba Nequi desde la tienda pública y confirma el estado de la orden.</li>
-      </ol>
-
-      <h4 class="subheading-block">31) Ventas operativas (paso a paso)</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></p>
-      <ol>
-        <li>Crea o activa carrito por estación/sesión y asigna cliente cuando aplique.</li>
-        <li>Agrega productos/servicios/combos, valida cantidades, descuentos e impuestos por línea.</li>
-        <li>Cierra el cobro con método permitido por rol y verifica que la venta quede en estado cerrado.</li>
-      </ol>
-
-      <h4 class="subheading-block">32) Crear productos e impuestos</h4>
-      <p class="form-help help-top-0">Ruta: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></p>
-      <ol>
-        <li>Crea categoría y producto con SKU/código de barras, costo, precio y bodega base.</li>
-        <li>Define porcentaje de impuesto en el producto y confirma impacto en total de venta.</li>
-        <li>Publica imagen, activa el producto y valida que aparezca en carrito/catalogo según módulo.</li>
-      </ol>
-    </section>
-
-    <section id="menu-propinas-comisiones" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Propinas y comisiones</h2>
-      </div>
-      <ul>
-        <li>Ambos módulos operan por empresa y deben revisarse junto con configuración operativa por rol.</li>
-        <li>Propinas: controla porcentaje, modo de distribución y acumulados por usuario/periodo.</li>
-        <li>Comisiones: calcula monto por servicio y consolida resultados por lavador o responsable.</li>
-        <li>Antes de cierre diario, cruza ambos reportes con ventas y finanzas para validar totales.</li>
-      </ul>
-    </section>
-
-    <section id="menu-erp-operativo" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">ERP extendido</h2>
-      </div>
-      <ul>
-        <li>ERP extendido centraliza módulos avanzados por dominio sin cambiar contratos backend.</li>
-        <li>Usa filtros, acciones de estado y trazabilidad por empresa_id en cada submódulo.</li>
-      </ul>
-    </section>
-
-    <section id="menu-creditos" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Créditos y cartera: guía operativa por rol</h2>
-      </div>
-      <p class="form-help mt-8">Ruta operativa: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></p>
-
-      <h3 class="heading-block">Flujo recomendado</h3>
-      <ol>
-        <li>Registrar crédito con datos contractuales completos (cliente, monto, plazo, tasa, fecha de inicio, tipo).</li>
-        <li>Validar plan de cuotas generado y clasificación inicial de cartera.</li>
-        <li>Operar abonos diarios y confirmar actualización de saldo, cuotas y movimientos.</li>
-        <li>Monitorear cartera vencida y aplicar cambio de estado (`suspendido`/`activo`/`cerrado`) según política.</li>
-        <li>Exportar reporte multiformato para cierre operativo y trazabilidad contable.</li>
-      </ol>
-
-      <h3 class="heading-block">Manual por rol</h3>
-      <h4 class="subheading-block">Administrador de empresa</h4>
-      <ul>
-        <li>Define políticas de otorgamiento y valida límites internos antes de crear créditos.</li>
-        <li>Supervisa cartera por clasificación (`al_dia`, `vencido`, `castigado`) y autoriza cambios críticos de estado.</li>
-        <li>Asegura consistencia de cierres con reportes exportados por período.</li>
-      </ul>
-
-      <h4 class="subheading-block">Operador de caja / cobranza</h4>
-      <ul>
-        <li>Consulta estado de cuenta por cliente y registra abonos con método y referencia verificables.</li>
-        <li>Confirma que cada abono impacte cuotas en orden y que no existan saldos inconsistentes.</li>
-        <li>Escala casos de mora o excepciones al responsable administrativo.</li>
-      </ul>
-
-      <h4 class="subheading-block">Auditoría / control interno</h4>
-      <ul>
-        <li>Revisa movimientos por crédito, usuario y periodo para validar trazabilidad completa.</li>
-        <li>Contrasta estado de cuenta vs. reporte exportado para detectar discrepancias.</li>
-        <li>Conserva evidencia operativa en formatos `PDF/XLS/CSV/JSON/TXT` para revisiones internas/externas.</li>
-      </ul>
-    </section>
-
-    <section id="menu-ventas-rapidas" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Ventas: flujo practico de punta a punta</h2>
-      </div>
-      <p class="form-help mt-8">Rutas sugeridas: <a href="/administrar_empresa/carrito_de_compras.html">carrito_de_compras</a>, <a href="/administrar_empresa/estaciones.html">estaciones</a> y <a href="/administrar_empresa/reportes.html">reportes</a>.</p>
-      <ol>
-        <li>Selecciona empresa y estación operativa (mesa, habitación, caja u otro punto de atención).</li>
-        <li>Crea/activa carrito y agrega items (producto, combo o servicio) con cantidades correctas.</li>
-        <li>Verifica subtotal, descuento, impuesto y total antes de pasar a cobro.</li>
-        <li>Selecciona método de pago permitido por rol y valida referencia cuando aplique.</li>
-        <li>Cierra venta y confirma en reportes que el documento quedó trazado por empresa_id.</li>
-      </ol>
-    </section>
-
-    <section id="menu-productos-impuestos" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Productos e impuestos: guia operativa</h2>
-      </div>
-      <p class="form-help mt-8">Ruta principal: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a>.</p>
-      <ol>
-        <li>Crea categoría y bodega antes de cargar productos masivos.</li>
-        <li>Registra producto con SKU/código de barras, costo, precio y unidad de medida.</li>
-        <li>Define porcentaje de impuesto por producto y valida impacto en carrito de prueba.</li>
-        <li>Configura stock mínimo/máximo para alertas y reposición temprana.</li>
-        <li>Sube imagen del producto y activa estado para disponibilidad comercial.</li>
-      </ol>
-    </section>
-
-    <section id="menu-venta-publica" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Venta publica online por empresa</h2>
-      </div>
-      <p class="form-help mt-8">Este módulo (venta pública online) fue retirado del panel. Si necesitas una tienda pública nuevamente, se debe definir un nuevo flujo y URLs oficiales.</p>
-      <ol>
-        <li>Configura slug, nombre de tienda, colores, logo/banner y moneda por empresa.</li>
-        <li>Publica items con imagen, precio, descripción y estado activo/inactivo.</li>
-        <li>Configura Wompi por empresa (public key + referencias seguras de llaves privadas).</li>
-        <li>Prueba flujo de cliente: catálogo público, carrito y pago Nequi.</li>
-        <li>Consulta ordenes y estado de pago para conciliación operativa.</li>
-      </ol>
-    </section>
-
-    <section id="menu-apis" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">APIs principales</h2>
-      </div>
-      <p class="form-help">Las APIs operativas usan <strong>empresa_id</strong> para garantizar separación por empresa.</p>
-
-      <h3 class="heading-block">Catálogo e inventario</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/productos</td><td>CRUD de productos por empresa</td></tr>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/combos_productos</td><td>CRUD de combos con receta de ingredientes</td></tr>
-            <tr><td>POST</td><td>/api/empresa/productos/imagen</td><td>Carga imagen por producto</td></tr>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/categorias_productos</td><td>Categorías de productos</td></tr>
-            <tr><td>GET</td><td>/api/empresa/inventario/existencias</td><td>Stock por bodega</td></tr>
-            <tr><td>GET</td><td>/api/empresa/inventario/movimientos</td><td>Movimientos de inventario</td></tr>
-            <tr><td>POST</td><td>/api/empresa/inventario/transferir</td><td>Transferencia entre bodegas</td></tr>
-            <tr><td>POST</td><td>/api/empresa/inventario/ajustar</td><td>Ajustes de entrada/salida</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="heading-block">Carrito y venta</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra</td><td>CRUD de carritos por empresa</td></tr>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra/items</td><td>CRUD de items en carrito</td></tr>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/codigos_de_descuento</td><td>CRUD y validación de códigos de descuento por empresa</td></tr>
-            <tr><td>GET/POST/PUT/PATCH/DELETE</td><td>/api/empresa/venta_publica</td><td>Configuración de tienda pública, catálogo, imágenes y órdenes por empresa</td></tr>
-            <tr><td>GET/POST</td><td>/api/public/venta_publica</td><td>Catálogo público, creación de pago Nequi (Wompi) y estado de orden</td></tr>
-            <tr><td>PUT?action=activar_estacion</td><td>/api/empresa/carritos_compra</td><td>Activación de carrito de estación</td></tr>
-            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago con validación de efectivo, tarjeta crédito, tarjeta débito, transferencia bancaria, pago mixto o código de descuento</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="heading-block">Configuración de empresa</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET/POST/PUT</td><td>/api/empresa/configuracion_avanzada</td><td>Configuración operativa y avanzada por empresa</td></tr>
-            <tr><td>GET/POST/PUT</td><td>/api/empresa/facturacion_electronica</td><td>Configuración FE por país y ciclo documental con respuesta de envío automático al cliente en emisión</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="heading-block">Reportes y analítica</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET</td><td>/api/empresa/reportes</td><td>Reportes por datasets y exportaciones multi-formato</td></tr>
-            <tr><td>GET</td><td>/api/empresa/graficos_estadisticas</td><td>Series gráficas, rankings y distribuciones operativas por empresa</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="heading-block">Créditos y cartera</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET/POST/PUT/PATCH/DELETE</td><td>/api/empresa/creditos</td><td>CRUD operativo de créditos por empresa</td></tr>
-            <tr><td>GET</td><td>/api/empresa/creditos?action=estado_cuenta</td><td>Detalle de cuotas, saldos y movimientos por crédito</td></tr>
-            <tr><td>GET</td><td>/api/empresa/creditos?action=resumen_cartera</td><td>Resumen agregado de cartera por estado y clasificación</td></tr>
-            <tr><td>POST</td><td>/api/empresa/creditos?action=abono</td><td>Registro de abonos y aplicación automática a cuotas</td></tr>
-            <tr><td>GET</td><td>/api/empresa/creditos?action=reporte&amp;format=json|csv|txt|xls|pdf</td><td>Exportación de cartera multiformato con estructura consistente</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="menu-inventario" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Inventario y reportes</h2>
-      </div>
-      <ul>
-        <li>El inventario se administra por empresa con bodegas, movimientos y existencias separadas por empresa_id.</li>
-        <li>Los combos permiten vender a precio único y mantener control de stock por ingrediente (receta).</li>
-        <li>El módulo de reportes consolida ventas cerradas, compras de inventario y stock actual.</li>
-        <li>Los reportes deben consumirse siempre con empresa_id para no mezclar datos entre empresas.</li>
-      </ul>
-    </section>
-
-    <section id="menu-carrito" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Carrito y lector de código de barras</h2>
-      </div>
-      <ul>
-        <li>El carrito permite agregar productos por catálogo o por lectura de código de barras/SKU.</li>
-        <li>También permite agregar combos; el descuento de inventario se realiza por cada ingrediente del combo.</li>
-        <li>El cierre de carrito valida método de pago y exige referencia para pagos con tarjeta o transferencia bancaria.</li>
-        <li>El pago con código de descuento valida vigencia, monto mínimo y usos disponibles del código.</li>
-        <li>Al leer un código válido, el sistema incrementa cantidad o crea el item automáticamente.</li>
-        <li>El proceso descuenta inventario del producto asociado respetando el contexto de empresa.</li>
-      </ul>
-    </section>
-
-    <section id="menu-configuracion" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Configuración por empresa</h2>
-      </div>
-      <ul>
-        <li>La configuración operativa se guarda por llave de empresa en la interfaz de administración.</li>
-        <li>La configuración avanzada/fiscal se guarda en base de datos por empresa_id.</li>
-        <li>No se debe reutilizar una configuración de una empresa en otra sin respaldo/restauración explícita.</li>
-      </ul>
-    </section>
-
-    <section id="menu-dian" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Cómo configurar facturación DIAN Colombia desde cero</h2>
-      </div>
-      <p class="form-help mt-8">
-        Esta guía explica el proceso completo para habilitar y operar facturación electrónica con DIAN en Colombia,
-        combinando lo que debes hacer en la plataforma DIAN y lo que debes configurar en el sistema.
-      </p>
-
-      <h3 class="heading-block">1) Requisitos previos antes de entrar a DIAN</h3>
-      <ol>
-        <li>Empresa legalmente constituida con NIT activo y RUT actualizado.</li>
-        <li>Responsabilidad de facturación electrónica activa en RUT (según actividad económica y obligación vigente).</li>
-        <li>Representante legal o usuario autorizado con acceso a servicios DIAN.</li>
-        <li>Correo corporativo operativo para notificaciones y recepción de eventos.</li>
-        <li>Definición del esquema de numeración de facturación (prefijo y rango) a solicitar en DIAN.</li>
-      </ol>
-
-      <h3 class="heading-block">2) Qué debes hacer en la plataforma DIAN</h3>
-      <p class="form-help help-top-0">
-        Portal de referencia: facturacionelectronica.dian.gov.co (habilitación y producción).
-      </p>
-      <ol>
-        <li>Ingresar con usuario DIAN y registrar la empresa como facturador electrónico.</li>
-        <li>Elegir modalidad tecnológica:
-          <ul>
-            <li>Software propio.</li>
-            <li>Software compartido tipo SaaS (recomendado para multiples empresas).</li>
-            <li>Proveedor tecnológico autorizado.</li>
-          </ul>
-        </li>
-        <li>Obtener credenciales técnicas:
-          <ul>
-            <li>Software ID.</li>
-            <li>Software PIN.</li>
-            <li>TestSetID (fase de habilitación/pruebas).</li>
-          </ul>
-        </li>
-        <li>Solicitar resolución de numeración de facturación (prefijo + rango autorizado):
-          <ul>
-            <li>Número de resolución.</li>
-            <li>Fecha desde / fecha hasta.</li>
-            <li>Consecutivo inicial / final.</li>
-          </ul>
-        </li>
-        <li>Ejecutar set de pruebas (habilitación) hasta obtener aprobación de casos requeridos.</li>
-        <li>Cuando DIAN apruebe habilitación, preparar paso a producción.</li>
-      </ol>
-
-      <h3 class="heading-block">3) Qué debes configurar en este sistema</h3>
-      <p class="form-help help-top-0">
-        Ruta principal: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a>
-      </p>
-      <ol>
-        <li>Completar datos del emisor:
-          <ul>
-            <li>NIT y dígito de verificación.</li>
-            <li>Razón social.</li>
-            <li>Correo y datos fiscales activos.</li>
-          </ul>
-        </li>
-        <li>Seleccionar ambiente:
-          <ul>
-            <li>habilitación (pruebas).</li>
-            <li>producción.</li>
-          </ul>
-        </li>
-        <li>Registrar credenciales DIAN:
-          <ul>
-            <li>Si usas SaaS: activar <code>usar_software_compartido=1</code> y definir referencias seguras de Software ID/PIN compartidos.</li>
-            <li>Si usas modo por empresa: guardar Software ID/PIN de la empresa.</li>
-            <li>TestSetID (cuando aplique).</li>
-          </ul>
-        </li>
-        <li>Registrar credenciales por empresa (obligatorias para emision real):
-          <ul>
-            <li><code>token_emisor_ref</code> por empresa (referencia segura).</li>
-            <li><code>certificado_clave_ref</code> por empresa para firma XML.</li>
-            <li>Opcional: subir firma PEM con <code>action=subir_firma</code> para guardar referencia <code>file:</code> automaticamente.</li>
-          </ul>
-        </li>
-        <li>Registrar resolución de numeración:
-          <ul>
-            <li>Prefijo.</li>
-            <li>Número de resolución.</li>
-            <li>Fechas de vigencia.</li>
-            <li>Rango desde/hasta.</li>
-            <li>Consecutivo actual inicial.</li>
-          </ul>
-        </li>
-        <li>Guardar configuración y ejecutar validación interna:
-          <ul>
-            <li>Endpoint: <code>/api/empresa/facturacion_electronica/dian?action=validar</code></li>
-            <li>Checklist: <code>/api/empresa/facturacion_electronica/dian?action=checklist</code></li>
-            <li>Credenciales: <code>/api/empresa/facturacion_electronica/dian?action=validar_credenciales</code></li>
-            <li>Guía por empresa: <code>/api/empresa/facturacion_electronica/dian?action=guia_onboarding</code></li>
-          </ul>
-        </li>
-      </ol>
-
-      <h3 class="heading-block">4) Flujo recomendado de salida a producción</h3>
-      <ol>
-        <li>Completar y aprobar pruebas en habilitación DIAN.</li>
-        <li>Verificar que numeración en DIAN y numeración en sistema sean idénticas.</li>
-        <li>Cambiar ambiente a producción en DIAN y en el sistema.</li>
-        <li>Emitir primeras facturas con monitoreo estricto de respuesta.</li>
-        <li>Verificar trazabilidad por empresa_id, documento y periodo contable.</li>
-      </ol>
-
-      <h3 class="heading-block">5) Campos críticos que nunca deben quedar vacíos</h3>
-      <ul>
-        <li>NIT del emisor.</li>
-        <li>Razón social del emisor.</li>
-        <li>Tipo de ambiente.</li>
-        <li>Software ID/PIN (compartidos o por empresa, según modelo).</li>
-        <li>Prefijo y resolución de numeración.</li>
-        <li>Rango desde y rango hasta.</li>
-        <li>token_emisor_ref por empresa.</li>
-        <li>certificado_clave_ref por empresa (firma digital).</li>
-      </ul>
-
-      <h3 class="heading-block">6) Endpoints de apoyo técnico DIAN</h3>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Método</th>
-              <th>Endpoint</th>
-              <th>Uso</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/facturacion_electronica/dian</td><td>CRUD de configuración DIAN por empresa</td></tr>
-            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=checklist</td><td>Lista de campos faltantes para habilitar DIAN</td></tr>
-            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=validar</td><td>Validación operativa de configuración DIAN</td></tr>
-            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=guia_onboarding</td><td>Guía profesional de onboarding DIAN por empresa</td></tr>
-            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=validar_credenciales</td><td>Valida token, firma y modo de software sin exponer secretos</td></tr>
-            <tr><td>POST/PUT multipart</td><td>/api/empresa/facturacion_electronica/dian?action=subir_firma</td><td>Sube firma PEM y actualiza certificado_clave_ref por empresa</td></tr>
-            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_cufe_demo</td><td>Genera CUFE de prueba para validación técnica</td></tr>
-            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_xml_demo</td><td>Genera XML de referencia para validación interna</td></tr>
-            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=enviar_set_pruebas</td><td>Envía (o simula) set de habilitación DIAN por empresa</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="heading-block">7) Errores frecuentes y cómo evitarlos</h3>
-      <ul>
-        <li>Consecutivo fuera de rango: validar que consecutivo actual esté entre rango desde/hasta.</li>
-        <li>Credenciales inválidas: confirmar Software ID/PIN (compartido o por empresa) y ejecutar <code>validar_credenciales</code>.</li>
-        <li>Firma inválida: subir nuevamente el PEM RSA por empresa con <code>action=subir_firma</code>.</li>
-        <li>Resolución vencida: revisar fecha hasta de resolución y gestionar renovación.</li>
-        <li>Datos fiscales inconsistentes: NIT, DV y razón social deben coincidir con RUT y DIAN.</li>
-        <li>Mezcla de ambientes: evitar emitir en producción con credenciales de habilitación.</li>
-      </ul>
-
-      <p class="form-help help-top-10">
-        Recomendación operativa: ejecutar siempre la validación DIAN interna del sistema antes de cada cambio de credenciales,
-        numeración o ambiente, y conservar evidencia de pruebas por período.
-      </p>
-    </section>
+    <div class="help-layout">
+      <nav class="card empresa-section help-nav" aria-label="Temas de ayuda">
+        <a href="#inicio">Inicio <span>base</span></a>
+        <a href="#roles">Roles y acceso <span>seguridad</span></a>
+        <a href="#super">Super administrador <span>plataforma</span></a>
+        <a href="#empresa">Administrar empresa <span>operacion</span></a>
+        <a href="#productos">Productos e inventario <span>stock</span></a>
+        <a href="#ventas">Estaciones, carrito y caja <span>POS</span></a>
+        <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
+        <a href="#dian">Facturacion DIAN <span>Colombia</span></a>
+        <a href="#ia">IA, voz y documentos <span>asistente</span></a>
+        <a href="#publico">Venta publica y red social <span>web</span></a>
+        <a href="#reportes">Reportes y auditoria <span>control</span></a>
+        <a href="#integraciones">Integraciones <span>servicios</span></a>
+        <a href="#faq">Solucion de problemas <span>FAQ</span></a>
+      </nav>
+
+      <main class="help-content" id="helpContent">
+        <section id="inicio" class="card empresa-section help-section" data-help="inicio guia rapida rutas principales panel">
+          <h2>Inicio rapido</h2>
+          <p class="form-help">El sistema es una plataforma SaaS ERP/POS multiempresa. Cada registro operativo debe pertenecer a una empresa activa mediante <code>empresa_id</code>.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Rutas principales</h3>
+              <p><a href="/login.html">/login.html</a> para administradores, <a href="/login_usuario.html">/login_usuario.html</a> para operadores, <a href="/seleccionar_empresa.html">/seleccionar_empresa.html</a> para elegir empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Orden recomendado</h3>
+              <ol class="help-step-list">
+                <li>Crear o seleccionar empresa.</li>
+                <li>Validar licencia activa.</li>
+                <li>Configurar usuarios, estaciones, productos, bodegas e impresoras.</li>
+                <li>Probar venta, pago, reporte y auditoria.</li>
+              </ol>
+            </article>
+            <article class="help-mini-card">
+              <h3>Principio de seguridad</h3>
+              <p>Si falta configuracion critica, el sistema debe explicar el requisito antes de continuar: bodega, formato de factura, cliente, pasarela, licencia o permisos.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="roles" class="card empresa-section help-section" data-help="roles permisos administrador usuario operador super acceso">
+          <h2>Roles y acceso</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Super administrador</h3>
+              <p>Administra plataforma, licencias, tipos de empresa, pagos, integraciones, IA, voz, auditoria, configuracion avanzada y metricas globales.</p>
+              <span class="help-route">Ruta: /super_administrador.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Administrador de empresa</h3>
+              <p>Configura y opera una empresa concreta: productos, usuarios, estaciones, caja, facturacion, reportes, venta publica y modulos.</p>
+              <span class="help-route">Ruta: /administrar_empresa.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Operadores</h3>
+              <p>Cajero, inventario, supervisor, vendedor, tecnico, lavador u otros roles dependen de permisos por modulo, pagina, accion y componente.</p>
+              <span class="help-route">Ruta: /login_usuario.html</span>
+            </article>
+          </div>
+        </section>
+
+        <section id="super" class="card empresa-section help-section" data-help="super administrador licencias tipos empresas preconfiguracion ia voz pagos metricas">
+          <h2>Super administrador</h2>
+          <ol class="help-step-list">
+            <li>Usa <strong>Panel</strong> para ver estado general, metricas, empresas y alertas.</li>
+            <li>Usa <strong>Tipos de empresas</strong> y <strong>Preconfiguracion de tipos</strong> para preparar empresas nuevas con estaciones, productos, usuarios guia y reglas por tipo.</li>
+            <li>Usa <strong>Licencias</strong> para crear planes, pruebas de 15 dias, valores por pais, descuentos y vigencias.</li>
+            <li>Usa <strong>Configuracion avanzada</strong> para Epayco, Gmail, Nextcloud, OnlyOffice, RustDesk, voz IA, seguridad y costos.</li>
+            <li>Usa <strong>Contexto IA negocio</strong> para editar el documento que la IA debe tomar como marco permanente de negocio.</li>
+          </ol>
+        </section>
+
+        <section id="empresa" class="card empresa-section help-section" data-help="administrar empresa panel clima favoritos configuracion estaciones usuarios">
+          <h2>Administrar empresa</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Panel empresarial</h3>
+              <p>Muestra bienvenida, clima, indicadores economicos, favoritos y accesos operativos. La ciudad se prioriza por GPS, navegador y luego datos registrados.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Configuracion</h3>
+              <p>Agrupa chat/robot, impresoras, caja, estaciones, sensores, facturacion, Raspberry Pi, respaldos, apariencia y parametros por empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Favoritos</h3>
+              <p>Las paginas de administrar empresa pueden agregarse a favoritos para aparecer debajo de clima e indicadores en el panel.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="productos" class="card empresa-section help-section" data-help="productos inventario bodega categorias servicios combos codigo barras stock">
+          <h2>Productos e inventario</h2>
+          <ol class="help-step-list">
+            <li>Crea categorias, bodegas y productos antes de vender.</li>
+            <li>Para productos inventariables, asigna bodega principal o existencia en <code>inventario_existencias</code>.</li>
+            <li>Usa combos para agrupar productos y servicios vendibles para mano de obra, tarifas, habitaciones, lavados o atenciones.</li>
+            <li>El generador de codigos de barras se abre desde el submenu de productos.</li>
+            <li>Si un producto no entra al carrito, revisa bodega, existencia, estado activo, precio y empresa correcta.</li>
+          </ol>
+        </section>
+
+        <section id="ventas" class="card empresa-section help-section" data-help="estaciones carrito caja pago cerrar cancelar sensor motel habitaciones mesas">
+          <h2>Estaciones, carrito y caja</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Estaciones</h3>
+              <p>Representan mesas, habitaciones, sillas, bahias, cajas o puestos. El nombre cambia segun el tipo de empresa y su preconfiguracion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Carrito</h3>
+              <p>Agrega productos por botones, lector de codigo de barras o busqueda. No se debe cerrar un carrito con total cero ni cancelar si tiene items sin devolver.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Caja y corte</h3>
+              <p>El corte de caja agrupa movimientos por cajero, efectivo esperado, tarjetas, otros medios, ventas de productos, servicios y alertas de sensor no facturadas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Sensores y tarifas por minutos</h3>
+              <p>Moteles y hoteles pueden activar estacion por sensor, tolerancias, cobro por fraccion, minutos extra y bloqueo de cancelacion tras margen configurado.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="pagos" class="card empresa-section help-section" data-help="licencias epayco descuento prueba pago cero activar licencia">
+          <h2>Licencias y pagos</h2>
+          <ol class="help-step-list">
+            <li>Las licencias vencidas desactivan la empresa hasta renovacion o compra.</li>
+            <li>Los codigos de descuento y licencias de prueba solo aplican una vez por empresa.</li>
+            <li>Si el valor final queda en cero, la licencia se activa sin pasar por Epayco y debe enviarse correo de confirmacion.</li>
+            <li>Si hay pago Epayco, la licencia se activa solo con estado aprobado, webhook valido o retorno con evidencia fuerte.</li>
+            <li>Para cambiar entre sandbox y produccion, revisa las credenciales y modo Epayco en Super Administrador.</li>
+          </ol>
+        </section>
+
+        <section id="dian" class="card empresa-section help-section" data-help="dian facturacion electronica colombia firma resolucion contingencia offline notas credito">
+          <h2>Facturacion electronica DIAN</h2>
+          <p class="form-help">La facturacion electronica requiere datos fiscales completos, firma electronica, resolucion, prefijo, consecutivos, ambiente y pruebas de habilitacion cuando aplique.</p>
+          <ol class="help-step-list">
+            <li>Configura empresa, responsabilidad fiscal, correo, NIT, ciudad, direccion y certificado.</li>
+            <li>Ejecuta <strong>Pruebas DIAN</strong> cuando la firma y datos esten listos.</li>
+            <li>Usa modo offline/contingencia solo si esta habilitado y DIAN o internet no responden.</li>
+            <li>Al volver internet o DIAN, el sistema debe regresar a modo online y sincronizar pendientes segun el flujo implementado.</li>
+          </ol>
+        </section>
+
+        <section id="ia" class="card empresa-section help-section" data-help="ia chat robot secretaria voz documentos gpt auditoria contexto ayuda">
+          <h2>IA, voz y documentos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Contexto de IA</h3>
+              <p>La IA usa auditoria en tiempo real, contexto de negocio, ayuda del sistema, datos consultados por backend y permisos de la empresa activa.</p>
+              <span class="help-route">Super: /super/contexto_ia_logica_negocio.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Chat, robot y secretaria</h3>
+              <p>Puede funcionar como chat cuadrado, robot 3D o secretaria 3D. La configuracion se administra por empresa en Configuracion &gt; Configurar chat y robot.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Voz rapida o natural</h3>
+              <p>La voz rapida usa el navegador y responde antes. La voz natural usa Piper en VPS y puede desactivarse para liberar memoria.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Documentos dinamicos</h3>
+              <p>El chat puede generar contratos, reportes, facturas, actas, cotizaciones, Excel, Word, PDF, TXT o JSON cuando el contenido aplica.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="publico" class="card empresa-section help-section" data-help="venta publica subdominio red social tienda pasarela catalogo">
+          <h2>Venta publica y red social empresarial</h2>
+          <p class="form-help">Permite publicar paginas, catalogos, productos, red social empresarial y pagos por pasarela propia de cada empresa.</p>
+          <ol class="help-step-list">
+            <li>Configura pagina publica, productos visibles, textos, imagenes y pasarela.</li>
+            <li>Usa el boton de visitar pagina para comprobar la tienda o red social publicada.</li>
+            <li>Si falla publicar un post, revisa permisos, empresa activa, archivos adjuntos y auditoria del endpoint.</li>
+          </ol>
+        </section>
+
+        <section id="reportes" class="card empresa-section help-section" data-help="reportes auditoria backups exportar importar caja finanzas">
+          <h2>Reportes, auditoria y respaldos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Reportes</h3>
+              <p>Consulta ventas, caja, inventario, finanzas, cartera, indicadores globales y exportaciones. Los formatos deben respetar POS o carta segun configuracion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Auditoria</h3>
+              <p>Registra usuario, modulo, accion, request, estado y detalle. La IA usa auditoria como memoria operativa para diagnosticar.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Backups</h3>
+              <p>Permiten exportar/importar configuracion completa por empresa y generar evidencia antes de eliminar o purgar datos.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="integraciones" class="card empresa-section help-section" data-help="integraciones nextcloud onlyoffice rustdesk gmail recaptcha raspberry sensor emulador juegos">
+          <h2>Integraciones y utilidades</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Nextcloud y OnlyOffice</h3>
+              <p>Gestionan nube privada, archivos empresariales y documentos colaborativos. Configurar URL, credenciales, JWT y permisos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>RustDesk y soporte</h3>
+              <p>Sirve para soporte remoto controlado con trazabilidad de sesiones y acceso por empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Raspberry Pi y sensores</h3>
+              <p>Se configura dentro de cada empresa. Puede activar estaciones, reportar ocupacion y alimentar cortes de caja.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Utilidades</h3>
+              <p>El menu flotante incluye calculadora, juegos y emulador. Se adaptan a modo claro/oscuro y a pantalla movil.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="faq" class="card empresa-section help-section" data-help="errores problemas frecuentes solucionar carrito licencia epayco recaptcha clima voz inventario">
+          <h2>Solucion de problemas frecuentes</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>No aparece boton pagar</h3>
+              <p>Revisa licencia activa, configuracion de carrito, medios de pago visibles, formato de factura, caja e impresoras.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Producto no entra al carrito</h3>
+              <p>Valida bodega, existencia, producto activo, precio mayor o igual a cero, empresa_id correcto y permisos del usuario.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Epayco queda pendiente</h3>
+              <p>Comprueba estado en Epayco, webhook, referencia interna, evidencia de retorno, credenciales, modo sandbox/produccion y auditoria de pagos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>La voz de IA es lenta</h3>
+              <p>Activa voz rapida del computador en Super Administrador &gt; Voz IA streaming. Esto apaga el servicio natural del VPS.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Clima muestra ciudad incorrecta</h3>
+              <p>Permite GPS en el navegador, revisa ciudad registrada del usuario y actualiza el panel. La prioridad es GPS, navegador y registro.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>reCAPTCHA falla</h3>
+              <p>Usa el boton reintentar, revisa conexion, dominio configurado y claves en configuracion avanzada.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
+
+  <script>
+    (function(){
+      var input = document.getElementById('helpSearch');
+      var clear = document.getElementById('helpClear');
+      var sections = Array.prototype.slice.call(document.querySelectorAll('.help-section'));
+
+      function normalize(value) {
+        return String(value || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function applyFilter() {
+        var q = normalize(input && input.value);
+        sections.forEach(function(section){
+          if (!q) {
+            section.classList.remove('help-hidden');
+            return;
+          }
+          var haystack = normalize(section.textContent + ' ' + (section.getAttribute('data-help') || ''));
+          section.classList.toggle('help-hidden', haystack.indexOf(q) < 0);
+        });
+      }
+
+      if (input) input.addEventListener('input', applyFilter);
+      if (clear) {
+        clear.addEventListener('click', function(){
+          if (input) input.value = '';
+          applyFilter();
+          if (input) input.focus();
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

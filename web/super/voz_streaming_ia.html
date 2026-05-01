@@ -18,17 +18,21 @@
   <div class="container">
     <div class="page-header">
       <h1>Voz IA streaming</h1>
-      <p class="form-help">Servicio abierto de voz natural para conversar con la IA. El backend usa este servidor solo cuando esta activo; si falla, el chat sigue funcionando con texto y respaldo del navegador.</p>
+      <p class="form-help">Configura la voz de la IA. La voz rapida del computador usa el navegador y responde casi al instante; la voz natural usa Piper en el VPS y puede tardar mas en cargar.</p>
     </div>
 
     <section class="card form advanced-card" data-brand="ai">
-      <h2>Servidor de voz natural</h2>
-      <p class="form-help">Motor recomendado: Piper TTS en el VPS. Configura la URL interna del servicio y controla su disponibilidad global desde aqui.</p>
+      <h2>Motor de voz de la IA</h2>
+      <p class="form-help">Si seleccionas voz rapida del computador, el sistema desactiva el servicio natural del VPS y ejecuta <code>systemctl stop pcs-voice-stream</code> como mejor esfuerzo para liberar memoria.</p>
 
       <div class="voice-status-grid">
         <div class="voice-status-item">
           <strong>Configuracion</strong>
           <span id="voiceConfigState">Cargando...</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Modo activo</strong>
+          <span id="voiceModeState">Cargando...</span>
         </div>
         <div class="voice-status-item">
           <strong>Servicio VPS</strong>
@@ -46,7 +50,28 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Activar / desactivar</label>
+          <label class="form-label">Voz rapida del computador</label>
+          <label class="mode-switch-row" for="voiceComputerMode">
+            <span class="mode-label">Off</span>
+            <input id="voiceComputerMode" type="checkbox" role="switch" aria-label="Usar voz rapida del computador">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Usa la sintesis de voz del navegador. Es menos natural, pero inicia mucho mas rapido y no consume memoria en el VPS.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Voz natural del VPS</label>
+          <label class="mode-switch-row" for="voiceNaturalMode">
+            <span class="mode-label">Off</span>
+            <input id="voiceNaturalMode" type="checkbox" role="switch" aria-label="Usar voz natural del VPS">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Usa Piper/FastAPI en el VPS. Cuando esta activo puede consumir memoria mientras el servicio esta levantado.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar / desactivar voz natural</label>
           <label class="mode-switch-row" for="voiceStreamEnabled">
             <span class="mode-label">Off</span>
             <input id="voiceStreamEnabled" type="checkbox" role="switch" aria-label="Activar servidor de voz IA">
@@ -54,13 +79,21 @@
           </label>
         </div>
         <div class="form-col">
-          <label class="form-label" for="voiceStreamProvider">Proveedor abierto</label>
-          <input id="voiceStreamProvider" class="form-input" type="text" value="piper" placeholder="piper">
-          <div class="form-help">Piper TTS convierte texto a voz natural sin depender de servicios cerrados.</div>
+          <label class="form-label" for="voiceComputerGender">Voz de computador</label>
+          <select id="voiceComputerGender" class="form-input">
+            <option value="female">Femenina rapida</option>
+            <option value="male">Masculina rapida</option>
+          </select>
+          <div class="form-help">La voz exacta depende del navegador y del sistema operativo, pero se prioriza el genero elegido.</div>
         </div>
       </div>
 
       <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamProvider">Proveedor abierto natural</label>
+          <input id="voiceStreamProvider" class="form-input" type="text" value="piper" placeholder="piper">
+          <div class="form-help">Piper TTS convierte texto a voz natural sin depender de servicios cerrados.</div>
+        </div>
         <div class="form-col">
           <label class="form-label" for="voiceStreamBaseURL">URL del servidor VPS</label>
           <input id="voiceStreamBaseURL" class="form-input" type="url" placeholder="http://127.0.0.1:8097">
@@ -113,14 +146,19 @@
       var baseURL = document.getElementById('voiceStreamBaseURL');
       var provider = document.getElementById('voiceStreamProvider');
       var voice = document.getElementById('voiceStreamVoice');
+      var computerMode = document.getElementById('voiceComputerMode');
+      var naturalMode = document.getElementById('voiceNaturalMode');
+      var computerGender = document.getElementById('voiceComputerGender');
       var timeoutMS = document.getElementById('voiceStreamTimeoutMS');
       var authHeader = document.getElementById('voiceStreamAuthHeader');
       var authToken = document.getElementById('voiceStreamAuthToken');
       var generateToken = document.getElementById('voiceStreamGenerateToken');
       var msg = document.getElementById('voiceStreamMessage');
       var configState = document.getElementById('voiceConfigState');
+      var modeState = document.getElementById('voiceModeState');
       var serviceState = document.getElementById('voiceServiceState');
       var authState = document.getElementById('voiceAuthState');
+      var currentMode = 'computer';
 
       function setMessage(text, error) {
         msg.textContent = text || '';
@@ -128,21 +166,38 @@
       }
 
       function applyConfig(config) {
-        enabled.checked = !!config.enabled;
+        currentMode = (config.mode === 'natural') ? 'natural' : 'computer';
+        computerMode.checked = currentMode === 'computer';
+        naturalMode.checked = currentMode === 'natural';
+        enabled.checked = currentMode === 'natural' && !!config.enabled;
+        enabled.disabled = currentMode === 'computer';
         baseURL.value = config.base_url || '';
         provider.value = config.provider || 'piper';
         voice.value = config.voice || 'es-CO';
+        computerGender.value = config.computer_gender === 'male' ? 'male' : 'female';
         timeoutMS.value = config.timeout_ms || 12000;
         authHeader.value = config.auth_header || 'X-PCS-Voice-Token';
         authToken.value = '';
         generateToken.checked = false;
-        configState.textContent = config.enabled ? 'Activo en backend' : 'Desactivado';
+        modeState.textContent = currentMode === 'computer' ? 'Voz rapida del computador' : 'Voz natural VPS';
+        configState.textContent = currentMode === 'computer'
+          ? 'Voz rapida activa; servidor natural apagado'
+          : (config.enabled ? 'Voz natural activa en backend' : 'Voz natural configurada pero desactivada');
         authState.textContent = config.auth_configured
           ? ('Token registrado' + (config.auth_encrypted ? ' y cifrado' : ' sin cifrar'))
           : 'Token no registrado';
         if (config.encryption_available === false) {
           authState.textContent = 'Cifrado no disponible: configura CONFIG_ENC_KEY';
         }
+      }
+
+      function setVoiceMode(mode) {
+        currentMode = mode === 'natural' ? 'natural' : 'computer';
+        computerMode.checked = currentMode === 'computer';
+        naturalMode.checked = currentMode === 'natural';
+        enabled.disabled = currentMode === 'computer';
+        if (currentMode === 'computer') enabled.checked = false;
+        modeState.textContent = currentMode === 'computer' ? 'Voz rapida del computador' : 'Voz natural VPS';
       }
 
       async function loadConfig() {
@@ -162,10 +217,12 @@
         setMessage('Guardando...');
         try {
           var payload = {
-            enabled: enabled.checked,
+            mode: currentMode,
+            enabled: currentMode === 'natural' && enabled.checked,
             base_url: baseURL.value.trim(),
             provider: provider.value.trim() || 'piper',
             voice: voice.value.trim() || 'es-CO',
+            computer_gender: computerGender.value === 'male' ? 'male' : 'female',
             timeout_ms: Number(timeoutMS.value || 12000),
             auth_header: authHeader.value.trim() || 'X-PCS-Voice-Token'
           };
@@ -183,13 +240,21 @@
           try { data = JSON.parse(text); } catch (e) {}
           if (!res.ok) throw new Error(text || res.status);
           applyConfig(data.config || payload);
-          setMessage('Configuracion guardada.');
+          var serviceMsg = data.service_control && data.service_control.action
+            ? (' Servicio VPS: ' + data.service_control.action + ' ' + (data.service_control.ok ? 'OK.' : 'no confirmado.'))
+            : '';
+          setMessage('Configuracion guardada.' + serviceMsg);
         } catch (err) {
           setMessage('No se pudo guardar: ' + err.message, true);
         }
       }
 
       async function testConfig() {
+        if (currentMode === 'computer') {
+          serviceState.textContent = 'No requerido: usa voz del navegador';
+          setMessage('Voz rapida lista. No se consulta el servicio natural del VPS.');
+          return;
+        }
         setMessage('Probando servicio...');
         serviceState.textContent = 'Comprobando...';
         try {
@@ -210,6 +275,8 @@
       }
 
       async function activateAndTestConfig() {
+        setVoiceMode('natural');
+        enabled.checked = true;
         setMessage('Activando y registrando credencial...');
         serviceState.textContent = 'Comprobando...';
         try {
@@ -236,6 +303,14 @@
       document.getElementById('saveVoiceStreamConfig').addEventListener('click', saveConfig);
       document.getElementById('activateTestVoiceStreamConfig').addEventListener('click', activateAndTestConfig);
       document.getElementById('testVoiceStreamConfig').addEventListener('click', testConfig);
+      computerMode.addEventListener('change', function () {
+        if (computerMode.checked) setVoiceMode('computer');
+        else setVoiceMode('natural');
+      });
+      naturalMode.addEventListener('change', function () {
+        if (naturalMode.checked) setVoiceMode('natural');
+        else setVoiceMode('computer');
+      });
       loadConfig();
     })();
   </script>

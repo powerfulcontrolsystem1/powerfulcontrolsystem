@@ -46,6 +46,8 @@
     conversationMode: false,
     voiceServerAvailable: false,
     voiceServerChecked: false,
+    voiceOutputMode: 'computer',
+    computerVoiceGender: 'female',
     voiceServerAudio: null,
     voicePlaybackVersion: 0,
     activeSpeechRecognition: null,
@@ -272,6 +274,10 @@
   }
 
   function getEffectiveRobotVoice() {
+    if (getChatPersonalityMode() === 'secretary') return 'es-CO-female';
+    if (state.voiceOutputMode === 'computer') {
+      return state.computerVoiceGender === 'male' ? 'es-CO-male' : 'es-CO-female';
+    }
     return getChatPersonalityMode() === 'secretary' ? 'es-CO-female' : normalizeRobotVoice(state.robotVoice);
   }
 
@@ -1656,7 +1662,7 @@
     var spokenText = sanitizeTextForSpeech(text);
     if (!spokenText) return;
     var playbackVersion = state.voicePlaybackVersion;
-    if (state.voiceServerAvailable) {
+    if (state.voiceOutputMode !== 'computer' && state.voiceServerAvailable) {
       playVoiceStreamAudio(spokenText, playbackVersion).then(function (played) {
         if (state.voicePlaybackVersion !== playbackVersion) {
           return;
@@ -1674,7 +1680,7 @@
     var spokenText = sanitizeTextForSpeech(text);
     if (!spokenText) return;
     var playbackVersion = state.voicePlaybackVersion;
-    if (state.voiceServerAvailable) {
+    if (state.voiceOutputMode !== 'computer' && state.voiceServerAvailable) {
       playVoiceStreamAudio(spokenText, playbackVersion).then(function (played) {
         if (state.voicePlaybackVersion !== playbackVersion) return;
         if (!played) speakAssistantTextWithBrowser(spokenText, playbackVersion);
@@ -1891,11 +1897,14 @@
       })
       .then(function (data) {
         state.voiceServerChecked = true;
-        state.voiceServerAvailable = !!(data && data.enabled && data.service_ok !== false);
+        state.voiceOutputMode = data && data.mode === 'natural' ? 'natural' : 'computer';
+        state.computerVoiceGender = data && data.computer_voice_gender === 'male' ? 'male' : 'female';
+        state.voiceServerAvailable = state.voiceOutputMode === 'natural' && !!(data && data.enabled && data.service_ok !== false);
         updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
       })
       .catch(function () {
         state.voiceServerChecked = true;
+        state.voiceOutputMode = 'computer';
         state.voiceServerAvailable = false;
         updateVoiceButtons(micBtn || document.getElementById(MIC_ID), voiceBtn || document.getElementById(VOICE_ID), convBtn || document.getElementById(CONV_ID));
       });

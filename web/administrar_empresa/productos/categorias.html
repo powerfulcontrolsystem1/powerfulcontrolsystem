@@ -52,6 +52,7 @@
       const empresaId = resolveEmpresaId();
       const target = new URL('/administrar_empresa/administrar_productos.html', window.location.origin);
       target.searchParams.set('view', 'categorias');
+      target.searchParams.set('v', '20260501-categorias-inline');
       if (empresaId) target.searchParams.set('empresa_id', empresaId);
       window.location.replace(target.toString());
     })();

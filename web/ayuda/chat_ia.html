@@ -3,95 +3,141 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ayuda — Chat con IA</title>
+  <title>Ayuda - Chat con IA</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .ai-help-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+    .ai-help-card { background:var(--content-soft-bg,rgba(148,163,184,.08)); border:1px solid var(--content-soft-border,rgba(148,163,184,.28)); border-radius:8px; padding:12px; }
+    .ai-help-card h3 { margin:0 0 6px; font-size:1rem; }
+    .ai-help-card p, .ai-help-card ul, .ai-help-card ol { margin-bottom:0; }
+    .ai-help-flow { display:grid; gap:10px; padding-left:20px; }
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Ayuda — Chat con IA</h1>
-      <p class="form-help" id="scopeHint"></p>
+      <h1>Ayuda - Chat con IA</h1>
+      <p class="form-help" id="scopeHint">Guia para usar el asistente IA con contexto de negocio, auditoria, ayuda del sistema y datos seguros del backend.</p>
     </div>
 
     <section class="card empresa-section">
-      <h2>Cómo usarlo</h2>
-      <ul>
-        <li><b>Escribe una pregunta</b> (ej: “muéstrame los últimos 10 carritos pagados”).</li>
-        <li>La IA responde con explicación y, si hace falta ejecutar algo, mostrará una tarjeta <b>“Acciones sugeridas”</b>.</li>
-        <li>Para ejecutar, debes presionar <b>Confirmar y ejecutar</b>. Nada se ejecuta automáticamente.</li>
-      </ul>
+      <h2>Como usarlo bien</h2>
+      <ol class="ai-help-flow">
+        <li>Escribe la tarea con contexto: empresa, modulo, fecha, cliente, estacion, producto o documento esperado.</li>
+        <li>Si quieres datos reales, pide una consulta: "revisa los ultimos carritos pagados" o "busca productos sin bodega".</li>
+        <li>Si quieres crear o cambiar datos, la IA debe proponer una accion y pedir confirmacion antes de ejecutar.</li>
+        <li>Para eliminar, el sistema debe pedir confirmacion adicional. No aceptes eliminaciones sin revisar respaldo o auditoria.</li>
+      </ol>
     </section>
 
     <section class="card empresa-section">
-      <h2>Acciones (PCS_ACTION) y confirmaciones</h2>
+      <h2>Contexto que usa la IA</h2>
+      <div class="ai-help-grid">
+        <article class="ai-help-card">
+          <h3>Auditoria en tiempo real</h3>
+          <p>La IA recibe eventos recientes, busquedas profundas y resultados seguros preparados por el backend.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Logica del negocio</h3>
+          <p>Super Administrador puede editar el contexto canonico en <code>/super/contexto_ia_logica_negocio.html</code>.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Ayuda del sistema</h3>
+          <p>La IA tambien recibe un resumen de estas paginas de ayuda para responder alineada con la documentacion visible.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Datos por empresa</h3>
+          <p>En chat empresarial solo debe usar informacion de la empresa activa y respetar <code>empresa_id</code>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Acciones y confirmaciones</h2>
       <ul>
-        <li><b>GET/OPEN</b>: consultar datos o abrir una vista del sistema.</li>
-        <li><b>POST/PUT</b>: crear o actualizar datos (siempre pide confirmación).</li>
-        <li><b>DELETE</b>: eliminar datos (pide confirmación adicional escribiendo <b>ELIMINAR</b>).</li>
+        <li><strong>GET/OPEN:</strong> consultar datos o abrir una vista.</li>
+        <li><strong>POST/PUT:</strong> crear o actualizar datos, siempre con confirmacion.</li>
+        <li><strong>DELETE:</strong> eliminar datos, con confirmacion adicional y advertencia del impacto.</li>
       </ul>
-      <p class="form-help">Recomendación: pide primero una consulta (GET) para revisar resultados y luego confirma cambios.</p>
+      <p class="form-help">Recomendacion: pide primero una consulta para revisar resultados y luego confirma cambios.</p>
     </section>
 
     <section class="card empresa-section" id="empresaOnly" style="display:none;">
-      <h2>Chat IA empresarial (por empresa)</h2>
+      <h2>Chat IA empresarial</h2>
       <ul>
-        <li>Opera <b>solo</b> sobre la empresa seleccionada (aislamiento por <code>empresa_id</code>).</li>
-        <li>Puede proponer CRUD por empresa usando el endpoint <code>/api/empresa/db_admin</code> (tablas con <code>empresa_id</code>).</li>
-        <li>Recibe contexto de auditoria reciente y consultas seguras resueltas por backend; la IA no ejecuta SQL libre.</li>
-        <li><b>Solo usuarios con rol administrador</b> pueden ejecutar operaciones de base de datos/CRUD desde el chat.</li>
+        <li>Opera solo sobre la empresa seleccionada.</li>
+        <li>Puede ayudar con carrito, productos, inventario, estaciones, caja, reportes, facturacion, venta publica, tareas y agenda.</li>
+        <li>Puede proponer acciones CRUD por empresa si el usuario tiene permisos.</li>
+        <li>Todas las acciones confirmadas deben dejar trazabilidad.</li>
       </ul>
-      <p class="form-help">Todas las operaciones quedan registradas en auditoría empresarial.</p>
     </section>
 
     <section class="card empresa-section" id="globalOnly" style="display:none;">
-      <h2>Chat IA global (super)</h2>
+      <h2>Chat IA global</h2>
       <ul>
-        <li>Sirve para consultas globales del sistema y navegación a vistas.</li>
-        <li>Cuando proponga acciones, siempre requiere confirmación.</li>
-      </ul>
-    </section>
-
-    <section class="card empresa-section">
-      <h2>Ejemplos útiles</h2>
-      <ul>
-        <li>“Lista las tablas disponibles para mi empresa y dime cuáles son las más importantes.”</li>
-        <li>“Busca el producto ‘Coca Cola’ y actualiza el precio a 3500 (muéstrame antes el producto encontrado).”</li>
-        <li>“Crea un código de descuento del 10% llamado PROMO10 y dime cómo desactivarlo después.”</li>
+        <li>Sirve para soporte de plataforma, licencias, tipos de empresa, configuraciones globales, pagos e integraciones.</li>
+        <li>Puede analizar datos agregados entregados por el backend, sin mezclar empresas fuera de permisos.</li>
+        <li>Cuando proponga acciones, siempre requiere confirmacion.</li>
       </ul>
     </section>
 
     <section class="card empresa-section">
       <h2>Voz, robot y secretaria</h2>
-      <ul>
-        <li>La configuracion del chat flotante se administra por empresa desde Administrar empresa &gt; Configuracion.</li>
-        <li>El administrador puede desactivar el chat/robot, elegir chat cuadrado, robot IA o secretaria IA, y activar el modo voz.</li>
-        <li>La secretaria usa voz femenina automaticamente; el robot conserva la voz elegida.</li>
-        <li>Si el servidor de voz streaming esta apagado o falla, el chat cae a voz del navegador o texto sin romper el servidor.</li>
-      </ul>
+      <div class="ai-help-grid">
+        <article class="ai-help-card">
+          <h3>Chat cuadrado</h3>
+          <p>Ventana compacta tradicional con mensajes, adjuntos, microfono, modo y herramientas de documentos.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Robot o secretaria 3D</h3>
+          <p>La conversacion fluye en globos junto al avatar. El boton stop detiene la voz solo por el momento.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Voz rapida</h3>
+          <p>Usa la voz del navegador/computador. Puede ser femenina o masculina y responde mas rapido.</p>
+        </article>
+        <article class="ai-help-card">
+          <h3>Voz natural VPS</h3>
+          <p>Usa Piper/FastAPI. Si esta desactivada o falla, el chat cae a voz del navegador o texto.</p>
+        </article>
+      </div>
     </section>
 
     <section class="card empresa-section">
-      <h2>Trazabilidad</h2>
-      <p class="form-help">
-        Las ejecuciones confirmadas desde el chat se registran con metadatos del chat (fuente <code>chat_ia</code> y conversación),
-        y en operaciones de BD se registra además un evento en <code>empresa_auditoria_eventos</code>.
-      </p>
+      <h2>Documentos desde el chat</h2>
+      <ol class="ai-help-flow">
+        <li>Pide el documento con datos suficientes: tipo, cliente, fecha, productos, valores y formato esperado.</li>
+        <li>La IA debe preguntar solo datos indispensables que falten.</li>
+        <li>Cuando el documento esta listo, el sistema muestra exportacion a PDF, Word/DOCX, Excel/XLSX, TXT o JSON cuando aplique.</li>
+        <li>Si falla un conversor, el chat no debe romperse: debe mostrar mensaje claro y permitir otro formato.</li>
+      </ol>
+    </section>
+
+    <section class="card empresa-section">
+      <h2>Ejemplos utiles</h2>
+      <ul>
+        <li>"Genera un Excel con productos, solo nombre y precio".</li>
+        <li>"Revisa por que no puedo agregar este producto al carrito".</li>
+        <li>"Activa el robot y activa tu voz".</li>
+        <li>"Muestrame los movimientos de caja de hoy y prepara un reporte".</li>
+        <li>"Explica los pasos para configurar DIAN en esta empresa".</li>
+      </ul>
     </section>
   </div>
 
   <script>
     (function(){
       const params = new URLSearchParams(window.location.search);
-      const scope = (params.get("scope") || "").trim().toLowerCase();
-      const hint = document.getElementById("scopeHint");
-      const empresa = document.getElementById("empresaOnly");
-      const global = document.getElementById("globalOnly");
-      if (scope === "super" || scope === "global") {
-        if (hint) hint.textContent = "Esta guía aplica al chat IA global (super).";
-        if (global) global.style.display = "";
+      const scope = (params.get('scope') || '').trim().toLowerCase();
+      const hint = document.getElementById('scopeHint');
+      const empresa = document.getElementById('empresaOnly');
+      const global = document.getElementById('globalOnly');
+      if (scope === 'super' || scope === 'global') {
+        if (hint) hint.textContent = 'Esta guia aplica al chat IA global del super administrador.';
+        if (global) global.style.display = '';
       } else {
-        if (hint) hint.textContent = "Esta guía aplica al chat IA empresarial (por empresa).";
-        if (empresa) empresa.style.display = "";
+        if (hint) hint.textContent = 'Esta guia aplica al chat IA empresarial por empresa.';
+        if (empresa) empresa.style.display = '';
       }
     })();
   </script>

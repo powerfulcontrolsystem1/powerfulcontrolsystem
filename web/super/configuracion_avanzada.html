@@ -413,15 +413,15 @@
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M8 8v8"></path><path d="M16 8v8"></path><path d="M4 11v2"></path><path d="M20 11v2"></path></svg>
         Voz IA streaming
       </h2>
-      <p class="form-help">Servidor abierto de voz natural para conversar con la IA. Se administra en una pagina dedicada para mantener separada la infraestructura de voz, el proxy del backend y el fallback del navegador.</p>
+      <p class="form-help">Voz rapida del computador o voz natural del VPS. Se administra en una pagina dedicada para elegir velocidad, genero de voz y consumo de memoria del servicio natural.</p>
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Gestion centralizada</label>
-          <div class="form-help">Activacion global, URL del VPS, proveedor Piper, voz e intervalo de timeout.</div>
+          <div class="form-help">Modo computador o natural, genero de voz, URL del VPS, proveedor Piper e intervalo de timeout.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Estado seguro</label>
-          <div class="form-help">Desactivado por defecto. Si el servicio no responde, el chat no se rompe.</div>
+          <div class="form-help">En modo computador se apaga el servicio natural del VPS; si la voz natural falla, el chat cae a voz del navegador o texto.</div>
         </div>
       </div>
       <div class="form-actions">
@@ -1548,7 +1548,9 @@
           const data = raw ? JSON.parse(raw) : {};
           const cfg = data.config || {};
           const parts = [];
-          parts.push(cfg.enabled ? 'Activo' : 'Desactivado');
+          const mode = cfg.mode === 'natural' ? 'natural' : 'computer';
+          parts.push(mode === 'computer' ? 'Modo computador rapido' : (cfg.enabled ? 'Voz natural activa' : 'Voz natural desactivada'));
+          if (mode === 'computer') parts.push((cfg.computer_gender === 'male' ? 'voz masculina' : 'voz femenina'));
           parts.push(cfg.base_url ? ('URL: ' + cfg.base_url) : 'URL no configurada');
           parts.push(cfg.auth_configured ? 'token registrado' : 'token pendiente');
           if (cfg.encryption_available === false) parts.push('cifrado no disponible');
@@ -1565,6 +1567,13 @@
         if (btn) { btn.disabled = true; btn.innerText = 'Probando...'; }
         if (msgEl) msgEl.innerText = 'Probando servicio de voz...';
         try {
+          const currentRes = await fetch('/super/api/config/voice_stream', { method: 'GET', credentials: 'same-origin' });
+          const currentRaw = await currentRes.text();
+          const currentData = currentRaw ? JSON.parse(currentRaw) : {};
+          if ((currentData.config || {}).mode !== 'natural') {
+            if (msgEl) msgEl.innerText = 'Modo computador activo: no requiere servicio VPS.';
+            return;
+          }
           const res = await fetch('/super/api/config/voice_stream?action=test', { method: 'POST', credentials: 'same-origin' });
           const raw = await res.text();
           const data = raw ? JSON.parse(raw) : {};

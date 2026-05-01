@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -26,19 +27,45 @@ const (
 	voiceStreamTimeoutMSKey  = "voice_stream.timeout_ms"
 	voiceStreamAuthTokenKey  = "voice_stream.auth_token"
 	voiceStreamAuthHeaderKey = "voice_stream.auth_header"
+	voiceStreamModeKey       = "voice_stream.mode"
+	voiceComputerGenderKey   = "voice_stream.computer_gender"
+	voiceStreamSystemdUnit   = "pcs-voice-stream"
 )
 
 type voiceStreamConfig struct {
 	Enabled             bool   `json:"enabled"`
+	Mode                string `json:"mode"`
 	BaseURL             string `json:"base_url"`
 	Provider            string `json:"provider"`
 	Voice               string `json:"voice"`
+	ComputerGender      string `json:"computer_gender"`
 	TimeoutMS           int    `json:"timeout_ms"`
 	AuthHeader          string `json:"auth_header"`
 	AuthConfigured      bool   `json:"auth_configured"`
 	AuthEncrypted       bool   `json:"auth_encrypted"`
 	AuthUpdated         string `json:"auth_updated,omitempty"`
 	EncryptionAvailable bool   `json:"encryption_available"`
+	SystemdUnit         string `json:"systemd_unit"`
+}
+
+func normalizeVoiceStreamMode(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "natural", "vps", "stream", "streaming", "piper":
+		return "natural"
+	case "computer", "computador", "browser", "navegador", "rapida", "rapido", "fast":
+		return "computer"
+	default:
+		return "computer"
+	}
+}
+
+func normalizeComputerVoiceGender(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "male", "masculina", "masculino", "hombre", "man":
+		return "male"
+	default:
+		return "female"
+	}
 }
 
 func defaultVoiceStreamConfig() voiceStreamConfig {
@@ -60,12 +87,15 @@ func defaultVoiceStreamConfig() voiceStreamConfig {
 	}
 	return voiceStreamConfig{
 		Enabled:             false,
+		Mode:                "computer",
 		BaseURL:             baseURL,
 		Provider:            provider,
 		Voice:               voice,
+		ComputerGender:      "female",
 		TimeoutMS:           12000,
 		AuthHeader:          authHeader,
 		EncryptionAvailable: utils.EncryptionAvailable(),
+		SystemdUnit:         voiceStreamSystemdUnit,
 	}
 }
 
@@ -83,6 +113,14 @@ func resolveVoiceStreamConfig(dbSuper *sql.DB) voiceStreamConfig {
 			cfg.Enabled = false
 		}
 	}
+	if raw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, voiceStreamModeKey); err == nil && strings.TrimSpace(raw) != "" {
+		cfg.Mode = normalizeVoiceStreamMode(raw)
+	} else if cfg.Enabled {
+		cfg.Mode = "natural"
+	}
+	if cfg.Mode == "computer" {
+		cfg.Enabled = false
+	}
 	if raw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, voiceStreamBaseURLKey); err == nil && strings.TrimSpace(raw) != "" {
 		cfg.BaseURL = strings.TrimRight(strings.TrimSpace(raw), "/")
 	}
@@ -91,6 +129,9 @@ func resolveVoiceStreamConfig(dbSuper *sql.DB) voiceStreamConfig {
 	}
 	if raw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, voiceStreamVoiceKey); err == nil && strings.TrimSpace(raw) != "" {
 		cfg.Voice = strings.TrimSpace(raw)
+	}
+	if raw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, voiceComputerGenderKey); err == nil && strings.TrimSpace(raw) != "" {
+		cfg.ComputerGender = normalizeComputerVoiceGender(raw)
 	}
 	if raw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, voiceStreamTimeoutMSKey); err == nil {
 		var parsed int
@@ -109,6 +150,30 @@ func resolveVoiceStreamConfig(dbSuper *sql.DB) voiceStreamConfig {
 		cfg.AuthConfigured = true
 	}
 	return cfg
+}
+
+func controlVoiceStreamSystemd(action string) map[string]any {
+	action = strings.ToLower(strings.TrimSpace(action))
+	if action != "stop" && action != "start" && action != "restart" {
+		return map[string]any{"ok": false, "skipped": true, "error": "accion no soportada"}
+	}
+	if _, err := exec.LookPath("systemctl"); err != nil {
+		return map[string]any{"ok": false, "skipped": true, "error": "systemctl no disponible"}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "systemctl", action, voiceStreamSystemdUnit)
+	out, err := cmd.CombinedOutput()
+	result := map[string]any{
+		"ok":     err == nil,
+		"action": action,
+		"unit":   voiceStreamSystemdUnit,
+		"output": strings.TrimSpace(string(out)),
+	}
+	if err != nil {
+		result["error"] = err.Error()
+	}
+	return result
 }
 
 func validateVoiceStreamAuthHeader(raw string) (string, error) {
@@ -248,10 +313,12 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodPut, http.MethodPost:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "activate" || action == "activar" || action == "activate_test" || action == "activar_probar" {
+				_ = dbpkg.SetConfigValue(dbSuper, voiceStreamModeKey, "natural", false)
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, "1", false); err != nil {
 					http.Error(w, "No se pudo activar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
+				serviceControl := controlVoiceStreamSystemd("start")
 				cfg := resolveVoiceStreamConfig(dbSuper)
 				if strings.TrimSpace(cfg.BaseURL) == "" {
 					cfg.BaseURL = defaultVoiceStreamConfig().BaseURL
@@ -271,9 +338,10 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					code = http.StatusBadGateway
 				}
 				writeJSON(w, code, map[string]any{
-					"ok":     status["ok"],
-					"status": status,
-					"config": cfg,
+					"ok":              status["ok"],
+					"status":          status,
+					"config":          cfg,
+					"service_control": serviceControl,
 				})
 				return
 			}
@@ -293,6 +361,8 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				BaseURL           string `json:"base_url"`
 				Provider          string `json:"provider"`
 				Voice             string `json:"voice"`
+				Mode              string `json:"mode"`
+				ComputerGender    string `json:"computer_gender"`
 				TimeoutMS         int    `json:"timeout_ms"`
 				AuthHeader        string `json:"auth_header"`
 				AuthToken         string `json:"auth_token"`
@@ -303,14 +373,51 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			serviceControl := map[string]any(nil)
+			if strings.TrimSpace(payload.Mode) != "" {
+				mode := normalizeVoiceStreamMode(payload.Mode)
+				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamModeKey, mode, false); err != nil {
+					http.Error(w, "No se pudo guardar voice_stream.mode: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if mode == "computer" {
+					if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, "0", false); err != nil {
+						http.Error(w, "No se pudo desactivar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					serviceControl = controlVoiceStreamSystemd("stop")
+				} else if payload.Enabled != nil && *payload.Enabled {
+					serviceControl = controlVoiceStreamSystemd("start")
+				}
+			}
+			if strings.TrimSpace(payload.ComputerGender) != "" {
+				if err := dbpkg.SetConfigValue(dbSuper, voiceComputerGenderKey, normalizeComputerVoiceGender(payload.ComputerGender), false); err != nil {
+					http.Error(w, "No se pudo guardar voice_stream.computer_gender: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
 			if payload.Enabled != nil {
 				value := "0"
 				if *payload.Enabled {
 					value = "1"
 				}
+				currentMode := normalizeVoiceStreamMode(payload.Mode)
+				if strings.TrimSpace(payload.Mode) == "" {
+					currentMode = resolveVoiceStreamConfig(dbSuper).Mode
+				}
+				if currentMode == "computer" {
+					value = "0"
+				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, value, false); err != nil {
 					http.Error(w, "No se pudo guardar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
 					return
+				}
+				if currentMode == "natural" {
+					if value == "1" {
+						serviceControl = controlVoiceStreamSystemd("start")
+					} else {
+						serviceControl = controlVoiceStreamSystemd("stop")
+					}
 				}
 			}
 			if strings.TrimSpace(payload.BaseURL) != "" {
@@ -384,8 +491,9 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			writeJSON(w, http.StatusOK, map[string]any{
-				"ok":     true,
-				"config": resolveVoiceStreamConfig(dbSuper),
+				"ok":              true,
+				"config":          resolveVoiceStreamConfig(dbSuper),
+				"service_control": serviceControl,
 			})
 			return
 		default:
@@ -407,11 +515,14 @@ func VoiceStreamStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		cfg := resolveVoiceStreamConfig(dbSuper)
 		status := map[string]any{
-			"ok":         true,
-			"enabled":    cfg.Enabled,
-			"provider":   cfg.Provider,
-			"voice":      cfg.Voice,
-			"configured": strings.TrimSpace(cfg.BaseURL) != "",
+			"ok":                    true,
+			"enabled":               cfg.Enabled,
+			"mode":                  cfg.Mode,
+			"provider":              cfg.Provider,
+			"voice":                 cfg.Voice,
+			"computer_voice_gender": cfg.ComputerGender,
+			"browser_voice":         cfg.Mode == "computer",
+			"configured":            cfg.Mode == "computer" || strings.TrimSpace(cfg.BaseURL) != "",
 		}
 		if cfg.Enabled {
 			probe := probeVoiceStreamService(dbSuper, cfg)
@@ -433,6 +544,10 @@ func VoiceStreamTTSProxyHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		cfg := resolveVoiceStreamConfig(dbSuper)
+		if cfg.Mode == "computer" {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "error": "voice_computer_mode"})
+			return
+		}
 		if !cfg.Enabled {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "error": "voice_stream_disabled"})
 			return
@@ -511,6 +626,9 @@ func VoiceStreamTTSProxyHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 func probeVoiceStreamService(dbSuper *sql.DB, cfg voiceStreamConfig) map[string]any {
+	if cfg.Mode == "computer" {
+		return map[string]any{"ok": false, "status": "computer_voice_mode", "unit": voiceStreamSystemdUnit}
+	}
 	if !cfg.Enabled {
 		return map[string]any{"ok": false, "status": "disabled"}
 	}

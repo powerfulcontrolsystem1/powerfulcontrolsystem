@@ -115,6 +115,8 @@ func superConfigCriticalKeys() []string {
 		"voice_stream.base_url",
 		"voice_stream.provider",
 		"voice_stream.voice",
+		"voice_stream.mode",
+		"voice_stream.computer_gender",
 		"voice_stream.timeout_ms",
 		"voice_stream.auth_header",
 		"voice_stream.auth_token",

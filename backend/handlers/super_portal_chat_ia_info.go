@@ -3,8 +3,13 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"html"
 	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -15,6 +20,16 @@ const (
 	superPortalChatIAInfoUpdatedByKey        = "portal.chat_ia.info_text.updated_by"
 	superContextoIALogicaNegocioKey          = "ai.contexto.logica_negocio"
 	superContextoIALogicaNegocioUpdatedByKey = "ai.contexto.logica_negocio.updated_by"
+)
+
+var (
+	ayudaSistemaIAMu         sync.Mutex
+	ayudaSistemaIACache      string
+	ayudaSistemaIACacheUntil time.Time
+	ayudaSistemaScriptRE     = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	ayudaSistemaStyleRE      = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
+	ayudaSistemaTagRE        = regexp.MustCompile(`(?is)<[^>]+>`)
+	ayudaSistemaSpaceRE      = regexp.MustCompile(`[ \t\r\n]+`)
 )
 
 // SuperPortalChatIAInfoHandler permite editar texto persistente que alimenta el chat público del portal.
@@ -152,15 +167,16 @@ func getContextoIALogicaNegocio(dbSuper *sql.DB) string {
 func appendContextoIALogicaNegocio(contexto string, dbSuper *sql.DB) string {
 	logica := strings.TrimSpace(getContextoIALogicaNegocio(dbSuper))
 	if logica == "" {
-		return contexto
+		return appendAyudaSistemaIAContexto(contexto)
 	}
 	if len([]rune(logica)) > 14000 {
 		logica = truncateText(logica, 14000)
 	}
+	base := contexto + "\n\nCONTEXTO_IA_LOGICA_NEGOCIO\n" + logica
 	if strings.TrimSpace(contexto) == "" {
-		return "CONTEXTO_IA_LOGICA_NEGOCIO\n" + logica
+		base = "CONTEXTO_IA_LOGICA_NEGOCIO\n" + logica
 	}
-	return contexto + "\n\nCONTEXTO_IA_LOGICA_NEGOCIO\n" + logica
+	return appendAyudaSistemaIAContexto(base)
 }
 
 func EnsureSuperContextoIALogicaNegocio(dbSuper *sql.DB) error {
@@ -180,11 +196,80 @@ func EnsureSuperContextoIALogicaNegocio(dbSuper *sql.DB) error {
 	return dbpkg.SetConfigValue(dbSuper, superContextoIALogicaNegocioUpdatedByKey, "sistema", false)
 }
 
+func appendAyudaSistemaIAContexto(contexto string) string {
+	ayuda := strings.TrimSpace(buildAyudaSistemaIAContexto())
+	if ayuda == "" {
+		return contexto
+	}
+	if len([]rune(ayuda)) > 10000 {
+		ayuda = truncateText(ayuda, 10000)
+	}
+	if strings.TrimSpace(contexto) == "" {
+		return "AYUDA_DEL_SISTEMA\n" + ayuda
+	}
+	return contexto + "\n\nAYUDA_DEL_SISTEMA\n" + ayuda
+}
+
+func buildAyudaSistemaIAContexto() string {
+	ayudaSistemaIAMu.Lock()
+	defer ayudaSistemaIAMu.Unlock()
+	now := time.Now()
+	if now.Before(ayudaSistemaIACacheUntil) && strings.TrimSpace(ayudaSistemaIACache) != "" {
+		return ayudaSistemaIACache
+	}
+	files := []string{"ayuda.html", "chat_ia.html", "login_administradores.html"}
+	sections := make([]string, 0, len(files))
+	for _, name := range files {
+		if raw := readAyudaSistemaFile(name); strings.TrimSpace(raw) != "" {
+			clean := cleanHTMLForAIHelp(raw)
+			if len([]rune(clean)) > 4500 {
+				clean = truncateText(clean, 4500)
+			}
+			if clean != "" {
+				sections = append(sections, "Archivo "+name+": "+clean)
+			}
+		}
+	}
+	ayudaSistemaIACache = strings.Join(sections, "\n\n")
+	ayudaSistemaIACacheUntil = now.Add(5 * time.Minute)
+	return ayudaSistemaIACache
+}
+
+func readAyudaSistemaFile(name string) string {
+	name = filepath.Base(strings.TrimSpace(name))
+	if name == "" {
+		return ""
+	}
+	candidates := []string{
+		filepath.Join("web", "ayuda", name),
+		filepath.Join("..", "web", "ayuda", name),
+		filepath.Join(".", "web", "ayuda", name),
+		filepath.Join("..", "..", "web", "ayuda", name),
+	}
+	for _, candidate := range candidates {
+		raw, err := os.ReadFile(candidate)
+		if err == nil && len(raw) > 0 {
+			return string(raw)
+		}
+	}
+	return ""
+}
+
+func cleanHTMLForAIHelp(raw string) string {
+	clean := ayudaSistemaScriptRE.ReplaceAllString(raw, " ")
+	clean = ayudaSistemaStyleRE.ReplaceAllString(clean, " ")
+	clean = ayudaSistemaTagRE.ReplaceAllString(clean, " ")
+	clean = html.UnescapeString(clean)
+	clean = strings.ReplaceAll(clean, "\u00a0", " ")
+	clean = ayudaSistemaSpaceRE.ReplaceAllString(clean, " ")
+	return strings.TrimSpace(clean)
+}
+
 func defaultContextoIALogicaNegocioText() string {
 	return `DOCUMENTO CANONICO PARA LA IA - LOGICA DE NEGOCIO DE POWERFUL CONTROL SYSTEM
 
 Proposito de este documento
-Este texto es contexto permanente para la IA del sistema. Debe ser usado como marco de negocio antes de responder en el chat global de super administrador, en el chat empresarial, en el robot, en la secretaria IA y en cualquier modulo donde la IA ayude a operar, diagnosticar, explicar, generar documentos o guiar al usuario. La IA debe priorizar este contexto junto con la auditoria en tiempo real, los datos consultados por el backend y la configuracion vigente. Si hay conflicto entre este documento y datos vivos del sistema, los datos vivos auditados y la configuracion guardada son la fuente principal.
+Este texto es contexto permanente para la IA del sistema. Debe ser usado como marco de negocio antes de responder en el chat global de super administrador, en el chat empresarial, en el robot, en la secretaria IA y en cualquier modulo donde la IA ayude a operar, diagnosticar, explicar, generar documentos o guiar al usuario. La IA debe priorizar este contexto junto con la auditoria en tiempo real, la ayuda oficial del sistema, los datos consultados por el backend y la configuracion vigente. Si hay conflicto entre este documento y datos vivos del sistema, los datos vivos auditados y la configuracion guardada son la fuente principal.
 
 Identidad del producto
 Powerful Control System es una plataforma SaaS ERP/POS multiempresa para administrar negocios de distintos tipos. Combina punto de venta, estaciones operativas, carritos, inventario, ventas, facturacion electronica, finanzas, reportes, licencias, venta publica, documentos dinamicos, soporte remoto, colaboracion y asistencia con IA. El sistema no es una sola tienda; es una plataforma que aloja muchas empresas y cada empresa debe operar aislada por empresa_id.
