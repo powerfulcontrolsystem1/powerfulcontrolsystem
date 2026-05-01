@@ -17436,3 +17436,25 @@ Archivos modificados:
 - web/administrar_empresa/productos/combos_productos.html
 - web/administrar_empresa/productos/compras.html
 - web/administrar_empresa/productos/precios.html
+
+2026-04-30: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/productos.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/market_public.go
+- backend/handlers/productos.go
+- backend/handlers/super_portal_chat_ia_info.go
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/panel.html
+- web/login_usuario.htm
+- web/login_usuario.html
+- web/super/configuracion_avanzada.html
+- web/super/contexto_ia_logica_negocio.html
+- web/super/licencias_resumen.html
+- web/super/metricas_de_trafico_general.html
+- web/super_administrador.html
