@@ -82,6 +82,9 @@ var allowedROMExtensions = map[string]romKind{
 	".fig": {core: "snes", system: "SNES"},
 	".swc": {core: "snes", system: "SNES"},
 	".nes": {core: "nes", system: "NES"},
+	".n64": {core: "n64", system: "Nintendo 64"},
+	".z64": {core: "n64", system: "Nintendo 64"},
+	".v64": {core: "n64", system: "Nintendo 64"},
 	".gb":  {core: "gb", system: "Game Boy"},
 	".gbc": {core: "gb", system: "Game Boy Color"},
 	".gba": {core: "gba", system: "Game Boy Advance"},
@@ -161,6 +164,9 @@ func mustRegisterMIMETypes() {
 	_ = mime.AddExtensionType(".sfc", "application/octet-stream")
 	_ = mime.AddExtensionType(".smc", "application/octet-stream")
 	_ = mime.AddExtensionType(".nes", "application/octet-stream")
+	_ = mime.AddExtensionType(".n64", "application/octet-stream")
+	_ = mime.AddExtensionType(".z64", "application/octet-stream")
+	_ = mime.AddExtensionType(".v64", "application/octet-stream")
 	_ = mime.AddExtensionType(".gb", "application/octet-stream")
 	_ = mime.AddExtensionType(".gbc", "application/octet-stream")
 	_ = mime.AddExtensionType(".gba", "application/octet-stream")

@@ -6,7 +6,7 @@ set -eu
 
 TARGET_DIR="${1:-./emulator}"
 TMP_DIR="$(mktemp -d)"
-CORES="${PCS_EMULATORJS_CORES:-snes9x fceumm gambatte mgba genesis_plus_gx}"
+CORES="${PCS_EMULATORJS_CORES:-snes9x fceumm gambatte mgba genesis_plus_gx mupen64plus_next}"
 
 cleanup() {
   rm -rf "$TMP_DIR"

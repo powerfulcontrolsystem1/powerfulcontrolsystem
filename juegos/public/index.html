@@ -24,21 +24,18 @@
       </div>
 
       <section class="selector-card">
-        <label for="romSelect">Seleccionar juego</label>
+        <label for="romSelect">Seleccionar juego por consola</label>
         <select id="romSelect"></select>
         <button id="playButton" class="primary-button" type="button">Jugar</button>
       </section>
 
-      <section>
-        <h2>ROMs disponibles</h2>
-        <div id="romGrid" class="rom-grid" role="list"></div>
-      </section>
+      <div id="romGrid" class="rom-grid" hidden></div>
     </aside>
 
     <section class="player-panel">
       <div class="player-toolbar">
         <div>
-          <p class="eyebrow">SNES</p>
+          <p id="currentSystem" class="eyebrow">Consola</p>
           <h2 id="currentTitle">Selecciona un juego</h2>
         </div>
       </div>

@@ -65,7 +65,7 @@ Debe quedar disponible:
 /opt/juegos/emulator/data/cores/snes9x-wasm.data
 ```
 
-El script tambien descarga cores locales basicos para las ROMs incluidas en este proyecto: SNES (`snes9x`), NES (`fceumm`), Game Boy/Game Boy Color (`gambatte`), Game Boy Advance (`mgba`) y Mega Drive (`genesis_plus_gx`). Puedes ajustar la lista con la variable `PCS_EMULATORJS_CORES`.
+El script tambien descarga cores locales basicos para las ROMs incluidas en este proyecto: SNES (`snes9x`), NES (`fceumm`), Game Boy/Game Boy Color (`gambatte`), Game Boy Advance (`mgba`), Mega Drive (`genesis_plus_gx`) y Nintendo 64 (`mupen64plus_next`). Puedes ajustar la lista con la variable `PCS_EMULATORJS_CORES`.
 
 ## Agregar ROMs
 
@@ -76,7 +76,7 @@ sudo cp mi-juego.sfc /opt/juegos/roms/
 sudo chown -R www-data:www-data /opt/juegos
 ```
 
-Formatos aceptados: `.sfc`, `.smc`, `.fig`, `.swc`, `.nes`, `.gb`, `.gbc`, `.gba`, `.gen`, `.bin`, `.zip`.
+Formatos aceptados: `.sfc`, `.smc`, `.fig`, `.swc`, `.nes`, `.n64`, `.z64`, `.v64`, `.gb`, `.gbc`, `.gba`, `.gen`, `.bin`, `.zip`.
 
 Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carpeta esta ignorada por git, salvo este README, para evitar redistribuir ROMs accidentalmente. En esta estacion de trabajo quedaron instaladas ROMs de prueba homebrew de Retrobrews:
 
@@ -85,6 +85,9 @@ Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carp
 - `hilda.sfc`
 - `horizontal-shooter.sfc`
 - `rockfall.smc`
+- `furryrpg.sfc`
+- `saf.smc`
+- `tchouv2.smc`
 - `nes-31-in-1-real-game.nes`
 - `nes-assimilate.nes`
 - `nes-babel-blox.nes`
@@ -92,6 +95,13 @@ Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carp
 - `nes-debris-dodger.nes`
 - `nes-invaders.nes`
 - `nes-lunar-limit.nes`
+- `3in12ppak.nes`
+- `ambushed.nes`
+- `bombarray.nes`
+- `flappybird.nes`
+- `nomolos.nes`
+- `twindragons.nes`
+- `mine64.n64`
 - `gb-2048.gb`
 - `gb-8-bitty-games-collection.gb`
 - `gb-1d-marathon.gb`
@@ -104,6 +114,7 @@ Para pruebas locales se pueden colocar ROMs homebrew en `juegos/roms/`. Esa carp
 Fuentes de referencia:
 
 - SNES/NES homebrew: `https://github.com/retrobrews/snes-games` y `https://github.com/retrobrews/nes-games`
+- Nintendo 64 homebrew: `https://github.com/SiliconSloth/Mine64`
 - GB/GBC homebrew: `https://github.com/gbdev/database`
 - GBA homebrew: `https://github.com/gbadev-org/games`
 - Mega Drive homebrew: `https://github.com/andwn/cave-story-md`
@@ -112,6 +123,7 @@ El backend detecta automaticamente el core de EmulatorJS por extension:
 
 - SNES: `.sfc`, `.smc`, `.fig`, `.swc`
 - NES: `.nes`
+- Nintendo 64: `.n64`, `.z64`, `.v64`
 - Game Boy / Game Boy Color: `.gb`, `.gbc`
 - Game Boy Advance: `.gba`
 - Sega Mega Drive / Genesis: `.gen`, `.bin`

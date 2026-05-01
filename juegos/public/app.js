@@ -53,6 +53,7 @@ const els = {
   fullscreenButton: document.getElementById("fullscreenButton"),
   reloadButton: document.getElementById("reloadButton"),
   currentTitle: document.getElementById("currentTitle"),
+  currentSystem: document.getElementById("currentSystem"),
   coreBadge: document.getElementById("coreBadge"),
   gamepadBadge: document.getElementById("gamepadBadge"),
   message: document.getElementById("message"),
@@ -197,38 +198,46 @@ function renderROMSelect() {
     return;
   }
 
-  for (const rom of state.roms) {
-    const option = document.createElement("option");
-    option.value = rom.file;
-    option.textContent = `${rom.system || rom.core || "ROM"} - ${rom.name}`;
-    els.romSelect.appendChild(option);
+  const grouped = groupROMsBySystem(state.roms);
+  for (const group of grouped) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = `${group.system} (${group.roms.length})`;
+    for (const rom of group.roms) {
+      const option = document.createElement("option");
+      option.value = rom.file;
+      option.textContent = rom.name;
+      optgroup.appendChild(option);
+    }
+    els.romSelect.appendChild(optgroup);
   }
   els.playButton.disabled = false;
 }
 
-function renderROMCards() {
-  els.romGrid.innerHTML = "";
-  if (!state.roms.length) {
-    const empty = document.createElement("p");
-    empty.className = "message";
-    empty.textContent = "Sin juegos detectados.";
-    els.romGrid.appendChild(empty);
-    return;
+function groupROMsBySystem(roms) {
+  const order = ["NES", "SNES", "Nintendo 64", "Game Boy", "Game Boy Color", "Game Boy Advance", "Mega Drive", "ZIP", "ROM"];
+  const groups = new Map();
+  for (const rom of roms) {
+    const system = rom.system || rom.core || "ROM";
+    if (!groups.has(system)) groups.set(system, []);
+    groups.get(system).push(rom);
   }
-
-  for (const rom of state.roms) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `rom-card${rom.file === state.selected ? " is-selected" : ""}`;
-    button.innerHTML = `<strong></strong><small></small>`;
-    button.querySelector("strong").textContent = rom.name;
-    button.querySelector("small").textContent = `${rom.system || rom.core || "ROM"} - ${formatBytes(rom.size)} - ${rom.file}`;
-    button.addEventListener("click", () => {
-      selectRom(rom.file);
-      startSelectedGame();
+  return Array.from(groups.entries())
+    .map(([system, items]) => ({
+      system,
+      roms: items.slice().sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es", { sensitivity: "base" }))
+    }))
+    .sort((a, b) => {
+      const ai = order.indexOf(a.system);
+      const bi = order.indexOf(b.system);
+      if (ai >= 0 || bi >= 0) return (ai >= 0 ? ai : 999) - (bi >= 0 ? bi : 999);
+      return a.system.localeCompare(b.system, "es", { sensitivity: "base" });
     });
-    els.romGrid.appendChild(button);
-  }
+}
+
+function renderROMCards() {
+  if (!els.romGrid) return;
+  els.romGrid.innerHTML = "";
+  els.romGrid.hidden = true;
 }
 
 function configureEmulator(rom, latestSave) {
@@ -489,6 +498,7 @@ async function startSelectedGame() {
     configureEmulator(rom, latestSave);
     await injectLoader();
     state.loaded = true;
+    if (els.currentSystem) els.currentSystem.textContent = rom.system || rom.core || "Consola";
     els.currentTitle.textContent = rom.name;
     setMessage("Juego cargado. En movil, usa el boton tactil del emulador para controles y menu.");
     if (els.loadSaveButton) els.loadSaveButton.disabled = !(latestSave && latestSave.state_url);
