@@ -1395,6 +1395,46 @@
         });
       }
 
+      function clearCachedLocation() {
+        try {
+          window.localStorage.removeItem(weatherLocationCacheKey());
+        } catch (e) {}
+      }
+
+      function profileCountryCode(profileLocation) {
+        if (!profileLocation) return "";
+        return normalizeCode(profileLocation.countryCode || profileLocation.pais_codigo || profileLocation.country_code) ||
+          countryCodeFromName(profileLocation.pais || profileLocation.Pais || profileLocation.country);
+      }
+
+      function locationConflictsWithProfile(location, profileLocation) {
+        var profileCode = profileCountryCode(profileLocation);
+        if (!profileCode) return false;
+        var locationCode = normalizeCode(location && (location.countryCode || location.country_code)) ||
+          countryCodeFromName(location && location.country);
+        return !!locationCode && locationCode !== profileCode;
+      }
+
+      function preferRegisteredLocation(profileLocation, statusMessage) {
+        clearCachedLocation();
+        var fallback = fallbackLocationFromAdmin(profileLocation);
+        if (statusMessage) setStatus(statusMessage, true);
+        return fallback;
+      }
+
+      function acceptAutomaticLocation(location, profileLocation, sourceName) {
+        if (locationConflictsWithProfile(location, profileLocation)) {
+          return preferRegisteredLocation(
+            profileLocation,
+            "La ubicacion automatica no coincide con el pais registrado; se uso la ciudad registrada."
+          );
+        }
+        if (location) {
+          location.source = location.source || sourceName || "navegador";
+        }
+        return location;
+      }
+
       function registeredLocationProfile(admin, empresa) {
         admin = admin || {};
         empresa = empresa || {};
@@ -1549,8 +1589,14 @@
       function detectLocation(admin, empresa) {
         var profileLocation = registeredLocationProfile(admin, empresa);
         return detectLocationByGPS()
+          .then(function (location) {
+            return acceptAutomaticLocation(location, profileLocation, "gps");
+          })
           .catch(function () {
             return detectLocationByBrowser();
+          })
+          .then(function (location) {
+            return acceptAutomaticLocation(location, profileLocation, "navegador");
           })
           .catch(function () {
             if (hasRegisteredLocation(profileLocation)) return fallbackLocationFromAdmin(profileLocation);

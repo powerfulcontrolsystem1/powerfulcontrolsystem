@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contexto IA - Logica de negocio</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .context-shell {
+      display: grid;
+      gap: 14px;
+    }
+    .context-toolbar {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+    }
+    .context-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .context-editor {
+      min-height: 62vh;
+      resize: vertical;
+      white-space: pre-wrap;
+    }
+    .context-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+    }
+    .context-note {
+      border-left: 4px solid #3b82f6;
+      padding-left: 12px;
+    }
+    @media (max-width: 720px) {
+      .context-toolbar {
+        align-items: stretch;
+      }
+      .context-actions,
+      .context-actions .btn {
+        width: 100%;
+      }
+      .context-editor {
+        min-height: 58vh;
+      }
+    }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Contexto IA - Logica de negocio</h1>
+        <p class="form-help">Documento canonico que se guarda en la base <strong>superadministrador</strong> y se inyecta automaticamente en el chat global, chat empresarial, robot y secretaria IA.</p>
+      </div>
+    </div>
+
+    <section class="card form advanced-card context-shell" data-brand="ai">
+      <div class="context-toolbar">
+        <div class="context-note form-help">
+          La IA debe usar este texto junto con auditoria en tiempo real, configuracion vigente y datos consultados por el backend. No incluyas secretos, tokens ni llaves privadas.
+        </div>
+        <div class="context-actions">
+          <button id="btnReload" class="btn secondary" type="button">Recargar</button>
+          <button id="btnSave" class="btn" type="button">Guardar contexto</button>
+        </div>
+      </div>
+
+      <label class="form-label" for="contextText">Logica del negocio para la IA</label>
+      <textarea id="contextText" class="form-textarea context-editor" rows="30" spellcheck="true" placeholder="Cargando contexto..."></textarea>
+
+      <div class="context-meta form-help">
+        <span id="metaLine">Cargando metadatos...</span>
+        <span id="counterLine">0 / 60000 caracteres</span>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const API_URL = '/super/api/config/contexto_ia_logica_negocio';
+      const MAX_CHARS = 60000;
+      const box = document.getElementById('contextText');
+      const msg = document.getElementById('msg');
+      const meta = document.getElementById('metaLine');
+      const counter = document.getElementById('counterLine');
+      const btnReload = document.getElementById('btnReload');
+      const btnSave = document.getElementById('btnSave');
+
+      function setMsg(text, isErr){
+        msg.textContent = text || '';
+        msg.style.color = isErr ? '#ef5350' : '';
+      }
+
+      function setBusy(isBusy){
+        btnReload.disabled = !!isBusy;
+        btnSave.disabled = !!isBusy;
+      }
+
+      function updateCounter(){
+        const length = Array.from(String(box.value || '')).length;
+        counter.textContent = length + ' / ' + MAX_CHARS + ' caracteres';
+        counter.style.color = length > MAX_CHARS ? '#ef5350' : '';
+      }
+
+      async function request(method, body){
+        const options = {
+          method: method,
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        };
+        if (body) options.body = JSON.stringify(body);
+        const res = await fetch(API_URL, options);
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (_) { data = { raw: text }; }
+        if (!res.ok || !data || data.ok !== true) {
+          throw new Error((data && (data.error || data.message || data.raw)) || text || ('HTTP ' + res.status));
+        }
+        return data;
+      }
+
+      async function load(){
+        setBusy(true);
+        setMsg('Cargando contexto...', false);
+        try {
+          const data = await request('GET');
+          box.value = String(data.value || '');
+          const updated = String(data.updated_at || '').trim();
+          const created = String(data.created_at || '').trim();
+          const updatedBy = String(data.updated_by || '').trim();
+          const parts = [];
+          if (created) parts.push('Creado: ' + created);
+          if (updated) parts.push('Actualizado: ' + updated);
+          if (updatedBy) parts.push('Por: ' + updatedBy);
+          meta.textContent = parts.length ? parts.join(' | ') : 'Sin metadatos de actualizacion.';
+          updateCounter();
+          setMsg('Contexto cargado.', false);
+        } catch (e) {
+          setMsg(e.message || 'No se pudo cargar el contexto.', true);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function save(){
+        const value = String(box.value || '').trim();
+        if (!value) {
+          setMsg('El contexto no puede quedar vacio.', true);
+          return;
+        }
+        if (Array.from(value).length > MAX_CHARS) {
+          setMsg('El contexto supera el maximo permitido de ' + MAX_CHARS + ' caracteres.', true);
+          return;
+        }
+        setBusy(true);
+        setMsg('Guardando contexto...', false);
+        try {
+          await request('PUT', { value: value });
+          setMsg('Contexto guardado correctamente.', false);
+          await load();
+        } catch (e) {
+          setMsg(e.message || 'No se pudo guardar el contexto.', true);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      box.addEventListener('input', updateCounter);
+      btnReload.addEventListener('click', load);
+      btnSave.addEventListener('click', save);
+      load();
+    })();
+  </script>
+</body>
+</html>

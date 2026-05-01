@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Resumen de Licencias</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .summary-card{padding:28px;text-align:center}
@@ -17,9 +18,25 @@
     .ops-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .ops-form .form-col{min-width:0}
+    .super-metrics-panel{margin-top:18px}
+    .super-metrics-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .super-metrics-header h2{margin:0;font-size:1.35rem;color:var(--text)}
+    .super-metrics-header p{margin:4px 0 0}
+    .super-metrics-current{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+    .super-metrics-value{font-size:1.8rem;font-weight:900;color:var(--text);margin-top:6px}
+    .super-metrics-charts{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:12px}
+    .super-metrics-chart-card{min-height:390px;display:flex;flex-direction:column}
+    .super-metrics-chart-card.is-wide{grid-column:auto}
+    .super-metrics-chart-card h3{margin:0 0 10px;font-size:1rem;color:var(--text)}
+    .super-metrics-chart-wrap{position:relative;flex:1;min-height:320px}
+    .super-metrics-table-card{margin-top:12px}
+    .super-metrics-table-wrap{margin-top:10px;overflow:auto}
+    .super-metrics-table-wrap table{min-width:760px}
     @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (min-width:1200px){.super-metrics-chart-card.is-wide{grid-column:1 / -1}.super-metrics-chart-wrap{min-height:380px}}
+    @media (max-width:1050px){.super-metrics-charts{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr 1fr}}
     @media (max-width:900px){.summary-grid{grid-template-columns:1fr}}
-    @media (max-width:680px){.ops-grid{grid-template-columns:1fr}.ops-form{grid-template-columns:1fr}}
+    @media (max-width:680px){.ops-grid{grid-template-columns:1fr}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
   </style>
 </head>
 <body class="super-page">
@@ -67,7 +84,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section" style="margin-top:12px">
+    <section class="card empresa-section" hidden style="display:none;margin-top:12px">
       <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <h2 style="margin:0">Configurar consumos (Hostinger / Cursor / costos OpenAI)</h2>
         <div class="ops-row">
@@ -139,6 +156,97 @@
       </div>
 
       <div id="consumosMsg" class="form-help" style="margin-top:10px"></div>
+    </section>
+
+    <section id="metricasSuperPanel" class="super-metrics-panel" aria-label="Metricas operativas del VPS">
+      <div class="super-metrics-header">
+        <div>
+          <h2>Metricas de trafico general</h2>
+          <p class="form-help muted">Estado en tiempo real del VPS, procesos y servicios principales.</p>
+        </div>
+        <button id="btnReloadMetrics" class="btn secondary" type="button">Actualizar metricas</button>
+      </div>
+
+      <div class="super-metrics-current">
+        <article class="card ops-card">
+          <div class="muted">CPU actual</div>
+          <div id="cpuValue" class="super-metrics-value">- %</div>
+        </article>
+        <article class="card ops-card">
+          <div class="muted">Memoria usada</div>
+          <div id="memValue" class="super-metrics-value">- MB (- %)</div>
+        </article>
+        <article class="card ops-card">
+          <div class="muted">Trafico total</div>
+          <div id="netValue" class="super-metrics-value">- B</div>
+        </article>
+      </div>
+
+      <div class="super-metrics-charts">
+        <article class="card super-metrics-chart-card">
+          <h3>Estado actual</h3>
+          <div class="super-metrics-chart-wrap"><canvas id="loadChart"></canvas></div>
+        </article>
+        <article class="card super-metrics-chart-card">
+          <h3>CPU y memoria</h3>
+          <div class="super-metrics-chart-wrap"><canvas id="cpuMemChart"></canvas></div>
+        </article>
+        <article class="card super-metrics-chart-card is-wide">
+          <h3>Trafico de red</h3>
+          <div class="super-metrics-chart-wrap"><canvas id="netChart"></canvas></div>
+        </article>
+      </div>
+
+      <section class="card super-metrics-table-card">
+        <div class="empresa-section-header">
+          <div>
+            <h2 style="margin:0">Procesos en el VPS por memoria</h2>
+            <div class="form-help muted">Top <span id="procLimitLabel">80</span> procesos ordenados por RSS.</div>
+          </div>
+          <button class="btn secondary" id="btnReloadProcs" type="button">Actualizar procesos</button>
+        </div>
+        <div class="super-metrics-table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Comando</th>
+                <th>RSS</th>
+                <th>MEM%</th>
+                <th>CPU%</th>
+                <th>Args</th>
+              </tr>
+            </thead>
+            <tbody id="procTbody">
+              <tr><td colspan="6" class="muted">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card super-metrics-table-card">
+        <div class="empresa-section-header">
+          <div>
+            <h2 style="margin:0">Servicios del VPS y consumo</h2>
+            <div class="form-help muted">RustDesk, OnlyOffice, Backend, Nginx y PostgreSQL.</div>
+          </div>
+        </div>
+        <div class="super-metrics-table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Servicio</th>
+                <th>Estado</th>
+                <th>Memoria aprox.</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody id="svcTbody">
+              <tr><td colspan="4" class="muted">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </div>
 
@@ -277,6 +385,188 @@
       }
     }
 
+    const apiCurrent = '/super/api/metrics/current';
+    const apiHistory = '/super/api/metrics/history?limit=500';
+    const apiProcs = '/super/api/vps/procesos?limit=80';
+    const apiServicios = '/super/api/servidores';
+    let loadChart, cpuMemChart, netChart;
+
+    function fmtBytes(n){
+      n = Number(n || 0);
+      if(n < 1024) return n + ' B';
+      const u = ['KB','MB','GB','TB'];
+      let i = -1;
+      do { n = n / 1024; i++; } while(n >= 1024 && i < u.length - 1);
+      return n.toFixed(2) + ' ' + u[i];
+    }
+
+    function fmtKB(kb){
+      const n = Number(kb || 0);
+      if(!n || !Number.isFinite(n)) return '-';
+      return fmtBytes(n * 1024);
+    }
+
+    function chartTheme(){
+      const rootStyles = getComputedStyle(document.documentElement);
+      return {
+        labelColor: (rootStyles.getPropertyValue('--text') || '#111827').trim() || '#111827',
+        gridColor: (rootStyles.getPropertyValue('--border') || 'rgba(148,163,184,.28)').trim() || 'rgba(148,163,184,.28)'
+      };
+    }
+
+    function createOrUpdateCharts(labels, cpuData, memData, netData){
+      if(!window.Chart) return;
+      const theme = chartTheme();
+      const common = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        elements: { line: { tension: 0.35, cubicInterpolationMode: 'monotone' }, point: { radius: 0, hitRadius: 8 } },
+        plugins: { legend: { labels: { color: theme.labelColor, boxWidth: 14 } } },
+        scales: {
+          x: { ticks: { color: theme.labelColor, maxTicksLimit: 8 }, grid: { color: theme.gridColor } },
+          y: { ticks: { color: theme.labelColor }, grid: { color: theme.gridColor }, beginAtZero: true }
+        }
+      };
+
+      if(cpuMemChart) cpuMemChart.destroy();
+      cpuMemChart = new Chart(document.getElementById('cpuMemChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'CPU %', data: cpuData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.14)', fill: true },
+            { label: 'Memoria %', data: memData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', fill: true }
+          ]
+        },
+        options: common
+      });
+
+      if(netChart) netChart.destroy();
+      netChart = new Chart(document.getElementById('netChart'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Trafico total (bytes)', data: netData, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.14)', fill: true }] },
+        options: common
+      });
+
+      updateLoadChart(cpuData[cpuData.length - 1] || 0, memData[memData.length - 1] || 0, netData[netData.length - 1] || 0);
+    }
+
+    function updateLoadChart(cpuPct, memPct, netTotal){
+      if(!window.Chart) return;
+      const theme = chartTheme();
+      const netScore = Math.min(100, Math.max(0, Number(netTotal || 0) / (1024 * 1024 * 100) * 100));
+      const data = [Number(cpuPct || 0), Number(memPct || 0), netScore];
+      const labels = ['CPU', 'Memoria', 'Red'];
+      if(loadChart){
+        loadChart.data.datasets[0].data = data;
+        loadChart.update('none');
+        return;
+      }
+      loadChart = new Chart(document.getElementById('loadChart'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: ['#ef4444', '#2563eb', '#16a34a'], borderColor: theme.gridColor, borderWidth: 1 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          animation: false,
+          plugins: { legend: { position: 'bottom', labels: { color: theme.labelColor } } }
+        }
+      });
+    }
+
+    async function loadHistory(){
+      try{
+        const res = await fetch(apiHistory, { credentials: 'same-origin' });
+        if(!res.ok) throw new Error('history fetch failed');
+        const arr = await res.json();
+        const rows = Array.isArray(arr) ? arr : [];
+        const labels = rows.map(x => x.timestamp || '');
+        const cpuData = rows.map(x => x.cpu_percent || 0);
+        const memData = rows.map(x => x.mem_percent || 0);
+        const netData = rows.map(x => ((x.net_recv || 0) + (x.net_sent || 0)) || 0);
+        createOrUpdateCharts(labels, cpuData, memData, netData);
+      }catch(e){ console.error(e); }
+    }
+
+    async function updateCurrent(){
+      try{
+        const res = await fetch(apiCurrent, { credentials: 'same-origin' });
+        if(!res.ok) throw new Error('current fetch failed');
+        const m = await res.json();
+        document.getElementById('cpuValue').textContent = (m.cpu_percent || 0).toFixed(2) + ' %';
+        const usedMB = ((m.mem_used || 0) / 1024 / 1024).toFixed(1);
+        const memPct = (m.mem_percent || 0).toFixed(1);
+        document.getElementById('memValue').textContent = usedMB + ' MB (' + memPct + '%)';
+        const netTotal = (m.net_recv || 0) + (m.net_sent || 0);
+        document.getElementById('netValue').textContent = fmtBytes(netTotal);
+        updateLoadChart(m.cpu_percent || 0, m.mem_percent || 0, netTotal);
+      }catch(e){ console.error(e); }
+    }
+
+    async function loadProcesos(){
+      const tbody = document.getElementById('procTbody');
+      if(!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="6" class="muted">Cargando...</td></tr>';
+      try{
+        const res = await fetch(apiProcs, { credentials: 'same-origin' });
+        const data = await res.json().catch(() => null);
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || 'No se pudo cargar procesos');
+        const items = data.items || [];
+        if(!items.length){
+          tbody.innerHTML = '<tr><td colspan="6" class="muted">Sin datos.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = items.map(p => (
+          '<tr>' +
+            '<td>' + esc(p.pid) + '</td>' +
+            '<td>' + esc(p.command) + '</td>' +
+            '<td>' + esc(fmtKB(p.rss_kb)) + '</td>' +
+            '<td>' + esc(p.mem_pct) + '</td>' +
+            '<td>' + esc(p.cpu_pct) + '</td>' +
+            '<td style="max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(p.args) + '">' + esc(p.args) + '</td>' +
+          '</tr>'
+        )).join('');
+      }catch(e){
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">Error: ' + esc(e.message || e) + '</td></tr>';
+      }
+    }
+
+    async function loadServicios(){
+      const tbody = document.getElementById('svcTbody');
+      if(!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">Cargando...</td></tr>';
+      try{
+        const res = await fetch(apiServicios, { credentials: 'same-origin' });
+        const data = await res.json().catch(() => null);
+        if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || 'No se pudo cargar servicios');
+        const items = data.servicios || [];
+        if(!items.length){
+          tbody.innerHTML = '<tr><td colspan="4" class="muted">Sin datos.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = items.map(s => {
+          const rssKB = s.componentes && (s.componentes.mem_rss_kb || s.componentes['mem_rss_kb']);
+          return '<tr>' +
+            '<td>' + esc(s.nombre || s.id) + '</td>' +
+            '<td>' + esc(s.estado || '') + '</td>' +
+            '<td>' + esc(rssKB ? fmtKB(rssKB) : '-') + '</td>' +
+            '<td>' + esc(s.detalle || '') + '</td>' +
+          '</tr>';
+        }).join('');
+      }catch(e){
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">Error: ' + esc(e.message || e) + '</td></tr>';
+      }
+    }
+
+    async function reloadMetricsPanel(){
+      await loadHistory();
+      await updateCurrent();
+      await Promise.all([loadProcesos(), loadServicios()]);
+    }
+
     document.addEventListener('DOMContentLoaded', function(){
       const btn = document.getElementById('refreshBtn');
       if (btn) btn.addEventListener('click', function(){ loadActiveCount(); loadEmpresasCount(); });
@@ -287,6 +577,12 @@
       loadActiveCount();
       loadEmpresasCount();
       loadConsumos();
+      const btnReloadMetrics = document.getElementById('btnReloadMetrics');
+      if (btnReloadMetrics) btnReloadMetrics.addEventListener('click', reloadMetricsPanel);
+      const btnReloadProcs = document.getElementById('btnReloadProcs');
+      if (btnReloadProcs) btnReloadProcs.addEventListener('click', function(){ loadProcesos(); loadServicios(); });
+      reloadMetricsPanel();
+      setInterval(updateCurrent, 5000);
     });
   </script>
 </body>

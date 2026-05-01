@@ -293,6 +293,7 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.base.dbSuper)
 
 	superMeta := c.base.dbSuper != nil
 	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
@@ -461,6 +462,7 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.base.dbSuper)
 
 	preguntaFinal := pregunta
 	if att != nil && strings.TrimSpace(att.Filename) != "" {
@@ -612,6 +614,7 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.base.dbSuper)
 	superMeta := c.base.dbSuper != nil
 	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
 	systemPrompt := buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente)

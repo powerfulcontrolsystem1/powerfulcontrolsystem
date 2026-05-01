@@ -1134,13 +1134,13 @@ func ensureColumnIfMissing(dbConn *sql.DB, table, column, columnDef string) erro
 
 // CreateBodega inserta una nueva bodega para una empresa.
 func CreateBodega(dbConn *sql.DB, b Bodega) (int64, error) {
-	res, err := dbConn.Exec(`INSERT INTO bodegas (empresa_id, codigo, nombre, ubicacion, responsable, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
-		VALUES (?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	id, err := insertSQLCompat(dbConn, `INSERT INTO bodegas (empresa_id, codigo, nombre, ubicacion, responsable, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
+		VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		b.EmpresaID, strings.TrimSpace(b.Codigo), strings.TrimSpace(b.Nombre), strings.TrimSpace(b.Ubicacion), strings.TrimSpace(b.Responsable), strings.TrimSpace(b.UsuarioCreador), strings.TrimSpace(b.Estado), strings.TrimSpace(b.Observaciones))
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetBodegasByEmpresa lista bodegas por empresa.
@@ -1199,7 +1199,7 @@ func GetBodegasByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivas bool)
 // UpdateBodega actualiza los datos editables de una bodega.
 func UpdateBodega(dbConn *sql.DB, b Bodega) error {
 	_, err := dbConn.Exec(`UPDATE bodegas
-		SET codigo = ?, nombre = ?, ubicacion = ?, responsable = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+		SET codigo = NULLIF(?, ''), nombre = ?, ubicacion = ?, responsable = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(b.Codigo), strings.TrimSpace(b.Nombre), strings.TrimSpace(b.Ubicacion), strings.TrimSpace(b.Responsable), strings.TrimSpace(b.Observaciones), b.ID, b.EmpresaID)
 	return err

@@ -5,6 +5,40 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administrar Productos</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .producto-inline-form{
+      position:relative !important;
+      inset:auto !important;
+      z-index:auto !important;
+      margin:12px 0 14px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:var(--card);
+      box-shadow:0 10px 26px rgba(15,23,42,.08);
+    }
+    .producto-inline-form-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin:0 0 12px;
+      padding-bottom:10px;
+      border-bottom:1px solid var(--border);
+    }
+    .producto-inline-form-header h3{
+      margin:0;
+      font-size:1.05rem;
+      color:var(--text);
+    }
+    .producto-inline-form-header p{
+      margin:3px 0 0;
+      color:var(--muted);
+    }
+    @media (max-width:720px){
+      .producto-inline-form-header{align-items:stretch;flex-direction:column}
+      .producto-inline-form-header .btn{width:100%}
+    }
+  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -54,7 +88,7 @@
     <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
         <h2>Bodegas</h2>
-        <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
+        <button id="btnNuevaBodega" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevoBodega ? window.PCSInventarioNuevoBodega(event) : true;">Nueva</button>
       </div>
 
       <form id="bodegaForm" class="form is-hidden">
@@ -110,7 +144,7 @@
     <section class="card empresa-section" data-view-section="proveedores">
       <div class="empresa-section-header">
         <h2>Proveedores</h2>
-        <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
+        <button id="btnNuevoProveedor" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevoProveedor ? window.PCSInventarioNuevoProveedor(event) : true;">Nuevo</button>
       </div>
 
       <form id="proveedorForm" class="form is-hidden">
@@ -193,7 +227,7 @@
         <div class="empresa-inline-actions">
           <input id="filtroCategoriasProducto" class="form-input" placeholder="Buscar por nombre/código">
           <button id="btnBuscarCategoriasProducto" type="button" class="btn secondary">Buscar</button>
-          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary">Nueva</button>
+          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevaCategoria ? window.PCSInventarioNuevaCategoria(event) : true;">Nueva</button>
         </div>
       </div>
 
@@ -259,11 +293,18 @@
           </select>
           <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
           <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
-          <button id="btnNuevoProducto" class="btn secondary" type="button">Nuevo</button>
+          <button id="btnNuevoProducto" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoProducto ? window.PCSInventarioNuevoProducto(event) : false;">Nuevo Producto</button>
         </div>
       </div>
 
-      <form id="productoForm" class="form is-hidden">
+      <form id="productoForm" class="form producto-inline-form is-hidden">
+        <div class="producto-inline-form-header">
+          <div>
+            <h3 id="productoFormTitle">Nuevo Producto</h3>
+            <p class="form-help">Registra el producto directamente en esta pagina, sin abrir ventanas encima.</p>
+          </div>
+          <button id="btnCerrarProductoForm" class="btn secondary" type="button">Cerrar formulario</button>
+        </div>
         <input type="hidden" id="productoId">
         <div class="form-row">
           <div class="form-col">
@@ -396,7 +437,7 @@
     <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Servicios Vendibles</h2>
-        <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
+        <button id="btnNuevoServicio" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoServicio ? window.PCSInventarioNuevoServicio(event) : true;">Nuevo</button>
       </div>
 
       <form id="servicioForm" class="form is-hidden">
@@ -1096,6 +1137,10 @@
     function setCRUDFormVisible(formId, visible) {
       const form = document.getElementById(formId);
       if (!form) return;
+      if (visible) {
+        const section = form.closest('[data-view-section]');
+        if (section) section.style.display = '';
+      }
       form.classList.toggle('is-hidden', !visible);
       form.hidden = !visible;
       if (visible) {
@@ -1105,6 +1150,11 @@
       }
       form.setAttribute('aria-hidden', visible ? 'false' : 'true');
       form.style.display = visible ? 'block' : 'none';
+      if (formId === 'productoForm') {
+        form.style.position = 'relative';
+        form.style.inset = 'auto';
+        form.style.zIndex = 'auto';
+      }
     }
 
     function hideCRUDForms() {
@@ -1124,9 +1174,92 @@
       }
       const focusEl = focusId ? document.getElementById(focusId) : null;
       if (focusEl && typeof focusEl.focus === 'function') {
-        focusEl.focus();
+        window.setTimeout(function(){ focusEl.focus(); }, 80);
       }
     }
+
+    function consumeOpenEvent(ev) {
+      if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+      if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+      if (ev && typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+      return false;
+    }
+
+    function reportOpenFormError(context, err) {
+      try { console.warn(context + ':', err); } catch (_) {}
+      showMessage('No se pudo preparar todo el formulario, pero puedes continuar registrando la informacion basica.', 'error');
+    }
+
+    window.PCSInventarioNuevoBodega = function(ev) {
+      fillBodegaForm(null);
+      openCRUDForm('bodegaForm', 'bodegaNombre');
+      return consumeOpenEvent(ev);
+    };
+
+    window.PCSInventarioNuevoProveedor = function(ev) {
+      fillProveedorForm(null);
+      openCRUDForm('proveedorForm', 'proveedorNombre');
+      return consumeOpenEvent(ev);
+    };
+
+    window.PCSInventarioNuevaCategoria = function(ev) {
+      fillCategoriaProductoForm(null);
+      openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
+      return consumeOpenEvent(ev);
+    };
+
+    let lastNuevoProductoOpenAt = 0;
+
+    window.PCSInventarioNuevoProducto = function(ev) {
+      const now = Date.now();
+      if (now - lastNuevoProductoOpenAt < 250) {
+        return consumeOpenEvent(ev);
+      }
+      lastNuevoProductoOpenAt = now;
+      try {
+        fillProductoForm(null);
+      } catch (err) {
+        reportOpenFormError('No se pudo limpiar el formulario de producto', err);
+      }
+      const title = document.getElementById('productoFormTitle');
+      if (title) title.textContent = 'Nuevo Producto';
+      openCRUDForm('productoForm', 'productoNombre');
+      showMessage('Formulario de nuevo producto listo para registrar.', 'success');
+      ensureProveedoresDisponibles().catch(function(err) {
+        try { console.warn('No se pudieron cargar proveedores opcionales:', err); } catch (_) {}
+      });
+      return consumeOpenEvent(ev);
+    };
+
+    window.PCSInventarioNuevoServicio = function(ev) {
+      fillServicioForm(null);
+      openCRUDForm('servicioForm', 'servicioNombre');
+      return consumeOpenEvent(ev);
+    };
+
+    document.addEventListener('click', function(ev) {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('#btnNuevaBodega,#btnNuevoProveedor,#btnNuevaCategoriaProducto,#btnNuevoProducto,#btnNuevoServicio') : null;
+      if (!btn) return;
+      const openers = {
+        btnNuevaBodega: window.PCSInventarioNuevoBodega,
+        btnNuevoProveedor: window.PCSInventarioNuevoProveedor,
+        btnNuevaCategoriaProducto: window.PCSInventarioNuevaCategoria,
+        btnNuevoProducto: window.PCSInventarioNuevoProducto,
+        btnNuevoServicio: window.PCSInventarioNuevoServicio
+      };
+      const opener = openers[btn.id];
+      if (typeof opener === 'function') {
+        try {
+          opener(ev);
+        } catch (err) {
+          reportOpenFormError('No se pudo abrir el formulario desde el boton ' + btn.id, err);
+          if (btn.id === 'btnNuevoProducto') {
+            openCRUDForm('productoForm', 'productoNombre');
+            consumeOpenEvent(ev);
+          }
+        }
+      }
+    }, true);
 
     async function loadEmpresaInfo() {
       if (!empresaId) {
@@ -1775,6 +1908,8 @@
       if (action === 'edit-producto') {
         const p = state.productos.find(x => Number(x.id) === Number(id));
         fillProductoForm(p || null);
+        const title = document.getElementById('productoFormTitle');
+        if (title) title.textContent = 'Editar Producto';
         openCRUDForm('productoForm', 'productoNombre');
         await ensureProveedoresDisponibles();
         if (p) {
@@ -2879,10 +3014,17 @@
         }
       });
 
-      document.getElementById('btnNuevoProducto').addEventListener('click', async () => {
-        fillProductoForm(null);
+      document.getElementById('btnNuevoProducto').addEventListener('click', ev => {
+        if (typeof window.PCSInventarioNuevoProducto === 'function') {
+          window.PCSInventarioNuevoProducto(ev);
+          return;
+        }
         openCRUDForm('productoForm', 'productoNombre');
-        await ensureProveedoresDisponibles();
+      });
+      document.getElementById('btnCerrarProductoForm').addEventListener('click', ev => {
+        ev.preventDefault();
+        setCRUDFormVisible('productoForm', false);
+        showMessage('', '');
       });
       document.getElementById('btnBuscarProductos').addEventListener('click', async () => {
         try {

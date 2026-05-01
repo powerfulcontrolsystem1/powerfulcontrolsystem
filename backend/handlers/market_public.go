@@ -39,18 +39,18 @@ func PublicMarketSymbolHandler() http.HandlerFunc {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w, "failed to fetch market symbol", http.StatusBadGateway)
+			writeEmptyMarketSymbol(w)
 			return
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			http.Error(w, "market provider unavailable", http.StatusBadGateway)
+			writeEmptyMarketSymbol(w)
 			return
 		}
 
 		var payload map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid market response", http.StatusBadGateway)
+			writeEmptyMarketSymbol(w)
 			return
 		}
 
@@ -58,4 +58,11 @@ func PublicMarketSymbolHandler() http.HandlerFunc {
 		w.Header().Set("Cache-Control", "public, max-age=120")
 		_ = json.NewEncoder(w).Encode(payload)
 	}
+}
+
+func writeEmptyMarketSymbol(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=30")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"symbols": []interface{}{}})
 }

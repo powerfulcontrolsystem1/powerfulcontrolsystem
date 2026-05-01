@@ -505,6 +505,24 @@ func resolveWebDir() string {
 	return "web"
 }
 
+func noCacheAdminStaticHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+		if strings.HasPrefix(path, "/administrar_empresa/") ||
+			strings.HasPrefix(path, "/super/") ||
+			path == "/administrar_empresa.html" ||
+			path == "/seleccionar_empresa.html" ||
+			path == "/js/administrar_empresa.js" ||
+			path == "/menu.js" ||
+			strings.HasSuffix(path, ".html") {
+			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+			w.Header().Set("Pragma", "no-cache")
+			w.Header().Set("Expires", "0")
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func resolveDownloadsDir() string {
 	candidates := []string{
 		"descargas",
@@ -652,6 +670,9 @@ func main() {
 			log.Fatalf("failed to ensure postgres primary key sequences in super db: %v", err)
 		}
 		loadGoogleOAuthFromDB(dbSuper)
+		if err := handlers.EnsureSuperContextoIALogicaNegocio(dbSuper); err != nil {
+			log.Printf("warning: no se pudo registrar contexto IA de logica de negocio: %v", err)
+		}
 		if clientID == "" || clientSecret == "" {
 			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
 		}
@@ -917,6 +938,7 @@ func main() {
 	// Endpoint super para consumos (OpenAI/Hostinger/Cursor) y contador de errores
 	http.HandleFunc("/super/api/consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.SuperPortalChatIAInfoHandler(dbSuper))
+	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.SuperContextoIALogicaNegocioHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacciÃ³n y consultar estado
@@ -999,7 +1021,7 @@ func main() {
 	}
 	faviconPath := filepath.Join(webDir, "favicon.ico")
 	fallbackFaviconPath := filepath.Join(webDir, "img", "punto_venta.png")
-	staticFS := http.FileServer(http.Dir(webDir))
+	staticFS := noCacheAdminStaticHandler(http.FileServer(http.Dir(webDir)))
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		if info, err := os.Stat(faviconPath); err == nil && !info.IsDir() {
 			http.ServeFile(w, r, faviconPath)

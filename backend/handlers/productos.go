@@ -52,7 +52,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateBodega(dbEmp, payload)
 			if err != nil {
-				http.Error(w, "failed to create bodega: "+err.Error(), http.StatusInternalServerError)
+				writeBodegaPersistenceError(w, err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -97,7 +97,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateBodega(dbEmp, payload); err != nil {
-				http.Error(w, "failed to update bodega: "+err.Error(), http.StatusInternalServerError)
+				writeBodegaPersistenceError(w, err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -2075,6 +2075,17 @@ func parseEmpresaIDQuery(r *http.Request) (int64, error) {
 		return 0, fmt.Errorf("empresa_id required")
 	}
 	return empresaID, nil
+}
+
+func writeBodegaPersistenceError(w http.ResponseWriter, err error) {
+	errText := strings.ToLower(err.Error())
+	if strings.Contains(errText, "ux_bodegas_empresa_nombre") ||
+		strings.Contains(errText, "ux_bodegas_empresa_codigo") ||
+		(strings.Contains(errText, "bodegas") && (strings.Contains(errText, "duplicate") || strings.Contains(errText, "duplic"))) {
+		http.Error(w, "Ya existe una bodega con ese nombre o codigo para esta empresa.", http.StatusConflict)
+		return
+	}
+	http.Error(w, "No se pudo guardar la bodega. Intenta de nuevo en unos segundos.", http.StatusInternalServerError)
 }
 
 func parseInt64Query(r *http.Request, key string) (int64, error) {

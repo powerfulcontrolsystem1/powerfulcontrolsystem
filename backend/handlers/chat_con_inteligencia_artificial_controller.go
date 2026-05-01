@@ -589,6 +589,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 
 	var respuesta string
 	var promptTokens int64
@@ -819,6 +820,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 
 	preguntaFinal := pregunta
 	if att != nil && strings.TrimSpace(att.Filename) != "" {
@@ -981,6 +983,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
 	}
+	contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
 	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
 
