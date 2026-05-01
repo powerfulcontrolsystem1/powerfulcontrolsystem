@@ -17473,3 +17473,8 @@ Archivos modificados:
 - web/js/ai_chat_drawer.js
 - web/super/configuracion_avanzada.html
 - web/super/voz_streaming_ia.html
+
+2026-04-30: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- web/super/licencias_resumen.html
