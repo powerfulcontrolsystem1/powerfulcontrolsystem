@@ -7,16 +7,14 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
-    .summary-card{padding:11px 12px;text-align:left;min-height:0}
-    .summary-card .form-help{font-size:.76rem;line-height:1.2;margin-top:3px}
-    .big-number{font-size:1.95rem;line-height:1;font-weight:850;color:var(--text);margin:4px 0}
+    .summary-grid,.ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface);margin-top:8px}
+    .summary-card,.ops-card{padding:7px 9px;text-align:left;min-height:0;border-radius:0;box-shadow:none;border:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .summary-card .form-help{font-size:.66rem;line-height:1.08;margin-top:1px}
+    .big-number{font-size:1.14rem;line-height:1;font-weight:850;color:var(--text);margin:2px 0}
     .muted{color:var(--muted)}
-    .ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;margin-top:8px}
-    .ops-card{padding:10px 12px;min-height:0}
-    .ops-card>.muted{font-size:.78rem;line-height:1.15}
-    .ops-kpi{font-size:1rem;line-height:1.18;font-weight:850;color:var(--text);margin-top:4px;overflow-wrap:anywhere}
-    .ops-sub{margin-top:3px;font-size:.73rem;line-height:1.18;overflow-wrap:anywhere}
+    .ops-card>.muted,.summary-card>.muted{font-size:.7rem;line-height:1.08;font-weight:750}
+    .ops-kpi{font-size:.9rem;line-height:1.08;font-weight:850;color:var(--text);margin-top:2px;overflow-wrap:anywhere}
+    .ops-sub{margin-top:1px;font-size:.64rem;line-height:1.08;overflow-wrap:anywhere}
     .ops-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .ops-form .form-col{min-width:0}
@@ -35,12 +33,12 @@
     .super-metrics-table-card{margin-top:12px}
     .super-metrics-table-wrap{margin-top:10px;overflow:auto}
     .super-metrics-table-wrap table{min-width:760px}
-    @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media (min-width:1200px){.super-metrics-chart-card.is-wide{grid-column:1 / -1}.super-metrics-chart-wrap{min-height:380px}}
     @media (max-width:1050px){.super-metrics-charts{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr 1fr}}
     @media (max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:680px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
-    @media (max-width:460px){.summary-grid,.ops-grid,.super-metrics-current{grid-template-columns:1fr}.super-metrics-header{align-items:flex-start}}
+    @media (max-width:460px){.summary-grid,.ops-grid,.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-header{align-items:flex-start}}
   </style>
 </head>
 <body class="super-page">
@@ -163,14 +161,6 @@
     </section>
 
     <section id="metricasSuperPanel" class="super-metrics-panel" aria-label="Metricas operativas del VPS">
-      <div class="super-metrics-header">
-        <div>
-          <h2>Metricas de trafico general</h2>
-          <p class="form-help muted">Estado en tiempo real del VPS, procesos y servicios principales.</p>
-        </div>
-        <button id="btnReloadMetrics" class="btn secondary" type="button">Actualizar metricas</button>
-      </div>
-
       <div class="super-metrics-current">
         <article class="card ops-card">
           <div class="muted">CPU actual</div>

@@ -873,16 +873,16 @@
       <div class="empresa-section-header">
         <h2>Compras a proveedores y reposición</h2>
         <div class="empresa-inline-actions">
-          <select id="kardexBodegaFiltro" class="form-input">
+          <select id="comprasKardexBodegaFiltro" class="form-input">
             <option value="">Todas las bodegas</option>
           </select>
-          <input id="kardexDesdeFiltro" class="form-input" type="date" title="Desde">
-          <input id="kardexHastaFiltro" class="form-input" type="date" title="Hasta">
-          <button id="btnAplicarKardexFiltros" class="btn secondary" type="button">Filtrar</button>
-          <button id="btnLimpiarKardexFiltros" class="btn secondary" type="button">Limpiar</button>
+          <input id="comprasKardexDesdeFiltro" class="form-input" type="date" title="Desde">
+          <input id="comprasKardexHastaFiltro" class="form-input" type="date" title="Hasta">
+          <button id="btnAplicarComprasKardexFiltros" class="btn secondary" type="button">Filtrar</button>
+          <button id="btnLimpiarComprasKardexFiltros" class="btn secondary" type="button">Limpiar</button>
         </div>
       </div>
-      <p id="inventarioResumenContexto" class="form-help">Compras preventivas: cargando resumen...</p>
+      <p id="comprasInventarioResumenContexto" class="form-help">Compras preventivas: cargando resumen...</p>
 
       <div class="empresa-section-header section-header-spaced">
         <h3 class="section-heading">Plan de reposición por proveedor (fase 8)</h3>
@@ -1141,6 +1141,37 @@
       return rows.filter(r => (r.estado || 'activo') === 'activo');
     }
 
+    function getScopedElementById(id) {
+      const comprasAliases = {
+        kardexBodegaFiltro: 'comprasKardexBodegaFiltro',
+        kardexDesdeFiltro: 'comprasKardexDesdeFiltro',
+        kardexHastaFiltro: 'comprasKardexHastaFiltro',
+        inventarioResumenContexto: 'comprasInventarioResumenContexto'
+      };
+      if (viewMode === 'compras' && comprasAliases[id]) {
+        const aliased = document.getElementById(comprasAliases[id]);
+        if (aliased) return aliased;
+      }
+      const nodes = Array.from(document.querySelectorAll('[id="' + id + '"]'));
+      if (nodes.length <= 1) return nodes[0] || null;
+      return nodes.find(el => {
+        const section = el.closest('[data-view-section]');
+        return !section || section.style.display !== 'none';
+      }) || nodes[0] || null;
+    }
+
+    function forEachElementById(id, callback) {
+      const aliasGroups = {
+        kardexBodegaFiltro: ['comprasKardexBodegaFiltro'],
+        btnAplicarKardexFiltros: ['btnAplicarComprasKardexFiltros'],
+        btnLimpiarKardexFiltros: ['btnLimpiarComprasKardexFiltros']
+      };
+      const ids = [id].concat(aliasGroups[id] || []);
+      ids.forEach(currentId => {
+        Array.from(document.querySelectorAll('[id="' + currentId + '"]')).forEach(callback);
+      });
+    }
+
     function setCRUDFormVisible(formId, visible) {
       const form = document.getElementById(formId);
       if (!form) return;
@@ -1332,7 +1363,9 @@
       buildOptions(document.getElementById('cambioBodega'), activas, '', 'Seleccione bodega');
       buildOptions(document.getElementById('conteoBodega'), activas, document.getElementById('conteoBodega').value, 'Seleccione bodega');
       buildOptions(document.getElementById('alertaBodegaFiltro'), activas, document.getElementById('alertaBodegaFiltro').value, 'Todas las bodegas');
-      buildOptions(document.getElementById('kardexBodegaFiltro'), activas, document.getElementById('kardexBodegaFiltro').value, 'Todas las bodegas');
+      forEachElementById('kardexBodegaFiltro', select => {
+        buildOptions(select, activas, select.value, 'Todas las bodegas');
+      });
     }
 
     function fillBodegaForm(b) {
@@ -2178,8 +2211,8 @@
     }
 
     async function loadInventarioResumen() {
-      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
-      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      const desde = String(getScopedElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(getScopedElementById('kardexHastaFiltro').value || '').trim();
 
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
@@ -2206,13 +2239,13 @@
         ', traslados ' + Number(resumen.movimientos_traslado || 0) +
         ', ajustes ' + Number(resumen.movimientos_ajuste || 0) +
         '. Último movimiento: ' + String(resumen.ultimo_movimiento || 'no disponible') + '.';
-      document.getElementById('inventarioResumenContexto').textContent = detalle;
+      getScopedElementById('inventarioResumenContexto').textContent = detalle;
     }
 
     async function loadInventarioTendencia() {
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
-      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
-      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
+      const desde = String(getScopedElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(getScopedElementById('kardexHastaFiltro').value || '').trim();
 
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
@@ -2265,9 +2298,9 @@
     }
 
     async function loadInventarioBalanceBodegas() {
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
-      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
-      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
+      const desde = String(getScopedElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(getScopedElementById('kardexHastaFiltro').value || '').trim();
 
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
@@ -2321,8 +2354,8 @@
     }
 
     function inferDiasVentanaKardex() {
-      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
-      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      const desde = String(getScopedElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(getScopedElementById('kardexHastaFiltro').value || '').trim();
       if (desde && hasta) {
         const d1 = new Date(desde + 'T00:00:00');
         const d2 = new Date(hasta + 'T00:00:00');
@@ -2337,7 +2370,7 @@
     }
 
     async function loadInventarioProyeccion() {
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
 
       const params = new URLSearchParams();
@@ -2390,7 +2423,7 @@
 
     function renderInventarioPlanReposicionRows(rows) {
       const tbody = document.querySelector('#inventarioPlanReposicionTable tbody');
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
 
       let scoped = Array.isArray(rows) ? rows.slice() : [];
@@ -2447,7 +2480,7 @@
     }
 
     async function loadInventarioPlanReposicion() {
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
 
       const params = new URLSearchParams();
@@ -2466,7 +2499,7 @@
 
     async function loadInventarioPlanReposicionResumen(preserveOrderState) {
       limpiarInventarioPlanReposicionBorrador(Boolean(preserveOrderState));
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
 
       const params = new URLSearchParams();
@@ -2586,7 +2619,7 @@
       state.ultimaOrdenReposicion = null;
       renderEstadoOrdenReposicion(null);
 
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
 
       const params = new URLSearchParams();
@@ -2614,7 +2647,7 @@
         throw new Error('El borrador no tiene proveedor válido para emisión.');
       }
 
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
       const diasVentana = inferDiasVentanaKardex();
       const now = new Date();
       const periodoContable = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -2811,10 +2844,10 @@
     }
 
     async function loadMovimientos() {
-      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
-      const tipo = String(document.getElementById('kardexTipoFiltro').value || '').trim();
-      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
-      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      const bodegaID = Number(getScopedElementById('kardexBodegaFiltro').value || 0);
+      const tipo = String(getScopedElementById('kardexTipoFiltro').value || '').trim();
+      const desde = String(getScopedElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(getScopedElementById('kardexHastaFiltro').value || '').trim();
 
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
@@ -3181,26 +3214,42 @@
         }
       });
 
-      document.getElementById('btnAplicarKardexFiltros').addEventListener('click', async () => {
-        try {
-          await loadMovimientos();
-          await loadInventarioResumen();
-        } catch (e) {
-          showMessage(e.message || 'No se pudo consultar el kardex filtrado.', 'error');
+      async function aplicarFiltrosKardex() {
+        if (viewMode === 'compras') {
+          await loadInventarioPlanReposicion();
+          await loadInventarioPlanReposicionResumen(true);
+          return;
         }
+        await loadMovimientos();
+        await loadInventarioResumen();
+      }
+
+      forEachElementById('btnAplicarKardexFiltros', btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await aplicarFiltrosKardex();
+          } catch (e) {
+            showMessage(e.message || 'No se pudo consultar el kardex filtrado.', 'error');
+          }
+        });
       });
 
-      document.getElementById('btnLimpiarKardexFiltros').addEventListener('click', async () => {
-        try {
-          document.getElementById('kardexBodegaFiltro').value = '';
-          document.getElementById('kardexTipoFiltro').value = '';
-          document.getElementById('kardexDesdeFiltro').value = '';
-          document.getElementById('kardexHastaFiltro').value = '';
-          await loadMovimientos();
-          await loadInventarioResumen();
-        } catch (e) {
-          showMessage(e.message || 'No se pudieron limpiar los filtros de kardex.', 'error');
-        }
+      forEachElementById('btnLimpiarKardexFiltros', btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const bodegaFiltro = getScopedElementById('kardexBodegaFiltro');
+            const tipoFiltro = getScopedElementById('kardexTipoFiltro');
+            const desdeFiltro = getScopedElementById('kardexDesdeFiltro');
+            const hastaFiltro = getScopedElementById('kardexHastaFiltro');
+            if (bodegaFiltro) bodegaFiltro.value = '';
+            if (tipoFiltro) tipoFiltro.value = '';
+            if (desdeFiltro) desdeFiltro.value = '';
+            if (hastaFiltro) hastaFiltro.value = '';
+            await aplicarFiltrosKardex();
+          } catch (e) {
+            showMessage(e.message || 'No se pudieron limpiar los filtros de kardex.', 'error');
+          }
+        });
       });
 
       document.getElementById('inventarioCriticosTable').addEventListener('click', ev => {

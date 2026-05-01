@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Egresos e ingresos - Menu</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Egresos e ingresos</h2>
+      <ul class="nav" id="egresosIngresosSidebarNav">
+        <li><a id="linkEgresos" href="/administrar_empresa/egresos.html" target="egresosIngresosContentFrame"><img class="icon" src="/img/money.svg" alt="">Egresos</a></li>
+        <li><a id="linkIngresos" href="/administrar_empresa/ingresos.html" target="egresosIngresosContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Ingresos</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="egresosIngresosSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe name="egresosIngresosContentFrame" id="egresosIngresosContentFrame" src="/administrar_empresa/egresos.html" title="Contenido de egresos e ingresos" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      function parseEmpresaId(raw) {
+        const n = Number(String(raw || '').trim());
+        if (!Number.isFinite(n)) return '';
+        const v = Math.trunc(n);
+        return v > 0 ? String(v) : '';
+      }
+
+      window.__resolveEmpresaIdContext = function() {
+        try {
+          const params = new URLSearchParams(window.location.search || '');
+          const own = parseEmpresaId(params.get('empresa_id') || params.get('id'));
+          if (own) return own;
+        } catch (_) {}
+        try {
+          let ctx = window.parent;
+          let depth = 0;
+          while (ctx && ctx !== window && depth < 4) {
+            try {
+              if (typeof ctx.__resolveEmpresaIdContext === 'function') {
+                const resolved = parseEmpresaId(ctx.__resolveEmpresaIdContext());
+                if (resolved) return resolved;
+              }
+            } catch (_) {}
+            try {
+              const parentParams = new URLSearchParams(ctx.location.search || '');
+              const fromParent = parseEmpresaId(parentParams.get('empresa_id') || parentParams.get('id'));
+              if (fromParent) return fromParent;
+            } catch (_) {}
+            try {
+              if (!ctx.parent || ctx.parent === ctx) break;
+              ctx = ctx.parent;
+            } catch (_) {
+              break;
+            }
+            depth += 1;
+          }
+        } catch (_) {}
+        try {
+          return parseEmpresaId(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id'));
+        } catch (_) {
+          return '';
+        }
+      };
+
+      function withEmpresa(rawUrl) {
+        try {
+          const url = new URL(rawUrl, window.location.origin);
+          const empresaId = window.__resolveEmpresaIdContext();
+          if (empresaId) url.searchParams.set('empresa_id', empresaId);
+          url.searchParams.set('v', '20260501-egresos-ingresos');
+          return url.pathname + url.search + url.hash;
+        } catch (_) {
+          return rawUrl;
+        }
+      }
+
+      document.querySelectorAll('#egresosIngresosSidebarNav a[href]').forEach(function(link) {
+        link.setAttribute('href', withEmpresa(link.getAttribute('href')));
+      });
+      const frame = document.getElementById('egresosIngresosContentFrame');
+      if (frame) frame.setAttribute('src', withEmpresa(frame.getAttribute('src') || '/administrar_empresa/egresos.html'));
+    })();
+  </script>
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>
