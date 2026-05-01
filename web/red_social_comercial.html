@@ -97,6 +97,8 @@
       return "";
     }
 
+    var pageParams = new URLSearchParams(window.location.search || '');
+    var pageEmpresaId = Number(String(pageParams.get('empresa_id') || pageParams.get('id') || '').trim()) || 0;
     var paging = { limit: 12, offset: 0, done: false, loading: false };
     function getActorKey() {
       try {
@@ -240,7 +242,9 @@
         const sentinel = document.getElementById("feedSentinel");
         if (sentinel) { sentinel.hidden = false; sentinel.textContent = "Cargando más..."; }
 
-        const res = await apiFetch('/api/public/publicaciones?limit=' + encodeURIComponent(paging.limit) + '&offset=' + encodeURIComponent(paging.offset));
+        var publicacionesUrl = '/api/public/publicaciones?limit=' + encodeURIComponent(paging.limit) + '&offset=' + encodeURIComponent(paging.offset);
+        if (pageEmpresaId > 0) publicacionesUrl += '&empresa_id=' + encodeURIComponent(pageEmpresaId);
+        const res = await apiFetch(publicacionesUrl);
         if (!res.ok) throw new Error('Error de red');
         const data = await res.json();
         const feed = document.getElementById('feedContenedor');

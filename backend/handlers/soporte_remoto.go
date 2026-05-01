@@ -88,11 +88,11 @@ type empresaSoporteRemotoAccessBundle struct {
 }
 
 const (
-	rustDeskClientWindowsURL = "/descargas/rustdesk-cliente-windows-x64.exe"
-	rustDeskClientLinuxURL   = "/descargas/rustdesk-cliente-linux-amd64.deb"
-	rustDeskClientMacURL     = "/descargas/rustdesk-cliente-macos-x64.dmg"
-	rustDeskServerWindowsURL = "/descargas/rustdesk-servidor-windows-x64.zip"
-	rustDeskServerLinuxURL   = "/descargas/rustdesk-servidor-linux-amd64.zip"
+	rustDeskClientWindowsURL = "https://rustdesk.com/download"
+	rustDeskClientLinuxURL   = "https://rustdesk.com/download"
+	rustDeskClientMacURL     = "https://rustdesk.com/download"
+	rustDeskServerWindowsURL = "https://rustdesk.com/docs/en/self-host/install/"
+	rustDeskServerLinuxURL   = "https://rustdesk.com/docs/en/self-host/install/"
 )
 
 func applyRustDeskDownloadDefaults(cfg *dbpkg.EmpresaSoporteRemotoConfig) {
