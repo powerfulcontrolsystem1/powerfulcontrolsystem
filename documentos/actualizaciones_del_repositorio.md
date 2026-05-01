@@ -3029,3 +3029,17 @@ Archivos modificados:
 - web/super/licencias_resumen.html
 - web/super/metricas_de_trafico_general.html
 - web/super_administrador.html
+
+2026-04-30 22:04:01 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 7db19f0; PushStatus: OK
+Archivos modificados:
+- backend/handlers/super_config_backup_handlers.go
+- backend/handlers/super_portal_chat_ia_info.go
+- backend/handlers/voice_stream_config.go
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/productos/categorias.html
+- web/ayuda/ayuda.html
+- web/ayuda/chat_ia.html
+- web/js/ai_chat_drawer.js
+- web/super/configuracion_avanzada.html
+- web/super/voz_streaming_ia.html
