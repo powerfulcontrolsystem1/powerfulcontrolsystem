@@ -3047,3 +3047,15 @@ Archivos modificados:
 2026-04-30 22:09:58 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 256c7f9; PushStatus: OK
 Archivos modificados:
 - web/super/licencias_resumen.html
+
+2026-05-01 16:19:31 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 7cbfa36; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/categorias.html
+- web/administrar_empresa/egresos.html
+- web/administrar_empresa/egresos_ingresos_menu.html
+- web/administrar_empresa/ingresos.html
+- web/administrar_empresa/productos/administrar_productos_menu.html
+- web/js/egresos_ingresos.js
+- web/super/licencias_resumen.html
