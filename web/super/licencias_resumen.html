@@ -7,23 +7,26 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .summary-card{padding:28px;text-align:center}
-    .big-number{font-size:3.2rem;font-weight:800;color:var(--text)}
+    .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+    .summary-card{padding:11px 12px;text-align:left;min-height:0}
+    .summary-card .form-help{font-size:.76rem;line-height:1.2;margin-top:3px}
+    .big-number{font-size:1.95rem;line-height:1;font-weight:850;color:var(--text);margin:4px 0}
     .muted{color:var(--muted)}
-    .ops-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .ops-card{padding:18px}
-    .ops-kpi{font-size:1.65rem;font-weight:900;color:var(--text);margin-top:6px}
-    .ops-sub{margin-top:6px}
+    .ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;margin-top:8px}
+    .ops-card{padding:10px 12px;min-height:0}
+    .ops-card>.muted{font-size:.78rem;line-height:1.15}
+    .ops-kpi{font-size:1rem;line-height:1.18;font-weight:850;color:var(--text);margin-top:4px;overflow-wrap:anywhere}
+    .ops-sub{margin-top:3px;font-size:.73rem;line-height:1.18;overflow-wrap:anywhere}
     .ops-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .ops-form .form-col{min-width:0}
-    .super-metrics-panel{margin-top:18px}
-    .super-metrics-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-    .super-metrics-header h2{margin:0;font-size:1.35rem;color:var(--text)}
-    .super-metrics-header p{margin:4px 0 0}
-    .super-metrics-current{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px;margin-bottom:12px}
-    .super-metrics-value{font-size:1.8rem;font-weight:900;color:var(--text);margin-top:6px}
+    .super-metrics-panel{margin-top:10px}
+    .super-metrics-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .super-metrics-header h2{margin:0;font-size:1rem;color:var(--text)}
+    .super-metrics-header p{margin:2px 0 0;font-size:.74rem;line-height:1.18}
+    .super-metrics-header .btn{padding:7px 10px;font-size:.82rem}
+    .super-metrics-current{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:8px}
+    .super-metrics-value{font-size:1.12rem;line-height:1.18;font-weight:850;color:var(--text);margin-top:4px;overflow-wrap:anywhere}
     .super-metrics-charts{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:12px}
     .super-metrics-chart-card{min-height:390px;display:flex;flex-direction:column}
     .super-metrics-chart-card.is-wide{grid-column:auto}
@@ -35,8 +38,9 @@
     @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (min-width:1200px){.super-metrics-chart-card.is-wide{grid-column:1 / -1}.super-metrics-chart-wrap{min-height:380px}}
     @media (max-width:1050px){.super-metrics-charts{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr 1fr}}
-    @media (max-width:900px){.summary-grid{grid-template-columns:1fr}}
-    @media (max-width:680px){.ops-grid{grid-template-columns:1fr}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
+    @media (max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:680px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
+    @media (max-width:460px){.summary-grid,.ops-grid,.super-metrics-current{grid-template-columns:1fr}.super-metrics-header{align-items:flex-start}}
   </style>
 </head>
 <body class="super-page">
