@@ -1348,6 +1348,9 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
 		return 0, err
 	}
+	if stockInicial > 0 && p.BodegaPrincipalID <= 0 {
+		return 0, fmt.Errorf("bodega_principal_id requerido para registrar stock inicial")
+	}
 
 	tx, err := dbConn.Begin()
 	if err != nil {

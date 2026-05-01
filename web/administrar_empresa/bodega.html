@@ -159,7 +159,15 @@
     function setCRUDFormVisible(formId, visible) {
       const form = document.getElementById(formId);
       if (!form) return;
-      form.style.display = visible ? '' : 'none';
+      form.classList.toggle('is-hidden', !visible);
+      form.hidden = !visible;
+      if (visible) {
+        form.removeAttribute('hidden');
+      } else {
+        form.setAttribute('hidden', 'hidden');
+      }
+      form.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      form.style.display = visible ? 'block' : 'none';
     }
 
     function fillBodegaForm(b) {

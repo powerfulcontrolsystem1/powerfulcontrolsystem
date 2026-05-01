@@ -1083,7 +1083,15 @@
     function setCRUDFormVisible(formId, visible) {
       const form = document.getElementById(formId);
       if (!form) return;
-      form.style.display = visible ? '' : 'none';
+      form.classList.toggle('is-hidden', !visible);
+      form.hidden = !visible;
+      if (visible) {
+        form.removeAttribute('hidden');
+      } else {
+        form.setAttribute('hidden', 'hidden');
+      }
+      form.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      form.style.display = visible ? 'block' : 'none';
     }
 
     function hideCRUDForms() {
@@ -1092,6 +1100,19 @@
       setCRUDFormVisible('categoriaProductoForm', false);
       setCRUDFormVisible('productoForm', false);
       setCRUDFormVisible('servicioForm', false);
+    }
+
+    function openCRUDForm(formId, focusId) {
+      hideCRUDForms();
+      setCRUDFormVisible(formId, true);
+      const form = document.getElementById(formId);
+      if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      const focusEl = focusId ? document.getElementById(focusId) : null;
+      if (focusEl && typeof focusEl.focus === 'function') {
+        focusEl.focus();
+      }
     }
 
     async function loadEmpresaInfo() {
@@ -1203,7 +1224,7 @@
       if (action === 'edit-bodega') {
         const b = state.bodegas.find(x => Number(x.id) === Number(id));
         fillBodegaForm(b || null);
-        setCRUDFormVisible('bodegaForm', true);
+        openCRUDForm('bodegaForm', 'bodegaNombre');
         return;
       }
       if (action === 'delete-bodega') {
@@ -1363,7 +1384,7 @@
       if (action === 'edit-proveedor') {
         const p = state.proveedores.find(x => Number(x.id) === Number(id));
         fillProveedorForm(p || null);
-        setCRUDFormVisible('proveedorForm', true);
+        openCRUDForm('proveedorForm', 'proveedorNombre');
         return;
       }
       if (action === 'delete-proveedor') {
@@ -1493,7 +1514,7 @@
       if (action === 'edit-categoria-producto') {
         const c = state.categoriasProductos.find(x => Number(x.id) === Number(id));
         fillCategoriaProductoForm(c || null);
-        setCRUDFormVisible('categoriaProductoForm', true);
+        openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
         return;
       }
       if (action === 'delete-categoria-producto') {
@@ -1639,7 +1660,14 @@
       document.getElementById('productoStockMin').value = p ? num(p.stock_minimo) : 0;
       document.getElementById('productoStockMax').value = p ? num(p.stock_maximo) : 0;
       document.getElementById('productoStockInicial').value = 0;
-      document.getElementById('productoBodegaPrincipal').value = p ? String(p.bodega_principal_id || '') : '';
+      const bodegaPrincipalSelect = document.getElementById('productoBodegaPrincipal');
+      bodegaPrincipalSelect.value = p ? String(p.bodega_principal_id || '') : '';
+      if (!p && !bodegaPrincipalSelect.value) {
+        const bodegasActivas = getActivos(state.bodegas);
+        if (bodegasActivas.length === 1) {
+          bodegaPrincipalSelect.value = String(Number(bodegasActivas[0].id || 0));
+        }
+      }
       document.getElementById('productoProveedorPrincipal').value = p ? String(p.proveedor_principal_id || '') : '';
       document.getElementById('productoImagenURL').value = p ? (p.imagen_url || '') : '';
       document.getElementById('productoDescripcion').value = p ? (p.descripcion || '') : '';
@@ -1679,6 +1707,11 @@
       };
       if (!payload.nombre) {
         showMessage('El nombre del producto es obligatorio.', 'error');
+        return;
+      }
+      if (!id && payload.stock_inicial > 0 && payload.bodega_principal_id <= 0) {
+        showMessage('Para registrar stock inicial debes seleccionar una bodega principal. Si no tienes bodegas, crea una primero en Inventario > Bodegas.', 'error');
+        document.getElementById('productoBodegaPrincipal').focus();
         return;
       }
 
@@ -1730,7 +1763,7 @@
         await ensureProveedoresDisponibles();
         const p = state.productos.find(x => Number(x.id) === Number(id));
         fillProductoForm(p || null);
-        setCRUDFormVisible('productoForm', true);
+        openCRUDForm('productoForm', 'productoNombre');
         return;
       }
       if (action === 'delete-producto') {
@@ -1835,7 +1868,7 @@
       if (action === 'edit-servicio') {
         const s = state.servicios.find(x => Number(x.id) === Number(id));
         fillServicioForm(s || null);
-        setCRUDFormVisible('servicioForm', true);
+        openCRUDForm('servicioForm', 'servicioNombre');
         return;
       }
       if (action === 'delete-servicio') {
@@ -2760,7 +2793,7 @@
     function wireEvents() {
       document.getElementById('btnNuevaBodega').addEventListener('click', () => {
         fillBodegaForm(null);
-        setCRUDFormVisible('bodegaForm', true);
+        openCRUDForm('bodegaForm', 'bodegaNombre');
       });
       document.getElementById('bodegaForm').addEventListener('submit', async ev => {
         try {
@@ -2782,7 +2815,7 @@
 
       document.getElementById('btnNuevoProveedor').addEventListener('click', () => {
         fillProveedorForm(null);
-        setCRUDFormVisible('proveedorForm', true);
+        openCRUDForm('proveedorForm', 'proveedorNombre');
       });
       document.getElementById('proveedorForm').addEventListener('submit', async ev => {
         try {
@@ -2804,7 +2837,7 @@
 
       document.getElementById('btnNuevaCategoriaProducto').addEventListener('click', () => {
         fillCategoriaProductoForm(null);
-        setCRUDFormVisible('categoriaProductoForm', true);
+        openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
       });
       document.getElementById('btnBuscarCategoriasProducto').addEventListener('click', async () => {
         try {
@@ -2833,7 +2866,7 @@
       document.getElementById('btnNuevoProducto').addEventListener('click', async () => {
         await ensureProveedoresDisponibles();
         fillProductoForm(null);
-        setCRUDFormVisible('productoForm', true);
+        openCRUDForm('productoForm', 'productoNombre');
       });
       document.getElementById('btnBuscarProductos').addEventListener('click', async () => {
         try {
@@ -2870,7 +2903,7 @@
 
       document.getElementById('btnNuevoServicio').addEventListener('click', () => {
         fillServicioForm(null);
-        setCRUDFormVisible('servicioForm', true);
+        openCRUDForm('servicioForm', 'servicioNombre');
       });
       document.getElementById('servicioForm').addEventListener('submit', async ev => {
         try {

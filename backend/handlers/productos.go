@@ -299,6 +299,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
 			}
+			if payload.StockInicial > 0 && payload.BodegaPrincipalID <= 0 {
+				http.Error(w, "bodega_principal_id required when stock_inicial is greater than zero", http.StatusBadRequest)
+				return
+			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProducto(dbEmp, payload.Producto, payload.StockInicial, payload.ReferenciaInicial)
 			if err != nil {
