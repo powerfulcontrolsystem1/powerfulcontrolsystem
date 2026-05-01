@@ -19,6 +19,7 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/super/api/administradores/solicitar_recuperacion",
 		"/super/api/administradores/restablecer_password",
 		"/api/public/venta_publica",
+		"/red_social_comercial.html",
 		"/emulador",
 		"/emulador/",
 		"/emulador/emulator/data/loader.js",
