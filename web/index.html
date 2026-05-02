@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 
 <head>
@@ -46,7 +46,7 @@
     html[data-theme="dark"] .portal-header .brand-logo,
     html[data-theme="dark-violet"] .portal-header .brand-logo,
     html[data-theme="dark-emerald"] .portal-header .brand-logo {
-      /* Más claro en modo oscuro: mejor contraste y legibilidad */
+      /* MÃ¡s claro en modo oscuro: mejor contraste y legibilidad */
       color: rgba(255, 255, 255, 0.985);
       text-shadow:
         0 1px 0 rgba(0, 0, 0, 0.35),
@@ -104,6 +104,111 @@
       margin: 0 auto 60px auto;
       max-width: 1200px;
       padding: 0 20px;
+    }
+
+    .portal-modules-section {
+      max-width: 1240px;
+      margin: 20px auto 80px;
+      padding: 0 20px 30px;
+    }
+
+    .portal-modules-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, .9fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .portal-modules-intro,
+    .portal-modules-note,
+    .portal-module-card {
+      background: linear-gradient(180deg, rgba(11, 28, 43, 0.96), rgba(15, 34, 54, 0.92));
+      border: 1px solid rgba(120, 154, 190, 0.18);
+      border-radius: 18px;
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.22);
+    }
+
+    .portal-modules-intro,
+    .portal-modules-note {
+      padding: 22px;
+    }
+
+    .portal-modules-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(49, 157, 231, 0.12);
+      color: #bee2ff;
+      border: 1px solid rgba(49, 157, 231, 0.28);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .portal-modules-intro h2,
+    .portal-modules-note h3 {
+      margin: 14px 0 10px;
+      color: #f5f8ff;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .portal-modules-intro p,
+    .portal-modules-note p {
+      margin: 0;
+      color: #b9cada;
+      line-height: 1.6;
+    }
+
+    .portal-modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .portal-module-card {
+      padding: 20px 18px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .portal-module-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: .95;
+    }
+
+    .portal-module-card h3 {
+      margin: 0 0 8px;
+      color: #f5f8ff;
+      font-size: 1.1rem;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .portal-module-card p {
+      margin: 0 0 14px;
+      color: #b7c8da;
+      font-size: .95rem;
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    .portal-module-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #edf3fb;
+      display: grid;
+      gap: 8px;
+    }
+
+    .portal-module-card li {
+      line-height: 1.45;
     }
 
     .home-offer-card {
@@ -165,7 +270,7 @@
       display: block;
     }
 
-    /* Arriba: logo pequeño + título */
+    /* Arriba: logo pequeÃ±o + tÃ­tulo */
     .home-offer-head {
       display: flex;
       align-items: center;
@@ -195,14 +300,14 @@
       color: var(--text);
       line-height: 1.2;
       text-align: left;
-      /* Mantener simetría entre tarjetas sin recortar con "..." */
+      /* Mantener simetrÃ­a entre tarjetas sin recortar con "..." */
       line-height: 1.15;
       max-height: calc(1.15em * 3);
       overflow: hidden;
       flex: 1 1 auto;
     }
 
-    /* Imagen principal debajo del título, centrada (mismo tamaño en todas las tarjetas) */
+    /* Imagen principal debajo del tÃ­tulo, centrada (mismo tamaÃ±o en todas las tarjetas) */
     .home-offer-figure {
       margin: 0 0 18px;
       display: flex;
@@ -220,7 +325,7 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: fill;
-      /* estirar para garantizar mismo tamaño visual */
+      /* estirar para garantizar mismo tamaÃ±o visual */
       display: block;
       opacity: 0.98;
       filter: none;
@@ -232,9 +337,15 @@
         height: 158px;
       }
 
-      /* +12.5% vs 140px (≈157.5px) */
+      /* +12.5% vs 140px (â‰ˆ157.5px) */
       .home-offer-head {
         min-height: 58px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .portal-modules-header {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -460,7 +571,7 @@
       color: #ff9b9b;
     }
 
-    /* Chat (Index): input del mismo ancho del panel y tipografía más grande */
+    /* Chat (Index): input del mismo ancho del panel y tipografÃ­a mÃ¡s grande */
     #pcsPublicChatForm {
       width: 100%;
     }
@@ -507,30 +618,61 @@
         <img src="/img/punto_venta.png" alt="Logo" width="32" height="32" style="border-radius: 4px;">
         <span class="brand-title-wrap">
           <span>Powerful Control System - Plataforma SaaS POS Multiempresa</span>
-          <span class="brand-subtitle">Sistema de Facturación Electrónica</span>
+          <span class="brand-subtitle">Sistema de FacturaciÃ³n ElectrÃ³nica</span>
         </span>
       </a>
       <nav class="nav-actions">
-        <a class="btn dark" href="/login.html">Iniciar sesión</a>
+        <a class="btn dark" href="/login.html">Iniciar sesiÃ³n</a>
         <a class="btn dark" href="/registrar_nuevo_usuario_administrador.html">Crear cuenta</a>
         <div class="header-dropdown" id="headerMoreMenu">
           <button type="button" class="header-dropdown-toggle" aria-haspopup="true" aria-expanded="false"
             aria-controls="headerMoreMenuList" id="headerMoreMenuToggle">
-            Más <span class="caret" aria-hidden="true">▾</span>
+            MÃ¡s <span class="caret" aria-hidden="true">â–¾</span>
           </button>
-          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="Más opciones">
-            <a role="menuitem" href="/Informacion_de_contacto.html">Información de contacto</a>
+          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="MÃ¡s opciones">
+            <a role="menuitem" href="/Informacion_de_contacto.html">InformaciÃ³n de contacto</a>
           </div>
         </div>
       </nav>
     </header>
 
     <main class="portal-main container">
-      <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
+      <!-- SecciÃ³n principal reservada para tarjetas, sin texto introductorio superior -->
       <section id="portalCardsGrid" class="portal-grid portal-home-grid" aria-live="polite"></section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
 
       
+
+      <section class="portal-modules-section" aria-labelledby="portalModulesTitle">
+        <div class="portal-modules-header">
+          <article class="portal-modules-intro">
+            <span class="portal-modules-kicker">Módulos del sistema</span>
+            <h2 id="portalModulesTitle">Todo lo que resuelve Powerful Control System en una sola plataforma</h2>
+            <p>Debajo del chat IA dejamos una tarjeta ejecutiva con los módulos más importantes del sistema. La idea es que cualquier cliente o empresa entienda rápido qué puede operar, controlar y escalar desde una sola suite.</p>
+          </article>
+          <aside class="portal-modules-note">
+            <h3>Cobertura empresarial real</h3>
+            <p>La plataforma ya combina operación diaria, ventas, reservas, gimnasio, inventario, finanzas, analítica, automatización y experiencias públicas para clientes. No es un módulo aislado: es un stack empresarial completo.</p>
+          </aside>
+        </div>
+
+        <div class="portal-modules-grid">
+          <article class="portal-module-card"><h3>Estaciones y operación</h3><p>Centro operativo para disponibilidad, apertura, ocupación y control diario del negocio.</p><ul><li>Mapa de estaciones en vivo y activación operativa.</li><li>Carritos rápidos y seguimiento de consumo por punto.</li><li>Señales de operación, incidencias y lectura del día.</li></ul></article>
+          <article class="portal-module-card"><h3>Ventas, carrito y caja</h3><p>Motor comercial para vender, cobrar y dejar trazabilidad documental y financiera.</p><ul><li>Carrito, venta directa, descuentos, propinas y pago mixto.</li><li>Cierre de venta con impresión y factura electrónica.</li><li>Corte de caja, métodos de pago y control de recaudo.</li></ul></article>
+          <article class="portal-module-card"><h3>Reservas hotel y hospedaje</h3><p>Planeación de reservas, recepción y control de ocupación para operación hotelera.</p><ul><li>Disponibilidad, check-in, no show e incidencias.</li><li>Tarifas por minutos o por día según el modelo del negocio.</li><li>Base lista para integrar acceso RFID a habitaciones.</li></ul></article>
+          <article class="portal-module-card"><h3>Gimnasio y control de acceso</h3><p>Módulo moderno para socios, clases, planes y control físico de ingreso.</p><ul><li>Planes, entrenadores, inscripciones y pagos.</li><li>Credenciales RFID, NFC, QR, PIN y biometría.</li><li>Dispositivos, bitácora y reglas anti-passback.</li></ul></article>
+          <article class="portal-module-card"><h3>Clientes y CRM comercial</h3><p>Relación comercial completa desde el lead hasta la fidelización.</p><ul><li>Base fiscal y comercial del cliente.</li><li>Pipeline, campañas, seguimientos y cotizaciones.</li><li>Conversión, historial y enfoque por segmentos.</li></ul></article>
+          <article class="portal-module-card"><h3>Inventario, productos y compras</h3><p>Catálogo y abastecimiento con control de existencias y reposición.</p><ul><li>Productos, servicios, categorías, existencias y precios.</li><li>Compras documentales, proveedores y plan de reposición.</li><li>Alertas, ajustes y trazabilidad del inventario.</li></ul></article>
+          <article class="portal-module-card"><h3>Finanzas, tesorería y cartera</h3><p>Puerta financiera para caja, movimientos, cuentas y conciliación.</p><ul><li>Movimientos, cierres, extractos y conciliación bancaria.</li><li>Cuentas por cobrar, cuentas por pagar y abonos.</li><li>Créditos, refinanciación y seguimiento de cartera.</li></ul></article>
+          <article class="portal-module-card"><h3>Facturación electrónica e impuestos</h3><p>Cumplimiento tributario y emisión documental unificada.</p><ul><li>Configuración DIAN, emisión y bandeja documental.</li><li>Reenvío, soporte, impresión y validación normativa.</li><li>Impuestos por país, catálogo tributario y tasas activas.</li></ul></article>
+          <article class="portal-module-card"><h3>Nómina, asistencia y horarios</h3><p>Gestión profesional del equipo desde planeación hasta control laboral.</p><ul><li>Asistencia, tardanzas, cierres de período y base de nómina.</li><li>Programación laboral por sede, área, rol y cobertura.</li><li>Reglas de jornada, publicación de turnos y alertas por conflicto.</li></ul></article>
+          <article class="portal-module-card"><h3>Usuarios, permisos y auditoría</h3><p>Seguridad empresarial con control de acceso y trazabilidad.</p><ul><li>Usuarios, roles y permisos por módulo o página.</li><li>Auditoría de acciones sensibles por empresa y usuario.</li><li>Backups, soporte remoto y administración segura.</li></ul></article>
+          <article class="portal-module-card"><h3>Chat, tareas e IA</h3><p>Colaboración interna y asistencia inteligente en el mismo flujo de trabajo.</p><ul><li>Chat empresarial, tareas, agenda y coordinación diaria.</li><li>Chat IA con voz, streaming, adjuntos y reportes.</li><li>Documentos IA y exportación compartible por correo o WhatsApp.</li></ul></article>
+          <article class="portal-module-card"><h3>Reportes y analítica ejecutiva</h3><p>Lectura gerencial para convertir datos operativos en decisiones.</p><ul><li>KPIs, semáforos, metas vs real y presupuesto vs ejecución.</li><li>Rentabilidad por línea, sede y canal.</li><li>Alertas, narrativa ejecutiva y oportunidades del período.</li></ul></article>
+          <article class="portal-module-card"><h3>Venta pública y red social empresarial</h3><p>Canales externos para vender, exhibir marca y atender clientes.</p><ul><li>Páginas públicas, checkout y catálogo por empresa.</li><li>Red social comercial y publicaciones con imagen o video.</li><li>Chat público determinista para catálogo, promociones y precios.</li></ul></article>
+          <article class="portal-module-card"><h3>Vehículos, activos y trazabilidad</h3><p>Control de permanencia, acceso y seguimiento físico de recursos.</p><ul><li>Registro vehicular por conductor, país y permanencia.</li><li>Historial de activos y hoja de vida operativa.</li><li>GPS, sensores y base para control de acceso por RFID.</li></ul></article>
+        </div>
+      </section>
 
     </main>
     <footer class="portal-footer">&copy; 2026 - Powerful Control System - Plataforma SaaS POS Multiempresa- Derechos
@@ -590,31 +732,31 @@
       var fallbackCards = [
         {
           titulo: 'Punto de venta',
-          descripcion: 'Solución completa para ventas rápidas y facturación electrónica.',
+          descripcion: 'SoluciÃ³n completa para ventas rÃ¡pidas y facturaciÃ³n electrÃ³nica.',
           imagen_url: '/img/punto_venta.png',
           enlace: '/administrar_empresa.html?module=punto_venta'
         },
         {
           titulo: 'Motel',
-          descripcion: 'Gestión por tiempo de servicio y facturación tarifada por estancia.',
+          descripcion: 'GestiÃ³n por tiempo de servicio y facturaciÃ³n tarifada por estancia.',
           imagen_url: '/img/motel.png',
           enlace: '/administrar_empresa.html?module=motel'
         },
         {
           titulo: 'Restaurante',
-          descripcion: 'Gestión de mesas, pedidos y facturación para restaurantes.',
+          descripcion: 'GestiÃ³n de mesas, pedidos y facturaciÃ³n para restaurantes.',
           imagen_url: '/img/restaurante.png',
           enlace: '/administrar_empresa.html?module=restaurante'
         },
         {
           titulo: 'Control por sensor',
-          descripcion: 'Integración y alertas con sensores para control de accesos.',
+          descripcion: 'IntegraciÃ³n y alertas con sensores para control de accesos.',
           imagen_url: '/img/sensor.png',
           enlace: '/administrar_empresa.html?module=sensor'
         },
         {
           titulo: 'Hotel',
-          descripcion: 'Administración de empresas, roles y permisos para operación hotelera.',
+          descripcion: 'AdministraciÃ³n de empresas, roles y permisos para operaciÃ³n hotelera.',
           imagen_url: '/img/settings-color.svg',
           enlace: '/administrar_empresa.html?module=configuracion'
         }
@@ -743,7 +885,7 @@
             '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
             '  </div>' +
             '  <div class="home-offer-figure">' +
-            '    <img class="card-figure-img" src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
+            '    <img class="card-figure-img" src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="IlustraciÃ³n: ' + escapeHTML(card.titulo) + '">' +
             '  </div>' +
             '  <div class="home-offer-body">' +
             '    <p>' + escapeHTML(card.descripcion) + '</p>' +
@@ -776,7 +918,7 @@
           var el = titles[i];
           if (!el) continue;
 
-          // Reset a tamaño base antes de ajustar.
+          // Reset a tamaÃ±o base antes de ajustar.
           el.style.fontSize = '';
           var cs = window.getComputedStyle(el);
 
@@ -796,7 +938,7 @@
           }
           var maxHeightPx = Math.ceil(lineHeightPx * 3 + 0.5);
 
-          // Reducir hasta que quepa en 3 líneas (sin recorte con "...")
+          // Reducir hasta que quepa en 3 lÃ­neas (sin recorte con "...")
           var current = basePx;
           var guard = 0;
           while (el.scrollHeight > maxHeightPx && current > minPx && guard < 40) {
@@ -835,7 +977,7 @@
         }
       }
 
-      // Chat público (portal) — 10 consultas/5 min por usuario
+      // Chat pÃºblico (portal) â€” 10 consultas/5 min por usuario
       (function initPublicPortalChat() {
         if (window.__pcsUseFloatingPublicChat) return;
         var box = document.getElementById("pcsPublicChat");
@@ -900,13 +1042,13 @@
           if (!q) return;
           var pre = localLimitCheck();
           if (!pre.ok) {
-            setMsg("Límite alcanzado. Espera " + pre.retry + "s o escríbenos por WhatsApp.", true);
+            setMsg("LÃ­mite alcanzado. Espera " + pre.retry + "s o escrÃ­benos por WhatsApp.", true);
             return;
           }
           input.value = "";
           append("user", q);
           pushHistory("user", q);
-          setMsg("Consultando…", false);
+          setMsg("Consultandoâ€¦", false);
           btnSend.disabled = true;
           try {
             var res = await fetch("/api/public/chat_portal", {
@@ -924,7 +1066,7 @@
                 setMsg(err, true);
                 append("assistant", err);
                 pushHistory("assistant", err);
-                // bloquear solo en el cliente también
+                // bloquear solo en el cliente tambiÃ©n
                 try {
                   window.localStorage.setItem(localKey, JSON.stringify({ resetAt: Date.now() + (retry * 1000), used: 10 }));
                 } catch (e2) { }
@@ -950,7 +1092,7 @@
           if (!q) return;
           var pre = localLimitCheck();
           if (!pre.ok) {
-            setMsg("Límite alcanzado. Espera " + pre.retry + "s.", true);
+            setMsg("LÃ­mite alcanzado. Espera " + pre.retry + "s.", true);
             return;
           }
           input.value = "";
@@ -1047,7 +1189,7 @@
 
       loadCards();
 
-      // Reajustar títulos si cambia el ancho (móvil/desktop)
+      // Reajustar tÃ­tulos si cambia el ancho (mÃ³vil/desktop)
       try {
         window.addEventListener('resize', scheduleFitHomeOfferTitles);
       } catch (e) { }
@@ -1058,3 +1200,4 @@
 </body>
 
 </html>
+

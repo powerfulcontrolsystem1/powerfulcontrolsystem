@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Horarios laborales</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .horarios-shell { display:flex; flex-direction:column; gap:16px; }
+    .horarios-hero {
+      display:grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+      gap:16px;
+      align-items:stretch;
+    }
+    .horarios-hero-card,
+    .horarios-panel-card,
+    .horarios-table-card {
+      background: linear-gradient(180deg, rgba(10,22,36,0.96), rgba(12,27,42,0.92));
+      border: 1px solid rgba(122, 154, 190, 0.18);
+      border-radius: 18px;
+      box-shadow: 0 18px 38px rgba(0,0,0,.24);
+      padding: 18px;
+    }
+    .horarios-hero-badge {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding:7px 14px;
+      background: rgba(49,157,231,0.12);
+      color:#b8ddff;
+      border:1px solid rgba(49,157,231,0.28);
+      font-size:.8rem;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+    .horarios-hero-card h1 { margin:12px 0 8px; font-size:2rem; color:#f4f8ff; }
+    .horarios-hero-card p,
+    .horarios-panel-card p { margin:0; color:#b8cadb; line-height:1.55; }
+    .horarios-badge-row,
+    .horarios-chip-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .horarios-chip {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px;
+      background: rgba(255,255,255,0.05); color:#edf4ff; border:1px solid rgba(150,176,206,0.16);
+      font-weight:700; font-size:.9rem;
+    }
+    .horarios-semaforos { display:grid; gap:10px; margin-top:14px; }
+    .horarios-semaforo {
+      border-radius:14px; padding:12px 14px; border:1px solid rgba(150,176,206,0.18);
+      background: rgba(255,255,255,0.04);
+    }
+    .horarios-semaforo strong { display:block; color:#f4f8ff; margin-bottom:4px; }
+    .horarios-semaforo span { color:#bed0e3; display:block; font-size:.92rem; }
+    .horarios-semaforo[data-state="solido"] { border-color: rgba(53,187,137,.4); }
+    .horarios-semaforo[data-state="estable"] { border-color: rgba(49,157,231,.4); }
+    .horarios-semaforo[data-state="atencion"] { border-color: rgba(255,189,89,.42); }
+    .horarios-semaforo[data-state="critico"] { border-color: rgba(239,83,80,.42); }
+    .horarios-grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
+    .horarios-grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:16px; }
+    .horarios-list {
+      display:grid; gap:10px; margin-top:10px; color:#d7e4f4;
+    }
+    .horarios-list-item {
+      border-radius:12px; padding:12px 14px; background: rgba(255,255,255,.045);
+      border:1px solid rgba(150,176,206,.12);
+    }
+    .horarios-list-item strong { display:block; color:#f4f8ff; margin-bottom:4px; }
+    .horarios-weekdays { display:flex; flex-wrap:wrap; gap:10px; }
+    .horarios-weekdays label {
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+      border:1px solid var(--border-color, rgba(150,176,206,.18)); border-radius:999px;
+      background: rgba(255,255,255,.04); color:#e7eef8; font-weight:700; cursor:pointer;
+    }
+    .horarios-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    .horarios-table-card table { width:100%; }
+    .horarios-color-dot {
+      width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle;
+      box-shadow:0 0 0 2px rgba(255,255,255,.1);
+    }
+    .horarios-empty { color:#9fb4c8; text-align:center; padding:16px; }
+    @media (max-width: 1080px) {
+      .horarios-hero,
+      .horarios-grid-2,
+      .horarios-grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container horarios-shell">
+    <section class="horarios-hero">
+      <article class="horarios-hero-card">
+        <span class="horarios-hero-badge">Horarios laborales</span>
+        <h1>Programación profesional de turnos y cobertura</h1>
+        <p>Programa semanas completas, controla solapes, publica turnos al equipo y mantén visibilidad operativa sobre sedes, áreas, descanso y carga horaria.</p>
+        <div class="horarios-chip-row">
+          <span class="horarios-chip">Semana operativa y publicación</span>
+          <span class="horarios-chip">Control de solapes y cobertura</span>
+          <span class="horarios-chip">Planeación por sede, área y rol</span>
+        </div>
+      </article>
+      <aside class="horarios-panel-card">
+        <strong style="display:block;color:#f4f8ff;font-size:1.1rem;">Lectura rápida</strong>
+        <p style="margin-top:8px;">Este módulo está pensado para recepción, supervisión y recursos humanos: permite planear la semana, detectar presión de horas y dejar evidencia clara de lo que ya fue publicado al equipo.</p>
+        <div id="semaforosBox" class="horarios-semaforos"></div>
+      </aside>
+    </section>
+
+    <section class="form">
+      <div class="page-header">
+        <div>
+          <h2 style="margin:0;">Resumen ejecutivo de la programación</h2>
+          <p class="form-help" style="margin:6px 0 0;">KPIs para jornada publicada, conflictos detectados y carga de trabajo por persona.</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="filtro_desde">Desde</label>
+          <input id="filtro_desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="filtro_hasta">Hasta</label>
+          <input id="filtro_hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="filtro_area">Área</label>
+          <input id="filtro_area" class="form-input" placeholder="Recepción, caja, gimnasio...">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="filtro_estado">Estado</label>
+          <select id="filtro_estado" class="form-input">
+            <option value="">Todos</option>
+            <option value="programado">Programado</option>
+            <option value="publicado">Publicado</option>
+            <option value="cubierto">Cubierto</option>
+            <option value="incidencia">Incidencia</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="horarios-actions">
+        <button id="btnRefrescar" class="btn secondary" type="button">Actualizar vista</button>
+        <button id="btnPublicarRango" class="btn" type="button">Publicar rango visible</button>
+      </div>
+      <div class="kpi-grid" style="margin-top:16px;">
+        <div class="kpi-box"><span class="kpi-label">Turnos</span><strong id="kpiTurnos">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Empleados</span><strong id="kpiEmpleados">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Horas</span><strong id="kpiHoras">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Publicados</span><strong id="kpiPublicados">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Pendientes</span><strong id="kpiPendientes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Conflictos</span><strong id="kpiConflictos">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Cobertura</span><strong id="kpiCobertura">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Promedio / empleado</span><strong id="kpiPromedio">0</strong></div>
+      </div>
+      <div class="horarios-grid-2" style="margin-top:16px;">
+        <div class="horarios-panel-card">
+          <strong style="display:block;color:#f4f8ff;">Alertas operativas</strong>
+          <div id="alertasBox" class="horarios-list"></div>
+        </div>
+        <div class="horarios-panel-card">
+          <strong style="display:block;color:#f4f8ff;">Oportunidades</strong>
+          <div id="oportunidadesBox" class="horarios-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="horarios-grid-2">
+      <form id="formTurno" class="form">
+        <div class="page-header">
+          <div>
+            <h2 style="margin:0;">Programar turno</h2>
+            <p class="form-help" style="margin:6px 0 0;">Sirve tanto para un turno único como para programar una semana completa con recurrencia.</p>
+          </div>
+        </div>
+        <input id="turno_id" type="hidden">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="usuario_id">Usuario interno</label>
+            <select id="usuario_id" class="form-input">
+              <option value="">Registro manual</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="nombre_empleado">Nombre del trabajador</label>
+            <input id="nombre_empleado" class="form-input" required placeholder="Nombre completo">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cargo">Cargo</label>
+            <input id="cargo" class="form-input" placeholder="Recepción, cajero, entrenador...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="area">Área</label>
+            <input id="area" class="form-input" placeholder="Operación, finanzas, recepción...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="sede">Sede</label>
+            <input id="sede" class="form-input" placeholder="Principal, Norte, Piso 2...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fecha_inicio">Fecha inicio</label>
+            <input id="fecha_inicio" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fecha_fin">Fecha fin</label>
+            <input id="fecha_fin" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="turno_nombre">Nombre del turno</label>
+            <input id="turno_nombre" class="form-input" placeholder="Apertura, cierre, PM...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="hora_inicio">Hora inicio</label>
+            <input id="hora_inicio" type="time" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="hora_fin">Hora fin</label>
+            <input id="hora_fin" type="time" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="descanso_minutos">Descanso (min)</label>
+            <input id="descanso_minutos" type="number" min="0" max="240" class="form-input" value="30">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="tipo_turno">Tipo</label>
+            <select id="tipo_turno" class="form-input">
+              <option value="operativo">Operativo</option>
+              <option value="administrativo">Administrativo</option>
+              <option value="cobertura">Cobertura</option>
+              <option value="guardia">Guardia</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="canal">Canal</label>
+            <select id="canal" class="form-input">
+              <option value="presencial">Presencial</option>
+              <option value="mixto">Mixto</option>
+              <option value="remoto">Remoto</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estado_turno">Estado</label>
+            <select id="estado_turno" class="form-input">
+              <option value="programado">Programado</option>
+              <option value="publicado">Publicado</option>
+              <option value="cubierto">Cubierto</option>
+              <option value="incidencia">Incidencia</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="color_turno">Color del turno</label>
+            <input id="color_turno" type="color" class="form-input" value="#2563eb">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="observaciones">Observaciones</label>
+            <input id="observaciones" class="form-input" placeholder="Cobertura, observaciones de recepción, etc.">
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-col" style="max-width:none;">
+            <label class="form-label">Días de repetición</label>
+            <div class="horarios-weekdays">
+              <label><input type="checkbox" value="1" class="weekday-check"> Lunes</label>
+              <label><input type="checkbox" value="2" class="weekday-check"> Martes</label>
+              <label><input type="checkbox" value="3" class="weekday-check"> Miércoles</label>
+              <label><input type="checkbox" value="4" class="weekday-check"> Jueves</label>
+              <label><input type="checkbox" value="5" class="weekday-check"> Viernes</label>
+              <label><input type="checkbox" value="6" class="weekday-check"> Sábado</label>
+              <label><input type="checkbox" value="0" class="weekday-check"> Domingo</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;">
+            <input id="publicado" type="checkbox">
+            <label class="form-label" for="publicado" style="margin:0;">Publicar de inmediato</label>
+          </div>
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;">
+            <input id="requiere_cobertura" type="checkbox">
+            <label class="form-label" for="requiere_cobertura" style="margin:0;">Requiere cobertura</label>
+          </div>
+        </div>
+        <div class="horarios-actions" style="margin-top:16px;">
+          <button id="btnGuardarTurno" class="btn add" type="submit">Guardar turno</button>
+          <button id="btnLimpiarTurno" class="btn secondary" type="button">Limpiar formulario</button>
+        </div>
+        <div id="turnoMsg" class="form-help" style="margin-top:10px;"></div>
+      </form>
+
+      <section class="form">
+        <div class="page-header">
+          <div>
+            <h2 style="margin:0;">Reglas de programación</h2>
+            <p class="form-help" style="margin:6px 0 0;">Define objetivos de jornada y el criterio para detectar conflictos antes de publicar.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfg_horas_dia">Horas objetivo / día</label>
+            <input id="cfg_horas_dia" type="number" min="1" max="24" step="0.5" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfg_horas_semana">Horas objetivo / semana</label>
+            <input id="cfg_horas_semana" type="number" min="1" max="120" step="0.5" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfg_descanso">Descanso mínimo (min)</label>
+            <input id="cfg_descanso" type="number" min="0" max="240" class="form-input">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfg_anticipacion">Publicación anticipada (h)</label>
+            <input id="cfg_anticipacion" type="number" min="0" max="168" class="form-input">
+          </div>
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;">
+            <input id="cfg_permitir_solapados" type="checkbox">
+            <label class="form-label" for="cfg_permitir_solapados" style="margin:0;">Permitir solapes controlados</label>
+          </div>
+        </div>
+        <div class="horarios-actions">
+          <button id="btnGuardarConfig" class="btn secondary" type="button">Guardar reglas</button>
+        </div>
+        <div id="configMsg" class="form-help" style="margin-top:10px;"></div>
+
+        <div class="horarios-grid-2" style="margin-top:16px;">
+          <div class="horarios-panel-card">
+            <strong style="display:block;color:#f4f8ff;">Carga por área</strong>
+            <div id="areasBox" class="horarios-list"></div>
+          </div>
+          <div class="horarios-panel-card">
+            <strong style="display:block;color:#f4f8ff;">Carga por sede</strong>
+            <div id="sedesBox" class="horarios-list"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="horarios-table-card">
+      <div class="page-header">
+        <div>
+          <h2 style="margin:0;">Programación cargada</h2>
+          <p class="form-help" style="margin:6px 0 0;">Lista operativa para revisar turnos, conflictos, publicación y cobertura.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha</th>
+              <th>Horario</th>
+              <th>Área / sede</th>
+              <th>Estado</th>
+              <th>Horas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaTurnosBody">
+            <tr><td colspan="7" class="horarios-empty">Cargando programación...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="/js/horarios_trabajadores.js"></script>
+</body>
+</html>

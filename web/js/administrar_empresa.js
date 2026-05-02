@@ -1,4 +1,4 @@
-function getQueryParam(name) {
+﻿function getQueryParam(name) {
   var params = new URLSearchParams(window.location.search);
   var value = params.get(name);
   if (value) {
@@ -133,6 +133,7 @@ try {
     document.getElementById("linkReservasHotel"),
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
+    document.getElementById("linkHorariosTrabajadores"),
     document.getElementById("linkCodigosDescuento"),
     document.getElementById("linkCorteCaja"),
     document.getElementById("linkGeneradorCodigosBarras"),
@@ -186,6 +187,7 @@ try {
     linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentas, action: permActionApprove },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
+    linkHorariosTrabajadores: { module: permModuleSeguridad, action: permActionUpdate },
     linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
     linkNominaSueldos: { module: permModuleFinanzas, action: permActionCreate },
     linkVehiculosRegistro: { module: permModuleSeguridad, action: permActionCreate },
@@ -774,7 +776,7 @@ try {
 
   function describePermissionContext(permissionContext) {
     if (!permissionContext || typeof permissionContext !== "object") {
-      return "Permisos de menú: sin contexto disponible.";
+      return "Permisos de menÃº: sin contexto disponible.";
     }
     var role = normalizePermissionRole(permissionContext.rol || "sin_rol") || "sin_rol";
     var summary = permissionContext.resumen || {};
@@ -782,9 +784,9 @@ try {
     var modulesRead = Number(summary.modulos_lectura || 0);
     var modulesApprove = Number(summary.modulos_aprobacion || 0);
     var enabledActions = Number(summary.acciones_habilitadas || 0);
-    return "Permisos de menú: rol " + role +
+    return "Permisos de menÃº: rol " + role +
       " | lectura " + modulesRead + "/" + modulesTotal +
-      " | aprobación " + modulesApprove +
+      " | aprobaciÃ³n " + modulesApprove +
       " | acciones habilitadas " + enabledActions +
       " | fuente: /api/empresa/permisos_contexto";
   }
@@ -970,9 +972,9 @@ try {
         }
         applyMenuPermissionsByRole(normalizedRole);
         if (normalizedRole) {
-          setMenuPermissionsEvidence("Permisos de menú: rol " + normalizedRole + " | fuente local de respaldo.", true);
+          setMenuPermissionsEvidence("Permisos de menÃº: rol " + normalizedRole + " | fuente local de respaldo.", true);
         } else {
-          setMenuPermissionsEvidence("Permisos de menú: sin rol detectado | fuente local de respaldo.", true);
+          setMenuPermissionsEvidence("Permisos de menÃº: sin rol detectado | fuente local de respaldo.", true);
         }
       });
   }
@@ -1117,8 +1119,8 @@ try {
       }
       if (!currentHref) return;
 
-      // Si una navegación interna del iframe pierde empresa_id,
-      // se corrige automáticamente usando el contexto activo.
+      // Si una navegaciÃ³n interna del iframe pierde empresa_id,
+      // se corrige automÃ¡ticamente usando el contexto activo.
       if (id) {
         try {
           var normalizedCurrent = normalizeHref(currentHref);
@@ -1140,8 +1142,8 @@ try {
       setActiveByHref(currentHref);
       updateFavoriteButton(currentHref);
     });
-    // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpágina activa.
-    // Si el foco está en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
+    // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpÃ¡gina activa.
+    // Si el foco estÃ¡ en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
     document.addEventListener('keydown', function (ev) {
       try {
         var isF5 = ev.key === 'F5' || ev.keyCode === 116;
@@ -1152,7 +1154,7 @@ try {
         var tag = (active && active.tagName) ? active.tagName.toLowerCase() : '';
         var isEditable = tag === 'input' || tag === 'textarea' || (active && active.isContentEditable);
         if (isEditable && !active.readOnly) {
-          // permitir refresco normal cuando el usuario está editando
+          // permitir refresco normal cuando el usuario estÃ¡ editando
           return;
         }
 
@@ -1162,7 +1164,7 @@ try {
             frame.contentWindow.location.reload();
             return;
           } catch (e) {
-            // si por alguna razón no es posible acceder al contentWindow, forzamos reload asignando src
+            // si por alguna razÃ³n no es posible acceder al contentWindow, forzamos reload asignando src
             try {
               var src = frame.getAttribute('src') || frame.src;
               frame.setAttribute('src', src);
@@ -1199,7 +1201,7 @@ try {
     .catch(function () {
       if (id) {
         applyMenuPermissionsByRole("");
-        setMenuPermissionsEvidence("Permisos de menú: no se pudo resolver contexto, se mantiene visibilidad base.", true);
+        setMenuPermissionsEvidence("Permisos de menÃº: no se pudo resolver contexto, se mantiene visibilidad base.", true);
         initializeMenuAndFrame(id);
         loadEmpresaTitle(id);
         startPendingConfigurationAssistant(id);
@@ -1212,3 +1214,5 @@ try {
       }
     });
 })();
+
+
