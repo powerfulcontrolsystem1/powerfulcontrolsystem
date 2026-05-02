@@ -17765,3 +17765,10 @@ PushStatus: OK
 Archivos modificados:
 - backend/logs/empresa_global.log
 - web/administrar_empresa/publicar_red_social.html
+
+2026-05-02: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/ventas.html
+- web/js/ai_chat_drawer.js
