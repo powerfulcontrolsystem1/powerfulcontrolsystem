@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   var DRAWER_ID = 'aiChatDrawer';
   var TOGGLE_ID = 'openAIDrawer';
   var CLOSE_ID = 'closeAIDrawer';
@@ -54,6 +54,8 @@
     voicePlaybackVersion: 0,
     activeSpeechRecognition: null,
     activeSpeechSource: '',
+    preferredConversationMicId: MIC_ID,
+    conversationResumeTimer: null,
     voiceQueuePromise: Promise.resolve(),
     voiceQueueVersion: 0,
     streamingSpeechBuffer: '',
@@ -629,7 +631,7 @@
 
   function getRobotStatusText(mood) {
     var modelLabel = buildResponseModelLabel(state.lastResponseModelMeta);
-    var suffix = modelLabel ? (' · ' + modelLabel) : '';
+    var suffix = modelLabel ? (' Â· ' + modelLabel) : '';
     switch (normalizeRobotMood(mood)) {
       case 'listening':
         return 'Escuchando tu voz' + suffix;
@@ -1105,7 +1107,7 @@
              
              var showBtn = document.createElement('button');
              showBtn.id = 'robotShowBtn';
-             showBtn.innerHTML = 'ðŸ’¼ Aparecer Ejecutivo';
+             showBtn.innerHTML = 'Aparecer Ejecutivo';
              showBtn.style.display = 'none';
              showBtn.onclick = function(e) {
                 e.stopPropagation();
@@ -1734,6 +1736,7 @@
   }
 
   function stopAssistantVoiceForMoment() {
+    clearConversationResumeTimer();
     resetQueuedAssistantSpeech();
     state.voicePlaybackVersion += 1;
     try {
@@ -1752,6 +1755,50 @@
       setRobotMood('idle', 900);
     }
     setNotice('Voz detenida por ahora. La siguiente respuesta volvera a hablar si el modo voz sigue activo.');
+  }
+
+  function clearConversationResumeTimer() {
+    if (state.conversationResumeTimer) {
+      window.clearTimeout(state.conversationResumeTimer);
+      state.conversationResumeTimer = null;
+    }
+  }
+
+  function getPreferredConversationMicButton() {
+    var preferredId = state.preferredConversationMicId || MIC_ID;
+    var preferred = document.getElementById(preferredId);
+    if (preferred) return preferred;
+    return document.getElementById(MIC_ID) || document.getElementById(ROBOT_INLINE_MIC_ID) || null;
+  }
+
+  function attemptConversationResume(playbackVersion, triesLeft) {
+    clearConversationResumeTimer();
+    if (!state.conversationMode) return;
+    if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) return;
+    if (state.loading || state.listening) {
+      if (triesLeft > 0) {
+        state.conversationResumeTimer = window.setTimeout(function () {
+          attemptConversationResume(playbackVersion, triesLeft - 1);
+        }, 650);
+      }
+      return;
+    }
+    var micBtn = getPreferredConversationMicButton();
+    if (!micBtn || micBtn.disabled) return;
+    micBtn.click();
+  }
+
+  function scheduleConversationMicResume(playbackVersion) {
+    clearConversationResumeTimer();
+    if (!state.conversationMode) return;
+    var version = playbackVersion !== undefined ? playbackVersion : state.voicePlaybackVersion;
+    Promise.resolve(state.voiceQueuePromise || Promise.resolve()).finally(function () {
+      if (!state.conversationMode) return;
+      if (state.voicePlaybackVersion !== version) return;
+      state.conversationResumeTimer = window.setTimeout(function () {
+        attemptConversationResume(version, 5);
+      }, 520);
+    });
   }
 
   function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
@@ -1804,6 +1851,7 @@
   }
 
   function stopActiveSpeechRecognition(silent) {
+    clearConversationResumeTimer();
     var active = state.activeSpeechRecognition;
     if (active) {
       try {
@@ -2080,7 +2128,9 @@
         }
         if (!played) {
           speakAssistantTextWithBrowser(spokenText, playbackVersion);
+          return;
         }
+        scheduleConversationMicResume(playbackVersion);
       });
       return;
     }
@@ -2109,6 +2159,9 @@
       speakAssistantSegmentWithBrowser(text, playbackVersion).then(function (played) {
         if (played && isAvatarPersonalityMode(getChatPersonalityMode())) {
           setRobotMood('happy', 1200);
+        }
+        if (played) {
+          scheduleConversationMicResume(playbackVersion);
         }
       });
     } catch (err) {
@@ -2342,6 +2395,8 @@
 
       instance.onstart = function () {
         setListening(true);
+        state.preferredConversationMicId = micBtn.id || MIC_ID;
+        clearConversationResumeTimer();
       };
 
       instance.onresult = function (event) {
@@ -2440,6 +2495,7 @@
         state.voiceEnabled = !state.voiceEnabled;
         if (!state.voiceEnabled) {
           state.conversationMode = false;
+          clearConversationResumeTimer();
         }
         persistVoicePreference(state.voiceEnabled);
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
@@ -2452,9 +2508,18 @@
         state.conversationMode = !state.conversationMode;
         if (state.conversationMode) {
           state.voiceEnabled = true;
+          state.preferredConversationMicId = (micBtn && micBtn.id) || state.preferredConversationMicId || MIC_ID;
           persistVoicePreference(true);
-          setNotice('Modo conversación: lectura automática de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
+          setNotice('Modo conversación: lectura automática de respuestas. Cuando la IA termine de hablar, volverá a escuchar por micrófono.');
+          if (!state.loading && !state.listening && micBtn && !micBtn.disabled) {
+            window.setTimeout(function () {
+              if (state.conversationMode && !state.loading && !state.listening) {
+                micBtn.click();
+              }
+            }, 180);
+          }
         } else {
+          clearConversationResumeTimer();
           setNotice('Modo conversación desactivado.');
         }
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
@@ -3103,6 +3168,7 @@
               processEventChunk(streamBuffer);
             }
             pushStreamingSpeechDelta('', speechPlaybackVersion, true);
+            scheduleConversationMicResume(speechPlaybackVersion);
             var extracted = extractPCSActionBlock(finalText);
             extracted.streamed = true;
             extracted.meta = modelMeta;
@@ -3116,6 +3182,7 @@
           }
           if (doneSeen) {
             pushStreamingSpeechDelta('', speechPlaybackVersion, true);
+            scheduleConversationMicResume(speechPlaybackVersion);
             var extractedDone = extractPCSActionBlock(finalText);
             extractedDone.streamed = true;
             extractedDone.meta = modelMeta;
@@ -4049,3 +4116,6 @@
 
   document.addEventListener('DOMContentLoaded', initDrawer);
 })();
+
+
+
