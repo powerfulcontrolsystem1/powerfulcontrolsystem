@@ -3407,3 +3407,7 @@ Archivos modificados:
 - web/pagar_licencia.html
 - web/pagar_productos_de_venta_publica.html
 - web/productos_estacion_clientes_publico.html
+
+2026-05-02 07:54:39 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bd88b94; PushStatus: OK
+Archivos modificados:
+- web/pantalla_publica.html
