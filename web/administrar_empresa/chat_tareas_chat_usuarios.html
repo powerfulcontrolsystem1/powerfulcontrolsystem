@@ -24,6 +24,30 @@
 </head>
 <body class="chat-workspace-shell chat-workspace--users">
   <main class="container chat-workspace-page chat-usuarios-page">
+    <section class="empresa-module-header" style="margin-bottom:18px;">
+      <div>
+        <span class="empresa-module-kicker">Canal general</span>
+        <h2 style="margin:6px 0 8px;">Mensajería compartida para toda la empresa</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Centraliza anuncios, preguntas rápidas y coordinación transversal en un solo canal visible para el equipo.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Difusión</strong>
+          <span>Mensajes visibles para todos</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Sincronía</strong>
+          <span>Actualización continua</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Contexto</strong>
+          <span>Participantes y resumen del canal</span>
+        </div>
+      </div>
+    </section>
+
     <section class="chat-workspace-hero">
       <nav class="chat-workspace-subnav" aria-label="Submenu Chat y tareas">
         <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_chats.html">
@@ -82,7 +106,7 @@
             <label class="sr-only" for="chatUsuariosInput">Escribe tu mensaje</label>
             <textarea id="chatUsuariosInput" class="form-input chat-usuarios-textarea" rows="4" maxlength="4000" placeholder="Escribe un mensaje para todo el equipo..."></textarea>
             <div class="chat-usuarios-composer-actions">
-              <span class="form-help">Este canal se refresca automaticamente cada pocos segundos.</span>
+              <span class="form-help">Este canal se refresca automáticamente cada pocos segundos.</span>
               <button id="chatUsuariosSendBtn" class="btn" type="submit">Enviar mensaje</button>
             </div>
           </form>

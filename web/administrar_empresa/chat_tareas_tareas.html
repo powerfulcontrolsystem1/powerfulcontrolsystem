@@ -24,6 +24,30 @@
 </head>
 <body class="chat-workspace-shell chat-workspace--tasks">
   <main class="container chat-workspace-page">
+    <section class="empresa-module-header" style="margin-bottom:18px;">
+      <div>
+        <span class="empresa-module-kicker">Ejecución operativa</span>
+        <h2 style="margin:6px 0 8px;">Tareas con responsables y seguimiento</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Ordena pendientes, responsables y prioridades desde una vista pensada para coordinar ejecución diaria y seguimiento del equipo.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Asignación</strong>
+          <span>Responsables y alcance</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Seguimiento</strong>
+          <span>Estado y avance</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Coordinación</strong>
+          <span>Trabajo alineado con chat</span>
+        </div>
+      </div>
+    </section>
+
     <section class="chat-workspace-hero">
       <nav class="chat-workspace-subnav" aria-label="Submenu Chat y tareas">
         <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_chats.html">
@@ -47,7 +71,10 @@
 
     <section class="chat-workspace-stage">
       <div class="chat-workspace-stage-head">
-        <div></div>
+        <div>
+          <strong>Centro de tareas</strong>
+          <p class="form-help" style="margin:4px 0 0 0;">Gestiona asignaciones y seguimiento sin salir del workspace compartido.</p>
+        </div>
         <span class="chat-workspace-stage-pill">Tareas</span>
       </div>
       <iframe id="chatWorkspaceFrame" class="chat-workspace-frame" data-src="/administrar_empresa/chat_y_tareas.html?view=tareas" title="Tareas"></iframe>
