@@ -3463,3 +3463,9 @@ Archivos modificados:
 - web/administrar_empresa/chat_tareas_chats.html
 - web/administrar_empresa/creditos.html
 - web/administrar_empresa/crm_comercial.html
+
+2026-05-02 12:10:32 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 9c57338; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/codigos_de_descuento.html
+- web/administrar_empresa/comisiones.html
+- web/administrar_empresa/propinas.html
