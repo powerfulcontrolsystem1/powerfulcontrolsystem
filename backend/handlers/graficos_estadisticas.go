@@ -78,12 +78,12 @@ type empresaGraficosDistribuciones struct {
 }
 
 type empresaGraficosSaludArea struct {
-	Key      string `json:"key"`
-	Label    string `json:"label"`
-	Score    int    `json:"score"`
-	Status   string `json:"status"`
-	Resumen  string `json:"resumen"`
-	Prioridad bool  `json:"prioridad"`
+	Key       string `json:"key"`
+	Label     string `json:"label"`
+	Score     int    `json:"score"`
+	Status    string `json:"status"`
+	Resumen   string `json:"resumen"`
+	Prioridad bool   `json:"prioridad"`
 }
 
 type empresaGraficosSaludEjecutiva struct {
@@ -92,6 +92,69 @@ type empresaGraficosSaludEjecutiva struct {
 	Resumen     string                     `json:"resumen"`
 	Areas       []empresaGraficosSaludArea `json:"areas"`
 	Prioridades []string                   `json:"prioridades"`
+}
+
+type empresaGraficosObjetivoMetrica struct {
+	Key             string  `json:"key"`
+	Label           string  `json:"label"`
+	Unidad          string  `json:"unidad"`
+	Actual          float64 `json:"actual"`
+	Objetivo        float64 `json:"objetivo"`
+	Brecha          float64 `json:"brecha"`
+	CumplimientoPct float64 `json:"cumplimiento_pct"`
+	Status          string  `json:"status"`
+	Descripcion     string  `json:"descripcion"`
+}
+
+type empresaGraficosObjetivos struct {
+	Base     string                           `json:"base"`
+	Resumen  string                           `json:"resumen"`
+	Metricas []empresaGraficosObjetivoMetrica `json:"metricas"`
+}
+
+type empresaGraficosPresupuestoPartida struct {
+	Key           string  `json:"key"`
+	Label         string  `json:"label"`
+	Unidad        string  `json:"unidad"`
+	Direccion     string  `json:"direccion"`
+	Ejecutado     float64 `json:"ejecutado"`
+	Presupuesto   float64 `json:"presupuesto"`
+	Desviacion    float64 `json:"desviacion"`
+	DesviacionPct float64 `json:"desviacion_pct"`
+	Status        string  `json:"status"`
+	Nota          string  `json:"nota"`
+}
+
+type empresaGraficosPresupuesto struct {
+	Base     string                              `json:"base"`
+	Resumen  string                              `json:"resumen"`
+	Partidas []empresaGraficosPresupuestoPartida `json:"partidas"`
+}
+
+type empresaGraficosSemaforoPredictivo struct {
+	Key      string `json:"key"`
+	Label    string `json:"label"`
+	Severity string `json:"severity"`
+	Signal   string `json:"signal"`
+	Resumen  string `json:"resumen"`
+	Accion   string `json:"accion"`
+}
+
+type empresaGraficosRentabilidadItem struct {
+	Key             string  `json:"key"`
+	Label           string  `json:"label"`
+	Ingresos        float64 `json:"ingresos"`
+	CostoEstimado   float64 `json:"costo_estimado"`
+	MargenEstimado  float64 `json:"margen_estimado"`
+	RentabilidadPct float64 `json:"rentabilidad_pct"`
+	Volumen         float64 `json:"volumen"`
+}
+
+type empresaGraficosRentabilidad struct {
+	BaseCosto string                            `json:"base_costo"`
+	Linea     []empresaGraficosRentabilidadItem `json:"linea"`
+	Sede      []empresaGraficosRentabilidadItem `json:"sede"`
+	Canal     []empresaGraficosRentabilidadItem `json:"canal"`
 }
 
 type empresaGraficosPanelResponse struct {
@@ -104,6 +167,10 @@ type empresaGraficosPanelResponse struct {
 	Rankings       empresaGraficosRankings             `json:"rankings"`
 	Distribuciones empresaGraficosDistribuciones       `json:"distribuciones"`
 	Salud          empresaGraficosSaludEjecutiva       `json:"salud"`
+	Objetivos      empresaGraficosObjetivos            `json:"objetivos"`
+	Presupuesto    empresaGraficosPresupuesto          `json:"presupuesto"`
+	Predictivos    []empresaGraficosSemaforoPredictivo `json:"predictivos"`
+	Rentabilidad   empresaGraficosRentabilidad         `json:"rentabilidad"`
 	Filtros        empresaGraficosFiltrosAplicados     `json:"filtros"`
 	Comparativo    *empresaGraficosComparativo         `json:"comparativo,omitempty"`
 	Cache          empresaGraficosCacheEstado          `json:"cache"`
@@ -166,6 +233,12 @@ type empresaGraficosMetricsSnapshot struct {
 	Egresos             float64
 	Balance             float64
 	AsistenciaRegistros int64
+}
+
+type empresaGraficosRentabilidadAgg struct {
+	label   string
+	revenue float64
+	volume  float64
 }
 
 type empresaGraficosPanelCacheEntry struct {
@@ -565,8 +638,505 @@ func buildEmpresaGraficosPanel(dbEmp *sql.DB, builder *reportesBuilder, maxPoint
 		)
 	}
 	panel.Salud = graficosBuildExecutiveHealth(panel.Tablero, panel.Comparativo)
+	panel.Objetivos = graficosBuildObjetivosVsReal(panel.Tablero, panel.Comparativo)
+	panel.Presupuesto = graficosBuildPresupuestoVsEjecucion(panel.Tablero, panel.Comparativo)
+	panel.Predictivos = graficosBuildPredictiveSignals(panel.Tablero, panel.Comparativo, panel.Objetivos, panel.Presupuesto, panel.Salud)
+	panel.Rentabilidad = graficosBuildRentabilidad(dbEmp, builder.empresaID, filteredVentas, builder.itemsCache, filterCtx.carritoEstacion, panel.Tablero)
 
 	return panel, nil
+}
+
+func graficosBuildObjetivosVsReal(tablero dbpkg.EmpresaReportesTableroResumen, comparativo *empresaGraficosComparativo) empresaGraficosObjetivos {
+	base := "Objetivos sugeridos desde el comportamiento actual del período."
+	if comparativo != nil {
+		base = "Objetivos sugeridos usando el período de referencia comparativa como línea base."
+	}
+
+	buildMetric := func(key, label, unidad string, actual float64, growthPct float64, fallbackFloor float64, descripcion string) empresaGraficosObjetivoMetrica {
+		baseValue := actual
+		if comparativo != nil {
+			if metric, ok := comparativo.Metricas[key]; ok && metric.Anterior > 0 {
+				baseValue = metric.Anterior
+			}
+		}
+		objetivo := reportesRound(baseValue * (1 + growthPct))
+		if objetivo <= 0 {
+			objetivo = reportesRound(math.Max(actual, fallbackFloor))
+		}
+		cumplimiento := 100.0
+		if objetivo > 0 {
+			cumplimiento = reportesRound((actual / objetivo) * 100)
+		}
+		return empresaGraficosObjetivoMetrica{
+			Key:             key,
+			Label:           label,
+			Unidad:          unidad,
+			Actual:          reportesRound(actual),
+			Objetivo:        objetivo,
+			Brecha:          reportesRound(actual - objetivo),
+			CumplimientoPct: cumplimiento,
+			Status:          graficosMetricComplianceStatus(cumplimiento),
+			Descripcion:     descripcion,
+		}
+	}
+
+	metricas := []empresaGraficosObjetivoMetrica{
+		buildMetric("ingresos_ventas", "Ingresos comerciales", "money", tablero.Operativo.IngresosVentas, 0.08, 0, "Compara la venta real contra una meta comercial sugerida para el mismo frente de ingresos."),
+		buildMetric("ventas_cerradas", "Ventas cerradas", "count", float64(tablero.Operativo.VentasCerradas), 0.05, 1, "Evalúa volumen de cierres frente a una meta operativa sugerida."),
+		buildMetric("ticket_promedio", "Ticket promedio", "money", tablero.Operativo.TicketPromedio, 0.04, 0, "Mide si el valor promedio por venta ya acompaña el crecimiento buscado."),
+		buildMetric("utilidad_operacional", "Utilidad operacional", "money", tablero.EstadoResultados.UtilidadOperacional, 0.10, 0, "Contrasta el margen real con el nivel sugerido para sostener rentabilidad."),
+	}
+
+	resumen := "Las metas sugeridas ayudan a leer avance comercial y margen sin depender todavía de una tabla manual de objetivos."
+	return empresaGraficosObjetivos{
+		Base:     base,
+		Resumen:  resumen,
+		Metricas: metricas,
+	}
+}
+
+func graficosBuildPresupuestoVsEjecucion(tablero dbpkg.EmpresaReportesTableroResumen, comparativo *empresaGraficosComparativo) empresaGraficosPresupuesto {
+	actualIngresos := math.Max(tablero.Operativo.IngresosVentas, 0)
+	actualCompras := math.Max(tablero.Operativo.ComprasCosto, 0)
+	actualEgresos := math.Max(tablero.Financiero.Egresos, 0)
+	actualUtilidad := tablero.EstadoResultados.UtilidadOperacional
+
+	refIngresos := actualIngresos
+	if comparativo != nil {
+		if metric, ok := comparativo.Metricas["ingresos_ventas"]; ok && metric.Anterior > 0 {
+			refIngresos = metric.Anterior
+		}
+	}
+	if refIngresos <= 0 {
+		refIngresos = actualIngresos
+	}
+	if refIngresos <= 0 {
+		refIngresos = 1
+	}
+
+	purchaseRatio := graficosClampFloat(actualCompras/refIngresos, 0.18, 0.78)
+	opexRatio := graficosClampFloat(actualEgresos/refIngresos, 0.08, 0.55)
+
+	presupuestoIngresos := reportesRound(refIngresos * 1.06)
+	if presupuestoIngresos <= 0 {
+		presupuestoIngresos = reportesRound(actualIngresos)
+	}
+	presupuestoCompras := reportesRound(presupuestoIngresos * graficosClampFloat(purchaseRatio*0.97, 0.16, 0.74))
+	presupuestoEgresos := reportesRound(presupuestoIngresos * graficosClampFloat(opexRatio*0.96, 0.07, 0.5))
+	presupuestoUtilidad := reportesRound(math.Max(presupuestoIngresos-presupuestoCompras-presupuestoEgresos, 0))
+
+	partidas := []empresaGraficosPresupuestoPartida{
+		graficosBuildBudgetItem("ingresos", "Ingresos presupuestados", "money", "higher_better", actualIngresos, presupuestoIngresos, "La ejecución comercial idealmente debe alcanzar o superar la meta de ingresos."),
+		graficosBuildBudgetItem("compras", "Costo de abastecimiento", "money", "lower_better", actualCompras, presupuestoCompras, "Compara compras y recepción frente al nivel sugerido para proteger margen."),
+		graficosBuildBudgetItem("egresos", "Caja operacional", "money", "lower_better", actualEgresos, presupuestoEgresos, "Vigila si los egresos ya se están yendo por encima del ritmo sostenible."),
+		graficosBuildBudgetItem("utilidad", "Utilidad esperada", "money", "higher_better", actualUtilidad, presupuestoUtilidad, "Resume si el período ya está materializando el margen que se esperaba producir."),
+	}
+
+	return empresaGraficosPresupuesto{
+		Base:     "Presupuesto sugerido desde histórico reciente y ratios reales de operación.",
+		Resumen:  "Esta vista traduce históricos y ratios de costo en una ejecución esperada para ventas, compras, caja y margen.",
+		Partidas: partidas,
+	}
+}
+
+func graficosBuildBudgetItem(key, label, unidad, direccion string, ejecutado, presupuesto float64, nota string) empresaGraficosPresupuestoPartida {
+	desviacion := reportesRound(ejecutado - presupuesto)
+	desviacionPct := 0.0
+	if presupuesto != 0 {
+		desviacionPct = reportesRound((desviacion / math.Abs(presupuesto)) * 100)
+	}
+	return empresaGraficosPresupuestoPartida{
+		Key:           key,
+		Label:         label,
+		Unidad:        unidad,
+		Direccion:     direccion,
+		Ejecutado:     reportesRound(ejecutado),
+		Presupuesto:   reportesRound(presupuesto),
+		Desviacion:    desviacion,
+		DesviacionPct: desviacionPct,
+		Status:        graficosBudgetStatus(direccion, ejecutado, presupuesto),
+		Nota:          nota,
+	}
+}
+
+func graficosBuildPredictiveSignals(tablero dbpkg.EmpresaReportesTableroResumen, comparativo *empresaGraficosComparativo, objetivos empresaGraficosObjetivos, presupuesto empresaGraficosPresupuesto, salud empresaGraficosSaludEjecutiva) []empresaGraficosSemaforoPredictivo {
+	out := make([]empresaGraficosSemaforoPredictivo, 0, 5)
+
+	if tablero.Financiero.Balance < 0 || tablero.EstadoResultados.UtilidadOperacional < 0 {
+		out = append(out, empresaGraficosSemaforoPredictivo{
+			Key:      "caja_margen",
+			Label:    "Presión sobre caja y margen",
+			Severity: "critico",
+			Signal:   "Balance o utilidad ya están en rojo.",
+			Resumen:  "La empresa ya entró en zona de presión financiera y puede deteriorar liquidez si mantiene el mismo ritmo.",
+			Accion:   "Revisar egresos, compras y precios antes del siguiente cierre.",
+		})
+	} else {
+		out = append(out, empresaGraficosSemaforoPredictivo{
+			Key:      "caja_margen",
+			Label:    "Presión sobre caja y margen",
+			Severity: "estable",
+			Signal:   "Caja y utilidad siguen respirando.",
+			Resumen:  "No hay presión crítica inmediata en liquidez o margen, aunque conviene vigilar variaciones semanales.",
+			Accion:   "Mantener control de egresos y seguir comparando contra el período anterior.",
+		})
+	}
+
+	commercialSeverity := "estable"
+	commercialSignal := "La demanda sostiene ritmo suficiente."
+	commercialResumen := "El frente comercial no muestra enfriamiento severo con la información actual."
+	if comparativo != nil {
+		if metric, ok := comparativo.Metricas["ingresos_ventas"]; ok && metric.VariacionPct <= -12 {
+			commercialSeverity = "atencion"
+			commercialSignal = "Los ingresos caen frente al período de referencia."
+			commercialResumen = "Si la tendencia se mantiene, la empresa puede cerrar el siguiente período con menor volumen y menor absorción de costos."
+		}
+	}
+	for _, metrica := range objetivos.Metricas {
+		if metrica.Key == "ingresos_ventas" && metrica.CumplimientoPct < 85 {
+			commercialSeverity = "critico"
+			commercialSignal = "Los ingresos van por debajo de la meta sugerida."
+			commercialResumen = "La velocidad comercial actual no alcanza para cerrar el período en el nivel objetivo."
+			break
+		}
+	}
+	out = append(out, empresaGraficosSemaforoPredictivo{
+		Key:      "demanda",
+		Label:    "Tracción comercial",
+		Severity: commercialSeverity,
+		Signal:   commercialSignal,
+		Resumen:  commercialResumen,
+		Accion:   "Activar campañas, revisar ticket promedio y priorizar recuperación de clientes.",
+	})
+
+	inventorySeverity := "solido"
+	if tablero.Operativo.ProductosBajoMinimo > 0 {
+		inventorySeverity = "atencion"
+	}
+	if tablero.Operativo.ProductosBajoMinimo >= 8 {
+		inventorySeverity = "critico"
+	}
+	out = append(out, empresaGraficosSemaforoPredictivo{
+		Key:      "inventario",
+		Label:    "Continuidad operativa",
+		Severity: inventorySeverity,
+		Signal:   fmt.Sprintf("%d productos bajo mínimo.", tablero.Operativo.ProductosBajoMinimo),
+		Resumen:  "El semáforo proyecta riesgo de quiebre comercial cuando el inventario crítico ya empieza a comprimirse.",
+		Accion:   "Reponer primero las referencias de mayor margen o mayor rotación.",
+	})
+
+	controlSeverity := "estable"
+	if tablero.Contable.EventosPendientes > 0 || tablero.Financiero.PeriodosAbiertos > 1 {
+		controlSeverity = "atencion"
+	}
+	if math.Abs(tablero.BalanceGeneral.Cuadre) > 1 || tablero.Contable.EventosPendientes > 10 {
+		controlSeverity = "critico"
+	}
+	out = append(out, empresaGraficosSemaforoPredictivo{
+		Key:      "control",
+		Label:    "Gobierno y trazabilidad",
+		Severity: controlSeverity,
+		Signal:   fmt.Sprintf("%d eventos pendientes y %d períodos abiertos.", tablero.Contable.EventosPendientes, tablero.Financiero.PeriodosAbiertos),
+		Resumen:  "Las señales de control anticipan fricción en cierres, conciliaciones y lectura gerencial si se siguen acumulando pendientes.",
+		Accion:   "Cerrar períodos, procesar eventos y corregir diferencias de balance oportunamente.",
+	})
+
+	healthSeverity := graficosNormalizeSeverity(salud.Status)
+	if healthSeverity == "solido" {
+		healthSeverity = "estable"
+	}
+	out = append(out, empresaGraficosSemaforoPredictivo{
+		Key:      "salud_global",
+		Label:    "Salud ejecutiva consolidada",
+		Severity: healthSeverity,
+		Signal:   fmt.Sprintf("Salud global %d/100.", salud.GlobalScore),
+		Resumen:  salud.Resumen,
+		Accion:   "Intervenir primero las prioridades listadas para evitar que las alertas se vuelvan estructurales.",
+	})
+
+	return out
+}
+
+func graficosBuildRentabilidad(dbEmp *sql.DB, empresaID int64, ventas []dbpkg.CarritoCompra, itemsCache map[int64][]dbpkg.CarritoCompraItem, carritoEstacion map[int64]int64, tablero dbpkg.EmpresaReportesTableroResumen) empresaGraficosRentabilidad {
+	costRatio := 0.42
+	if tablero.Operativo.IngresosVentas > 0 {
+		costRatio = graficosClampFloat(tablero.Operativo.ComprasCosto/tablero.Operativo.IngresosVentas, 0.18, 0.78)
+	}
+	opexRatio := 0.18
+	if tablero.Operativo.IngresosVentas > 0 {
+		opexRatio = graficosClampFloat(tablero.Financiero.Egresos/tablero.Operativo.IngresosVentas, 0.06, 0.45)
+	}
+
+	lineas := make(map[string]*empresaGraficosRentabilidadAgg)
+	canales := make(map[string]*empresaGraficosRentabilidadAgg)
+	sedes := make(map[string]*empresaGraficosRentabilidadAgg)
+
+	stationLabels := graficosLoadEstacionLabels(dbEmp, empresaID)
+
+	for _, venta := range ventas {
+		totalVenta := reportesVentaTotal(venta)
+		canalKey, canalLabel := graficosNormalizeCanalLabel(venta.CanalVenta)
+		canalAgg := canales[canalKey]
+		if canalAgg == nil {
+			canalAgg = &empresaGraficosRentabilidadAgg{label: canalLabel}
+			canales[canalKey] = canalAgg
+		}
+		canalAgg.revenue += totalVenta
+		canalAgg.volume++
+
+		estacionID := carritoEstacion[venta.ID]
+		sedeKey, sedeLabel := graficosSedeLabel(estacionID, stationLabels)
+		sedeAgg := sedes[sedeKey]
+		if sedeAgg == nil {
+			sedeAgg = &empresaGraficosRentabilidadAgg{label: sedeLabel}
+			sedes[sedeKey] = sedeAgg
+		}
+		sedeAgg.revenue += totalVenta
+		sedeAgg.volume++
+
+		for _, item := range itemsCache[venta.ID] {
+			if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+				continue
+			}
+			lineKey, lineLabel := graficosLineaItem(item)
+			lineAgg := lineas[lineKey]
+			if lineAgg == nil {
+				lineAgg = &empresaGraficosRentabilidadAgg{label: lineLabel}
+				lineas[lineKey] = lineAgg
+			}
+			lineAgg.revenue += item.TotalLinea
+			lineAgg.volume += math.Max(item.Cantidad, 1)
+		}
+	}
+
+	return empresaGraficosRentabilidad{
+		BaseCosto: "Rentabilidad estimada con mezcla de costo de abastecimiento y carga operativa real del período.",
+		Linea:     graficosFinalizeRentabilidad(lineas, func(key string) float64 { return graficosLineaCostoRatio(key, costRatio, opexRatio) }, 6),
+		Sede:      graficosFinalizeRentabilidad(sedes, func(key string) float64 { return graficosSedeCostoRatio(key, costRatio, opexRatio) }, 6),
+		Canal:     graficosFinalizeRentabilidad(canales, func(key string) float64 { return graficosCanalCostoRatio(key, costRatio, opexRatio) }, 6),
+	}
+}
+
+func graficosMetricComplianceStatus(cumplimiento float64) string {
+	switch {
+	case cumplimiento >= 105:
+		return "solido"
+	case cumplimiento >= 95:
+		return "estable"
+	case cumplimiento >= 80:
+		return "atencion"
+	default:
+		return "critico"
+	}
+}
+
+func graficosBudgetStatus(direccion string, ejecutado, presupuesto float64) string {
+	if strings.EqualFold(strings.TrimSpace(direccion), "lower_better") {
+		if ejecutado <= presupuesto {
+			return "solido"
+		}
+		if presupuesto <= 0 {
+			return "atencion"
+		}
+		excesoPct := ((ejecutado - presupuesto) / math.Abs(presupuesto)) * 100
+		if excesoPct <= 10 {
+			return "atencion"
+		}
+		return "critico"
+	}
+
+	if presupuesto <= 0 {
+		if ejecutado > 0 {
+			return "solido"
+		}
+		return "estable"
+	}
+	cumplimiento := (ejecutado / presupuesto) * 100
+	return graficosMetricComplianceStatus(cumplimiento)
+}
+
+func graficosNormalizeSeverity(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "solido":
+		return "solido"
+	case "estable":
+		return "estable"
+	case "atencion":
+		return "atencion"
+	case "critico":
+		return "critico"
+	default:
+		return "estable"
+	}
+}
+
+func graficosClampFloat(value, minVal, maxVal float64) float64 {
+	if value < minVal {
+		return minVal
+	}
+	if value > maxVal {
+		return maxVal
+	}
+	return value
+}
+
+func graficosLoadEstacionLabels(dbEmp *sql.DB, empresaID int64) map[int64]string {
+	out := make(map[int64]string)
+	rows, err := dbEmp.Query(`SELECT
+		COALESCE(estacion_id, 0),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(estacion_codigo, '')
+	FROM empresa_ventas_estacion_metricas
+	WHERE empresa_id = ?
+		AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+		AND COALESCE(estacion_id, 0) > 0
+	ORDER BY id DESC`, empresaID)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var nombre string
+		var codigo string
+		if err := rows.Scan(&id, &nombre, &codigo); err != nil {
+			return out
+		}
+		if id <= 0 {
+			continue
+		}
+		if _, ok := out[id]; ok {
+			continue
+		}
+		out[id] = reportesFirstNonBlank(strings.TrimSpace(nombre), strings.TrimSpace(codigo), fmt.Sprintf("Estación %d", id))
+	}
+	return out
+}
+
+func graficosLineaItem(item dbpkg.CarritoCompraItem) (string, string) {
+	tipo := strings.ToLower(strings.TrimSpace(item.TipoItem))
+	switch tipo {
+	case "producto":
+		return "producto", "Productos"
+	case "servicio":
+		return "servicio", "Servicios"
+	case "combo", "combo_producto":
+		return "combo", "Combos"
+	case "tarifa_por_dia", "tarifa_dia", "estadia", "habitacion":
+		return "tarifa_dia", "Tarifas por día"
+	case "tarifa_por_minutos", "tarifa_minutos", "minutos":
+		return "tarifa_minutos", "Tarifas por minutos"
+	default:
+		if tipo == "" {
+			desc := strings.ToLower(strings.TrimSpace(item.Descripcion))
+			switch {
+			case strings.Contains(desc, "tarifa") && strings.Contains(desc, "dia"):
+				return "tarifa_dia", "Tarifas por día"
+			case strings.Contains(desc, "tarifa") && strings.Contains(desc, "minuto"):
+				return "tarifa_minutos", "Tarifas por minutos"
+			}
+		}
+		return reportesFirstNonBlank(tipo, "otros"), reportesFirstNonBlank(strings.Title(tipo), "Otros")
+	}
+}
+
+func graficosNormalizeCanalLabel(raw string) (string, string) {
+	canal := strings.ToLower(strings.TrimSpace(raw))
+	switch canal {
+	case "", "mostrador":
+		return "mostrador", "Mostrador"
+	case "estacion", "estaciones":
+		return "estacion", "Estación"
+	case "vip", "portal_vip", "portal vip":
+		return "vip", "Portal VIP"
+	case "venta_publica", "publico", "publica":
+		return "venta_publica", "Venta pública"
+	case "crm", "comercial":
+		return "crm", "CRM comercial"
+	default:
+		return canal, strings.Title(strings.ReplaceAll(canal, "_", " "))
+	}
+}
+
+func graficosSedeLabel(estacionID int64, labels map[int64]string) (string, string) {
+	if estacionID <= 0 {
+		return "sin_sede", "Operación general"
+	}
+	if label, ok := labels[estacionID]; ok && strings.TrimSpace(label) != "" {
+		return fmt.Sprintf("estacion_%d", estacionID), label
+	}
+	return fmt.Sprintf("estacion_%d", estacionID), fmt.Sprintf("Estación %d", estacionID)
+}
+
+func graficosLineaCostoRatio(key string, costRatio, opexRatio float64) float64 {
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "producto":
+		return graficosClampFloat(costRatio*0.9+opexRatio*0.35, 0.28, 0.9)
+	case "servicio":
+		return graficosClampFloat(costRatio*0.3+opexRatio*0.85, 0.16, 0.82)
+	case "combo":
+		return graficosClampFloat(costRatio*0.8+opexRatio*0.45, 0.24, 0.88)
+	case "tarifa_dia", "tarifa_minutos":
+		return graficosClampFloat(costRatio*0.18+opexRatio*0.82, 0.12, 0.76)
+	default:
+		return graficosClampFloat(costRatio*0.5+opexRatio*0.55, 0.18, 0.85)
+	}
+}
+
+func graficosCanalCostoRatio(key string, costRatio, opexRatio float64) float64 {
+	base := costRatio*0.55 + opexRatio*0.55
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "venta_publica", "vip":
+		base -= 0.04
+	case "crm":
+		base -= 0.02
+	case "estacion":
+		base -= 0.01
+	}
+	return graficosClampFloat(base, 0.16, 0.85)
+}
+
+func graficosSedeCostoRatio(key string, costRatio, opexRatio float64) float64 {
+	base := costRatio*0.52 + opexRatio*0.58
+	if strings.EqualFold(strings.TrimSpace(key), "sin_sede") {
+		base += 0.03
+	}
+	return graficosClampFloat(base, 0.16, 0.86)
+}
+
+func graficosFinalizeRentabilidad(source map[string]*empresaGraficosRentabilidadAgg, ratioFn func(string) float64, limit int) []empresaGraficosRentabilidadItem {
+	out := make([]empresaGraficosRentabilidadItem, 0, len(source))
+	for key, item := range source {
+		if item == nil || item.revenue <= 0 {
+			continue
+		}
+		ratio := ratioFn(key)
+		costo := reportesRound(item.revenue * ratio)
+		margen := reportesRound(item.revenue - costo)
+		rentabilidad := 0.0
+		if item.revenue > 0 {
+			rentabilidad = reportesRound((margen / item.revenue) * 100)
+		}
+		out = append(out, empresaGraficosRentabilidadItem{
+			Key:             key,
+			Label:           item.label,
+			Ingresos:        reportesRound(item.revenue),
+			CostoEstimado:   costo,
+			MargenEstimado:  margen,
+			RentabilidadPct: rentabilidad,
+			Volumen:         reportesRound(item.volume),
+		})
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].MargenEstimado == out[j].MargenEstimado {
+			return out[i].Ingresos > out[j].Ingresos
+		}
+		return out[i].MargenEstimado > out[j].MargenEstimado
+	})
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out
 }
 
 func graficosBuildExecutiveHealth(tablero dbpkg.EmpresaReportesTableroResumen, comparativo *empresaGraficosComparativo) empresaGraficosSaludEjecutiva {
@@ -624,11 +1194,11 @@ func graficosBuildExecutiveHealth(tablero dbpkg.EmpresaReportesTableroResumen, c
 	}
 	financieroScore = graficosClampScore(financieroScore)
 	financieroArea := empresaGraficosSaludArea{
-		Key:     "financiero",
-		Label:   "Financiero",
-		Score:   financieroScore,
-		Status:  graficosHealthStatus(financieroScore),
-		Resumen: fmt.Sprintf("Balance %s, utilidad operacional %s e ingresos %s frente a egresos %s.", graficosFmtMoneyShort(financiero.Balance), graficosFmtMoneyShort(estado.UtilidadOperacional), graficosFmtMoneyShort(financiero.Ingresos), graficosFmtMoneyShort(financiero.Egresos)),
+		Key:       "financiero",
+		Label:     "Financiero",
+		Score:     financieroScore,
+		Status:    graficosHealthStatus(financieroScore),
+		Resumen:   fmt.Sprintf("Balance %s, utilidad operacional %s e ingresos %s frente a egresos %s.", graficosFmtMoneyShort(financiero.Balance), graficosFmtMoneyShort(estado.UtilidadOperacional), graficosFmtMoneyShort(financiero.Ingresos), graficosFmtMoneyShort(financiero.Egresos)),
 		Prioridad: financiero.Balance < 0 || estado.UtilidadOperacional < 0,
 	}
 	areas = append(areas, financieroArea)
@@ -650,11 +1220,11 @@ func graficosBuildExecutiveHealth(tablero dbpkg.EmpresaReportesTableroResumen, c
 	}
 	operativoScore = graficosClampScore(operativoScore)
 	operativoArea := empresaGraficosSaludArea{
-		Key:      "operativo",
-		Label:    "Operativo",
-		Score:    operativoScore,
-		Status:   graficosHealthStatus(operativoScore),
-		Resumen:  fmt.Sprintf("%d productos activos, %d bajo mínimo y %d eventos pendientes por procesar.", operativo.ProductosActivos, operativo.ProductosBajoMinimo, contable.EventosPendientes),
+		Key:       "operativo",
+		Label:     "Operativo",
+		Score:     operativoScore,
+		Status:    graficosHealthStatus(operativoScore),
+		Resumen:   fmt.Sprintf("%d productos activos, %d bajo mínimo y %d eventos pendientes por procesar.", operativo.ProductosActivos, operativo.ProductosBajoMinimo, contable.EventosPendientes),
 		Prioridad: operativo.ProductosBajoMinimo > 0 || contable.EventosPendientes > 0,
 	}
 	areas = append(areas, operativoArea)
@@ -675,11 +1245,11 @@ func graficosBuildExecutiveHealth(tablero dbpkg.EmpresaReportesTableroResumen, c
 	}
 	controlScore = graficosClampScore(controlScore)
 	controlArea := empresaGraficosSaludArea{
-		Key:      "control",
-		Label:    "Control",
-		Score:    controlScore,
-		Status:   graficosHealthStatus(controlScore),
-		Resumen:  fmt.Sprintf("Cuadre %s, %d períodos abiertos y %d eventos pendientes.", graficosFmtMoneyShort(balance.Cuadre), financiero.PeriodosAbiertos, contable.EventosPendientes),
+		Key:       "control",
+		Label:     "Control",
+		Score:     controlScore,
+		Status:    graficosHealthStatus(controlScore),
+		Resumen:   fmt.Sprintf("Cuadre %s, %d períodos abiertos y %d eventos pendientes.", graficosFmtMoneyShort(balance.Cuadre), financiero.PeriodosAbiertos, contable.EventosPendientes),
 		Prioridad: math.Abs(balance.Cuadre) > 1 || financiero.PeriodosAbiertos > 1,
 	}
 	areas = append(areas, controlArea)

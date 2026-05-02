@@ -499,9 +499,25 @@
           </div>
           <div class="form-row">
             <div class="form-col">
+              <label class="empresa-config-check" for="facturaImprimirVenta" >
+                <input id="facturaImprimirVenta" type="checkbox">
+                <span>Imprimir la venta al cerrar el cobro</span>
+              </label>
+              <p class="form-help">Activa o desactiva el recibo de venta autom?tico cuando se paga un carrito o una estaci?n.</p>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="facturaImprimirFacturaElectronica" >
+                <input id="facturaImprimirFacturaElectronica" type="checkbox">
+                <span>Imprimir la factura electr?nica al emitirse</span>
+              </label>
+              <p class="form-help">Si est? activa, al emitir una factura electr?nica el sistema abrir? la impresi?n autom?ticamente.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
               <label class="empresa-config-check" for="facturaImprimirCopia" >
                 <input id="facturaImprimirCopia" type="checkbox">
-                <span>Requiere imprimir copia</span>
+                <span>Imprimir copia adicional de la factura</span>
               </label>
             </div>
           </div>
@@ -2197,6 +2213,8 @@
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       document.getElementById('facturaModoDocumentoVenta').value = String(src.modo_documento_venta || 'comprobante_pago').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago';
       document.getElementById('facturaFormatoImpresion').value = normalizeFormatoImpresion(src.formato_impresion);
+      document.getElementById('facturaImprimirVenta').checked = src.imprimir_venta === true;
+      document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
@@ -2217,6 +2235,8 @@
         empresa_id: Number(empresaId),
         modo_documento_venta: String(document.getElementById('facturaModoDocumentoVenta').value || '').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago',
         formato_impresion: normalizeFormatoImpresion(document.getElementById('facturaFormatoImpresion').value),
+        imprimir_venta: document.getElementById('facturaImprimirVenta').checked,
+        imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
         logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()

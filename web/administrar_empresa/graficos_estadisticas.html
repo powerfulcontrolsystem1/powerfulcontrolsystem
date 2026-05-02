@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -39,6 +39,16 @@
     .analytics-health-badge.critico{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.25)}
     .analytics-priority-list{display:grid;gap:10px;margin:12px 0 0;padding:0;list-style:none}
     .analytics-priority-list li{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);line-height:1.5;color:var(--text)}
+    .analytics-strategy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:18px 0}
+    .analytics-strategy-card{padding:16px 18px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 90%,var(--accent) 10%),color-mix(in srgb,var(--surface) 96%,black 4%));box-shadow:0 14px 28px rgba(0,0,0,.10)}
+    .analytics-strategy-card h3{margin:0 0 6px}
+    .analytics-strategy-card p{margin:0 0 12px;color:var(--muted);line-height:1.5}
+    .analytics-traffic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:18px 0}
+    .analytics-traffic-card{padding:16px 18px;border-radius:18px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+    .analytics-traffic-card header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+    .analytics-traffic-card strong{display:block;font-size:1rem}
+    .analytics-traffic-card p{margin:0;color:var(--muted);line-height:1.5}
+    .analytics-table-note{margin:10px 0 0;color:var(--muted)}
     @media (max-width: 900px){
       .analytics-health-shell{grid-template-columns:1fr}
     }
@@ -50,7 +60,7 @@
       <div class="empresa-section-header">
         <div>
           <h1 class="empresa-title">Analítica ejecutiva avanzada</h1>
-          <p class="form-help page-header-lead analytics-section-note">Convierte operación, finanzas, compras y asistencia en lectura gerencial con comparativos, alertas y oportunidades accionables.</p>
+          <p class="form-help page-header-lead analytics-section-note">Convierte operación, finanzas, compras y asistencia en lectura gerencial con comparativos, objetivos, presupuesto y focos predictivos.</p>
         </div>
         <div class="empresa-inline-actions graficos-inline-actions analytics-toolbar">
           <input id="fechaDesde" type="date" class="form-input">
@@ -61,7 +71,7 @@
           <input id="segmento" type="text" class="form-input graficos-segmento-input" placeholder="Segmento (ej: frecuente)">
           <label class="empresa-switch graficos-switch-inline" for="compararPeriodo">
             <input id="compararPeriodo" type="checkbox">
-            <span>Comparar periodo</span>
+            <span>Comparar período</span>
           </label>
           <input id="compararDesde" type="date" class="form-input graficos-compare-input" placeholder="Comparar desde" disabled>
           <input id="compararHasta" type="date" class="form-input graficos-compare-input" placeholder="Comparar hasta" disabled>
@@ -75,7 +85,7 @@
         <button id="presetMonth" class="btn secondary" type="button">Mes actual</button>
         <button id="presetYear" class="btn secondary" type="button">Año actual</button>
       </div>
-      <p class="form-help">Panel visual para seguimiento ejecutivo de ventas, finanzas, compras, asistencia y distribuciones operativas por empresa.</p>
+      <p class="form-help">Panel visual para seguimiento ejecutivo de ventas, finanzas, compras, asistencia, objetivos y rentabilidad por empresa.</p>
       <p id="graficosMsg" class="form-help"></p>
       <p id="graficosResumen" class="form-help"></p>
       <p id="graficosFiltroResumen" class="form-help"></p>
@@ -130,6 +140,45 @@
       </div>
 
       <div id="analyticsHealthAreas" class="analytics-health-area-grid"></div>
+
+      <div class="analytics-strategy-grid">
+        <article class="analytics-strategy-card">
+          <h3>Metas vs real</h3>
+          <p id="objetivosResumen">Esperando objetivos sugeridos...</p>
+          <div class="table-wrap">
+            <table class="table" id="tablaObjetivosGraficos">
+              <thead>
+                <tr>
+                  <th>Métrica</th>
+                  <th>Actual</th>
+                  <th>Objetivo</th>
+                  <th>Cumplimiento</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="analytics-strategy-card">
+          <h3>Presupuesto vs ejecución</h3>
+          <p id="presupuestoResumen">Esperando presupuesto sugerido...</p>
+          <div class="table-wrap">
+            <table class="table" id="tablaPresupuestoGraficos">
+              <thead>
+                <tr>
+                  <th>Partida</th>
+                  <th>Ejecutado</th>
+                  <th>Presupuesto</th>
+                  <th>Desviación</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <div class="analytics-traffic-grid" id="predictivosGrid"></div>
 
       <div class="kpi-grid graficos-kpi-grid">
         <div class="kpi-box"><span class="kpi-label">Ventas cerradas</span><strong id="kpiVentas">0</strong></div>
@@ -232,6 +281,65 @@
         </article>
       </div>
     </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 class="empresa-subtitle">Rentabilidad estimada</h2>
+      </div>
+      <p id="rentabilidadBase" class="form-help analytics-table-note">Esperando lectura de rentabilidad...</p>
+      <div class="graficos-bottom-grid">
+        <article class="graficos-chart-card">
+          <h3>Por línea</h3>
+          <div class="table-wrap">
+            <table class="table" id="tablaRentabilidadLinea">
+              <thead>
+                <tr>
+                  <th>Línea</th>
+                  <th>Ingresos</th>
+                  <th>Margen</th>
+                  <th>Rentabilidad</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Por sede</h3>
+          <div class="table-wrap">
+            <table class="table" id="tablaRentabilidadSede">
+              <thead>
+                <tr>
+                  <th>Sede</th>
+                  <th>Ingresos</th>
+                  <th>Margen</th>
+                  <th>Rentabilidad</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Por canal</h3>
+          <div class="table-wrap">
+            <table class="table" id="tablaRentabilidadCanal">
+              <thead>
+                <tr>
+                  <th>Canal</th>
+                  <th>Ingresos</th>
+                  <th>Margen</th>
+                  <th>Rentabilidad</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -257,7 +365,7 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
 
@@ -449,7 +557,7 @@
       if (!grid) return;
       const comparativo = panel?.comparativo;
       if (!comparativo || !comparativo.metricas) {
-        grid.innerHTML = '<article class="graficos-compare-card"><h3>Comparativo</h3><p class="form-help">Active "Comparar periodo" para ver variaciones frente al periodo anterior o personalizado.</p></article>';
+        grid.innerHTML = '<article class="graficos-compare-card"><h3>Comparativo</h3><p class="form-help">Active "Comparar período" para ver variaciones frente al periodo anterior o personalizado.</p></article>';
         return;
       }
 
@@ -482,7 +590,7 @@
 
       const periodNote = '' +
         '<article class="graficos-compare-card graficos-compare-period">' +
-        '<h3>Comparacion activa</h3>' +
+        '<h3>Comparación activa</h3>' +
         '<p class="form-help">Actual: ' + sanitize(comparativo.desde || "-") + ' a ' + sanitize(comparativo.hasta || "-") + '</p>' +
         '<p class="form-help">Referencia: ' + sanitize(comparativo.referencia_desde || "-") + ' a ' + sanitize(comparativo.referencia_hasta || "-") + '</p>' +
         '</article>';
@@ -547,12 +655,12 @@
       const acciones = [];
 
       if (num(operativo.productos_bajo_minimo) > 0) {
-        acciones.push({ title: "Lanza reposición priorizada", detail: "Abre inventario y compras para resolver primero productos bajo mínimo." });
+        acciones.push({ title: "Lanza reposiciÃ³n priorizada", detail: "Abre inventario y compras para resolver primero productos bajo mínimo." });
       }
       if (num(financiero.balance) < 0) {
         acciones.push({ title: "Revisa egresos del período", detail: "Analiza movimientos financieros y flujo de caja para cortar fugas de margen." });
       }
-      acciones.push({ title: "Comparar contra otro período", detail: "Activa el comparativo para medir tendencia, no solo fotografía del rango." });
+      acciones.push({ title: "Comparar contra otro período", detail: "Activa el comparativo para medir tendencia, no solo fotografÃ­a del rango." });
       acciones.push({ title: "Exportar y compartir", detail: "Usa CSV, PDF o reportes IA para bajar esta lectura a equipo gerencial y responsables." });
       return acciones.slice(0, 4);
     }
@@ -647,6 +755,122 @@
           return '<li>' + sanitize(item || '') + '</li>';
         }).join('');
       }
+    }
+
+    function fmtByUnit(value, unit) {
+      if (unit === "money") return fmtMoney(value);
+      if (unit === "percent") return fmtNumber(value) + "%";
+      return fmtNumber(value);
+    }
+
+    function renderObjetivos(panel) {
+      const wrap = document.getElementById("objetivosResumen");
+      const tbody = document.querySelector("#tablaObjetivosGraficos tbody");
+      const objetivos = panel?.objetivos || {};
+      const metricas = Array.isArray(objetivos.metricas) ? objetivos.metricas : [];
+      if (wrap) {
+        wrap.textContent = (objetivos.base || "") + (objetivos.resumen ? " " + objetivos.resumen : "");
+      }
+      if (!tbody) return;
+      if (!metricas.length) {
+        tbody.innerHTML = '<tr><td colspan="4">Sin datos</td></tr>';
+        return;
+      }
+      tbody.innerHTML = metricas.map(function(item){
+        return '' +
+          '<tr>' +
+          '<td><strong>' + sanitize(item.label || '-') + '</strong><br><span class="form-help">' + sanitize(item.descripcion || '') + '</span></td>' +
+          '<td>' + sanitize(fmtByUnit(item.actual, item.unidad)) + '</td>' +
+          '<td>' + sanitize(fmtByUnit(item.objetivo, item.unidad)) + '</td>' +
+          '<td>' + sanitize(fmtNumber(item.cumplimiento_pct)) + '%</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderPresupuesto(panel) {
+      const wrap = document.getElementById("presupuestoResumen");
+      const tbody = document.querySelector("#tablaPresupuestoGraficos tbody");
+      const presupuesto = panel?.presupuesto || {};
+      const partidas = Array.isArray(presupuesto.partidas) ? presupuesto.partidas : [];
+      if (wrap) {
+        wrap.textContent = (presupuesto.base || "") + (presupuesto.resumen ? " " + presupuesto.resumen : "");
+      }
+      if (!tbody) return;
+      if (!partidas.length) {
+        tbody.innerHTML = '<tr><td colspan="4">Sin datos</td></tr>';
+        return;
+      }
+      tbody.innerHTML = partidas.map(function(item){
+        const desviacion = fmtByUnit(item.desviacion, item.unidad) + ' (' + fmtNumber(item.desviacion_pct) + '%)';
+        return '' +
+          '<tr>' +
+          '<td><strong>' + sanitize(item.label || '-') + '</strong><br><span class="form-help">' + sanitize(item.nota || '') + '</span></td>' +
+          '<td>' + sanitize(fmtByUnit(item.ejecutado, item.unidad)) + '</td>' +
+          '<td>' + sanitize(fmtByUnit(item.presupuesto, item.unidad)) + '</td>' +
+          '<td>' + sanitize(desviacion) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function predictiveLabel(value) {
+      const normalized = normalize(value).toLowerCase();
+      if (normalized === 'solido') return 'Sólido';
+      if (normalized === 'estable') return 'Estable';
+      if (normalized === 'atencion') return 'Atención';
+      if (normalized === 'critico') return 'Crítico';
+      return 'Estable';
+    }
+
+    function renderPredictivos(panel) {
+      const host = document.getElementById('predictivosGrid');
+      if (!host) return;
+      const items = Array.isArray(panel?.predictivos) ? panel.predictivos : [];
+      if (!items.length) {
+        host.innerHTML = '<article class="analytics-traffic-card"><p>Sin señales predictivas disponibles.</p></article>';
+        return;
+      }
+      host.innerHTML = items.map(function(item){
+        const sev = normalize(item.severity).toLowerCase() || 'estable';
+        return '' +
+          '<article class="analytics-traffic-card">' +
+            '<header>' +
+              '<div><strong>' + sanitize(item.label || '-') + '</strong></div>' +
+              '<div class="analytics-health-badge ' + sanitize(sev) + '">' + sanitize(predictiveLabel(sev)) + '</div>' +
+            '</header>' +
+            '<p><strong>' + sanitize(item.signal || '') + '</strong></p>' +
+            '<p>' + sanitize(item.resumen || '') + '</p>' +
+            '<p class="form-help">Acción sugerida: ' + sanitize(item.accion || '') + '</p>' +
+          '</article>';
+      }).join('');
+    }
+
+    function renderRentabilidadTable(selector, rows) {
+      const tbody = document.querySelector(selector + ' tbody');
+      if (!tbody) return;
+      if (!Array.isArray(rows) || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4">Sin datos</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function(item){
+        return '' +
+          '<tr>' +
+          '<td>' + sanitize(item.label || '-') + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.ingresos)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.margen_estimado)) + '</td>' +
+          '<td>' + sanitize(fmtNumber(item.rentabilidad_pct)) + '%</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderRentabilidad(panel) {
+      const rent = panel?.rentabilidad || {};
+      const base = document.getElementById('rentabilidadBase');
+      if (base) {
+        base.textContent = rent.base_costo || 'Rentabilidad estimada con base en ventas, costos y carga operativa del período.';
+      }
+      renderRentabilidadTable('#tablaRentabilidadLinea', rent.linea || []);
+      renderRentabilidadTable('#tablaRentabilidadSede', rent.sede || []);
+      renderRentabilidadTable('#tablaRentabilidadCanal', rent.canal || []);
     }
 
     function applyKpis(panel) {
@@ -826,6 +1050,10 @@
       renderInsightList("accionesEjecutivas", buildExecutiveActions(panel));
       renderExecutiveNarrative(panel);
       renderExecutiveHealth(panel);
+      renderObjetivos(panel);
+      renderPresupuesto(panel);
+      renderPredictivos(panel);
+      renderRentabilidad(panel);
 
       const ventas = panel?.series?.ventas || [];
       const finanzas = panel?.series?.finanzas || [];
@@ -939,3 +1167,7 @@
   </script>
 </body>
 </html>
+
+
+
+
