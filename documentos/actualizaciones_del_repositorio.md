@@ -3511,3 +3511,9 @@ Archivos modificados:
 - web/administrar_empresa/chat_tareas_papelera.html
 - web/administrar_empresa/panel.html
 - web/super/licencias_resumen.html
+
+2026-05-02 13:50:04 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 0ae96ac; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa/graficos_estadisticas.html
+- web/administrar_empresa/reportes_menu.html

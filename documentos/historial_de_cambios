@@ -18001,3 +18001,10 @@ Archivos modificados:
 - web/administrar_empresa/chat_tareas_papelera.html
 - web/administrar_empresa/panel.html
 - web/super/licencias_resumen.html
+
+2026-05-02: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa/graficos_estadisticas.html
+- web/administrar_empresa/reportes_menu.html
