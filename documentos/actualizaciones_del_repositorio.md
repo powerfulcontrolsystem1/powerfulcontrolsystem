@@ -3469,3 +3469,9 @@ Archivos modificados:
 - web/administrar_empresa/codigos_de_descuento.html
 - web/administrar_empresa/comisiones.html
 - web/administrar_empresa/propinas.html
+
+2026-05-02 12:13:23 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 32b8e9e; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/publicar_red_social.html
+- web/administrar_empresa/reservas_hotel.html
