@@ -179,14 +179,16 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			var payload struct {
-				TipoID       int64   `json:"tipo_id"`
-				PaisCodigo   string  `json:"pais_codigo"`
-				Nombre       string  `json:"nombre"`
-				Descripcion  string  `json:"descripcion"`
-				Valor        float64 `json:"valor"`
-				DuracionDias int     `json:"duracion_dias"`
-				ModulosHab   string  `json:"modulos_habilitados"`
-				SuperRol     int     `json:"super_rol_habilitado"`
+				TipoID        int64   `json:"tipo_id"`
+				PaisCodigo    string  `json:"pais_codigo"`
+				Nombre        string  `json:"nombre"`
+				Descripcion   string  `json:"descripcion"`
+				Valor         float64 `json:"valor"`
+				DuracionDias  int     `json:"duracion_dias"`
+				ModulosHab    string  `json:"modulos_habilitados"`
+				EsAdicional   int     `json:"es_adicional"`
+				CodigoFuncion string  `json:"codigo_funcion"`
+				SuperRol      int     `json:"super_rol_habilitado"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -203,7 +205,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "pais_codigo required", http.StatusBadRequest)
 				return
 			}
-			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.SuperRol)
+			id, err := dbpkg.CreateLicenciaAdvanced(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
@@ -246,14 +248,16 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			// actualización normal (payload JSON)
 			var payloadUpdate struct {
-				TipoID       int64   `json:"tipo_id"`
-				PaisCodigo   string  `json:"pais_codigo"`
-				Nombre       string  `json:"nombre"`
-				Descripcion  string  `json:"descripcion"`
-				Valor        float64 `json:"valor"`
-				DuracionDias int     `json:"duracion_dias"`
-				ModulosHab   string  `json:"modulos_habilitados"`
-				SuperRol     int     `json:"super_rol_habilitado"`
+				TipoID        int64   `json:"tipo_id"`
+				PaisCodigo    string  `json:"pais_codigo"`
+				Nombre        string  `json:"nombre"`
+				Descripcion   string  `json:"descripcion"`
+				Valor         float64 `json:"valor"`
+				DuracionDias  int     `json:"duracion_dias"`
+				ModulosHab    string  `json:"modulos_habilitados"`
+				EsAdicional   int     `json:"es_adicional"`
+				CodigoFuncion string  `json:"codigo_funcion"`
+				SuperRol      int     `json:"super_rol_habilitado"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -264,7 +268,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "pais_codigo required", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.SuperRol); err != nil {
+			if err := dbpkg.UpdateLicenciaAdvanced(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.EsAdicional, payloadUpdate.CodigoFuncion, payloadUpdate.SuperRol); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -1041,6 +1045,178 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	return true, nil
 }
 
+func normalizeLicenciaCheckoutMode(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "empresa_bundle", "bundle", "renovacion_agrupada":
+		return "empresa_bundle"
+	case "empresa_addons", "addons", "adicionales":
+		return "empresa_addons"
+	default:
+		return ""
+	}
+}
+
+func readCheckoutContextFromRawPayload(raw string) (string, []int64) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return "", nil
+	}
+	mode := normalizeLicenciaCheckoutMode(fmt.Sprint(payload["checkout_mode"]))
+	addons := make([]int64, 0)
+	switch v := payload["addon_licencia_ids"].(type) {
+	case []interface{}:
+		for _, item := range v {
+			switch typed := item.(type) {
+			case float64:
+				id := int64(typed)
+				if id > 0 {
+					addons = append(addons, id)
+				}
+			case string:
+				if id, err := strconv.ParseInt(strings.TrimSpace(typed), 10, 64); err == nil && id > 0 {
+					addons = append(addons, id)
+				}
+			}
+		}
+	case string:
+		addons = parseLicenciaIDsCSV(v)
+	}
+	return mode, addons
+}
+
+func maxTime(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func activateLicenciaCheckoutContext(dbSuper *sql.DB, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+	mode := normalizeLicenciaCheckoutMode(checkoutMode)
+	if mode == "" {
+		return activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+	}
+
+	baseLic, err := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
+	if err != nil && err != sql.ErrNoRows {
+		return false, err
+	}
+	now := time.Now()
+	activatedAny := false
+
+	switch mode {
+	case "empresa_addons":
+		baseEnd := now
+		if baseLic != nil {
+			if parsed, ok := parsePaymentTime(baseLic.FechaFin); ok && parsed.After(now) {
+				baseEnd = parsed
+			} else if baseLic.DuracionDias > 0 {
+				baseEnd = now.AddDate(0, 0, baseLic.DuracionDias)
+			}
+		}
+		fechaInicio := now.Format("2006-01-02 15:04:05")
+		fechaFin := baseEnd.Format("2006-01-02 15:04:05")
+		for _, addonID := range addonLicenciaIDs {
+			if addonID <= 0 {
+				continue
+			}
+			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addonID, fechaInicio, fechaFin, true, "checkout_addons", "activacion por compra de adicional"); err != nil {
+				return activatedAny, err
+			}
+			activatedAny = true
+		}
+	case "empresa_bundle":
+		if baseLic == nil {
+			act, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+			if err != nil {
+				return activatedAny, err
+			}
+			activatedAny = activatedAny || act
+			baseLic, _ = dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
+		} else {
+			anchor := now
+			if parsedEnd, ok := parsePaymentTime(baseLic.FechaFin); ok && parsedEnd.After(anchor) {
+				anchor = parsedEnd
+			}
+			baseStart := strings.TrimSpace(baseLic.FechaInicio)
+			if baseStart == "" {
+				baseStart = now.Format("2006-01-02 15:04:05")
+			}
+			if baseLic.DuracionDias <= 0 {
+				baseLic.DuracionDias = 30
+			}
+			baseEnd := anchor.AddDate(0, 0, baseLic.DuracionDias).Format("2006-01-02 15:04:05")
+			if err := dbpkg.SetLicenciaFechas(dbSuper, baseLic.ID, baseStart, baseEnd); err != nil {
+				return activatedAny, err
+			}
+			baseLic.FechaFin = baseEnd
+			activatedAny = true
+		}
+
+		activeAddons, err := dbpkg.ListEmpresaLicenciasAdicionales(dbSuper, empresaID, false)
+		if err != nil {
+			return activatedAny, err
+		}
+		for _, addon := range activeAddons {
+			if addon.AutoRenovar != 1 {
+				continue
+			}
+			anchor := now
+			if parsedEnd, ok := parsePaymentTime(addon.FechaFin); ok && parsedEnd.After(anchor) {
+				anchor = parsedEnd
+			}
+			duration := addon.DuracionDias
+			if duration <= 0 {
+				duration = 30
+			}
+			fechaInicio := strings.TrimSpace(addon.FechaInicio)
+			if fechaInicio == "" {
+				fechaInicio = now.Format("2006-01-02 15:04:05")
+			}
+			fechaFin := anchor.AddDate(0, 0, duration).Format("2006-01-02 15:04:05")
+			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addon.LicenciaID, fechaInicio, fechaFin, true, "bundle_renew", "renovacion agrupada"); err != nil {
+				return activatedAny, err
+			}
+			activatedAny = true
+		}
+		newAddonEnd := now.AddDate(0, 0, 30)
+		if baseLic != nil {
+			if parsedEnd, ok := parsePaymentTime(baseLic.FechaFin); ok && parsedEnd.After(newAddonEnd) {
+				newAddonEnd = parsedEnd
+			}
+		}
+		for _, addonID := range addonLicenciaIDs {
+			if addonID <= 0 {
+				continue
+			}
+			current, err := dbpkg.GetEmpresaLicenciaAdicionalByEmpresaYLicencia(dbSuper, empresaID, addonID)
+			if err == nil && current != nil && current.Activo == 1 {
+				continue
+			}
+			if err != nil && err != sql.ErrNoRows {
+				return activatedAny, err
+			}
+			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addonID, now.Format("2006-01-02 15:04:05"), newAddonEnd.Format("2006-01-02 15:04:05"), true, "bundle_new_addon", "alta desde renovacion agrupada"); err != nil {
+				return activatedAny, err
+			}
+			activatedAny = true
+		}
+	}
+
+	if activatedAny {
+		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+			if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
+				return activatedAny, err
+			}
+		}
+	}
+	return activatedAny, nil
+}
+
 type licenciaCheckoutSummary struct {
 	OriginalValue             float64 `json:"original_value"`
 	DiscountValue             float64 `json:"discount_value"`
@@ -1201,6 +1377,54 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	return summary, nil
 }
 
+func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {
+	mode := normalizeLicenciaCheckoutMode(checkoutMode)
+	if mode == "" {
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode)
+		return summary, nil, err
+	}
+	bundle, err := dbpkg.BuildEmpresaLicenciaBundleSummary(dbSuper, empresaID, mode, addonLicenciaIDs)
+	if err != nil {
+		return licenciaCheckoutSummary{}, nil, err
+	}
+	originalValue := roundLicenciaCheckoutAmount(bundle.TotalCheckout)
+	discountValue, discountLabel, discountApplied, err := resolveLicenciaDiscountAmount(dbSuper, discountCode, originalValue)
+	if err != nil {
+		return licenciaCheckoutSummary{}, nil, err
+	}
+	if discountApplied && strings.TrimSpace(discountCode) != "" {
+		used, usedErr := dbpkg.HasLicenciaDiscountCodeUsedByEmpresa(dbSuper, empresaID, discountCode)
+		if usedErr != nil {
+			return licenciaCheckoutSummary{}, nil, usedErr
+		}
+		if used {
+			return licenciaCheckoutSummary{}, nil, fmt.Errorf("este codigo de descuento ya fue usado por esta empresa")
+		}
+	}
+	totalValue := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	summary := licenciaCheckoutSummary{
+		OriginalValue:             originalValue,
+		DiscountValue:             discountValue,
+		TotalValue:                totalValue,
+		DiscountCode:              strings.TrimSpace(discountCode),
+		DiscountApplied:           discountApplied && discountValue > 0,
+		DiscountLabel:             discountLabel,
+		IsZeroTotal:               totalValue <= 0,
+		ZeroTotalBlocked:          false,
+		CanActivateWithoutPayment: totalValue <= 0,
+	}
+	switch mode {
+	case "empresa_addons":
+		summary.Message = "El checkout incluye solo licencias adicionales para ampliar módulos o funciones de la empresa."
+	case "empresa_bundle":
+		summary.Message = "El checkout agrupa la renovación de la licencia base y de los adicionales marcados para cobro periódico."
+	}
+	if summary.DiscountApplied {
+		summary.Message += " Se aplicó el descuento al total agrupado."
+	}
+	return summary, bundle, nil
+}
+
 func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -1210,6 +1434,8 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		licenciaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("licencia_id")), 10, 64)
 		empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
 		discountCode := strings.TrimSpace(r.URL.Query().Get("discount_code"))
+		checkoutMode := strings.TrimSpace(r.URL.Query().Get("checkout_mode"))
+		addonLicenciaIDs := parseLicenciaIDsCSV(r.URL.Query().Get("addon_licencia_ids"))
 		if licenciaID <= 0 {
 			http.Error(w, "licencia_id invalido", http.StatusBadRequest)
 			return
@@ -1223,7 +1449,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if empresaID > 0 {
 			empresa, _ = dbpkg.GetEmpresaByID(dbSuper, empresaID)
 		}
-		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, empresaID, discountCode, checkoutMode, addonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve checkout summary: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -1233,13 +1459,15 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"licencia_id": licenciaID,
 			"empresa_id":  empresaID,
 			"licencia": map[string]interface{}{
-				"id":            lic.ID,
-				"nombre":        lic.Nombre,
-				"descripcion":   lic.Descripcion,
-				"valor":         lic.Valor,
-				"duracion_dias": lic.DuracionDias,
-				"tipo_id":       lic.TipoID,
-				"tipo_nombre":   lic.TipoNombre,
+				"id":             lic.ID,
+				"nombre":         lic.Nombre,
+				"descripcion":    lic.Descripcion,
+				"valor":          lic.Valor,
+				"duracion_dias":  lic.DuracionDias,
+				"tipo_id":        lic.TipoID,
+				"tipo_nombre":    lic.TipoNombre,
+				"es_adicional":   lic.EsAdicional,
+				"codigo_funcion": lic.CodigoFuncion,
 			},
 			"empresa": func() interface{} {
 				if empresa == nil {
@@ -1253,7 +1481,9 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"tipo_nombre": empresa.TipoNombre,
 				}
 			}(),
-			"summary": summary,
+			"checkout_mode": checkoutMode,
+			"bundle":        bundle,
+			"summary":       summary,
 		})
 	}
 }
@@ -3107,13 +3337,15 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
-			LicenciaID    int64  `json:"licencia_id"`
-			EmpresaID     int64  `json:"empresa_id,omitempty"`
-			PhoneNumber   string `json:"phone_number"`
-			CustomerEmail string `json:"customer_email,omitempty"`
-			AcceptTerms   bool   `json:"accept_terms"`
-			DiscountCode  string `json:"discount_code,omitempty"`
-			AsesorID      string `json:"asesor_id,omitempty"`
+			LicenciaID       int64   `json:"licencia_id"`
+			EmpresaID        int64   `json:"empresa_id,omitempty"`
+			PhoneNumber      string  `json:"phone_number"`
+			CustomerEmail    string  `json:"customer_email,omitempty"`
+			AcceptTerms      bool    `json:"accept_terms"`
+			DiscountCode     string  `json:"discount_code,omitempty"`
+			AsesorID         string  `json:"asesor_id,omitempty"`
+			CheckoutMode     string  `json:"checkout_mode,omitempty"`
+			AddonLicenciaIDs []int64 `json:"addon_licencia_ids,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -3200,7 +3432,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -3333,13 +3565,16 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		rawMap := map[string]interface{}{
-			"provider":      "wompi",
-			"valor_pagado":  summary.TotalValue,
-			"discount_code": payload.DiscountCode,
-			"asesor_id":     strings.ToUpper(strings.TrimSpace(payload.AsesorID)),
-			"licencia_id":   payload.LicenciaID,
-			"empresa_id":    payload.EmpresaID,
-			"created_at":    time.Now().Format(time.RFC3339),
+			"provider":           "wompi",
+			"valor_pagado":       summary.TotalValue,
+			"discount_code":      payload.DiscountCode,
+			"asesor_id":          strings.ToUpper(strings.TrimSpace(payload.AsesorID)),
+			"licencia_id":        payload.LicenciaID,
+			"empresa_id":         payload.EmpresaID,
+			"checkout_mode":      normalizeLicenciaCheckoutMode(payload.CheckoutMode),
+			"addon_licencia_ids": payload.AddonLicenciaIDs,
+			"bundle":             bundle,
+			"created_at":         time.Now().Format(time.RFC3339),
 		}
 		rawBytes, _ := json.Marshal(rawMap)
 		rawPayload := mergePaymentPayloadJSON(string(respBody), string(rawBytes))
@@ -3692,7 +3927,12 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to load licencia from Wompi status:", licErr)
 			} else if lic != nil {
 				if isApprovedPaymentStatus(status) {
-					act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+					checkoutMode := ""
+					var addonLicenciaIDs []int64
+					if payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payErr == nil && payRec != nil && payRec.RawPayload.Valid {
+						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
+					}
+					act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 					if actErr != nil {
 						log.Println("warning: failed to activate licencia from Wompi:", actErr)
 					} else {
@@ -3834,7 +4074,16 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				}
 			}
 			if !discountBlocked {
-				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				checkoutMode := ""
+				var addonLicenciaIDs []int64
+				if payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payErr == nil && payRec != nil && payRec.RawPayload.Valid {
+					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
+				} else if payRec == nil && strings.TrimSpace(reference) != "" {
+					if byRef, refErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference); refErr == nil && byRef != nil && byRef.RawPayload.Valid {
+						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(byRef.RawPayload.String)
+					}
+				}
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
@@ -3940,11 +4189,13 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
-			LicenciaID    int64  `json:"licencia_id"`
-			EmpresaID     int64  `json:"empresa_id,omitempty"`
-			CustomerEmail string `json:"customer_email,omitempty"`
-			DiscountCode  string `json:"discount_code,omitempty"`
-			AsesorID      string `json:"asesor_id,omitempty"`
+			LicenciaID       int64   `json:"licencia_id"`
+			EmpresaID        int64   `json:"empresa_id,omitempty"`
+			CustomerEmail    string  `json:"customer_email,omitempty"`
+			DiscountCode     string  `json:"discount_code,omitempty"`
+			AsesorID         string  `json:"asesor_id,omitempty"`
+			CheckoutMode     string  `json:"checkout_mode,omitempty"`
+			AddonLicenciaIDs []int64 `json:"addon_licencia_ids,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -4036,7 +4287,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
@@ -4130,6 +4381,9 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"discount_code":        payload.DiscountCode,
 				"valor_pagado":         summary.TotalValue,
 				"asesor_id":            payload.AsesorID,
+				"checkout_mode":        normalizeLicenciaCheckoutMode(payload.CheckoutMode),
+				"addon_licencia_ids":   payload.AddonLicenciaIDs,
+				"bundle":               bundle,
 				"summary":              summary,
 				"created_at":           time.Now().Format(time.RFC3339),
 				"integration_flow":     "classic_checkout_js_fallback",
@@ -4188,25 +4442,28 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		rawMap := map[string]interface{}{
-			"provider":         "epayco",
-			"mode":             mode,
-			"mode_source":      modeSource,
-			"payment_base_url": paymentBaseURL,
-			"checkout_type":    "standard",
-			"checkout_script":  epaycoSmartCheckoutScriptURL,
-			"session_id":       sessionID,
-			"response":         responseURL,
-			"confirmation":     confirmationURL,
-			"license_id":       payload.LicenciaID,
-			"empresa_id":       payload.EmpresaID,
-			"customer_email":   email,
-			"discount_code":    payload.DiscountCode,
-			"valor_pagado":     summary.TotalValue,
-			"asesor_id":        payload.AsesorID,
-			"created_at":       time.Now().Format(time.RFC3339),
-			"integration_flow": "smart_checkout_v2",
-			"apify_login_raw":  loginRaw,
-			"session_raw":      sessionRaw,
+			"provider":           "epayco",
+			"mode":               mode,
+			"mode_source":        modeSource,
+			"payment_base_url":   paymentBaseURL,
+			"checkout_type":      "standard",
+			"checkout_script":    epaycoSmartCheckoutScriptURL,
+			"session_id":         sessionID,
+			"response":           responseURL,
+			"confirmation":       confirmationURL,
+			"license_id":         payload.LicenciaID,
+			"empresa_id":         payload.EmpresaID,
+			"customer_email":     email,
+			"discount_code":      payload.DiscountCode,
+			"valor_pagado":       summary.TotalValue,
+			"asesor_id":          payload.AsesorID,
+			"checkout_mode":      normalizeLicenciaCheckoutMode(payload.CheckoutMode),
+			"addon_licencia_ids": payload.AddonLicenciaIDs,
+			"bundle":             bundle,
+			"created_at":         time.Now().Format(time.RFC3339),
+			"integration_flow":   "smart_checkout_v2",
+			"apify_login_raw":    loginRaw,
+			"session_raw":        sessionRaw,
 		}
 		rawBytes, _ := json.Marshal(rawMap)
 		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
@@ -4554,7 +4811,12 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			if !discountBlocked {
-				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				checkoutMode := ""
+				var addonLicenciaIDs []int64
+				if rec != nil && rec.RawPayload.Valid {
+					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
+				}
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 				} else {
@@ -4748,7 +5010,12 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				}
 			}
 			if !discountBlocked {
-				act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+				checkoutMode := ""
+				var addonLicenciaIDs []int64
+				if rec != nil && rec.RawPayload.Valid {
+					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
+				}
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {
@@ -4820,11 +5087,13 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		}
 
 		var payload struct {
-			LicenciaID   int64  `json:"licencia_id"`
-			EmpresaID    int64  `json:"empresa_id"`
-			Motivo       string `json:"motivo,omitempty"`
-			DiscountCode string `json:"discount_code,omitempty"`
-			AsesorID     string `json:"asesor_id,omitempty"`
+			LicenciaID       int64   `json:"licencia_id"`
+			EmpresaID        int64   `json:"empresa_id"`
+			Motivo           string  `json:"motivo,omitempty"`
+			DiscountCode     string  `json:"discount_code,omitempty"`
+			AsesorID         string  `json:"asesor_id,omitempty"`
+			CheckoutMode     string  `json:"checkout_mode,omitempty"`
+			AddonLicenciaIDs []int64 `json:"addon_licencia_ids,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -4845,7 +5114,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			return
 		}
 
-		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -4860,23 +5129,39 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		}
 
 		now := time.Now()
-		if lic.DuracionDias <= 0 {
-			lic.DuracionDias = 30
-		}
 		fechaInicio := now.Format("2006-01-02 15:04:05")
-		fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-		if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo); err != nil {
-			if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
-				http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
+		fechaFin := now.AddDate(0, 0, 30).Format("2006-01-02 15:04:05")
+		if normalizeLicenciaCheckoutMode(payload.CheckoutMode) == "" {
+			if lic.DuracionDias <= 0 {
+				lic.DuracionDias = 30
+			}
+			fechaFin = now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
+			if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo); err != nil {
+				if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
+					http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
+					return
+				}
+				http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
-			if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
-				http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
+			if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+				if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
+					http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+		} else {
+			activated, actErr := activateLicenciaCheckoutContext(dbSuper, payload.LicenciaID, payload.EmpresaID, payload.CheckoutMode, payload.AddonLicenciaIDs)
+			if actErr != nil {
+				http.Error(w, "failed to activate bundle de licencias: "+actErr.Error(), http.StatusInternalServerError)
 				return
+			}
+			if !activated {
+				http.Error(w, "no hubo componentes por activar en el checkout agrupado", http.StatusConflict)
+				return
+			}
+			if bundle != nil && strings.TrimSpace(bundle.FechaCorteBase) != "" {
+				fechaFin = bundle.FechaCorteBase
 			}
 		}
 
@@ -4894,14 +5179,17 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
 		}
 		rawMapWelcome := map[string]interface{}{
-			"provider":       "manual",
-			"customer_email": toEmail,
-			"discount_code":  payload.DiscountCode,
-			"asesor_id":      payload.AsesorID,
-			"original_value": summary.OriginalValue,
-			"discount_value": summary.DiscountValue,
-			"total_value":    summary.TotalValue,
-			"motivo":         payload.Motivo,
+			"provider":           "manual",
+			"customer_email":     toEmail,
+			"discount_code":      payload.DiscountCode,
+			"asesor_id":          payload.AsesorID,
+			"checkout_mode":      normalizeLicenciaCheckoutMode(payload.CheckoutMode),
+			"addon_licencia_ids": payload.AddonLicenciaIDs,
+			"original_value":     summary.OriginalValue,
+			"discount_value":     summary.DiscountValue,
+			"total_value":        summary.TotalValue,
+			"bundle":             bundle,
+			"motivo":             payload.Motivo,
 		}
 		rawBytesWelcome, _ := json.Marshal(rawMapWelcome)
 		if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, ref, ref, "APPROVED", string(rawBytesWelcome), payload.DiscountCode, payload.AsesorID); recErr == nil {

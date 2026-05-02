@@ -2,6 +2,7 @@
   var state = {
     empresa: null,
     impacto: null,
+    licencias: null,
     accesos: [],
     invitaciones: [],
     shareMeta: {
@@ -300,6 +301,135 @@
     renderShares();
   }
 
+  function formatCurrency(value) {
+    var amount = Number(value || 0);
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  function formatDate(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return "Sin fecha";
+    var normalized = raw.length === 10 ? (raw + "T00:00:00") : raw.replace(" ", "T");
+    var dt = new Date(normalized);
+    if (Number.isNaN(dt.getTime())) return raw;
+    return new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(dt);
+  }
+
+  function buildLicenciaCheckoutUrl(mode, addonLicenciaIds) {
+    var empresaId = state.empresa && state.empresa.id ? state.empresa.id : getEmpresaId();
+    var licencias = state.licencias || {};
+    var base = licencias.base_licencia || null;
+    if (!empresaId || !base || !base.id) return "";
+    var url = new URL("/pagar_licencia.html", window.location.origin);
+    url.searchParams.set("empresa_id", String(empresaId));
+    url.searchParams.set("licencia_id", String(base.id));
+    if (mode) url.searchParams.set("checkout_mode", String(mode));
+    if (addonLicenciaIds && addonLicenciaIds.length) {
+      url.searchParams.set("addon_licencia_ids", addonLicenciaIds.join(","));
+    }
+    return url.pathname + url.search;
+  }
+
+  function renderLicencias() {
+    var licencias = state.licencias || {};
+    var resumenNode = $("empresaLicenciasResumen");
+    var baseNode = $("empresaLicenciasBase");
+    var activasNode = $("empresaLicenciasActivas");
+    var catalogoNode = $("empresaLicenciasCatalogo");
+    if (!resumenNode || !baseNode || !activasNode || !catalogoNode) return;
+
+    var base = licencias.base_licencia || null;
+    var addons = Array.isArray(licencias.licencias_adicionales) ? licencias.licencias_adicionales : [];
+    var catalogo = Array.isArray(licencias.catalogo_adicionales) ? licencias.catalogo_adicionales : [];
+    var bundle = licencias.bundle_summary || null;
+
+    if (!base) {
+      resumenNode.textContent = "La empresa todavía no tiene una licencia base activa. Primero debe existir una licencia principal antes de agregar módulos adicionales.";
+      baseNode.innerHTML = '<p class="muted">Sin licencia base activa.</p>';
+      activasNode.innerHTML = '<p class="muted">No se pueden activar adicionales sin una licencia base activa.</p>';
+      catalogoNode.innerHTML = '<p class="muted">El catálogo adicional se habilita cuando la empresa tenga una licencia base vigente.</p>';
+      return;
+    }
+
+    var siguienteTotal = bundle && typeof bundle.total_periodico_siguiente === "number" ? bundle.total_periodico_siguiente : Number(base.valor || 0);
+    var checkoutAgrupado = buildLicenciaCheckoutUrl("empresa_bundle", []);
+    resumenNode.innerHTML = ''
+      + '<strong>Resumen agrupado:</strong> '
+      + 'la siguiente renovación sumará la licencia base y los adicionales activos en un solo cobro de '
+      + '<strong>' + escapeHtml(formatCurrency(siguienteTotal)) + '</strong>'
+      + (bundle && bundle.fecha_corte_base ? ' con corte base el ' + escapeHtml(formatDate(bundle.fecha_corte_base)) + '.' : '.')
+      + (checkoutAgrupado ? ' <a href="' + escapeHtml(checkoutAgrupado) + '">Renovar todo en un solo pago</a>.' : '');
+
+    baseNode.innerHTML = ''
+      + '<article class="empresa-share-item">'
+      + '<div><strong>' + escapeHtml(base.nombre || "Licencia base") + '</strong>'
+      + '<div class="muted">' + escapeHtml(base.descripcion || "Licencia principal de la empresa.") + '</div>'
+      + '<div class="muted">Valor periódico: ' + escapeHtml(formatCurrency(base.valor || 0)) + ' - vence: ' + escapeHtml(formatDate(base.fecha_fin)) + '</div>'
+      + '</div>'
+      + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-activo">Base</span></div>'
+      + '</article>';
+
+    if (!addons.length) {
+      activasNode.innerHTML = '<p class="muted">No hay licencias adicionales activas o históricas para esta empresa.</p>';
+    } else {
+      activasNode.innerHTML = addons.map(function(item) {
+        var activo = Number(item.activo || 0) === 1;
+        var autoRenovar = Number(item.auto_renovar || 0) === 1;
+        var status = activo ? "activo" : "inactivo";
+        return '<article class="empresa-share-item">'
+          + '<div><strong>' + escapeHtml(item.licencia_nombre || item.nombre || "Licencia adicional") + '</strong>'
+          + '<div class="muted">' + escapeHtml(item.codigo_funcion || item.licencia_codigo_funcion || "Módulo adicional") + '</div>'
+          + '<div class="muted">Valor periódico: ' + escapeHtml(formatCurrency(item.valor || 0)) + ' - vigente hasta: ' + escapeHtml(formatDate(item.fecha_fin)) + '</div>'
+          + '</div>'
+          + '<div class="empresa-share-item-actions">'
+          + '<span class="empresa-share-state is-' + escapeHtml(status) + '">' + escapeHtml(activo ? "Activo" : "Inactivo") + '</span>'
+          + '<button type="button" class="btn secondary empresa-addon-toggle-renew" data-licencia-id="' + escapeHtml(item.licencia_id) + '" data-auto-renovar="' + escapeHtml(autoRenovar ? "0" : "1") + '">' + (autoRenovar ? "No renovar" : "Reactivar renovación") + '</button>'
+          + '<button type="button" class="btn danger empresa-addon-toggle-active" data-licencia-id="' + escapeHtml(item.licencia_id) + '" data-action="' + (activo ? "desactivar_adicional" : "activar_adicional") + '">' + (activo ? "Desactivar" : "Activar") + '</button>'
+          + '</div>'
+          + '</article>';
+      }).join("");
+    }
+
+    if (!catalogo.length) {
+      catalogoNode.innerHTML = '<p class="muted">No hay licencias adicionales disponibles para este tipo de empresa en este momento.</p>';
+    } else {
+      catalogoNode.innerHTML = catalogo.map(function(item) {
+        var buyUrl = buildLicenciaCheckoutUrl("empresa_addons", [Number(item.id)]);
+        return '<article class="empresa-share-item">'
+          + '<div><strong>' + escapeHtml(item.nombre || "Licencia adicional") + '</strong>'
+          + '<div class="muted">' + escapeHtml(item.descripcion || "Extiende módulos o funciones específicas sobre la licencia base.") + '</div>'
+          + '<div class="muted">Código: ' + escapeHtml(item.codigo_funcion || "Sin código") + ' - valor: ' + escapeHtml(formatCurrency(item.valor || 0)) + ' - vigencia: ' + escapeHtml(String(item.duracion_dias || 0)) + ' días</div>'
+          + '</div>'
+          + '<div class="empresa-share-item-actions">'
+          + (buyUrl ? '<a class="btn" href="' + escapeHtml(buyUrl) + '">Comprar adicional</a>' : '<span class="muted">No disponible</span>')
+          + '</div>'
+          + '</article>';
+      }).join("");
+    }
+  }
+
+  async function loadLicencias() {
+    if (!state.empresa || !state.empresa.id) return;
+    var data = await fetchJSON('/super/api/empresa_licencias_adicionales?empresa_id=' + encodeURIComponent(state.empresa.id) + '&action=resumen', { credentials: 'same-origin' });
+    state.licencias = data || null;
+    renderLicencias();
+  }
+
+  async function toggleLicenciaAdicional(action, licenciaId, payload) {
+    if (!state.empresa || !licenciaId) return;
+    await fetchJSON('/super/api/empresa_licencias_adicionales?empresa_id=' + encodeURIComponent(state.empresa.id) + '&action=' + encodeURIComponent(action), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ licencia_id: Number(licenciaId) }, payload || {}))
+    });
+    await loadLicencias();
+  }
+
   async function loadEmpresa() {
     var empresaId = getEmpresaId();
     if (!empresaId) {
@@ -312,6 +442,11 @@
     state.impacto = impacto && impacto.impacto ? impacto.impacto : null;
     renderEmpresa();
     renderSummary();
+    try {
+      await loadLicencias();
+    } catch (err) {
+      setMessage("empresaLicenciasMessage", err.message || "No se pudo cargar el estado de licencias de la empresa.", true);
+    }
     try {
       await loadShares();
     } catch (err) {
@@ -487,10 +622,33 @@
     if (shareForm) {
       shareForm.addEventListener("submit", inviteAdmin);
     }
+    document.addEventListener("click", function (ev) {
+      var renewBtn = ev.target && ev.target.closest ? ev.target.closest(".empresa-addon-toggle-renew") : null;
+      if (renewBtn) {
+        toggleLicenciaAdicional("auto_renovar", renewBtn.getAttribute("data-licencia-id"), {
+          auto_renovar: renewBtn.getAttribute("data-auto-renovar") === "1"
+        }).then(function () {
+          setMessage("empresaLicenciasMessage", "La preferencia de renovación quedó actualizada.", false);
+        }).catch(function (err) {
+          setMessage("empresaLicenciasMessage", err.message || "No se pudo actualizar la renovación del adicional.", true);
+        });
+        return;
+      }
+      var activeBtn = ev.target && ev.target.closest ? ev.target.closest(".empresa-addon-toggle-active") : null;
+      if (activeBtn) {
+        var action = activeBtn.getAttribute("data-action") || "desactivar_adicional";
+        toggleLicenciaAdicional(action, activeBtn.getAttribute("data-licencia-id")).then(function () {
+          setMessage("empresaLicenciasMessage", action === "desactivar_adicional" ? "La licencia adicional quedó desactivada." : "La licencia adicional quedó activa otra vez.", false);
+        }).catch(function (err) {
+          setMessage("empresaLicenciasMessage", err.message || "No se pudo actualizar la licencia adicional.", true);
+        });
+      }
+    });
     loadEmpresa().catch(function (err) {
       setMessage("empresaEditMessage", err.message || "No se pudo cargar la empresa.", true);
       setMessage("empresaDeleteMessage", err.message || "No se pudo cargar la empresa.", true);
       setMessage("empresaShareMessageBox", err.message || "No se pudo cargar el estado de empresas compartidas.", true);
+      setMessage("empresaLicenciasMessage", err.message || "No se pudo cargar el estado de licencias.", true);
     });
   });
 })();
