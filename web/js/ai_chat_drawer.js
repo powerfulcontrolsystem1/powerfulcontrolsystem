@@ -54,6 +54,9 @@
     voicePlaybackVersion: 0,
     activeSpeechRecognition: null,
     activeSpeechSource: '',
+    voiceQueuePromise: Promise.resolve(),
+    voiceQueueVersion: 0,
+    streamingSpeechBuffer: '',
     robotVoice: 'es-CO',
     robotAssistantVisible: false,
     robotMoodTimer: null,
@@ -226,6 +229,13 @@
       return '/super/api/chat_con_ia_global/consultar';
     }
     return '/api/empresa/chat_con_inteligencia_artificial/consultar';
+  }
+
+  function buildStreamEndpoint() {
+    if (isSuperContext()) {
+      return '/super/api/chat_con_ia_global/consultar_stream';
+    }
+    return '/api/empresa/chat_con_inteligencia_artificial/consultar_stream';
   }
 
   function buildAttachmentEndpoint() {
@@ -1679,6 +1689,7 @@
   }
 
   function stopAssistantVoiceForMoment() {
+    resetQueuedAssistantSpeech();
     state.voicePlaybackVersion += 1;
     try {
       if (state.voiceServerAudio) {
@@ -1842,6 +1853,147 @@
     return chunks.slice(0, 18);
   }
 
+  function resetQueuedAssistantSpeech() {
+    state.voiceQueueVersion += 1;
+    state.streamingSpeechBuffer = '';
+    state.voiceQueuePromise = Promise.resolve();
+  }
+
+  function extractQueuedSpeechSegments(text, force) {
+    var value = String(text || '').replace(/\s+/g, ' ').trim();
+    var segments = [];
+    if (!value) {
+      return { segments: segments, rest: '' };
+    }
+    var rest = value;
+    var lastCut = 0;
+    var match;
+    var sentenceRegex = /(.+?[.!?;:])(?=\s|$)/g;
+    while ((match = sentenceRegex.exec(value))) {
+      var part = String(match[1] || '').trim();
+      if (part) {
+        segments.push(part);
+      }
+      lastCut = sentenceRegex.lastIndex;
+    }
+    rest = value.slice(lastCut).trim();
+    if (!force && rest.length > 220) {
+      var splitAt = rest.lastIndexOf(' ', 180);
+      if (splitAt < 80) splitAt = 180;
+      var early = rest.slice(0, splitAt).trim();
+      if (early) {
+        segments.push(early);
+        rest = rest.slice(splitAt).trim();
+      }
+    }
+    if (force && rest) {
+      segments.push(rest);
+      rest = '';
+    }
+    return { segments: segments, rest: rest };
+  }
+
+  function speakAssistantSegmentWithBrowser(text, playbackVersion) {
+    if (!isSpeechSynthesisSupported() || !text) {
+      return Promise.resolve(false);
+    }
+    return new Promise(function (resolve) {
+      try {
+        if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+          resolve(false);
+          return;
+        }
+        var utterance = new SpeechSynthesisUtterance(String(text));
+        var effectiveVoice = getEffectiveRobotVoice();
+        utterance.lang = robotVoiceLang(effectiveVoice);
+        utterance.rate = 1;
+        utterance.pitch = getChatPersonalityMode() === 'secretary' ? 1.08 : 1;
+        var desiredVoice = pickBrowserSpeechVoice(effectiveVoice);
+        if (desiredVoice) {
+          utterance.voice = desiredVoice;
+        }
+        utterance.onstart = function () {
+          if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+            resolve(false);
+            return;
+          }
+          if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
+        };
+        utterance.onend = function () {
+          resolve(true);
+        };
+        utterance.onerror = function () {
+          if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
+          resolve(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn('No se pudo reproducir segmento de voz:', err);
+        resolve(false);
+      }
+    });
+  }
+
+  function playAssistantSpeechSegment(text, playbackVersion) {
+    var segment = sanitizeTextForSpeech(text);
+    if (!segment) {
+      return Promise.resolve(false);
+    }
+    if (state.voiceOutputMode !== 'computer' && state.voiceServerAvailable) {
+      return playVoiceStreamAudio(segment, playbackVersion).then(function (played) {
+        if (state.voicePlaybackVersion !== playbackVersion) {
+          return false;
+        }
+        if (played) {
+          return true;
+        }
+        return speakAssistantSegmentWithBrowser(segment, playbackVersion);
+      });
+    }
+    return speakAssistantSegmentWithBrowser(segment, playbackVersion);
+  }
+
+  function queueAssistantSpeechSegment(text, playbackVersion) {
+    var segment = sanitizeTextForSpeech(text);
+    if (!segment) return;
+    var version = playbackVersion !== undefined ? playbackVersion : state.voicePlaybackVersion;
+    state.voiceQueuePromise = (state.voiceQueuePromise || Promise.resolve())
+      .then(function () {
+        if (state.voicePlaybackVersion !== version) {
+          return false;
+        }
+        return playAssistantSpeechSegment(segment, version);
+      })
+      .catch(function () {
+        return false;
+      });
+  }
+
+  function beginStreamingSpeechPlayback() {
+    resetQueuedAssistantSpeech();
+    if (!state.voiceEnabled && !state.conversationMode) {
+      return null;
+    }
+    return state.voicePlaybackVersion;
+  }
+
+  function pushStreamingSpeechDelta(text, playbackVersion, force) {
+    if ((!state.voiceEnabled && !state.conversationMode) || !text) {
+      return;
+    }
+    var sanitized = sanitizeTextForSpeech(text);
+    if (!sanitized) {
+      return;
+    }
+    state.streamingSpeechBuffer = (state.streamingSpeechBuffer ? (state.streamingSpeechBuffer + ' ') : '') + sanitized;
+    var extracted = extractQueuedSpeechSegments(state.streamingSpeechBuffer, !!force);
+    state.streamingSpeechBuffer = extracted.rest;
+    extracted.segments.forEach(function (segment) {
+      queueAssistantSpeechSegment(segment, playbackVersion);
+    });
+  }
+
   function stripSendVoiceCommand(text) {
     var raw = String(text || '').trim();
     if (!raw) {
@@ -1867,6 +2019,7 @@
   function speakAssistantText(text) {
     var readAloud = state.voiceEnabled || state.conversationMode;
     if (!text) return;
+    resetQueuedAssistantSpeech();
     if (isAvatarPersonalityMode(getChatPersonalityMode())) {
       setRobotMood('speaking', readAloud ? 0 : 2200);
     }
@@ -1907,29 +2060,11 @@
     try {
       if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) return;
       window.speechSynthesis.cancel();
-      var utterance = new SpeechSynthesisUtterance(String(text));
-      var effectiveVoice = getEffectiveRobotVoice();
-      utterance.lang = robotVoiceLang(effectiveVoice);
-      utterance.rate = 1;
-      utterance.pitch = getChatPersonalityMode() === 'secretary' ? 1.08 : 1;
-      var desiredVoice = pickBrowserSpeechVoice(effectiveVoice);
-      if (desiredVoice) {
-        utterance.voice = desiredVoice;
-      }
-      utterance.onstart = function () {
-        if (playbackVersion !== undefined && state.voicePlaybackVersion !== playbackVersion) {
-          try { window.speechSynthesis.cancel(); } catch (e) {}
-          return;
+      speakAssistantSegmentWithBrowser(text, playbackVersion).then(function (played) {
+        if (played && isAvatarPersonalityMode(getChatPersonalityMode())) {
+          setRobotMood('happy', 1200);
         }
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('speaking');
-      };
-      utterance.onend = function () {
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('happy', 1200);
-      };
-      utterance.onerror = function () {
-        if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
-      };
-      window.speechSynthesis.speak(utterance);
+      });
     } catch (err) {
       console.warn('No se pudo reproducir voz:', err);
       if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 1600);
@@ -2672,6 +2807,56 @@
     }
   }
 
+  function appendStreamingAssistantMessage(initialText) {
+    var messagesEl = document.getElementById(MESSAGES_ID);
+    if (!messagesEl) return null;
+    var item = document.createElement('div');
+    item.className = 'ai-chat-message assistant';
+    item.classList.add('is-streaming');
+    var textNode = document.createElement('div');
+    textNode.textContent = String(initialText || 'Pensando...');
+    item.appendChild(textNode);
+    messagesEl.appendChild(item);
+    scrollChatToBottom();
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
+      setRobotAssistantText(textNode.textContent);
+    }
+    return {
+      item: item,
+      textNode: textNode
+    };
+  }
+
+  function updateStreamingAssistantMessage(ref, text) {
+    if (!ref || !ref.textNode) return;
+    var value = String(text || '').trim() || 'Pensando...';
+    ref.textNode.textContent = value;
+    scrollChatToBottom();
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
+      setRobotAssistantText(value);
+    }
+  }
+
+  function finalizeStreamingAssistantMessage(ref, text, actionProposal) {
+    if (!ref || !ref.item || !ref.textNode) return;
+    var value = String(text || '').trim() || 'Respuesta lista.';
+    ref.item.classList.remove('is-streaming');
+    ref.textNode.textContent = value;
+    if (actionProposal && Array.isArray(actionProposal.actions) && actionProposal.actions.length) {
+      var proposalIndex = state.proposals.length;
+      state.proposals.push(actionProposal);
+      ref.item.dataset.proposalIndex = String(proposalIndex);
+      ref.item.appendChild(createActionProposalElement(actionProposal, proposalIndex));
+    }
+    if (shouldShowDocumentExports(value)) {
+      ref.item.appendChild(createDocumentExportElement(value, inferCurrentSourceModule()));
+    }
+    scrollChatToBottom();
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
+      setRobotAssistantText(value);
+    }
+  }
+
   function setNotice(message, isWarning) {
     var noticeEl = document.getElementById(NOTICE_ID);
     if (!noticeEl) return;
@@ -2720,6 +2905,108 @@
         msg = 'No tienes permiso para usar el asistente IA. Pidele a un administrador que habilite el acceso de rol para este usuario.';
       }
       throw new Error(msg);
+    });
+  }
+
+  function shouldUseStreamingForTextQuery(attachment) {
+    if (attachment || isDocumentMode() || isReportMode()) return false;
+    if (!window.fetch || !window.TextDecoder) return false;
+    return true;
+  }
+
+  function streamTextQuery(body, callbacks) {
+    var endpoint = buildStreamEndpoint();
+    var onStreamStart = callbacks && typeof callbacks.onStreamStart === 'function' ? callbacks.onStreamStart : null;
+    var onStreamDelta = callbacks && typeof callbacks.onStreamDelta === 'function' ? callbacks.onStreamDelta : null;
+    var speechPlaybackVersion = beginStreamingSpeechPlayback();
+    return fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-PCS-Source': 'ai_drawer_stream'
+      },
+      body: JSON.stringify(body)
+    }).then(function (resp) {
+      if (!resp.ok) {
+        return parseErrorResponse(resp);
+      }
+      if (!resp.body || typeof resp.body.getReader !== 'function') {
+        var streamSupportError = new Error('El navegador no soporta respuestas en tiempo real para este chat.');
+        streamSupportError.pcsStreamFallback = true;
+        throw streamSupportError;
+      }
+      if (onStreamStart) {
+        onStreamStart();
+      }
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      var streamBuffer = '';
+      var finalText = '';
+      var doneSeen = false;
+
+      function processEventChunk(chunk) {
+        var lines = String(chunk || '').split(/\r?\n/);
+        lines.forEach(function (line) {
+          if (!line || line.indexOf('data:') !== 0) return;
+          var payload = line.slice(5).trim();
+          if (!payload) return;
+          var evt = null;
+          try {
+            evt = JSON.parse(payload);
+          } catch (err) {
+            return;
+          }
+          if (!evt || typeof evt !== 'object') return;
+          if (evt.error) {
+            throw new Error(String(evt.error));
+          }
+          if (evt.delta) {
+            finalText += String(evt.delta);
+            if (onStreamDelta) {
+              onStreamDelta(finalText);
+            }
+            pushStreamingSpeechDelta(String(evt.delta), speechPlaybackVersion, false);
+          }
+          if (evt.done) {
+            doneSeen = true;
+          }
+        });
+      }
+
+      function pump() {
+        return reader.read().then(function (result) {
+          if (!result) {
+            return;
+          }
+          if (result.done) {
+            streamBuffer += decoder.decode();
+            if (streamBuffer.trim()) {
+              processEventChunk(streamBuffer);
+            }
+            pushStreamingSpeechDelta('', speechPlaybackVersion, true);
+            var extracted = extractPCSActionBlock(finalText);
+            extracted.streamed = true;
+            return extracted;
+          }
+          streamBuffer += decoder.decode(result.value, { stream: true });
+          var events = streamBuffer.split('\n\n');
+          streamBuffer = events.pop() || '';
+          for (var i = 0; i < events.length; i += 1) {
+            processEventChunk(events[i]);
+          }
+          if (doneSeen) {
+            pushStreamingSpeechDelta('', speechPlaybackVersion, true);
+            var extractedDone = extractPCSActionBlock(finalText);
+            extractedDone.streamed = true;
+            try { reader.cancel(); } catch (e) {}
+            return extractedDone;
+          }
+          return pump();
+        });
+      }
+
+      return pump();
     });
   }
 
@@ -2773,7 +3060,7 @@
     });
   }
 
-  function sendQuery(query, attachment) {
+  function sendQuery(query, attachment, callbacks) {
     var useDocumentMode = isDocumentMode() || (!attachment && shouldAutoUseDocumentMode(query));
     if (useDocumentMode) {
       if (attachment) {
@@ -2881,6 +3168,33 @@
       options.body = JSON.stringify(body);
     }
 
+    if (!attachment && shouldUseStreamingForTextQuery(attachment)) {
+      return streamTextQuery(body, callbacks).catch(function (err) {
+        var canFallback = !!(err && (err.pcsStreamFallback || err.name === 'TypeError'));
+        if (!canFallback) {
+          throw err;
+        }
+        if (callbacks && typeof callbacks.onStreamFallback === 'function') {
+          callbacks.onStreamFallback(err);
+        }
+        return fetch(endpoint, options)
+          .then(function (resp) {
+            if (!resp.ok) {
+              return parseErrorResponse(resp);
+            }
+            return resp.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok === false) {
+              var detailFallback = (data && data.error) ? String(data.error) : 'No se pudo obtener respuesta de IA.';
+              throw new Error(detailFallback);
+            }
+            var answerFallback = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
+            return extractPCSActionBlock(answerFallback);
+          });
+      });
+    }
+
     return fetch(endpoint, options)
       .then(function (resp) {
         if (!resp.ok) {
@@ -2938,7 +3252,18 @@
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
-    sendQuery(query, null).then(function (result) {
+    sendQuery(query, null, {
+      onStreamStart: function () {
+        setRobotAssistantText('Respondiendo en tiempo real...');
+        setNotice('Respondiendo en tiempo real...');
+      },
+      onStreamDelta: function (text) {
+        setRobotAssistantText(text || 'Respondiendo en tiempo real...');
+      },
+      onStreamFallback: function () {
+        setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
+      }
+    }).then(function (result) {
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (hasActions) {
@@ -2954,7 +3279,9 @@
       } else {
         renderRobotDocumentExportActions(answer);
       }
-      speakAssistantText(answer);
+      if (!(result && result.streamed)) {
+        speakAssistantText(answer);
+      }
       setNotice('Respuesta lista desde el robot.');
     }).catch(function (err) {
       var message = err && err.message ? err.message : 'Error al procesar la consulta.';
@@ -3117,15 +3444,43 @@
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
-    sendQuery(query, attachment).then(function (result) {
+    var liveAssistantMessage = null;
+    sendQuery(query, attachment, {
+      onStreamStart: function () {
+        liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...');
+        setNotice('Respondiendo en tiempo real...');
+      },
+      onStreamDelta: function (text) {
+        if (!liveAssistantMessage) {
+          liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...');
+        }
+        updateStreamingAssistantMessage(liveAssistantMessage, text);
+      },
+      onStreamFallback: function () {
+        if (liveAssistantMessage && liveAssistantMessage.item && liveAssistantMessage.item.parentNode) {
+          liveAssistantMessage.item.parentNode.removeChild(liveAssistantMessage.item);
+        }
+        liveAssistantMessage = null;
+        setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
+      }
+    }).then(function (result) {
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
-      appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal);
+      if (liveAssistantMessage && result && result.streamed) {
+        finalizeStreamingAssistantMessage(liveAssistantMessage, result.clean, result.proposal);
+      } else {
+        appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal);
+      }
       if (hasActions) setRobotMood('action', 3200);
-      speakAssistantText(result.clean);
+      if (!(result && result.streamed)) {
+        speakAssistantText(result.clean);
+      }
       setNotice(result && result.document ? 'Documento listo. Elige formato y presiona Descargar.' : 'Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
       if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 2600);
+      if (liveAssistantMessage && liveAssistantMessage.item && liveAssistantMessage.item.parentNode) {
+        liveAssistantMessage.item.parentNode.removeChild(liveAssistantMessage.item);
+      }
       appendMessage('assistant', err.message || 'Error al procesar la consulta.', 'error');
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
     }).finally(function () {
