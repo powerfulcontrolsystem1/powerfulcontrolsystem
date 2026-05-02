@@ -3686,3 +3686,7 @@ Archivos modificados:
 - backend/handlers/venta_publica.go
 - web/administrar_empresa/venta_publica.html
 - web/venta_publica.html
+
+2026-05-02 18:53:40 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a86c09d; PushStatus: OK
+Archivos modificados:
+- backend/db/venta_publica.go
