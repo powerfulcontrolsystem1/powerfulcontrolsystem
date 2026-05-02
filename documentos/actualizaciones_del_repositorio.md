@@ -3427,3 +3427,9 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/estilos.css
 - web/super_administrador.html
+
+2026-05-02 08:10:59 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: aed34cb; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/panel.html
+- web/super/licencias_resumen.html
