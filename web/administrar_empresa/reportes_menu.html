@@ -3,13 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Reportes - Menu</title>
+  <title>Reportes - Menú</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Reportes</h2>
+      <p class="admin-sidebar-kicker">Análisis ejecutivo</p>
+      <div class="admin-sidebar-summary" aria-label="Resumen del módulo de reportes">
+        <p>Consolida ventas, inventario, finanzas e impuestos para convertir datos operativos en decisiones rápidas.</p>
+        <div class="admin-sidebar-summary-tags" aria-hidden="true">
+          <span>Ventas</span>
+          <span>Inventario</span>
+          <span>Finanzas</span>
+        </div>
+      </div>
       <ul class="nav" id="reportesSidebarNav">
         <li><a id="linkReportesMain" href="/administrar_empresa/reportes.html" target="reportesContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Reportes generales</a></li>
         <li><a id="linkReportesVentas" href="/administrar_empresa/ventas.html" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Ventas</a></li>
@@ -17,9 +26,9 @@
         <li><a id="linkReportesFinanzas" href="/administrar_empresa/reportes_finanzas.html" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
         <li><a id="linkReportesImpuestos" href="/administrar_empresa/reportes.html?dataset=operativo_impuestos_deuda" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Impuestos</a></li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="reportesSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="reportesSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
-            <span class="admin-menu-visibility-label">Ocultar menu</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
           </button>
         </li>
       </ul>

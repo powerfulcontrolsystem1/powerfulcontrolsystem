@@ -3,23 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Finanzas - Menu</title>
+  <title>Finanzas - Menú</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Finanzas</h2>
+      <p class="admin-sidebar-kicker">Control financiero</p>
+      <div class="admin-sidebar-summary" aria-label="Resumen del módulo de finanzas">
+        <p>Administra caja, cartera, nómina y visión ERP desde una sola puerta financiera.</p>
+        <div class="admin-sidebar-summary-tags" aria-hidden="true">
+          <span>Caja</span>
+          <span>Cartera</span>
+          <span>Nómina</span>
+        </div>
+      </div>
       <ul class="nav" id="finanzasSidebarNav">
         <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
         <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de caja</a></li>
-        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Creditos y cartera</a></li>
-        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nomina de sueldos</a></li>
+        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Créditos y cartera</a></li>
+        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nómina de sueldos</a></li>
         <li><a id="linkERPExtendidoMenu" href="/administrar_empresa/modulos_erp_extendido.html" target="finanzasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">ERP extendido</a></li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
-            <span class="admin-menu-visibility-label">Ocultar menu</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
           </button>
         </li>
       </ul>
