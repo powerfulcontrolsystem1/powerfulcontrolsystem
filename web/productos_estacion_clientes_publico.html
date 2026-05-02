@@ -1,60 +1,63 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Pedidos VIP por estaci?n</title>
+  <title>Pedidos VIP por estación</title>
   <link rel="stylesheet" href="/estilos.css">
   <script>
     window.__pcsAutoInjectChatShell = true;
     window.__pcsPublicChatContext = { scope: 'portal' };
   </script>
 </head>
-<body class="super-page form-bg-dark">
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Pedidos VIP por estaci?n</h1>
-        <p class="form-help">Digita tu c?digo VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
-      </div>
-    </div>
+<body class="public-utility-page">
+  <header class="portal-header">
+    <div class="brand"><a class="btn secondary" href="/index.html">Volver al portal</a></div>
+    <nav class="nav-actions">
+      <a class="btn dark" href="/venta_publica.html">Ver tienda pública</a>
+    </nav>
+  </header>
 
-    <section class="card empresa-section">
-      <div class="form">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="vipCodigo">C?digo VIP</label>
-            <input id="vipCodigo" class="form-input" placeholder="Ej: ABCD2EFG3HJKL" autocomplete="one-time-code">
-          </div>
-          <div class="form-col maxw-240 flex-end">
-            <button id="btnIngresar" class="btn w-full" type="button">Ingresar</button>
-          </div>
-        </div>
-        <div id="vipMsg" class="form-help"></div>
-      </div>
+  <main class="public-utility-shell public-utility-stack">
+    <section class="public-utility-hero">
+      <span class="public-utility-badge">Acceso VIP</span>
+      <h1>Pedidos VIP por estación</h1>
+      <p>Ingresa tu código VIP para consultar productos activos, pedir desde tu celular y enviar una nota breve a la estación sin depender de un operador.</p>
     </section>
 
-    <section id="vipPanel" class="card empresa-section" style="display:none;">
-      <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <h2 style="margin:0;">Productos</h2>
-        <button id="btnQR" type="button" class="btn secondary">Ver QR (link)</button>
-      </div>
-      <p class="form-help">Toca un producto para pedirlo. Puedes escribir una nota opcional (ej: "sin hielo").</p>
-
-      <div class="form">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="pedidoNota">Nota del pedido (opcional)</label>
-            <input id="pedidoNota" class="form-input" placeholder="Ej: por favor con servilletas">
+    <section class="public-utility-card">
+      <div class="public-utility-grid">
+        <div class="public-utility-card-soft">
+          <label class="form-label" for="vipCodigo">Código VIP</label>
+          <input id="vipCodigo" class="form-input" placeholder="Ej: ABCD2EFG3HJKL" autocomplete="one-time-code">
+        </div>
+        <div class="public-utility-card-soft">
+          <p class="public-utility-copy">El acceso se desactiva al pagar la cuenta. Si el código sigue vigente, podrás pedir productos y compartir el enlace por QR.</p>
+          <div class="public-utility-inline-actions">
+            <button id="btnIngresar" class="btn" type="button">Ingresar</button>
           </div>
         </div>
+      </div>
+      <div id="vipMsg" class="form-help public-utility-status"></div>
+    </section>
+
+    <section id="vipPanel" class="public-utility-card" style="display:none;">
+      <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <h2 style="margin:0;">Productos disponibles</h2>
+        <button id="btnQR" type="button" class="btn secondary">Ver QR</button>
+      </div>
+      <p class="public-utility-copy">Toca un producto para pedirlo. También puedes dejar una nota breve, por ejemplo: “sin hielo” o “agregar servilletas”.</p>
+
+      <div class="public-utility-card-soft" style="margin-bottom:14px;">
+        <label class="form-label" for="pedidoNota">Nota del pedido</label>
+        <input id="pedidoNota" class="form-input" placeholder="Ej: por favor con servilletas">
       </div>
 
       <div id="productosGrid" class="portal-grid"></div>
-      <div id="pedidoMsg" class="form-help"></div>
+      <div id="pedidoMsg" class="form-help public-utility-status"></div>
 
-      <div id="qrBox" class="form" style="display:none;margin-top:14px;">
-        <p class="form-help">Este QR abre esta misma p?gina. Comparte el enlace o muestra el c?digo al cliente.</p>
+      <div id="qrBox" class="public-utility-card-soft" style="display:none;margin-top:14px;">
+        <p class="public-utility-copy">Este QR abre esta misma página. Puedes compartir el enlace o mostrar el código al cliente.</p>
         <div class="form-row">
           <div class="form-col">
             <input id="publicLink" class="form-input" readonly>
@@ -67,17 +70,17 @@
         </div>
       </div>
     </section>
-  </div>
+  </main>
 
   <script>
-    let vipCodigo = "";
+    let vipCodigo = '';
     let productos = [];
 
-    function normalize(v){ return String(v==null?'':v).trim(); }
-    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function normalize(v){ return String(v == null ? '' : v).trim(); }
+    function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     async function fetchJSON(url, options){
-      const res = await fetch(url, Object.assign({ credentials:'same-origin' }, options||{}));
+      const res = await fetch(url, Object.assign({ credentials:'same-origin' }, options || {}));
       const text = await res.text();
       let data = null;
       try { data = text ? JSON.parse(text) : null; } catch(_) { data = text; }
@@ -92,7 +95,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.textContent = text || '';
-      el.className = isErr ? 'error' : 'form-help';
+      el.className = isErr ? 'error public-utility-status' : 'form-help public-utility-status';
     }
 
     function renderProductos(){
@@ -103,9 +106,9 @@
         return;
       }
       grid.innerHTML = productos.map(p => {
-        const id = Number(p.id||0);
-        const nombre = esc(p.nombre||'Producto');
-        const precio = Number(p.precio||0);
+        const id = Number(p.id || 0);
+        const nombre = esc(p.nombre || 'Producto');
+        const precio = Number(p.precio || 0);
         return '<article class="portal-card home-offer-card" style="cursor:pointer;" data-id="' + id + '">' +
           '<div class="home-offer-card-content">' +
             '<h3>' + nombre + '</h3>' +
@@ -117,7 +120,7 @@
 
       grid.querySelectorAll('article[data-id]').forEach(card => {
         card.addEventListener('click', async function(){
-          const productoID = Number(card.getAttribute('data-id')||0);
+          const productoID = Number(card.getAttribute('data-id') || 0);
           if (!productoID) return;
           setMsg('pedidoMsg','Enviando pedido...',false);
           try {
@@ -127,7 +130,7 @@
               headers: { 'Content-Type':'application/json' },
               body: JSON.stringify({ codigo: vipCodigo, producto_id: productoID, cantidad: 1, nota: nota })
             });
-            setMsg('pedidoMsg','Pedido enviado a la estaci?n.',false);
+            setMsg('pedidoMsg','Pedido enviado a la estación.',false);
           } catch (e) {
             setMsg('pedidoMsg', e.message || 'No se pudo enviar el pedido', true);
           }
@@ -138,19 +141,19 @@
     async function ingresar(){
       vipCodigo = normalize(document.getElementById('vipCodigo').value).toUpperCase();
       if (!vipCodigo) {
-        setMsg('vipMsg','Escribe tu c?digo VIP.',true);
+        setMsg('vipMsg','Escribe tu código VIP.',true);
         return;
       }
-      setMsg('vipMsg','Validando c?digo...',false);
+      setMsg('vipMsg','Validando código...',false);
       try {
         const data = await fetchJSON('/api/public/estacion_vip?action=info&codigo=' + encodeURIComponent(vipCodigo));
         productos = Array.isArray(data && data.productos) ? data.productos : [];
         document.getElementById('vipPanel').style.display = '';
-        setMsg('vipMsg','C?digo v?lido. Ya puedes pedir.',false);
+        setMsg('vipMsg','Código válido. Ya puedes pedir.',false);
         renderProductos();
       } catch (e) {
         document.getElementById('vipPanel').style.display = 'none';
-        setMsg('vipMsg', e.message || 'C?digo inv?lido', true);
+        setMsg('vipMsg', e.message || 'Código inválido', true);
       }
     }
 
@@ -161,8 +164,7 @@
       if (on) {
         const link = window.location.origin + '/productos_estacion_clientes_publico.html';
         document.getElementById('publicLink').value = link;
-        document.getElementById('qrImg').src =
-          'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link);
+        document.getElementById('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link);
         box.style.display = '';
       } else {
         box.style.display = 'none';

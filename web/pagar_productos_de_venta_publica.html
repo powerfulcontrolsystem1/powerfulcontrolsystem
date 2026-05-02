@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -33,7 +33,7 @@
       <h2>Datos para pagar</h2>
       <p class="form-help">El pago se procesa con la pasarela configurada por esta empresa. El dinero llega directamente a su cuenta Wompi o Epayco.</p>
       <div class="form-help" style="margin-top:-6px;">
-        ¿Tienes preguntas antes de pagar? <a href="#" id="privateMsgLink">Enviar mensaje privado a la empresa</a>
+        Â¿Tienes preguntas antes de pagar? <a href="#" id="privateMsgLink">Enviar mensaje privado a la empresa</a>
       </div>
       <div class="form-grid">
         <input id="buyerName" class="form-input" placeholder="Nombre completo">
@@ -90,14 +90,14 @@
         if(!state.slug && data.empresa_slug) state.slug=data.empresa_slug;
         if(state.cartMode){
           const cart=getCart();
-          if(!cart.length) throw new Error('Tu carrito está vacío.');
+          if(!cart.length) throw new Error('Tu carrito estÃ¡ vacío.');
           const items=data.items||[];
           state.cart = cart.map(ci=>{
             const it = items.find(x=>Number(x.id)===Number(ci.id));
             if(!it) return null;
             return {id:Number(it.id), nombre:it.nombre||'', descripcion:it.descripcion||'', precio:Number(it.precio||0), moneda:it.moneda||((data.tienda&&data.tienda.moneda)||'COP'), imagen_url:it.imagen_url||'', qty:Math.max(1, Math.min(99, Math.trunc(Number(ci.qty||1))))};
           }).filter(Boolean);
-          if(!state.cart.length) throw new Error('Los productos del carrito ya no están disponibles.');
+          if(!state.cart.length) throw new Error('Los productos del carrito ya no estÃ¡n disponibles.');
           renderCartMode();
         } else {
           state.item=(data.items||[]).find(x=>Number(x.id)===state.itemId);
@@ -167,13 +167,13 @@
       });
     }
     function loadScript(src){return new Promise((resolve,reject)=>{if(!src)return reject(new Error('Script de checkout no disponible')); const existing=document.querySelector('script[data-epayco-smart="1"]'); if(existing)return resolve(); const s=document.createElement('script'); s.src=src; s.async=true; s.dataset.epaycoSmart='1'; s.onload=resolve; s.onerror=()=>reject(new Error('No se pudo cargar Smart Checkout de Epayco')); document.head.appendChild(s);});}
-    async function openEpaycoCheckout(data){await loadScript(data.checkout_script_url); if(!window.ePayco||!window.ePayco.checkout||!window.ePayco.checkout.configure)throw new Error('Smart Checkout de Epayco no quedó disponible'); const checkout=window.ePayco.checkout.configure({sessionId:data.session_id,type:data.checkout_type||'standard',test:String(data.mode||'sandbox').toLowerCase()!=='production'}); try{checkout.onErrors&&checkout.onErrors(e=>setMsg('Epayco reportó un error: '+JSON.stringify(e),true)); checkout.onClosed&&checkout.onClosed(()=>setMsg('Checkout cerrado. Puedes consultar el estado con la referencia: '+(data.reference||''),false));}catch(_){} checkout.open();}
+    async function openEpaycoCheckout(data){await loadScript(data.checkout_script_url); if(!window.ePayco||!window.ePayco.checkout||!window.ePayco.checkout.configure)throw new Error('Smart Checkout de Epayco no quedó disponible'); const checkout=window.ePayco.checkout.configure({sessionId:data.session_id,type:data.checkout_type||'standard',test:String(data.mode||'sandbox').toLowerCase()!=='production'}); try{checkout.onErrors&&checkout.onErrors(e=>setMsg('Epayco reportÃ³ un error: '+JSON.stringify(e),true)); checkout.onClosed&&checkout.onClosed(()=>setMsg('Checkout cerrado. Puedes consultar el estado con la referencia: '+(data.reference||''),false));}catch(_){} checkout.open();}
     async function pay(){
       try{
         if(!state.data)throw new Error('Catálogo no cargado.');
         let items=[];
         if(state.cartMode){
-          if(!state.cart.length) throw new Error('Tu carrito está vacío.');
+          if(!state.cart.length) throw new Error('Tu carrito estÃ¡ vacío.');
           items = state.cart.map(x=>({item_id:Number(x.id),cantidad:Number(x.qty||1)}));
         } else {
           if(!state.item)throw new Error('Producto no disponible.');
@@ -203,7 +203,7 @@
     }
     payBtn.onclick=pay; load();
 
-    // Mensaje privado desde checkout (crea conversación en Chat y tareas de la empresa)
+    // Mensaje privado desde checkout (crea conversaciÃ³n en Chat y tareas de la empresa)
     privateMsgLink.onclick = async function(ev){
       ev.preventDefault();
       try {
@@ -240,3 +240,4 @@
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
+

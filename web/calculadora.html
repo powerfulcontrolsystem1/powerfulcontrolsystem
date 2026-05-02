@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -11,54 +11,39 @@
     window.__pcsPublicChatContext = { scope: 'portal' };
   </script>
   <style>
-    .calc-page{min-height:100vh;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text)}
-    .calc-shell{width:min(560px, calc(100% - 24px));margin:0 auto;padding:22px 0 56px;display:grid;gap:12px}
-    .calc-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:0 18px 48px rgba(0,0,0,0.16);padding:16px}
-    .calc-title{margin:0 0 8px;font-size:1.3rem}
-    .calc-display{
-      width:100%;
-      border:1px solid var(--border);
-      background:color-mix(in srgb, var(--surface-soft) 55%, transparent);
-      border-radius:16px;
-      padding:14px 14px;
-      display:grid;
-      gap:6px;
-      box-sizing:border-box;
-    }
-    .calc-display .calc-expr{min-height:18px;color:var(--muted);font-weight:700;letter-spacing:0.02em}
-    .calc-display .calc-value{font-size:2rem;font-weight:900;line-height:1.05;word-break:break-word}
-    .calc-grid{
-      display:grid;
-      grid-template-columns:repeat(4, minmax(0,1fr));
-      gap:10px;
-      margin-top:12px;
-    }
-    .calc-btn{
-      border:1px solid var(--border);
-      background:rgba(255,255,255,0.04);
-      color:var(--text);
-      border-radius:16px;
-      padding:14px 12px;
-      font-weight:900;
-      font-size:1.05rem;
-      cursor:pointer;
-      transition:transform .08s ease, background .15s ease, border-color .15s ease;
-      user-select:none;
-    }
-    .calc-btn:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border) 45%);background:rgba(31,142,241,0.12)}
-    .calc-btn:active{transform:scale(0.98)}
-    .calc-btn.op{background:rgba(14,165,164,0.14)}
-    .calc-btn.danger{background:rgba(239,83,80,0.14)}
-    .calc-btn.eq{background:color-mix(in srgb, var(--accent) 60%, transparent);color:#fff;border-color:color-mix(in srgb, var(--accent) 70%, var(--border) 30%)}
+    .calc-shell{max-width:640px}
+    .calc-display{width:100%;border:1px solid var(--public-panel-soft-border);background:var(--public-panel-soft-bg);border-radius:18px;padding:16px;display:grid;gap:6px;box-sizing:border-box}
+    .calc-expr{min-height:20px;color:var(--public-panel-muted);font-weight:700;letter-spacing:.02em}
+    .calc-value{font-size:2.1rem;font-weight:900;line-height:1.05;word-break:break-word;color:var(--public-panel-text)}
+    .calc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+    .calc-btn{border:1px solid var(--public-panel-soft-border);background:color-mix(in srgb, var(--surface) 74%, transparent);color:var(--public-panel-text);border-radius:16px;padding:14px 12px;font-weight:900;font-size:1.05rem;cursor:pointer;transition:transform .08s ease, background .15s ease, border-color .15s ease;user-select:none}
+    .calc-btn:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--public-panel-soft-border) 45%);background:color-mix(in srgb, var(--accent) 12%, var(--surface) 88%)}
+    .calc-btn:active{transform:scale(.98)}
+    .calc-btn.op{background:color-mix(in srgb, var(--accent-2) 12%, var(--surface) 88%)}
+    .calc-btn.danger{background:color-mix(in srgb, #ef5350 14%, var(--surface) 86%)}
+    .calc-btn.eq{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
     .calc-btn.wide{grid-column:span 2}
-    .calc-help{margin:0;color:var(--muted);font-size:0.95rem}
+    @media (max-width:640px){.calc-grid{gap:8px}.calc-btn{padding:13px 10px}.calc-value{font-size:1.9rem}}
   </style>
 </head>
-<body class="calc-page">
-  <main class="calc-shell">
-    <section class="calc-card">
-      <h1 class="calc-title">Calculadora</h1>
-      <p class="calc-help">Escribe con el teclado o usa los botones. Enter = igual, Esc = limpiar.</p>
+<body class="public-utility-page">
+  <header class="portal-header">
+    <div class="brand"><a class="btn secondary" href="/index.html">Volver al portal</a></div>
+    <nav class="nav-actions">
+      <a class="btn dark" href="/login.html">Iniciar sesión</a>
+    </nav>
+  </header>
+
+  <main class="public-utility-shell calc-shell public-utility-stack">
+    <section class="public-utility-hero">
+      <span class="public-utility-badge">Herramienta rápida</span>
+      <h1>Calculadora lista para operaciones rápidas</h1>
+      <p>Usa esta calculadora desde cualquier dispositivo para resolver cuentas rápidas mientras trabajas en el portal o compartes la herramienta con un cliente.</p>
+    </section>
+
+    <section class="public-utility-card">
+      <h2>Calculadora</h2>
+      <p class="public-utility-copy">Puedes escribir con el teclado o usar los botones. Enter calcula el resultado y Esc limpia la operación.</p>
 
       <div class="calc-display" aria-live="polite">
         <div id="calcExpr" class="calc-expr"></div>
@@ -97,7 +82,6 @@
     (function(){
       var exprEl = document.getElementById('calcExpr');
       var valueEl = document.getElementById('calcValue');
-
       var current = '0';
       var prev = null;
       var op = null;
@@ -106,54 +90,53 @@
       function isFiniteNumber(n){ return typeof n === 'number' && Number.isFinite(n); }
       function toNumber(s){
         var n = Number(String(s || '').replace(',', '.'));
-        return Number.isFinite(n) DEL n : NaN;
+        return Number.isFinite(n) ? n : NaN;
       }
       function formatNumber(n){
         if (!isFiniteNumber(n)) return 'Error';
         var s = String(n);
         if (s.indexOf('e') >= 0) return s;
-        if (s.indexOf('.') >= 0) {
-          s = n.toFixed(10).replace(/\.DEL0+$/,'');
-        }
+        if (s.indexOf('.') >= 0) s = n.toFixed(10).replace(/\.?0+$/,'');
         return s;
       }
       function setDisplay(){
         var expr = '';
         if (prev != null && op) expr = formatNumber(prev) + ' ' + op;
         exprEl.textContent = expr;
-        valueEl.textContent = current === '' DEL '0' : current;
+        valueEl.textContent = current === '' ? '0' : current;
       }
-      function resetAll(){
-        current = '0';
-        prev = null;
-        op = null;
-        justEvaluated = false;
-        setDisplay();
-      }
+      function resetAll(){ current = '0'; prev = null; op = null; justEvaluated = false; setDisplay(); }
       function backspace(){
         if (justEvaluated) return;
-        if (current.length <= 1) current = '0';
-        else current = current.slice(0, -1);
+        current = current.length <= 1 ? '0' : current.slice(0, -1);
         if (current === '-' || current === '') current = '0';
         setDisplay();
       }
       function inputDigit(d){
         if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
-        if (current === '0') current = String(d);
-        else current += String(d);
+        current = current === '0' ? String(d) : current + String(d);
         setDisplay();
       }
       function inputDot(){
         if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
         if (current.indexOf('.') >= 0) return;
-        current = current + '.';
+        current += '.';
         setDisplay();
       }
+      function compute(a,b,symbol){
+        switch(symbol){
+          case '+': return a + b;
+          case '-': return a - b;
+          case '*': return a * b;
+          case '/': return b === 0 ? NaN : a / b;
+          default: return b;
+        }
+      }
       function applyOp(nextOp){
-        if (nextOp === '%' ) {
-          var n = toNumber(current);
-          if (!Number.isFinite(n)) { current = 'Error'; setDisplay(); return; }
-          current = formatNumber(n / 100);
+        if (nextOp === '%') {
+          var percent = toNumber(current);
+          if (!Number.isFinite(percent)) { current = 'Error'; setDisplay(); return; }
+          current = formatNumber(percent / 100);
           justEvaluated = false;
           setDisplay();
           return;
@@ -163,32 +146,23 @@
         if (prev == null) {
           prev = ncur;
         } else if (op && !justEvaluated) {
-          var r = compute(prev, ncur, op);
-          if (!Number.isFinite(r)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
-          prev = r;
-          current = formatNumber(r);
+          var partial = compute(prev, ncur, op);
+          if (!Number.isFinite(partial)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
+          prev = partial;
+          current = formatNumber(partial);
         }
         op = nextOp;
         justEvaluated = true;
         current = formatNumber(prev);
         setDisplay();
       }
-      function compute(a,b,op){
-        switch(op){
-          case '+': return a + b;
-          case '-': return a - b;
-          case '*': return a * b;
-          case '/': return b === 0 DEL NaN : a / b;
-          default: return b;
-        }
-      }
       function evaluate(){
         if (op == null || prev == null) return;
         var ncur = toNumber(current);
         if (!Number.isFinite(ncur)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
-        var r = compute(prev, ncur, op);
-        if (!Number.isFinite(r)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
-        current = formatNumber(r);
+        var result = compute(prev, ncur, op);
+        if (!Number.isFinite(result)) { current = 'Error'; prev = null; op = null; setDisplay(); return; }
+        current = formatNumber(result);
         prev = null;
         op = null;
         justEvaluated = true;
@@ -199,12 +173,12 @@
         btn.addEventListener('click', function(){
           var act = btn.getAttribute('data-act');
           var val = btn.getAttribute('data-val');
-          if (act === 'clear') return resetAll();
-          if (act === 'back') return backspace();
-          if (act === 'digit') return inputDigit(val);
-          if (act === 'dot') return inputDot();
-          if (act === 'op') return applyOp(val);
-          if (act === 'eq') return evaluate();
+          if (act === 'clear') resetAll();
+          else if (act === 'back') backspace();
+          else if (act === 'digit') inputDigit(val);
+          else if (act === 'dot') inputDot();
+          else if (act === 'op') applyOp(val);
+          else if (act === 'eq') evaluate();
         });
       });
 
@@ -216,7 +190,7 @@
         if (k >= '0' && k <= '9') { e.preventDefault(); inputDigit(k); return; }
         if (k === '.' || k === ',') { e.preventDefault(); inputDot(); return; }
         if (k === '+' || k === '-' || k === '*' || k === '/') { e.preventDefault(); applyOp(k); return; }
-        if (k === '%') { e.preventDefault(); applyOp('%'); return; }
+        if (k === '%') { e.preventDefault(); applyOp('%'); }
       });
 
       setDisplay();

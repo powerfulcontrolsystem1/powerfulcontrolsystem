@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -186,11 +186,11 @@
               return;
             }
             delete epaycoCheckoutScriptPromises[resolvedURL];
-            reject(new Error('La librería de Epayco no quedó disponible en la página.'));
+            reject(new Error('La librerÃ­a de Epayco no quedó disponible en la página.'));
           };
           script.onerror = function(){
             delete epaycoCheckoutScriptPromises[resolvedURL];
-            reject(new Error('No se pudo cargar la librería de checkout de Epayco.'));
+            reject(new Error('No se pudo cargar la librerÃ­a de checkout de Epayco.'));
           };
           document.head.appendChild(script);
         });
@@ -204,7 +204,7 @@
       }
       function openEpaycoSmartCheckout(epaycoRuntime, sessionId, rawType, mode){
         if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
-          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout.');
+          throw new Error('La librerÃ­a de Epayco no quedó disponible para abrir el checkout.');
         }
         const firstType = preferredEpaycoCheckoutType(rawType);
         const fallbackType = firstType === 'onpage' ? 'standard' : 'onpage';
@@ -218,12 +218,12 @@
               test: testMode
             });
             if (!checkout || typeof checkout.open !== 'function') {
-              throw new Error('Epayco no devolvió una instancia de checkout válida.');
+              throw new Error('Epayco no devolviÃ³ una instancia de checkout vÃ¡lida.');
             }
             if (typeof checkout.onErrors === 'function') {
               checkout.onErrors(function(errors){
                 const detail = Array.isArray(errors) && errors.length ? JSON.stringify(errors) : String(errors || 'Error desconocido');
-                syncStatusText(document.getElementById('epaycoStatus'), 'Epayco reportó un error al abrir el checkout: ' + detail);
+                syncStatusText(document.getElementById('epaycoStatus'), 'Epayco reportÃ³ un error al abrir el checkout: ' + detail);
                 var btn = document.getElementById('payEpaycoBtn');
                 if (btn) {
                   btn.disabled = false;
@@ -241,19 +241,19 @@
       }
       function openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData){
         if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
-          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout estándar.');
+          throw new Error('La librerÃ­a de Epayco no quedó disponible para abrir el checkout estÃ¡ndar.');
         }
         const config = checkoutConfig && typeof checkoutConfig === 'object' ? checkoutConfig : {};
         const data = checkoutData && typeof checkoutData === 'object' ? checkoutData : {};
         if (!config.key || !data.amount || !data.name) {
-          throw new Error('La configuración de Epayco está incompleta para abrir el checkout estándar.');
+          throw new Error('La configuración de Epayco estÃ¡ incompleta para abrir el checkout estÃ¡ndar.');
         }
         const checkout = epaycoRuntime.checkout.configure({
           key: String(config.key || '').trim(),
           test: !!config.test
         });
         if (!checkout || typeof checkout.open !== 'function') {
-          throw new Error('Epayco no devolvió una instancia válida del checkout estándar.');
+          throw new Error('Epayco no devolviÃ³ una instancia vÃ¡lida del checkout estÃ¡ndar.');
         }
         checkout.open(data);
         return true;
@@ -351,12 +351,12 @@
             if (isSuccessStatus(returnContext.status)) {
               clearPendingPayment();
               if (redirectToSuccessPage(returnContext.provider, returnContext, licenciaId, empresaId)) return;
-              container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavía, vuelve a empresas y recarga el listado.</div></div>';
+              container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavÃ­a, vuelve a empresas y recarga el listado.</div></div>';
             } else if (isFinalStatus(returnContext.status)) {
               clearPendingPayment();
-              container.innerHTML = '<div class="error"><strong>Pago no completado</strong><div>La pasarela reportó el estado ' + escapeHtml(returnContext.status || 'DESCONOCIDO') + '. Puedes volver a intentar el pago.</div></div>';
+              container.innerHTML = '<div class="error"><strong>Pago no completado</strong><div>La pasarela reportÃ³ el estado ' + escapeHtml(returnContext.status || 'DESCONOCIDO') + '. Puedes volver a intentar el pago.</div></div>';
             } else {
-              container.innerHTML = '<div class="muted"><strong>Pago en verificación</strong><div>Estamos recuperando el estado del pago. Si no ves cambios en unos segundos, vuelve a la selección de empresas.</div></div>';
+              container.innerHTML = '<div class="muted"><strong>Pago en verificaciÃ³n</strong><div>Estamos recuperando el estado del pago. Si no ves cambios en unos segundos, vuelve a la selecciÃ³n de empresas.</div></div>';
             }
             return;
           }
@@ -389,14 +389,14 @@
           function countryName(code){
             const c = String(code || '').toUpperCase();
             if (c === 'CO') return 'Colombia';
-            if (c === 'MX') return 'México';
+            if (c === 'MX') return 'MÃ©xico';
             if (c === 'US') return 'Estados Unidos';
-            if (c === 'ES') return 'España';
+            if (c === 'ES') return 'EspaÃ±a';
             return c || 'No detectado';
           }
           function countryFlag(code){
             const c = String(code || '').toUpperCase();
-            if (!/^[A-Z]{2}$/.test(c)) return '🏳️';
+            if (!/^[A-Z]{2}$/.test(c)) return 'ðŸ³ï¸';
             const A = 0x1F1E6;
             const cc = c.charCodeAt(0) - 65;
             const dd = c.charCodeAt(1) - 65;
@@ -408,7 +408,7 @@
             fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
             fetch('/api/public/licencias/payment_methods?pais_codigo=' + encodeURIComponent(paisCodigo), { credentials: 'same-origin' })
           ]);
-          if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen público de la licencia'; return }
+          if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen pÃºblico de la licencia'; return }
           if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
 
           const summaryPayload = await summaryRes.json();
@@ -424,13 +424,13 @@
           const unavailableMessages = [];
           if (epaycoProvider && !epaycoProvider.available) {
             unavailableMessages.push(epaycoProvider.enabled
-              ? 'Epayco está activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estándar.'
-              : 'Epayco está desactivado en configuración avanzada.');
+              ? 'Epayco estÃ¡ activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estÃ¡ndar.'
+              : 'Epayco estÃ¡ desactivado en configuración avanzada.');
           }
           if (wompiProvider && !wompiProvider.available) {
             unavailableMessages.push(wompiProvider.enabled
-              ? 'Wompi está activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
-              : 'Wompi está desactivado en configuración avanzada.');
+              ? 'Wompi estÃ¡ activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
+              : 'Wompi estÃ¡ desactivado en configuración avanzada.');
           }
 
           const paymentCards = [];
@@ -473,7 +473,7 @@
                 '<div class="portal-intro-copy">'+
                   '<p class="checkout-eyebrow">Checkout de licencia</p>'+
                   '<h2 class="brand-title checkout-brand-title"><span>Confirma tu licencia</span><span>y completa el pago</span></h2>'+
-                  '<p class="brand-subtitle checkout-brand-subtitle">Revisa los datos de la licencia, agrega descuentos si aplica y continúa con la pasarela disponible.</p>'+
+                  '<p class="brand-subtitle checkout-brand-subtitle">Revisa los datos de la licencia, agrega descuentos si aplica y continÃºa con la pasarela disponible.</p>'+
                   '<div class="checkout-mini-pills" style="margin-top:10px;">' +
                     '<span class="checkout-mini-pill">País detectado: ' + escapeHtml(countryName(paisCodigo)) + ' ' + escapeHtml(countryFlag(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
                   '</div>' +
@@ -486,16 +486,16 @@
                     '<div class="home-offer-media checkout-license-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
                   '</div>'+
                   '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
-                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacción.')+'</p>'+
+                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacciÃ³n.')+'</p>'+
                   '<div class="checkout-license-benefits">'+
-                    '<span>Activación controlada</span>'+
-                    '<span>Renovación trazable</span>'+
+                    '<span>ActivaciÃ³n controlada</span>'+
+                    '<span>RenovaciÃ³n trazable</span>'+
                     '<span>Pago seguro</span>'+
                   '</div>'+
                   '<div class="checkout-meta-list">'+
                     (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
                     (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
-                    (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
+                    (licenciaDuracion ? '<span class="checkout-meta-pill">DuraciÃ³n: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
                   '</div>'+
                   '<div class="checkout-license-value-row">'+
                     '<span>Total a pagar</span>'+
@@ -521,7 +521,7 @@
                   '</div>'+
                   '<div class="checkout-mini-pills">'+
                     '<span class="checkout-mini-pill">Opcional</span>'+
-                    '<span class="checkout-mini-pill">Validación automática</span>'+
+                    '<span class="checkout-mini-pill">ValidaciÃ³n automÃ¡tica</span>'+
                   '</div>'+
                   '<div id="discountCodeStatus" class="form-help checkout-discount-status"></div>'+
                 '</article>'+
@@ -544,10 +544,10 @@
               '<section id="freeActivationSection" class="card checkout-free-activation" style="display:none;">'+
                 '<div class="checkout-payment-header">'+
                   '<div>'+
-                    '<p class="checkout-eyebrow">Activación directa</p>'+
+                    '<p class="checkout-eyebrow">ActivaciÃ³n directa</p>'+
                     '<h3 class="payment-method-title">No se requiere pago</h3>'+
                   '</div>'+
-                  '<p class="checkout-payment-copy">Esta licencia quedó en total cero. Se activará una sola vez por empresa y no abrirá pasarela.</p>'+
+                  '<p class="checkout-payment-copy">Esta licencia quedó en total cero. Se activarÃ¡ una sola vez por empresa y no abrirÃ¡ pasarela.</p>'+
                 '</div>'+
                 '<button id="activateFreeBtn" class="btn" type="button">Activar licencia</button>'+
                 '<div id="freeActivationStatus" class="form-help"></div>'+
@@ -559,13 +559,13 @@
                     '<p class="checkout-eyebrow">Pago</p>'+
                     '<h3 class="payment-method-title">Formas de pago disponibles</h3>'+
                   '</div>'+
-                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma página y el estado del pago se retoma automáticamente al volver.</p>'+
+                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma página y el estado del pago se retoma automÃ¡ticamente al volver.</p>'+
                 '</div>'+
                 (paymentCards.length > 1
                   ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
                   : '')+
                 (paymentCards.length === 1
-                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar más rápido.</div>'
+                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar más rÃ¡pido.</div>'
                   : '')+
                 (paymentCards.length === 0
                   ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
@@ -587,7 +587,7 @@
             ((wompiProvider && wompiProvider.available)
               ? '<div id="wompiPanel" class="payment-method-panel payment-method-panel-wompi" style="display:none;">'+
                 '<div class="method-panel-heading">Wompi</div>'+
-                '<label for="wompiPhone" class="muted small">Celular Nequi (10 dígitos):</label>'+
+                '<label for="wompiPhone" class="muted small">Celular Nequi (10 dÃ­gitos):</label>'+
                 '<input id="wompiPhone" class="payment-method-input" type="text" inputmode="numeric" maxlength="10" placeholder="3991111111">'+
                 '<div id="wompiSandboxHint" class="small payment-method-hint">En sandbox: 3991111111 aprueba, 3992222222 declina.</div>'+
                 '<label class="small payment-method-check"><input id="wompiTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
@@ -667,7 +667,7 @@
                 ui.discountCodeStatus.classList.remove('error');
                 ui.discountCodeStatus.classList.add('success');
               } else {
-                ui.discountCodeStatus.textContent = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim() ? 'El código no cambió el total de esta licencia.' : '';
+                ui.discountCodeStatus.textContent = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim() ? 'El código no cambiÃ³ el total de esta licencia.' : '';
                 ui.discountCodeStatus.classList.remove('success');
                 ui.discountCodeStatus.classList.remove('error');
               }
@@ -782,13 +782,13 @@
                   licencia_id: licenciaId,
                   empresa_id: empresaId || null
                 });
-                renderFeedback(ui.feedback, 'muted', 'Activando licencia', 'Epayco aprobó el pago. Estamos confirmando el registro con el servidor para activar la licencia. ' + referenceText);
+                renderFeedback(ui.feedback, 'muted', 'Activando licencia', 'Epayco aprobÃ³ el pago. Estamos confirmando el registro con el servidor para activar la licencia. ' + referenceText);
                 syncStatusText(statusElement, 'Estado ' + label + ': verificando activación');
                 return { done: false, context: resolved };
               }
               if (backendDecision && statusData && statusData.discount_blocked) {
                 clearPendingPayment();
-                renderFeedback(ui.feedback, 'error', 'Pago aprobado sin activar', 'El pago fue aprobado, pero el código de descuento ya había sido usado por esta empresa. Contacta soporte para revisar la licencia. ' + referenceText);
+                renderFeedback(ui.feedback, 'error', 'Pago aprobado sin activar', 'El pago fue aprobado, pero el código de descuento ya habÃ­a sido usado por esta empresa. Contacta soporte para revisar la licencia. ' + referenceText);
                 syncStatusText(statusElement, 'Estado ' + label + ': descuento bloqueado');
                 resetProvider(normalizedProvider);
                 return { done: true, context: resolved };
@@ -796,12 +796,12 @@
               if (normalizedProvider === 'epayco' && backendDecision && statusData && statusData.activated !== true) {
                 if (statusData.context_found === false) {
                   clearPendingPayment();
-                  renderFeedback(ui.feedback, 'error', 'Pago aprobado sin licencia asociada', 'Epayco aprobó el pago, pero el servidor no encontró la empresa y licencia para activar. Conserva la referencia y contacta soporte. ' + referenceText);
+                  renderFeedback(ui.feedback, 'error', 'Pago aprobado sin licencia asociada', 'Epayco aprobÃ³ el pago, pero el servidor no encontrÃ³ la empresa y licencia para activar. Conserva la referencia y contacta soporte. ' + referenceText);
                   syncStatusText(statusElement, 'Estado ' + label + ': falta contexto de licencia');
                   resetProvider(normalizedProvider);
                   return { done: true, context: resolved };
                 }
-                renderFeedback(ui.feedback, 'muted', 'Activación en proceso', 'Epayco aprobó el pago. Estamos reintentando activar la licencia en el servidor. ' + referenceText);
+                renderFeedback(ui.feedback, 'muted', 'ActivaciÃ³n en proceso', 'Epayco aprobÃ³ el pago. Estamos reintentando activar la licencia en el servidor. ' + referenceText);
                 syncStatusText(statusElement, 'Estado ' + label + ': reintentando activación');
                 return { done: false, context: resolved };
               }
@@ -832,7 +832,7 @@
                 licencia_id: licenciaId,
                 empresa_id: empresaId || null
               });
-              renderFeedback(ui.feedback, 'error', 'Pago no completado', label + ' reportó el estado ' + normalizedStatus + '. Puedes intentarlo de nuevo. ' + referenceText);
+              renderFeedback(ui.feedback, 'error', 'Pago no completado', label + ' reportÃ³ el estado ' + normalizedStatus + '. Puedes intentarlo de nuevo. ' + referenceText);
               syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
               resetProvider(normalizedProvider);
               return { done: true, context: resolved };
@@ -846,7 +846,7 @@
               licencia_id: licenciaId,
               empresa_id: empresaId || null
             });
-            renderFeedback(ui.feedback, 'muted', 'Pago en verificación', 'Estamos consultando el estado final con ' + label + '. ' + referenceText);
+            renderFeedback(ui.feedback, 'muted', 'Pago en verificaciÃ³n', 'Estamos consultando el estado final con ' + label + '. ' + referenceText);
             syncStatusText(statusElement, 'Estado ' + label + ': ' + (normalizedStatus || 'PENDING'));
             return { done: false, context: resolved };
           }
@@ -863,7 +863,7 @@
 
             var cancelEl = document.createElement('a');
             cancelEl.href = '#';
-            cancelEl.textContent = 'Cancelar verificación e intentar de nuevo';
+            cancelEl.textContent = 'Cancelar verificaciÃ³n e intentar de nuevo';
             cancelEl.style.cssText = 'display:block;margin-top:8px;color:#c00;font-size:13px;cursor:pointer;';
             cancelEl.addEventListener('click', function(ev){ ev.preventDefault(); doCancelPolling(); });
             var stEl = getStatusElement(normalizedProvider);
@@ -880,13 +880,13 @@
                 if (outcome.done) { pollingCtrl = null; return; }
               } catch (err) {
                 if (ctrl.cancelled) return;
-                syncStatusText(getStatusElement(normalizedProvider), 'Reintentando verificación con ' + providerLabel(normalizedProvider) + '...');
+                syncStatusText(getStatusElement(normalizedProvider), 'Reintentando verificaciÃ³n con ' + providerLabel(normalizedProvider) + '...');
                 if (stEl) stEl.appendChild(cancelEl);
               }
               if (ctrl.cancelled) return;
               if (tries >= maxTries) {
                 clearPendingPayment();
-                renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotó el tiempo de verificación automática. Puedes intentar un nuevo pago o recargar la página.');
+                renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotÃ³ el tiempo de verificaciÃ³n automÃ¡tica. Puedes intentar un nuevo pago o recargar la página.');
                 syncStatusText(getStatusElement(normalizedProvider), '');
                 resetProvider(normalizedProvider);
                 pollingCtrl = null;
@@ -918,7 +918,7 @@
           if (ui.activateFreeBtn) ui.activateFreeBtn.addEventListener('click', async function(){
             var summary = checkoutSummaryState;
             if (!summary || !summary.is_zero_total) {
-              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Esta licencia todavía no quedó en total cero.';
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Esta licencia todavÃ­a no quedó en total cero.';
               return;
             }
             if (summary.zero_total_blocked) {
@@ -973,16 +973,16 @@
               const termsRes = await fetch('/wompi/terms');
               if (termsRes.ok) {
                 const terms = await termsRes.json();
-                const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a>') : 'Términos';
+                const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">TÃ©rminos</a>') : 'TÃ©rminos';
                 const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
-                if (ui.wompiTermsLinks) ui.wompiTermsLinks.innerHTML = linkA + ' · ' + linkB;
+                if (ui.wompiTermsLinks) ui.wompiTermsLinks.innerHTML = linkA + ' Â· ' + linkB;
                 const wompiMode = String(terms.mode || '').toLowerCase();
                 if (wompiMode.indexOf('sandbox') >= 0) {
                   if (terms.sandbox_phone_approved && terms.sandbox_phone_declined && ui.wompiSandboxHint) {
                     ui.wompiSandboxHint.textContent = 'Sandbox activo: ' + terms.sandbox_phone_approved + ' aprueba, ' + terms.sandbox_phone_declined + ' declina.';
                   }
                 } else if (ui.wompiSandboxHint) {
-                  ui.wompiSandboxHint.textContent = 'Modo producción activo para Nequi.';
+                  ui.wompiSandboxHint.textContent = 'Modo producciÃ³n activo para Nequi.';
                 }
               } else if (ui.wompiTermsLinks) {
                 ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
@@ -995,11 +995,11 @@
           if (ui.payWompiBtn) ui.payWompiBtn.addEventListener('click', async function(){
             const phone = String((ui.wompiPhoneInput && ui.wompiPhoneInput.value) || '').trim();
             if (!/^3\d{9}$/.test(phone)) {
-              syncStatusText(ui.wompiStatus, 'Ingresa un celular válido de Nequi (10 dígitos, inicia por 3).');
+              syncStatusText(ui.wompiStatus, 'Ingresa un celular válido de Nequi (10 dÃ­gitos, inicia por 3).');
               return;
             }
             if (!ui.wompiTermsChk || !ui.wompiTermsChk.checked) {
-              syncStatusText(ui.wompiStatus, 'Debes aceptar términos y autorización de datos para pagar con Nequi.');
+              syncStatusText(ui.wompiStatus, 'Debes aceptar términos y autorizaciÃ³n de datos para pagar con Nequi.');
               return;
             }
 
@@ -1029,7 +1029,7 @@
                 const msg = data && data.error ? data.error : raw;
                 syncStatusText(ui.wompiStatus, 'Error Wompi: ' + msg);
                 if (data && data.acceptance_permalink && data.personal_data_permalink && ui.wompiTermsLinks) {
-                  ui.wompiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a> · <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
+                  ui.wompiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">TÃ©rminos</a> Â· <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
                 }
                 resetProvider('wompi');
                 return;
@@ -1037,7 +1037,7 @@
 
               const context = extractResponseContext(data, { provider: 'wompi' });
               if (!context.transactionId) {
-                syncStatusText(ui.wompiStatus, 'No se recibió transaction_id de Wompi.');
+                syncStatusText(ui.wompiStatus, 'No se recibiÃ³ transaction_id de Wompi.');
                 resetProvider('wompi');
                 return;
               }
@@ -1052,7 +1052,7 @@
                 createdAt: Date.now()
               });
               updateUrlState({ provider: 'wompi', status: 'pending', transaction_id: context.transactionId, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
-              renderFeedback(ui.feedback, 'muted', 'Solicitud enviada a Wompi', 'Revisa tu app de Nequi y confirma el pago. Mantendremos esta pantalla verificando el estado automáticamente.');
+              renderFeedback(ui.feedback, 'muted', 'Solicitud enviada a Wompi', 'Revisa tu app de Nequi y confirma el pago. Mantendremos esta pantalla verificando el estado automÃ¡ticamente.');
               syncStatusText(ui.wompiStatus, 'Estado Wompi: ' + (context.status || 'PENDING'));
               startPolling('wompi', context, 30);
             } catch (err) {
@@ -1063,7 +1063,7 @@
 
           if (ui.payEpaycoBtn) ui.payEpaycoBtn.addEventListener('click', async function(){
             if (!ui.epaycoTermsChk || !ui.epaycoTermsChk.checked) {
-              syncStatusText(ui.epaycoStatus, 'Debes aceptar términos y autorización de datos para pagar con Epayco.');
+              syncStatusText(ui.epaycoStatus, 'Debes aceptar términos y autorizaciÃ³n de datos para pagar con Epayco.');
               return;
             }
 
@@ -1095,7 +1095,7 @@
 
               const context = extractResponseContext(data, { provider: 'epayco' });
               if (!context.transactionId && !context.reference) {
-                syncStatusText(ui.epaycoStatus, 'No se recibió una referencia válida de Epayco.');
+                syncStatusText(ui.epaycoStatus, 'No se recibiÃ³ una referencia vÃ¡lida de Epayco.');
                 resetProvider('epayco');
                 return;
               }
@@ -1120,7 +1120,7 @@
               const checkoutData = data && (data.checkout_data || (data.data && data.data.checkout_data));
               if (sessionId) {
                 setProviderBusy('epayco', 'Abriendo checkout seguro...');
-                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciará el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciarÃ¡ el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomarÃ¡ la verificaciÃ³n automÃ¡tica con la referencia guardada.');
                 syncStatusText(ui.epaycoStatus, 'Preparando Smart Checkout de Epayco...');
                 const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL);
                 openEpaycoSmartCheckout(epaycoRuntime, sessionId, checkoutType, data && data.mode);
@@ -1128,8 +1128,8 @@
               }
               if (checkoutType === 'classic_js' && checkoutConfig && checkoutData) {
                 setProviderBusy('epayco', 'Abriendo checkout seguro...');
-                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se abrirá el checkout estándar seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
-                syncStatusText(ui.epaycoStatus, 'Preparando checkout estándar de Epayco...');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se abrirÃ¡ el checkout estÃ¡ndar seguro de Epayco. Cuando regreses, esta página retomarÃ¡ la verificaciÃ³n automÃ¡tica con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Preparando checkout estÃ¡ndar de Epayco...');
                 const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL || 'https://checkout.epayco.co/checkout.js');
                 openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData);
                 startPolling('epayco', context, 60);
@@ -1137,7 +1137,7 @@
               }
               if (checkoutForm) {
                 setProviderBusy('epayco', 'Redirigiendo...');
-                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomarÃ¡ la verificaciÃ³n automÃ¡tica con la referencia guardada.');
                 syncStatusText(ui.epaycoStatus, 'Enviando el formulario seguro de Epayco...');
                 if (submitEpaycoClassicCheckoutForm(checkoutForm)) {
                   return;
@@ -1148,14 +1148,14 @@
               }
               if (checkoutUrl) {
                 if (!isSafeEpaycoRedirectURL(checkoutUrl)) {
-                  syncStatusText(ui.epaycoStatus, 'Epayco devolvió una URL de checkout no válida o requiere formulario POST. No se redirigió para evitar el error AccessDenied.');
+                  syncStatusText(ui.epaycoStatus, 'Epayco devolviÃ³ una URL de checkout no vÃ¡lida o requiere formulario POST. No se redirigiÃ³ para evitar el error AccessDenied.');
                   resetProvider('epayco');
                   return;
                 }
                 setProviderBusy('epayco', 'Redirigiendo...');
-                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta página retomarÃ¡ la verificaciÃ³n automÃ¡tica con la referencia guardada.');
                 if (ui.epaycoStatus) {
-                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automáticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
+                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automÃ¡ticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
                 }
                 window.setTimeout(function(){
                   window.location.assign(checkoutUrl);
@@ -1163,7 +1163,7 @@
                 return;
               }
 
-              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibió una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
+              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibiÃ³ una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
               syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
               startPolling('epayco', context, 30);
             } catch (err) {
@@ -1195,7 +1195,7 @@
           } else if (returnContext.hasReturn) {
             var providerForStale = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
             if (providerForStale) setPaymentMethod(providerForStale);
-            syncStatusText(getStatusElement(providerForStale), 'Se encontró un pago anterior sin completar. Puedes iniciar uno nuevo.');
+            syncStatusText(getStatusElement(providerForStale), 'Se encontrÃ³ un pago anterior sin completar. Puedes iniciar uno nuevo.');
             clearPendingPayment();
           }
 
@@ -1207,3 +1207,4 @@
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
+
