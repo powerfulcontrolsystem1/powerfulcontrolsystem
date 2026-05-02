@@ -3348,3 +3348,8 @@ Archivos modificados:
 2026-05-02 06:59:33 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 69e1915; PushStatus: OK
 Archivos modificados:
 - backend/utils/utils.go
+
+2026-05-02 07:02:17 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 364aa50; PushStatus: OK
+Archivos modificados:
+- web/pagar_licencia.html
+- web/pagar_productos_de_venta_publica.html
