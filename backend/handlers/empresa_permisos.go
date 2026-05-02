@@ -232,7 +232,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkReportesIAChat", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Finanzas y reportes"},
-	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Gráficos y estadísticas", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Analítica ejecutiva avanzada", Grupo: "Finanzas y reportes"},
 }
 
 type permissionModuleMatrixRow struct {
