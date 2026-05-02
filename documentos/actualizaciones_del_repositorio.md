@@ -3388,3 +3388,7 @@ Archivos modificados:
 2026-05-02 07:28:19 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 39cb313; PushStatus: OK
 Archivos modificados:
 - web/pagar_licencia.html
+
+2026-05-02 07:32:12 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 42aae60; PushStatus: OK
+Archivos modificados:
+- web/productos_estacion_clientes_publico.html
