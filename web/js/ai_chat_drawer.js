@@ -228,7 +228,56 @@
     return path.indexOf('/seleccionar_empresa.html') >= 0 || path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
   }
 
+  function getPublicPortalContextConfig() {
+    if (window && window.__pcsPublicChatContext && typeof window.__pcsPublicChatContext === 'object') {
+      return window.__pcsPublicChatContext;
+    }
+    return null;
+  }
+
+  function inferPublicStoreSlugFromPath() {
+    var path = String(window.location.pathname || '').trim();
+    if (!path) return '';
+    var match = path.match(/^\/([^\/]+)\/venta_publica\.html$/i);
+    if (match && match[1]) {
+      return normalize(match[1]).toLowerCase();
+    }
+    return '';
+  }
+
+  function getPublicEmpresaSlug() {
+    var cfg = getPublicPortalContextConfig() || {};
+    var params = new URLSearchParams(window.location.search || '');
+    var slug = normalize(cfg.empresa_slug || cfg.slug || params.get('empresa_slug') || params.get('slug') || inferPublicStoreSlugFromPath());
+    return slug.toLowerCase();
+  }
+
+  function getPublicPortalScope() {
+    var cfg = getPublicPortalContextConfig() || {};
+    var raw = normalize(cfg.scope).toLowerCase();
+    if (raw === 'venta_publica') return 'venta_publica';
+    var path = String(window.location.pathname || '').toLowerCase();
+    if (path === '/venta_publica.html') return 'venta_publica';
+    if (/^\/[^\/]+\/venta_publica\.html$/i.test(path)) return 'venta_publica';
+    return 'portal';
+  }
+
+  function isPublicPortalContext() {
+    if (isSuperContext()) return false;
+    var cfg = getPublicPortalContextConfig();
+    if (cfg && normalize(cfg.scope)) return true;
+    var path = String(window.location.pathname || '').toLowerCase();
+    return path === '/' || path === '/index.html' || path === '/venta_publica.html' || /^\/[^\/]+\/venta_publica\.html$/i.test(path);
+  }
+
+  function isPublicStoreContext() {
+    return isPublicPortalContext() && getPublicPortalScope() === 'venta_publica';
+  }
+
   function buildTextEndpoint() {
+    if (isPublicPortalContext()) {
+      return '/api/public/chat_portal';
+    }
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar';
     }
@@ -236,6 +285,9 @@
   }
 
   function buildStreamEndpoint() {
+    if (isPublicPortalContext()) {
+      return '/api/public/chat_portal_stream';
+    }
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar_stream';
     }
@@ -243,6 +295,9 @@
   }
 
   function buildAttachmentEndpoint() {
+    if (isPublicPortalContext()) {
+      return '/api/public/chat_portal';
+    }
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar_con_adjunto';
     }
@@ -562,6 +617,12 @@
   }
 
   function getEndpointLabel() {
+    if (isPublicStoreContext()) {
+      return 'chat publico de venta';
+    }
+    if (isPublicPortalContext()) {
+      return 'chat publico del portal';
+    }
     return isSuperContext() ? 'chat global de super administrador' : 'chat empresarial';
   }
 
@@ -1142,6 +1203,12 @@
 
   function getDefaultAssistantGreeting() {
     var mode = getChatPersonalityMode();
+    if (isPublicStoreContext()) {
+      return 'Hola. Soy el asistente publico de esta tienda. Puedo ayudarte con productos, servicios, precios y paginas publicas de esta empresa.';
+    }
+    if (isPublicPortalContext()) {
+      return 'Hola. Soy el asistente publico de Powerful Control System. Puedo ayudarte con planes, modulos, precios, contacto y como empezar.';
+    }
     if (mode === 'secretary') {
       return 'Hola. Soy tu secretaria IA 3D, lista para ayudarte a organizar tareas, ventas y configuraciones.';
     }
@@ -1309,6 +1376,12 @@
   }
 
   function openChatConfigPage() {
+    if (isPublicPortalContext()) {
+      setNotice(isPublicStoreContext()
+        ? 'Este chat publico ya viene restringido al catalogo de esta empresa y no permite configuracion administrativa desde aqui.'
+        : 'Este chat publico ya viene restringido al portal y no permite configuracion administrativa desde aqui.');
+      return;
+    }
     var panel = ensureCompactConfigPanel();
     setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled);
     panel.hidden = false;
@@ -1346,6 +1419,9 @@
   function getAssistantMode() {
     var modeEl = document.getElementById(MODE_ID);
     var value = normalize(modeEl && modeEl.value);
+    if (isPublicPortalContext()) {
+      return value === 'ayudante' ? 'ayudante' : 'operativo';
+    }
     if (value === 'reportes') return 'reportes';
     if (value === 'documentos') return 'documentos';
     return value === 'ayudante' ? 'ayudante' : 'operativo';
@@ -1360,7 +1436,7 @@
   }
 
   function shouldAutoUseDocumentMode(query) {
-    if (isSuperContext()) return false;
+    if (isSuperContext() || isPublicPortalContext()) return false;
     var text = normalize(String(query || ''));
     if (!text) return false;
     var hasAction = /\b(genera|generar|crea|crear|haz|hacer|redacta|redactar|prepara|preparar|exporta|exportar)\b/.test(text);
@@ -1409,6 +1485,9 @@
   }
 
   function ensureDocumentModeUI() {
+    if (isPublicPortalContext()) {
+      return null;
+    }
     var modeEl = document.getElementById(MODE_ID);
     if (modeEl && !modeEl.querySelector('option[value="documentos"]')) {
       var option = document.createElement('option');
@@ -2539,32 +2618,56 @@
     var documentOption = modeEl && modeEl.querySelector('option[value="documentos"]');
     var documentTools = document.getElementById(DOCUMENT_TOOLS_ID);
     var documentFormatSelect = document.getElementById(DOCUMENT_FORMAT_ID);
+    var configBtn = document.getElementById('aiChatConfigBtn');
+    var attachField = attachBtn && attachBtn.closest('.ai-chat-control-field');
     var reportMode = isReportMode();
     var documentMode = isDocumentMode();
     var superContext = isSuperContext();
+    var publicContext = isPublicPortalContext();
+
+    if (modeEl && publicContext) {
+      Array.prototype.slice.call(modeEl.querySelectorAll('option')).forEach(function (option) {
+        var value = normalize(option && option.value);
+        var allowed = value === 'operativo' || value === 'ayudante';
+        option.hidden = !allowed;
+        option.disabled = !allowed;
+      });
+      if (normalize(modeEl.value) !== 'operativo' && normalize(modeEl.value) !== 'ayudante') {
+        modeEl.value = 'operativo';
+      }
+      reportMode = false;
+      documentMode = false;
+    }
 
     if (reportOption) {
-      reportOption.hidden = superContext;
-      reportOption.disabled = superContext;
-      if (superContext && normalize(modeEl.value) === 'reportes') {
+      reportOption.hidden = superContext || publicContext;
+      reportOption.disabled = superContext || publicContext;
+      if ((superContext || publicContext) && normalize(modeEl.value) === 'reportes') {
         modeEl.value = 'operativo';
         reportMode = false;
       }
     }
     if (documentOption) {
-      documentOption.hidden = superContext;
-      documentOption.disabled = superContext;
-      if (superContext && normalize(modeEl.value) === 'documentos') {
+      documentOption.hidden = superContext || publicContext;
+      documentOption.disabled = superContext || publicContext;
+      if ((superContext || publicContext) && normalize(modeEl.value) === 'documentos') {
         modeEl.value = 'operativo';
         documentMode = false;
       }
     }
 
+    if (configBtn) {
+      configBtn.hidden = publicContext;
+    }
+    if (attachField) {
+      attachField.hidden = publicContext;
+    }
+
     if (documentTools) {
-      documentTools.classList.toggle('is-hidden', !(documentMode || reportMode));
+      documentTools.classList.toggle('is-hidden', publicContext || !(documentMode || reportMode));
     }
     if (documentFormatSelect) {
-      documentFormatSelect.disabled = reportMode;
+      documentFormatSelect.disabled = publicContext || reportMode;
     }
     if (!documentMode) {
       updateDocumentDownloadButton();
@@ -2573,10 +2676,15 @@
       setShareArtifact(null);
     }
 
-    if (attachBtn) attachBtn.disabled = reportMode || documentMode;
-    if (clearBtn) clearBtn.disabled = reportMode || documentMode;
+    if (attachBtn) attachBtn.disabled = publicContext || reportMode || documentMode;
+    if (clearBtn) clearBtn.disabled = publicContext || reportMode || documentMode;
     if (attachName) {
-      if (reportMode) {
+      if (publicContext) {
+        attachName.textContent = isPublicStoreContext()
+          ? 'Este chat publico esta restringido a preguntas sobre los productos, precios y paginas visibles de esta empresa.'
+          : 'Este chat publico responde sobre planes, modulos, precios, contacto y licencias de Powerful Control System.';
+        attachName.classList.remove('is-hidden');
+      } else if (reportMode) {
         attachName.textContent = 'Modo reportes: el asistente usará el flujo centralizado de reportes y exportaciones.';
         attachName.classList.remove('is-hidden');
       } else if (documentMode) {
@@ -3198,7 +3306,7 @@
   }
 
   function generateDocumentFromPrompt(query) {
-    if (isSuperContext()) {
+    if (isSuperContext() || isPublicPortalContext()) {
       throw new Error('El modo Documentos IA requiere una empresa activa.');
     }
     var empresaId = getCurrentEmpresaId();
@@ -3256,6 +3364,9 @@
       return generateDocumentFromPrompt(query);
     }
     if (isReportMode()) {
+      if (isPublicPortalContext()) {
+        throw new Error('El modo reportes no esta disponible en el chat publico.');
+      }
       if (isSuperContext()) {
         throw new Error('El modo reportes centralizado aplica al contexto de empresa. En super administrador usa el asistente global en modo operativo o ayudante.');
       }
@@ -3318,7 +3429,19 @@
     if (pageContext) {
       body.pagina_contexto = pageContext;
     }
-    if (!isSuperContext()) {
+    if (isPublicPortalContext()) {
+      if (attachment) {
+        throw new Error('El chat publico no admite adjuntos. Usa preguntas de texto sobre el portal o el catalogo visible.');
+      }
+      body.scope = getPublicPortalScope();
+      if (body.scope === 'venta_publica') {
+        var publicSlug = getPublicEmpresaSlug();
+        if (!publicSlug) {
+          throw new Error('No se pudo identificar la empresa publica de esta pagina para usar el chat.');
+        }
+        body.empresa_slug = publicSlug;
+      }
+    } else if (!isSuperContext()) {
       var empresaId = getCurrentEmpresaId();
       if (!empresaId) {
         throw new Error('No se encontro una empresa activa. Ingresa desde el contexto de una empresa para usar el chat IA empresarial.');
