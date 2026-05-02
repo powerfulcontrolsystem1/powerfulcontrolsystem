@@ -194,7 +194,7 @@ func PublicTurnosAtencionHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo listar los servicios", http.StatusInternalServerError)
 					return
 				}
-				var activos []dbpkg.EmpresaTurnoAtencionServicio
+				activos := make([]dbpkg.EmpresaTurnoAtencionServicio, 0)
 				for _, row := range rows {
 					if strings.ToLower(strings.TrimSpace(row.Estado)) == "activo" {
 						activos = append(activos, row)
