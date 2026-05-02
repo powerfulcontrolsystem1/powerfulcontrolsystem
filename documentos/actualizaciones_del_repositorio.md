@@ -3370,3 +3370,12 @@ Archivos modificados:
 Archivos modificados:
 - backend/utils/utils.go
 - web/pantalla_publica.html
+
+2026-05-02 07:20:32 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 5ebd7d7; PushStatus: OK
+Archivos modificados:
+- backend/utils/utils.go
+- web/administrar_empresa.html
+- web/descargar_informacion_de_la_empresa.html
+- web/mantenimiento.html
+- web/seleccionar_empresa.html
+- web/super_administrador.html
