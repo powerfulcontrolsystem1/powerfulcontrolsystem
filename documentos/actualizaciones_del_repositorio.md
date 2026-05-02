@@ -3591,3 +3591,7 @@ Archivos modificados:
 2026-05-02 16:13:55 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 060cbd7; PushStatus: OK
 Archivos modificados:
 - backend/db/turnos_atencion.go
+
+2026-05-02 16:15:59 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 6c7d270; PushStatus: OK
+Archivos modificados:
+- backend/handlers/turnos_atencion.go
