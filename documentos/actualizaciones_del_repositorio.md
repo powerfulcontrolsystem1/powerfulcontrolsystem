@@ -3638,3 +3638,7 @@ Archivos modificados:
 - web/administrar_empresa/consultorio_odontologico.html
 - web/js/administrar_empresa.js
 - web/js/consultorio_odontologico.js
+
+2026-05-02 17:23:51 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 3501abe; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/panel.html
