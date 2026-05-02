@@ -3,20 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Egresos e ingresos - Menu</title>
+  <title>Egresos e ingresos - Menú</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Egresos e ingresos</h2>
+      <p class="admin-sidebar-kicker">Flujo operativo</p>
+      <div class="admin-sidebar-summary" aria-label="Resumen del módulo de egresos e ingresos">
+        <p>Registra salidas y entradas de dinero para sostener control diario sobre caja operativa y movimientos simples.</p>
+        <div class="admin-sidebar-summary-tags" aria-hidden="true">
+          <span>Egresos</span>
+          <span>Ingresos</span>
+          <span>Seguimiento</span>
+        </div>
+      </div>
       <ul class="nav" id="egresosIngresosSidebarNav">
         <li><a id="linkEgresos" href="/administrar_empresa/egresos.html" target="egresosIngresosContentFrame"><img class="icon" src="/img/money.svg" alt="">Egresos</a></li>
         <li><a id="linkIngresos" href="/administrar_empresa/ingresos.html" target="egresosIngresosContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Ingresos</a></li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="egresosIngresosSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="egresosIngresosSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
-            <span class="admin-menu-visibility-label">Ocultar menu</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
           </button>
         </li>
       </ul>
