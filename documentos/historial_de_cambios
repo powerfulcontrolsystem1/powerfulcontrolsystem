@@ -17567,3 +17567,33 @@ Archivos modificados:
 - web/super/preconfiguracion_tipos_empresa.html
 - web/super/voz_streaming_ia.html
 - web/super_administrador.html
+
+2026-05-01: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/chat_tareas.go
+- backend/db/codigos_descuento.go
+- backend/db/comisiones_servicio.go
+- backend/db/propinas.go
+- backend/db/reservas_hotel.go
+- backend/db/vehiculos_registro.go
+- backend/handlers/asistencia_empleados.go
+- backend/handlers/chat_tareas.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/nomina_sueldos.go
+- backend/tmp_test_calipso_crm.go
+- backend/tmp_trace_crm.go
+- backend/tmp_validate_ops_roles.exe
+- web/administrar_empresa/asistencia_empleados.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chat_usuarios.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_papelera.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/administrar_empresa/reservas_hotel.html
+- web/administrar_empresa/venta_publica.html
+- web/estilos.css
+- web/js/chat_tareas_chat_usuarios.js
+- web/venta_publica.html
