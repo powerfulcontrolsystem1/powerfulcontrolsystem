@@ -3607,3 +3607,8 @@ Archivos modificados:
 - web/js/editar_empresa.js
 - web/pagar_licencia.html
 - web/super/licencias.html
+
+2026-05-02 16:42:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b6fabb4; PushStatus: OK
+Archivos modificados:
+- web/index.html
+- web/js/ai_chat_drawer.js
