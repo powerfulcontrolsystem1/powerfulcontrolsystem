@@ -3316,3 +3316,8 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/ventas.html
 - web/js/ai_chat_drawer.js
+
+2026-05-02 06:29:33 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a3e021a; PushStatus: OK
+Archivos modificados:
+- backend/logs/empresa_global.log
+- web/administrar_empresa/facturas_electronicas.html
