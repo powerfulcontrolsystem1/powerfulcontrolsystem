@@ -3642,3 +3642,12 @@ Archivos modificados:
 2026-05-02 17:23:51 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 3501abe; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/panel.html
+
+2026-05-02 17:38:04 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: d6bb1c2; PushStatus: OK
+Archivos modificados:
+- backend/handlers/carritos_compras.go
+- backend/handlers/facturacion_electronica.go
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_impresora.html
+- web/administrar_empresa/ventas.html
