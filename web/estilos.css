@@ -1148,7 +1148,45 @@ p{color:var(--muted);line-height:1.5}
 .ai-chat-message{max-width:100%;border-radius:18px;padding:14px 16px;line-height:1.5;word-break:break-word;white-space:pre-wrap;box-shadow:0 10px 20px rgba(0,0,0,.06)}
 .ai-chat-message.user{align-self:flex-end;background:var(--btn-primary);color:var(--btn-primary-text)}
 .ai-chat-message.assistant{align-self:flex-start;background:var(--surface-soft);color:var(--text)}
+.ai-chat-message.assistant.is-streaming{
+  position:relative;
+  border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background:linear-gradient(135deg,color-mix(in srgb, var(--accent) 7%, var(--surface-soft)) 0%, var(--surface-soft) 100%);
+  box-shadow:0 14px 28px rgba(14,165,233,.12);
+}
+.ai-chat-message.assistant.is-streaming::after{
+  content:'En vivo';
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:10px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.02em;
+  color:color-mix(in srgb, var(--accent) 72%, var(--text));
+  background:color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.ai-chat-message.assistant.is-streaming > div:first-child::after{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  margin-left:8px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 0 rgba(14,165,233,.45);
+  animation:ai-chat-stream-pulse 1.4s ease-in-out infinite;
+  vertical-align:middle;
+}
 .ai-chat-message.error{border:1px solid #d97706;background:rgba(254,226,200,.92);color:#7a341a}
+@keyframes ai-chat-stream-pulse{
+  0%{transform:scale(.9);box-shadow:0 0 0 0 rgba(14,165,233,.45)}
+  70%{transform:scale(1.08);box-shadow:0 0 0 10px rgba(14,165,233,0)}
+  100%{transform:scale(.95);box-shadow:0 0 0 0 rgba(14,165,233,0)}
+}
 .ai-chat-hints{padding:0;color:var(--muted);font-size:.92rem;line-height:1.5;flex-shrink:0}
 .ai-chat-hints.is-hidden{display:none}
 .ai-chat-hints p{margin:0 0 8px}
