@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Taxi system</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left, rgba(49,157,231,.14), transparent 28%),linear-gradient(180deg,#07131f,#0d1f32);color:#eef4fb;font-family:"Segoe UI Variable","Segoe UI",sans-serif}
+    .taxi-public{max-width:1240px;margin:0 auto;padding:18px;display:grid;gap:16px}
+    .taxi-hero,.taxi-card{background:rgba(11,26,42,.92);border:1px solid rgba(150,176,206,.16);border-radius:22px;box-shadow:0 24px 44px rgba(0,0,0,.28)}
+    .taxi-hero{padding:22px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr);gap:16px}
+    .taxi-card{padding:18px}
+    .taxi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .taxi-map{height:420px;border-radius:18px;overflow:hidden}
+    .taxi-status{display:grid;gap:10px}
+    .taxi-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(150,176,206,.14);font-weight:800}
+    @media (max-width: 980px){.taxi-hero,.taxi-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="taxi-public">
+    <section class="taxi-hero">
+      <article>
+        <h1 id="portalTitle" style="margin:0 0 10px;">Taxi system</h1>
+        <p id="portalDesc" style="margin:0;color:#bdd1e4;line-height:1.6;">Solicita un vehículo desde la web de la empresa, comparte tu punto de recogida y sigue el estado del servicio hasta que una unidad lo acepte.</p>
+      </article>
+      <aside class="taxi-card" style="padding:0;background:transparent;border:0;box-shadow:none;">
+        <div class="taxi-status">
+          <span class="taxi-chip" id="customerSessionChip">Modo invitado</span>
+          <span class="taxi-chip" id="requestStateChip">Sin solicitud activa</span>
+        </div>
+      </aside>
+    </section>
+
+    <section class="taxi-grid">
+      <section class="taxi-card">
+        <h2 style="margin-top:0;">Pedir servicio</h2>
+        <form id="requestForm" class="form">
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="reqNombre">Nombre</label><input id="reqNombre" class="form-input"></div>
+            <div class="form-col"><label class="form-label" for="reqTelefono">Teléfono</label><input id="reqTelefono" class="form-input"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="reqDocumento">Documento</label><input id="reqDocumento" class="form-input"></div>
+            <div class="form-col"><label class="form-label" for="reqMetodo">Tipo de servicio</label><input id="reqMetodo" class="form-input" value="Taxi"></div>
+          </div>
+          <div class="form-row"><div class="form-col"><label class="form-label" for="reqPickup">Punto de recogida</label><input id="reqPickup" class="form-input" placeholder="Dirección o referencia"></div></div>
+          <div class="form-row"><div class="form-col"><label class="form-label" for="reqDestination">Destino</label><input id="reqDestination" class="form-input" placeholder="Opcional"></div></div>
+          <div class="form-row"><div class="form-col"><label class="form-label" for="reqNotes">Notas</label><textarea id="reqNotes" class="form-textarea" placeholder="Ej: portería, torre, color de camiseta"></textarea></div></div>
+          <div class="form-row">
+            <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="shareLocation" type="checkbox" checked><label class="form-label" for="shareLocation" style="margin:0;">Compartir mi ubicación</label></div>
+          </div>
+          <div class="form-actions">
+            <button id="btnUseCurrentLocation" class="btn secondary" type="button">Usar mi ubicación actual</button>
+            <button class="btn add" type="submit">Solicitar servicio</button>
+          </div>
+          <div id="requestMsg" class="form-help"></div>
+        </form>
+      </section>
+
+      <section class="taxi-card">
+        <h2 style="margin-top:0;">Registro opcional del cliente</h2>
+        <form id="customerRegisterForm" class="form">
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="regNombre">Nombre</label><input id="regNombre" class="form-input"></div>
+            <div class="form-col"><label class="form-label" for="regTelefono">Teléfono</label><input id="regTelefono" class="form-input"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="regEmail">Email</label><input id="regEmail" class="form-input"></div>
+            <div class="form-col"><label class="form-label" for="regPin">PIN</label><input id="regPin" class="form-input" placeholder="4-8 dígitos"></div>
+          </div>
+          <div class="form-actions"><button class="btn secondary" type="submit">Crear cuenta</button></div>
+          <div id="registerMsg" class="form-help"></div>
+        </form>
+        <hr style="border-color:rgba(150,176,206,.18);margin:18px 0;">
+        <form id="customerLoginForm" class="form">
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="loginTelefono">Teléfono</label><input id="loginTelefono" class="form-input"></div>
+            <div class="form-col"><label class="form-label" for="loginPin">PIN</label><input id="loginPin" class="form-input"></div>
+          </div>
+          <div class="form-actions"><button class="btn secondary" type="submit">Ingresar</button></div>
+          <div id="loginMsg" class="form-help"></div>
+        </form>
+      </section>
+    </section>
+
+    <section class="taxi-grid">
+      <section class="taxi-card">
+        <h2 style="margin-top:0;">Mapa del servicio</h2>
+        <div id="taxiPublicMap" class="taxi-map"></div>
+      </section>
+      <section class="taxi-card">
+        <h2 style="margin-top:0;">Estado del viaje</h2>
+        <div id="requestDetails" class="taxi-status"></div>
+      </section>
+    </section>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/taxi_system_public.js"></script>
+</body>
+</html>

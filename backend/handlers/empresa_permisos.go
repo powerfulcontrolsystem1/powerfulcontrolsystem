@@ -197,6 +197,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Turnos de atención y fila", Grupo: "Operación y venta"},
 	{PaginaClave: "linkGimnasio", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTaxiSystem", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Operación y venta"},
 	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Clientes"},
 	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
@@ -1851,6 +1852,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkVehiculosRegistro"
 	case path == "/api/empresa/gimnasio":
 		return "linkGimnasio"
+	case path == "/api/empresa/taxi_system":
+		return "linkTaxiSystem"
 	case path == "/api/empresa/odontologia":
 		return "linkConsultorioOdontologico"
 	case path == "/api/empresa/turnos_atencion":

@@ -607,6 +607,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/auth/confirmar_admin":                                 {},
 			"/auth/logout":                                          {},
 			"/api/public/venta_publica":                             {},
+			"/api/public/taxi_system":                               {},
 			"/api/public/estacion_vip":                              {},
 			"/api/public/chat_portal":                               {},
 			"/api/public/chat_portal_stream":                        {},
@@ -630,6 +631,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/pantalla_publica.html":                                {},
 			"/pantalla_turnos.html":                                 {},
 			"/turnos_publicos.html":                                 {},
+			"/taxi_system.html":                                     {},
+			"/taxi_system_conductor.html":                           {},
 			"/calculadora.html":                                     {},
 			"/productos_estacion_clientes_publico.html":             {},
 			"/estilos.css":                                          {},
@@ -736,4 +739,3 @@ func DecryptString(payload string) (string, error) {
 func EncryptionAvailable() bool {
 	return secure.EncryptionAvailable()
 }
-

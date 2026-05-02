@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Taxi system</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    .taxi-shell{display:grid;gap:16px}
+    .taxi-hero,.taxi-card{background:linear-gradient(180deg,rgba(10,24,38,.96),rgba(14,31,48,.92));border:1px solid rgba(120,154,190,.18);border-radius:18px;box-shadow:0 18px 38px rgba(0,0,0,.22);padding:18px}
+    .taxi-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr);gap:16px}
+    .taxi-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(49,157,231,.12);border:1px solid rgba(49,157,231,.24);color:#bde1ff;font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .taxi-hero h1,.taxi-card h2{margin:12px 0 8px;color:#f4f8ff}
+    .taxi-hero p,.taxi-card p{margin:0;color:#b8cada;line-height:1.55}
+    .taxi-grid-2,.taxi-grid-3{display:grid;gap:16px}
+    .taxi-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .taxi-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .taxi-list{display:grid;gap:10px;margin-top:12px}
+    .taxi-item{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .taxi-item strong{display:block;color:#f4f8ff}
+    .taxi-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .taxi-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(150,176,206,.16);color:#edf3fb;font-size:.82rem;font-weight:700}
+    .taxi-map{height:480px;border-radius:16px;overflow:hidden;border:1px solid rgba(150,176,206,.16)}
+    .taxi-actions{display:flex;flex-wrap:wrap;gap:10px}
+    @media (max-width: 980px){.taxi-hero,.taxi-grid-2,.taxi-grid-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container taxi-shell">
+    <section class="taxi-hero">
+      <article>
+        <span class="taxi-kicker">Taxi system</span>
+        <h1>Despacho en vivo para clientes, central y conductores móviles</h1>
+        <p>Recibe solicitudes desde la web pública de la empresa, localiza unidades cercanas, despacha por proximidad y sigue cada recorrido en un mapa GPS con trazabilidad real del servicio.</p>
+      </article>
+      <aside class="taxi-card">
+        <h2 style="margin-top:0;">Canales del módulo</h2>
+        <p>La central opera el despacho, los conductores responden desde su celular y los clientes pueden pedir servicio con registro opcional o como invitados compartiendo su ubicación si lo desean.</p>
+        <div class="taxi-actions" style="margin-top:12px;">
+          <a id="openTaxiPortalBtn" class="btn secondary" target="_blank" rel="noopener">Abrir portal cliente</a>
+          <a id="openTaxiDriverBtn" class="btn secondary" target="_blank" rel="noopener">Abrir portal conductor</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-box"><span class="kpi-label">Pendientes</span><strong id="kpiPendientes">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Servicios activos</span><strong id="kpiActivos">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Conductores online</span><strong id="kpiOnline">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Disponibles</span><strong id="kpiDisponibles">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Clientes registrados</span><strong id="kpiClientes">0</strong></div>
+    </section>
+
+    <section class="taxi-grid-3">
+      <form id="taxiConfigForm" class="form taxi-card">
+        <h2>Configuración</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgNombreSistema">Nombre sistema</label><input id="cfgNombreSistema" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgNombrePortal">Nombre portal</label><input id="cfgNombrePortal" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgRadio">Radio búsqueda KM</label><input id="cfgRadio" type="number" step="0.1" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgDriversRound">Conductores por ronda</label><input id="cfgDriversRound" type="number" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgTimeout">Timeout oferta seg</label><input id="cfgTimeout" type="number" min="5" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgLatBase">Latitud base</label><input id="cfgLatBase" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgLngBase">Longitud base</label><input id="cfgLngBase" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="cfgRegistroCliente" type="checkbox"><label class="form-label" for="cfgRegistroCliente" style="margin:0;">Permitir registro cliente</label></div>
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="cfgUbicacionCliente" type="checkbox"><label class="form-label" for="cfgUbicacionCliente" style="margin:0;">Permitir compartir ubicación</label></div>
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="cfgAutoDispatch" type="checkbox"><label class="form-label" for="cfgAutoDispatch" style="margin:0;">Despacho automático</label></div>
+        </div>
+        <div class="taxi-actions"><button class="btn secondary" type="submit">Guardar configuración</button></div>
+        <div id="configMsg" class="form-help"></div>
+      </form>
+
+      <form id="driverForm" class="form taxi-card">
+        <h2>Registrar conductor</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="drvCodigo">Código</label><input id="drvCodigo" class="form-input" placeholder="DRV-001"></div>
+          <div class="form-col"><label class="form-label" for="drvNombre">Nombre</label><input id="drvNombre" class="form-input" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="drvDocumento">Documento</label><input id="drvDocumento" class="form-input" required></div>
+          <div class="form-col"><label class="form-label" for="drvTelefono">Teléfono</label><input id="drvTelefono" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="drvPlaca">Placa</label><input id="drvPlaca" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="drvModelo">Vehículo / modelo</label><input id="drvModelo" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="drvTipo">Tipo</label><input id="drvTipo" class="form-input" placeholder="Taxi, SUV, Moto"></div>
+          <div class="form-col"><label class="form-label" for="drvPin">PIN acceso móvil</label><input id="drvPin" class="form-input" placeholder="4-8 dígitos"></div>
+        </div>
+        <div class="taxi-actions"><button class="btn add" type="submit">Crear conductor</button></div>
+        <div id="driverMsg" class="form-help"></div>
+      </form>
+
+      <section class="taxi-card">
+        <h2>Operación del despacho</h2>
+        <p>Usa el mapa central para seguir unidades conectadas, revisar solicitudes abiertas y relanzar ofertas manuales cuando un conductor no responda a tiempo.</p>
+        <div class="taxi-list">
+          <div class="taxi-item"><strong>Clientes</strong><span>Solicitan servicio como invitados o registrados y pueden compartir su ubicación.</span></div>
+          <div class="taxi-item"><strong>Conductores</strong><span>Se conectan desde el celular, reciben alertas y publican GPS en tiempo real.</span></div>
+          <div class="taxi-item"><strong>Central</strong><span>Ve pendientes, rutas, cercanía, estados y puede despachar de nuevo con un clic.</span></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="taxi-grid-2">
+      <section class="taxi-card">
+        <h2>Mapa y recorridos</h2>
+        <div id="taxiMap" class="taxi-map"></div>
+        <div id="mapMsg" class="form-help"></div>
+      </section>
+      <section class="taxi-card">
+        <h2>Solicitudes y despacho</h2>
+        <div id="requestsList" class="taxi-list"></div>
+      </section>
+    </section>
+
+    <section class="taxi-grid-2">
+      <section class="taxi-card">
+        <h2>Conductores</h2>
+        <div id="driversList" class="taxi-list"></div>
+      </section>
+      <section class="taxi-card">
+        <h2>Ofertas recientes</h2>
+        <div id="offersList" class="taxi-list"></div>
+      </section>
+    </section>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/taxi_system.js"></script>
+</body>
+</html>
