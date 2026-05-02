@@ -9,8 +9,14 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/you/pos-backend/secure"
+)
+
+var (
+	empresaSensorPuertasSchemaMu    sync.Mutex
+	empresaSensorPuertasSchemaReady bool
 )
 
 // EmpresaSensorDevice representa un dispositivo sensor (Raspberry) asociado a una empresa/estación
@@ -66,6 +72,17 @@ func GenerateEmpresaSensorDeviceID(empresaID, estacionID int64) (string, error) 
 
 // EnsureEmpresaSensorPuertasSchema crea/migra las tablas del módulo sensor de puertas por empresa
 func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+
+	empresaSensorPuertasSchemaMu.Lock()
+	defer empresaSensorPuertasSchemaMu.Unlock()
+
+	if empresaSensorPuertasSchemaReady {
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_sensor_puertas_devices (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,6 +158,7 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	empresaSensorPuertasSchemaReady = true
 	return nil
 }
 

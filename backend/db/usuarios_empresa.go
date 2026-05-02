@@ -5,7 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
+)
+
+var (
+	empresaUsuariosAuthSchemaMu    sync.Mutex
+	empresaUsuariosAuthSchemaReady bool
 )
 
 // EmpresaUsuario representa un usuario gestionado dentro del contexto de una empresa.
@@ -44,6 +50,13 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		return errors.New("db connection is required")
 	}
 
+	empresaUsuariosAuthSchemaMu.Lock()
+	defer empresaUsuariosAuthSchemaMu.Unlock()
+
+	if empresaUsuariosAuthSchemaReady {
+		return nil
+	}
+
 	if isPostgresDialect() {
 		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS users (
 			id BIGSERIAL PRIMARY KEY,
@@ -78,6 +91,12 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		)`); err != nil {
 			return err
 		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_lower_email_empresa ON users ((lower(email)), empresa_id)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_email_confirm_token ON users (email_confirm_token)`); err != nil {
+			return err
+		}
 	} else {
 		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,6 +129,12 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_lower_email_empresa ON users (lower(email), empresa_id)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_email_confirm_token ON users (email_confirm_token)`); err != nil {
 			return err
 		}
 	}
@@ -150,6 +175,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	empresaUsuariosAuthSchemaReady = true
 	return nil
 }
 

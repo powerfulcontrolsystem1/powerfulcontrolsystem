@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -13,11 +14,16 @@ var (
 	ErrReservaHotelConflicto       = errors.New("reserva_hotel_conflicto")
 	ErrReservaHotelExpirada        = errors.New("reserva_hotel_expirada")
 	ErrReservaHotelNoReconvertible = errors.New("reserva_hotel_no_reconvertible")
+	reservasHotelSchemaMu          sync.Mutex
+	reservasHotelSchemaReady       bool
+	reservasHotelPoliciesMu        sync.Mutex
+	reservasHotelPoliciesLastRun   = map[int64]time.Time{}
 )
 
 const (
 	reservaHotelExpiracionDefaultMin = 30
 	reservaHotelNoShowToleranciaMin  = 90
+	reservaHotelPoliciesCooldown     = 15 * time.Second
 )
 
 // ReservaHotel representa una reserva de habitacion/estacion por empresa.
@@ -79,6 +85,21 @@ type ReservaHotelEstacion struct {
 
 // EnsureEmpresaReservasHotelSchema crea/migra el esquema de reservas de hotel por empresa.
 func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	reservasHotelSchemaMu.Lock()
+	defer reservasHotelSchemaMu.Unlock()
+
+	if reservasHotelSchemaReady {
+		return nil
+	}
+	ready, err := reservasHotelSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		reservasHotelSchemaReady = true
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS reservas_hotel (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,6 +134,9 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_estado ON reservas_hotel(empresa_id, estado_reserva, estado_pago, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_carrito_fechas ON reservas_hotel(empresa_id, carrito_id, fecha_entrada, fecha_salida);`,
 		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_expiracion ON reservas_hotel(empresa_id, fecha_expiracion);`,
+		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_estado_id ON reservas_hotel(empresa_id, estado, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_pendientes_fecha ON reservas_hotel(empresa_id, estado, estado_reserva, estado_pago, fecha_creacion, fecha_expiracion);`,
+		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_confirmadas_entrada ON reservas_hotel(empresa_id, estado, estado_reserva, estado_pago, fecha_entrada);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -192,7 +216,49 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "reservas_hotel", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	reservasHotelSchemaReady = true
 	return nil
+}
+
+func reservasHotelSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	ok, err := tableExists(dbConn, "reservas_hotel")
+	if err != nil || !ok {
+		return false, err
+	}
+
+	requiredIndexes := []string{
+		"ux_reservas_hotel_empresa_codigo",
+		"ix_reservas_hotel_empresa_estado",
+		"ix_reservas_hotel_empresa_carrito_fechas",
+		"ix_reservas_hotel_empresa_expiracion",
+		"ix_reservas_hotel_empresa_estado_id",
+		"ix_reservas_hotel_empresa_pendientes_fecha",
+		"ix_reservas_hotel_empresa_confirmadas_entrada",
+	}
+	for _, indexName := range requiredIndexes {
+		indexOK, idxErr := reservasHotelIndexExists(dbConn, indexName)
+		if idxErr != nil || !indexOK {
+			return false, idxErr
+		}
+	}
+
+	return true, nil
+}
+
+func reservasHotelIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
+		)
+	`, indexName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func nextReservaHotelCodigo() string {
@@ -424,12 +490,33 @@ func markReservasHotelNoShow(dbConn *sql.DB, empresaID int64, toleranciaMin int)
 
 // ApplyReservasHotelOperationalPolicies aplica expiracion pendiente y politica no_show por empresa.
 func ApplyReservasHotelOperationalPolicies(dbConn *sql.DB, empresaID int64) (int64, int64, error) {
+	if empresaID > 0 {
+		reservasHotelPoliciesMu.Lock()
+		lastRun := reservasHotelPoliciesLastRun[empresaID]
+		if !lastRun.IsZero() && time.Since(lastRun) < reservaHotelPoliciesCooldown {
+			reservasHotelPoliciesMu.Unlock()
+			return 0, 0, nil
+		}
+		reservasHotelPoliciesLastRun[empresaID] = time.Now()
+		reservasHotelPoliciesMu.Unlock()
+	}
+
 	expiradas, err := expirePendientesReservasHotelAvanzado(dbConn, empresaID)
 	if err != nil {
+		if empresaID > 0 {
+			reservasHotelPoliciesMu.Lock()
+			delete(reservasHotelPoliciesLastRun, empresaID)
+			reservasHotelPoliciesMu.Unlock()
+		}
 		return 0, 0, err
 	}
 	noShow, err := markReservasHotelNoShow(dbConn, empresaID, reservaHotelNoShowToleranciaMin)
 	if err != nil {
+		if empresaID > 0 {
+			reservasHotelPoliciesMu.Lock()
+			delete(reservasHotelPoliciesLastRun, empresaID)
+			reservasHotelPoliciesMu.Unlock()
+		}
 		return expiradas, 0, err
 	}
 	return expiradas, noShow, nil

@@ -19,6 +19,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -52,6 +53,14 @@ type empresaUsuarioPasswordPolicy struct {
 	RequireSymbol bool
 	RotationDays  int
 }
+
+var (
+	empresaUsuarioPasswordPolicyMu       sync.Mutex
+	empresaUsuarioPasswordPolicyCached   empresaUsuarioPasswordPolicy
+	empresaUsuarioPasswordPolicyLoadedAt time.Time
+)
+
+const empresaUsuarioPasswordPolicyCacheTTL = 30 * time.Second
 
 func defaultEmpresaUsuarioPasswordPolicy() empresaUsuarioPasswordPolicy {
 	return empresaUsuarioPasswordPolicy{
@@ -1556,6 +1565,14 @@ func newPasswordRecoveryTokenAndExpiration() (string, string, error) {
 }
 
 func resolveEmpresaUsuarioPasswordPolicy(dbSuper *sql.DB) empresaUsuarioPasswordPolicy {
+	empresaUsuarioPasswordPolicyMu.Lock()
+	if !empresaUsuarioPasswordPolicyLoadedAt.IsZero() && time.Since(empresaUsuarioPasswordPolicyLoadedAt) < empresaUsuarioPasswordPolicyCacheTTL {
+		cached := empresaUsuarioPasswordPolicyCached
+		empresaUsuarioPasswordPolicyMu.Unlock()
+		return cached
+	}
+	empresaUsuarioPasswordPolicyMu.Unlock()
+
 	policy := defaultEmpresaUsuarioPasswordPolicy()
 
 	policy.MinLength = parseEmpresaUsuarioInt(
@@ -1586,6 +1603,11 @@ func resolveEmpresaUsuarioPasswordPolicy(dbSuper *sql.DB) empresaUsuarioPassword
 		0,
 		3650,
 	)
+
+	empresaUsuarioPasswordPolicyMu.Lock()
+	empresaUsuarioPasswordPolicyCached = policy
+	empresaUsuarioPasswordPolicyLoadedAt = time.Now()
+	empresaUsuarioPasswordPolicyMu.Unlock()
 
 	return policy
 }

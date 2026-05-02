@@ -1331,8 +1331,6 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "No se pudo cargar configuracion publica", http.StatusInternalServerError)
 		return
 	}
-	ensureMotelCalipsoPublicShowcase(dbEmp, resolvedEmpresaID, &cfg)
-	cfg, _ = dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, resolvedEmpresaID)
 	pages, err := dbpkg.ListEmpresaVentaPublicaPaginas(dbEmp, resolvedEmpresaID, false)
 	if err != nil {
 		http.Error(w, "No se pudieron cargar paginas publicas", http.StatusInternalServerError)

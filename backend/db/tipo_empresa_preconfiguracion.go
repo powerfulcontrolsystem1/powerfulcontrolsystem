@@ -296,6 +296,15 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 	if err != nil {
 		return nil, err
 	}
+	if !overwrite {
+		if skip, err := canSkipDefaultTipoEmpresaSeed(dbConn, len(tipos)); err == nil && skip {
+			return &TipoEmpresaPreconfigSeedResult{
+				TotalTipos: len(tipos),
+				Omitidas:   len(tipos),
+				Items:      make([]TipoEmpresaPreconfigSeedItem, 0, len(tipos)),
+			}, nil
+		}
+	}
 	saved, err := ListTipoEmpresaPreconfiguraciones(dbConn)
 	if err != nil {
 		return nil, err
@@ -361,6 +370,48 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 	result.PermisosConfigurados = permisosConfigurados
 	result.PermisosPersonalizados = permisosPersonalizados
 	return result, nil
+}
+
+func canSkipDefaultTipoEmpresaSeed(dbConn *sql.DB, totalTipos int) (bool, error) {
+	if dbConn == nil || totalTipos <= 0 {
+		return false, nil
+	}
+	requiredTables := []string{
+		"tipo_empresa_preconfiguraciones",
+		"roles_de_usuario",
+		"roles_de_usuario_permisos",
+	}
+	for _, tableName := range requiredTables {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+
+	var preconfigCount int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM tipo_empresa_preconfiguraciones WHERE COALESCE(NULLIF(TRIM(estado), ''), 'activo') <> 'inactivo'`).Scan(&preconfigCount); err != nil {
+		return false, err
+	}
+	if preconfigCount < totalTipos {
+		return false, nil
+	}
+
+	var rolesCount int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM roles_de_usuario WHERE COALESCE(NULLIF(TRIM(estado), ''), 'activo') <> 'inactivo'`).Scan(&rolesCount); err != nil {
+		return false, err
+	}
+	if rolesCount <= 0 {
+		return false, nil
+	}
+
+	var permisosCount int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM roles_de_usuario_permisos WHERE COALESCE(NULLIF(TRIM(estado), ''), 'activo') <> 'inactivo'`).Scan(&permisosCount); err != nil {
+		return false, err
+	}
+	return permisosCount > 0, nil
 }
 
 // EnsureCanonicalTiposEmpresaPreconfigurables registra tipos operativos base

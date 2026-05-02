@@ -226,7 +226,7 @@ func (e badRequestError) Error() string { return e.msg }
 func errBadRequest(msg string) error { return badRequestError{msg: msg} }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("[clientes] write json response error: %v", err)

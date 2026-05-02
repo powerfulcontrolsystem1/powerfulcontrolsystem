@@ -557,13 +557,17 @@ func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64,
 		AND b.id IS NULL
 		AND ABS(COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0) - ?) <= ?`
 	args := []interface{}{empresaID, item.TipoMovimiento, montoObjetivo, cfg.ToleranciaMonto}
+	fechaDistExpr := `ABS(julianday(date(COALESCE(m.fecha_movimiento, ''))) - julianday(date(?)))`
+	if isPostgresDialect() {
+		fechaDistExpr = `ABS((COALESCE(NULLIF(m.fecha_movimiento, ''), CURRENT_DATE::text)::date) - (?::date))`
+	}
 
 	if cfg.PeriodoContable != "" {
 		query += ` AND COALESCE(m.periodo_contable, '') = ?`
 		args = append(args, cfg.PeriodoContable)
 	}
 	if fechaObjetivo != "" {
-		query += ` AND ABS(julianday(date(COALESCE(m.fecha_movimiento, ''))) - julianday(date(?))) <= ?`
+		query += ` AND ` + fechaDistExpr + ` <= ?`
 		args = append(args, fechaObjetivo, cfg.ToleranciaDias)
 	}
 
@@ -573,7 +577,7 @@ func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64,
 			LOWER(COALESCE(m.numero_comprobante, '')) = LOWER(?) OR
 			LOWER(COALESCE(m.codigo, '')) = LOWER(?)
 		) THEN 0 ELSE 1 END,
-		ABS(julianday(date(COALESCE(m.fecha_movimiento, ''))) - julianday(date(?))) ASC,
+		` + fechaDistExpr + ` ASC,
 		ABS(COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0) - ?) ASC,
 		m.id DESC
 	LIMIT 1`

@@ -54,6 +54,39 @@ var (
 	empresaRateLimitBuckets = map[string]empresaRateLimitBucket{}
 )
 
+var legacyPermissionVisibleTextReplacer = strings.NewReplacer(
+	"Operaci\u00c3\u00b3n", "Operaci\u00f3n",
+	"Configuraci\u00c3\u00b3n", "Configuraci\u00f3n",
+	"Facturaci\u00c3\u00b3n", "Facturaci\u00f3n",
+	"electr\u00c3\u00b3nica", "electr\u00f3nica",
+	"cat\u00c3\u00a1logo", "cat\u00e1logo",
+	"c\u00c3\u00b3digos", "c\u00f3digos",
+	"c\u00c3\u00b3digo", "c\u00f3digo",
+	"\u00c3\u00b3rdenes", "\u00f3rdenes",
+	"N\u00c3\u00b3mina", "N\u00f3mina",
+	"veh\u00c3\u00adculos", "veh\u00edculos",
+	"veh\u00c3\u00adculo", "veh\u00edculo",
+	"Auditor\u00c3\u00ada", "Auditor\u00eda",
+	"Cr\u00c3\u00a9ditos", "Cr\u00e9ditos",
+	"cr\u00c3\u00a9ditos", "cr\u00e9ditos",
+	"Ubicaci\u00c3\u00b3n", "Ubicaci\u00f3n",
+	"Aprobaci\u00c3\u00b3n", "Aprobaci\u00f3n",
+	"d\u00c3\u00ada", "d\u00eda",
+	"Gr\u00c3\u00a1ficos", "Gr\u00e1ficos",
+	"estad\u00c3\u00adsticas", "estad\u00edsticas",
+	"m\u00c3\u00b3dulo", "m\u00f3dulo",
+	"acci\u00c3\u00b3n", "acci\u00f3n",
+	"integraci\u00c3\u00b3n", "integraci\u00f3n",
+)
+
+func sanitizeLegacyPermissionVisibleText(value string) string {
+	clean := strings.TrimSpace(value)
+	if clean == "" {
+		return ""
+	}
+	return strings.TrimSpace(legacyPermissionVisibleTextReplacer.Replace(clean))
+}
+
 var permissionModulesCatalogOrdered = []string{
 	permModuleVentas,
 	permModuleInventario,
@@ -669,6 +702,19 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
+		}
+		if pageKey := resolvePermissionPageKeyForRequest(r); pageKey != "" {
+			pageRows := buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
+			pageRows = applyLicenciaRestriccionesToModuleRows(pageRows, allowedModules)
+			empresaModuleOverrides, empresaPageOverrides, _ := loadEmpresaPermissionOverrides(dbSuper, empresaID)
+			pageRows = applyEmpresaRestriccionesToModuleRows(pageRows, empresaModuleOverrides)
+			pages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, pageRows)
+			pages = applyEmpresaPageRestrictionsToMap(pages, empresaPageOverrides)
+			if !pages[pageKey] {
+				http.Error(w, "forbidden: rol sin acceso a la funcionalidad solicitada", http.StatusForbidden)
+				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
+				return
+			}
 		}
 
 		if permissionChangeRequiresApproval(module, r, action) {
@@ -1488,18 +1534,18 @@ func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixR
 			permitido = override
 		}
 
-		titulo := strings.TrimSpace(rule.Titulo)
+		titulo := sanitizeLegacyPermissionVisibleText(rule.Titulo)
 		if titulo == "" {
-			titulo = rule.PaginaClave
+			titulo = sanitizeLegacyPermissionVisibleText(rule.PaginaClave)
 		}
-		grupo := strings.TrimSpace(rule.Grupo)
+		grupo := sanitizeLegacyPermissionVisibleText(rule.Grupo)
 		if grupo == "" {
 			grupo = "Otras"
 		}
 		out = append(out, permissionPageAccessRow{
 			PaginaClave:   rule.PaginaClave,
-			Modulo:        rule.Modulo,
-			Accion:        rule.Accion,
+			Modulo:        sanitizeLegacyPermissionVisibleText(rule.Modulo),
+			Accion:        sanitizeLegacyPermissionVisibleText(rule.Accion),
 			Permitido:     permitido,
 			AlwaysVisible: rule.AlwaysVisible,
 			Titulo:        titulo,
@@ -1613,6 +1659,70 @@ func applyEmpresaPageRestrictionsToMap(paginas map[string]bool, overrides map[st
 	return out
 }
 
+func resolvePermissionPageKeyForRequest(r *http.Request) string {
+	if r == nil || r.URL == nil {
+		return ""
+	}
+	path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch {
+	case strings.HasPrefix(path, "/api/empresa/crm/"):
+		return "linkCRMComercial"
+	case path == "/api/empresa/clientes":
+		return "linkClientes"
+	case strings.HasPrefix(path, "/api/empresa/chat_tareas"):
+		return "linkChatTareas"
+	case strings.HasPrefix(path, "/api/empresa/chat_con_inteligencia_artificial"):
+		return "linkChatIA"
+	case strings.HasPrefix(path, "/api/empresa/facturacion_electronica"):
+		if action == "emitir" || !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet) {
+			return "linkFacturacionElectronica"
+		}
+		return "linkFacturasElectronicas"
+	case strings.HasPrefix(path, "/api/empresa/finanzas/") || path == "/api/empresa/corte_caja":
+		return "linkFinanzas"
+	case strings.HasPrefix(path, "/api/empresa/creditos") ||
+		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
+		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):
+		return "linkCreditos"
+	case path == "/api/empresa/propinas":
+		return "linkPropinas"
+	case path == "/api/empresa/comisiones":
+		return "linkComisiones"
+	case path == "/api/empresa/codigos_de_descuento":
+		return "linkCodigosDescuento"
+	case path == "/api/empresa/venta_publica":
+		return "linkVentaPublica"
+	case path == "/api/empresa/carritos_compra":
+		if strings.Contains(action, "estacion") {
+			return "linkEstaciones"
+		}
+		return "linkCarritoCompras"
+	case strings.HasPrefix(path, "/api/empresa/estaciones") ||
+		strings.HasPrefix(path, "/api/empresa/estacion_") ||
+		strings.HasPrefix(path, "/api/empresa/ventas_estacion"):
+		return "linkEstaciones"
+	case path == "/api/empresa/reservas_hotel":
+		return "linkReservasHotel"
+	case path == "/api/empresa/tarifas_por_minutos":
+		return "linkTarifasPorMinutos"
+	case path == "/api/empresa/tarifas_por_dia":
+		return "linkTarifasPorDia"
+	case path == "/api/empresa/nomina_sueldos":
+		return "linkNominaSueldos"
+	case path == "/api/empresa/asistencia_empleados":
+		return "linkAsistenciaEmpleados"
+	case path == "/api/empresa/vehiculos_registro":
+		return "linkVehiculosRegistro"
+	case strings.HasPrefix(path, "/api/empresa/reportes"):
+		if strings.Contains(path, "/ia") {
+			return "linkReportesIAChat"
+		}
+		return "linkReportes"
+	}
+	return ""
+}
+
 func resolveEffectiveRoleByLicencia(role string, licenciaPolicy *dbpkg.LicenciaPermisoPolicy) string {
 	resolved := normalizePermissionRole(role)
 	if licenciaPolicy == nil || !licenciaPolicy.SuperRolHabilitado {
@@ -1653,9 +1763,9 @@ func PermissionModuleDisplayNameMap() map[string]string {
 	out := make(map[string]string, len(permissionModulesCatalogOrdered))
 	for _, m := range permissionModulesCatalogOrdered {
 		if lab, ok := permissionModuleDisplayNames[m]; ok && strings.TrimSpace(lab) != "" {
-			out[m] = lab
+			out[m] = sanitizeLegacyPermissionVisibleText(lab)
 		} else {
-			out[m] = m
+			out[m] = sanitizeLegacyPermissionVisibleText(m)
 		}
 	}
 	return out
@@ -1666,9 +1776,9 @@ func PermissionActionDisplayNameMap() map[string]string {
 	out := make(map[string]string, len(permissionActionsCatalogOrdered))
 	for _, a := range permissionActionsCatalogOrdered {
 		if lab, ok := permissionActionDisplayNames[a]; ok && strings.TrimSpace(lab) != "" {
-			out[a] = lab
+			out[a] = sanitizeLegacyPermissionVisibleText(lab)
 		} else {
-			out[a] = a
+			out[a] = sanitizeLegacyPermissionVisibleText(a)
 		}
 	}
 	return out

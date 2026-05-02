@@ -4,6 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
+)
+
+var (
+	empresaChatTareasSchemaMu    sync.Mutex
+	empresaChatTareasSchemaReady bool
 )
 
 // ChatConversacion representa un hilo de comunicacion interna por empresa.
@@ -139,6 +145,21 @@ const chatUsuariosGeneralMarker = "sistema:chat_usuarios_general"
 
 // EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en la base operativa por empresa.
 func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	empresaChatTareasSchemaMu.Lock()
+	defer empresaChatTareasSchemaMu.Unlock()
+
+	if empresaChatTareasSchemaReady {
+		return nil
+	}
+	ready, err := empresaChatTareasSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		empresaChatTareasSchemaReady = true
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS chat_tareas_conversaciones (
 			id BIGSERIAL PRIMARY KEY,
@@ -512,8 +533,59 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 		return err
 	}
 	_ = ensureColumnIfMissing(dbConn, "chat_tareas_citas", "eliminado_en", "TEXT")
-
+	empresaChatTareasSchemaReady = true
 	return nil
+}
+
+func empresaChatTareasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	requiredTables := []string{
+		"chat_tareas_conversaciones",
+		"chat_tareas_participantes",
+		"chat_tareas_mensajes",
+		"chat_tareas_adjuntos",
+		"chat_tareas",
+		"chat_tareas_citas",
+	}
+	for _, tableName := range requiredTables {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+
+	requiredIndexes := []string{
+		"ix_chat_conv_empresa_estado",
+		"ix_chat_participantes_empresa_conv",
+		"ix_chat_msg_empresa_conv",
+		"ix_chat_adj_empresa_mensaje",
+		"ix_chat_tareas_empresa_estado",
+		"ix_chat_tareas_empresa_conv",
+		"ix_chat_citas_empresa_fecha",
+		"ix_chat_citas_empresa_conv",
+	}
+	for _, indexName := range requiredIndexes {
+		ok, err := empresaChatTareasIndexExists(dbConn, indexName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func empresaChatTareasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
+		)
+	`, indexName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func normalizeChatEstado(v string) string {

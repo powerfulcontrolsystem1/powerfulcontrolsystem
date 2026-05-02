@@ -4,7 +4,17 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"sync"
+	"time"
 )
+
+var (
+	currentSuperContractCacheMu       sync.Mutex
+	currentSuperContractCacheValue    *SuperContractVersion
+	currentSuperContractCacheLoadedAt time.Time
+)
+
+const currentSuperContractCacheTTL = 30 * time.Second
 
 type SuperContractVersion struct {
 	ID                 int64  `json:"id"`
@@ -22,8 +32,8 @@ type SuperContractVersion struct {
 }
 
 type SuperContractAcceptance struct {
-	Acepta bool   `json:"acepta"`
-	Version int   `json:"version"`
+	Acepta  bool   `json:"acepta"`
+	Version int    `json:"version"`
 	Fecha   string `json:"fecha"`
 }
 
@@ -236,7 +246,9 @@ func EnsureDefaultSuperContract(dbConn *sql.DB) error {
 	return err
 }
 
-func scanSuperContractVersion(scanner interface{ Scan(dest ...interface{}) error }) (*SuperContractVersion, error) {
+func scanSuperContractVersion(scanner interface {
+	Scan(dest ...interface{}) error
+}) (*SuperContractVersion, error) {
 	var item SuperContractVersion
 	var resumen sql.NullString
 	var nota sql.NullString
@@ -277,11 +289,28 @@ func scanSuperContractVersion(scanner interface{ Scan(dest ...interface{}) error
 }
 
 func GetCurrentSuperContract(dbConn *sql.DB) (*SuperContractVersion, error) {
+	currentSuperContractCacheMu.Lock()
+	if currentSuperContractCacheValue != nil && time.Since(currentSuperContractCacheLoadedAt) < currentSuperContractCacheTTL {
+		cached := *currentSuperContractCacheValue
+		currentSuperContractCacheMu.Unlock()
+		return &cached, nil
+	}
+	currentSuperContractCacheMu.Unlock()
+
 	if err := EnsureDefaultSuperContract(dbConn); err != nil {
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, "SELECT id, version, titulo, resumen, contenido, nota_aceptacion, resumen_cambio, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM super_contrato_versiones ORDER BY version DESC LIMIT 1")
-	return scanSuperContractVersion(row)
+	item, err := scanSuperContractVersion(row)
+	if err != nil {
+		return nil, err
+	}
+	currentSuperContractCacheMu.Lock()
+	copyItem := *item
+	currentSuperContractCacheValue = &copyItem
+	currentSuperContractCacheLoadedAt = time.Now()
+	currentSuperContractCacheMu.Unlock()
+	return item, nil
 }
 
 func GetSuperContractVersionByNumber(dbConn *sql.DB, version int) (*SuperContractVersion, error) {
@@ -346,6 +375,16 @@ func SaveSuperContractVersion(dbConn *sql.DB, doc SuperContractVersion) (*SuperC
 	if err != nil {
 		return nil, false, err
 	}
+	currentSuperContractCacheMu.Lock()
+	if saved != nil {
+		copyItem := *saved
+		currentSuperContractCacheValue = &copyItem
+		currentSuperContractCacheLoadedAt = time.Now()
+	} else {
+		currentSuperContractCacheValue = nil
+		currentSuperContractCacheLoadedAt = time.Time{}
+	}
+	currentSuperContractCacheMu.Unlock()
 	return saved, false, nil
 }
 

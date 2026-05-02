@@ -677,6 +677,32 @@ type carteraPagoRelacionado struct {
 	NumeroComprobante string  `json:"numero_comprobante,omitempty"`
 }
 
+func dedupePagosCarteraRelacionados(items []carteraPagoRelacionado) []carteraPagoRelacionado {
+	if len(items) <= 1 {
+		return items
+	}
+	seen := make(map[string]struct{}, len(items))
+	out := make([]carteraPagoRelacionado, 0, len(items))
+	for _, item := range items {
+		key := ""
+		if item.MovimientoID > 0 {
+			key = "mov:" + strconv.FormatInt(item.MovimientoID, 10)
+		} else {
+			key = strings.TrimSpace(item.Codigo) + "|" +
+				strings.TrimSpace(item.FechaMovimiento) + "|" +
+				strconv.FormatFloat(reportesRound(item.MontoAplicado), 'f', 2, 64) + "|" +
+				strings.TrimSpace(item.ReferenciaExterna) + "|" +
+				strings.TrimSpace(item.NumeroComprobante)
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, item)
+	}
+	return out
+}
+
 func EmpresaFinanzasPlanCuentasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	base := empresaModuloGenericCRUDHandler(dbEmp, cfgPlanCuentas)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -3116,13 +3142,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 		saldoNuevo = 0
 	}
 	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
-	pagosRelacionados = append(pagosRelacionados, carteraPagoRelacionado{
-		MovimientoID:      movID,
-		FechaMovimiento:   now,
-		MontoAplicado:     abono,
-		ReferenciaExterna: referenciaExterna,
-		NumeroComprobante: finanzasFirstNonBlank(genericStringValue(payload["numero_comprobante"]), referenciaExterna),
-	})
+	pagosRelacionados = dedupePagosCarteraRelacionados(pagosRelacionados)
 	referenciaPagosJSON := "[]"
 	if len(pagosRelacionados) > 0 {
 		encoded, _ := json.Marshal(pagosRelacionados)
@@ -3269,6 +3289,11 @@ func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento
 		return nil, 0, "", err
 	}
 
+	out = dedupePagosCarteraRelacionados(out)
+	total = 0
+	for _, item := range out {
+		total += item.MontoAplicado
+	}
 	return out, total, ultimoPago, nil
 }
 

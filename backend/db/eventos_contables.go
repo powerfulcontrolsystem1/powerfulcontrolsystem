@@ -186,6 +186,8 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 		"factura_contingencia_activada":         {},
 	},
 	"compras": {
+		"orden_compra_creada":                {},
+		"orden_compra_pendiente_aprobacion":  {},
 		"orden_compra_emitida":               {},
 		"compra_recepcionada":                {},
 		"compra_contabilizada":               {},
@@ -1482,6 +1484,9 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 
 	case "compras":
 		switch normalizeEventoContableNombre(evento.Evento) {
+		case "orden_compra_creada", "orden_compra_pendiente_aprobacion":
+			// Se registran como hitos precontables para trazabilidad, sin asiento.
+			return []EmpresaAsientoContableLinea{}
 		case "devolucion_proveedor_contabilizada":
 			return nuevoIngreso()
 		case "orden_compra_emitida", "compra_recepcionada", "compra_contabilizada":

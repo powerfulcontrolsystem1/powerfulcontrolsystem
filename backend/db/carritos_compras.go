@@ -7,8 +7,59 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var (
+	empresaCarritosSchemaMu    sync.Mutex
+	empresaCarritosSchemaReady bool
+)
+
+var legacyUserVisibleTextReplacer = strings.NewReplacer(
+	"Estaci\u00c3\u00b3n", "Estaci\u00f3n",
+	"Estaci\u00c3\u0192\u00c2\u00b3n", "Estaci\u00f3n",
+	"Operaci\u00c3\u00b3n", "Operaci\u00f3n",
+	"Operaci\u00c3\u0192\u00c2\u00b3n", "Operaci\u00f3n",
+	"Configuraci\u00c3\u00b3n", "Configuraci\u00f3n",
+	"Configuraci\u00c3\u0192\u00c2\u00b3n", "Configuraci\u00f3n",
+	"Facturaci\u00c3\u00b3n", "Facturaci\u00f3n",
+	"Facturaci\u00c3\u0192\u00c2\u00b3n", "Facturaci\u00f3n",
+	"electr\u00c3\u00b3nica", "electr\u00f3nica",
+	"electr\u00c3\u0192\u00c2\u00b3nica", "electr\u00f3nica",
+	"c\u00c3\u00b3digo", "c\u00f3digo",
+	"c\u00c3\u0192\u00c2\u00b3digo", "c\u00f3digo",
+	"c\u00c3\u00b3digos", "c\u00f3digos",
+	"c\u00c3\u0192\u00c2\u00b3digos", "c\u00f3digos",
+	"veh\u00c3\u00adculo", "veh\u00edculo",
+	"veh\u00c3\u0192\u00c2\u00adculo", "veh\u00edculo",
+	"veh\u00c3\u00adculos", "veh\u00edculos",
+	"veh\u00c3\u0192\u00c2\u00adculos", "veh\u00edculos",
+	"cat\u00c3\u00a1logo", "cat\u00e1logo",
+	"cat\u00c3\u0192\u00c2\u00a1logo", "cat\u00e1logo",
+	"p\u00c3\u00bablica", "p\u00fablica",
+	"p\u00c3\u0192\u00c2\u00bablica", "p\u00fablica",
+	"cr\u00c3\u00a9dito", "cr\u00e9dito",
+	"cr\u00c3\u0192\u00c2\u00a9dito", "cr\u00e9dito",
+	"cr\u00c3\u00a9ditos", "cr\u00e9ditos",
+	"cr\u00c3\u0192\u00c2\u00a9ditos", "cr\u00e9ditos",
+	"N\u00c3\u00b3mina", "N\u00f3mina",
+	"N\u00c3\u0192\u00c2\u00b3mina", "N\u00f3mina",
+	"Auditor\u00c3\u00ada", "Auditor\u00eda",
+	"Auditor\u00c3\u0192\u00c2\u00ada", "Auditor\u00eda",
+	"Gr\u00c3\u00a1ficos", "Gr\u00e1ficos",
+	"Gr\u00c3\u0192\u00c2\u00a1ficos", "Gr\u00e1ficos",
+	"estad\u00c3\u00adsticas", "estad\u00edsticas",
+	"estad\u00c3\u0192\u00c2\u00adsticas", "estad\u00edsticas",
+)
+
+func sanitizeLegacyUserVisibleText(value string) string {
+	clean := strings.TrimSpace(value)
+	if clean == "" {
+		return ""
+	}
+	return strings.TrimSpace(legacyUserVisibleTextReplacer.Replace(clean))
+}
 
 // CarritoCompra representa un carrito de compra por empresa.
 type CarritoCompra struct {
@@ -115,6 +166,21 @@ type CarritoStationMetricSummary struct {
 
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en empresas.db.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	empresaCarritosSchemaMu.Lock()
+	defer empresaCarritosSchemaMu.Unlock()
+
+	if empresaCarritosSchemaReady {
+		return nil
+	}
+	ready, err := empresaCarritosSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		empresaCarritosSchemaReady = true
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS carritos_compras (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -209,11 +275,14 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		{name: "ux_carritos_empresa_codigo", query: `CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_codigo ON carritos_compras(empresa_id, codigo);`},
 		{name: "ux_carritos_empresa_nombre", query: `CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_nombre ON carritos_compras(empresa_id, nombre);`},
 		{name: "ix_carritos_empresa_estado", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado ON carritos_compras(empresa_id, estado, estado_carrito);`},
+		{name: "ix_carritos_empresa_estado_pagado", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado_pagado ON carritos_compras(empresa_id, estado_carrito, pagado_en DESC, id DESC);`},
+		{name: "ix_carritos_empresa_referencia_externa", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_referencia_externa ON carritos_compras(empresa_id, referencia_externa, id DESC);`},
 		{name: "ix_carrito_items_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`},
 		{name: "ix_carrito_items_empresa_referencia", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`},
 		{name: "ix_ventas_estacion_metricas_empresa_estacion_fecha", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_evento", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`},
+		{name: "ix_ventas_estacion_metricas_empresa_evento_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento_carrito ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, carrito_id);`},
 	}
 	for _, idx := range indexStmts {
 		if err := ensureIndexIfMissing(dbConn, idx.name, idx.query); err != nil {
@@ -405,8 +474,86 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := sanitizeLegacyStationMetricText(dbConn); err != nil {
+		return err
+	}
 
+	empresaCarritosSchemaReady = true
 	return nil
+}
+
+func sanitizeLegacyStationMetricText(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	updates := []struct {
+		from string
+		to   string
+	}{
+		{from: "Estaci\u00c3\u00b3n", to: "Estaci\u00f3n"},
+		{from: "Estacion ", to: "Estaci\u00f3n "},
+	}
+	for _, item := range updates {
+		if strings.TrimSpace(item.from) == "" || item.from == item.to {
+			continue
+		}
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_ventas_estacion_metricas
+		SET estacion_nombre = REPLACE(COALESCE(estacion_nombre, ''), ?, ?),
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE estacion_nombre LIKE '%' || ? || '%'`, item.from, item.to, item.from); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	requiredTables := []string{
+		"carritos_compras",
+		"carrito_compra_items",
+		"empresa_ventas_estacion_metricas",
+	}
+	for _, tableName := range requiredTables {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+
+	requiredIndexes := []string{
+		"ux_carritos_empresa_codigo",
+		"ix_carrito_items_empresa_carrito",
+		"ix_ventas_estacion_metricas_carrito",
+	}
+	for _, indexName := range requiredIndexes {
+		ok, err := empresaCarritosIndexExists(dbConn, indexName)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func empresaCarritosIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = current_schema()
+			  AND indexname = ?
+		)
+	`, strings.TrimSpace(indexName)).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func ensureIndexIfMissing(dbConn *sql.DB, indexName, createStmt string) error {
@@ -578,12 +725,12 @@ func ResolveCarritoStationIdentity(carrito *CarritoCompra) (int64, string, strin
 	if estacionCodigo == "" && estacionID > 0 {
 		estacionCodigo = fmt.Sprintf("EST-%d-%d", carrito.EmpresaID, estacionID)
 	}
-	estacionNombre := strings.TrimSpace(carrito.Nombre)
+	estacionNombre := sanitizeLegacyUserVisibleText(carrito.Nombre)
 	if estacionNombre == "" && estacionID > 0 {
-		estacionNombre = fmt.Sprintf("Estacion %d", estacionID)
+		estacionNombre = fmt.Sprintf("Estaci\u00f3n %d", estacionID)
 	}
 	if estacionNombre == "" {
-		estacionNombre = "Estacion"
+		estacionNombre = "Estaci\u00f3n"
 	}
 	return estacionID, estacionCodigo, estacionNombre
 }
@@ -666,7 +813,7 @@ func isTransientTxRetryError(err error) bool {
 		return false
 	}
 	lower := strings.ToLower(strings.TrimSpace(err.Error()))
-	// Reintentar en errores transitorios típicos de Postgres (serialización/deadlock).
+	// Reintentar en errores transitorios tÃ­picos de Postgres (serializaciÃ³n/deadlock).
 	return strings.Contains(lower, "deadlock detected") ||
 		strings.Contains(lower, "could not serialize access") ||
 		strings.Contains(lower, "serialization failure")
@@ -984,7 +1131,7 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 	return &item, nil
 }
 
-// GetCarritoCompraByCodigo obtiene un carrito por empresa y código (p. ej. EST-{empresa}-{estacion}).
+// GetCarritoCompraByCodigo obtiene un carrito por empresa y cÃ³digo (p. ej. EST-{empresa}-{estacion}).
 func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*CarritoCompra, error) {
 	codigo = strings.TrimSpace(codigo)
 	if codigo == "" {
@@ -1229,7 +1376,7 @@ func SetCarritoOperacionEstado(dbConn *sql.DB, empresaID, carritoID int64, estad
 	return tx.Commit()
 }
 
-// ActivateCarritoStationSession activa un carrito de estación y opcionalmente reinicia sus items.
+// ActivateCarritoStationSession activa un carrito de estaciÃ³n y opcionalmente reinicia sus items.
 func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, resetItems bool) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -1463,9 +1610,9 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 	if estacionCodigo == "" && input.EstacionID > 0 {
 		estacionCodigo = fmt.Sprintf("EST-%d-%d", input.EmpresaID, input.EstacionID)
 	}
-	estacionNombre := strings.TrimSpace(input.EstacionNombre)
+	estacionNombre := sanitizeLegacyUserVisibleText(input.EstacionNombre)
 	if estacionNombre == "" && input.EstacionID > 0 {
-		estacionNombre = fmt.Sprintf("Estacion %d", input.EstacionID)
+		estacionNombre = fmt.Sprintf("Estaci\u00f3n %d", input.EstacionID)
 	}
 	duracionSegundos := input.DuracionSegundos
 	if duracionSegundos <= 0 {
@@ -1607,11 +1754,12 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 		); err != nil {
 			return nil, err
 		}
+		row.EstacionNombre = sanitizeLegacyUserVisibleText(row.EstacionNombre)
 		if strings.TrimSpace(row.EstacionNombre) == "" {
 			if row.EstacionID > 0 {
-				row.EstacionNombre = fmt.Sprintf("Estacion %d", row.EstacionID)
+				row.EstacionNombre = fmt.Sprintf("Estaci\u00f3n %d", row.EstacionID)
 			} else {
-				row.EstacionNombre = "Estacion"
+				row.EstacionNombre = "Estaci\u00f3n"
 			}
 		}
 		row.MontoVendido = round2(row.MontoVendido)

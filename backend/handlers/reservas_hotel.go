@@ -7,9 +7,25 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type reservasHotelCacheEntry struct {
+	Status   int
+	Body     []byte
+	Headers  map[string]string
+	CachedAt time.Time
+}
+
+var (
+	reservasHotelReadCacheMu sync.Mutex
+	reservasHotelReadCache   = map[string]reservasHotelCacheEntry{}
+)
+
+const reservasHotelReadCacheTTL = 10 * time.Second
 
 // EmpresaReservasHotelHandler gestiona el modulo de reservas por empresa.
 func EmpresaReservasHotelHandler(dbEmp *sql.DB) http.HandlerFunc {
@@ -50,6 +66,15 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 	}
 
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	cacheKey := buildReservasHotelCacheKey(r, empresaID, action)
+	if cached := getReservasHotelCachedResponse(cacheKey); cached != nil {
+		for k, v := range cached.Headers {
+			w.Header().Set(k, v)
+		}
+		w.WriteHeader(cached.Status)
+		_, _ = w.Write(cached.Body)
+		return
+	}
 	switch action {
 	case "aplicar_politicas", "sincronizar_estado", "sincronizar_politicas":
 		expiradas, noShow, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID)
@@ -65,10 +90,6 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		return
 
 	case "", "listar", "list":
-		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
-			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
-			return
-		}
 		limit, err := parseIntQueryOptional(r, "limit")
 		if err != nil {
 			http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -119,17 +140,14 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		if filter.Limit <= 0 {
 			filter.Limit = 80
 		}
-		w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
-		w.Header().Set("X-Page-Limit", strconv.Itoa(filter.Limit))
-		w.Header().Set("X-Page-Offset", strconv.Itoa(filter.Offset))
-		writeJSON(w, http.StatusOK, rows)
+		writeReservasHotelCachedJSON(w, cacheKey, http.StatusOK, rows, map[string]string{
+			"X-Total-Count": strconv.FormatInt(total, 10),
+			"X-Page-Limit":  strconv.Itoa(filter.Limit),
+			"X-Page-Offset": strconv.Itoa(filter.Offset),
+		})
 		return
 
 	case "detalle", "get", "by_id", "by_codigo":
-		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
-			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
-			return
-		}
 		id, err := parseInt64QueryOptional(r, "id")
 		if err != nil {
 			http.Error(w, "id invalido", http.StatusBadRequest)
@@ -154,14 +172,10 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			http.Error(w, "No se pudo consultar la reserva", http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, http.StatusOK, item)
+		writeReservasHotelCachedJSON(w, cacheKey, http.StatusOK, item, nil)
 		return
 
 	case "disponibilidad", "estaciones_disponibles":
-		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
-			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
-			return
-		}
 		fechaEntrada := strings.TrimSpace(firstNonEmptyStr(r.URL.Query().Get("fecha_entrada"), r.URL.Query().Get("desde")))
 		fechaSalida := strings.TrimSpace(firstNonEmptyStr(r.URL.Query().Get("fecha_salida"), r.URL.Query().Get("hasta")))
 		if fechaEntrada == "" || fechaSalida == "" {
@@ -174,7 +188,7 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		writeJSON(w, http.StatusOK, rows)
+		writeReservasHotelCachedJSON(w, cacheKey, http.StatusOK, rows, nil)
 		return
 	default:
 		http.Error(w, "action invalida. Use: listar, detalle, disponibilidad o aplicar_politicas", http.StatusBadRequest)
@@ -210,6 +224,7 @@ func handleReservasHotelCreate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		writeReservaHotelError(w, err)
 		return
 	}
+	invalidateReservasHotelCache(payload.EmpresaID)
 	item, err := dbpkg.GetReservaHotelByID(dbEmp, payload.EmpresaID, id)
 	if err != nil {
 		writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
@@ -243,6 +258,7 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 			http.Error(w, "No se pudo actualizar el estado", http.StatusInternalServerError)
 			return
 		}
+		invalidateReservasHotelCache(empresaID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": nextEstado})
 		return
 	}
@@ -275,6 +291,7 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 			writeReservaHotelError(w, err)
 			return
 		}
+		invalidateReservasHotelCache(payload.EmpresaID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accion": "confirmar_pago"})
 		return
 
@@ -285,6 +302,7 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 			writeReservaHotelError(w, err)
 			return
 		}
+		invalidateReservasHotelCache(payload.EmpresaID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accion": "cancelar"})
 		return
 
@@ -295,6 +313,7 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 			writeReservaHotelError(w, err)
 			return
 		}
+		invalidateReservasHotelCache(payload.EmpresaID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accion": "convertir_carrito", "reserva_id": payload.ID, "carrito_id": carritoID})
 		return
 
@@ -303,6 +322,7 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 			writeReservaHotelError(w, err)
 			return
 		}
+		invalidateReservasHotelCache(payload.EmpresaID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 		return
 	}
@@ -327,7 +347,92 @@ func handleReservasHotelDelete(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		http.Error(w, "No se pudo eliminar la reserva", http.StatusInternalServerError)
 		return
 	}
+	invalidateReservasHotelCache(empresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func buildReservasHotelCacheKey(r *http.Request, empresaID int64, action string) string {
+	if r == nil || r.URL == nil || empresaID <= 0 || !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet) {
+		return ""
+	}
+	return strings.Join([]string{
+		strconv.FormatInt(empresaID, 10),
+		strings.ToLower(strings.TrimSpace(action)),
+		r.URL.RawQuery,
+	}, "|")
+}
+
+func getReservasHotelCachedResponse(key string) *reservasHotelCacheEntry {
+	if strings.TrimSpace(key) == "" {
+		return nil
+	}
+	reservasHotelReadCacheMu.Lock()
+	defer reservasHotelReadCacheMu.Unlock()
+	entry, ok := reservasHotelReadCache[key]
+	if !ok {
+		return nil
+	}
+	if time.Since(entry.CachedAt) > reservasHotelReadCacheTTL {
+		delete(reservasHotelReadCache, key)
+		return nil
+	}
+	copied := reservasHotelCacheEntry{
+		Status:   entry.Status,
+		Body:     append([]byte(nil), entry.Body...),
+		Headers:  map[string]string{},
+		CachedAt: entry.CachedAt,
+	}
+	for k, v := range entry.Headers {
+		copied.Headers[k] = v
+	}
+	return &copied
+}
+
+func writeReservasHotelCachedJSON(w http.ResponseWriter, key string, status int, payload interface{}, headers map[string]string) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "No se pudo serializar la respuesta", http.StatusInternalServerError)
+		return
+	}
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	headers["Content-Type"] = "application/json; charset=utf-8"
+	for k, v := range headers {
+		w.Header().Set(k, v)
+	}
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
+
+	if strings.TrimSpace(key) == "" {
+		return
+	}
+	cachedHeaders := map[string]string{}
+	for k, v := range headers {
+		cachedHeaders[k] = v
+	}
+	reservasHotelReadCacheMu.Lock()
+	reservasHotelReadCache[key] = reservasHotelCacheEntry{
+		Status:   status,
+		Body:     append([]byte(nil), body...),
+		Headers:  cachedHeaders,
+		CachedAt: time.Now(),
+	}
+	reservasHotelReadCacheMu.Unlock()
+}
+
+func invalidateReservasHotelCache(empresaID int64) {
+	if empresaID <= 0 {
+		return
+	}
+	prefix := strconv.FormatInt(empresaID, 10) + "|"
+	reservasHotelReadCacheMu.Lock()
+	for key := range reservasHotelReadCache {
+		if strings.HasPrefix(key, prefix) {
+			delete(reservasHotelReadCache, key)
+		}
+	}
+	reservasHotelReadCacheMu.Unlock()
 }
 
 func writeReservaHotelError(w http.ResponseWriter, err error) {

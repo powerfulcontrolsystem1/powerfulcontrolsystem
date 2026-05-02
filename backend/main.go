@@ -570,12 +570,24 @@ func resolveDownloadsDir() string {
 
 func main() {
 	backendDir := resolveBackendRuntimeDir()
+	startupTraceEnabled := strings.TrimSpace(os.Getenv("PCS_STARTUP_TRACE")) == "1"
+	startupTrace := func(step string) {
+		if startupTraceEnabled {
+			log.Printf("STARTUP TRACE: %s", strings.TrimSpace(step))
+		}
+	}
+
+	startupTrace("main_enter")
 	loadRuntimeEnvDefaults(backendDir)
+	startupTrace("after_load_runtime_env_defaults")
 	refreshRuntimeGlobalsFromEnv()
+	startupTrace("after_refresh_runtime_globals")
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
 		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
 	}
+	startupTrace("after_ensure_runtime_config_enc_key")
 	runtimeDBDialect := resolveRuntimeDBDialect()
+	startupTrace("after_resolve_runtime_db_dialect")
 	runtimePostgres := runtimeDBDialect == "postgres"
 	if !runtimePostgres {
 		log.Fatalf("DB_DIALECT=%q no soportado. La migracion fue cerrada a PostgreSQL-only", runtimeDBDialect)
@@ -609,36 +621,50 @@ func main() {
 		}
 
 		postgresDriverName := dbpkg.PostgresCompatDriverName()
+		startupTrace("before_open_db_empresas")
 		dbEmpresas, err = openAndPingRuntimeDB(postgresDriverName, dbEmpresasDSN, "empresas")
 		if err != nil {
 			log.Fatal(err)
 		}
+		startupTrace("after_open_db_empresas")
 		// Registrar la conexión principal de empresas en el paquete db para wrappers
 		dbpkg.SetDefaultDB(dbEmpresas)
+		startupTrace("before_open_db_super")
 		dbSuper, err = openAndPingRuntimeDB(postgresDriverName, dbSuperDSN, "superadministrador")
 		if err != nil {
 			log.Fatal(err)
 		}
+		startupTrace("after_open_db_super")
 		if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
 		}
+		startupTrace("after_ensure_pg_compat_empresas")
 		if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
 			log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
 		}
+		startupTrace("after_ensure_pg_compat_super")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
+		startupTrace("after_ensure_payment_gateway_schema")
 		if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
+		startupTrace("after_ensure_licencias_schema")
+		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_usuario_config_schema")
 		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
 		}
+		startupTrace("after_ensure_asesor_schema")
 		if seedResult, err := dbpkg.SeedDefaultTipoEmpresaPreconfiguraciones(dbSuper, "sistema.arranque", false); err != nil {
 			log.Printf("warning: no se pudieron registrar preconfiguraciones por tipo de empresa: %v", err)
 		} else {
 			log.Printf("INFO: preconfiguraciones por tipo verificadas: tipos=%d creadas=%d omitidas=%d errores=%d", seedResult.TotalTipos, seedResult.Creadas, seedResult.Omitidas, seedResult.Errores)
 		}
+		startupTrace("after_seed_default_tipo_empresa")
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -650,35 +676,45 @@ func main() {
 	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 	}
+	startupTrace("after_empresa_usuarios_auth_schema")
 	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure nextcloud schema in empresas db: %v", err)
 	}
+	startupTrace("after_empresa_nextcloud_schema")
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
 	}
+	startupTrace("after_empresa_carritos_schema")
 	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
 	}
+	startupTrace("after_empresa_reservas_schema")
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
 			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
 		}
+		startupTrace("after_sensitive_super_config")
 		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure postgres primary key sequences in empresas db: %v", err)
 		}
+		startupTrace("after_empresas_pk_sequences")
 		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbSuper); err != nil {
 			log.Fatalf("failed to ensure postgres primary key sequences in super db: %v", err)
 		}
+		startupTrace("after_super_pk_sequences")
 		loadGoogleOAuthFromDB(dbSuper)
+		startupTrace("after_load_google_oauth_from_db")
 		if err := handlers.EnsureSuperContextoIALogicaNegocio(dbSuper); err != nil {
 			log.Printf("warning: no se pudo registrar contexto IA de logica de negocio: %v", err)
 		}
+		startupTrace("after_super_contexto_ia")
 		if clientID == "" || clientSecret == "" {
 			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
 		}
 		log.Println("INFO: modo PostgreSQL activo; bootstrap legacy desactivado.")
 	}
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
+	startupTrace("after_error_monitor")
 
 	// Inicializar tabla de mÃ©tricas y arrancar collector periÃ³dico
 	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
@@ -707,14 +743,17 @@ func main() {
 	go utils.RunProtectedProcess("finanzas.asientos_worker", map[string]interface{}{"interval": asientosInterval.String(), "batch_size": asientosBatchSize, "max_retries": asientosMaxRetries}, func() {
 		dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
 	})
+	startupTrace("after_workers")
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
 	downloadsDir := resolveDownloadsDir()
+	startupTrace("after_resolve_dirs")
 	vpsSecurityService, err := vpssecurity.NewService(nil, nil, nil)
 	if err != nil {
 		log.Fatalf("failed to initialize VPS security service: %v", err)
 	}
+	startupTrace("after_vps_security_service")
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexiÃ³n de la base `empresas` al callback para persistir usuarios y empresas
@@ -749,6 +788,7 @@ func main() {
 	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/mis_clientes", handlers.AsesorComercialMisClientesHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
+	startupTrace("after_super_and_core_routes")
 	// MÃ³dulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
@@ -845,6 +885,7 @@ func main() {
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
+	startupTrace("after_empresa_routes")
 
 	// OnlyOffice public endpoints (token temporal)
 	http.HandleFunc("/api/onlyoffice/file", handlers.OnlyOfficeFilePublicHandler(dbSuper))
@@ -970,6 +1011,7 @@ func main() {
 	http.HandleFunc("/super/api/security/vps/history", handlers.SecurityVPSHistoryHandler(dbSuper, vpsSecurityService))
 	http.HandleFunc("/super/api/security/vps/report", handlers.SecurityVPSReportHandler(dbSuper, vpsSecurityService))
 	http.HandleFunc("/super/api/security/vps/compare", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService))
+	startupTrace("after_super_config_routes")
 
 	// Logout handler: limpiar cookie de sesiÃ³n (si existe) y redirigir a la pÃ¡gina de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -1008,6 +1050,7 @@ func main() {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
 	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
 	registerLocalEmulatorRoutes(backendDir, webDir)
+	startupTrace("after_static_helper_routes")
 
 	// Servir pÃ¡ginas estÃ¡ticas desde la carpeta `web` detectada
 	// Verificar existencia de index.html y loguear la ruta usada
@@ -1075,9 +1118,11 @@ func main() {
 		}
 		staticFS.ServeHTTP(w, r)
 	})
+	startupTrace("after_root_handler")
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
 	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))))
+	startupTrace("after_handler_wrap")
 
 	// Respetar la variable de entorno PORT si estÃ¡ definida; por defecto usar 8080
 	port := os.Getenv("PORT")
@@ -1094,6 +1139,7 @@ func main() {
 		log.Printf("warning: no se pudo registrar evento de inicio de servidor: %v", startupEventErr)
 		utils.ReportProcessError("server.runtime_notifications", "startup_event_registration", "No se pudo registrar el evento de inicio del servidor", startupEventErr, utils.ErrorLevelError, map[string]interface{}{"listen_addr": addr})
 	}
+	startupTrace("after_startup_event_registration")
 
 	server := &http.Server{
 		Addr:    addr,
@@ -1118,6 +1164,7 @@ func main() {
 			utils.ReportProcessError("server.shutdown", "shutdown_error", "Error durante el apagado controlado del servidor", err, utils.ErrorLevelError, map[string]interface{}{"reason": reason})
 		}
 	})
+	startupTrace("before_listen")
 
 	log.Println("Servidor arrancado en", addr)
 	err = server.ListenAndServe()

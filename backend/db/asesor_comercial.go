@@ -3,6 +3,12 @@ package db
 import (
 	"database/sql"
 	"strings"
+	"sync"
+)
+
+var (
+	asesorComercialSchemaMu    sync.Mutex
+	asesorComercialSchemaReady bool
 )
 
 // AsesorComercial representa al administrador aceptado para operar como asesor comercial.
@@ -54,6 +60,17 @@ type AsesorComercialComision struct {
 // EnsureAsesorComercialSchema prepara el modulo de asesores comerciales en pcs_superadministrador.
 func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
 	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+	asesorComercialSchemaMu.Lock()
+	defer asesorComercialSchemaMu.Unlock()
+
+	if asesorComercialSchemaReady {
+		return nil
+	}
+	ready, err := asesorComercialSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		asesorComercialSchemaReady = true
 		return nil
 	}
 	statements := []string{
@@ -145,7 +162,58 @@ func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+	asesorComercialSchemaReady = true
 	return nil
+}
+
+func asesorComercialSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	if dbConn == nil || !isPostgresDialect() {
+		return false, nil
+	}
+	requiredTables := []string{
+		"asesores_comerciales",
+		"asesor_comercial_comisiones",
+	}
+	for _, tableName := range requiredTables {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+
+	requiredIndexes := []string{
+		"ux_asesores_comerciales_email",
+		"ix_asesores_comerciales_codigo",
+		"ix_asesores_comerciales_token",
+		"ix_asesor_comisiones_empresa",
+		"ux_asesor_comisiones_ref",
+	}
+	for _, indexName := range requiredIndexes {
+		ok, err := asesorComercialIndexExists(dbConn, indexName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func asesorComercialIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	if dbConn == nil {
+		return false, nil
+	}
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = current_schema()
+			  AND indexname = ?
+		)
+	`, strings.TrimSpace(indexName)).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func CreateAsesorComercial(dbConn *sql.DB, item AsesorComercial, tokenHash string) (int64, error) {

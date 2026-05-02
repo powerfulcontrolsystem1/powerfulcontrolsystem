@@ -177,21 +177,21 @@ func publicRecaptchaConfig(dbSuper *sql.DB) map[string]interface{} {
 		message = "reCAPTCHA activo para formularios publicos protegidos."
 	}
 	return map[string]interface{}{
-		"provider":           provider,
-		"enabled":            enabled,
-		"requested_enabled":  requestedEnabled,
-		"configured":         configured,
-		"site_key":           siteKey,
+		"provider":              provider,
+		"enabled":               enabled,
+		"requested_enabled":     requestedEnabled,
+		"configured":            configured,
+		"site_key":              siteKey,
 		"site_key_updated_at":   siteUpdatedAt,
 		"secret_key_updated_at": secretUpdatedAt,
 		"provider_updated_at":   providerUpdatedAt,
-		"provider_present":   strings.TrimSpace(recaptchaConfigValue(dbSuper, superRecaptchaProviderConfigKey)) != "" || strings.TrimSpace(recaptchaEnvValue("RECAPTCHA_PROVIDER", "GOOGLE_RECAPTCHA_PROVIDER")) != "",
-		"stored_site_key":    recaptchaConfigValue(dbSuper, superRecaptchaSiteKeyConfigKey),
-		"site_key_present":   siteKey != "",
-		"secret_key_present": secretKey != "",
-		"stored_secret_key":  recaptchaStoredSecretKeyPresent(dbSuper),
-		"dev_bypass":         recaptchaDevBypassEnabled(),
-		"message":            message,
+		"provider_present":      strings.TrimSpace(recaptchaConfigValue(dbSuper, superRecaptchaProviderConfigKey)) != "" || strings.TrimSpace(recaptchaEnvValue("RECAPTCHA_PROVIDER", "GOOGLE_RECAPTCHA_PROVIDER")) != "",
+		"stored_site_key":       recaptchaConfigValue(dbSuper, superRecaptchaSiteKeyConfigKey),
+		"site_key_present":      siteKey != "",
+		"secret_key_present":    secretKey != "",
+		"stored_secret_key":     recaptchaStoredSecretKeyPresent(dbSuper),
+		"dev_bypass":            recaptchaDevBypassEnabled(),
+		"message":               message,
 	}
 }
 
@@ -309,10 +309,10 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 func validateRecaptchaToken(dbSuper *sql.DB, r *http.Request, token string) error {
-	if !isRecaptchaFeatureEnabled(dbSuper) {
+	if recaptchaDevBypassEnabled() {
 		return nil
 	}
-	if recaptchaDevBypassEnabled() {
+	if !isRecaptchaFeatureEnabled(dbSuper) {
 		return nil
 	}
 	// Si la funcionalidad fue activada pero faltan credenciales, no bloquear el acceso:

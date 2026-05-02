@@ -6,7 +6,13 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 	"time"
+)
+
+var (
+	empresaPropinasSchemaMu    sync.Mutex
+	empresaPropinasSchemaReady bool
 )
 
 const (
@@ -140,6 +146,21 @@ type propinaActiveUser struct {
 
 // EnsureEmpresaPropinasSchema crea/migra las tablas de configuracion y movimientos de propinas.
 func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	empresaPropinasSchemaMu.Lock()
+	defer empresaPropinasSchemaMu.Unlock()
+
+	if empresaPropinasSchemaReady {
+		return nil
+	}
+	ready, err := empresaPropinasSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		empresaPropinasSchemaReady = true
+		return nil
+	}
+
 	bootstrapStmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_propinas_configuracion (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -323,7 +344,47 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	empresaPropinasSchemaReady = true
 	return nil
+}
+
+func empresaPropinasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	ok, err := tableExists(dbConn, "empresa_propinas_configuracion")
+	if err != nil || !ok {
+		return false, err
+	}
+	ok, err = tableExists(dbConn, "empresa_propinas_movimientos")
+	if err != nil || !ok {
+		return false, err
+	}
+
+	requiredIndexes := []string{
+		"ux_empresa_propinas_configuracion_empresa",
+		"ix_empresa_propinas_movimientos_empresa_fecha",
+		"ix_empresa_propinas_movimientos_empresa_cierre",
+	}
+	for _, indexName := range requiredIndexes {
+		indexOK, idxErr := empresaPropinasIndexExists(dbConn, indexName)
+		if idxErr != nil || !indexOK {
+			return false, idxErr
+		}
+	}
+	return true, nil
+}
+
+func empresaPropinasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM sqlite_master
+			WHERE type = 'index' AND name = ?
+		)
+	`, indexName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func defaultEmpresaPropinasConfiguracion(empresaID int64) EmpresaPropinasConfiguracion {

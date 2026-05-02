@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
 	"time"
+)
+
+var (
+	empresaFinanzasSchemaMu    sync.Mutex
+	empresaFinanzasSchemaReady bool
 )
 
 var ErrPeriodoFinancieroCerrado = errors.New("el periodo contable esta cerrado")
@@ -155,6 +161,21 @@ type EmpresaFinanzasConfiguracion struct {
 
 // EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en empresas.db.
 func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	empresaFinanzasSchemaMu.Lock()
+	defer empresaFinanzasSchemaMu.Unlock()
+
+	if empresaFinanzasSchemaReady {
+		return nil
+	}
+	ready, err := empresaFinanzasSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		empresaFinanzasSchemaReady = true
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_movimientos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -301,6 +322,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_fecha ON empresa_finanzas_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_tipo_estado ON empresa_finanzas_movimientos(empresa_id, tipo_movimiento, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_estado_fecha_usuario ON empresa_finanzas_movimientos(empresa_id, estado, fecha_movimiento DESC, usuario_creador);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_comprobante ON empresa_finanzas_movimientos(empresa_id, numero_comprobante);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_fecha ON empresa_cierres_caja(empresa_id, fecha_operacion DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_estado ON empresa_cierres_caja(empresa_id, estado_cierre, estado);`,
@@ -609,7 +631,60 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	empresaFinanzasSchemaReady = true
 	return nil
+}
+
+func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	ok, err := tableExists(dbConn, "empresa_finanzas_movimientos")
+	if err != nil || !ok {
+		return false, err
+	}
+	ok, err = tableExists(dbConn, "empresa_finanzas_configuracion")
+	if err != nil || !ok {
+		return false, err
+	}
+	ok, err = tableExists(dbConn, "empresa_finanzas_periodos")
+	if err != nil || !ok {
+		return false, err
+	}
+	ok, err = tableExists(dbConn, "empresa_cierres_caja")
+	if err != nil || !ok {
+		return false, err
+	}
+	ok, err = tableExists(dbConn, "empresa_finanzas_bancos_movimientos")
+	if err != nil || !ok {
+		return false, err
+	}
+
+	requiredIndexes := []string{
+		"ix_empresa_finanzas_movimientos_empresa_fecha",
+		"ix_empresa_cierres_caja_empresa_estado",
+		"ix_empresa_finanzas_bancos_movimientos_empresa_periodo_estado",
+		"ix_empresa_finanzas_periodos_empresa_estado",
+	}
+	for _, indexName := range requiredIndexes {
+		indexOK, idxErr := empresaFinanzasIndexExists(dbConn, indexName)
+		if idxErr != nil || !indexOK {
+			return false, idxErr
+		}
+	}
+	return true, nil
+}
+
+func empresaFinanzasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM sqlite_master
+			WHERE type = 'index' AND name = ?
+		)
+	`, indexName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 // GetEmpresaFinanzasConfiguracion obtiene configuracion financiera por empresa con defaults seguros.

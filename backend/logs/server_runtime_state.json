@@ -1,14 +1,12 @@
 {
-  "status": "stopped",
+  "status": "running",
   "hostname": "NITRO",
-  "process_id": 14596,
+  "process_id": 18288,
   "listen_addr": ":8080",
-  "last_start_at": "2026-05-01 20:14:36",
+  "last_start_at": "2026-05-02 02:40:41",
   "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=19920 previo_inicio=2026-05-01 20:13:54 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/05/01 18:46:15 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
-  "last_stop_at": "2026-05-01 20:14:44",
-  "last_stop_reason": "listen_and_serve_error: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.",
+  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=15284 previo_inicio=2026-05-02 02:36:21 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/05/01 23:58:42 [compras] evento contable omitido empresa_id=7 modulo=compras evento=orden_compra_pendiente_aprobacion entidad=orden_compra entidad_id=12 error: evento contable no soportado para modulo=compras evento=orden_compra_pendiente_aprobacion",
   "last_unexpected_restart": true,
-  "last_known_server_err": "2026/05/01 18:46:15 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
-  "last_event_id": 9225
+  "last_known_server_err": "2026/05/01 23:58:42 [compras] evento contable omitido empresa_id=7 modulo=compras evento=orden_compra_pendiente_aprobacion entidad=orden_compra entidad_id=12 error: evento contable no soportado para modulo=compras evento=orden_compra_pendiente_aprobacion",
+  "last_event_id": 9268
 }

@@ -120,6 +120,52 @@ IMMUTABLE
 AS $$
 SELECT replace(COALESCE(format_text, ''), '%d', COALESCE(value::text, ''));
 $$;`,
+		`CREATE OR REPLACE FUNCTION julianday(base_value text)
+RETURNS double precision
+LANGUAGE plpgsql
+STABLE
+AS $fn$
+DECLARE
+	ts timestamp;
+BEGIN
+	IF base_value IS NULL OR btrim(base_value) = '' OR lower(btrim(base_value)) = 'now' THEN
+		ts := CURRENT_TIMESTAMP;
+	ELSE
+		BEGIN
+			ts := base_value::timestamp;
+		EXCEPTION WHEN others THEN
+			BEGIN
+				ts := (base_value::date)::timestamp;
+			EXCEPTION WHEN others THEN
+				ts := CURRENT_TIMESTAMP;
+			END;
+		END;
+	END IF;
+
+	RETURN EXTRACT(EPOCH FROM ts) / 86400.0;
+END;
+$fn$;`,
+		`CREATE OR REPLACE FUNCTION julianday(base_value timestamp)
+RETURNS double precision
+LANGUAGE sql
+STABLE
+AS $$
+SELECT EXTRACT(EPOCH FROM base_value) / 86400.0;
+$$;`,
+		`CREATE OR REPLACE FUNCTION julianday(base_value date)
+RETURNS double precision
+LANGUAGE sql
+STABLE
+AS $$
+SELECT EXTRACT(EPOCH FROM (base_value::timestamp)) / 86400.0;
+$$;`,
+		`CREATE OR REPLACE FUNCTION julianday(base_value timestamptz)
+RETURNS double precision
+LANGUAGE sql
+STABLE
+AS $$
+SELECT EXTRACT(EPOCH FROM (base_value AT TIME ZONE current_setting('TIMEZONE'))) / 86400.0;
+$$;`,
 	}
 
 	for i, stmt := range stmts {

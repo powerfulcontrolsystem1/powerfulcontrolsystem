@@ -6,10 +6,23 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type corteCajaCacheEntry struct {
+	Response *corteCajaResponse
+	CachedAt time.Time
+}
+
+var (
+	corteCajaCacheMu sync.Mutex
+	corteCajaCache   = map[string]corteCajaCacheEntry{}
+)
+
+const corteCajaCacheTTL = 10 * time.Second
 
 type corteCajaVenta struct {
 	ID             int64   `json:"id"`
@@ -107,13 +120,73 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		usuario := strings.TrimSpace(r.URL.Query().Get("usuario"))
 		apertura := parseCorteCajaFloat(r.URL.Query().Get("apertura_efectivo"))
 
+		cacheKey := buildCorteCajaCacheKeyFromRequest(r, empresaID, desde, hasta, usuario, apertura)
+		if cached := getCorteCajaCache(cacheKey); cached != nil {
+			writeJSON(w, http.StatusOK, cached)
+			return
+		}
+
 		resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura)
 		if err != nil {
 			http.Error(w, "No se pudo generar el corte de caja", http.StatusInternalServerError)
 			return
 		}
+		storeCorteCajaCache(cacheKey, resp)
 		writeJSON(w, http.StatusOK, resp)
 	}
+}
+
+func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, hasta, usuario string, apertura float64) string {
+	rawDesde := ""
+	rawHasta := ""
+	if r != nil && r.URL != nil {
+		rawDesde = strings.TrimSpace(r.URL.Query().Get("desde"))
+		rawHasta = strings.TrimSpace(r.URL.Query().Get("hasta"))
+	}
+	keyDesde := strings.TrimSpace(desde)
+	keyHasta := strings.TrimSpace(hasta)
+	if rawDesde == "" {
+		keyDesde = "default_desde"
+	}
+	if rawHasta == "" {
+		keyHasta = "default_hasta"
+	}
+	return strings.Join([]string{
+		strconv.FormatInt(empresaID, 10),
+		keyDesde,
+		keyHasta,
+		strings.ToLower(strings.TrimSpace(usuario)),
+		strconv.FormatFloat(apertura, 'f', 2, 64),
+	}, "|")
+}
+
+func getCorteCajaCache(key string) *corteCajaResponse {
+	if strings.TrimSpace(key) == "" {
+		return nil
+	}
+	corteCajaCacheMu.Lock()
+	defer corteCajaCacheMu.Unlock()
+	entry, ok := corteCajaCache[key]
+	if !ok {
+		return nil
+	}
+	if entry.Response == nil || time.Since(entry.CachedAt) > corteCajaCacheTTL {
+		delete(corteCajaCache, key)
+		return nil
+	}
+	return entry.Response
+}
+
+func storeCorteCajaCache(key string, resp *corteCajaResponse) {
+	if strings.TrimSpace(key) == "" || resp == nil {
+		return
+	}
+	corteCajaCacheMu.Lock()
+	corteCajaCache[key] = corteCajaCacheEntry{
+		Response: resp,
+		CachedAt: time.Now(),
+	}
+	corteCajaCacheMu.Unlock()
 }
 
 func normalizeCorteCajaDateTime(raw string, fallback time.Time) string {

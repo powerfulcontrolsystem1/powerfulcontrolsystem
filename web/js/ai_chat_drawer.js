@@ -2115,7 +2115,7 @@
         attachName.textContent = 'Modo reportes: el asistente usará el flujo centralizado de reportes y exportaciones.';
         attachName.classList.remove('is-hidden');
       } else if (documentMode) {
-        attachName.textContent = 'Modo Documentos IA: GPT-5.4 mini generará el documento. Los adjuntos quedan desactivados; GPT-5.5 se reserva solo para fotos.';
+        attachName.textContent = 'Modo Documentos IA: el sistema seleccionara automaticamente el mejor modelo disponible para generar el documento. Los adjuntos quedan desactivados; el analisis visual se reserva para fotos.';
         attachName.classList.remove('is-hidden');
       } else if (!getCurrentAttachment()) {
         attachName.textContent = '';
@@ -2518,7 +2518,6 @@
         prompt: query,
         input_format: 'markdown',
         template_name: inferDocumentExportType(query),
-        model_id: 'openai:gpt-5.4-mini',
         formats: ['pdf', 'docx', 'xlsx', 'txt', 'json'],
         metadata: {
           origin: 'chat_ia',
@@ -2537,7 +2536,7 @@
       setGeneratedDocument(data);
       var selectedFormat = getSelectedDocumentFormat().toUpperCase();
       var preview = normalize(data.preview_text);
-      var text = 'Documento generado con GPT-5.4 mini: ' + normalize(data.title || 'Documento IA') + '.';
+      var text = 'Documento generado por el modelo IA seleccionado automaticamente: ' + normalize(data.title || 'Documento IA') + '.';
       text += '\nFormato seleccionado para descarga: ' + selectedFormat + '.';
       text += '\nUsa el boton Descargar para obtenerlo como PDF, Word, Excel, TXT o JSON.';
       if (preview) {
@@ -2605,7 +2604,6 @@
     var body = {
       pregunta: query,
       modo_asistente: mode,
-      model_id: 'openai:gpt-5.4-mini'
     };
 
     if (pageContext) {
@@ -3117,7 +3115,7 @@
       modeEl.addEventListener('change', function () {
         syncModeUI();
         setNotice(isDocumentMode()
-          ? 'Modo Documentos IA activo. GPT-5.4 mini generará documentos descargables.'
+          ? 'Modo Documentos IA activo. El sistema elegira automaticamente el mejor modelo disponible para generar documentos descargables.'
           : (isReportMode()
             ? 'Modo reportes activo. Este chat central usará el flujo de reportes y exportaciones de la empresa.'
             : 'Modo actualizado. Puedes seguir consultando normalmente.'));

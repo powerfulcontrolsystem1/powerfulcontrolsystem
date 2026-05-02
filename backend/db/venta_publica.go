@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+)
+
+var (
+	empresaVentaPublicaSchemaMu    sync.Mutex
+	empresaVentaPublicaSchemaReady bool
 )
 
 // EnsureVentaPublicaSchema crea las tablas necesarias para el módulo de venta pública.
@@ -523,6 +529,17 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
+	empresaVentaPublicaSchemaMu.Lock()
+	defer empresaVentaPublicaSchemaMu.Unlock()
+
+	if empresaVentaPublicaSchemaReady {
+		return nil
+	}
+	ready, err := empresaVentaPublicaSchemaLooksReady(dbConn)
+	if err == nil && ready {
+		empresaVentaPublicaSchemaReady = true
+		return nil
+	}
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_configuracion (
@@ -778,8 +795,56 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id)`); err != nil {
 		return err
 	}
-
+	empresaVentaPublicaSchemaReady = true
 	return nil
+}
+
+func empresaVentaPublicaSchemaLooksReady(dbConn *sql.DB) (bool, error) {
+	requiredTables := []string{
+		"empresa_venta_publica_configuracion",
+		"empresa_venta_publica_paginas",
+		"empresa_venta_publica_items",
+		"empresa_venta_publica_ordenes",
+	}
+	for _, tableName := range requiredTables {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+
+	requiredIndexes := []string{
+		"ux_venta_publica_cfg_slug",
+		"ix_venta_publica_cfg_empresa_estado",
+		"ix_venta_publica_items_empresa_estado",
+		"ix_venta_publica_items_empresa_pagina",
+		"ix_venta_publica_paginas_empresa_estado",
+		"ix_venta_publica_ordenes_empresa_estado",
+		"ix_venta_publica_ordenes_tx",
+	}
+	for _, indexName := range requiredIndexes {
+		ok, err := empresaVentaPublicaIndexExists(dbConn, indexName)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func empresaVentaPublicaIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
+		)
+	`, indexName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 // ListEmpresaVentaPublicaPaginas lista las paginas publicas de una empresa.
@@ -800,8 +865,8 @@ func ListEmpresaVentaPublicaPaginas(dbConn *sql.DB, empresaID int64, includeInac
 	}
 	rows, err := querySQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
-		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
 	FROM empresa_venta_publica_paginas `+where+`
 	ORDER BY COALESCE(orden_visual, 0) ASC, id DESC`, args...)
@@ -876,8 +941,8 @@ func GetEmpresaVentaPublicaPaginaByID(dbConn *sql.DB, empresaID, pageID int64) (
 	var p EmpresaVentaPublicaPagina
 	err := queryRowSQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
-		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
 	FROM empresa_venta_publica_paginas WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, pageID).Scan(
 		&p.ID, &p.EmpresaID, &p.Slug, &p.Nombre, &p.Descripcion, &p.BannerURL, &p.OrdenVisual, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones,
@@ -896,8 +961,8 @@ func GetEmpresaVentaPublicaPaginaBySlug(dbConn *sql.DB, empresaID int64, slug st
 	var p EmpresaVentaPublicaPagina
 	err := queryRowSQLCompat(dbConn, `SELECT
 		id, empresa_id, COALESCE(slug, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
-		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
+		COALESCE(banner_url, ''), COALESCE(orden_visual, 0), COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
 	FROM empresa_venta_publica_paginas
 	WHERE empresa_id = ? AND slug = ? AND COALESCE(estado, 'activo') <> 'inactivo'
@@ -965,8 +1030,8 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(epayco_public_key, ''),
 		COALESCE(epayco_private_key_ref, ''),
 		COALESCE(epayco_customer_id, ''),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
@@ -1535,8 +1600,8 @@ func GetEmpresaVentaPublicaItemByID(dbConn *sql.DB, empresaID, itemID int64) (Em
 		COALESCE(i.stock_publicado, 0),
 		COALESCE(i.orden_visual, 0),
 		COALESCE(i.destacado, 0),
-		COALESCE(i.fecha_creacion, ''),
-		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(CAST(i.fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(i.fecha_actualizacion AS TEXT), ''),
 		COALESCE(i.usuario_creador, ''),
 		COALESCE(i.estado, 'activo'),
 		COALESCE(i.observaciones, '')
@@ -1640,8 +1705,8 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		COALESCE(i.stock_publicado, 0),
 		COALESCE(i.orden_visual, 0),
 		COALESCE(i.destacado, 0),
-		COALESCE(i.fecha_creacion, ''),
-		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(CAST(i.fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(i.fecha_actualizacion AS TEXT), ''),
 		COALESCE(i.usuario_creador, ''),
 		COALESCE(i.estado, 'activo'),
 		COALESCE(i.observaciones, '')
@@ -1869,8 +1934,8 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		COALESCE(items_json, ''),
 		COALESCE(pasarela_payload_json, ''),
 		COALESCE(pagado_en, ''),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
@@ -1943,8 +2008,8 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		COALESCE(items_json, ''),
 		COALESCE(pasarela_payload_json, ''),
 		COALESCE(pagado_en, ''),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
@@ -2041,8 +2106,8 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		COALESCE(items_json, ''),
 		COALESCE(pasarela_payload_json, ''),
 		COALESCE(pagado_en, ''),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
