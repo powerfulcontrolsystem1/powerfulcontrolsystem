@@ -69,6 +69,9 @@
   </div>
 
   <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
     function escapeHtml(value) {
       return String(value == null ? '' : value)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -392,5 +395,6 @@
       cargarPublico(true);
     })();
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

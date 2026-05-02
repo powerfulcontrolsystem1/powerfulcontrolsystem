@@ -274,6 +274,131 @@
     return isPublicPortalContext() && getPublicPortalScope() === 'venta_publica';
   }
 
+  function shouldAutoInjectDrawerShell() {
+    try {
+      return !!(window && window.__pcsAutoInjectChatShell);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function buildPublicDrawerExamplesMarkup() {
+    if (isPublicStoreContext()) {
+      return '<p>Preguntas recomendadas:</p>' +
+        '<ul>' +
+        '<li>¿Qué productos o servicios tiene esta empresa?</li>' +
+        '<li>¿Qué promociones públicas están activas?</li>' +
+        '<li>¿Cuáles son los precios visibles hoy?</li>' +
+        '<li>Muéstrame las páginas públicas disponibles.</li>' +
+        '</ul>';
+    }
+    return '<p>Ejemplos de preguntas útiles:</p>' +
+      '<ul>' +
+      '<li>¿Qué planes manejan?</li>' +
+      '<li>¿Qué módulos incluye la plataforma?</li>' +
+      '<li>¿Cómo puedo empezar una prueba gratis?</li>' +
+      '<li>¿Por dónde los contacto para una demostración?</li>' +
+      '</ul>';
+  }
+
+  function buildPublicDrawerTitle() {
+    return isPublicStoreContext() ? 'Asistente público de tienda' : 'Asistente público IA';
+  }
+
+  function buildPublicDrawerPlaceholder() {
+    return isPublicStoreContext()
+      ? 'Pregunta por productos, servicios, precios o promociones...'
+      : 'Escribe tu consulta aquí...';
+  }
+
+  function ensureDrawerShell() {
+    if (document.getElementById(TOGGLE_ID) && document.getElementById(DRAWER_ID) && document.getElementById(BACKDROP_ID)) {
+      return true;
+    }
+    if (!shouldAutoInjectDrawerShell()) {
+      return false;
+    }
+    if (!document.body) {
+      return false;
+    }
+    var title = buildPublicDrawerTitle();
+    var placeholder = buildPublicDrawerPlaceholder();
+    var hintsMarkup = buildPublicDrawerExamplesMarkup();
+    document.body.insertAdjacentHTML('beforeend',
+      '<button id="' + TOGGLE_ID + '" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">' +
+        '<img class="icon" src="/img/gpt.svg" alt=""><span class="ai-chat-toggle-label">Asistente IA</span>' +
+      '</button>' +
+      '<div id="' + BACKDROP_ID + '" class="ai-chat-backdrop" aria-hidden="true"></div>' +
+      '<section id="' + DRAWER_ID + '" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">' +
+        '<div class="ai-chat-minibar" id="' + MINIBAR_ID + '" hidden>' +
+          '<span class="ai-chat-minibar-label">Asistente IA</span>' +
+          '<button type="button" id="' + MINIBAR_EXPAND_ID + '" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">' +
+            '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="ai-chat-drawer-surface">' +
+          '<div class="ai-chat-header">' +
+            '<div class="ai-chat-header-title-row">' +
+              '<span class="ai-chat-header-icon" aria-hidden="true">' +
+                '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>' +
+              '</span>' +
+              '<div><h2 id="aiChatTitle">' + title + '</h2></div>' +
+            '</div>' +
+            '<div class="ai-chat-header-actions">' +
+              '<button id="' + HINT_TOGGLE_ID + '" type="button" class="btn secondary small">Ver ejemplos</button>' +
+              '<button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">' +
+                '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>' +
+              '</button>' +
+              '<button id="' + MINIMIZE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">' +
+                '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>' +
+              '</button>' +
+              '<button id="' + CLOSE_ID + '" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>' +
+            '</div>' +
+          '</div>' +
+          '<div id="' + NOTICE_ID + '" class="ai-chat-notice"></div>' +
+          '<div class="ai-chat-body-scroll">' +
+            '<div id="' + MESSAGES_ID + '" class="ai-chat-messages"></div>' +
+            '<div id="' + HINTS_ID + '" class="ai-chat-hints is-hidden">' + hintsMarkup + '</div>' +
+          '</div>' +
+          '<form id="' + FORM_ID + '" class="ai-chat-form">' +
+            '<div class="ai-chat-toolbar-row">' +
+              '<div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">' +
+                '<button id="' + CLEAR_CHAT_ID + '" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">' +
+                  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>' +
+                '</button>' +
+                '<button type="button" id="' + CONV_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>' +
+                '<button type="button" id="' + MIC_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>' +
+                '<button type="button" id="' + VOICE_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>' +
+              '</div>' +
+              '<div class="ai-chat-controls">' +
+                '<label class="ai-chat-control-field" for="' + MODE_ID + '">' +
+                  '<span>Modo</span>' +
+                  '<select id="' + MODE_ID + '" class="form-input" aria-label="Modo del asistente IA">' +
+                    '<option value="operativo">Operativo</option>' +
+                    '<option value="ayudante">Ayudante por pasos</option>' +
+                  '</select>' +
+                '</label>' +
+                '<div class="ai-chat-control-field">' +
+                  '<span>Adjunto</span>' +
+                  '<div class="ai-chat-attachment-row">' +
+                    '<input id="' + ATTACHMENT_INPUT_ID + '" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />' +
+                    '<button id="' + ATTACH_BTN_ID + '" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">' +
+                      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>' +
+                    '</button>' +
+                    '<button id="' + CLEAR_ATTACHMENT_ID + '" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">×</button>' +
+                  '</div>' +
+                  '<div id="' + ATTACHMENT_NAME_ID + '" class="ai-chat-attachment-name is-hidden"></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<textarea id="' + INPUT_ID + '" placeholder="' + placeholder + '" aria-label="Mensaje al asistente IA"></textarea>' +
+            '<button type="submit" class="btn primary">Enviar</button>' +
+          '</form>' +
+        '</div>' +
+      '</section>');
+    return true;
+  }
+
   function buildTextEndpoint() {
     if (isPublicPortalContext()) {
       return '/api/public/chat_portal';
@@ -3967,6 +4092,7 @@
   }
 
   function initDrawer() {
+    ensureDrawerShell();
     var toggle = document.getElementById(TOGGLE_ID);
     var drawer = document.getElementById(DRAWER_ID);
     var closeBtn = document.getElementById(CLOSE_ID);
