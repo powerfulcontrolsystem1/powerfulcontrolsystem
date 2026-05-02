@@ -3,15 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Pedidos VIP por estación</title>
+  <title>Pedidos VIP por estacion</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+  </script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
       <div>
-        <h1>Pedidos VIP por estación</h1>
-        <p class="form-help">Digita tu código VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
+        <h1>Pedidos VIP por estacion</h1>
+        <p class="form-help">Digita tu codigo VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
       </div>
     </div>
 
@@ -19,7 +23,7 @@
       <div class="form">
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="vipCodigo">Código VIP</label>
+            <label class="form-label" for="vipCodigo">Codigo VIP</label>
             <input id="vipCodigo" class="form-input" placeholder="Ej: ABCD2EFG3HJKL" autocomplete="one-time-code">
           </div>
           <div class="form-col maxw-240 flex-end">
@@ -35,7 +39,7 @@
         <h2 style="margin:0;">Productos</h2>
         <button id="btnQR" type="button" class="btn secondary">Ver QR (link)</button>
       </div>
-      <p class="form-help">Toca un producto para pedirlo. Puedes escribir una nota opcional (ej: “sin hielo”).</p>
+      <p class="form-help">Toca un producto para pedirlo. Puedes escribir una nota opcional (ej: "sin hielo").</p>
 
       <div class="form">
         <div class="form-row">
@@ -50,7 +54,7 @@
       <div id="pedidoMsg" class="form-help"></div>
 
       <div id="qrBox" class="form" style="display:none;margin-top:14px;">
-        <p class="form-help">Este QR abre esta misma página. Comparte el link o muestra el código al cliente.</p>
+        <p class="form-help">Este QR abre esta misma pagina. Comparte el link o muestra el codigo al cliente.</p>
         <div class="form-row">
           <div class="form-col">
             <input id="publicLink" class="form-input" readonly>
@@ -123,7 +127,7 @@
               headers: { 'Content-Type':'application/json' },
               body: JSON.stringify({ codigo: vipCodigo, producto_id: productoID, cantidad: 1, nota: nota })
             });
-            setMsg('pedidoMsg','Pedido enviado a la estación.',false);
+            setMsg('pedidoMsg','Pedido enviado a la estacion.',false);
           } catch (e) {
             setMsg('pedidoMsg', e.message || 'No se pudo enviar el pedido', true);
           }
@@ -134,19 +138,19 @@
     async function ingresar(){
       vipCodigo = normalize(document.getElementById('vipCodigo').value).toUpperCase();
       if (!vipCodigo) {
-        setMsg('vipMsg','Escribe tu código VIP.',true);
+        setMsg('vipMsg','Escribe tu codigo VIP.',true);
         return;
       }
-      setMsg('vipMsg','Validando código...',false);
+      setMsg('vipMsg','Validando codigo...',false);
       try {
         const data = await fetchJSON('/api/public/estacion_vip?action=info&codigo=' + encodeURIComponent(vipCodigo));
         productos = Array.isArray(data && data.productos) ? data.productos : [];
         document.getElementById('vipPanel').style.display = '';
-        setMsg('vipMsg','Código válido. Ya puedes pedir.',false);
+        setMsg('vipMsg','Codigo valido. Ya puedes pedir.',false);
         renderProductos();
       } catch (e) {
         document.getElementById('vipPanel').style.display = 'none';
-        setMsg('vipMsg', e.message || 'Código inválido', true);
+        setMsg('vipMsg', e.message || 'Codigo invalido', true);
       }
     }
 
@@ -157,7 +161,6 @@
       if (on) {
         const link = window.location.origin + '/productos_estacion_clientes_publico.html';
         document.getElementById('publicLink').value = link;
-        // QR externo (simple): genera imagen por URL pública
         document.getElementById('qrImg').src =
           'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link);
         box.style.display = '';
@@ -172,6 +175,6 @@
     });
     document.getElementById('btnQR').addEventListener('click', toggleQR);
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
-
