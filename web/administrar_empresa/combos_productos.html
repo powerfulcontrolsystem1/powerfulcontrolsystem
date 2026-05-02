@@ -5,108 +5,243 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Combos de productos</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .combo-shell{display:grid;gap:16px}
+    .combo-hero,.combo-card{background:linear-gradient(180deg,rgba(10,24,38,.96),rgba(14,31,48,.92));border:1px solid rgba(120,154,190,.18);border-radius:18px;box-shadow:0 18px 38px rgba(0,0,0,.22);padding:18px}
+    .combo-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px}
+    .combo-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(49,157,231,.12);border:1px solid rgba(49,157,231,.24);color:#bde1ff;font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .combo-hero h1,.combo-card h2,.combo-card h3{margin:12px 0 8px;color:#f4f8ff}
+    .combo-hero p,.combo-card p{margin:0;color:#b8cada;line-height:1.55}
+    .combo-grid-2,.combo-grid-3,.combo-grid-main{display:grid;gap:16px}
+    .combo-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .combo-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .combo-grid-main{grid-template-columns:minmax(0,1.5fr) minmax(340px,.9fr)}
+    .combo-inline-metrics{display:grid;gap:10px}
+    .combo-inline-metric{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .combo-inline-metric strong{display:block;color:#f4f8ff}
+    .combo-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .combo-summary-box{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .combo-summary-box span{display:block;font-size:.82rem;color:#9fb4c8;text-transform:uppercase;letter-spacing:.06em}
+    .combo-summary-box strong{display:block;margin-top:8px;color:#f4f8ff;font-size:1.55rem}
+    .combo-form{display:grid;gap:16px}
+    .combo-section{padding:16px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(150,176,206,.12)}
+    .combo-form-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .combo-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .combo-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(150,176,206,.16);color:#edf3fb;font-size:.82rem;font-weight:700}
+    .combo-empty{padding:18px;border-radius:14px;border:1px dashed rgba(150,176,206,.18);color:#9fb4c8;text-align:center}
+    .combo-ingredients-table .table{margin:0}
+    .combo-card-list{display:grid;gap:12px}
+    .combo-item{padding:16px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .combo-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .combo-item-title{display:grid;gap:6px}
+    .combo-item-title strong{font-size:1.02rem;color:#f4f8ff}
+    .combo-item-title small{color:#90a7ba}
+    .combo-item-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .combo-item-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+    .combo-item-stat{padding:10px 12px;border-radius:12px;background:rgba(5,14,24,.34);border:1px solid rgba(150,176,206,.1)}
+    .combo-item-stat span{display:block;color:#8fa5ba;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+    .combo-item-stat strong{display:block;margin-top:6px;color:#f4f8ff}
+    .combo-status-active{color:#7ef0b4}
+    .combo-status-inactive{color:#ffb4b4}
+    .combo-metric-positive{color:#7ef0b4}
+    .combo-metric-negative{color:#ffb4b4}
+    .combo-helper{color:#9fb4c8;font-size:.92rem}
+    @media (max-width: 1100px){.combo-grid-main,.combo-hero,.combo-summary-grid,.combo-item-stats{grid-template-columns:1fr}}
+    @media (max-width: 880px){.combo-grid-2,.combo-grid-3{grid-template-columns:1fr}}
+  </style>
 </head>
 <body class="super-page form-bg-dark">
-  <div class="container">
-    <div class="page-header">
-      <h1 id="pageTitle">Combos de productos</h1>
-      <button id="nuevoComboBtn" class="btn add" type="button">Nuevo combo</button>
-    </div>
-
-    <p class="form-help" style="margin:0 0 12px 0;">
-      Define recetas de combos con precio unico. Al vender un combo en el carrito, el inventario se descuenta automaticamente por ingrediente.
-    </p>
-
-    <form id="comboForm" class="form" style="display:none;">
-      <input type="hidden" id="comboId">
-
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Nombre del combo</label>
-          <input id="comboNombre" class="form-input" required placeholder="Ej: Plato ejecutivo">
+  <div class="container combo-shell">
+    <section class="combo-hero">
+      <article>
+        <span class="combo-kicker">Combos de productos</span>
+        <h1>Diseña recetas vendibles con costo, margen y control de inventario</h1>
+        <p>Construye combos comerciales con ingredientes reales del catálogo, controla su receta versionada y valida si el precio final sostiene un margen saludable frente al costo teórico y al costo real.</p>
+      </article>
+      <aside class="combo-inline-metrics">
+        <div class="combo-inline-metric">
+          <strong>Uso recomendado</strong>
+          <span class="combo-helper">Ideal para platos ejecutivos, packs promocionales, combos de desayuno, menús especiales y productos armados con múltiples componentes.</span>
         </div>
-        <div class="form-col">
-          <label class="form-label">Codigo</label>
-          <input id="comboCodigo" class="form-input" placeholder="Opcional">
+        <div class="combo-inline-metric">
+          <strong>Control operativo</strong>
+          <span class="combo-helper">Cada venta descuenta inventario por ingrediente y conserva historial de receta para medir variaciones de costo.</span>
         </div>
-      </div>
+      </aside>
+    </section>
 
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Precio de venta</label>
-          <input id="comboPrecio" type="number" min="0" step="0.01" class="form-input" value="0" required>
-        </div>
-        <div class="form-col">
-          <label class="form-label">Impuesto %</label>
-          <input id="comboImpuesto" type="number" min="0" max="100" step="0.01" class="form-input" value="0">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Unidad</label>
-          <input id="comboUnidad" class="form-input" value="combo" placeholder="combo">
-        </div>
-      </div>
+    <section class="combo-summary-grid">
+      <div class="combo-summary-box"><span>Total combos</span><strong id="kpiTotalCombos">0</strong></div>
+      <div class="combo-summary-box"><span>Activos</span><strong id="kpiActivos">0</strong></div>
+      <div class="combo-summary-box"><span>Margen prom.</span><strong id="kpiMargen">0%</strong></div>
+      <div class="combo-summary-box"><span>Recetas riesgosas</span><strong id="kpiRiesgo">0</strong></div>
+    </section>
 
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Descripción</label>
-          <textarea id="comboDescripcion" class="form-textarea" placeholder="Opcional"></textarea>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Observaciones</label>
-          <textarea id="comboObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
-        </div>
-      </div>
-
-      <div class="card empresa-section" >
-        <div class="empresa-section-header">
-          <h3 style="margin:0;">Ingredientes del combo</h3>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label">Producto ingrediente</label>
-            <select id="ingredienteProducto" class="form-input"></select>
+    <section class="combo-grid-main">
+      <div class="combo-card">
+        <div class="combo-form-header">
+          <div>
+            <h2 id="pageTitle">Combos de productos</h2>
+            <p>Administra la receta, el precio y el comportamiento económico de cada combo desde una sola vista.</p>
           </div>
-          <div class="form-col" style="max-width:180px;">
-            <label class="form-label">Cantidad</label>
-            <input id="ingredienteCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
-          </div>
-          <div class="form-col" style="max-width:180px;">
-            <label class="form-label">Unidad</label>
-            <input id="ingredienteUnidad" class="form-input" placeholder="unidad">
-          </div>
-          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
-            <button id="agregarIngredienteBtn" type="button" class="btn" style="width:100%;">Agregar ingrediente</button>
+          <div class="combo-item-actions">
+            <button id="nuevoComboBtn" class="btn add" type="button">Nuevo combo</button>
           </div>
         </div>
 
-        <div id="ingredientesList" class="table-wrap" >Sin ingredientes agregados.</div>
-      </div>
+        <form id="comboForm" class="combo-form" style="display:none;">
+          <input type="hidden" id="comboId">
 
-      <div class="form-actions" >
-        <button type="submit" id="guardarComboBtn" class="btn">Guardar combo</button>
-        <button type="button" id="cancelarComboBtn" class="btn secondary">Cancelar</button>
-      </div>
-      <div id="comboCostoInfo" class="form-help" ></div>
-      <div id="comboMsg" class="form-help"></div>
-    </form>
+          <div class="combo-section">
+            <div class="combo-form-header">
+              <div>
+                <h3 id="comboFormTitle">Ficha del combo</h3>
+                <p>Define cómo se venderá el combo y cómo se verá en caja o catálogo interno.</p>
+              </div>
+              <div class="combo-pills" id="comboInsightPills">
+                <span class="combo-pill">Receta nueva</span>
+              </div>
+            </div>
 
-    <div id="comboSearchBlock" class="form" >
-      <div class="form-row" style="margin-bottom:0;">
-        <div class="form-col">
-          <label class="form-label">Buscar combo</label>
-          <input id="buscarCombo" class="form-input" placeholder="Buscar por nombre o codigo">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="comboNombre">Nombre del combo</label>
+                <input id="comboNombre" class="form-input" required placeholder="Ej: Plato ejecutivo premium">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comboCodigo">Código</label>
+                <input id="comboCodigo" class="form-input" placeholder="Ej: CMB-PLATO-01">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="comboPrecio">Precio de venta</label>
+                <input id="comboPrecio" type="number" min="0" step="0.01" class="form-input" value="0" required>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comboImpuesto">Impuesto %</label>
+                <input id="comboImpuesto" type="number" min="0" max="100" step="0.01" class="form-input" value="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="comboUnidad">Unidad</label>
+                <input id="comboUnidad" class="form-input" value="combo" placeholder="combo">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="comboDescripcion">Descripción</label>
+                <textarea id="comboDescripcion" class="form-textarea" placeholder="Qué incluye, para qué tipo de cliente aplica o qué valor comercial ofrece"></textarea>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="comboObservaciones">Observaciones</label>
+                <textarea id="comboObservaciones" class="form-textarea" placeholder="Notas internas de cocina, producción, costos o empaque"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="combo-grid-2">
+            <div class="combo-section">
+              <div class="combo-form-header">
+                <div>
+                  <h3>Ingredientes de la receta</h3>
+                  <p>Agrega productos reales del inventario para que el descuento se haga por componente al vender el combo.</p>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-col">
+                  <label class="form-label" for="ingredienteProducto">Producto ingrediente</label>
+                  <select id="ingredienteProducto" class="form-input"></select>
+                </div>
+                <div class="form-col" style="max-width:180px;">
+                  <label class="form-label" for="ingredienteCantidad">Cantidad</label>
+                  <input id="ingredienteCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
+                </div>
+                <div class="form-col" style="max-width:180px;">
+                  <label class="form-label" for="ingredienteUnidad">Unidad</label>
+                  <input id="ingredienteUnidad" class="form-input" placeholder="unidad">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button id="agregarIngredienteBtn" type="button" class="btn">Agregar ingrediente</button>
+              </div>
+              <div id="ingredienteContexto" class="form-help"></div>
+
+              <div id="ingredientesList" class="combo-ingredients-table" style="margin-top:12px;">Sin ingredientes agregados.</div>
+            </div>
+
+            <div class="combo-section">
+              <div class="combo-form-header">
+                <div>
+                  <h3>Lectura económica</h3>
+                  <p>Usa esta vista para validar si el combo sostiene precio y margen antes de publicarlo.</p>
+                </div>
+              </div>
+              <div class="combo-card-list" id="comboFinancialPreview">
+                <div class="combo-empty">Aún no hay datos económicos para mostrar.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="guardarComboBtn" class="btn">Guardar combo</button>
+            <button type="button" id="cancelarComboBtn" class="btn secondary">Cancelar</button>
+          </div>
+          <div id="comboCostoInfo" class="form-help"></div>
+          <div id="comboMsg" class="form-help"></div>
+        </form>
+
+        <div id="comboSearchBlock" class="combo-section">
+          <div class="combo-form-header">
+            <div>
+              <h3>Bandeja de combos</h3>
+              <p>Busca por nombre o código y revisa versión, ingredientes, costo y margen sin abrir cada ficha.</p>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-col">
+              <label class="form-label" for="buscarCombo">Buscar combo</label>
+              <input id="buscarCombo" class="form-input" placeholder="Buscar por nombre o código">
+            </div>
+            <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
+              <button id="buscarComboBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
+            </div>
+          </div>
         </div>
-        <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
-          <button id="buscarComboBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
-        </div>
-      </div>
-    </div>
 
-    <div id="combosList" >Cargando combos...</div>
+        <div id="combosList" style="margin-top:16px;">Cargando combos...</div>
+      </div>
+
+      <aside class="combo-card">
+        <h2>Buenas prácticas</h2>
+        <div class="combo-card-list">
+          <div class="combo-item">
+            <div class="combo-item-title">
+              <strong>Piensa el combo como receta, no solo como precio</strong>
+              <small>Si cambias ingredientes, la versión debe seguir ayudándote a comparar costos históricos.</small>
+            </div>
+          </div>
+          <div class="combo-item">
+            <div class="combo-item-title">
+              <strong>Cuida el margen antes de vender</strong>
+              <small>Un combo puede mover volumen, pero si el costo real se come el precio, el ticket sube y la utilidad baja.</small>
+            </div>
+          </div>
+          <div class="combo-item">
+            <div class="combo-item-title">
+              <strong>Evita ingredientes sin stock o inactivos</strong>
+              <small>La receta debe apoyarse en productos operables para que la venta no termine rompiendo la experiencia en caja o cocina.</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
   </div>
 
   <script>
@@ -151,9 +286,7 @@
           try {
             if (!ctx.parent || ctx.parent === ctx) break;
             ctx = ctx.parent;
-          } catch (_) {
-            break;
-          }
+          } catch (_) { break; }
           depth += 1;
         }
       } catch (_) {}
@@ -170,8 +303,7 @@
 
     function toNumber(v, fallback) {
       const n = Number(v);
-      if (!Number.isFinite(n)) return fallback;
-      return n;
+      return Number.isFinite(n) ? n : fallback;
     }
 
     function round2(v) {
@@ -180,6 +312,7 @@
 
     function setMessage(id, text, isError) {
       const el = document.getElementById(id);
+      if (!el) return;
       el.textContent = text || '';
       el.style.color = isError ? '#ef5350' : '';
     }
@@ -200,7 +333,7 @@
     }
 
     function formatMoney(v) {
-      return Number(v || 0).toFixed(2);
+      return Number(v || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function formatSignedPercent(v) {
@@ -210,6 +343,32 @@
       if (n > 0) return '+' + abs;
       if (n < 0) return '-' + abs;
       return abs;
+    }
+
+    function comboMarginPct(combo) {
+      const price = Number(combo && combo.precio || 0);
+      const cost = Number(combo && combo.costo_real || combo && combo.costo_teorico || 0);
+      if (price <= 0) return 0;
+      return ((price - cost) / price) * 100;
+    }
+
+    function comboRiskFlag(combo) {
+      const margin = comboMarginPct(combo);
+      const varPct = Number(combo && combo.variacion_costo_porcentaje || 0);
+      if (margin < 15 || varPct > 20) return 'alto';
+      if (margin < 30 || varPct > 10) return 'medio';
+      return 'bajo';
+    }
+
+    function renderKPIs() {
+      const total = state.combos.length;
+      const active = state.combos.filter(function(c) { return normalize(c.estado || 'activo') === 'activo'; }).length;
+      const risky = state.combos.filter(function(c) { return comboRiskFlag(c) === 'alto'; }).length;
+      const avgMargin = total ? state.combos.reduce(function(acc, c) { return acc + comboMarginPct(c); }, 0) / total : 0;
+      document.getElementById('kpiTotalCombos').textContent = String(total);
+      document.getElementById('kpiActivos').textContent = String(active);
+      document.getElementById('kpiMargen').textContent = avgMargin.toFixed(1) + '%';
+      document.getElementById('kpiRiesgo').textContent = String(risky);
     }
 
     function renderComboCostInfo(combo) {
@@ -222,7 +381,7 @@
       const costoTeorico = formatMoney(combo.costo_teorico || 0);
       const costoReal = formatMoney(combo.costo_real || 0);
       const variacion = formatSignedPercent(combo.variacion_costo_porcentaje || 0);
-      info.textContent = 'Receta v' + version + ' | Costo teorico: ' + costoTeorico + ' | Costo real: ' + costoReal + ' | Variacion: ' + variacion;
+      info.textContent = 'Receta v' + version + ' | Costo teórico: ' + costoTeorico + ' | Costo real: ' + costoReal + ' | Variación: ' + variacion;
     }
 
     function fillProductosSelect() {
@@ -236,13 +395,11 @@
         sel.disabled = true;
         return;
       }
-
       sel.disabled = false;
       const placeholder = document.createElement('option');
       placeholder.value = '';
       placeholder.textContent = '-- Selecciona producto ingrediente --';
       sel.appendChild(placeholder);
-
       state.productos.forEach(function(p) {
         const opt = document.createElement('option');
         opt.value = String(p.id);
@@ -262,6 +419,7 @@
       const rows = await res.json();
       state.productos = Array.isArray(rows) ? rows : [];
       fillProductosSelect();
+      updateIngredienteContext();
     }
 
     function getProductoByID(productoID) {
@@ -270,39 +428,92 @@
 
     function resolveIngredienteNombre(item) {
       const fromCatalog = getProductoByID(item.producto_id);
-      if (fromCatalog && normalize(fromCatalog.nombre)) {
-        return normalize(fromCatalog.nombre);
-      }
+      if (fromCatalog && normalize(fromCatalog.nombre)) return normalize(fromCatalog.nombre);
       return normalize(item.producto_nombre) || ('Producto #' + Number(item.producto_id || 0));
+    }
+
+    function updateIngredienteContext() {
+      const productoID = Number(document.getElementById('ingredienteProducto').value || 0);
+      const box = document.getElementById('ingredienteContexto');
+      if (!productoID) {
+        box.textContent = '';
+        return;
+      }
+      const p = getProductoByID(productoID);
+      if (!p) {
+        box.textContent = '';
+        return;
+      }
+      const stock = Number(p.stock_total || 0).toFixed(2);
+      const costo = formatMoney(p.costo || 0);
+      const unidad = normalize(p.unidad_medida) || 'unidad';
+      box.textContent = 'Stock total: ' + stock + ' | Costo base: ' + costo + ' | Unidad sugerida: ' + unidad;
+    }
+
+    function renderComboPreview() {
+      const box = document.getElementById('comboFinancialPreview');
+      const payload = buildComboPayload();
+      if (!payload.ingredientes.length) {
+        box.innerHTML = '<div class="combo-empty">Agrega ingredientes para ver una lectura operativa del combo.</div>';
+        document.getElementById('comboInsightPills').innerHTML = '<span class="combo-pill">Receta nueva</span>';
+        return;
+      }
+
+      let costoEstimado = 0;
+      let productosSinCosto = 0;
+      payload.ingredientes.forEach(function(it) {
+        const p = getProductoByID(it.producto_id);
+        const costo = Number(p && p.costo || 0);
+        if (costo <= 0) productosSinCosto += 1;
+        costoEstimado += costo * Number(it.cantidad || 0);
+      });
+      costoEstimado = round2(costoEstimado);
+      const precio = Number(payload.precio || 0);
+      const utilidad = round2(precio - costoEstimado);
+      const margen = precio > 0 ? ((utilidad / precio) * 100) : 0;
+      const riesgo = margen < 15 ? 'Margen en riesgo' : (margen < 30 ? 'Margen vigilado' : 'Margen saludable');
+      const riskClass = margen < 15 ? 'combo-metric-negative' : 'combo-metric-positive';
+
+      box.innerHTML = [
+        '<div class="combo-item-stat"><span>Ingredientes</span><strong>' + payload.ingredientes.length + '</strong></div>',
+        '<div class="combo-item-stat"><span>Costo estimado</span><strong>$' + formatMoney(costoEstimado) + '</strong></div>',
+        '<div class="combo-item-stat"><span>Utilidad estimada</span><strong>$' + formatMoney(utilidad) + '</strong></div>',
+        '<div class="combo-item-stat"><span>Margen estimado</span><strong class="' + riskClass + '">' + margen.toFixed(1) + '%</strong></div>',
+        '<div class="combo-item-stat"><span>Riesgo</span><strong class="' + riskClass + '">' + riesgo + '</strong></div>',
+        productosSinCosto ? '<div class="combo-item"><div class="combo-item-title"><strong>Atención con costos incompletos</strong><small>' + productosSinCosto + ' ingrediente(s) no tienen costo base; eso puede distorsionar el margen estimado.</small></div></div>' : ''
+      ].join('');
+
+      document.getElementById('comboInsightPills').innerHTML = [
+        '<span class="combo-pill">Ingredientes: ' + payload.ingredientes.length + '</span>',
+        '<span class="combo-pill">Margen: ' + margen.toFixed(1) + '%</span>',
+        '<span class="combo-pill">' + riesgo + '</span>'
+      ].join('');
     }
 
     function renderIngredientesDraft() {
       const box = document.getElementById('ingredientesList');
       if (!state.draftIngredientes.length) {
-        box.textContent = 'Sin ingredientes agregados.';
+        box.innerHTML = '<div class="combo-empty">Sin ingredientes agregados.</div>';
+        renderComboPreview();
         return;
       }
 
       const table = document.createElement('table');
       table.className = 'table';
-      table.innerHTML = '<thead><tr>' +
-        '<th>Producto</th>' +
-        '<th>Cantidad</th>' +
-        '<th>Unidad</th>' +
-        '<th>Acciones</th>' +
-        '</tr></thead>';
-
+      table.innerHTML = '<thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Stock referencial</th><th>Acciones</th></tr></thead>';
       const tbody = document.createElement('tbody');
       state.draftIngredientes.forEach(function(item, idx) {
+        const p = getProductoByID(item.producto_id);
+        const stock = Number(p && p.stock_total || 0).toFixed(2);
         const tr = document.createElement('tr');
         tr.innerHTML = '<td>' + escapeHtml(resolveIngredienteNombre(item)) + '</td>' +
           '<td>' + Number(item.cantidad || 0).toFixed(4) + '</td>' +
           '<td>' + escapeHtml(normalize(item.unidad_medida) || 'unidad') + '</td>' +
+          '<td>' + stock + '</td>' +
           '<td class="actions"><button class="btn danger removeIngrediente" data-idx="' + idx + '">Quitar</button></td>';
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-
       box.innerHTML = '';
       box.appendChild(table);
 
@@ -314,13 +525,14 @@
           renderIngredientesDraft();
         };
       });
+
+      renderComboPreview();
     }
 
     function addIngredienteDraft() {
       const productoID = Number(document.getElementById('ingredienteProducto').value || 0);
       const cantidad = toNumber(document.getElementById('ingredienteCantidad').value, 0);
       const unidadInput = normalize(document.getElementById('ingredienteUnidad').value);
-
       if (productoID <= 0) {
         setMessage('comboMsg', 'Selecciona un producto ingrediente válido.', true);
         return;
@@ -329,19 +541,12 @@
         setMessage('comboMsg', 'La cantidad del ingrediente debe ser mayor que cero.', true);
         return;
       }
-
       const producto = getProductoByID(productoID);
       const unidad = unidadInput || normalize(producto && producto.unidad_medida) || 'unidad';
-
-      const existing = state.draftIngredientes.find(function(it) {
-        return Number(it.producto_id) === productoID;
-      });
-
+      const existing = state.draftIngredientes.find(function(it) { return Number(it.producto_id) === productoID; });
       if (existing) {
         existing.cantidad = round2(Number(existing.cantidad || 0) + cantidad);
-        if (!normalize(existing.unidad_medida)) {
-          existing.unidad_medida = unidad;
-        }
+        if (!normalize(existing.unidad_medida)) existing.unidad_medida = unidad;
       } else {
         state.draftIngredientes.push({
           producto_id: productoID,
@@ -350,7 +555,6 @@
           unidad_medida: unidad
         });
       }
-
       document.getElementById('ingredienteCantidad').value = '1';
       document.getElementById('ingredienteUnidad').value = '';
       renderIngredientesDraft();
@@ -358,6 +562,7 @@
     }
 
     function resetComboForm(hide) {
+      document.getElementById('comboFormTitle').textContent = 'Ficha del combo';
       document.getElementById('comboId').value = '';
       document.getElementById('comboNombre').value = '';
       document.getElementById('comboCodigo').value = '';
@@ -374,8 +579,6 @@
       if (hide) {
         const form = document.getElementById('comboForm');
         form.hidden = true;
-        form.setAttribute('hidden', 'hidden');
-        form.setAttribute('aria-hidden', 'true');
         form.style.display = 'none';
       }
     }
@@ -383,15 +586,11 @@
     function showComboForm() {
       const form = document.getElementById('comboForm');
       form.hidden = false;
-      form.removeAttribute('hidden');
-      form.setAttribute('aria-hidden', 'false');
-      form.style.display = 'block';
+      form.style.display = 'grid';
       const nombre = document.getElementById('comboNombre');
       if (nombre && typeof nombre.focus === 'function') nombre.focus();
       if (form && typeof form.scrollIntoView === 'function') {
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
@@ -432,56 +631,51 @@
 
     function renderCombos() {
       const box = document.getElementById('combosList');
+      renderKPIs();
       if (!state.combos.length) {
-        box.textContent = 'No hay combos registrados para esta empresa.';
+        box.innerHTML = '<div class="combo-empty">No hay combos registrados para esta empresa.</div>';
         return;
       }
 
-      const table = document.createElement('table');
-      table.className = 'table';
-      table.innerHTML = '<thead><tr>' +
-        '<th>ID</th>' +
-        '<th>Código</th>' +
-        '<th>Nombre</th>' +
-        '<th>Receta v</th>' +
-        '<th>Precio</th>' +
-        '<th>Imp %</th>' +
-        '<th>Costo teórico</th>' +
-        '<th>Costo real</th>' +
-        '<th>Var %</th>' +
-        '<th>Ingredientes</th>' +
-        '<th>Estado</th>' +
-        '<th>Acciones</th>' +
-        '</tr></thead>';
-
-      const tbody = document.createElement('tbody');
-      state.combos.forEach(function(c) {
+      box.innerHTML = '<div class="combo-card-list">' + state.combos.map(function(c) {
         const estado = normalize(c.estado) || 'activo';
         const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
         const version = Number(c.receta_version || 1);
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + Number(c.id || 0) + '</td>' +
-          '<td>' + escapeHtml(normalize(c.codigo) || '-') + '</td>' +
-          '<td>' + escapeHtml(normalize(c.nombre) || '-') + '</td>' +
-          '<td>' + version + '</td>' +
-          '<td>' + formatMoney(c.precio) + '</td>' +
-          '<td>' + Number(c.impuesto_porcentaje || 0).toFixed(2) + '</td>' +
-          '<td>' + formatMoney(c.costo_teorico || 0) + '</td>' +
-          '<td>' + formatMoney(c.costo_real || 0) + '</td>' +
-          '<td>' + escapeHtml(formatSignedPercent(c.variacion_costo_porcentaje || 0)) + '</td>' +
-          '<td>' + Number(c.ingredientes_count || 0) + '</td>' +
-          '<td>' + escapeHtml(estado) + '</td>' +
-          '<td class="actions">' +
-            '<button class="btn secondary editCombo" data-id="' + Number(c.id || 0) + '">Editar</button> ' +
-            '<button class="btn toggleCombo" data-id="' + Number(c.id || 0) + '" data-estado="' + escapeHtml(estado) + '">' + toggleLabel + '</button> ' +
-            '<button class="btn danger delCombo" data-id="' + Number(c.id || 0) + '">Eliminar</button>' +
-          '</td>';
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-
-      box.innerHTML = '';
-      box.appendChild(table);
+        const margin = comboMarginPct(c);
+        const varPct = Number(c.variacion_costo_porcentaje || 0);
+        const risk = comboRiskFlag(c);
+        const riskText = risk === 'alto' ? 'En riesgo' : (risk === 'medio' ? 'Vigilado' : 'Sano');
+        const riskClass = risk === 'alto' ? 'combo-metric-negative' : 'combo-metric-positive';
+        return '<article class="combo-item">' +
+          '<div class="combo-item-head">' +
+            '<div class="combo-item-title">' +
+              '<strong>' + escapeHtml(normalize(c.nombre) || '-') + '</strong>' +
+              '<small>Código: ' + escapeHtml(normalize(c.codigo) || '-') + ' · Receta v' + version + '</small>' +
+            '</div>' +
+            '<div class="combo-item-actions">' +
+              '<button class="btn secondary editCombo" data-id="' + Number(c.id || 0) + '">Editar</button>' +
+              '<button class="btn toggleCombo" data-id="' + Number(c.id || 0) + '" data-estado="' + escapeHtml(estado) + '">' + toggleLabel + '</button>' +
+              '<button class="btn danger delCombo" data-id="' + Number(c.id || 0) + '">Eliminar</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="combo-pills">' +
+            '<span class="combo-pill ' + (estado === 'activo' ? 'combo-status-active' : 'combo-status-inactive') + '">Estado: ' + escapeHtml(estado) + '</span>' +
+            '<span class="combo-pill">Ingredientes: ' + Number(c.ingredientes_count || 0) + '</span>' +
+            '<span class="combo-pill ' + riskClass + '">Riesgo: ' + riskText + '</span>' +
+          '</div>' +
+          '<div class="combo-item-stats">' +
+            '<div class="combo-item-stat"><span>Precio</span><strong>$' + formatMoney(c.precio || 0) + '</strong></div>' +
+            '<div class="combo-item-stat"><span>Impuesto</span><strong>' + Number(c.impuesto_porcentaje || 0).toFixed(2) + '%</strong></div>' +
+            '<div class="combo-item-stat"><span>Costo teórico</span><strong>$' + formatMoney(c.costo_teorico || 0) + '</strong></div>' +
+            '<div class="combo-item-stat"><span>Costo real</span><strong>$' + formatMoney(c.costo_real || 0) + '</strong></div>' +
+            '<div class="combo-item-stat"><span>Margen</span><strong class="' + riskClass + '">' + margin.toFixed(1) + '%</strong></div>' +
+          '</div>' +
+          '<div class="combo-pills" style="margin-top:12px;">' +
+            '<span class="combo-pill">Variación costo: ' + escapeHtml(formatSignedPercent(varPct)) + '</span>' +
+            '<span class="combo-pill">Unidad: ' + escapeHtml(normalize(c.unidad_medida) || 'combo') + '</span>' +
+          '</div>' +
+        '</article>';
+      }).join('') + '</div>';
 
       document.querySelectorAll('.editCombo').forEach(function(btn) {
         btn.onclick = async function() {
@@ -489,6 +683,7 @@
           if (comboID <= 0) return;
           try {
             const combo = await loadComboForEdit(comboID);
+            document.getElementById('comboFormTitle').textContent = 'Editar combo';
             document.getElementById('comboId').value = String(combo.id || '');
             document.getElementById('comboNombre').value = normalize(combo.nombre);
             document.getElementById('comboCodigo').value = normalize(combo.codigo);
@@ -522,9 +717,7 @@
           const estadoActual = normalize(btn.getAttribute('data-estado')) || 'activo';
           const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
           try {
-            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID) + '&action=' + encodeURIComponent(action), {
-              method: 'PUT'
-            });
+            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID) + '&action=' + encodeURIComponent(action), { method: 'PUT' });
             await ensureOk(res);
             await loadCombos();
           } catch (err) {
@@ -537,11 +730,9 @@
         btn.onclick = async function() {
           const comboID = Number(btn.getAttribute('data-id'));
           if (comboID <= 0) return;
-          if (!confirm('Eliminar este combo y su receta?')) return;
+          if (!confirm('¿Eliminar este combo y su receta?')) return;
           try {
-            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID), {
-              method: 'DELETE'
-            });
+            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID), { method: 'DELETE' });
             await ensureOk(res);
             await loadCombos();
             setMessage('comboMsg', 'Combo eliminado.', false);
@@ -577,10 +768,13 @@
       addIngredienteDraft();
     });
 
+    document.getElementById('ingredienteProducto').addEventListener('change', updateIngredienteContext);
+    document.getElementById('comboPrecio').addEventListener('input', renderComboPreview);
+    document.getElementById('comboImpuesto').addEventListener('input', renderComboPreview);
+
     document.getElementById('comboForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const payload = buildComboPayload();
-
       if (!payload.nombre) {
         setMessage('comboMsg', 'El nombre del combo es obligatorio.', true);
         return;
@@ -597,7 +791,6 @@
         setMessage('comboMsg', 'Debes agregar al menos un ingrediente al combo.', true);
         return;
       }
-
       try {
         const method = payload.id > 0 ? 'PUT' : 'POST';
         const res = await fetch('/api/empresa/combos_productos', {
@@ -632,20 +825,19 @@
     (async function init() {
       const empresaID = resolveEmpresaId();
       if (!empresaID) {
-        document.getElementById('combosList').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('combosList').innerHTML = '<div class="combo-empty">empresa_id requerido en la URL</div>';
         setMessage('comboMsg', 'No se encontró empresa_id. Puedes abrir el formulario, pero no se podrá guardar hasta cargar la empresa correctamente.', true);
         return;
       }
       state.empresaID = empresaID;
-
       try {
         await Promise.all([loadProductosActivos(), loadCombos()]);
+        renderIngredientesDraft();
       } catch (err) {
-        document.getElementById('combosList').textContent = 'Error cargando combos';
+        document.getElementById('combosList').innerHTML = '<div class="combo-empty">Error cargando combos</div>';
         setMessage('comboMsg', err.message || 'Error cargando combos', true);
       }
     })();
   </script>
 </body>
 </html>
-
