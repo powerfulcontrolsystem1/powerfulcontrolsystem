@@ -3246,3 +3246,9 @@ Archivos modificados:
 2026-05-02 04:53:27 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: d27d2c0; PushStatus: OK
 Archivos modificados:
 - web/js/ai_chat_drawer.js
+
+2026-05-02 04:56:40 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 1f823bc; PushStatus: OK
+Archivos modificados:
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/dynamic_documents.go
+- web/js/ai_chat_drawer.js
