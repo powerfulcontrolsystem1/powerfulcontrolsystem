@@ -12684,6 +12684,100 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
+@media (max-width: 640px) {
+  .robot-inline-chat-panel {
+    right: 14px;
+    left: 14px;
+    bottom: 116px;
+    width: auto;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .robot-inline-status {
+    align-self: center;
+    width: min(100%, 340px);
+    max-width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .robot-cloud-assistant,
+  .robot-cloud-input,
+  .robot-assistant-actions {
+    width: min(100%, 340px);
+    align-self: center;
+  }
+
+  .robot-cloud-assistant {
+    min-height: 52px;
+    padding: 12px 13px;
+    font-size: 0.88rem;
+    border-radius: 18px 18px 8px 18px;
+  }
+
+  .robot-cloud-assistant::after {
+    right: 14px;
+    bottom: -8px;
+    width: 14px;
+    height: 14px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+  }
+
+  .robot-cloud-user {
+    max-width: min(88%, 290px);
+    font-size: 0.8rem;
+  }
+
+  .robot-assistant-actions {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .robot-assistant-action-chip {
+    flex: 1 1 calc(50% - 8px);
+    min-height: 38px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .robot-cloud-input {
+    grid-template-columns: 1fr auto auto auto auto;
+    padding: 7px;
+    gap: 6px;
+    border-radius: 18px 18px 8px 18px;
+  }
+
+  .robot-cloud-input textarea {
+    min-height: 38px;
+    max-height: 112px;
+    padding: 8px 4px;
+    font-size: 0.9rem;
+  }
+
+  .robot-cloud-input button {
+    min-height: 36px;
+    border-radius: 12px;
+  }
+
+  #robotHideBtn {
+    right: 14px;
+    bottom: 212px;
+    padding: 5px 10px;
+    font-size: 0.74rem;
+  }
+
+  #robotShowBtn {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: 9px 14px;
+    font-size: 0.82rem;
+  }
+}
+
 .robot-assistant-action-chip:hover,
 .robot-assistant-action-chip:focus-visible {
   border-color: var(--accent, #0ea5e9);
