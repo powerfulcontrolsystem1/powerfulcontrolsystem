@@ -17632,3 +17632,25 @@ Archivos modificados:
 - tmp_login_page.html
 - tmp_recaptcha_helper.js
 - web/js/ai_chat_drawer.js
+
+2026-05-02: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/db.go
+- backend/db/empresa_admin_compartida.go
+- backend/db/finanzas.go
+- backend/db/perf_trace.go
+- backend/db/reservas_hotel.go
+- backend/db/sensor_puertas.go
+- backend/handlers/auditoria_empresa.go
+- backend/handlers/corte_caja.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/reservas_hotel.go
+- backend/handlers/usuarios_empresa.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/utils/utils.go
