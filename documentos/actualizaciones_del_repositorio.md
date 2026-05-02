@@ -3571,3 +3571,19 @@ Archivos modificados:
 - web/index.html
 - web/js/administrar_empresa.js
 - web/js/horarios_trabajadores.js
+
+2026-05-02 16:11:21 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: fcc0c08; PushStatus: OK
+Archivos modificados:
+- backend/db/turnos_atencion.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/turnos_atencion.go
+- backend/main.go
+- backend/utils/utils.go
+- web/administrar_empresa.html
+- web/administrar_empresa/turnos_atencion.html
+- web/js/administrar_empresa.js
+- web/js/pantalla_turnos.js
+- web/js/turnos_atencion.js
+- web/js/turnos_publicos.js
+- web/pantalla_turnos.html
+- web/turnos_publicos.html
