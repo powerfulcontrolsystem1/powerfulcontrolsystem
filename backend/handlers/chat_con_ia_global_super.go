@@ -356,6 +356,8 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 		"admin_email": adminEmail,
 		"provider":    model.Provider,
 		"model_id":    model.ID,
+		"display_name": model.DisplayName,
+		"upstream_model": model.UpstreamModel,
 		"respuesta":   respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
@@ -622,6 +624,12 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	_ = sseWriteJSON(w, openAIStreamEvent{
+		ModelID:       model.ID,
+		Provider:      model.Provider,
+		DisplayName:   model.DisplayName,
+		UpstreamModel: model.UpstreamModel,
+	})
 
 	var full strings.Builder
 	_, err = c.base.callOpenAIStreamChatCompletions(model, payload.Pregunta, payload.Historial, systemPrompt, func(delta string) {

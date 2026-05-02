@@ -21,9 +21,13 @@ import (
 )
 
 type openAIStreamEvent struct {
-	Delta string `json:"delta"`
-	Done  bool   `json:"done,omitempty"`
-	Error string `json:"error,omitempty"`
+	Delta         string `json:"delta"`
+	Done          bool   `json:"done,omitempty"`
+	Error         string `json:"error,omitempty"`
+	ModelID       string `json:"model_id,omitempty"`
+	Provider      string `json:"provider,omitempty"`
+	DisplayName   string `json:"display_name,omitempty"`
+	UpstreamModel string `json:"upstream_model,omitempty"`
 }
 
 func sseWriteJSON(w http.ResponseWriter, payload interface{}) error {
@@ -663,6 +667,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		"modelo_registrado_google": true,
 		"provider":                 model.Provider,
 		"model_id":                 model.ID,
+		"display_name":             model.DisplayName,
+		"upstream_model":           model.UpstreamModel,
 		"respuesta":                respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
@@ -879,6 +885,8 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		"empresa_id": empresaID,
 		"provider":   model.Provider,
 		"model_id":   model.ID,
+		"display_name": model.DisplayName,
+		"upstream_model": model.UpstreamModel,
 		"respuesta":  respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
@@ -990,6 +998,12 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	_ = sseWriteJSON(w, openAIStreamEvent{
+		ModelID:       model.ID,
+		Provider:      model.Provider,
+		DisplayName:   model.DisplayName,
+		UpstreamModel: model.UpstreamModel,
+	})
 
 	var full strings.Builder
 	_, err = c.callOpenAIStreamChatCompletions(model, payload.Pregunta, payload.Historial, systemPrompt, func(delta string) {

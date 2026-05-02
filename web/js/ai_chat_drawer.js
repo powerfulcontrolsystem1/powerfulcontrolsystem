@@ -60,6 +60,7 @@
     robotVoice: 'es-CO',
     robotAssistantVisible: false,
     robotMoodTimer: null,
+    lastResponseModelMeta: null,
     generatedDocument: null,
     shareArtifact: null
   };
@@ -627,24 +628,31 @@
   }
 
   function getRobotStatusText(mood) {
+    var modelLabel = buildResponseModelLabel(state.lastResponseModelMeta);
+    var suffix = modelLabel ? (' · ' + modelLabel) : '';
     switch (normalizeRobotMood(mood)) {
       case 'listening':
-        return 'Escuchando tu voz';
+        return 'Escuchando tu voz' + suffix;
       case 'thinking':
-        return 'Pensando la mejor respuesta';
+        return 'Pensando la mejor respuesta' + suffix;
       case 'speaking':
-        return 'Hablando contigo';
+        return 'Hablando contigo' + suffix;
       case 'happy':
-        return 'Lista para ayudarte';
+        return 'Lista para ayudarte' + suffix;
       case 'error':
-        return 'Necesito que lo intentemos de nuevo';
+        return 'Necesito que lo intentemos de nuevo' + suffix;
       case 'action':
-        return 'Acciones listas para confirmar';
+        return 'Acciones listas para confirmar' + suffix;
       case 'hidden':
         return 'Asistente oculto';
       default:
-        return 'Lista para ayudarte';
+        return 'Lista para ayudarte' + suffix;
     }
+  }
+
+  function setLastResponseModelMeta(meta) {
+    state.lastResponseModelMeta = normalizeResponseModelMeta(meta);
+    syncRobotStatus(state.loading ? 'thinking' : 'idle');
   }
 
   function syncRobotStatus(mood) {
@@ -2009,6 +2017,7 @@
 
   function beginStreamingSpeechPlayback() {
     resetQueuedAssistantSpeech();
+    state.lastResponseModelMeta = null;
     if (!state.voiceEnabled && !state.conversationMode) {
       return null;
     }
@@ -2810,13 +2819,19 @@
     });
   }
 
-  function appendMessage(author, text, messageType, actionProposal) {
+  function appendMessage(author, text, messageType, actionProposal, meta) {
     var messagesEl = document.getElementById(MESSAGES_ID);
     if (!messagesEl || !text) return;
     var item = document.createElement('div');
     item.className = 'ai-chat-message ' + author;
     if (messageType === 'error') {
       item.classList.add('error');
+    }
+    if (author === 'assistant') {
+      var badge = createResponseModelBadge(meta);
+      if (badge) {
+        item.appendChild(badge);
+      }
     }
 
     var textNode = document.createElement('div');
@@ -2844,12 +2859,69 @@
     }
   }
 
-  function appendStreamingAssistantMessage(initialText) {
+  function normalizeResponseModelMeta(data) {
+    if (!data || typeof data !== 'object') return null;
+    var modelId = normalize(data.model_id || data.modelId);
+    var provider = normalize(data.provider);
+    var displayName = normalize(data.display_name || data.displayName);
+    var upstreamModel = normalize(data.upstream_model || data.upstreamModel);
+    if (!modelId && !displayName && !upstreamModel) return null;
+    return {
+      model_id: modelId,
+      provider: provider,
+      display_name: displayName,
+      upstream_model: upstreamModel
+    };
+  }
+
+  function buildResponseModelLabel(meta) {
+    if (!meta) return '';
+    var display = normalize(meta.display_name);
+    var upstream = normalize(meta.upstream_model);
+    var modelId = normalize(meta.model_id);
+    var provider = normalize(meta.provider).toUpperCase();
+    if (display) return display;
+    if (upstream && provider) return provider + ' ' + upstream;
+    if (upstream) return upstream;
+    if (modelId) return modelId;
+    return '';
+  }
+
+  function createResponseModelBadge(meta) {
+    var label = buildResponseModelLabel(meta);
+    if (!label) return null;
+    var badge = document.createElement('div');
+    badge.className = 'ai-chat-model-badge';
+    badge.textContent = 'Modelo: ' + label;
+    return badge;
+  }
+
+  function ensureMessageModelBadge(container, meta) {
+    if (!container) return;
+    var label = buildResponseModelLabel(meta);
+    var existing = container.querySelector('.ai-chat-model-badge');
+    if (!label) {
+      if (existing && existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+      return;
+    }
+    if (existing) {
+      existing.textContent = 'Modelo: ' + label;
+      return;
+    }
+    var badge = createResponseModelBadge(meta);
+    if (!badge) return;
+    container.insertBefore(badge, container.firstChild || null);
+  }
+
+  function appendStreamingAssistantMessage(initialText, meta) {
     var messagesEl = document.getElementById(MESSAGES_ID);
     if (!messagesEl) return null;
     var item = document.createElement('div');
     item.className = 'ai-chat-message assistant';
     item.classList.add('is-streaming');
+    ensureMessageModelBadge(item, meta);
     var textNode = document.createElement('div');
     textNode.textContent = String(initialText || 'Pensando...');
     item.appendChild(textNode);
@@ -2955,6 +3027,7 @@
     var endpoint = buildStreamEndpoint();
     var onStreamStart = callbacks && typeof callbacks.onStreamStart === 'function' ? callbacks.onStreamStart : null;
     var onStreamDelta = callbacks && typeof callbacks.onStreamDelta === 'function' ? callbacks.onStreamDelta : null;
+    var onStreamMeta = callbacks && typeof callbacks.onStreamMeta === 'function' ? callbacks.onStreamMeta : null;
     var speechPlaybackVersion = beginStreamingSpeechPlayback();
     return fetch(endpoint, {
       method: 'POST',
@@ -2981,6 +3054,7 @@
       var streamBuffer = '';
       var finalText = '';
       var doneSeen = false;
+      var modelMeta = null;
 
       function processEventChunk(chunk) {
         var lines = String(chunk || '').split(/\r?\n/);
@@ -2997,6 +3071,13 @@
           if (!evt || typeof evt !== 'object') return;
           if (evt.error) {
             throw new Error(String(evt.error));
+          }
+          var evtMeta = normalizeResponseModelMeta(evt);
+          if (evtMeta) {
+            modelMeta = evtMeta;
+            if (onStreamMeta) {
+              onStreamMeta(evtMeta);
+            }
           }
           if (evt.delta) {
             finalText += String(evt.delta);
@@ -3024,6 +3105,7 @@
             pushStreamingSpeechDelta('', speechPlaybackVersion, true);
             var extracted = extractPCSActionBlock(finalText);
             extracted.streamed = true;
+            extracted.meta = modelMeta;
             return extracted;
           }
           streamBuffer += decoder.decode(result.value, { stream: true });
@@ -3036,6 +3118,7 @@
             pushStreamingSpeechDelta('', speechPlaybackVersion, true);
             var extractedDone = extractPCSActionBlock(finalText);
             extractedDone.streamed = true;
+            extractedDone.meta = modelMeta;
             try { reader.cancel(); } catch (e) {}
             return extractedDone;
           }
@@ -3227,7 +3310,9 @@
               throw new Error(detailFallback);
             }
             var answerFallback = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
-            return extractPCSActionBlock(answerFallback);
+            var extractedFallback = extractPCSActionBlock(answerFallback);
+            extractedFallback.meta = normalizeResponseModelMeta(data);
+            return extractedFallback;
           });
       });
     }
@@ -3245,7 +3330,9 @@
           throw new Error(detail);
         }
         var answer = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
-        return extractPCSActionBlock(answer);
+        var extracted = extractPCSActionBlock(answer);
+        extracted.meta = normalizeResponseModelMeta(data);
+        return extracted;
       });
   }
 
@@ -3291,8 +3378,12 @@
 
     sendQuery(query, null, {
       onStreamStart: function () {
+        setLastResponseModelMeta(null);
         setRobotAssistantText('Respondiendo en tiempo real...');
         setNotice('Respondiendo en tiempo real...');
+      },
+      onStreamMeta: function (meta) {
+        setLastResponseModelMeta(meta);
       },
       onStreamDelta: function (text) {
         setRobotAssistantText(text || 'Respondiendo en tiempo real...');
@@ -3301,6 +3392,7 @@
         setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
       }
     }).then(function (result) {
+      setLastResponseModelMeta(result && result.meta ? result.meta : null);
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (hasActions) {
@@ -3482,14 +3574,25 @@
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
 
     var liveAssistantMessage = null;
+    var liveAssistantMeta = null;
     sendQuery(query, attachment, {
       onStreamStart: function () {
-        liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...');
+        setLastResponseModelMeta(null);
+        liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...', liveAssistantMeta);
         setNotice('Respondiendo en tiempo real...');
+      },
+      onStreamMeta: function (meta) {
+        liveAssistantMeta = meta;
+        setLastResponseModelMeta(meta);
+        if (!liveAssistantMessage) {
+          liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...', liveAssistantMeta);
+        } else if (liveAssistantMessage.item) {
+          ensureMessageModelBadge(liveAssistantMessage.item, liveAssistantMeta);
+        }
       },
       onStreamDelta: function (text) {
         if (!liveAssistantMessage) {
-          liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...');
+          liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...', liveAssistantMeta);
         }
         updateStreamingAssistantMessage(liveAssistantMessage, text);
       },
@@ -3501,11 +3604,12 @@
         setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
       }
     }).then(function (result) {
+      setLastResponseModelMeta(result && result.meta ? result.meta : null);
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (liveAssistantMessage && result && result.streamed) {
         finalizeStreamingAssistantMessage(liveAssistantMessage, result.clean, result.proposal);
       } else {
-        appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal);
+        appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal, result && result.meta ? result.meta : null);
       }
       if (hasActions) setRobotMood('action', 3200);
       if (!(result && result.streamed)) {
