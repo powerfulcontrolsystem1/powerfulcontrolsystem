@@ -16,6 +16,7 @@ func RegisterEmpresaChatIARoutes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/empresa/chat_con_inteligencia_artificial/historial", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, ctrl.HistorialHandler))
 	http.HandleFunc("/api/empresa/chat_documentos/generar", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, DynamicDocumentGenerateHandler(dbEmp, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_documentos/exportar", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, DynamicDocumentChatExportHandler(dbEmp, dbSuper)))
+	http.HandleFunc("/api/empresa/chat_documentos/compartir_email", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, DynamicDocumentEmailShareHandler(dbEmp, dbSuper)))
 	http.HandleFunc("/api/empresa/ia/importar_desde_foto", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaIAImportarDesdeFotoHandler(dbEmp)))
 	http.HandleFunc("/api/empresa/ia_pedidos_estacion/ejecutar", WithEmpresaVentasPermissions(dbEmp, dbSuper, ctrl.IaPedidosEstacionEjecutarHandler))
 }

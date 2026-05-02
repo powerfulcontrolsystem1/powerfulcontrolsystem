@@ -54,6 +54,15 @@ type DynamicDocumentChatExportRequest struct {
 	Metadata       map[string]interface{} `json:"metadata"`
 }
 
+type DynamicDocumentEmailShareRequest struct {
+	EmpresaID  int64  `json:"empresa_id"`
+	DocumentID string `json:"document_id"`
+	Format     string `json:"format"`
+	ToEmail    string `json:"to_email"`
+	Subject    string `json:"subject"`
+	Message    string `json:"message"`
+}
+
 type dynamicDocumentRecord struct {
 	ID           string                 `json:"id"`
 	EmpresaID    int64                  `json:"empresa_id"`
@@ -359,6 +368,84 @@ func DynamicDocumentChatExportHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			"filename":     filename,
 			"download_url": "/download?id=" + record.ID + "&type=" + format,
 			"fallback":     false,
+		})
+	}
+}
+
+// DynamicDocumentEmailShareHandler envia por correo un documento generado desde el chat IA.
+func DynamicDocumentEmailShareHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if !voiceStreamRequireSession(w, r, dbSuper) {
+			return
+		}
+
+		var payload DynamicDocumentEmailShareRequest
+		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 512*1024))
+		if err := dec.Decode(&payload); err != nil {
+			http.Error(w, "JSON invalido: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if parsed, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && parsed > 0 {
+				payload.EmpresaID = parsed
+			}
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		payload.DocumentID = sanitizeDynamicDocumentID(payload.DocumentID)
+		if payload.DocumentID == "" {
+			http.Error(w, "document_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		format := normalizeDynamicDocumentFormat(payload.Format)
+		if format == "" {
+			format = "pdf"
+		}
+
+		record, err := loadDynamicDocumentRecord(payload.DocumentID)
+		if err != nil {
+			http.Error(w, "Documento no encontrado o expirado", http.StatusNotFound)
+			return
+		}
+		if record.EmpresaID != payload.EmpresaID {
+			http.Error(w, "El documento no pertenece a la empresa activa", http.StatusForbidden)
+			return
+		}
+		path, contentType, err := ensureDynamicDocumentFile(r.Context(), record, format)
+		if err != nil {
+			http.Error(w, "No se pudo generar archivo: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			http.Error(w, "No se pudo leer el archivo generado", http.StatusInternalServerError)
+			return
+		}
+		filename := dynamicDocumentDownloadFilename(record, format)
+		subject := strings.TrimSpace(payload.Subject)
+		if subject == "" {
+			subject = "Documento generado desde chat IA: " + strings.TrimSpace(record.Title)
+		}
+		message := strings.TrimSpace(payload.Message)
+		if message == "" {
+			message = "Adjunto encontraras el documento generado desde el chat IA."
+		}
+		metaJSON := fmt.Sprintf(`{"scope":"chat_documentos_email","empresa_id":%d,"document_id":%q,"format":%q}`, payload.EmpresaID, record.ID, format)
+		if err := sendReportesEmailWithAttachment(r, dbSuper, payload.EmpresaID, payload.ToEmail, subject, message, filename, contentType, content, metaJSON); err != nil {
+			http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":       true,
+			"to_email": strings.TrimSpace(payload.ToEmail),
+			"filename": filename,
+			"format":   format,
 		})
 	}
 }

@@ -1509,6 +1509,17 @@
     return parts.join('\n');
   }
 
+  function parseArtifactExportParams(artifact) {
+    var rawUrl = normalize(artifact && artifact.url);
+    if (!rawUrl) return null;
+    try {
+      var parsed = new URL(rawUrl, window.location.origin);
+      return parsed;
+    } catch (error) {
+      return null;
+    }
+  }
+
   function shareCurrentArtifactByWhatsApp() {
     var artifact = getCurrentShareArtifact();
     if (!artifact) {
@@ -1539,8 +1550,76 @@
     }
     var subject = artifact.title || 'Archivo generado desde chat IA';
     var body = buildArtifactShareMessage(artifact);
-    window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-    setNotice('Se preparo el correo para compartir el archivo generado.');
+    var empresaId = getCurrentEmpresaId();
+    if (!empresaId) {
+      window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      setNotice('Se preparo el correo localmente porque no hay empresa activa.');
+      return;
+    }
+    if (artifact.kind === 'report') {
+      var exportParams = parseArtifactExportParams(artifact);
+      var dataset = exportParams ? normalize(exportParams.searchParams.get('dataset')) : '';
+      var format = exportParams ? normalize(exportParams.searchParams.get('format')) : normalize(artifact.format);
+      if (!dataset) {
+        window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        setNotice('No se pudo resolver el dataset del reporte. Se preparo correo local como respaldo.', true);
+        return;
+      }
+      fetch('/api/empresa/reportes?action=enviar_email&empresa_id=' + encodeURIComponent(String(parsePositiveInt(empresaId))), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-PCS-Source': 'ai_drawer'
+        },
+        body: JSON.stringify({
+          to_email: email,
+          subject: subject,
+          message: body,
+          dataset: dataset,
+          format: format || 'pdf'
+        })
+      }).then(function (resp) {
+        if (!resp.ok) return parseErrorResponse(resp);
+        return resp.json();
+      }).then(function () {
+        setNotice('Reporte enviado por correo desde el servidor.');
+      }).catch(function (err) {
+        setNotice('No se pudo enviar el reporte por correo: ' + String(err && err.message ? err.message : err), true);
+      });
+      return;
+    }
+
+    var documentId = normalize(state.generatedDocument && (state.generatedDocument.document_id || state.generatedDocument.id));
+    if (!documentId) {
+      var fallbackMail = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      window.location.href = fallbackMail;
+      setNotice('Se preparo el correo localmente porque no se encontro el documento activo.');
+      return;
+    }
+    fetch('/api/empresa/chat_documentos/compartir_email', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-PCS-Source': 'ai_drawer'
+      },
+      body: JSON.stringify({
+        empresa_id: parsePositiveInt(empresaId),
+        document_id: documentId,
+        format: normalize(artifact.format) || getSelectedDocumentFormat(),
+        to_email: email,
+        subject: subject,
+        message: body
+      })
+    }).then(function (resp) {
+      if (!resp.ok) return parseErrorResponse(resp);
+      return resp.json();
+    }).then(function () {
+      setNotice('Documento enviado por correo desde el servidor.');
+    }).catch(function (err) {
+      setNotice('No se pudo enviar el documento por correo: ' + String(err && err.message ? err.message : err), true);
+    });
   }
 
   function downloadCurrentGeneratedDocument() {
