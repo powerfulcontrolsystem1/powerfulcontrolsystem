@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pantalla en Vivo</title>
+    <title>Pantalla en vivo</title>
     <link rel="stylesheet" href="/estilos.css">
     <script>
         window.__pcsAutoInjectChatShell = true;
@@ -12,21 +12,60 @@
     <style>
         body {
             margin: 0;
-            padding: 0;
-            background: linear-gradient(180deg, var(--bg-alt), var(--bg));
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 30%),
+                radial-gradient(circle at top right, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 26%),
+                linear-gradient(180deg, var(--bg-alt), var(--bg));
             color: var(--text);
+            font-family: "Segoe UI Variable", "Segoe UI", Tahoma, sans-serif;
+        }
+        .screen-shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 18px 16px 28px;
+            display: grid;
+            gap: 16px;
+        }
+        .screen-topbar {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: sans-serif;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px 14px;
+            border: 1px solid var(--public-panel-border);
+            border-radius: 18px;
+            background: var(--public-panel-bg);
+            box-shadow: 0 18px 36px var(--public-panel-shadow);
+        }
+        .screen-topbar h1 { margin: 0; font-size: clamp(1.2rem, 2.4vw, 1.8rem); font-weight: 900; }
+        .screen-topbar p { margin: 4px 0 0; color: var(--public-panel-muted); }
+        .screen-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--surface) 84%, white 16%);
+            border: 1px solid var(--public-panel-soft-border);
+            color: var(--public-panel-text);
+            font-weight: 800;
+        }
+        .screen-stage {
+            position: relative;
+            min-height: 72vh;
+            border: 1px solid var(--public-panel-border);
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, black 8%), color-mix(in srgb, var(--bg-alt) 90%, black 10%));
+            box-shadow: 0 24px 44px var(--public-panel-shadow);
         }
         #video-container {
             width: 100%;
             height: 100%;
-            max-width: 100%;
-            max-height: 100vh;
+            min-height: 72vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -35,62 +74,102 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            background-color: color-mix(in srgb, var(--bg) 84%, black 16%);
+            background: color-mix(in srgb, var(--bg) 84%, black 16%);
         }
-        #status {
+        .screen-empty {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            background: color-mix(in srgb, var(--surface) 78%, transparent);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            z-index: 10;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            pointer-events: none;
+        }
+        .screen-empty-card {
+            max-width: 520px;
+            padding: 24px;
+            border-radius: 22px;
+            background: color-mix(in srgb, var(--surface) 82%, transparent);
+            border: 1px solid var(--public-panel-soft-border);
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.24);
+        }
+        .screen-empty-card h2 { margin: 0 0 10px; color: var(--public-hero-title); }
+        .screen-empty-card p { margin: 0; color: var(--public-panel-muted); line-height: 1.6; }
+        @media (max-width: 720px) {
+            .screen-shell { padding: 14px 12px 22px; }
+            .screen-stage, #video-container { min-height: 62vh; }
         }
     </style>
 </head>
 <body>
-    <div id="status">Esperando conexión de la empresa...</div>
-    <div id="video-container">
-        <video id="remoteVideo" autoplay playsinline controls></video>
-    </div>
+    <main class="screen-shell">
+        <header class="screen-topbar">
+            <div>
+                <h1>Pantalla en vivo</h1>
+                <p>Visualiza la transmisión pública de la empresa desde esta pantalla compartida.</p>
+            </div>
+            <div id="status" class="screen-status">Esperando conexión de la empresa...</div>
+        </header>
+
+        <section class="screen-stage">
+            <div id="video-container">
+                <video id="remoteVideo" autoplay playsinline controls></video>
+            </div>
+            <div class="screen-empty" id="emptyState">
+                <div class="screen-empty-card">
+                    <h2>La transmisión aparecerá aquí</h2>
+                    <p>Cuando la empresa inicie su señal pública, esta pantalla mostrará el contenido en vivo automáticamente.</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script>
         const videoElement = document.getElementById('remoteVideo');
         const statusElement = document.getElementById('status');
+        const emptyState = document.getElementById('emptyState');
         let peerConnection;
         let ws;
 
         const config = {
-            'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
 
+        function setStatus(text) {
+            statusElement.innerText = text;
+        }
+
+        function hideEmptyState() {
+            if (emptyState) emptyState.style.display = 'none';
+        }
+
+        function showEmptyState() {
+            if (emptyState) emptyState.style.display = 'flex';
+        }
+
         function connect() {
-            // Determine WebSocket URL based on current protocol
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${wsProtocol}//${window.location.host}/api/public/webrtc/signaling`;
-            
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 console.log('Conectado al servidor de señalización');
-                statusElement.innerText = 'Conectado al servidor. Esperando transmisión...';
-                // Registrarse como visualizador
+                setStatus('Conectado al servidor. Esperando transmisión...');
                 ws.send(JSON.stringify({ type: 'register_viewer' }));
             };
 
             ws.onmessage = async (message) => {
                 const data = JSON.parse(message.data);
-                
+
                 if (data.type === 'offer') {
-                    statusElement.innerText = 'Recibiendo transmisión...';
+                    setStatus('Recibiendo transmisión...');
                     peerConnection = new RTCPeerConnection(config);
-                    
+
                     peerConnection.ontrack = (event) => {
                         console.log('Stream recibido');
                         videoElement.srcObject = event.streams[0];
+                        hideEmptyState();
                     };
 
                     peerConnection.onicecandidate = (event) => {
@@ -102,7 +181,6 @@
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
-                    
                     ws.send(JSON.stringify({ type: 'answer', answer: answer }));
                 } else if (data.type === 'ice_candidate' && peerConnection) {
                     await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -111,7 +189,8 @@
 
             ws.onclose = () => {
                 console.log('Desconectado del servidor de señalización');
-                statusElement.innerText = 'Desconectado. Reintentando...';
+                setStatus('Desconectado. Reintentando...');
+                showEmptyState();
                 setTimeout(connect, 3000);
             };
         }
