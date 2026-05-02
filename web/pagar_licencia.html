@@ -544,7 +544,7 @@
               '<section id="freeActivationSection" class="card checkout-free-activation" style="display:none;">'+
                 '<div class="checkout-payment-header">'+
                   '<div>'+
-                    '<p class="checkout-eyebrow">Activacion directa</p>'+
+                    '<p class="checkout-eyebrow">Activaci?n directa</p>'+
                     '<h3 class="payment-method-title">No se requiere pago</h3>'+
                   '</div>'+
                   '<p class="checkout-payment-copy">Esta licencia quedó en total cero. Se activará una sola vez por empresa y no abrirá pasarela.</p>'+
@@ -756,7 +756,7 @@
             const normalizedStatus = normalizeStatus(resolved.status);
             const statusElement = getStatusElement(normalizedProvider);
             const label = providerLabel(normalizedProvider);
-            const referenceText = resolved.reference ? ('Referencia: ' + resolved.reference + '.') : 'Aun no tenemos una referencia confirmada por la pasarela.';
+            const referenceText = resolved.reference ? ('Referencia: ' + resolved.reference + '.') : 'A?n no tenemos una referencia confirmada por la pasarela.';
 
             if (resolved.reference || resolved.transactionId) {
               savePendingPayment({
@@ -1137,7 +1137,7 @@
               }
               if (checkoutForm) {
                 setProviderBusy('epayco', 'Redirigiendo...');
-                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automatica con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación autom?tica con la referencia guardada.');
                 syncStatusText(ui.epaycoStatus, 'Enviando el formulario seguro de Epayco...');
                 if (submitEpaycoClassicCheckoutForm(checkoutForm)) {
                   return;
@@ -1148,7 +1148,7 @@
               }
               if (checkoutUrl) {
                 if (!isSafeEpaycoRedirectURL(checkoutUrl)) {
-                  syncStatusText(ui.epaycoStatus, 'Epayco devolvio una URL de checkout no valida o requiere formulario POST. No se redirigio para evitar el error AccessDenied.');
+                  syncStatusText(ui.epaycoStatus, 'Epayco devolvi? una URL de checkout no v?lida o requiere formulario POST. No se redirigi? para evitar el error AccessDenied.');
                   resetProvider('epayco');
                   return;
                 }

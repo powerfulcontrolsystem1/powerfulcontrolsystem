@@ -588,6 +588,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/perfil_red_social.html":                               {},
 			"/venta_publica.html":                                   {},
 			"/pagar_productos_de_venta_publica.html":                {},
+			"/pagar_licencia.html":                               {},
 			"/venta_digital.html":                                   {},
 			"/elegir_licencia.html":                                 {},
 			"/login.html":                                           {},
