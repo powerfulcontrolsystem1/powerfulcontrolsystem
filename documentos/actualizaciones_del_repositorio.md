@@ -3475,3 +3475,9 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/administrar_empresa/publicar_red_social.html
 - web/administrar_empresa/reservas_hotel.html
+
+2026-05-02 12:16:04 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 7628c3b; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/ventas.html
