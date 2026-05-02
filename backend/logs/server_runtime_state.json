@@ -1,12 +1,14 @@
 {
-  "status": "running",
+  "status": "stopped",
   "hostname": "NITRO",
-  "process_id": 11332,
+  "process_id": 14596,
   "listen_addr": ":8080",
-  "last_start_at": "2026-04-29 23:59:08",
+  "last_start_at": "2026-05-01 20:14:36",
   "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=10600 previo_inicio=2026-04-29 23:55:07 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/04/29 23:58:30 INFO: preconfiguraciones por tipo verificadas: tipos=7 creadas=0 omitidas=7 errores=0",
+  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=19920 previo_inicio=2026-05-01 20:13:54 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/05/01 18:46:15 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
+  "last_stop_at": "2026-05-01 20:14:44",
+  "last_stop_reason": "listen_and_serve_error: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.",
   "last_unexpected_restart": true,
-  "last_known_server_err": "2026/04/29 23:58:30 INFO: preconfiguraciones por tipo verificadas: tipos=7 creadas=0 omitidas=7 errores=0",
-  "last_event_id": 8862
+  "last_known_server_err": "2026/05/01 18:46:15 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
+  "last_event_id": 9225
 }

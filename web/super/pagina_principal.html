@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Pagina principal</title>
+  <title>Página principal</title>
   <link rel="stylesheet" href="/estilos.css">
   <script>
     (function () {
@@ -27,7 +27,7 @@
 <body class="super-page">
   <div class="container">
     <div class="page-header">
-      <h1>Configuracion de tarjetas en pagina principal</h1>
+      <h1>Configuración de tarjetas en página principal</h1>
       <div id="ppTopMessage" class="form-help" aria-live="polite" ></div>
       <div class="form-actions">
         <a href="/index.html" class="btn secondary" target="_top">Ver index publico</a>
@@ -42,12 +42,12 @@
         <div class="form-col pp-col-small">
           <label class="form-label" for="ppCantidad">Cantidad de tarjetas</label>
           <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="" placeholder="Cargando..." disabled>
-          <p class="form-help">La cantidad se aplica al cambiar este campo y se guarda junto con toda la configuracion.</p>
+          <p class="form-help">La cantidad se aplica al cambiar este campo y se guarda junto con toda la configuración.</p>
         </div>
         <div class="form-col pp-col-grow">
           <label class="form-label">Acciones</label>
           <div class="form-actions pp-inline-actions">
-            <button id="ppBtnSave" type="button" class="btn">Guardar cantidad y configuracion</button>
+            <button id="ppBtnSave" type="button" class="btn">Guardar cantidad y configuración</button>
           </div>
         </div>
       </div>
@@ -73,11 +73,11 @@
       </div>
       <div class="form-row">
         <div class="form-col">
-          <p class="form-help"><strong>Tipos de tarjeta:</strong> por defecto se usa "tarjeta informacion mas foto". Si eliges "tarjeta banner", el index mostrara solamente la imagen ocupando toda la tarjeta.</p>
+          <p class="form-help"><strong>Tipos de tarjeta:</strong> por defecto se usa "tarjeta información más foto". Si eliges "tarjeta banner", el index mostrará solamente la imagen ocupando toda la tarjeta.</p>
           <p class="form-help"><strong>Medidas recomendadas para banner:</strong> relacion 4:3. Pequena: 640 x 480 px, mediana: 800 x 600 px, grande: 1000 x 750 px. Tambien puedes usar una imagen un poco mas pequena con la misma proporcion para evitar recortes.</p>
         </div>
       </div>
-      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
+      <p class="form-help">Cada tarjeta define imagen, título, descripción breve, destino de Probar Gratis y el contenido ampliado que se mostrará en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
       <!-- El tipo banner se configura por tarjeta desde el editor. -->
       <div class="form-actions pp-bottom-actions">
@@ -147,7 +147,7 @@
         return {
           tipo_tarjeta: 'info_foto',
           titulo: 'Tarjeta ' + (index + 1),
-          descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
+          descripcion: 'Describe aquí la oferta principal de esta tarjeta.',
           imagen_url: image,
           imagen_secundaria_url: '/img/sistema punto de venta.png',
           enlace: '/login.html',
@@ -219,7 +219,7 @@
       function cardTypeOptionsHTML(selected) {
         var current = normalizeCardType(selected);
         var options = [
-          { value: 'info_foto', label: 'Tarjeta informacion mas foto' },
+          { value: 'info_foto', label: 'Tarjeta información más foto' },
           { value: 'banner', label: 'Tarjeta banner' }
         ];
         return options.map(function (option) {
@@ -549,7 +549,7 @@
 
       async function saveCurrentConfig() {
         syncCardCountAndRender();
-        setMsg('Guardando configuracion...', '');
+        setMsg('Guardando configuración...', '');
         try {
           await saveConfig();
           await loadConfig();
@@ -562,7 +562,7 @@
       }
 
       async function reloadAll() {
-        setMsg('Cargando configuracion...', '');
+        setMsg('Cargando configuración...', '');
         setCantidadLoading(true);
         try {
           await loadImages();

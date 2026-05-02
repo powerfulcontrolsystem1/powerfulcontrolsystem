@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuracion chat flotante</title>
+  <title>Configuración chat flotante</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .chat-appearance-grid {
@@ -82,7 +82,7 @@
 <body class="admin-empresa-config-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Configuracion del chat flotante</h1>
+      <h1>Configuración del chat flotante</h1>
       <p class="form-help">Elige como se abre el asistente IA en Administrar Empresa: ventana cuadrada tradicional, robot 3D o secretaria 3D conversacional.</p>
     </div>
 
@@ -99,7 +99,7 @@
         <input id="robotEnabled" type="checkbox">
         <span>
           <span class="chat-appearance-title">Activar avatares IA 3D</span>
-          <span class="chat-appearance-copy">Permite usar el robot o la secretaria 3D, los globos conversacionales, la guia inicial y los avisos hablados de recordatorios.</span>
+          <span class="chat-appearance-copy">Permite usar el robot o la secretaria 3D, los globos conversacionales, la guía inicial y los avisos hablados de recordatorios.</span>
         </span>
       </label>
 
@@ -149,11 +149,11 @@
       </div>
 
       <div class="form-actions" style="margin-top:16px;">
-        <button id="saveChatModeBtn" class="btn" type="button">Guardar configuracion</button>
+        <button id="saveChatModeBtn" class="btn" type="button">Guardar configuración</button>
         <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer chat cuadrado</button>
         <a href="/administrar_empresa.html" class="btn secondary" style="text-decoration:none;">Volver al panel</a>
       </div>
-      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Cargando configuracion...</div>
+      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Cargando configuración...</div>
     </section>
   </div>
 
@@ -464,14 +464,14 @@
         input.addEventListener('change', function () {
           var mode = storeLocalMode(getSelectedMode());
           notifyChatMode(mode);
-          updateStatus('Vista previa aplicada: ' + labelFor(mode) + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: ' + labelFor(mode) + '. Presiona Guardar configuración para persistirla.');
         });
       });
       if (chatEnabledCheckbox) {
         chatEnabledCheckbox.addEventListener('change', function () {
           var enabled = setChatEnabled(chatEnabledCheckbox.checked);
           notifyChatEnabled(enabled);
-          updateStatus('Vista previa aplicada: chat ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: chat ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuración para persistirla.');
         });
       }
       if (robotEnabledCheckbox) {
@@ -479,21 +479,21 @@
           var enabled = setRobotEnabled(robotEnabledCheckbox.checked);
           notifyRobotEnabled(enabled);
           notifyChatMode(getSelectedMode());
-          updateStatus('Vista previa aplicada: robot ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: robot ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuración para persistirla.');
         });
       }
       if (voiceCheckbox) {
         voiceCheckbox.addEventListener('change', function () {
           var enabled = setVoiceEnabled(voiceCheckbox.checked);
           notifyChatVoice(enabled);
-          updateStatus('Vista previa aplicada: voz ' + (enabled ? 'activa' : 'inactiva') + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: voz ' + (enabled ? 'activa' : 'inactiva') + '. Presiona Guardar configuración para persistirla.');
         });
       }
       if (robotVoiceSelect) {
         robotVoiceSelect.addEventListener('change', function () {
           var voice = setSelectedRobotVoice(robotVoiceSelect.value);
           notifyRobotVoice(voice);
-          updateStatus('Vista previa aplicada: voz del avatar ' + labelForRobotVoice(getSelectedMode() === 'secretary' ? 'es-CO-female' : voice) + '. Presiona Guardar configuracion para persistirla.');
+          updateStatus('Vista previa aplicada: voz del avatar ' + labelForRobotVoice(getSelectedMode() === 'secretary' ? 'es-CO-female' : voice) + '. Presiona Guardar configuración para persistirla.');
         });
       }
       loadMode();

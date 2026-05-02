@@ -11,7 +11,7 @@
     <section class="card empresa-section">
       <h1>Auditoria por empresa</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Consulta trazabilidad de acciones criticas por modulo, usuario, request y rango de fechas.</p>
+      <p class="form-help">Consulta trazabilidad de acciones críticas por módulo, usuario, request y rango de fechas.</p>
     </section>
 
     <section class="card empresa-section">
@@ -33,7 +33,7 @@
               <option value="">Todos</option>
               <option value="ventas">Ventas</option>
               <option value="compras">Compras</option>
-              <option value="facturacion">Facturacion</option>
+              <option value="facturacion">Facturación</option>
               <option value="finanzas">Finanzas</option>
               <option value="inventario">Inventario</option>
               <option value="clientes">Clientes</option>
@@ -52,8 +52,8 @@
             </select>
           </div>
           <div class="form-col">
-            <label class="form-label" for="fAccion">Accion</label>
-            <input id="fAccion" class="form-input" placeholder="Ej: cerrar, emitir, aprobar">
+            <label class="form-label" for="fAcción">Acción</label>
+            <input id="fAcción" class="form-input" placeholder="Ej: cerrar, emitir, aprobar">
           </div>
           <div class="form-col">
             <label class="form-label" for="fResultado">Resultado</label>
@@ -84,7 +84,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="fSearch">Busqueda libre</label>
-            <input id="fSearch" class="form-input" placeholder="Texto en modulo, accion, endpoint, usuario, request, IP">
+            <input id="fSearch" class="form-input" placeholder="Texto en módulo, acción, endpoint, usuario, request, IP">
           </div>
         </div>
 
@@ -133,11 +133,11 @@
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="retencionDias">Retencion (dias)</label>
+          <label class="form-label" for="retencionDias">Retención (días)</label>
           <input id="retencionDias" type="number" min="1" max="3650" class="form-input" value="180">
         </div>
         <div class="form-col">
-          <label class="form-label">Accion</label>
+          <label class="form-label">Acción</label>
           <button id="btnPurgar" type="button" class="btn secondary">Aplicar retencion</button>
         </div>
       </div>
@@ -158,8 +158,8 @@
           <thead>
             <tr>
               <th>Fecha</th>
-              <th>Modulo</th>
-              <th>Accion</th>
+              <th>Módulo</th>
+              <th>Acción</th>
               <th>Metodo</th>
               <th>Endpoint</th>
               <th>Recurso</th>
@@ -311,7 +311,7 @@
 
       const modulo = normalize(document.getElementById('fModulo').value).toLowerCase();
       const metodoHttp = normalize(document.getElementById('fMetodoHttp').value).toUpperCase();
-      const accion = normalize(document.getElementById('fAccion').value).toLowerCase();
+      const accion = normalize(document.getElementById('fAcción').value).toLowerCase();
       const resultado = normalize(document.getElementById('fResultado').value).toLowerCase();
       const usuario = normalize(document.getElementById('fUsuario').value);
       const requestId = normalize(document.getElementById('fRequestId').value);
@@ -602,7 +602,7 @@
     function limpiarFiltros() {
       document.getElementById('fModulo').value = '';
       document.getElementById('fMetodoHttp').value = '';
-      document.getElementById('fAccion').value = '';
+      document.getElementById('fAcción').value = '';
       document.getElementById('fResultado').value = '';
       document.getElementById('fUsuario').value = '';
       document.getElementById('fRequestId').value = '';

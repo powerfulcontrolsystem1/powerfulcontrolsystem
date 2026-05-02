@@ -252,7 +252,7 @@
     if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
     if (lower === 'es-co-male' || lower === 'masculina' || lower === 'hombre') return 'es-CO-male';
     if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
-    if (lower === 'es-es' || lower === 'espana' || lower === 'espaÃ±a' || lower === 'castellano') return 'es-ES';
+    if (lower === 'es-es' || lower === 'espana' || lower === 'españa' || lower === 'castellano') return 'es-ES';
     return 'es-CO';
   }
 
@@ -260,8 +260,8 @@
     switch (normalizeRobotVoice(value)) {
       case 'es-CO-female': return 'Colombiana femenina';
       case 'es-CO-male': return 'Colombiana masculina';
-      case 'es-MX': return 'EspaÃ±ol latino';
-      case 'es-ES': return 'EspaÃ±ol castellano';
+      case 'es-MX': return 'Español latino';
+      case 'es-ES': return 'Español castellano';
       default: return 'Colombiana natural';
     }
   }
@@ -355,7 +355,7 @@
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[Â¿?Â¡!.,;:]+/g, ' ')
+      .replace(/[¿?¡!.,;:]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -852,7 +852,7 @@
       panel = document.createElement('section');
       panel.id = ROBOT_PANEL_ID;
       panel.className = 'robot-inline-chat-panel';
-      panel.setAttribute('aria-label', 'Conversacion con robot IA');
+      panel.setAttribute('aria-label', 'Conversación con robot IA');
       panel.innerHTML =
         '<div id="' + ROBOT_ASSISTANT_BUBBLE_ID + '" class="robot-cloud robot-cloud-assistant"></div>' +
         '<div id="' + ROBOT_ACTIONS_ID + '" class="robot-assistant-actions" hidden></div>' +
@@ -1144,17 +1144,17 @@
     panel.innerHTML =
       '<div class="ai-chat-compact-config-card" role="dialog" aria-modal="false" aria-labelledby="aiChatCompactConfigTitle">' +
       '<div class="ai-chat-compact-config-header">' +
-      '<strong id="aiChatCompactConfigTitle">Configuracion del chat</strong>' +
-      '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuracion">Ã—</button>' +
+      '<strong id="aiChatCompactConfigTitle">Configuración del chat</strong>' +
+      '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuración">×</button>' +
       '</div>' +
       '<div class="ai-chat-compact-config-body">' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>Activar chat IA</b><small>Muestra u oculta el chat flotante completo.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_ROBOT_ENABLED_ID + '" type="checkbox"><span><b>Activar robot IA</b><small>Permite el avatar 3D, la guia inicial y avisos de recordatorios.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="normal"><span><b>Chat cuadrado</b><small>Ventana lateral tradicional con historial y controles completos.</small></span></label>' +
-      '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="robot"><span><b>Robot IA</b><small>Avatar 3D con conversacion en globos sobre el robot.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="robot"><span><b>Robot IA</b><small>Avatar 3D con conversación en globos sobre el robot.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="secretary"><span><b>Secretaria IA 3D</b><small>Avatar estilo caricatura ejecutiva joven con voz femenina.</small></span></label>' +
       '<label class="ai-chat-compact-option ai-chat-compact-option-voice"><input id="' + CONFIG_VOICE_ID + '" type="checkbox"><span><b>Activar modo voz</b><small>Lee las respuestas con el servicio de voz o la voz del navegador.</small></span></label>' +
-      '<label class="ai-chat-compact-option"><span><b>Voz del avatar</b><small>La secretaria usa automaticamente voz femenina.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">EspaÃ±ol latino</option><option value="es-ES">EspaÃ±ol castellano</option></select></span></label>' +
+      '<label class="ai-chat-compact-option"><span><b>Voz del avatar</b><small>La secretaria usa automáticamente voz femenina.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">Español latino</option><option value="es-ES">Español castellano</option></select></span></label>' +
       '</div>' +
       '<div class="ai-chat-compact-config-actions">' +
       '<button id="' + CONFIG_SAVE_ID + '" type="button" class="btn primary small">Guardar</button>' +
@@ -1222,7 +1222,7 @@
         var voice = !!document.getElementById(CONFIG_VOICE_ID).checked;
         var robotVoice = setRobotVoicePreference(mode === 'secretary' ? 'es-CO-female' : document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
         applyVoicePreference(voice);
-        setConfigStatus('Guardando configuracion...');
+        setConfigStatus('Guardando configuración...');
         fetch(CHAT_PREFS_ENDPOINT, {
           method: 'PUT',
           credentials: 'same-origin',
@@ -1239,9 +1239,9 @@
           var savedRobotVoice = setRobotVoicePreference(data && data.robot_voice ? data.robot_voice : robotVoice);
           applyVoicePreference(savedVoice);
           setCompactConfigState(savedMode, savedVoice, savedRobotVoice, savedChat, savedRobot);
-          setConfigStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(savedMode === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
+          setConfigStatus('Configuración guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(savedMode === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
         }).catch(function (err) {
-          setConfigStatus('Configuracion aplicada localmente, pero no se pudo guardar. ' + String(err && err.message ? err.message : ''), true);
+          setConfigStatus('Configuración aplicada localmente, pero no se pudo guardar. ' + String(err && err.message ? err.message : ''), true);
         });
       });
     }
@@ -1489,7 +1489,7 @@
   function updateVoiceButtons(micBtn, voiceBtn, convBtn) {
     if (micBtn) {
       micBtn.innerHTML = ICON_MIC;
-      micBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrÃ³fono';
+      micBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrófono';
       micBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje');
       micBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
       micBtn.disabled = state.loading || !isSpeechRecognitionSupported();
@@ -1501,7 +1501,7 @@
     var robotMicBtn = document.getElementById(ROBOT_INLINE_MIC_ID);
     if (robotMicBtn && robotMicBtn !== micBtn) {
       robotMicBtn.innerHTML = ICON_MIC;
-      robotMicBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el microfono';
+      robotMicBtn.title = state.listening ? 'Detener dictado' : 'Dictar con el micrófono';
       robotMicBtn.setAttribute('aria-label', state.listening ? 'Detener dictado' : 'Dictar mensaje al robot');
       robotMicBtn.setAttribute('aria-pressed', state.listening ? 'true' : 'false');
       robotMicBtn.disabled = state.loading || !isSpeechRecognitionSupported();
@@ -1529,8 +1529,8 @@
     }
     if (convBtn) {
       convBtn.innerHTML = ICON_CONV;
-      convBtn.title = state.conversationMode ? 'Modo conversaciÃ³n activo' : 'Modo conversaciÃ³n (dictado y voz del asistente)';
-      convBtn.setAttribute('aria-label', 'Modo conversaciÃ³n');
+      convBtn.title = state.conversationMode ? 'Modo conversación activo' : 'Modo conversación (dictado y voz del asistente)';
+      convBtn.setAttribute('aria-label', 'Modo conversación');
       convBtn.setAttribute('aria-pressed', state.conversationMode ? 'true' : 'false');
     }
   }
@@ -1991,13 +1991,13 @@
         var errorCode = event && event.error ? String(event.error) : '';
         setListening(false);
         if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
-          setNotice('Permiso de microfono denegado. Revisa los permisos del navegador.');
+          setNotice('Permiso de micrófono denegado. Revisa los permisos del navegador.');
         } else if (errorCode === 'no-speech') {
-          setNotice('No se detecto voz. Intenta hablar mas cerca del microfono.');
+          setNotice('No se detectó voz. Intenta hablar más cerca del micrófono.');
         } else if (errorCode === 'audio-capture') {
-          setNotice('No se detecto un microfono disponible en este equipo.');
+          setNotice('No se detectó un micrófono disponible en este equipo.');
         } else {
-          setNotice(errorCode ? 'Error de microfono: ' + errorCode + '.' : 'Error de microfono.');
+          setNotice(errorCode ? 'Error de micrófono: ' + errorCode + '.' : 'Error de micrófono.');
         }
       };
 
@@ -2029,7 +2029,7 @@
         recognition.start();
         setListening(true);
         if (isRobotMic) {
-          setNotice('Escuchando desde el microfono del robot...');
+          setNotice('Escuchando desde el micrófono del robot...');
         }
       } catch (err) {
         setListening(false);
@@ -2050,7 +2050,7 @@
         }
         persistVoicePreference(state.voiceEnabled);
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
-        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: sÃ­ntesis).' : 'Respuestas de voz desactivadas.');
+        setNotice(state.voiceEnabled ? 'Respuestas de voz activadas (API del navegador: síntesis).' : 'Respuestas de voz desactivadas.');
       });
     }
     if (convBtn) {
@@ -2060,9 +2060,9 @@
         if (state.conversationMode) {
           state.voiceEnabled = true;
           persistVoicePreference(true);
-          setNotice('Modo conversaciÃ³n: lectura automÃ¡tica de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
+          setNotice('Modo conversación: lectura automática de respuestas. Dictado y voz usan la Web Speech API del navegador (sin coste extra).');
         } else {
-          setNotice('Modo conversaciÃ³n desactivado.');
+          setNotice('Modo conversación desactivado.');
         }
         updateVoiceButtons(micBtn, voiceBtn, convBtn);
       });
@@ -2112,10 +2112,10 @@
     if (clearBtn) clearBtn.disabled = reportMode || documentMode;
     if (attachName) {
       if (reportMode) {
-        attachName.textContent = 'Modo reportes: el asistente usara el flujo centralizado de reportes y exportaciones.';
+        attachName.textContent = 'Modo reportes: el asistente usará el flujo centralizado de reportes y exportaciones.';
         attachName.classList.remove('is-hidden');
       } else if (documentMode) {
-        attachName.textContent = 'Modo Documentos IA: GPT-5.4 mini generara el documento. Los adjuntos quedan desactivados; GPT-5.5 se reserva solo para fotos.';
+        attachName.textContent = 'Modo Documentos IA: GPT-5.4 mini generará el documento. Los adjuntos quedan desactivados; GPT-5.5 se reserva solo para fotos.';
         attachName.classList.remove('is-hidden');
       } else if (!getCurrentAttachment()) {
         attachName.textContent = '';
@@ -2749,7 +2749,7 @@
     if (value.indexOf('__PCS_ROBOT_CANCEL_ACTIONS__') === 0) {
       clearRobotActionChips();
       cancelActionProposal(parseInt(value.replace('__PCS_ROBOT_CANCEL_ACTIONS__', ''), 10));
-      setRobotAssistantText('Acciones canceladas. Puedes pedirme otra configuracion o ajustar la propuesta.');
+      setRobotAssistantText('Acciones canceladas. Puedes pedirme otra configuración o ajustar la propuesta.');
       return;
     }
     input.value = value;
@@ -2766,27 +2766,27 @@
     return [
       {
         label: 'Agregar productos',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Revisa el contexto de preconfiguracion y guiame para agregar o ajustar productos, categorias, precios, costos, impuestos y stock minimo. Si puedes proponer acciones seguras, proponlas para confirmarlas.'
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Revisa el contexto de preconfiguración y guíame para agregar o ajustar productos, categorías, precios, costos, impuestos y stock mínimo. Si puedes proponer acciones seguras, proponlas para confirmarlas.'
       },
       {
         label: 'Configurar tarifas',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Ayudame a configurar tarifas por minutos, por dia o por servicio segun el tipo de empresa. Preguntame los datos faltantes y propon una configuracion profesional.'
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Ayúdame a configurar tarifas por minutos, por día o por servicio según el tipo de empresa. Pregúntame los datos faltantes y propón una configuración profesional.'
       },
       {
         label: 'Estaciones y caja',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Revisa estaciones, nombres, caja, carrito, notas y vista movil. Guiame para dejar operativa la empresa sin romper la configuracion actual.'
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Revisa estaciones, nombres, caja, carrito, notas y vista móvil. Guíame para dejar operativa la empresa sin romper la configuración actual.'
       },
       {
         label: 'Usuarios y roles',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Guiame para convertir usuarios guia en usuarios reales, asignar roles, permisos y tareas iniciales.'
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Guíame para convertir usuarios guía en usuarios reales, asignar roles, permisos y tareas iniciales.'
       },
       {
-        label: 'Facturacion',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Guiame por la configuracion de facturacion, resoluciones, impuestos, DIAN si aplica y pruebas necesarias antes de vender.'
+        label: 'Facturación',
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Guíame por la configuración de facturación, resoluciones, impuestos, DIAN si aplica y pruebas necesarias antes de vender.'
       },
       {
         label: 'Plan completo',
-        prompt: 'Actua como asistente de configuracion inicial' + tipoText + '. Dame un plan paso a paso para terminar productos, tarifas, estaciones, usuarios, facturacion, reportes y auditoria usando la preconfiguracion de esta empresa.'
+        prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Dame un plan paso a paso para terminar productos, tarifas, estaciones, usuarios, facturación, reportes y auditoría usando la preconfiguración de esta empresa.'
       }
     ];
   }
@@ -2802,21 +2802,21 @@
     var estaciones = parsePositiveInt(summary && summary.estaciones_creadas);
     var productos = parsePositiveInt(summary && summary.productos_creados);
     var usuarios = parsePositiveInt(summary && summary.usuarios_creados);
-    var intro = 'Hola. Soy tu robot asistente de configuracion. ';
+    var intro = 'Hola. Soy tu robot asistente de configuración. ';
     if (tipo || estaciones || productos || usuarios) {
-      intro += 'Detecte una preconfiguracion inicial';
+      intro += 'Detecté una preconfiguración inicial';
       if (tipo) intro += ' para ' + tipo;
       intro += '. ';
       intro += 'Ya puedo ayudarte a revisar';
       if (estaciones) intro += ' ' + estaciones + ' estaciones,';
-      if (productos) intro += ' ' + productos + ' productos guia,';
-      if (usuarios) intro += ' ' + usuarios + ' usuarios guia,';
+      if (productos) intro += ' ' + productos + ' productos guía,';
+      if (usuarios) intro += ' ' + usuarios + ' usuarios guía,';
       intro = intro.replace(/,\s*$/, '') + '. ';
     }
-    intro += 'Elige una opcion o escribeme que quieres configurar: productos, tarifas, estaciones, usuarios, facturacion o reportes.';
+    intro += 'Elige una opción o escríbeme qué quieres configurar: productos, tarifas, estaciones, usuarios, facturación o reportes.';
     setRobotAssistantText(intro);
     renderRobotActionChips(buildConfigurationAssistantActions(summary || {}));
-    setNotice('Asistente de configuracion inicial activo.');
+    setNotice('Asistente de configuración inicial activo.');
     speakRobotAnnouncement(intro);
     focusRobotInput();
     return true;
@@ -2837,8 +2837,8 @@
     }
     setRobotAssistantText(message);
     renderRobotActionChips([
-      { label: 'Que hago ahora', prompt: 'Se cumplio un recordatorio de nota: "' + title + '". Ayudame a decidir el siguiente paso operativo con una respuesta corta y accionable.' },
-      { label: 'Crear tarea', prompt: 'Se cumplio un recordatorio de nota: "' + title + '". Guiame para crear una tarea o seguimiento relacionado y dejar evidencia en el sistema.' }
+      { label: 'Qué hago ahora', prompt: 'Se cumplió un recordatorio de nota: "' + title + '". Ayúdame a decidir el siguiente paso operativo con una respuesta corta y accionable.' },
+      { label: 'Crear tarea', prompt: 'Se cumplió un recordatorio de nota: "' + title + '". Guíame para crear una tarea o seguimiento relacionado y dejar evidencia en el sistema.' }
     ]);
     setNotice('Recordatorio de notas cumplido.');
     speakRobotAnnouncement(message);
@@ -3117,9 +3117,9 @@
       modeEl.addEventListener('change', function () {
         syncModeUI();
         setNotice(isDocumentMode()
-          ? 'Modo Documentos IA activo. GPT-5.4 mini generara documentos descargables.'
+          ? 'Modo Documentos IA activo. GPT-5.4 mini generará documentos descargables.'
           : (isReportMode()
-            ? 'Modo reportes activo. Este chat central usara el flujo de reportes y exportaciones de la empresa.'
+            ? 'Modo reportes activo. Este chat central usará el flujo de reportes y exportaciones de la empresa.'
             : 'Modo actualizado. Puedes seguir consultando normalmente.'));
       });
     }

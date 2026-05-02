@@ -2039,8 +2039,23 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 }
 
 func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
-	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, "administrador", ""); err != nil {
+	sessionRole := normalizePermissionRole(item.RolNombre)
+	if sessionRole == "" || sessionRole == "sin_rol" {
+		sessionRole = "admin_empresa"
+	}
+	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, sessionRole, ""); err != nil {
 		return fmt.Errorf("failed to upsert admin: %w", err)
+	}
+	if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
+		EmpresaID:          item.EmpresaID,
+		AdminEmail:         item.Email,
+		CompartidoPorEmail: item.UsuarioCreador,
+		FechaAceptada:      time.Now().Format("2006-01-02 15:04:05"),
+		UsuarioCreador:     item.UsuarioCreador,
+		Estado:             "activo",
+		Observaciones:      "Acceso operativo para usuario de empresa.",
+	}); err != nil {
+		return fmt.Errorf("failed to upsert company access: %w", err)
 	}
 
 	token, err := utils.GenerateSecureToken(32)
@@ -2074,6 +2089,7 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		"ok":           true,
 		"empresa_id":   item.EmpresaID,
 		"usuario_id":   item.ID,
+		"rol":          sessionRole,
 		"redirect_url": redirectURL,
 		"apariencia":   apariencia,
 	})

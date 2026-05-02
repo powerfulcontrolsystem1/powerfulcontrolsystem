@@ -1,0 +1,547 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CRM comercial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .crm-shell { padding-bottom: 28px; }
+    .crm-kpi-grid, .crm-summary-grid, .crm-agenda-grid { display:grid; gap:14px; }
+    .crm-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .crm-summary-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .crm-agenda-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .crm-kpi-card { border:1px solid rgba(15,111,203,.14); border-radius:16px; padding:16px; background:linear-gradient(180deg,#ffffff 0%,#f7fbff 100%); box-shadow:0 10px 28px rgba(15,111,203,.08); }
+    .crm-kpi-card span { display:block; font-size:.84rem; color:#4a607a; margin-bottom:6px; }
+    .crm-kpi-card strong { display:block; font-size:1.7rem; color:#143b63; }
+    .crm-kpi-card small { display:block; margin-top:8px; color:#5e7188; }
+    .crm-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+    .crm-toolbar .form-col { min-width:180px; }
+    .crm-tabs { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+    .crm-tab-btn.is-active { box-shadow: inset 0 0 0 2px rgba(15,111,203,.18); background:#eaf4ff; }
+    .crm-panel.is-hidden { display:none; }
+    .crm-panel-grid { display:grid; grid-template-columns:minmax(320px, 420px) minmax(0, 1fr); gap:18px; align-items:start; }
+    .crm-stacked-card { border:1px solid rgba(15,111,203,.1); border-radius:16px; background:#fff; padding:16px; }
+    .crm-table-wrap { overflow:auto; }
+    .crm-table-wrap table { min-width:100%; }
+    .crm-mini-list { display:grid; gap:10px; }
+    .crm-mini-item { border:1px solid rgba(15,111,203,.1); border-radius:14px; padding:12px 14px; background:#fff; }
+    .crm-mini-item strong { color:#143b63; }
+    .crm-inline-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .crm-actions-cell { display:flex; flex-wrap:wrap; gap:6px; min-width:250px; }
+    .crm-select-inline { min-width:150px; }
+    .crm-note { color:#5e7188; margin:8px 0 0 0; }
+    .crm-section-title { margin:0; }
+    .crm-pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#eef5ff; color:#16456c; font-size:.78rem; font-weight:600; }
+    .crm-pill.is-warning { background:#fff4d9; color:#7c5400; }
+    .crm-pill.is-success { background:#e9f9ef; color:#11653a; }
+    .crm-pill.is-danger { background:#ffe5e5; color:#8b1e1e; }
+    .crm-state-select { min-width:145px; }
+    .crm-form-help { margin-top:8px; }
+    .crm-output { white-space:pre-wrap; word-break:break-word; }
+    @media (max-width: 1080px) { .crm-panel-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container crm-shell">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1 id="pageTitle">CRM comercial</h1>
+          <p class="form-help my-0-10">Prospectos, seguimientos, campañas, cotizaciones y embudo comercial en una sola operación por empresa.</p>
+        </div>
+        <div class="crm-inline-actions">
+          <button id="crmRefreshBtn" type="button" class="btn secondary">Actualizar</button>
+          <button id="crmExportBtn" type="button" class="btn secondary">Exportar vista</button>
+        </div>
+      </div>
+      <div id="crmMsg" class="form-help"></div>
+      <div class="crm-kpi-grid" id="crmKpiGrid"></div>
+    </section>
+
+    <section class="card empresa-section erp-section-gap">
+      <div class="crm-toolbar">
+        <div class="form-col">
+          <label class="form-label" for="crmSearch">Buscar</label>
+          <input id="crmSearch" class="form-input" placeholder="Lead, cliente, campaña, código o responsable">
+        </div>
+        <div class="form-col maxw-180">
+          <label class="form-label" for="crmIncludeInactive">Registros</label>
+          <label class="empresa-config-check" for="crmIncludeInactive">
+            <input id="crmIncludeInactive" type="checkbox">
+            <span>Incluir inactivos</span>
+          </label>
+        </div>
+        <div class="form-col maxw-180 flex-end">
+          <button id="crmSearchBtn" type="button" class="btn secondary w-full">Aplicar filtros</button>
+        </div>
+      </div>
+      <div class="crm-tabs" id="crmTabs">
+        <button type="button" class="btn crm-tab-btn is-active" data-tab="leads">Leads</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="interacciones">Seguimientos</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="cotizaciones">Cotizaciones</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="campanas">Campañas</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="embudo">Embudo</button>
+      </div>
+    </section>
+
+    <section id="crmPanelLeads" class="card empresa-section erp-section-gap crm-panel">
+      <div class="crm-panel-grid">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Lead</h2>
+            <button id="leadResetBtn" type="button" class="btn secondary">Nuevo</button>
+          </div>
+          <form id="leadForm" class="form">
+            <input type="hidden" id="leadId">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadCodigo">Código</label>
+                <input id="leadCodigo" class="form-input" readonly placeholder="Se genera automáticamente">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="leadEstado">Estado del lead</label>
+                <select id="leadEstado" class="form-input">
+                  <option value="nuevo">Nuevo</option>
+                  <option value="contactado">Contactado</option>
+                  <option value="calificado">Calificado</option>
+                  <option value="propuesta">Propuesta</option>
+                  <option value="negociacion">Negociación</option>
+                  <option value="ganado">Ganado</option>
+                  <option value="perdido">Perdido</option>
+                  <option value="reactivado">Reactivado</option>
+                  <option value="postventa">Postventa</option>
+                  <option value="descalificado">Descalificado</option>
+                  <option value="cerrado">Cerrado</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadNombre">Nombre del prospecto</label>
+                <input id="leadNombre" class="form-input" required placeholder="Persona o empresa interesada">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="leadEmpresaOrigen">Empresa de origen</label>
+                <input id="leadEmpresaOrigen" class="form-input" placeholder="Nombre comercial del prospecto">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadEmail">Correo</label>
+                <input id="leadEmail" type="email" class="form-input" placeholder="correo@dominio.com">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="leadTelefono">Teléfono</label>
+                <input id="leadTelefono" class="form-input" placeholder="3001234567">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadCanal">Canal de origen</label>
+                <select id="leadCanal" class="form-input">
+                  <option value="">Selecciona</option>
+                  <option value="web">Web</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="llamada">Llamada</option>
+                  <option value="referido">Referido</option>
+                  <option value="visita">Visita</option>
+                  <option value="campana">Campaña</option>
+                  <option value="red_social">Red social</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="leadPropietario">Propietario</label>
+                <input id="leadPropietario" class="form-input" placeholder="Responsable comercial">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadValor">Valor potencial</label>
+                <input id="leadValor" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="leadProbabilidad">Probabilidad (%)</label>
+                <input id="leadProbabilidad" type="number" min="0" max="100" step="1" class="form-input" placeholder="0 a 100">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadProximoContacto">Próximo contacto</label>
+                <input id="leadProximoContacto" type="datetime-local" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadNotas">Notas comerciales</label>
+                <textarea id="leadNotas" class="form-textarea" placeholder="Necesidad, objeciones, contexto y acuerdo comercial"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="leadObservaciones">Observaciones internas</label>
+                <textarea id="leadObservaciones" class="form-textarea" placeholder="Notas internas y trazabilidad"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="leadSaveBtn" class="btn">Guardar lead</button>
+              <button type="button" id="leadCancelBtn" class="btn secondary">Cancelar</button>
+            </div>
+            <div id="leadMsg" class="form-help crm-form-help"></div>
+          </form>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Pipeline de prospectos</h2>
+            <span class="crm-pill" id="leadCounterPill">0 leads</span>
+          </div>
+          <p class="crm-note">Desde esta tabla puedes mover etapas, registrar seguimiento, abrir una cotización o convertir el prospecto en cliente formal.</p>
+          <div class="crm-table-wrap" id="leadsTableWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="crmPanelInteracciones" class="card empresa-section erp-section-gap crm-panel is-hidden">
+      <div class="crm-panel-grid">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Seguimiento comercial</h2>
+            <button id="interaccionResetBtn" type="button" class="btn secondary">Nuevo</button>
+          </div>
+          <form id="interaccionForm" class="form">
+            <input type="hidden" id="interaccionId">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionCodigo">Código</label>
+                <input id="interaccionCodigo" class="form-input" readonly placeholder="Se genera automáticamente">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="interaccionEstado">Estado</label>
+                <select id="interaccionEstado" class="form-input">
+                  <option value="abierta">Abierta</option>
+                  <option value="en_progreso">En progreso</option>
+                  <option value="cerrada">Cerrada</option>
+                  <option value="reabierta">Reabierta</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionLeadId">Lead asociado</label>
+                <select id="interaccionLeadId" class="form-input"></select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="interaccionClienteId">Cliente ID (opcional)</label>
+                <input id="interaccionClienteId" type="number" min="0" step="1" class="form-input" placeholder="Si ya existe en clientes">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionTipo">Tipo de interacción</label>
+                <select id="interaccionTipo" class="form-input" required>
+                  <option value="llamada">Llamada</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="correo">Correo</option>
+                  <option value="visita">Visita</option>
+                  <option value="reunion">Reunión</option>
+                  <option value="demo">Demostración</option>
+                  <option value="seguimiento">Seguimiento</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="interaccionFecha">Fecha de interacción</label>
+                <input id="interaccionFecha" type="datetime-local" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionResponsable">Responsable</label>
+                <input id="interaccionResponsable" class="form-input" placeholder="Ej: asesor principal">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="interaccionResultado">Resultado</label>
+                <input id="interaccionResultado" class="form-input" placeholder="Ej: agenda demo, espera propuesta">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionResumen">Resumen</label>
+                <textarea id="interaccionResumen" class="form-textarea" required placeholder="Qué se habló, objeciones, acuerdos y siguiente paso"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionProximaAccion">Próxima acción</label>
+                <textarea id="interaccionProximaAccion" class="form-textarea" placeholder="Tarea siguiente, fecha sugerida o compromiso"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="interaccionObservaciones">Observaciones internas</label>
+                <textarea id="interaccionObservaciones" class="form-textarea"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="interaccionSaveBtn" class="btn">Guardar seguimiento</button>
+              <button type="button" id="interaccionCancelBtn" class="btn secondary">Cancelar</button>
+            </div>
+            <div id="interaccionMsg" class="form-help crm-form-help"></div>
+          </form>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Seguimientos y recordatorios</h2>
+            <span class="crm-pill" id="interaccionCounterPill">0 seguimientos</span>
+          </div>
+          <p class="crm-note">Cada seguimiento conserva su trazabilidad y puede quedar enlazado a lead o cliente.</p>
+          <div class="crm-table-wrap" id="interaccionesTableWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="crmPanelCotizaciones" class="card empresa-section erp-section-gap crm-panel is-hidden">
+      <div class="crm-panel-grid">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Cotización comercial</h2>
+            <button id="cotizacionResetBtn" type="button" class="btn secondary">Nueva</button>
+          </div>
+          <form id="cotizacionForm" class="form">
+            <input type="hidden" id="cotizacionId">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionCodigo">Código</label>
+                <input id="cotizacionCodigo" class="form-input" readonly placeholder="Se genera automáticamente">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionEstado">Estado</label>
+                <select id="cotizacionEstado" class="form-input">
+                  <option value="borrador">Borrador</option>
+                  <option value="emitida">Emitida</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="rechazada">Rechazada</option>
+                  <option value="vencida">Vencida</option>
+                  <option value="convertida">Convertida</option>
+                  <option value="anulada">Anulada</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionClienteNombre">Cliente / prospecto</label>
+                <input id="cotizacionClienteNombre" class="form-input" required placeholder="Nombre del cliente o lead">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionClienteId">Cliente ID (opcional)</label>
+                <input id="cotizacionClienteId" type="number" min="0" step="1" class="form-input" placeholder="Si ya existe como cliente">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionFecha">Fecha del documento</label>
+                <input id="cotizacionFecha" type="date" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionVigencia">Vigencia hasta</label>
+                <input id="cotizacionVigencia" type="date" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionSubtotal">Subtotal</label>
+                <input id="cotizacionSubtotal" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionDescuento">Descuento total</label>
+                <input id="cotizacionDescuento" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionImpuesto">Impuesto total</label>
+                <input id="cotizacionImpuesto" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionTotal">Total</label>
+                <input id="cotizacionTotal" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionMoneda">Moneda</label>
+                <input id="cotizacionMoneda" class="form-input" value="COP">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cotizacionOrigen">Origen</label>
+                <input id="cotizacionOrigen" class="form-input" placeholder="Lead, canal o campaña">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionNotas">Notas</label>
+                <textarea id="cotizacionNotas" class="form-textarea" placeholder="Alcance comercial, propuesta y observaciones al cliente"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cotizacionObservaciones">Observaciones internas</label>
+                <textarea id="cotizacionObservaciones" class="form-textarea"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="cotizacionSaveBtn" class="btn">Guardar cotización</button>
+              <button type="button" id="cotizacionCancelBtn" class="btn secondary">Cancelar</button>
+            </div>
+            <div id="cotizacionMsg" class="form-help crm-form-help"></div>
+          </form>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Cotizaciones y conversión</h2>
+            <span class="crm-pill" id="cotizacionCounterPill">0 cotizaciones</span>
+          </div>
+          <p class="crm-note">Puedes aprobar, convertir a pedido o generar documento final sin salir del CRM.</p>
+          <div class="crm-table-wrap" id="cotizacionesTableWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="crmPanelCampanas" class="card empresa-section erp-section-gap crm-panel is-hidden">
+      <div class="crm-panel-grid">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Campaña comercial</h2>
+            <button id="campanaResetBtn" type="button" class="btn secondary">Nueva</button>
+          </div>
+          <form id="campanaForm" class="form">
+            <input type="hidden" id="campanaId">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaCodigo">Código</label>
+                <input id="campanaCodigo" class="form-input" readonly placeholder="Se genera automáticamente">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="campanaEstado">Estado</label>
+                <select id="campanaEstado" class="form-input">
+                  <option value="planificada">Planificada</option>
+                  <option value="activa">Activa</option>
+                  <option value="pausada">Pausada</option>
+                  <option value="finalizada">Finalizada</option>
+                  <option value="archivada">Archivada</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaNombre">Nombre</label>
+                <input id="campanaNombre" class="form-input" required placeholder="Ej: Reactivación clientes mayo">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="campanaCanal">Canal</label>
+                <select id="campanaCanal" class="form-input" required>
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="llamada">Llamada</option>
+                  <option value="presencial">Presencial</option>
+                  <option value="red_social">Red social</option>
+                  <option value="mixta">Mixta</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaObjetivo">Objetivo</label>
+                <textarea id="campanaObjetivo" class="form-textarea" placeholder="Meta comercial y segmento objetivo"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaPresupuesto">Presupuesto</label>
+                <input id="campanaPresupuesto" type="number" min="0" step="0.01" class="form-input" placeholder="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="campanaAudiencia">Audiencia</label>
+                <input id="campanaAudiencia" class="form-input" placeholder="Ej: clientes inactivos 30-90 días">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaFechaInicio">Fecha inicio</label>
+                <input id="campanaFechaInicio" type="date" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="campanaFechaFin">Fecha fin</label>
+                <input id="campanaFechaFin" type="date" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaKPI">KPI objetivo</label>
+                <input id="campanaKPI" class="form-input" placeholder="Ej: 25 reuniones o 15 ventas">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="campanaResultados">Resultado JSON</label>
+                <textarea id="campanaResultados" class="form-textarea crm-output" placeholder='{"contactados": 120, "reuniones": 18, "ventas": 6}'></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="campanaObservaciones">Observaciones internas</label>
+                <textarea id="campanaObservaciones" class="form-textarea"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="campanaSaveBtn" class="btn">Guardar campaña</button>
+              <button type="button" id="campanaCancelBtn" class="btn secondary">Cancelar</button>
+            </div>
+            <div id="campanaMsg" class="form-help crm-form-help"></div>
+          </form>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Campañas y marketing comercial</h2>
+            <span class="crm-pill" id="campanaCounterPill">0 campañas</span>
+          </div>
+          <p class="crm-note">Registra presupuesto, audiencia, KPIs y resultados medibles por campaña.</p>
+          <div class="crm-table-wrap" id="campanasTableWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="crmPanelEmbudo" class="card empresa-section erp-section-gap crm-panel is-hidden">
+      <div class="crm-summary-grid">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Resumen del embudo</h2>
+            <span class="crm-pill is-success" id="embudoConversionBadge">Conversión 0%</span>
+          </div>
+          <div id="embudoResumen"></div>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Alertas comerciales</h2>
+            <span class="crm-pill is-warning" id="embudoAlertBadge">0 alertas</span>
+          </div>
+          <div id="embudoAlertas" class="crm-mini-list"></div>
+        </div>
+      </div>
+      <div class="crm-agenda-grid erp-section-gap">
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Agenda comercial inmediata</h2>
+          </div>
+          <div id="crmAgendaWrap" class="crm-mini-list"></div>
+        </div>
+        <div class="crm-stacked-card">
+          <div class="empresa-section-header">
+            <h2 class="section-heading crm-section-title">Detalle del embudo</h2>
+          </div>
+          <div class="crm-table-wrap" id="embudoTableWrap"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/crm_comercial.js"></script>
+</body>
+</html>

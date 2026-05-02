@@ -997,7 +997,7 @@
     if (moduleConfig.dian) {
       actions.push({
         key: "dian_guia_onboarding",
-        label: "DIAN guia onboarding",
+        label: "DIAN guía onboarding",
         params: [],
         execute: function () { return runDianAction("guia_onboarding", "GET"); }
       });

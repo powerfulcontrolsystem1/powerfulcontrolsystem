@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Modulo de creditos</title>
+  <title>Módulo de créditos</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container">
     <div class="page-header">
-      <h1 class="creditos-page-title">Modulo de creditos y cartera</h1>
+      <h1 class="creditos-page-title">Módulo de créditos y cartera</h1>
     </div>
     <p id="creditosContexto" class="form-help creditos-context"></p>
     <p class="form-help creditos-intro">
@@ -58,7 +58,7 @@
       </div>
       <div class="form-row">
         <div class="form-col creditos-col-200">
-          <label class="form-label" for="crPlazoDias">Plazo dias</label>
+          <label class="form-label" for="crPlazoDias">Plazo días</label>
           <input id="crPlazoDias" class="form-input" type="number" min="0" step="1" value="0">
         </div>
         <div class="form-col creditos-col-200">
@@ -156,9 +156,9 @@
                 <th>Disponible</th>
                 <th>Estado credito</th>
                 <th>Clasificacion</th>
-                <th>Dias mora</th>
+                <th>Días mora</th>
                 <th>Vencimiento</th>
-                <th>Acciones</th>
+                <th>Acciónes</th>
               </tr>
             </thead>
             <tbody id="tablaCreditosBody">
@@ -175,7 +175,7 @@
       </div>
       <div class="creditos-alertas-toolbar">
         <div class="form-col creditos-col-200">
-          <label class="form-label" for="alDiasProximos">Dias proactivos</label>
+          <label class="form-label" for="alDiasProximos">Días proactivos</label>
           <input id="alDiasProximos" class="form-input" type="number" min="1" max="365" step="1" value="7">
         </div>
         <div class="form-col creditos-col-200">
@@ -206,7 +206,7 @@
                   <th>Codigo</th>
                   <th>Cliente</th>
                   <th>Vencimiento</th>
-                  <th>Dias mora</th>
+                  <th>Días mora</th>
                   <th>Saldo</th>
                   <th>Estado</th>
                 </tr>
@@ -227,10 +227,10 @@
                   <th>ID</th>
                   <th>Codigo</th>
                   <th>Cliente</th>
-                  <th>Dias mora</th>
+                  <th>Días mora</th>
                   <th>Saldo</th>
                   <th>Clasificacion</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="tablaRankingBody">
@@ -291,7 +291,7 @@
       <div class="page-header creditos-section-header">
         <h2 id="detalleTitulo" class="creditos-section-title">Estado de cuenta</h2>
       </div>
-      <div id="detalleMeta" class="form-help creditos-detail-meta">Selecciona un credito para ver cuotas y movimientos.</div>
+      <div id="detalleMeta" class="form-help creditos-detail-meta">Selecciona un crédito para ver cuotas y movimientos.</div>
       <div class="creditos-detail-grid">
         <div>
           <h3 class="creditos-detail-subtitle">Cuotas</h3>
@@ -511,7 +511,7 @@
         if (!box) return;
         alertas = alertas || {};
         var cards = [
-          { label: 'Dias proactivos', value: String(i(alertas.dias_proximos || 0)) },
+          { label: 'Días proactivos', value: String(i(alertas.dias_proximos || 0)) },
           { label: 'Top ranking', value: String(i(alertas.top || 0)) },
           { label: 'Total proximos a vencer', value: String(i(alertas.total_proximos_vencer || 0)) },
           { label: 'Total vencidos', value: String(i(alertas.total_vencidos || 0)) },
@@ -716,7 +716,7 @@
         }
         if (meta) {
           if (!credito) {
-            meta.textContent = 'Selecciona un credito para ver cuotas y movimientos.';
+            meta.textContent = 'Selecciona un crédito para ver cuotas y movimientos.';
           } else {
             meta.textContent =
               'Cliente: ' + normalize(credito.cliente_nombre || ('#' + i(credito.cliente_id))) +

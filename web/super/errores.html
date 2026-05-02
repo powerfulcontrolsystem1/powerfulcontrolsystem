@@ -65,14 +65,14 @@
       <div class="page-header">
         <div>
           <h1>Errores del sistema</h1>
-          <p class="form-help">Monitor centralizado de incidencias del POS multiempresa. Registra errores HTTP, panicos recuperados y fallos operativos sin exponer detalles tecnicos al usuario final.</p>
+          <p class="form-help">Monitor centralizado de incidencias del POS multiempresa. Registra errores HTTP, pánicos recuperados y fallos operativos sin exponer detalles técnicos al usuario final.</p>
         </div>
         <div class="errors-toolbar">
           <button id="refreshBtn" class="btn">Actualizar</button>
           <button id="clearFiltersBtn" class="btn secondary">Limpiar filtros</button>
         </div>
       </div>
-      <div class="form-help" id="generatedAtText">Ultima lectura: pendiente</div>
+      <div class="form-help" id="generatedAtText">Última lectura: pendiente</div>
     </section>
 
     <section id="errorBanner" class="card error-banner"></section>
@@ -127,7 +127,7 @@
         <article class="stat-card"><div class="stat-label">WARNING</div><div id="statWarning" class="stat-value">-</div></article>
         <article class="stat-card"><div class="stat-label">ERROR</div><div id="statError" class="stat-value">-</div></article>
         <article class="stat-card"><div class="stat-label">CRITICAL</div><div id="statCritical" class="stat-value">-</div></article>
-        <article class="stat-card"><div class="stat-label">Ultimas 24h</div><div id="statLast24" class="stat-value">-</div></article>
+        <article class="stat-card"><div class="stat-label">Últimas 24h</div><div id="statLast24" class="stat-value">-</div></article>
       </div>
     </section>
 
@@ -147,7 +147,7 @@
               <th>Tipo</th>
               <th>Endpoint</th>
               <th>Mensaje</th>
-              <th>Accion</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody id="errorsTableBody">
@@ -157,7 +157,7 @@
       </div>
       <div class="pagination">
         <button id="prevBtn" class="btn secondary" type="button">Anterior</button>
-        <span id="pageText" class="form-help">Pagina 1</span>
+        <span id="pageText" class="form-help">Página 1</span>
         <button id="nextBtn" class="btn secondary" type="button">Siguiente</button>
       </div>
     </section>
@@ -394,7 +394,7 @@
             renderSummary(payload.summary || {});
             renderRows(state.items);
             renderDetails(state.items[0] || null);
-            elements.generatedAtText.textContent = 'Ultima lectura: ' + new Date().toLocaleString();
+            elements.generatedAtText.textContent = 'Última lectura: ' + new Date().toLocaleString();
             elements.tableMeta.textContent = 'Mostrando ' + state.items.length + ' de ' + state.total + ' errores filtrados.';
             updatePagination();
           })

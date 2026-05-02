@@ -115,6 +115,7 @@ type permissionPageRule struct {
 
 var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
+	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "Operación y venta"},
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "Operación y venta"},
@@ -133,6 +134,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación y venta"},
 	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
+	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM comercial y embudo", Grupo: "Clientes"},
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},

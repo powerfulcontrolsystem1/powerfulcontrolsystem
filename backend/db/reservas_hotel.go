@@ -380,7 +380,7 @@ func expirePendientesReservasHotelAvanzado(dbConn *sql.DB, empresaID int64) (int
 				AND datetime(fecha_creacion, '+' || ? || ' minutes') <= datetime('now','localtime')
 			)
 		)`
-	args := []interface{}{reservaHotelExpiracionDefaultMin}
+	args := []interface{}{strconv.Itoa(reservaHotelExpiracionDefaultMin)}
 	if empresaID > 0 {
 		query += ` AND empresa_id = ?`
 		args = append(args, empresaID)
@@ -409,7 +409,7 @@ func markReservasHotelNoShow(dbConn *sql.DB, empresaID int64, toleranciaMin int)
 		AND estado_reserva = 'confirmada'
 		AND estado_pago = 'confirmado'
 		AND datetime(fecha_entrada, '+' || ? || ' minutes') <= datetime('now','localtime')`
-	args := []interface{}{toleranciaMin}
+	args := []interface{}{strconv.Itoa(toleranciaMin)}
 	if empresaID > 0 {
 		query += ` AND empresa_id = ?`
 		args = append(args, empresaID)

@@ -1198,23 +1198,46 @@ func GetBodegasByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivas bool)
 
 // UpdateBodega actualiza los datos editables de una bodega.
 func UpdateBodega(dbConn *sql.DB, b Bodega) error {
-	_, err := dbConn.Exec(`UPDATE bodegas
-		SET codigo = NULLIF(?, ''), nombre = ?, ubicacion = ?, responsable = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE bodegas
+		SET codigo = NULLIF(?, ''), nombre = ?, ubicacion = ?, responsable = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(b.Codigo), strings.TrimSpace(b.Nombre), strings.TrimSpace(b.Ubicacion), strings.TrimSpace(b.Responsable), strings.TrimSpace(b.Observaciones), b.ID, b.EmpresaID)
-	return err
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // DeleteBodega elimina una bodega de la empresa.
 func DeleteBodega(dbConn *sql.DB, empresaID, bodegaID int64) error {
-	_, err := dbConn.Exec("DELETE FROM bodegas WHERE id = ? AND empresa_id = ?", bodegaID, empresaID)
-	return err
+	res, err := execSQLCompat(dbConn, "DELETE FROM bodegas WHERE id = ? AND empresa_id = ?", bodegaID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // SetBodegaEstado activa/desactiva una bodega.
 func SetBodegaEstado(dbConn *sql.DB, empresaID, bodegaID int64, estado string) error {
-	_, err := dbConn.Exec("UPDATE bodegas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?", strings.TrimSpace(estado), bodegaID, empresaID)
-	return err
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, "UPDATE bodegas SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND empresa_id = ?", strings.TrimSpace(estado), bodegaID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // CreateCategoriaProducto inserta una categoría de producto para una empresa.
@@ -1298,15 +1321,21 @@ func UpdateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`UPDATE categorias_productos
-		SET codigo = NULLIF(?, ''), nombre = ?, descripcion = ?, color_hex = ?, orden = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+	nowExpr := sqlNowExpr()
+	res, err := execTxSQLCompat(tx, `UPDATE categorias_productos
+		SET codigo = NULLIF(?, ''), nombre = ?, descripcion = ?, color_hex = ?, orden = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
-		strings.TrimSpace(c.Codigo), strings.TrimSpace(c.Nombre), strings.TrimSpace(c.Descripcion), strings.TrimSpace(c.ColorHex), c.Orden, strings.TrimSpace(c.Observaciones), c.ID, c.EmpresaID); err != nil {
+		strings.TrimSpace(c.Codigo), strings.TrimSpace(c.Nombre), strings.TrimSpace(c.Descripcion), strings.TrimSpace(c.ColorHex), c.Orden, strings.TrimSpace(c.Observaciones), c.ID, c.EmpresaID)
+	if err != nil {
 		return err
 	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
 
-	if _, err := tx.Exec(`UPDATE productos
-		SET categoria = ?, fecha_actualizacion = datetime('now','localtime')
+	if _, err := execTxSQLCompat(tx, `UPDATE productos
+		SET categoria = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ? AND categoria_id = ?`, strings.TrimSpace(c.Nombre), c.EmpresaID, c.ID); err != nil {
 		return err
 	}
@@ -1317,20 +1346,35 @@ func UpdateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) error {
 // DeleteCategoriaProducto elimina una categoría si no está asociada a productos.
 func DeleteCategoriaProducto(dbConn *sql.DB, empresaID, categoriaID int64) error {
 	var totalProductos int64
-	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND categoria_id = ?`, empresaID, categoriaID).Scan(&totalProductos); err != nil {
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND categoria_id = ?`, empresaID, categoriaID).Scan(&totalProductos); err != nil {
 		return err
 	}
 	if totalProductos > 0 {
 		return fmt.Errorf("no se puede eliminar la categoría porque está asociada a productos")
 	}
-	_, err := dbConn.Exec(`DELETE FROM categorias_productos WHERE id = ? AND empresa_id = ?`, categoriaID, empresaID)
-	return err
+	res, err := execSQLCompat(dbConn, `DELETE FROM categorias_productos WHERE id = ? AND empresa_id = ?`, categoriaID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // SetCategoriaProductoEstado activa/desactiva una categoría de producto.
 func SetCategoriaProductoEstado(dbConn *sql.DB, empresaID, categoriaID int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE categorias_productos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), categoriaID, empresaID)
-	return err
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE categorias_productos SET estado = ?, fecha_actualizacion = `+nowExpr+` WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), categoriaID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func validateProductoStockThresholds(stockMinimo, stockMaximo float64) error {
@@ -1653,17 +1697,23 @@ func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio s
 	}
 
 	var costoAnterior, precioAnterior, impuestoAnterior float64
-	if err := tx.QueryRow(`SELECT costo, precio, impuesto_porcentaje FROM productos WHERE id = ? AND empresa_id = ? LIMIT 1`, p.ID, p.EmpresaID).Scan(&costoAnterior, &precioAnterior, &impuestoAnterior); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT costo, precio, impuesto_porcentaje FROM productos WHERE id = ? AND empresa_id = ? LIMIT 1`, p.ID, p.EmpresaID).Scan(&costoAnterior, &precioAnterior, &impuestoAnterior); err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(`UPDATE productos
+	nowExpr := sqlNowExpr()
+	res, err := execTxSQLCompat(tx, `UPDATE productos
 		SET bodega_principal_id = ?, proveedor_principal_id = ?, categoria_id = ?, sku = NULLIF(?, ''), codigo_barras = NULLIF(?, ''), nombre = ?, descripcion = ?, categoria = ?, marca = ?, unidad_medida = ?,
-			costo = ?, precio = ?, impuesto_porcentaje = ?, stock_minimo = ?, stock_maximo = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+			costo = ?, precio = ?, impuesto_porcentaje = ?, stock_minimo = ?, stock_maximo = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
-		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID); err != nil {
+		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
+	if err != nil {
 		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
 	}
 
 	if costoAnterior != p.Costo || precioAnterior != p.Precio || impuestoAnterior != p.ImpuestoPorcentaje {
@@ -1700,22 +1750,35 @@ func DeleteProducto(dbConn *sql.DB, empresaID, productoID int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM inventario_movimientos WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
+	if _, err := execTxSQLCompat(tx, "DELETE FROM inventario_movimientos WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
 		return err
 	}
-	if _, err := tx.Exec("DELETE FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
+	if _, err := execTxSQLCompat(tx, "DELETE FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
 		return err
 	}
-	if _, err := tx.Exec("DELETE FROM productos WHERE empresa_id = ? AND id = ?", empresaID, productoID); err != nil {
+	res, err := execTxSQLCompat(tx, "DELETE FROM productos WHERE empresa_id = ? AND id = ?", empresaID, productoID)
+	if err != nil {
 		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
 	}
 	return tx.Commit()
 }
 
 // SetProductoEstado activa/desactiva un producto.
 func SetProductoEstado(dbConn *sql.DB, empresaID, productoID int64, estado string) error {
-	_, err := dbConn.Exec("UPDATE productos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?", strings.TrimSpace(estado), productoID, empresaID)
-	return err
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, "UPDATE productos SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND empresa_id = ?", strings.TrimSpace(estado), productoID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // DeleteProductosPreconfiguracion elimina productos guia creados por la preconfiguracion de tipo de empresa.
@@ -1741,8 +1804,16 @@ func DeleteProductosPreconfiguracion(dbConn *sql.DB, empresaID int64) (int64, er
 
 // UpdateProductoImagen actualiza la URL de imagen/logo de un producto.
 func UpdateProductoImagen(dbConn *sql.DB, empresaID, productoID int64, imagenURL string) error {
-	_, err := dbConn.Exec("UPDATE productos SET imagen_url = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?", strings.TrimSpace(imagenURL), productoID, empresaID)
-	return err
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, "UPDATE productos SET imagen_url = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND empresa_id = ?", strings.TrimSpace(imagenURL), productoID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // GetExistenciasByEmpresa devuelve stock por bodega y producto.
@@ -3481,13 +3552,21 @@ func UpdateProveedor(dbConn *sql.DB, p Proveedor) error {
 		return err
 	}
 
-	_, err := dbConn.Exec(`UPDATE proveedores
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE proveedores
 		SET codigo = ?, nombre = ?, documento = ?, contacto = ?, telefono = ?, email = ?, direccion = ?,
 			catalogo_referencia = ?, precio_base_referencial = ?, descuento_porcentaje = ?, plazo_pago_dias = ?, condicion_entrega = ?,
-			observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+			observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(p.Codigo), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Documento), strings.TrimSpace(p.Contacto), strings.TrimSpace(p.Telefono), strings.TrimSpace(p.Email), strings.TrimSpace(p.Direccion), strings.TrimSpace(p.CatalogoReferencia), p.PrecioBaseReferencial, p.DescuentoPorcentaje, p.PlazoPagoDias, strings.TrimSpace(p.CondicionEntrega), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
-	return err
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func validateProveedorCondiciones(p Proveedor) error {
@@ -3505,14 +3584,29 @@ func validateProveedorCondiciones(p Proveedor) error {
 
 // DeleteProveedor elimina proveedor.
 func DeleteProveedor(dbConn *sql.DB, empresaID, proveedorID int64) error {
-	_, err := dbConn.Exec(`DELETE FROM proveedores WHERE id = ? AND empresa_id = ?`, proveedorID, empresaID)
-	return err
+	res, err := execSQLCompat(dbConn, `DELETE FROM proveedores WHERE id = ? AND empresa_id = ?`, proveedorID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // SetProveedorEstado activa/desactiva proveedor.
 func SetProveedorEstado(dbConn *sql.DB, empresaID, proveedorID int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE proveedores SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), proveedorID, empresaID)
-	return err
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE proveedores SET estado = ?, fecha_actualizacion = `+nowExpr+` WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), proveedorID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func defaultComboUnidad(v string) string {
@@ -3668,7 +3762,7 @@ func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes
 	for _, it := range normalized {
 		var unidadProducto sql.NullString
 		var costoProducto float64
-		err := tx.QueryRow(`SELECT COALESCE(unidad_medida, 'unidad'), COALESCE(costo, 0)
+		err := queryRowTxSQLCompat(tx, `SELECT COALESCE(unidad_medida, 'unidad'), COALESCE(costo, 0)
 			FROM productos
 			WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'
 			LIMIT 1`, empresaID, it.ProductoID).Scan(&unidadProducto, &costoProducto)
@@ -3731,7 +3825,7 @@ func validateComboCostos(c ComboProducto, metrics comboCostoMetrics) error {
 func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64, comboCostoMetrics, error) {
 	metrics := comboCostoMetrics{}
 	var version sql.NullInt64
-	err := tx.QueryRow(`SELECT
+	err := queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(receta_version, 1),
 		COALESCE(costo_teorico, 0),
 		COALESCE(costo_real, 0),
@@ -3756,7 +3850,7 @@ func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64
 }
 
 func getComboProductoIngredientesTx(tx *sql.Tx, empresaID, comboID int64) ([]ComboProductoDetalle, error) {
-	rows, err := tx.Query(`SELECT
+	rows, err := queryTxSQLCompat(tx, `SELECT
 		COALESCE(producto_id, 0),
 		COALESCE(cantidad, 0),
 		COALESCE(unidad_medida, 'unidad')
@@ -3795,7 +3889,8 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT OR IGNORE INTO combos_productos_versiones (
+	nowExpr := sqlNowExpr()
+	insertStmt := `INSERT OR IGNORE INTO combos_productos_versiones (
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
@@ -3811,8 +3906,8 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 		variacion_costo_porcentaje,
 		motivo
 	) VALUES (
-		datetime('now','localtime'),
-		datetime('now','localtime'),
+		` + nowExpr + `,
+		` + nowExpr + `,
 		?,
 		'activo',
 		?,
@@ -3825,7 +3920,12 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 		?,
 		?,
 		?
-	)`,
+	)`
+	if isPostgresDialect() {
+		insertStmt = strings.Replace(insertStmt, "INSERT OR IGNORE INTO", "INSERT INTO", 1)
+		insertStmt += " ON CONFLICT (empresa_id, combo_id, receta_version) DO NOTHING"
+	}
+	_, err = execTxSQLCompat(tx, insertStmt,
 		strings.TrimSpace(usuario),
 		strings.TrimSpace(motivo),
 		empresaID,
@@ -3846,12 +3946,13 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 		return fmt.Errorf("el combo debe tener al menos un ingrediente")
 	}
 
-	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
 		return err
 	}
 
+	nowExpr := sqlNowExpr()
 	for _, it := range ingredientes {
-		if _, err := tx.Exec(`INSERT INTO combos_productos_detalle (
+		if _, err := execTxSQLCompat(tx, `INSERT INTO combos_productos_detalle (
 			fecha_creacion,
 			fecha_actualizacion,
 			usuario_creador,
@@ -3863,8 +3964,8 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 			cantidad,
 			unidad_medida
 		) VALUES (
-			datetime('now','localtime'),
-			datetime('now','localtime'),
+			`+nowExpr+`,
+			`+nowExpr+`,
 			?,
 			?,
 			?,
@@ -3892,7 +3993,7 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 
 func countActiveOpenCarritoItemsByComboTx(tx *sql.Tx, empresaID, comboID int64) (int64, error) {
 	var total int64
-	err := tx.QueryRow(`SELECT COUNT(1)
+	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 	FROM carrito_compra_items i
 	JOIN carritos_compras c ON c.empresa_id = i.empresa_id AND c.id = i.carrito_id
 	WHERE i.empresa_id = ?
@@ -3932,7 +4033,8 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return 0, err
 	}
 
-	res, err := tx.Exec(`INSERT INTO combos_productos (
+	nowExpr := sqlNowExpr()
+	comboID, err := insertTxSQLCompat(tx, `INSERT INTO combos_productos (
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
@@ -3951,8 +4053,8 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		variacion_costo,
 		variacion_costo_porcentaje
 	) VALUES (
-		datetime('now','localtime'),
-		datetime('now','localtime'),
+		`+nowExpr+`,
+		`+nowExpr+`,
 		?,
 		?,
 		?,
@@ -3984,11 +4086,6 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		metrics.VariacionCosto,
 		metrics.VariacionCostoPct,
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	comboID, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -4062,7 +4159,7 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 	query += ` ORDER BY c.id DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4101,7 +4198,7 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 
 // GetComboProductoByID obtiene un combo por empresa e incluye su receta.
 func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProducto, error) {
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
@@ -4183,7 +4280,7 @@ func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incl
 	}
 	query += ` ORDER BY d.id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4274,7 +4371,8 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		nextVersion = currentVersion + 1
 	}
 
-	res, err := tx.Exec(`UPDATE combos_productos SET
+	nowExpr := sqlNowExpr()
+	res, err := execTxSQLCompat(tx, `UPDATE combos_productos SET
 		codigo = NULLIF(?, ''),
 		nombre = ?,
 		descripcion = ?,
@@ -4288,7 +4386,7 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		variacion_costo_porcentaje = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(combo.Codigo),
 		strings.TrimSpace(combo.Nombre),
@@ -4352,10 +4450,10 @@ func DeleteComboProducto(dbConn *sql.DB, empresaID, comboID int64) error {
 		return fmt.Errorf("no se puede eliminar el combo mientras tenga items activos en carritos abiertos")
 	}
 
-	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
 		return err
 	}
-	res, err := tx.Exec(`DELETE FROM combos_productos WHERE empresa_id = ? AND id = ?`, empresaID, comboID)
+	res, err := execTxSQLCompat(tx, `DELETE FROM combos_productos WHERE empresa_id = ? AND id = ?`, empresaID, comboID)
 	if err != nil {
 		return err
 	}
@@ -4387,8 +4485,9 @@ func SetComboProductoEstado(dbConn *sql.DB, empresaID, comboID int64, estado str
 		}
 	}
 
-	res, err := tx.Exec(`UPDATE combos_productos
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	nowExpr := sqlNowExpr()
+	res, err := execTxSQLCompat(tx, `UPDATE combos_productos
+	SET estado = ?, fecha_actualizacion = `+nowExpr+`
 	WHERE id = ? AND empresa_id = ?`, nuevoEstado, comboID, empresaID)
 	if err != nil {
 		return err
@@ -4403,15 +4502,12 @@ func SetComboProductoEstado(dbConn *sql.DB, empresaID, comboID int64, estado str
 
 // CreateServicio crea un servicio comercial por empresa.
 func CreateServicio(dbConn *sql.DB, s Servicio) (int64, error) {
-	res, err := dbConn.Exec(`INSERT INTO servicios (
+	nowExpr := sqlNowExpr()
+	return insertSQLCompat(dbConn, `INSERT INTO servicios (
 		empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos, costo_referencial, precio, impuesto_porcentaje, imagen_url,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, `+nowExpr+`, `+nowExpr+`)`,
 		s.EmpresaID, strings.TrimSpace(s.Codigo), strings.TrimSpace(s.Nombre), strings.TrimSpace(s.Descripcion), strings.TrimSpace(s.Categoria), s.DuracionMinutos, s.CostoReferencial, s.Precio, s.ImpuestoPorcentaje, strings.TrimSpace(s.ImagenURL), strings.TrimSpace(s.UsuarioCreador), strings.TrimSpace(s.Estado), strings.TrimSpace(s.Observaciones))
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 // GetServiciosByEmpresa lista servicios por empresa.
@@ -4439,7 +4535,7 @@ func GetServiciosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	query += ` ORDER BY id DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4486,8 +4582,9 @@ func GetServiciosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 
 // UpdateServicio actualiza servicio.
 func UpdateServicio(dbConn *sql.DB, s Servicio) error {
-	_, err := dbConn.Exec(`UPDATE servicios
-		SET codigo = ?, nombre = ?, descripcion = ?, categoria = ?, duracion_minutos = ?, costo_referencial = ?, precio = ?, impuesto_porcentaje = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, `UPDATE servicios
+		SET codigo = ?, nombre = ?, descripcion = ?, categoria = ?, duracion_minutos = ?, costo_referencial = ?, precio = ?, impuesto_porcentaje = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(s.Codigo), strings.TrimSpace(s.Nombre), strings.TrimSpace(s.Descripcion), strings.TrimSpace(s.Categoria), s.DuracionMinutos, s.CostoReferencial, s.Precio, s.ImpuestoPorcentaje, strings.TrimSpace(s.ImagenURL), strings.TrimSpace(s.Observaciones), s.ID, s.EmpresaID)
 	return err
@@ -4495,13 +4592,14 @@ func UpdateServicio(dbConn *sql.DB, s Servicio) error {
 
 // DeleteServicio elimina servicio.
 func DeleteServicio(dbConn *sql.DB, empresaID, servicioID int64) error {
-	_, err := dbConn.Exec(`DELETE FROM servicios WHERE id = ? AND empresa_id = ?`, servicioID, empresaID)
+	_, err := execSQLCompat(dbConn, `DELETE FROM servicios WHERE id = ? AND empresa_id = ?`, servicioID, empresaID)
 	return err
 }
 
 // SetServicioEstado activa/desactiva servicio.
 func SetServicioEstado(dbConn *sql.DB, empresaID, servicioID int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE servicios SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), servicioID, empresaID)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, `UPDATE servicios SET estado = ?, fecha_actualizacion = `+nowExpr+` WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), servicioID, empresaID)
 	return err
 }
 

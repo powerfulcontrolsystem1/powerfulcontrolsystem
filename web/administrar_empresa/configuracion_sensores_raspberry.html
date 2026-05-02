@@ -35,7 +35,7 @@
           <div class="form-col">
             <label class="form-label" for="margenToleranciaEntradaMinutos">Margen de tolerancia para cobro extra (minutos)</label>
             <input id="margenToleranciaEntradaMinutos" class="form-input" type="number" min="0" max="1440" step="1" placeholder="Ej: 10">
-            <p class="form-help">Si la estacion supera la tarifa base solo dentro de este margen, no se cobra hora o fraccion extra.</p>
+            <p class="form-help">Si la estación supera la tarifa base solo dentro de este margen, no se cobra hora o fracción extra.</p>
           </div>
         </div>
         <div class="form-row">
@@ -64,7 +64,7 @@
           <div class="form-col">
             <label class="form-label" for="estacionId">Estacion asociada</label>
             <input id="estacionId" class="form-input" type="number" min="1" step="1" placeholder="Numero de estacion">
-            <p class="form-help">Usa el numero de estacion configurado en la pagina de estaciones.</p>
+            <p class="form-help">Usa el número de estación configurado en la página de estaciones.</p>
           </div>
           <div class="form-col">
             <label class="form-label" for="deviceToken">Token del dispositivo</label>
@@ -258,7 +258,7 @@
 
           container.innerHTML = '<div class="table-wrap">' +
             '<table class="table">' +
-            '<thead><tr><th>Dispositivo</th><th>Estacion</th><th>Estado</th><th>Ultima señal</th><th>Registrado por</th></tr></thead>' +
+            '<thead><tr><th>Dispositivo</th><th>Estación</th><th>Estado</th><th>Última señal</th><th>Registrado por</th></tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
             '</table>' +
             '</div>';
@@ -358,7 +358,7 @@
               String(provisioning.python || '')
             ].join('\n');
           }
-          showMessage('Sensor provisionado. Copia el token en la Raspberry Pi antes de cerrar esta pagina.', 'success');
+          showMessage('Sensor provisionado. Copia el token en la Raspberry Pi antes de cerrar esta página.', 'success');
           await loadDevices();
         } catch (err) {
           showMessage(err.message || 'No se pudo provisionar el sensor.', 'error');

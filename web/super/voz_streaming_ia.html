@@ -18,16 +18,16 @@
   <div class="container">
     <div class="page-header">
       <h1>Voz IA streaming</h1>
-      <p class="form-help">Configura la voz de la IA. La voz rapida del computador usa el navegador y responde casi al instante; la voz natural usa Piper en el VPS y puede tardar mas en cargar.</p>
+      <p class="form-help">Configura la voz de la IA. La voz rápida del computador usa el navegador y responde casi al instante; la voz natural usa Piper en el VPS y puede tardar mas en cargar.</p>
     </div>
 
     <section class="card form advanced-card" data-brand="ai">
       <h2>Motor de voz de la IA</h2>
-      <p class="form-help">Si seleccionas voz rapida del computador, el sistema desactiva el servicio natural del VPS y ejecuta <code>systemctl stop pcs-voice-stream</code> como mejor esfuerzo para liberar memoria.</p>
+      <p class="form-help">Si seleccionas voz rápida del computador, el sistema desactiva el servicio natural del VPS y ejecuta <code>systemctl stop pcs-voice-stream</code> como mejor esfuerzo para liberar memoria.</p>
 
       <div class="voice-status-grid">
         <div class="voice-status-item">
-          <strong>Configuracion</strong>
+          <strong>Configuración</strong>
           <span id="voiceConfigState">Cargando...</span>
         </div>
         <div class="voice-status-item">
@@ -53,10 +53,10 @@
           <label class="form-label">Voz rapida del computador</label>
           <label class="mode-switch-row" for="voiceComputerMode">
             <span class="mode-label">Off</span>
-            <input id="voiceComputerMode" type="checkbox" role="switch" aria-label="Usar voz rapida del computador">
+            <input id="voiceComputerMode" type="checkbox" role="switch" aria-label="Usar voz rápida del computador">
             <span class="mode-label">On</span>
           </label>
-          <div class="form-help">Usa la sintesis de voz del navegador. Es menos natural, pero inicia mucho mas rapido y no consume memoria en el VPS.</div>
+          <div class="form-help">Usa la síntesis de voz del navegador. Es menos natural, pero inicia mucho más rápido y no consume memoria en el VPS.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Voz natural del VPS</label>
@@ -201,7 +201,7 @@
       }
 
       async function loadConfig() {
-        setMessage('Cargando configuracion...');
+        setMessage('Cargando configuración...');
         try {
           var res = await fetch('/super/api/config/voice_stream', { credentials: 'same-origin' });
           var data = await res.json();
@@ -243,7 +243,7 @@
           var serviceMsg = data.service_control && data.service_control.action
             ? (' Servicio VPS: ' + data.service_control.action + ' ' + (data.service_control.ok ? 'OK.' : 'no confirmado.'))
             : '';
-          setMessage('Configuracion guardada.' + serviceMsg);
+          setMessage('Configuración guardada.' + serviceMsg);
         } catch (err) {
           setMessage('No se pudo guardar: ' + err.message, true);
         }
@@ -296,7 +296,7 @@
           setMessage('Servicio activo, credencial registrada y VPS disponible.');
         } catch (err) {
           serviceState.textContent = 'No disponible';
-          setMessage('Activado/configurado, pero la prueba fallo: ' + err.message, true);
+          setMessage('Activado/configurado, pero la prueba falló: ' + err.message, true);
         }
       }
 

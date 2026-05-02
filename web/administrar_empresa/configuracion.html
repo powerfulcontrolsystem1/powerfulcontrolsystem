@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -9,12 +9,12 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Centro de configuracion empresarial</h1>
+      <h1>Centro de configuración empresarial</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
       <p class="form-help">Administra reglas comerciales, cobro, documentos, formato monetario, impresoras, respaldos y pasarelas desde una vista organizada por temas.</p>
-      <div class="empresa-config-map" aria-label="Mapa de configuracion">
+      <div class="empresa-config-map" aria-label="Mapa de configuración">
         <a href="#configuracionFormatoNumerico" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Operacion comercial</span>
+          <span class="empresa-config-map-title">Operación comercial</span>
           <span>Productos, pedidos y descuentos.</span>
         </a>
         <a href="#configuracionCobroOperativo" class="empresa-config-map-item">
@@ -124,7 +124,7 @@
 
     <section id="configuracionCobroOperativo" class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Configuracion operativa de cobro</h2>
+        <h2>Configuración operativa de cobro</h2>
         <button id="btnGuardarConfigOperativa" type="button" class="btn">Guardar empresa</button>
       </div>
       <p class="form-help">Activa o desactiva metodos de pago, propinas y comisiones por empresa y por rol de usuario.</p>
@@ -357,7 +357,7 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="opSimObservaciones">Observaciones de simulacion</label>
-              <input id="opSimObservaciones" class="form-input" placeholder="Descripcion opcional para el historial">
+              <input id="opSimObservaciones" class="form-input" placeholder="Descripción opcional para el historial">
             </div>
           </div>
           <div class="form-actions" >
@@ -386,7 +386,7 @@
                   <th>Evento</th>
                   <th>Usuario</th>
                   <th>Fecha</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="operativaHistorialBody"></tbody>
@@ -401,7 +401,7 @@
         <h2>Caja y cajon monedero</h2>
         <button id="btnGuardarCajaConfig" type="button" class="btn">Guardar caja</button>
       </div>
-      <p class="form-help">Configura la caja operativa de la empresa y define si el cajon monedero se abre automaticamente al terminar el pago de un carrito o una transaccion.</p>
+      <p class="form-help">Configura la caja operativa de la empresa y define si el cajón monedero se abre automáticamente al terminar el pago de un carrito o una transacción.</p>
 
       <div class="empresa-config-grid">
         <div class="form">
@@ -417,7 +417,7 @@
           <input id="cajaCodigo" type="text" maxlength="80" placeholder="CAJA-01">
 
           <label for="cajaObservaciones">Observaciones</label>
-          <textarea id="cajaObservaciones" rows="4" maxlength="800" placeholder="Notas internas de operacion, responsable o ubicacion fisica."></textarea>
+          <textarea id="cajaObservaciones" rows="4" maxlength="800" placeholder="Notas internas de operación, responsable o ubicación física."></textarea>
         </div>
 
         <div class="form">
@@ -428,12 +428,12 @@
 
           <label class="empresa-config-check" for="abrirCajonAlPagarCarrito">
             <input id="abrirCajonAlPagarCarrito" type="checkbox">
-            <span>Abrir automaticamente al pagar un carrito</span>
+            <span>Abrir automáticamente al pagar un carrito</span>
           </label>
 
           <label class="empresa-config-check" for="abrirCajonAlCerrarTransaccion">
             <input id="abrirCajonAlCerrarTransaccion" type="checkbox">
-            <span>Abrir automaticamente al terminar la transaccion</span>
+            <span>Abrir automáticamente al terminar la transacción</span>
           </label>
 
           <label for="cajonMonederoMetodo">Metodo de apertura</label>
@@ -461,7 +461,7 @@
         <h2>Documento de venta e impresion</h2>
         <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar documento</button>
       </div>
-      <p class="form-help">Elige si la venta genera factura electronica o comprobante de pago sin envio a DIAN. El flujo operativo de venta sigue siendo el mismo.</p>
+      <p class="form-help">Elige si la venta genera factura electrónica o comprobante de pago sin envío a DIAN. El flujo operativo de venta sigue siendo el mismo.</p>
 
       <div class="empresa-config-grid">
         <div class="form">
@@ -470,9 +470,9 @@
               <label class="form-label" for="facturaModoDocumentoVenta">Documento al vender</label>
               <select id="facturaModoDocumentoVenta" class="form-input">
                 <option value="comprobante_pago">Comprobante de pago</option>
-                <option value="factura_electronica">Factura electronica</option>
+                <option value="factura_electronica">Factura electrónica</option>
               </select>
-              <p class="form-help">Si se selecciona factura electronica y falta configuracion legal, la venta se guarda y el documento queda pendiente de emision.</p>
+              <p class="form-help">Si se selecciona factura electrónica y falta configuración legal, la venta se guarda y el documento queda pendiente de emisión.</p>
             </div>
             <div class="form-col">
               <label class="form-label" for="facturaFormatoImpresion">Tamaño de hoja</label>
@@ -593,7 +593,7 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="impresoraDireccion">Direccion o cola</label>
+              <label class="form-label" for="impresoraDireccion">Dirección o cola</label>
               <input id="impresoraDireccion" class="form-input" maxlength="255" placeholder="192.168.1.80 o \\\\PC\\IMPRESORA">
             </div>
             <div class="form-col">
@@ -674,7 +674,7 @@
                 <tr>
                   <th>Funcionalidad</th>
                   <th>Impresora</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="tablaImpresorasFuncionalidadesBody"></tbody>
@@ -704,7 +704,7 @@
                 <tr>
                   <th>Producto</th>
                   <th>Impresora</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="tablaImpresorasProductosBody"></tbody>
@@ -1967,7 +1967,7 @@
         }
         if (showSuccessMessage) {
           const catalogWarning = results[1].status !== 'fulfilled' ? ' El catalogo de productos no se pudo cargar, pero las impresoras quedaron disponibles.' : '';
-          setImpresorasMessage('Configuracion de impresoras actualizada.' + catalogWarning, results[1].status !== 'fulfilled' ? 'error' : 'success');
+          setImpresorasMessage('Configuración de impresoras actualizada.' + catalogWarning, results[1].status !== 'fulfilled' ? 'error' : 'success');
         }
       } catch (err) {
         setImpresorasMessage('No se pudo cargar configuración de impresoras: ' + (err && err.message ? err.message : err), 'error');
@@ -2400,9 +2400,9 @@
       try {
         const cfg = await saveGeneralConfig(getFormData());
         setFormData(cfg);
-        setCajaMessage('Configuracion de caja guardada correctamente.', 'success');
+        setCajaMessage('Configuración de caja guardada correctamente.', 'success');
       } catch (err) {
-        setCajaMessage('No se pudo guardar la configuracion de caja: ' + (err && err.message ? err.message : err), 'error');
+        setCajaMessage('No se pudo guardar la configuración de caja: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 

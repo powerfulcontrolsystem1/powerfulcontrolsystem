@@ -1134,12 +1134,12 @@
               }
               if (checkoutForm) {
                 setProviderBusy('epayco', 'Redirigiendo...');
-                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta pagina retomara la verificacion automatica con la referencia guardada.');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automatica con la referencia guardada.');
                 syncStatusText(ui.epaycoStatus, 'Enviando el formulario seguro de Epayco...');
                 if (submitEpaycoClassicCheckoutForm(checkoutForm)) {
                   return;
                 }
-                syncStatusText(ui.epaycoStatus, 'No se pudo enviar el formulario seguro de Epayco. Revisa la configuracion de la pasarela.');
+                syncStatusText(ui.epaycoStatus, 'No se pudo enviar el formulario seguro de Epayco. Revisa la configuración de la pasarela.');
                 resetProvider('epayco');
                 return;
               }

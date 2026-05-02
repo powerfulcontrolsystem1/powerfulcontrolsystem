@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -42,7 +42,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Configuracion legal de nomina</h2>
+        <h2>Configuración legal de nómina</h2>
       </div>
       <form id="cfgForm" class="form">
         <div class="form-row">
@@ -180,7 +180,7 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn">Guardar configuracion</button>
+          <button type="submit" class="btn">Guardar configuración</button>
         </div>
         <div id="cfgMsg" class="form-help"></div>
       </form>
@@ -297,7 +297,7 @@
 
       <section class="card empresa-section">
         <div class="empresa-section-header">
-          <h2>Dias festivos para recargos</h2>
+          <h2>Días festivos para recargos</h2>
         </div>
 
         <form id="festForm" class="form nomina-form-compact">
@@ -307,7 +307,7 @@
               <input id="festFecha" type="date" class="form-input" required>
             </div>
             <div class="form-col">
-              <label class="form-label" for="festDescripcion">Descripcion</label>
+              <label class="form-label" for="festDescripcion">Descripción</label>
               <input id="festDescripcion" class="form-input" placeholder="Ej: Jueves santo">
             </div>
           </div>
@@ -414,7 +414,7 @@
           <thead>
             <tr>
               <th>Empleado</th>
-              <th>Dias</th>
+              <th>Días</th>
               <th>Horas asistencia</th>
               <th>Horas extra</th>
               <th>Devengado</th>
@@ -978,7 +978,7 @@
 
         const html = '<div><strong>Desprendible estandar</strong> | Periodo: ' + period + '</div>' +
           '<div class="form-help" >Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Contrato: ' + contrato + '</div>' +
-          '<div class="form-help" >Dias liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
+          '<div class="form-help" >Días liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
           '<div >' +
             '<div class="card" ><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
             '<div class="card" ><strong>Deducciones</strong><br>Salud: ' + esc(money(doc.deduccion_salud)) + '<br>Pension: ' + esc(money(doc.deduccion_pension)) + '<br>Fondo solidaridad: ' + esc(money(doc.deduccion_fondo_solidaridad)) + '<br>Fija: ' + esc(money(doc.deduccion_fija)) + '<br>Otras: ' + esc(money(doc.otras_deducciones)) + '<br><strong>Total deducciones: ' + esc(money(doc.deduccion_total)) + '</strong></div>' +

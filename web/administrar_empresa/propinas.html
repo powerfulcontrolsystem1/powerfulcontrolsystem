@@ -1,15 +1,15 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Modulo de propinas</title>
+  <title>Módulo de propinas</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container">
     <div class="page-header">
-      <h1>Modulo de propinas</h1>
+      <h1>Módulo de propinas</h1>
     </div>
     <p id="empresaContextoPropinas" class="form-help" style="margin:0 0 8px 0;"></p>
     <p class="form-help" style="margin:0 0 12px 0;">
@@ -18,7 +18,7 @@
 
     <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
-        <h2 style="margin:0;font-size:1rem;">Configuracion de propinas</h2>
+        <h2 style="margin:0;font-size:1rem;">Configuración de propinas</h2>
       </div>
       <div class="form-row">
         <div class="form-col" style="max-width:260px;">
@@ -218,7 +218,7 @@
         <div class="form-col" style="max-width:260px;">
           <label class="form-label" for="ajTratamientoFiscal">Tratamiento fiscal (opcional)</label>
           <select id="ajTratamientoFiscal" class="form-input">
-            <option value="">Usar configuracion</option>
+            <option value="">Usar configuración</option>
             <option value="no_gravada">No gravada</option>
             <option value="gravada">Gravada</option>
           </select>
@@ -374,7 +374,7 @@
           .then(function (resp) {
             var cfg = resp && resp.configuracion ? resp.configuracion : null;
             if (cfg) applyCfg(cfg);
-            setMessage('cfgMsg', 'Configuracion de propinas guardada correctamente.', false);
+            setMessage('cfgMsg', 'Configuración de propinas guardada correctamente.', false);
           })
           .catch(function (err) {
             setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);

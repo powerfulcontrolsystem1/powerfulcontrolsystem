@@ -187,6 +187,10 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetCategoriaProductoEstado(dbEmp, empresaID, id, estado); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
+						return
+					}
 					http.Error(w, "failed to set categoria estado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -208,6 +212,10 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateCategoriaProducto(dbEmp, payload); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
+					return
+				}
 				http.Error(w, "failed to update categoria de producto: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -225,6 +233,10 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteCategoriaProducto(dbEmp, empresaID, id); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
+					return
+				}
 				if strings.Contains(strings.ToLower(err.Error()), "asociada") {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -330,6 +342,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetProductoEstado(dbEmp, empresaID, id, estado); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "producto no encontrado", http.StatusNotFound)
+						return
+					}
 					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -358,10 +374,24 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			if err := dbpkg.UpdateProducto(dbEmp, payload, motivoPrecio, referenciaPrecio); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "producto no encontrado", http.StatusNotFound)
+					return
+				}
 				http.Error(w, "failed to update producto: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.WriteHeader(http.StatusNoContent)
+			updated, err := dbpkg.GetProductoByID(dbEmp, payload.EmpresaID, payload.ID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "producto no encontrado despues de actualizar", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "producto actualizado, pero no se pudo recargar: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(updated)
 			return
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
@@ -375,6 +405,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteProducto(dbEmp, empresaID, id); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "producto no encontrado", http.StatusNotFound)
+					return
+				}
 				http.Error(w, "failed to delete producto: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -1767,6 +1801,10 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetProveedorEstado(dbEmp, empresaID, id, estado); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "proveedor no encontrado", http.StatusNotFound)
+						return
+					}
 					http.Error(w, "failed to set proveedor estado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -1807,6 +1845,10 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateProveedor(dbEmp, payload); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "proveedor no encontrado", http.StatusNotFound)
+					return
+				}
 				http.Error(w, "failed to update proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -1846,6 +1888,10 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteProveedor(dbEmp, empresaID, id); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "proveedor no encontrado", http.StatusNotFound)
+					return
+				}
 				http.Error(w, "failed to delete proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -2039,6 +2085,10 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		imageURL := "/uploads/productos/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
 		if err := dbpkg.UpdateProductoImagen(dbEmp, empresaID, productoID, imageURL); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "producto no encontrado", http.StatusNotFound)
+				return
+			}
 			http.Error(w, "failed to update image url in producto: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

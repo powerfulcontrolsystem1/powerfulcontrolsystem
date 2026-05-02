@@ -234,8 +234,8 @@
       <form id="categoriaProductoForm" class="form is-hidden">
         <div class="producto-inline-form-header">
           <div>
-            <h3 id="categoriaProductoFormTitle">Nueva categoria</h3>
-            <p class="form-help">Registra la categoria directamente en esta pagina.</p>
+            <h3 id="categoriaProductoFormTitle">Nueva categoría</h3>
+            <p class="form-help">Registra la categoría directamente en esta página.</p>
           </div>
           <button id="btnCerrarCategoriaProductoForm" class="btn secondary" type="button">Cerrar formulario</button>
         </div>
@@ -308,7 +308,7 @@
         <div class="producto-inline-form-header">
           <div>
             <h3 id="productoFormTitle">Nuevo producto</h3>
-            <p class="form-help">Registra el producto directamente en esta pagina, sin abrir ventanas encima.</p>
+            <p class="form-help">Registra el producto directamente en esta página, sin abrir ventanas encima.</p>
           </div>
           <button id="btnCerrarProductoForm" class="btn secondary" type="button">Cerrar formulario</button>
         </div>
@@ -732,12 +732,12 @@
                 <th>Producto</th>
                 <th>Bodega</th>
                 <th>Stock actual</th>
-                <th>Stock minimo</th>
+                <th>Stock mínimo</th>
                 <th>Stock maximo</th>
                 <th>Estado</th>
                 <th>Deficit</th>
                 <th>Exceso</th>
-                <th>Accion sugerida</th>
+                <th>Acción sugerida</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1248,9 +1248,9 @@
         reportOpenFormError('No se pudo limpiar el formulario de categoria', err);
       }
       const title = document.getElementById('categoriaProductoFormTitle');
-      if (title) title.textContent = 'Nueva categoria';
+      if (title) title.textContent = 'Nueva categoría';
       openCRUDForm('categoriaProductoForm', 'categoriaProductoNombre');
-      showMessage('Formulario de nueva categoria listo para registrar.', 'success');
+      showMessage('Formulario de nueva categoría listo para registrar.', 'success');
       return consumeOpenEvent(ev);
     };
     window.PCSInventarioNuevaCategoria = window.PCSInventarioNuevaCategoriaProducto;
@@ -1299,7 +1299,7 @@
         try {
           opener(ev);
         } catch (err) {
-          reportOpenFormError('No se pudo abrir el formulario desde el boton ' + btn.id, err);
+          reportOpenFormError('No se pudo abrir el formulario desde el botón ' + btn.id, err);
           if (btn.id === 'btnNuevoProducto') {
             openCRUDForm('productoForm', 'productoNombre');
             consumeOpenEvent(ev);
@@ -1668,7 +1668,7 @@
     async function saveCategoriaProducto(ev) {
       ev.preventDefault();
       if (!empresaId) {
-        showMessage('No se encontro la empresa activa para guardar la categoria. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Categorias de productos.', 'error');
+        showMessage('No se encontró la empresa activa para guardar la categoría. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Categorías de productos.', 'error');
         return;
       }
       const id = Number(document.getElementById('categoriaProductoId').value || 0);
@@ -1838,6 +1838,8 @@
 
     function fillProductoForm(p) {
       document.getElementById('productoId').value = p ? Number(p.id) : '';
+      const title = document.getElementById('productoFormTitle');
+      if (title) title.textContent = p ? 'Editar producto' : 'Nuevo producto';
       document.getElementById('productoNombre').value = p ? (p.nombre || '') : '';
       document.getElementById('productoSKU').value = p ? (p.sku || '') : '';
       document.getElementById('productoCodigoBarras').value = p ? (p.codigo_barras || '') : '';
@@ -1881,7 +1883,7 @@
     async function saveProducto(ev) {
       ev.preventDefault();
       if (!empresaId) {
-        showMessage('No se encontro la empresa activa para guardar el producto. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Inventario (Productos).', 'error');
+        showMessage('No se encontró la empresa activa para guardar el producto. Vuelve a seleccionar la empresa y entra de nuevo a Productos > Inventario (Productos).', 'error');
         return;
       }
       const id = Number(document.getElementById('productoId').value || 0);
@@ -1929,11 +1931,17 @@
 
       let productoID = id;
       if (id > 0) {
-        await requestJSON('/api/empresa/productos', {
+        const updated = await requestJSON('/api/empresa/productos?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(id), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        if (updated && Number(updated.id || 0) === id) {
+          const idx = state.productos.findIndex(p => Number(p.id) === id);
+          if (idx >= 0) {
+            state.productos[idx] = updated;
+          }
+        }
         showMessage('Producto actualizado correctamente.', 'success');
       } else {
         const created = await requestJSON('/api/empresa/productos', {
@@ -1957,6 +1965,10 @@
 
       fillProductoForm(null);
       setCRUDFormVisible('productoForm', false);
+      if (id > 0) {
+        document.getElementById('filtroProductos').value = '';
+        document.getElementById('filtroCategoriaProducto').value = '';
+      }
       await loadProductos();
       await loadExistencias();
       await loadMovimientos();
@@ -2291,7 +2303,7 @@
 
       const rango = (desde || hasta)
         ? ('desde ' + (desde || 'inicio') + ' hasta ' + (hasta || 'hoy'))
-        : 'ultimos 7 dias';
+        : 'últimos 7 días';
       const alcance = bodegaID > 0 ? (' para bodega #' + bodegaID) : ' en todas las bodegas';
       document.getElementById('inventarioTendenciaContexto').textContent =
         'Tendencia ' + rango + alcance + ': neto acumulado ' + netoTotal.toFixed(2) + ' con ' + eventosTotal + ' eventos.';
@@ -2347,7 +2359,7 @@
 
       const rango = (desde || hasta)
         ? ('desde ' + (desde || 'inicio') + ' hasta ' + (hasta || 'hoy'))
-        : 'ultimos 7 dias';
+        : 'últimos 7 días';
       const alcance = bodegaID > 0 ? (' para bodega #' + bodegaID) : ' para bodegas activas';
       document.getElementById('inventarioBalanceBodegasContexto').textContent =
         'Balance ' + rango + alcance + ': neto acumulado ' + netoTotal.toFixed(2) + ' y ' + eventosTotal + ' eventos.';
@@ -2606,7 +2618,7 @@
       const proveedorNombre = String(borrador.proveedor_nombre || ('Proveedor #' + Number(borrador.proveedor_id || 0)));
       document.getElementById('inventarioPlanReposicionBorradorContexto').textContent =
         'Borrador ' + String(borrador.codigo_borrador || '') + ' para ' + proveedorNombre + ': ' +
-        Number(borrador.total_items || 0) + ' lineas, ' + Number(borrador.productos_unicos || 0) + ' productos, ' +
+        Number(borrador.total_items || 0) + ' líneas, ' + Number(borrador.productos_unicos || 0) + ' productos, ' +
         'cantidad total ' + Number(borrador.cantidad_total || 0).toFixed(2) + ' y costo total ' + Number(borrador.costo_total || 0).toFixed(2) + '.';
     }
 
@@ -3339,7 +3351,7 @@
       wireEvents();
       applyViewMode();
       if (!empresaId) {
-        showMessage('No se encontro empresa_id en la URL. Puedes abrir el formulario, pero no se podra guardar hasta cargar la empresa correctamente.', 'error');
+        showMessage('No se encontró empresa_id en la URL. Puedes abrir el formulario, pero no se podrá guardar hasta cargar la empresa correctamente.', 'error');
         return;
       }
       await loadEmpresaInfo();

@@ -16,17 +16,17 @@
 
     <section class="form creditos-section creditos-section-first">
       <div class="page-header creditos-section-header">
-        <h2 class="creditos-section-title">Configuracion por empresa</h2>
+        <h2 class="creditos-section-title">Configuración por empresa</h2>
       </div>
-      <p class="form-help">Fase 2: exporta o importa la configuracion operativa de la empresa en JSON canonico. Incluye integraciones, apariencia, parametros operativos, impresoras, venta publica, soporte remoto y preferencias empresariales.</p>
+      <p class="form-help">Fase 2: exporta o importa la configuración operativa de la empresa en JSON canónico. Incluye integraciones, apariencia, parámetros operativos, impresoras, venta publica, soporte remoto y preferencias empresariales.</p>
       <div class="backups-toolbar-grid">
-        <input id="bkConfigNombre" class="form-input" type="text" placeholder="Nombre del backup de configuracion (opcional)">
-        <input id="bkConfigDescripcion" class="form-input" type="text" placeholder="Descripcion operativa (opcional)">
+        <input id="bkConfigNombre" class="form-input" type="text" placeholder="Nombre del backup de configuración (opcional)">
+        <input id="bkConfigDescripcion" class="form-input" type="text" placeholder="Descripción operativa (opcional)">
         <input id="bkConfigFile" class="form-input" type="file" accept="application/json,.json">
       </div>
       <div class="form-actions creditos-actions-top">
-        <button id="btnExportarConfiguracionEmpresa" type="button" class="btn">Exportar configuracion</button>
-        <button id="btnImportarConfiguracionEmpresa" type="button" class="btn secondary">Importar configuracion</button>
+        <button id="btnExportarConfiguracionEmpresa" type="button" class="btn">Exportar configuración</button>
+        <button id="btnImportarConfiguracionEmpresa" type="button" class="btn secondary">Importar configuración</button>
       </div>
       <div id="configBackupMsg" class="form-help"></div>
     </section>
@@ -37,7 +37,7 @@
       </div>
       <div class="backups-toolbar-grid">
         <input id="bkNombre" class="form-input" type="text" placeholder="Nombre del backup (opcional)">
-        <input id="bkDescripcion" class="form-input" type="text" placeholder="Descripcion operativa (opcional)">
+        <input id="bkDescripcion" class="form-input" type="text" placeholder="Descripción operativa (opcional)">
         <input id="bkInclude" class="form-input" type="text" placeholder="Incluir tablas (coma), ej: clientes,productos">
         <input id="bkExclude" class="form-input" type="text" placeholder="Excluir tablas (coma), ej: logs_tmp">
       </div>
@@ -83,7 +83,7 @@
         <h2 class="creditos-section-title">Historial de backups</h2>
       </div>
       <div class="backups-toolbar-grid backups-toolbar-grid-list">
-        <input id="bkQ" class="form-input" type="text" placeholder="Buscar por codigo, nombre o descripcion">
+        <input id="bkQ" class="form-input" type="text" placeholder="Buscar por código, nombre o descripción">
         <label class="form-help creditos-filter-check backups-filter-check">
           <input id="bkIncludeInactive" type="checkbox"> Incluir inactivos
         </label>
@@ -469,7 +469,7 @@
           include_tables: includeTables,
           exclude_tables: excludeTables,
           crear_backup_previo: crearBackupPrevio,
-          observaciones: 'depuracion por fecha ejecutada desde modulo backups'
+          observaciones: 'depuración por fecha ejecutada desde módulo backups'
         };
 
         var data = await requestJSON('POST', 'depurar_fecha', null, payload);

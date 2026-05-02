@@ -407,17 +407,17 @@
         icon: "/img/restaurante.png",
         alt: "Icono de restaurante",
         eyebrow: "Atencion gastronomica",
-        activeCopy: "Operacion lista para atender clientes, registrar consumos y administrar cobros del negocio.",
-        pendingCopy: "Configura la licencia para activar una operacion agil de mesas, pedidos y facturacion del local."
+        activeCopy: "Operación lista para atender clientes, registrar consumos y administrar cobros del negocio.",
+        pendingCopy: "Configura la licencia para activar una operación ágil de mesas, pedidos y facturación del local."
       },
       {
         pattern: /(hotel|hostal|hosped|motel|apartahotel|resort|alojamiento)/,
         tone: "lodging",
         icon: "/img/motel.png",
         alt: "Icono de hotel o motel",
-        eyebrow: "Operacion de hospedaje",
+        eyebrow: "Operación de hospedaje",
         activeCopy: "Gestion preparada para reservas, recepcion, habitaciones y seguimiento operativo por estancia.",
-        pendingCopy: "Activa la licencia para gestionar hospedaje, recepcion y trazabilidad comercial por habitacion."
+        pendingCopy: "Activa la licencia para gestionar hospedaje, recepción y trazabilidad comercial por habitación."
       },
       {
         pattern: /(tienda|almacen|supermercado|market|boutique|farmacia|drogueria|minimercado|retail|comercio|ferreteria|papeleria|pos|punto de venta)/,
@@ -426,7 +426,7 @@
         alt: "Icono de punto de venta",
         eyebrow: "Comercio y mostrador",
         activeCopy: "Empresa lista para ventas de mostrador, control comercial e interaccion directa con clientes.",
-        pendingCopy: "Habilita la licencia para operar catalogo, facturacion y flujo comercial en punto de venta."
+        pendingCopy: "Habilita la licencia para operar catálogo, facturación y flujo comercial en punto de venta."
       },
       {
         pattern: /(bodega|distribuidora|logistica|almacenamiento|inventario|deposito|suministros|mayorista|warehouse)/,
@@ -434,7 +434,7 @@
         icon: "/img/warehouse-color.svg",
         alt: "Icono de bodega o logistica",
         eyebrow: "Control de inventario",
-        activeCopy: "Preparada para movimientos de bodega, control de existencias y operacion logistica por empresa.",
+        activeCopy: "Preparada para movimientos de bodega, control de existencias y operación logística por empresa.",
         pendingCopy: "Activa la licencia para orquestar inventario, entradas, salidas y control de almacenamiento."
       },
       {
@@ -461,9 +461,9 @@
       tone: "generic",
       icon: "/img/company-briefcase-color.svg",
       alt: "Icono de empresa",
-      eyebrow: "Operacion empresarial",
+      eyebrow: "Operación empresarial",
       activeCopy: "Empresa disponible para continuar la gestion administrativa y operativa desde el panel principal.",
-      pendingCopy: "Configura la licencia para habilitar la operacion completa de esta empresa dentro del sistema."
+      pendingCopy: "Configura la licencia para habilitar la operación completa de esta empresa dentro del sistema."
     };
 
     for (var i = 0; i < visualRules.length; i += 1) {
@@ -784,8 +784,8 @@
     dlBtn.className = "license-indicator active download-data";
     dlBtn.setAttribute("data-empresa-id", String(empresa.id || ""));
     dlBtn.setAttribute("data-empresa-name", String(empresa.nombre || ""));
-    dlBtn.setAttribute("aria-label", "Descargar informacion de la empresa " + String(empresa.nombre || ""));
-    dlBtn.setAttribute("title", "Descargar informacion de la empresa");
+    dlBtn.setAttribute("aria-label", "Descargar información de la empresa " + String(empresa.nombre || ""));
+    dlBtn.setAttribute("title", "Descargar información de la empresa");
     dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10l4-4-1.4-1.4L13 9.2V3h-2zM5 18v2h14v-2H5z"/></svg>';
     var dlCell = div.querySelector(".empresa-card-footer-bar__cell--download");
     if (dlCell) {

@@ -1,15 +1,15 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Modulo de comisiones</title>
+  <title>Módulo de comisiones</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Modulo de comisiones por servicio</h1>
+      <h1>Módulo de comisiones por servicio</h1>
     </div>
     <p class="form-help" style="margin:0 0 12px 0;">
       Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidacion de nomina.
@@ -17,7 +17,7 @@
 
     <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
-        <h2 style="margin:0;font-size:1rem;">Configuracion de comisiones</h2>
+        <h2 style="margin:0;font-size:1rem;">Configuración de comisiones</h2>
       </div>
       <div class="form-row">
         <div class="form-col" style="max-width:260px;">
@@ -48,7 +48,7 @@
         </div>
       </div>
       <div class="form-actions">
-        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuracion</button>
+        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuración</button>
         <button id="btnActivarCfg" type="button" class="btn secondary">Activar</button>
         <button id="btnDesactivarCfg" type="button" class="btn secondary">Desactivar</button>
       </div>
@@ -470,10 +470,10 @@
           .then(function (resp) {
             var cfg = resp && resp.configuracion ? resp.configuracion : null;
             if (cfg) applyCfg(cfg);
-            setMessage('cfgMsg', 'Configuracion de comisiones guardada correctamente.', false);
+            setMessage('cfgMsg', 'Configuración de comisiones guardada correctamente.', false);
           })
           .catch(function (err) {
-            setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+            setMessage('cfgMsg', err.message || 'No se pudo guardar la configuración.', true);
           });
       }
 
@@ -701,7 +701,7 @@
         var rows = report && Array.isArray(report.lavadores) ? report.lavadores : [];
         var body = document.getElementById('tablaLavadoresBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos para el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos para el período seleccionado</td></tr>';
           return;
         }
 
@@ -719,7 +719,7 @@
         var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
         var body = document.getElementById('tablaMovimientosBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="17" class="text-empty" style="text-align:center;">Sin movimientos en el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="17" class="text-empty" style="text-align:center;">Sin movimientos en el período seleccionado</td></tr>';
           return;
         }
 

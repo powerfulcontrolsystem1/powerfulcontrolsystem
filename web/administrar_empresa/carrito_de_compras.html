@@ -123,7 +123,7 @@
       <div id="stationCartSplitRow" class="carrito-station-split mt-12" hidden>
         <div class="carrito-station-split-main">
           <p class="form-help mb-8 mt-0">Items del carrito</p>
-          <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus items.</div>
+          <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
         <aside class="card carrito-summary-card carrito-station-totals-aside">
           <h3 class="section-heading">Totales y detalles</h3>
@@ -199,7 +199,7 @@
             <label class="form-help inline-check">
               <input id="applyTipCheckbox" type="checkbox" checked> Aplicar propina configurada
             </label>
-            <div id="tipConfigHint" class="form-help mt-6">Configuracion de propinas: cargando...</div>
+            <div id="tipConfigHint" class="form-help mt-6">Configuración de propinas: cargando...</div>
           </div>
         </div>
 
@@ -304,7 +304,7 @@
         <div class="form-col">
           <label class="form-label" for="commissionWorker">Lavador (comision)</label>
           <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com">
-          <div id="commissionConfigHint" class="form-help mt-6">Configuracion de comisiones: cargando...</div>
+          <div id="commissionConfigHint" class="form-help mt-6">Configuración de comisiones: cargando...</div>
         </div>
       </section>
 
@@ -330,12 +330,12 @@
           </div>
 
         <section id="itemCatalogSection" class="card carrito-payment-section-card carrito-catalog-card">
-          <h4 class="section-heading">Catalogo inteligente</h4>
+          <h4 class="section-heading">Catálogo inteligente</h4>
         <div id="itemCatalogSearchRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Buscar en catálogo inteligente</label>
             <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
-            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de item (producto/servicio/combo) y escribe al menos 2 caracteres.</div>
+            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de ítem (producto/servicio/combo) y escribe al menos 2 caracteres.</div>
           </div>
           <div class="form-col maxw-220 flex-end">
             <button id="buscarCatalogoBtn" type="button" class="btn secondary w-full">Buscar catálogo</button>
@@ -429,7 +429,7 @@
 
       <div id="carritoGrid" class="carrito-grid mt-14">
         <div class="carrito-grid-main">
-          <div id="itemsList" class="carrito-items-box">Selecciona un carrito para gestionar sus items.</div>
+          <div id="itemsList" class="carrito-items-box">Selecciona un carrito para gestionar sus ítems.</div>
 
         </div>
       </div>
@@ -3054,7 +3054,7 @@
       document.getElementById('cancelItemBtn').style.display = 'none';
       setMessage('itemMsg', '', false);
       document.getElementById('itemBuscarCatalogo').value = '';
-      clearCatalogResults('Selecciona tipo de item (producto/servicio/combo) y escribe al menos 2 caracteres.');
+      clearCatalogResults('Selecciona tipo de ítem (producto/servicio/combo) y escribe al menos 2 caracteres.');
     }
 
     function isCatalogSearchType(tipo) {
@@ -3462,7 +3462,7 @@
         { label: 'Saldo', value: formatAmount(balance, selected.moneda) }
       ];
 
-      const hiddenSummaryLabels = new Set(['EstaciÃ³n ID', 'Carrito ID', 'CÃ³digo', 'Estado', 'SesiÃ³n']);
+      const hiddenSummaryLabels = new Set(['Estación ID', 'Carrito ID', 'Código', 'Estado', 'Sesión']);
       const compactRows = rows.filter(function(row) {
         return !hiddenSummaryLabels.has(row.label);
       });
@@ -3627,7 +3627,7 @@
       if (!box) return;
       const selected = getSelectedCarrito();
       if (!selected) {
-        box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus items.';
+        box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus ítems.';
         return;
       }
 

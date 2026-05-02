@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -16,7 +16,7 @@
     <p class="form-help" style="margin:0 0 12px 0;">Registra entrada, salida, estado y novedad diaria por empleado y empresa.</p>
 
     <section class="form" style="margin-bottom:14px;">
-      <h2 style="margin:0 0 8px 0;">Configuracion de turnos y tolerancias</h2>
+      <h2 style="margin:0 0 8px 0;">Configuración de turnos y tolerancias</h2>
       <div class="form-row">
         <div class="form-col">
           <label class="form-label" for="cfg_tolerancia_entrada">Tolerancia entrada (minutos)</label>
@@ -45,7 +45,7 @@
           <label class="form-label" for="cfg_permitir_cruzado" style="margin:0;">Permitir turno cruzado</label>
         </div>
         <div class="form-col" style="display:flex;align-items:flex-end;gap:8px;max-width:240px;">
-          <button id="saveConfigBtn" class="btn secondary" type="button" style="width:100%;">Guardar configuracion</button>
+          <button id="saveConfigBtn" class="btn secondary" type="button" style="width:100%;">Guardar configuración</button>
         </div>
       </div>
       <div id="cfgMsg" class="form-help"></div>
@@ -452,7 +452,7 @@
       });
       await ensureOk(resp);
       await loadAsistenciaConfig();
-      setSectionMessage('cfgMsg', 'Configuracion de asistencia guardada.', false);
+      setSectionMessage('cfgMsg', 'Configuración de asistencia guardada.', false);
     }
 
     function renderPeriodosCerrados() {
@@ -761,7 +761,7 @@
         try {
           await saveAsistenciaConfig();
         } catch (err) {
-          setSectionMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+          setSectionMessage('cfgMsg', err.message || 'No se pudo guardar la configuración.', true);
         }
       });
       document.getElementById('closePeriodoBtn').addEventListener('click', async function() {
@@ -833,7 +833,7 @@
             return;
           }
         } catch (err) {
-          setMessage(err.message || 'No se pudo ejecutar la accion.', true);
+          setMessage(err.message || 'No se pudo ejecutar la acción.', true);
         }
       });
     }
@@ -841,7 +841,7 @@
     async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || getQueryParam('id') || 0);
       if (!empresaID) {
-        setMessage('No se encontro empresa_id en la URL.', true);
+        setMessage('No se encontró empresa_id en la URL.', true);
         return;
       }
       state.empresaID = empresaID;

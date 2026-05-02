@@ -151,7 +151,7 @@
 
     <div class="form">
       <div class="page-header">
-        <h2>Configuracion avanzada de calculo</h2>
+        <h2>Configuración avanzada de cálculo</h2>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -168,7 +168,7 @@
           <input id="cfg_redondeo_unidad" class="form-input" type="number" min="0.01" step="0.01" value="100">
         </div>
         <div class="form-col">
-          <label class="form-label">Monto minimo diario</label>
+          <label class="form-label">Monto mínimo diario</label>
           <input id="cfg_monto_minimo_diario" class="form-input" type="number" min="0" step="0.01" value="0">
         </div>
       </div>
@@ -674,7 +674,7 @@
         await ensureOk(resp);
         const cfg = await resp.json();
         applyConfigToForm(cfg);
-        setConfigMessage("Configuracion guardada", false);
+        setConfigMessage("Configuración guardada", false);
       } catch (err) {
         setConfigMessage(err.message || "No se pudo guardar la configuracion", true);
       }

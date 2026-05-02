@@ -101,6 +101,7 @@ try {
   var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
   var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
+  var companySelectorLink = document.querySelector("a.select-company");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
   try {
@@ -748,12 +749,14 @@ try {
       setMenuLinkVisible(link, true);
     });
     if (!permissionContext) {
+      setSecondaryMenuVisibility(true);
       refreshMenuGroups();
       return;
     }
     links.forEach(function (link) {
       setMenuLinkVisible(link, canPermissionContextAccessLink(permissionContext, link));
     });
+    setSecondaryMenuVisibility(shouldShowSecondaryMenuLinks(permissionContext));
     refreshMenuGroups();
   }
 
@@ -820,6 +823,43 @@ try {
     }
   }
 
+  function setSecondaryMenuVisibility(visible) {
+    if (portalUsuariosLink) {
+      var portalItem = typeof portalUsuariosLink.closest === "function"
+        ? portalUsuariosLink.closest("li")
+        : portalUsuariosLink.parentElement;
+      if (portalItem) {
+        portalItem.style.display = visible ? "" : "none";
+      }
+    }
+    if (companySelectorLink) {
+      var companyItem = typeof companySelectorLink.closest === "function"
+        ? companySelectorLink.closest("li")
+        : companySelectorLink.parentElement;
+      if (companyItem) {
+        companyItem.style.display = visible ? "" : "none";
+      }
+    }
+  }
+
+  function shouldShowSecondaryMenuLinks(permissionContext) {
+    var pages = permissionContext && permissionContext.paginas;
+    if (!pages || typeof pages !== "object") {
+      return true;
+    }
+    var allowedCount = 0;
+    for (var key in pages) {
+      if (!Object.prototype.hasOwnProperty.call(pages, key)) continue;
+      if (pages[key]) {
+        allowedCount += 1;
+      }
+      if (allowedCount > 1) {
+        return true;
+      }
+    }
+    return allowedCount !== 1;
+  }
+
   function refreshMenuGroups() {
     var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
     groups.forEach(function (group) {
@@ -855,12 +895,14 @@ try {
       setMenuLinkVisible(link, true);
     });
     if (!normalizedRole) {
+      setSecondaryMenuVisibility(true);
       refreshMenuGroups();
       return;
     }
     links.forEach(function (link) {
       setMenuLinkVisible(link, canRoleAccessLink(normalizedRole, link));
     });
+    setSecondaryMenuVisibility(true);
     refreshMenuGroups();
   }
 

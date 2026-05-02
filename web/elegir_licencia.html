@@ -321,7 +321,7 @@
           '    <p class="license-sales-description">' + escapeHtml(descripcion || ('Licencia con duración de ' + String(duracion || '--') + ' días y activación para la empresa seleccionada.')) + '</p>' +
           '    <div class="license-sales-meta">' +
           '      <div class="license-sales-metric"><span>Valor</span><strong>' + escapeHtml(money) + '</strong></div>' +
-          '      <div class="license-sales-metric"><span>Duracion</span><strong>' + escapeHtml(String(duracion || '--')) + ' dias</strong></div>' +
+          '      <div class="license-sales-metric"><span>Duración</span><strong>' + escapeHtml(String(duracion || '--')) + ' días</strong></div>' +
           '    </div>' +
           '    <div class="card-actions">' +
           '      <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
@@ -334,8 +334,8 @@
         try{
           const params = new URLSearchParams(window.location.search);
           const empresaId = params.get('empresa_id');
-          const tipoId = params.get('tipo_id');
-          const tipoNombre = params.get('tipo_nombre');
+          let tipoId = params.get('tipo_id');
+          let tipoNombre = params.get('tipo_nombre');
 
           // auth check
           const meRes = await fetch('/me');
@@ -369,7 +369,11 @@
           let empresaName = '';
           if (empresaId && Array.isArray(empresas)){
             const found = empresas.find(function(x){ return String(x.id) === String(empresaId) });
-            if (found) empresaName = found.nombre || '';
+            if (found) {
+              empresaName = found.nombre || '';
+              if (!tipoId && found.tipo_id != null) tipoId = String(found.tipo_id);
+              if (!tipoNombre && (found.tipo_nombre || found.tipoNombre)) tipoNombre = found.tipo_nombre || found.tipoNombre;
+            }
           }
 
           const titleEl = document.getElementById('pageTitle');

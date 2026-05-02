@@ -216,3 +216,8 @@ Revision integral de modulos - avance 2026-04-30
 
 - Siguiente fase:
   - Continuar con revision funcional de estaciones, carrito, pagos internos, inventario, reportes y venta publica.
+
+- Credenciales del cajero de Motel Calipso creadas el 2026-05-01
+	- Correo: cajero.calipso@powerfulcontrolsystem.local
+	- Clave: CalipsoCaja2026!
+	- Rol: cajero_estaciones_calipso

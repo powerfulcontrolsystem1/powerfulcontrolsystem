@@ -29,6 +29,11 @@ func parsePrinterIDQuery(r *http.Request) (int64, error) {
 // EmpresaImpresorasHandler administra impresoras de empresa, asignación por funcionalidad y por producto.
 func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras] ensure schema error: %v", err)
+			http.Error(w, "No se pudo preparar configuracion de impresoras", http.StatusInternalServerError)
+			return
+		}
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch r.Method {
 		case http.MethodGet:

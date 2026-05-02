@@ -365,7 +365,7 @@ func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usua
 	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
 	  AND (? = '' OR LOWER(COALESCE(usuario_creador, '')) = LOWER(?))
 	GROUP BY LOWER(COALESCE(tipo_movimiento, '')), LOWER(COALESCE(metodo_pago, '')), COALESCE(categoria, ''), COALESCE(usuario_creador, '')
-	ORDER BY tipo_movimiento, metodo_pago, categoria`
+	ORDER BY 1, 2, 3, 4`
 	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario)
 	if err != nil {
 		return nil, err

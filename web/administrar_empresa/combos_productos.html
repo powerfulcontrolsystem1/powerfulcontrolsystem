@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -48,7 +48,7 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Descripcion</label>
+          <label class="form-label">Descripción</label>
           <textarea id="comboDescripcion" class="form-textarea" placeholder="Opcional"></textarea>
         </div>
       </div>
@@ -633,7 +633,7 @@
       const empresaID = resolveEmpresaId();
       if (!empresaID) {
         document.getElementById('combosList').textContent = 'empresa_id requerido en la URL';
-        setMessage('comboMsg', 'No se encontro empresa_id. Puedes abrir el formulario, pero no se podra guardar hasta cargar la empresa correctamente.', true);
+        setMessage('comboMsg', 'No se encontró empresa_id. Puedes abrir el formulario, pero no se podrá guardar hasta cargar la empresa correctamente.', true);
         return;
       }
       state.empresaID = empresaID;

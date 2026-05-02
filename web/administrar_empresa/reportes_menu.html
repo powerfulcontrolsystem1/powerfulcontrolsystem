@@ -3,19 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Reportes - Menú</title>
+  <title>Reportes - Menu</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Reportes</h2>
-      <ul class="nav">
+      <ul class="nav" id="reportesSidebarNav">
         <li><a id="linkReportesMain" href="/administrar_empresa/reportes.html" target="reportesContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Reportes generales</a></li>
         <li><a id="linkReportesVentas" href="/administrar_empresa/ventas.html" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Ventas</a></li>
         <li><a id="linkReportesInventario" href="/administrar_empresa/reportes_inventario.html" target="reportesContentFrame"><img class="icon" src="/img/warehouse-color.svg" alt="">Inventario</a></li>
         <li><a id="linkReportesFinanzas" href="/administrar_empresa/reportes_finanzas.html" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
         <li><a id="linkReportesImpuestos" href="/administrar_empresa/reportes.html?dataset=operativo_impuestos_deuda" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Impuestos</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="reportesSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
       </ul>
     </aside>
 
@@ -23,23 +29,23 @@
       <iframe name="reportesContentFrame" id="reportesContentFrame" src="/administrar_empresa/reportes.html" title="Contenido de reportes" class="admin-empresa-frame"></iframe>
     </main>
   </div>
-      <script src="/js/administrar_empresa.js"></script>
-      <script>
-        (function(){
-          try {
-            const params = new URLSearchParams(window.location.search);
-            const sub = params.get('subpage');
-            if (sub) {
-              const iframe = document.getElementById('reportesContentFrame');
-              if (iframe) {
-                const src = sub.startsWith('/') ? sub : ('/administrar_empresa/' + sub);
-                iframe.src = src;
-              }
-            }
-          } catch (e) {
-            // no-op
+  <script src="/js/administrar_empresa.js"></script>
+  <script>
+    (function(){
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const sub = params.get('subpage');
+        if (sub) {
+          const iframe = document.getElementById('reportesContentFrame');
+          if (iframe) {
+            const src = sub.startsWith('/') ? sub : ('/administrar_empresa/' + sub);
+            iframe.src = src;
           }
-        })();
-      </script>
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/menu.js"></script>
 </body>
 </html>

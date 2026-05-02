@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Preconfiguracion de tipos de empresa</title>
+  <title>Preconfiguración de tipos de empresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .preconfig-layout { display:grid; grid-template-columns:minmax(240px,320px) 1fr; gap:16px; align-items:start; }
@@ -42,8 +42,8 @@
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Preconfiguracion de tipos de empresa</h1>
-      <p class="form-help">Define datos guia para empresas nuevas: estaciones, caja, productos, usuarios iniciales y contexto de IA. Al crear la empresa, el administrador decide si conserva o elimina la preconfiguracion aplicada.</p>
+      <h1>Preconfiguración de tipos de empresa</h1>
+      <p class="form-help">Define datos guía para empresas nuevas: estaciones, caja, productos, usuarios iniciales y contexto de IA. Al crear la empresa, el administrador decide si conserva o elimina la preconfiguración aplicada.</p>
     </div>
 
     <div class="preconfig-layout">
@@ -87,7 +87,7 @@
 
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="descripcion">Descripcion</label>
+              <label class="form-label" for="descripcion">Descripción</label>
               <textarea id="descripcion" class="form-textarea" rows="2"></textarea>
             </div>
           </div>
@@ -127,7 +127,7 @@
           </section>
 
           <section class="preconfig-section">
-            <h3>Operacion por tipo de empresa</h3>
+            <h3>Operación por tipo de empresa</h3>
             <div class="form-row">
               <div class="form-col">
                 <label class="form-label" for="operacionTipoNegocio">Tipo operativo</label>
@@ -147,13 +147,13 @@
                 <label class="form-label">
                   <input id="operacionUsaEstaciones" type="checkbox"> Usa estaciones
                 </label>
-                <div class="form-help">Si se desactiva, no se crean estaciones. Ideal para tecnico independiente.</div>
+                <div class="form-help">Si se desactiva, no se crean estaciones. Ideal para técnico independiente.</div>
               </div>
               <div class="form-col">
                 <label class="form-label">
                   <input id="ventaDirectaEnabled" type="checkbox"> Activar venta directa
                 </label>
-                <div class="form-help">Crea acceso a carrito rapido para vender sin entrar por estaciones.</div>
+                <div class="form-help">Crea acceso a carrito rápido para vender sin entrar por estaciones.</div>
               </div>
               <div class="form-col">
                 <label class="form-label" for="ventaDirectaNombre">Nombre venta directa</label>
@@ -168,7 +168,7 @@
               </div>
               <div class="form-col">
                 <label class="form-label" for="comisionRol">Rol que gana comision</label>
-                <input id="comisionRol" class="form-input" placeholder="estilista, tecnico, operacion">
+                <input id="comisionRol" class="form-input" placeholder="estilista, técnico, operación">
               </div>
               <div class="form-col">
                 <label class="form-label" for="comisionPorcentaje">Porcentaje</label>
@@ -184,26 +184,26 @@
           </section>
 
           <section class="preconfig-section">
-            <h3>Productos guia</h3>
-            <label class="form-label" for="productosText">Un producto por linea</label>
+            <h3>Productos guía</h3>
+            <label class="form-label" for="productosText">Un producto por línea</label>
             <textarea id="productosText" class="form-textarea" rows="8" spellcheck="false"></textarea>
-            <div class="form-help">Formato: SKU | Nombre | Precio | Categoria | Costo | Stock minimo</div>
+            <div class="form-help">Formato: SKU | Nombre | Precio | Categoría | Costo | Stock mínimo</div>
             <div id="productsPreview" class="preconfig-products-preview"></div>
           </section>
 
           <section class="preconfig-section">
-            <h3>Usuarios guia</h3>
-            <label class="form-label" for="usuariosText">Un usuario por linea</label>
+            <h3>Usuarios guía</h3>
+            <label class="form-label" for="usuariosText">Un usuario por línea</label>
             <textarea id="usuariosText" class="form-textarea" rows="5" spellcheck="false"></textarea>
             <div class="form-help">Formato: Nombre | Rol | Email opcional | Observaciones. Se crean inactivos y sin clave para que luego se conviertan en usuarios reales.</div>
           </section>
 
           <section class="preconfig-section">
-            <h3>Asistente IA guia</h3>
+            <h3>Asistente IA guía</h3>
             <div class="form-row">
               <div class="form-col">
                 <label class="form-label">
-                  <input id="asistenteEnabled" type="checkbox"> Activar guia de IA para este tipo
+                  <input id="asistenteEnabled" type="checkbox"> Activar guía de IA para este tipo
                 </label>
               </div>
               <div class="form-col">
@@ -213,18 +213,18 @@
             </div>
             <label class="form-label" for="instruccionesText">Instrucciones para la IA</label>
             <textarea id="instruccionesText" class="form-textarea" rows="5" spellcheck="false"></textarea>
-            <div class="form-help">Una instruccion por linea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guia operativa.</div>
+            <div class="form-help">Una instrucción por línea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guía operativa.</div>
           </section>
 
           <section class="preconfig-section">
-            <h3>Tareas guia iniciales</h3>
-            <label class="form-label" for="tareasText">Una tarea por linea</label>
+            <h3>Tareas guía iniciales</h3>
+            <label class="form-label" for="tareasText">Una tarea por línea</label>
             <textarea id="tareasText" class="form-textarea" rows="6" spellcheck="false"></textarea>
-            <div class="form-help">Formato: Modulo | Titulo | Descripcion. La IA puede usar estas tareas como ruta de configuracion inicial.</div>
+            <div class="form-help">Formato: Módulo | Título | Descripción. La IA puede usar estas tareas como ruta de configuración inicial.</div>
           </section>
 
           <div class="form-actions">
-            <button type="submit" class="btn primary">Guardar preconfiguracion</button>
+            <button type="submit" class="btn primary">Guardar preconfiguración</button>
             <button type="button" id="resetDefaultBtn" class="btn secondary">Restaurar sugerida</button>
           </div>
           <div id="message" class="form-help preconfig-message" role="status"></div>
@@ -412,11 +412,11 @@
         var products = parseProducts();
         productsPreview.innerHTML = products.length ? products.map(function (p) {
           return '<div class="preconfig-product-row">' +
-            '<div><strong>' + escapeHtml(p.nombre) + '</strong><br><small>' + escapeHtml(p.sku + ' - ' + (p.categoria || 'Sin categoria')) + '</small></div>' +
+            '<div><strong>' + escapeHtml(p.nombre) + '</strong><br><small>' + escapeHtml(p.sku + ' - ' + (p.categoria || 'Sin categoría')) + '</small></div>' +
             '<span>$' + Number(p.precio || 0).toLocaleString('es-CO') + '</span>' +
             '<small>Costo $' + Number(p.costo || 0).toLocaleString('es-CO') + '</small>' +
             '</div>';
-        }).join('') : '<div class="form-help">Sin productos guia.</div>';
+        }).join('') : '<div class="form-help">Sin productos guía.</div>';
       }
 
       function setForm(item) {
@@ -443,11 +443,11 @@
         document.getElementById('descripcion').value = preconfig.descripcion || '';
         document.getElementById('estacionesEnabled').checked = !!estaciones.enabled;
         document.getElementById('estacionesCantidad').value = estaciones.cantidad || 0;
-        document.getElementById('estacionesPrefijo').value = estaciones.prefijo || 'Estacion';
+        document.getElementById('estacionesPrefijo').value = estaciones.prefijo || 'Estación';
         document.getElementById('cardSize').value = estaciones.card_size || 'medium';
         document.getElementById('cajaEnabled').checked = !!estaciones.caja_enabled;
         document.getElementById('operacionTipoNegocio').value = operacion.tipo_negocio || '';
-        document.getElementById('operacionSingular').value = operacion.nombre_estacion_singular || estaciones.prefijo || 'Estacion';
+        document.getElementById('operacionSingular').value = operacion.nombre_estacion_singular || estaciones.prefijo || 'Estación';
         document.getElementById('operacionPlural').value = operacion.nombre_estacion_plural || '';
         document.getElementById('operacionUsaEstaciones').checked = operacion.usa_estaciones !== false && !!estaciones.enabled;
         document.getElementById('ventaDirectaEnabled').checked = !!operacion.venta_directa_enabled;
@@ -584,7 +584,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          setMessage('Preconfiguracion guardada.', 'success');
+          setMessage('Preconfiguración guardada.', 'success');
           await load();
         } catch (err) {
           setMessage(err.message || 'No se pudo guardar.', 'error');
