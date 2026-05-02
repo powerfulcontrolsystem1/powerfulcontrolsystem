@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Sistema para gimnasios</title>
+  <desc id="desc">Ilustración de un gimnasio moderno con dashboard, acceso por credencial y entrenamiento guiado.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e0a0e"/>
+      <stop offset="50%" stop-color="#4f121c"/>
+      <stop offset="100%" stop-color="#b42933"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ef"/>
+      <stop offset="100%" stop-color="#ffd8b1"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" rx="48" fill="url(#bg)"/>
+  <circle cx="1015" cy="130" r="94" fill="#f4c277" opacity="0.25"/>
+  <circle cx="165" cy="662" r="126" fill="#ff7e68" opacity="0.2"/>
+  <rect x="58" y="64" width="1084" height="672" rx="34" fill="url(#glass)" stroke="rgba(255,255,255,0.16)"/>
+  <text x="92" y="128" fill="#fff6ee" font-family="Georgia, serif" font-size="48" font-weight="700">Sistema para gimnasios</text>
+  <text x="92" y="172" fill="#ffd8c2" font-family="'Trebuchet MS', sans-serif" font-size="24">Membresías, control de acceso RFID, clases, pagos y seguimiento del socio.</text>
+
+  <rect x="90" y="228" width="356" height="420" rx="28" fill="#2b1116" stroke="#ffcfaa" stroke-opacity="0.18"/>
+  <text x="124" y="280" fill="#ffdcb8" font-family="'Trebuchet MS', sans-serif" font-size="22" font-weight="700">Control de acceso</text>
+  <rect x="124" y="314" width="288" height="116" rx="20" fill="#fff2e2"/>
+  <rect x="150" y="338" width="76" height="68" rx="18" fill="#b62d3d"/>
+  <rect x="243" y="354" width="136" height="10" rx="5" fill="#5d1721"/>
+  <rect x="243" y="377" width="112" height="10" rx="5" fill="#c74d5c"/>
+  <rect x="243" y="398" width="92" height="10" rx="5" fill="#df8f80"/>
+  <text x="124" y="474" fill="#fff5eb" font-family="'Trebuchet MS', sans-serif" font-size="18">• Carnets y tarjetas RFID/NFC</text>
+  <text x="124" y="506" fill="#fff5eb" font-family="'Trebuchet MS', sans-serif" font-size="18">• Validación por plan, sede y horario</text>
+  <text x="124" y="538" fill="#fff5eb" font-family="'Trebuchet MS', sans-serif" font-size="18">• Bitácora de ingresos y salidas</text>
+
+  <rect x="490" y="228" width="274" height="420" rx="28" fill="#fff6ec"/>
+  <text x="524" y="280" fill="#6d1822" font-family="'Trebuchet MS', sans-serif" font-size="22" font-weight="700">Dashboard del socio</text>
+  <rect x="524" y="314" width="206" height="16" rx="8" fill="#f0b97e"/>
+  <rect x="524" y="346" width="168" height="16" rx="8" fill="#ffd7ae"/>
+  <rect x="524" y="390" width="206" height="182" rx="26" fill="#3b1119"/>
+  <path d="M560 508l42-82 46 56 32-44 36 70" fill="none" stroke="#86f0c7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="560" cy="508" r="8" fill="#86f0c7"/>
+  <circle cx="602" cy="426" r="8" fill="#86f0c7"/>
+  <circle cx="648" cy="482" r="8" fill="#86f0c7"/>
+  <circle cx="680" cy="438" r="8" fill="#86f0c7"/>
+  <circle cx="716" cy="508" r="8" fill="#86f0c7"/>
+  <text x="524" y="610" fill="#6d1822" font-family="'Trebuchet MS', sans-serif" font-size="18">Rutinas, pagos, clases y renovaciones</text>
+
+  <rect x="808" y="228" width="302" height="420" rx="28" fill="#2a0f15" stroke="#ffcfaa" stroke-opacity="0.18"/>
+  <text x="842" y="280" fill="#ffe6ca" font-family="'Trebuchet MS', sans-serif" font-size="22" font-weight="700">Operación diaria</text>
+  <rect x="842" y="320" width="236" height="128" rx="26" fill="#fff6ec"/>
+  <rect x="876" y="344" width="64" height="64" rx="22" fill="#c53b4b"/>
+  <rect x="958" y="356" width="92" height="14" rx="7" fill="#6d1822"/>
+  <rect x="958" y="384" width="74" height="14" rx="7" fill="#db846a"/>
+  <text x="842" y="500" fill="#fff4e8" font-family="'Trebuchet MS', sans-serif" font-size="18">• Turnos de entrenadores</text>
+  <text x="842" y="532" fill="#fff4e8" font-family="'Trebuchet MS', sans-serif" font-size="18">• Clases con cupos y listas</text>
+  <text x="842" y="564" fill="#fff4e8" font-family="'Trebuchet MS', sans-serif" font-size="18">• Alertas de cartera y vencimientos</text>
+  <text x="842" y="596" fill="#fff4e8" font-family="'Trebuchet MS', sans-serif" font-size="18">• Rentabilidad por plan y canal</text>
+</svg>
