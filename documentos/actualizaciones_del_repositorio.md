@@ -3242,3 +3242,7 @@ Archivos modificados:
 2026-05-02 04:48:42 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 771ee8f; PushStatus: OK
 Archivos modificados:
 - backend/handlers/public_chat_portal.go
+
+2026-05-02 04:53:27 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: d27d2c0; PushStatus: OK
+Archivos modificados:
+- web/js/ai_chat_drawer.js
