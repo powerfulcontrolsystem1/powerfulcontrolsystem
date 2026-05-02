@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Turnos de atención</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .turnos-grid{display:grid;gap:16px}
+    .turnos-hero,.turnos-card{background:linear-gradient(180deg,rgba(10,24,38,.96),rgba(14,31,48,.92));border:1px solid rgba(120,154,190,.18);border-radius:18px;box-shadow:0 18px 38px rgba(0,0,0,.22);padding:18px}
+    .turnos-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:16px}
+    .turnos-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(49,157,231,.12);border:1px solid rgba(49,157,231,.24);color:#bde1ff;font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .turnos-hero h1,.turnos-card h2{margin:12px 0 8px;color:#f4f8ff}
+    .turnos-hero p,.turnos-card p{margin:0;color:#b8cada;line-height:1.55}
+    .turnos-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .turnos-layout-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .turnos-layout-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .turnos-list{display:grid;gap:10px;margin-top:12px}
+    .turnos-list-item{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .turnos-list-item strong{display:block;color:#f4f8ff;margin-bottom:4px}
+    .turno-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-weight:800;background:rgba(255,255,255,.05);color:#edf3fb;border:1px solid rgba(150,176,206,.18)}
+    .turno-code{font-size:1.8rem;font-weight:900;color:#f4f8ff;letter-spacing:.04em}
+    @media (max-width: 980px){.turnos-hero,.turnos-layout-2,.turnos-layout-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container turnos-grid">
+    <section class="turnos-hero">
+      <article>
+        <span class="turnos-kicker">Turnos de atención</span>
+        <h1>Cola profesional para bancos, recepción, cajas y servicio al cliente</h1>
+        <p>Emite tickets, organiza servicios, asigna puestos, llama el siguiente turno y alimenta una pantalla pública para TV con el historial de llamados y el estado de la fila.</p>
+      </article>
+      <aside class="turnos-card">
+        <h2 style="margin-top:0;">Operación del módulo</h2>
+        <p>Este flujo está pensado para sucursales, cajas, clínicas, bancos, gimnasios o recepciones donde el cliente toma un ticket y espera a que el sistema lo llame en pantalla.</p>
+        <div class="turnos-actions" style="margin-top:12px;">
+          <a class="btn secondary" id="openPublicKiosk" target="_blank" rel="noopener">Abrir kiosco público</a>
+          <a class="btn secondary" id="openDisplayScreen" target="_blank" rel="noopener">Abrir pantalla TV</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-box"><span class="kpi-label">Esperando</span><strong id="kpiEsperando">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Llamando</span><strong id="kpiLlamando">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">En atención</span><strong id="kpiAtendiendo">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Completados</span><strong id="kpiCompletados">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Cancelados</span><strong id="kpiCancelados">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Espera prom. min</span><strong id="kpiEspera">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Atención prom. min</span><strong id="kpiAtencion">0</strong></div>
+    </section>
+
+    <section class="turnos-layout-3">
+      <form id="configForm" class="form turnos-card">
+        <h2>Configuración</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgNombreSistema">Nombre del sistema</label><input id="cfgNombreSistema" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgNombrePantalla">Nombre de pantalla</label><input id="cfgNombrePantalla" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgPrefijo">Prefijo general</label><input id="cfgPrefijo" class="form-input" maxlength="4"></div>
+          <div class="form-col"><label class="form-label" for="cfgTiempo">Tiempo visual de llamado (seg)</label><input id="cfgTiempo" type="number" min="5" max="120" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="cfgEmisionPublica" type="checkbox"><label class="form-label" for="cfgEmisionPublica" style="margin:0;">Permitir emisión pública</label></div>
+          <div class="form-col" style="display:flex;align-items:center;gap:8px;"><input id="cfgMostrarCompletados" type="checkbox"><label class="form-label" for="cfgMostrarCompletados" style="margin:0;">Mostrar completados en TV</label></div>
+        </div>
+        <div class="turnos-actions"><button class="btn secondary" type="submit">Guardar configuración</button></div>
+        <div id="configMsg" class="form-help"></div>
+      </form>
+
+      <form id="serviceForm" class="form turnos-card">
+        <h2>Servicios</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="svcCodigo">Código</label><input id="svcCodigo" class="form-input" placeholder="CAJA"></div>
+          <div class="form-col"><label class="form-label" for="svcNombre">Nombre</label><input id="svcNombre" class="form-input" placeholder="Caja general"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="svcPrefijo">Prefijo ticket</label><input id="svcPrefijo" class="form-input" placeholder="A"></div>
+          <div class="form-col"><label class="form-label" for="svcPrioridad">Prioridad</label><input id="svcPrioridad" type="number" min="1" class="form-input" value="100"></div>
+          <div class="form-col"><label class="form-label" for="svcColor">Color</label><input id="svcColor" type="color" class="form-input" value="#2563eb"></div>
+        </div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="svcDescripcion">Descripción</label><input id="svcDescripcion" class="form-input"></div></div>
+        <div class="turnos-actions"><button class="btn add" type="submit">Crear servicio</button></div>
+        <div id="serviceMsg" class="form-help"></div>
+      </form>
+
+      <form id="puestoForm" class="form turnos-card">
+        <h2>Puestos de atención</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="pstCodigo">Código</label><input id="pstCodigo" class="form-input" placeholder="P1"></div>
+          <div class="form-col"><label class="form-label" for="pstNombre">Nombre</label><input id="pstNombre" class="form-input" placeholder="Puesto 1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="pstArea">Área</label><input id="pstArea" class="form-input" placeholder="Recepción"></div>
+          <div class="form-col"><label class="form-label" for="pstUbicacion">Ubicación</label><input id="pstUbicacion" class="form-input" placeholder="Sala principal"></div>
+        </div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="pstServicios">Servicios permitidos (códigos CSV)</label><input id="pstServicios" class="form-input" placeholder="CAJA,INFO"></div></div>
+        <div class="turnos-actions"><button class="btn add" type="submit">Crear puesto</button></div>
+        <div id="puestoMsg" class="form-help"></div>
+      </form>
+    </section>
+
+    <section class="turnos-layout-2">
+      <section class="turnos-card">
+        <h2>Emisión y llamado</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="emitServicio">Servicio</label><select id="emitServicio" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="emitPuesto">Puesto</label><select id="emitPuesto" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="emitNombre">Cliente</label><input id="emitNombre" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="emitDocumento">Documento</label><input id="emitDocumento" class="form-input"></div>
+        </div>
+        <div class="turnos-actions">
+          <button id="btnEmitirTicket" class="btn add" type="button">Emitir ticket</button>
+          <button id="btnLlamarSiguiente" class="btn secondary" type="button">Llamar siguiente</button>
+        </div>
+        <div id="emitMsg" class="form-help"></div>
+        <div id="lastTicketBox" class="turnos-list"></div>
+      </section>
+
+      <section class="turnos-card">
+        <h2>Servicios y puestos activos</h2>
+        <div class="turnos-layout-2">
+          <div>
+            <strong style="color:#f4f8ff;">Servicios</strong>
+            <div id="servicesList" class="turnos-list"></div>
+          </div>
+          <div>
+            <strong style="color:#f4f8ff;">Puestos</strong>
+            <div id="puestosList" class="turnos-list"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="turnos-layout-2">
+      <section class="turnos-card">
+        <h2>Tickets activos</h2>
+        <div id="ticketsList" class="turnos-list"></div>
+      </section>
+      <section class="turnos-card">
+        <h2>Llamados recientes</h2>
+        <div id="recentCallsList" class="turnos-list"></div>
+      </section>
+    </section>
+  </div>
+  <script src="/js/turnos_atencion.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sacar turno</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+  </script>
+  <style>
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text)}
+    .kiosk-shell{max-width:1100px;margin:0 auto;padding:24px 16px;display:grid;gap:18px}
+    .kiosk-card{background:var(--public-panel-bg);border:1px solid var(--public-panel-border);border-radius:20px;box-shadow:0 20px 44px var(--public-panel-shadow);padding:22px}
+    .kiosk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+    .service-btn{width:100%;text-align:left;border-radius:16px;border:1px solid rgba(150,176,206,.18);background:rgba(255,255,255,.04);padding:18px;color:#eef4fb;font-weight:800;cursor:pointer}
+    .service-btn small{display:block;margin-top:8px;color:#b8cada;font-weight:600}
+    .ticket-preview{display:grid;gap:10px;place-items:center;text-align:center}
+    .ticket-code{font-size:3rem;font-weight:900;color:#f4f8ff}
+  </style>
+</head>
+<body>
+  <main class="kiosk-shell">
+    <section class="kiosk-card">
+      <h1 style="margin:0 0 8px;">Sacar turno</h1>
+      <p style="margin:0;color:var(--public-panel-muted);">Selecciona el servicio y genera tu ticket. Luego espera a que tu número aparezca en la pantalla de llamados.</p>
+    </section>
+    <section class="kiosk-card">
+      <h2 style="margin-top:0;">Servicios disponibles</h2>
+      <div id="servicesGrid" class="kiosk-grid"></div>
+      <div id="kioskMsg" class="form-help"></div>
+    </section>
+    <section class="kiosk-card ticket-preview">
+      <strong>Último ticket generado</strong>
+      <div id="ticketCode" class="ticket-code">-</div>
+      <div id="ticketInfo" class="form-help">Todavía no has generado un turno.</div>
+    </section>
+  </main>
+  <script src="/js/turnos_publicos.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
+</body>
+</html>

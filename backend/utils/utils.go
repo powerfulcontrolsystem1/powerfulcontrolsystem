@@ -1,4 +1,4 @@
-package utils
+﻿package utils
 
 import (
 	"bytes"
@@ -559,15 +559,15 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 }
 
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
-// Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
-// exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
+// Permite un conjunto pÃºblico de rutas (login/callback/activos). Para rutas que comienzan con /super/
+// exige rol 'super_administrador'. AÃ±ade `adminEmail` en el contexto de la peticiÃ³n.
 func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		// Verificación de Modo Mantenimiento
+		// VerificaciÃ³n de Modo Mantenimiento
 		if getCachedMaintenanceActive(dbSuper) {
-			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
+			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estÃ¡ticos)
 			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
 			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
 			if !isMntAllowed && !isStatic {
@@ -576,7 +576,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			}
 		}
 
-		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
+		// Rutas pÃºblicas exactas (no usar prefijo "/" porque abrirÃ­a todo el sistema).
 		publicExact := map[string]struct{}{
 			"/":                                                     {},
 			"/index.html":                                           {},
@@ -617,6 +617,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/venta_digital":                             {},
 			"/api/public/pagina_principal":                          {},
 			"/api/public/contrato":                                  {},
+			"/api/public/turnos_atencion":                           {},
 			"/api/public/licencias/payment_methods":                 {},
 			"/api/empresa/usuarios/login":                           {},
 			"/api/empresa/usuarios/establecer_password":             {},
@@ -627,6 +628,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/accept.html":                                          {},
 			"/accept/complete":                                      {},
 			"/pantalla_publica.html":                                {},
+			"/pantalla_turnos.html":                                 {},
+			"/turnos_publicos.html":                                 {},
 			"/calculadora.html":                                     {},
 			"/productos_estacion_clientes_publico.html":             {},
 			"/estilos.css":                                          {},
@@ -659,7 +662,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			}
 		}
 
-		// Recursos estáticos públicos
+		// Recursos estÃ¡ticos pÃºblicos
 		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/descargas/", "/emulador/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
@@ -707,10 +710,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 
-		// Propagar información del admin en el contexto
+		// Propagar informaciÃ³n del admin en el contexto
 		ctx := context.WithValue(r.Context(), "adminEmail", admin.Email)
 		r = r.WithContext(ctx)
-		// Añadir cabecera informativa
+		// AÃ±adir cabecera informativa
 		r.Header.Set("X-Admin-Email", admin.Email)
 
 		next.ServeHTTP(w, r)
@@ -729,7 +732,8 @@ func DecryptString(payload string) (string, error) {
 	return secure.DecryptString(payload)
 }
 
-// EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY está disponible y válida.
+// EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY estÃ¡ disponible y vÃ¡lida.
 func EncryptionAvailable() bool {
 	return secure.EncryptionAvailable()
 }
+
