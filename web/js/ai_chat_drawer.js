@@ -69,6 +69,7 @@
   var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
   var ICON_STOP = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>';
   var ROBOT_PANEL_ID = 'robotInlineChatPanel';
+  var ROBOT_STATUS_ID = 'robotInlineStatus';
   var ROBOT_ASSISTANT_BUBBLE_ID = 'robotAssistantBubble';
   var ROBOT_USER_BUBBLE_ID = 'robotUserBubble';
   var ROBOT_INLINE_FORM_ID = 'robotInlineForm';
@@ -595,6 +596,7 @@
       host: document.getElementById(TOGGLE_ID),
       avatar: document.getElementById('robotAvatarGraphic'),
       panel: document.getElementById(ROBOT_PANEL_ID),
+      status: document.getElementById(ROBOT_STATUS_ID),
       assistantBubble: document.getElementById(ROBOT_ASSISTANT_BUBBLE_ID),
       actions: document.getElementById(ROBOT_ACTIONS_ID),
       userBubble: document.getElementById(ROBOT_USER_BUBBLE_ID),
@@ -624,6 +626,39 @@
     }
   }
 
+  function getRobotStatusText(mood) {
+    switch (normalizeRobotMood(mood)) {
+      case 'listening':
+        return 'Escuchando tu voz';
+      case 'thinking':
+        return 'Pensando la mejor respuesta';
+      case 'speaking':
+        return 'Hablando contigo';
+      case 'happy':
+        return 'Lista para ayudarte';
+      case 'error':
+        return 'Necesito que lo intentemos de nuevo';
+      case 'action':
+        return 'Acciones listas para confirmar';
+      case 'hidden':
+        return 'Asistente oculto';
+      default:
+        return 'Lista para ayudarte';
+    }
+  }
+
+  function syncRobotStatus(mood) {
+    var els = getRobotInlineElements();
+    if (!els.status) return;
+    var next = normalizeRobotMood(mood);
+    els.status.textContent = getRobotStatusText(next);
+    els.status.setAttribute('data-status', next);
+    ['idle', 'listening', 'thinking', 'speaking', 'happy', 'error', 'action', 'hidden'].forEach(function (name) {
+      els.status.classList.remove('is-' + name);
+    });
+    els.status.classList.add('is-' + next);
+  }
+
   function setRobotMood(mood, durationMs) {
     var els = getRobotInlineElements();
     var next = normalizeRobotMood(mood);
@@ -640,6 +675,7 @@
       node.classList.add('robot-mood-' + next);
       if (node.setAttribute) node.setAttribute('data-mood', next);
     });
+    syncRobotStatus(next);
     if (durationMs && Number(durationMs) > 0) {
       state.robotMoodTimer = window.setTimeout(function () {
         state.robotMoodTimer = null;
@@ -867,6 +903,7 @@
       panel.className = 'robot-inline-chat-panel';
       panel.setAttribute('aria-label', 'Conversación con robot IA');
       panel.innerHTML =
+        '<div id="' + ROBOT_STATUS_ID + '" class="robot-inline-status" data-status="idle">Lista para ayudarte</div>' +
         '<div id="' + ROBOT_ASSISTANT_BUBBLE_ID + '" class="robot-cloud robot-cloud-assistant"></div>' +
         '<div id="' + ROBOT_ACTIONS_ID + '" class="robot-assistant-actions" hidden></div>' +
         '<div id="' + ROBOT_USER_BUBBLE_ID + '" class="robot-cloud robot-cloud-user" hidden></div>' +
