@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Pedidos VIP por estacion</title>
+  <title>Pedidos VIP por estaci?n</title>
   <link rel="stylesheet" href="/estilos.css">
   <script>
     window.__pcsAutoInjectChatShell = true;
@@ -14,8 +14,8 @@
   <div class="container">
     <div class="page-header">
       <div>
-        <h1>Pedidos VIP por estacion</h1>
-        <p class="form-help">Digita tu codigo VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
+        <h1>Pedidos VIP por estaci?n</h1>
+        <p class="form-help">Digita tu c?digo VIP para ver productos y pedir desde tu celular. El acceso se desactiva al pagar la cuenta.</p>
       </div>
     </div>
 
@@ -23,7 +23,7 @@
       <div class="form">
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="vipCodigo">Codigo VIP</label>
+            <label class="form-label" for="vipCodigo">C?digo VIP</label>
             <input id="vipCodigo" class="form-input" placeholder="Ej: ABCD2EFG3HJKL" autocomplete="one-time-code">
           </div>
           <div class="form-col maxw-240 flex-end">
@@ -54,7 +54,7 @@
       <div id="pedidoMsg" class="form-help"></div>
 
       <div id="qrBox" class="form" style="display:none;margin-top:14px;">
-        <p class="form-help">Este QR abre esta misma pagina. Comparte el link o muestra el codigo al cliente.</p>
+        <p class="form-help">Este QR abre esta misma p?gina. Comparte el enlace o muestra el c?digo al cliente.</p>
         <div class="form-row">
           <div class="form-col">
             <input id="publicLink" class="form-input" readonly>
@@ -127,7 +127,7 @@
               headers: { 'Content-Type':'application/json' },
               body: JSON.stringify({ codigo: vipCodigo, producto_id: productoID, cantidad: 1, nota: nota })
             });
-            setMsg('pedidoMsg','Pedido enviado a la estacion.',false);
+            setMsg('pedidoMsg','Pedido enviado a la estaci?n.',false);
           } catch (e) {
             setMsg('pedidoMsg', e.message || 'No se pudo enviar el pedido', true);
           }
@@ -138,19 +138,19 @@
     async function ingresar(){
       vipCodigo = normalize(document.getElementById('vipCodigo').value).toUpperCase();
       if (!vipCodigo) {
-        setMsg('vipMsg','Escribe tu codigo VIP.',true);
+        setMsg('vipMsg','Escribe tu c?digo VIP.',true);
         return;
       }
-      setMsg('vipMsg','Validando codigo...',false);
+      setMsg('vipMsg','Validando c?digo...',false);
       try {
         const data = await fetchJSON('/api/public/estacion_vip?action=info&codigo=' + encodeURIComponent(vipCodigo));
         productos = Array.isArray(data && data.productos) ? data.productos : [];
         document.getElementById('vipPanel').style.display = '';
-        setMsg('vipMsg','Codigo valido. Ya puedes pedir.',false);
+        setMsg('vipMsg','C?digo v?lido. Ya puedes pedir.',false);
         renderProductos();
       } catch (e) {
         document.getElementById('vipPanel').style.display = 'none';
-        setMsg('vipMsg', e.message || 'Codigo invalido', true);
+        setMsg('vipMsg', e.message || 'C?digo inv?lido', true);
       }
     }
 
