@@ -3523,3 +3523,14 @@ Archivos modificados:
 - backend/handlers/graficos_estadisticas.go
 - web/administrar_empresa/graficos_estadisticas.html
 - web/login.html
+
+2026-05-02 14:15:20 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: cfcf5c4; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- tmp_configuracion_head.html
+- tmp_index_head.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_impresora.html
+- web/administrar_empresa/configuracion_menu.html
+- web/index.html
+- web/js/administrar_empresa.js
