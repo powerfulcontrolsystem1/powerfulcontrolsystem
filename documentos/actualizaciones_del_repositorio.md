@@ -3353,3 +3353,9 @@ Archivos modificados:
 Archivos modificados:
 - web/pagar_licencia.html
 - web/pagar_productos_de_venta_publica.html
+
+2026-05-02 07:05:10 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: cbf6222; PushStatus: OK
+Archivos modificados:
+- web/accept.html
+- web/contrato.html
+- web/soporte_remoto_acceso.html
