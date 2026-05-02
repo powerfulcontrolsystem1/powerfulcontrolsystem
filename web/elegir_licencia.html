@@ -198,6 +198,9 @@
   </div>
 
   <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
     (function(){
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
       function normalizeImage(raw) {
@@ -417,6 +420,7 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
     })();
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 
 </body>
 </html>
