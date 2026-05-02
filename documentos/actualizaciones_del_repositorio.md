@@ -3260,3 +3260,8 @@ Archivos modificados:
 2026-05-02 05:05:52 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 4639ddf; PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-05-02 05:09:07 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: ceb56f1; PushStatus: OK
+Archivos modificados:
+- web/estilos.css
+- web/js/ai_chat_drawer.js
