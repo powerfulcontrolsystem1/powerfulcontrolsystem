@@ -3616,3 +3616,14 @@ Archivos modificados:
 2026-05-02 16:45:25 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: ccfc261; PushStatus: OK
 Archivos modificados:
 - web/super/licencias_resumen.html
+
+2026-05-02 17:02:52 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bcdbf05; PushStatus: OK
+Archivos modificados:
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- web/administrar_empresa/configuracion_guiada.html
+- web/administrar_empresa/configuracion_menu.html
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/js/seleccionar_empresa.js
