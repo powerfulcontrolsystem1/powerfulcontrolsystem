@@ -64,7 +64,8 @@
     robotMoodTimer: null,
     lastResponseModelMeta: null,
     generatedDocument: null,
-    shareArtifact: null
+    shareArtifact: null,
+    setupWizard: null
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
@@ -3668,6 +3669,11 @@
     if (!input) return;
     var query = String(input.value || '').trim();
     if (!query) return;
+    if (state.setupWizard && state.setupWizard.active) {
+      input.value = '';
+      input.style.height = 'auto';
+      return handleGuidedSetupAnswer(query);
+    }
 
     input.value = '';
     input.style.height = 'auto';
@@ -3760,6 +3766,18 @@
       setRobotAssistantText('Acciones canceladas. Puedes pedirme otra configuración o ajustar la propuesta.');
       return;
     }
+    if (value === '__PCS_START_GUIDED_SETUP__') {
+      loadAndStartGuidedSetup();
+      return true;
+    }
+    if (value.indexOf('__PCS_GUIDED_SETUP_OPTION__') === 0) {
+      handleGuidedSetupAnswer(value.replace('__PCS_GUIDED_SETUP_OPTION__', ''));
+      return true;
+    }
+    if (value === '__PCS_GUIDED_SETUP_CANCEL__') {
+      cancelGuidedSetup();
+      return true;
+    }
     input.value = value;
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 96) + 'px';
@@ -3768,10 +3786,215 @@
     return true;
   }
 
+  function getGuidedSetupEndpoint() {
+    var empresaId = getCurrentEmpresaId();
+    if (!empresaId) {
+      throw new Error('No se encontro una empresa activa para iniciar la configuracion guiada.');
+    }
+    return '/api/empresa/configuracion_guiada?empresa_id=' + encodeURIComponent(String(empresaId));
+  }
+
+  function normalizeGuidedSetupOptionLabel(question, raw) {
+    var value = normalize(raw).toLowerCase();
+    if (question && question.type === 'boolean') {
+      return value === 'si' ? 'Si' : 'No';
+    }
+    if (value === 'comprobante_pago') return 'Comprobante de pago';
+    if (value === 'factura_electronica') return 'Factura electronica';
+    return raw;
+  }
+
+  function buildGuidedSetupQuestionActions(question) {
+    if (!question) return [];
+    var actions = [];
+    if (question.type === 'boolean') {
+      actions.push({ label: 'Si', prompt: '__PCS_GUIDED_SETUP_OPTION__si' });
+      actions.push({ label: 'No', prompt: '__PCS_GUIDED_SETUP_OPTION__no' });
+    } else if (Array.isArray(question.options) && question.options.length) {
+      question.options.forEach(function (option) {
+        actions.push({
+          label: normalizeGuidedSetupOptionLabel(question, option),
+          prompt: '__PCS_GUIDED_SETUP_OPTION__' + String(option)
+        });
+      });
+    }
+    actions.push({ label: 'Cancelar guía', prompt: '__PCS_GUIDED_SETUP_CANCEL__' });
+    return actions;
+  }
+
+  function renderGuidedSetupQuestion() {
+    var wizard = state.setupWizard;
+    if (!wizard || !wizard.active) return false;
+    var question = wizard.questions[wizard.index];
+    if (!question) return false;
+    var prefix = wizard.index === 0
+      ? 'Vamos a terminar la configuracion base de esta empresa con preguntas cortas.'
+      : 'Perfecto. Continuemos con la siguiente decision.';
+    var text = prefix + '\n\n' + (question.prompt || question.label || 'Responde este dato.');
+    if (question.help) {
+      text += '\n\n' + question.help;
+    }
+    if (question.default_value) {
+      text += '\n\nValor sugerido: ' + question.default_value;
+    }
+    setRobotAssistantText(text);
+    renderRobotActionChips(buildGuidedSetupQuestionActions(question));
+    setNotice('Configuracion guiada en curso: ' + (question.label || 'pregunta'));
+    focusRobotInput();
+    return true;
+  }
+
+  function startGuidedSetupWizard(payload) {
+    if (!state.chatEnabled || !state.robotEnabled) return false;
+    var wizardPayload = payload && payload.wizard ? payload.wizard : payload;
+    var questions = wizardPayload && Array.isArray(wizardPayload.questions) ? wizardPayload.questions.slice() : [];
+    if (!questions.length) {
+      setRobotAssistantText('No encontre preguntas disponibles para esta configuracion guiada. Puedes abrir la pagina de configuracion y revisar el contexto de la empresa.');
+      renderRobotActionChips([]);
+      return false;
+    }
+    state.setupWizard = {
+      active: true,
+      context: payload || {},
+      questions: questions,
+      answers: {},
+      index: 0
+    };
+    setRobotMood('thinking', 2200);
+    return renderGuidedSetupQuestion();
+  }
+
+  function cancelGuidedSetup() {
+    state.setupWizard = null;
+    clearRobotActionChips();
+    setRobotAssistantText('Configuracion guiada cancelada. Puedes retomarla cuando quieras desde Configuracion > Configuracion guiada.');
+    setNotice('Configuracion guiada cancelada.');
+    focusRobotInput();
+    return true;
+  }
+
+  function completeGuidedSetupWizard() {
+    var wizard = state.setupWizard;
+    if (!wizard || !wizard.active) return false;
+    var answers = Object.assign({}, wizard.answers || {});
+    state.setupWizard = null;
+    setRobotLoading(true);
+    state.loading = true;
+    clearRobotActionChips();
+    setRobotAssistantText('Estoy aplicando la configuracion guiada en la empresa...');
+    setNotice('Aplicando configuracion guiada...');
+    return fetch(getGuidedSetupEndpoint() + '&action=aplicar', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-PCS-Source': 'ai_drawer'
+      },
+      body: JSON.stringify({ answers: answers })
+    }).then(function (resp) {
+      if (!resp.ok) {
+        return parseErrorResponse(resp);
+      }
+      return resp.json();
+    }).then(function (data) {
+      var result = data && data.resultado ? data.resultado : {};
+      var summary = result && result.resumen ? result.resumen : {};
+      var message = normalize(result.mensaje || 'Configuracion guiada aplicada.');
+      if (summary && summary.nombre_comercial) {
+        message += '\n\nNombre comercial: ' + summary.nombre_comercial;
+      }
+      if (summary && summary.cantidad_estaciones) {
+        message += '\nEstaciones: ' + summary.cantidad_estaciones;
+      }
+      if (summary && summary.modo_documento_venta) {
+        message += '\nDocumento: ' + (summary.modo_documento_venta === 'factura_electronica' ? 'Factura electronica' : 'Comprobante de pago');
+      }
+      setRobotMood('success', 3200);
+      setRobotAssistantText(message);
+      var actions = [];
+      if (Array.isArray(result.acciones)) {
+        result.acciones.forEach(function (item) {
+          if (!item || !item.url) return;
+          actions.push({
+            label: normalize(item.label || 'Abrir modulo'),
+            prompt: 'Abre la pagina ' + item.url + ' y ayudame a revisar la configuracion aplicada.'
+          });
+        });
+      }
+      renderRobotActionChips(actions);
+      setNotice('Configuracion guiada aplicada correctamente.');
+      speakRobotAnnouncement(message);
+      return true;
+    }).catch(function (err) {
+      var message = err && err.message ? err.message : 'No se pudo aplicar la configuracion guiada.';
+      setRobotMood('error', 2600);
+      setRobotAssistantText(message, true);
+      setNotice(message, true);
+      return false;
+    }).finally(function () {
+      state.loading = false;
+      setRobotLoading(false);
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      focusRobotInput();
+    });
+  }
+
+  function handleGuidedSetupAnswer(rawValue) {
+    var wizard = state.setupWizard;
+    if (!wizard || !wizard.active || state.loading) return false;
+    var question = wizard.questions[wizard.index];
+    if (!question) return false;
+    var answer = normalize(rawValue);
+    if (!answer) {
+      return false;
+    }
+    wizard.answers[question.id] = answer;
+    setRobotUserText(answer);
+    wizard.index += 1;
+    if (wizard.index >= wizard.questions.length) {
+      return completeGuidedSetupWizard();
+    }
+    return renderGuidedSetupQuestion();
+  }
+
+  function loadAndStartGuidedSetup() {
+    if (!state.chatEnabled || !state.robotEnabled || state.loading) return false;
+    setRobotLoading(true);
+    state.loading = true;
+    setRobotAssistantText('Estoy preparando la configuracion guiada de esta empresa...');
+    setNotice('Preparando configuracion guiada...');
+    fetch(getGuidedSetupEndpoint(), {
+      credentials: 'same-origin',
+      headers: { 'X-PCS-Source': 'ai_drawer' }
+    }).then(function (resp) {
+      if (!resp.ok) {
+        return parseErrorResponse(resp);
+      }
+      return resp.json();
+    }).then(function (data) {
+      startGuidedSetupWizard(data || {});
+    }).catch(function (err) {
+      var message = err && err.message ? err.message : 'No se pudo iniciar la configuracion guiada.';
+      setRobotMood('error', 2600);
+      setRobotAssistantText(message, true);
+      setNotice(message, true);
+    }).finally(function () {
+      state.loading = false;
+      setRobotLoading(false);
+      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      focusRobotInput();
+    });
+    return true;
+  }
+
   function buildConfigurationAssistantActions(summary) {
     var tipo = normalize(summary && summary.tipo_empresa_nombre);
     var tipoText = tipo ? (' para una empresa tipo ' + tipo) : '';
     return [
+      {
+        label: 'Configuracion guiada',
+        prompt: '__PCS_START_GUIDED_SETUP__'
+      },
       {
         label: 'Agregar productos',
         prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Revisa el contexto de preconfiguración y guíame para agregar o ajustar productos, categorías, precios, costos, impuestos y stock mínimo. Si puedes proponer acciones seguras, proponlas para confirmarlas.'
@@ -3827,6 +4050,11 @@
     setNotice('Asistente de configuración inicial activo.');
     speakRobotAnnouncement(intro);
     focusRobotInput();
+    if (summary && summary.auto_start_guided_setup) {
+      window.setTimeout(function () {
+        loadAndStartGuidedSetup();
+      }, 320);
+    }
     return true;
   }
 
@@ -4296,6 +4524,16 @@
         startConfigurationAssistant(data.summary || data.preconfiguracion || {});
         return;
       }
+      if (data.type === 'pcs-ai-config-wizard-start') {
+        if (!state.chatEnabled || !state.robotEnabled) return;
+        var toggleBtnWizard = document.getElementById(TOGGLE_ID);
+        setChatPersonalityMode('robot');
+        closeChatDrawerFully();
+        ensureRobotInlineUI(toggleBtnWizard);
+        showRobotAssistant(toggleBtnWizard);
+        startGuidedSetupWizard(data.payload || {});
+        return;
+      }
       if (data.type === 'pcs-ai-robot-reminder') {
         if (!state.chatEnabled || !state.robotEnabled) return;
         notifyRobotReminder(data.payload || data);
@@ -4341,6 +4579,7 @@
 
     window.PCSAIChatRobot = {
       startConfigurationAssistant: startConfigurationAssistant,
+      startGuidedSetupWizard: startGuidedSetupWizard,
       notifyReminder: notifyRobotReminder,
       showMessage: function (text, options) {
         if (!state.chatEnabled || !state.robotEnabled) return false;

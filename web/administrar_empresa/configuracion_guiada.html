@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración guiada</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <main class="erp-shell" style="padding:20px;">
+    <section class="erp-card">
+      <div class="erp-kicker">Configuración guiada</div>
+      <h1 style="margin:0 0 8px;">Onboarding asistido con robot IA</h1>
+      <p id="guidedIntro" class="muted" style="margin:0 0 16px;">
+        Vamos a convertir la preconfiguración inicial en una puesta en marcha real: estaciones, documento de venta, impresión y reglas básicas.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button id="guidedStartBtn" type="button" class="btn btn-primary">Iniciar con el robot</button>
+        <button id="guidedReloadBtn" type="button" class="btn">Actualizar resumen</button>
+      </div>
+    </section>
+
+    <section class="erp-card" style="margin-top:16px;">
+      <div class="erp-kicker">Estado actual</div>
+      <div id="guidedStatusGrid" class="erp-metric-grid"></div>
+    </section>
+
+    <section class="erp-card" style="margin-top:16px;">
+      <div class="erp-kicker">Última aplicación</div>
+      <div id="guidedLastSummary" class="muted">Aún no se ha guardado una configuración guiada.</div>
+      <ul id="guidedPendingList" style="margin-top:12px;padding-left:18px;"></ul>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      function parsePositiveInt(raw) {
+        var n = Number(String(raw || '').trim());
+        if (!Number.isFinite(n)) return 0;
+        n = Math.trunc(n);
+        return n > 0 ? n : 0;
+      }
+
+      function getEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var id = parsePositiveInt(params.get('empresa_id') || params.get('id') || '');
+          if (id > 0) return String(id);
+        } catch (e) {}
+        try {
+          if (window.parent && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            var parentId = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentId > 0) return String(parentId);
+          }
+        } catch (e) {}
+        return '';
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function fetchEstado() {
+        var empresaId = getEmpresaId();
+        if (!empresaId) {
+          return Promise.reject(new Error('No se encontró la empresa activa.'));
+        }
+        return fetch('/api/empresa/configuracion_guiada?empresa_id=' + encodeURIComponent(empresaId), {
+          credentials: 'same-origin'
+        }).then(function (resp) {
+          if (!resp.ok) {
+            return resp.text().then(function (text) {
+              throw new Error(text || 'No se pudo cargar la configuración guiada.');
+            });
+          }
+          return resp.json();
+        });
+      }
+
+      function renderStatus(data) {
+        var estado = data && data.estado ? data.estado : {};
+        var grid = document.getElementById('guidedStatusGrid');
+        if (!grid) return;
+        var items = [
+          { label: 'Empresa', value: estado.empresa_nombre || 'Sin nombre' },
+          { label: 'Tipo', value: estado.tipo_empresa_nombre || 'General' },
+          { label: 'Estaciones', value: (estado.estaciones && estado.estaciones.cantidad) || 0 },
+          { label: 'Venta directa', value: estado.operacion && estado.operacion.venta_directa_enabled ? 'Activa' : 'No definida' }
+        ];
+        grid.innerHTML = items.map(function (item) {
+          return '<article class="erp-metric-card">' +
+            '<span class="erp-metric-label">' + escapeHtml(item.label) + '</span>' +
+            '<strong class="erp-metric-value">' + escapeHtml(item.value) + '</strong>' +
+          '</article>';
+        }).join('');
+
+        var intro = document.getElementById('guidedIntro');
+        if (intro) {
+          intro.textContent = 'La empresa ' + (estado.empresa_nombre || 'actual') + ' puede terminar su puesta en marcha desde aquí. El robot hará preguntas cortas y aplicará la configuración base sin que tengas que recorrer todos los módulos.';
+        }
+      }
+
+      function renderLastSummary(data) {
+        var estado = data && data.estado ? data.estado : {};
+        var summary = document.getElementById('guidedLastSummary');
+        var pending = document.getElementById('guidedPendingList');
+        if (!summary || !pending) return;
+
+        var resumen = data && data.resumen ? data.resumen : null;
+        if (!resumen) {
+          summary.textContent = 'Aún no se ha guardado una configuración guiada.';
+          pending.innerHTML = '';
+          return;
+        }
+
+        summary.innerHTML =
+          '<strong>' + escapeHtml(resumen.nombre_comercial || estado.empresa_nombre || 'Empresa') + '</strong>' +
+          ' · Documento: ' + escapeHtml(resumen.modo_documento_venta || 'comprobante_pago') +
+          ' · Estaciones: ' + escapeHtml(resumen.cantidad_estaciones || 0) +
+          ' · Aplicado: ' + escapeHtml(resumen.aplicado_en || 'sin fecha');
+
+        var pendientes = Array.isArray(data && data.pendientes) ? data.pendientes : [];
+        pending.innerHTML = pendientes.map(function (item) {
+          return '<li>' + escapeHtml(item) + '</li>';
+        }).join('');
+      }
+
+      function notifyParentStart(data) {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'pcs-ai-config-wizard-start',
+              payload: data
+            }, '*');
+          }
+        } catch (e) {}
+      }
+
+      function load() {
+        return fetchEstado().then(function (data) {
+          window.__pcsGuidedSetupState = data;
+          renderStatus(data);
+          renderLastSummary(data);
+          return data;
+        });
+      }
+
+      document.getElementById('guidedReloadBtn').addEventListener('click', function () {
+        load().catch(function (err) {
+          alert(err.message || 'No se pudo actualizar el resumen.');
+        });
+      });
+
+      document.getElementById('guidedStartBtn').addEventListener('click', function () {
+        var current = window.__pcsGuidedSetupState;
+        if (current) {
+          notifyParentStart(current);
+          return;
+        }
+        load().then(function (data) {
+          notifyParentStart(data);
+        }).catch(function (err) {
+          alert(err.message || 'No se pudo iniciar la configuración guiada.');
+        });
+      });
+
+      load().catch(function (err) {
+        var summary = document.getElementById('guidedLastSummary');
+        if (summary) {
+          summary.textContent = err.message || 'No se pudo cargar la configuración guiada.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
