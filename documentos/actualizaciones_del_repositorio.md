@@ -3690,3 +3690,7 @@ Archivos modificados:
 2026-05-02 18:53:40 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a86c09d; PushStatus: OK
 Archivos modificados:
 - backend/db/venta_publica.go
+
+2026-05-02 18:56:49 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: e51eff5; PushStatus: OK
+Archivos modificados:
+- backend/db/venta_publica.go
