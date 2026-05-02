@@ -159,6 +159,7 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudieron aplicar variables al contenido: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		renderedContent = normalizeDynamicDocumentGeneratedContent(renderedContent, payload.InputFormat)
 
 		contentHTML := buildDynamicDocumentContentHTML(renderedContent, payload.InputFormat)
 		htmlDoc, err := renderDynamicDocumentHTML(docTemplateData{
@@ -191,7 +192,7 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			InputFormat:  payload.InputFormat,
 			TemplateName: payload.TemplateName,
 			HTML:         htmlDoc,
-			PlainText:    htmlToPlainText(htmlDoc),
+			PlainText:    strings.TrimSpace(renderedContent),
 			Variables:    payload.Variables,
 			Metadata:     payload.Metadata,
 			ModelID:      firstNonEmptyString(modelID, payload.ModelID),
@@ -510,6 +511,7 @@ func buildDynamicDocumentRecordFromContent(payload DynamicDocumentRequest, creat
 	if err != nil {
 		return dynamicDocumentRecord{}, fmt.Errorf("variables invalidas: %w", err)
 	}
+	renderedContent = normalizeDynamicDocumentGeneratedContent(renderedContent, payload.InputFormat)
 	contentHTML := buildDynamicDocumentContentHTML(renderedContent, payload.InputFormat)
 	now := time.Now()
 	htmlDoc, err := renderDynamicDocumentHTML(docTemplateData{
@@ -539,13 +541,28 @@ func buildDynamicDocumentRecordFromContent(payload DynamicDocumentRequest, creat
 		InputFormat:  payload.InputFormat,
 		TemplateName: payload.TemplateName,
 		HTML:         htmlDoc,
-		PlainText:    htmlToPlainText(htmlDoc),
+		PlainText:    strings.TrimSpace(renderedContent),
 		Variables:    payload.Variables,
 		Metadata:     payload.Metadata,
 		ModelID:      payload.ModelID,
 		CreatedAt:    now.Format(time.RFC3339),
 		CreatedBy:    createdBy,
 	}, nil
+}
+
+func normalizeDynamicDocumentGeneratedContent(content, inputFormat string) string {
+	clean := strings.TrimSpace(content)
+	if clean == "" {
+		return ""
+	}
+	if normalizeDynamicDocumentInputFormat(inputFormat) == "html" {
+		return clean
+	}
+	lower := strings.ToLower(clean)
+	if strings.Contains(lower, "<!doctype html") || strings.Contains(lower, "<html") || strings.Contains(lower, "<body") || strings.Contains(lower, "<style") {
+		return strings.TrimSpace(htmlToPlainText(sanitizeDynamicDocumentHTML(clean)))
+	}
+	return clean
 }
 
 func renderDynamicTextVariables(content string, vars map[string]interface{}) (string, error) {
