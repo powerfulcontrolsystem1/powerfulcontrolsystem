@@ -101,6 +101,7 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_sensor_device_empresa_device ON empresa_sensor_puertas_devices(empresa_id, device_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_sensor_device_empresa ON empresa_sensor_puertas_devices(empresa_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_sensor_device_lookup ON empresa_sensor_puertas_devices(empresa_id, estado, estacion_id, last_state);`,
 		`CREATE TABLE IF NOT EXISTS empresa_sensor_puertas_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER,

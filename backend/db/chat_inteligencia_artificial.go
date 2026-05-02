@@ -8,8 +8,20 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var (
+	canAdminAccessEmpresaIACacheMu  sync.Mutex
+	canAdminAccessEmpresaIACache    = map[string]cachedAdminEmpresaAccessIA{}
+	canAdminAccessEmpresaIACacheTTL = 60 * time.Second
+)
+
+type cachedAdminEmpresaAccessIA struct {
+	Allowed  bool
+	LoadedAt time.Time
+}
 
 // GetEmpresaAIUsoDiarioOpenAITokensGlobal retorna el consumo del día (consultas/tokens) agregado
 // para todas las empresas en el proveedor indicado (ej: "openai").
@@ -655,11 +667,21 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 	if adminEmail == "" {
 		return false, nil
 	}
+	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
+	canAdminAccessEmpresaIACacheMu.Lock()
+	if cached, ok := canAdminAccessEmpresaIACache[cacheKey]; ok && time.Since(cached.LoadedAt) < canAdminAccessEmpresaIACacheTTL {
+		canAdminAccessEmpresaIACacheMu.Unlock()
+		return cached.Allowed, nil
+	}
+	canAdminAccessEmpresaIACacheMu.Unlock()
 
 	if dbSuper != nil {
-		if adm, err := GetAdminByEmailFull(dbSuper, adminEmail); err == nil {
+		if adm, err := GetAdminByEmail(dbSuper, adminEmail); err == nil {
 			creator := strings.TrimSpace(strings.ToLower(adm.UsuarioCreador))
 			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") && (creator == "" || creator == adminEmail) {
+				canAdminAccessEmpresaIACacheMu.Lock()
+				canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+				canAdminAccessEmpresaIACacheMu.Unlock()
 				return true, nil
 			}
 		}
@@ -669,12 +691,18 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 	err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&creador)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			canAdminAccessEmpresaIACacheMu.Lock()
+			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: false, LoadedAt: time.Now()}
+			canAdminAccessEmpresaIACacheMu.Unlock()
 			return false, nil
 		}
 		return false, err
 	}
 	creador = strings.TrimSpace(strings.ToLower(creador))
 	if creador != "" && creador == adminEmail {
+		canAdminAccessEmpresaIACacheMu.Lock()
+		canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+		canAdminAccessEmpresaIACacheMu.Unlock()
 		return true, nil
 	}
 	if dbSuper != nil {
@@ -683,9 +711,15 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 			return false, err
 		}
 		if access != nil {
+			canAdminAccessEmpresaIACacheMu.Lock()
+			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+			canAdminAccessEmpresaIACacheMu.Unlock()
 			return true, nil
 		}
 	}
+	canAdminAccessEmpresaIACacheMu.Lock()
+	canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: false, LoadedAt: time.Now()}
+	canAdminAccessEmpresaIACacheMu.Unlock()
 	return false, nil
 }
 

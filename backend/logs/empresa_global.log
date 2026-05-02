@@ -8281,3 +8281,43 @@
 2026-05-02T02:31:06-05:00 [INFO] req_id=req-1777707066082048800-0bc0a2912b62 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
 2026-05-02T02:31:12-05:00 [WARNING] req_id=req-1777707066082048800-0bc0a2912b62 event=api_error method=GET path=/me status=401 error="unauthorized"
 2026-05-02T02:31:12-05:00 [WARNING] req_id=req-1777707066082048800-0bc0a2912b62 event=request_end method=GET path=/me status=401 dur_ms=6831
+2026-05-02T03:34:13-05:00 [INFO] req_id=req-1777710853765273600-654d30bae5d8 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:14-05:00 [WARNING] req_id=req-1777710853765273600-654d30bae5d8 event=request_end method=GET path=/healthz status=401 dur_ms=236
+2026-05-02T03:34:16-05:00 [INFO] req_id=req-1777710856300326300-65700db11761 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:16-05:00 [WARNING] req_id=req-1777710856300326300-65700db11761 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:18-05:00 [INFO] req_id=req-1777710858302436200-01aeaaa76c03 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:18-05:00 [WARNING] req_id=req-1777710858302436200-01aeaaa76c03 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:20-05:00 [INFO] req_id=req-1777710860314825600-8c2a34795dbc event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:20-05:00 [WARNING] req_id=req-1777710860314825600-8c2a34795dbc event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:22-05:00 [INFO] req_id=req-1777710862331887300-dd2a927109bc event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:22-05:00 [WARNING] req_id=req-1777710862331887300-dd2a927109bc event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:24-05:00 [INFO] req_id=req-1777710864336606300-ecae961af3ae event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:24-05:00 [WARNING] req_id=req-1777710864336606300-ecae961af3ae event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:26-05:00 [INFO] req_id=req-1777710866343842900-3e2cccc52573 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:26-05:00 [WARNING] req_id=req-1777710866343842900-3e2cccc52573 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:28-05:00 [INFO] req_id=req-1777710868359945700-6c2667f75152 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:28-05:00 [WARNING] req_id=req-1777710868359945700-6c2667f75152 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:30-05:00 [INFO] req_id=req-1777710870373498800-317b426dcc9d event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:30-05:00 [WARNING] req_id=req-1777710870373498800-317b426dcc9d event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:32-05:00 [INFO] req_id=req-1777710872389359900-3683a7c031d7 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:32-05:00 [WARNING] req_id=req-1777710872389359900-3683a7c031d7 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:34-05:00 [INFO] req_id=req-1777710874398019100-322e5516ab56 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:34-05:00 [WARNING] req_id=req-1777710874398019100-322e5516ab56 event=request_end method=GET path=/healthz status=401 dur_ms=1
+2026-05-02T03:34:36-05:00 [INFO] req_id=req-1777710876406631800-bcb48724d18e event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:36-05:00 [WARNING] req_id=req-1777710876406631800-bcb48724d18e event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:38-05:00 [INFO] req_id=req-1777710878411803700-2f313481d6ba event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:38-05:00 [WARNING] req_id=req-1777710878411803700-2f313481d6ba event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:40-05:00 [INFO] req_id=req-1777710880420670500-98536c521db6 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:40-05:00 [WARNING] req_id=req-1777710880420670500-98536c521db6 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:42-05:00 [INFO] req_id=req-1777710882437601100-8af872bedd9a event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:42-05:00 [WARNING] req_id=req-1777710882437601100-8af872bedd9a event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:44-05:00 [INFO] req_id=req-1777710884443725200-758bb1184df1 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:44-05:00 [WARNING] req_id=req-1777710884443725200-758bb1184df1 event=request_end method=GET path=/healthz status=401 dur_ms=342
+2026-05-02T03:34:46-05:00 [INFO] req_id=req-1777710886807307300-8cd756a79fb0 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:46-05:00 [WARNING] req_id=req-1777710886807307300-8cd756a79fb0 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:48-05:00 [INFO] req_id=req-1777710888820426500-27a8b9429ce7 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:48-05:00 [WARNING] req_id=req-1777710888820426500-27a8b9429ce7 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:50-05:00 [INFO] req_id=req-1777710890824044100-a8a16b587121 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:50-05:00 [WARNING] req_id=req-1777710890824044100-a8a16b587121 event=request_end method=GET path=/healthz status=401 dur_ms=0
+2026-05-02T03:34:52-05:00 [INFO] req_id=req-1777710892827710700-b9fb144c55b3 event=request_start method=GET path=/healthz ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T03:34:52-05:00 [WARNING] req_id=req-1777710892827710700-b9fb144c55b3 event=request_end method=GET path=/healthz status=401 dur_ms=0

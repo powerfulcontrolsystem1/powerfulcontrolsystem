@@ -217,12 +217,18 @@ func parseCorteCajaFloat(raw string) float64 {
 }
 
 func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64) (*corteCajaResponse, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] buildCorteCajaReport empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] step ensure_carritos empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] step ensure_finanzas empresa=%d dur=%s", empresaID, time.Since(startedAt))
 
 	resp := &corteCajaResponse{
 		OK:                 true,
@@ -238,6 +244,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		resp.Resumen.EmpresaNombre = strings.TrimSpace(empresa.Nombre)
 		resp.Resumen.EmpresaTipo = strings.TrimSpace(empresa.TipoNombre)
 	}
+	dbpkg.PerfLogf("[perf][corte] step empresa empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.Resumen.EmpresaID = empresaID
 	resp.Resumen.Desde = desde
 	resp.Resumen.Hasta = hasta
@@ -249,6 +256,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	if err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] step ventas empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.Ventas = ventas
 
 	soldStationIDs := make(map[int64]bool)
@@ -285,6 +293,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	if err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] step items empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.ItemsPorTipo = items
 	for _, item := range items {
 		switch normalizeCorteCajaTipoItem(item.Tipo) {
@@ -301,6 +310,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	if err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] step movimientos empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.Movimientos = movimientos
 	for _, mov := range movimientos {
 		tipo := strings.ToLower(strings.TrimSpace(mov.Tipo))
@@ -322,6 +332,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 
 	if strings.Contains(strings.ToLower(resp.Resumen.EmpresaTipo), "motel") {
 		stationNames, _ := getCorteCajaStationNames(dbEmp, empresaID)
+		dbpkg.PerfLogf("[perf][corte] step station_names empresa=%d dur=%s", empresaID, time.Since(startedAt))
 		alertas, alertErr := listCorteCajaSensoresSinFactura(dbEmp, empresaID, soldStationIDs, stationNames)
 		if alertErr != nil {
 			resp.Advertencias = append(resp.Advertencias, "No se pudieron evaluar sensores de puerta.")
@@ -329,12 +340,17 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 			resp.SensoresSinFactura = alertas
 			resp.Resumen.HabitacionesSinFactura = int64(len(alertas))
 		}
+		dbpkg.PerfLogf("[perf][corte] step sensores empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	}
 
 	return resp, nil
 }
 
 func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaVenta, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
 	query := `SELECT
 		c.id,
 		COALESCE(c.codigo, ''),
@@ -385,6 +401,10 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario s
 }
 
 func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaTipoItem, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaItemsPorTipo empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
 	query := `SELECT
 		LOWER(COALESCE(i.tipo_item, 'producto')) AS tipo,
 		COALESCE(SUM(COALESCE(i.cantidad, 0)), 0) AS cantidad,
@@ -424,6 +444,10 @@ func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usu
 }
 
 func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaMovimientoGrupo, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaMovimientos empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
 	query := `SELECT
 		LOWER(COALESCE(tipo_movimiento, '')),
 		LOWER(COALESCE(metodo_pago, '')),
@@ -456,22 +480,37 @@ func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usua
 }
 
 func listCorteCajaSensoresSinFactura(dbEmp *sql.DB, empresaID int64, soldStationIDs map[int64]bool, stationNames map[int64]string) ([]corteCajaSensorAlerta, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaSensoresSinFactura empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	}()
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmp); err != nil {
 		return nil, err
 	}
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, `SELECT COALESCE(estacion_id, 0), COALESCE(device_id, ''), COALESCE(last_state, ''), COALESCE(last_seen, '') FROM empresa_sensor_puertas_devices WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo' AND COALESCE(estacion_id, 0) > 0`, empresaID)
+	query := `SELECT COALESCE(estacion_id, 0), COALESCE(device_id, ''), COALESCE(last_state, ''), COALESCE(last_seen, '')
+		FROM empresa_sensor_puertas_devices
+		WHERE empresa_id = ?
+		  AND ` + corteCajaSensorEstadoActivoClause() + `
+		  AND estacion_id > 0
+		  AND ` + corteCajaSensorOccupiedClause()
+	queryStarted := time.Now()
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID)
 	if err != nil {
 		return nil, err
 	}
+	dbpkg.PerfLogf("[perf][corte] sensores query empresa=%d dur=%s", empresaID, time.Since(queryStarted))
 	defer rows.Close()
 	out := []corteCajaSensorAlerta{}
+	var scanned int
+	scanStarted := time.Now()
 	for rows.Next() {
 		var estacionID int64
 		var deviceID, state, seen string
 		if err := rows.Scan(&estacionID, &deviceID, &state, &seen); err != nil {
 			return nil, err
 		}
-		if !isCorteCajaSensorOccupiedState(state) || soldStationIDs[estacionID] {
+		scanned++
+		if soldStationIDs[estacionID] {
 			continue
 		}
 		name := strings.TrimSpace(stationNames[estacionID])
@@ -487,7 +526,28 @@ func listCorteCajaSensoresSinFactura(dbEmp *sql.DB, empresaID int64, soldStation
 			Motivo:         "El sensor figura ocupado, pero no hay venta facturada para esta habitacion en el rango del corte.",
 		})
 	}
+	dbpkg.PerfLogf("[perf][corte] sensores scan empresa=%d scanned=%d out=%d dur=%s", empresaID, scanned, len(out), time.Since(scanStarted))
 	return out, rows.Err()
+}
+
+func corteCajaSensorEstadoActivoClause() string {
+	return "LOWER(COALESCE(estado, 'activo')) = 'activo'"
+}
+
+func corteCajaSensorOccupiedClause() string {
+	return `(COALESCE(last_state, '') <> ''
+		AND lower(COALESCE(last_state, '')) NOT IN ('0', 'false', 'off', 'libre', 'disponible', 'free', 'abierta', 'abierto', 'open', 'vacia', 'vacio', 'vacía', 'vacío')
+		AND (
+			lower(COALESCE(last_state, '')) LIKE '%ocup%'
+			OR lower(COALESCE(last_state, '')) LIKE '%occupied%'
+			OR lower(COALESCE(last_state, '')) LIKE '%busy%'
+			OR lower(COALESCE(last_state, '')) LIKE '%cerrad%'
+			OR lower(COALESCE(last_state, '')) LIKE '%closed%'
+			OR lower(COALESCE(last_state, '')) LIKE '%presencia%'
+			OR lower(COALESCE(last_state, '')) = 'on'
+			OR lower(COALESCE(last_state, '')) = 'true'
+			OR lower(COALESCE(last_state, '')) = '1'
+		))`
 }
 
 func getCorteCajaStationNames(dbEmp *sql.DB, empresaID int64) (map[int64]string, error) {

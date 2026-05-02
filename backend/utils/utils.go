@@ -46,6 +46,30 @@ const (
 
 var companyLogMu sync.Mutex
 
+type authSessionCacheEntry struct {
+	Session  *dbpkg.Session
+	CachedAt time.Time
+}
+
+type authAdminCacheEntry struct {
+	Admin    *dbpkg.Admin
+	CachedAt time.Time
+}
+
+var (
+	authMiddlewareCacheMu             sync.Mutex
+	authMiddlewareSessionCache        = map[string]authSessionCacheEntry{}
+	authMiddlewareAdminCache          = map[string]authAdminCacheEntry{}
+	authMiddlewareMaintenanceActive   bool
+	authMiddlewareMaintenanceLoadedAt time.Time
+)
+
+const (
+	authMiddlewareSessionCacheTTL     = 30 * time.Second
+	authMiddlewareAdminCacheTTL       = 30 * time.Second
+	authMiddlewareMaintenanceCacheTTL = 30 * time.Second
+)
+
 func AdminShouldUseSuperRole(email string) bool {
 	return strings.EqualFold(strings.TrimSpace(email), reservedSuperAdminEmail)
 }
@@ -440,6 +464,80 @@ func GenerateSecureToken(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+func getCachedMaintenanceActive(dbSuper *sql.DB) bool {
+	if dbSuper == nil {
+		return false
+	}
+	authMiddlewareCacheMu.Lock()
+	if time.Since(authMiddlewareMaintenanceLoadedAt) < authMiddlewareMaintenanceCacheTTL {
+		value := authMiddlewareMaintenanceActive
+		authMiddlewareCacheMu.Unlock()
+		return value
+	}
+	authMiddlewareCacheMu.Unlock()
+
+	active := false
+	if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
+		active = true
+	}
+
+	authMiddlewareCacheMu.Lock()
+	authMiddlewareMaintenanceActive = active
+	authMiddlewareMaintenanceLoadedAt = time.Now()
+	authMiddlewareCacheMu.Unlock()
+	return active
+}
+
+func getCachedSessionByToken(dbSuper *sql.DB, token string) (*dbpkg.Session, error) {
+	token = strings.TrimSpace(token)
+	if dbSuper == nil || token == "" {
+		return nil, sql.ErrNoRows
+	}
+	authMiddlewareCacheMu.Lock()
+	if cached, ok := authMiddlewareSessionCache[token]; ok && time.Since(cached.CachedAt) < authMiddlewareSessionCacheTTL {
+		authMiddlewareCacheMu.Unlock()
+		return cached.Session, nil
+	}
+	authMiddlewareCacheMu.Unlock()
+
+	session, err := dbpkg.GetSessionByToken(dbSuper, token)
+	if err != nil {
+		return nil, err
+	}
+	authMiddlewareCacheMu.Lock()
+	authMiddlewareSessionCache[token] = authSessionCacheEntry{
+		Session:  session,
+		CachedAt: time.Now(),
+	}
+	authMiddlewareCacheMu.Unlock()
+	return session, nil
+}
+
+func getCachedAdminByEmailFull(dbSuper *sql.DB, email string) (*dbpkg.Admin, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if dbSuper == nil || email == "" {
+		return nil, sql.ErrNoRows
+	}
+	authMiddlewareCacheMu.Lock()
+	if cached, ok := authMiddlewareAdminCache[email]; ok && time.Since(cached.CachedAt) < authMiddlewareAdminCacheTTL {
+		authMiddlewareCacheMu.Unlock()
+		return cached.Admin, nil
+	}
+	authMiddlewareCacheMu.Unlock()
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, email)
+	if err != nil {
+		return nil, err
+	}
+	authMiddlewareCacheMu.Lock()
+	authMiddlewareAdminCache[email] = authAdminCacheEntry{
+		Admin:    admin,
+		CachedAt: time.Now(),
+	}
+	authMiddlewareCacheMu.Unlock()
+	return admin, nil
+}
+
 func allowAdminLimitedSuperRoute(path, method, role string) bool {
 	if !strings.EqualFold(strings.TrimSpace(role), "administrador") {
 		return false
@@ -468,15 +566,13 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		// Verificación de Modo Mantenimiento
-		if dbSuper != nil {
-			if val, _, err := dbpkg.GetConfigValue(dbSuper, "mantenimiento_activo"); err == nil && val == "true" {
-				// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
-				isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
-				isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
-				if !isMntAllowed && !isStatic {
-					http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
-					return
-				}
+		if getCachedMaintenanceActive(dbSuper) {
+			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
+			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
+			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
+			if !isMntAllowed && !isStatic {
+				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
+				return
 			}
 		}
 
@@ -579,13 +675,13 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 
-		sess, err := dbpkg.GetSessionByToken(dbSuper, token)
+		sess, err := getCachedSessionByToken(dbSuper, token)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, sess.AdminEmail)
+		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return

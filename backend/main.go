@@ -685,10 +685,18 @@ func main() {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_carritos_schema")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_finanzas_schema")
 	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_reservas_schema")
+	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_sensor_puertas_schema")
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
 			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)

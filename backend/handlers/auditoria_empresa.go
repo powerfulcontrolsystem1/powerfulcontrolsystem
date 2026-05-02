@@ -420,6 +420,10 @@ func sha256Hex(input []byte) string {
 }
 
 func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, empresaID int64, modulo, permissionAction string, statusCode int, elapsed time.Duration) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][auditoria] empresa=%d modulo=%s accion=%s dur=%s", empresaID, modulo, permissionAction, time.Since(startedAt))
+	}()
 	if dbEmp == nil {
 		return
 	}
@@ -512,9 +516,11 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 		Observaciones:  "auditoria automatica de operacion empresarial",
 	}
 
-	if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, auditoria); err != nil {
-		log.Printf("[auditoria] no se pudo registrar evento empresa_id=%d modulo=%s accion=%s error=%v", empresaID, modulo, auditoria.Accion, err)
-	}
+	go func(audit dbpkg.EmpresaAuditoriaEvento, eid int64, mod string) {
+		if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, audit); err != nil {
+			log.Printf("[auditoria] no se pudo registrar evento empresa_id=%d modulo=%s accion=%s error=%v", eid, mod, audit.Accion, err)
+		}
+	}(auditoria, empresaID, modulo)
 }
 
 func accionDebeAuditarse(permissionAction string) bool {

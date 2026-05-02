@@ -4,8 +4,38 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
+
+var (
+	licenciaPermisoPolicyCacheMu  sync.Mutex
+	licenciaPermisoPolicyCache    = map[int64]cachedLicenciaPermisoPolicy{}
+	licenciaPermisoPolicyCacheTTL = 60 * time.Second
+
+	adminByEmailCacheMu  sync.Mutex
+	adminByEmailCache    = map[string]cachedAdminByEmail{}
+	adminByEmailCacheTTL = 60 * time.Second
+
+	empresaByScopeCacheMu  sync.Mutex
+	empresaByScopeCache    = map[int64]cachedEmpresaByScope{}
+	empresaByScopeCacheTTL = 60 * time.Second
+)
+
+type cachedLicenciaPermisoPolicy struct {
+	Policy   *LicenciaPermisoPolicy
+	LoadedAt time.Time
+}
+
+type cachedAdminByEmail struct {
+	Admin    *Admin
+	LoadedAt time.Time
+}
+
+type cachedEmpresaByScope struct {
+	Empresa  *Empresa
+	LoadedAt time.Time
+}
 
 // EnsureAdministradoresAuthSchema regulariza las columnas operativas y de seguridad
 // usadas por el flujo administrativo en PostgreSQL.
@@ -665,6 +695,17 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 		return nil, nil
 	}
 
+	licenciaPermisoPolicyCacheMu.Lock()
+	if cached, ok := licenciaPermisoPolicyCache[empresaID]; ok && time.Since(cached.LoadedAt) < licenciaPermisoPolicyCacheTTL {
+		licenciaPermisoPolicyCacheMu.Unlock()
+		if cached.Policy == nil {
+			return nil, nil
+		}
+		copyPolicy := *cached.Policy
+		return &copyPolicy, nil
+	}
+	licenciaPermisoPolicyCacheMu.Unlock()
+
 	query := `SELECT id,
 		COALESCE(nombre, ''),
 		COALESCE(modulos_habilitados, ''),
@@ -701,15 +742,25 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 	var superRolRaw int
 	if err := row.Scan(&item.LicenciaID, &item.Nombre, &item.ModulosHabilitados, &superRolRaw); err != nil {
 		if err == sql.ErrNoRows {
+			licenciaPermisoPolicyCacheMu.Lock()
+			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
+			licenciaPermisoPolicyCacheMu.Unlock()
 			return nil, nil
 		}
 		if isMissingTableError(err) || isMissingColumnError(err) {
+			licenciaPermisoPolicyCacheMu.Lock()
+			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
+			licenciaPermisoPolicyCacheMu.Unlock()
 			return nil, nil
 		}
 		return nil, err
 	}
 	item.SuperRolHabilitado = superRolRaw == 1
-	return &item, nil
+	licenciaPermisoPolicyCacheMu.Lock()
+	licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: &item, LoadedAt: time.Now()}
+	licenciaPermisoPolicyCacheMu.Unlock()
+	copyPolicy := item
+	return &copyPolicy, nil
 }
 
 // DeleteLicencia elimina una licencia por id
@@ -785,6 +836,19 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 
 // GetAdminByEmail devuelve el administrador por email
 func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
+	cacheKey := strings.ToLower(strings.TrimSpace(email))
+	if cacheKey != "" {
+		adminByEmailCacheMu.Lock()
+		if cached, ok := adminByEmailCache[cacheKey]; ok && time.Since(cached.LoadedAt) < adminByEmailCacheTTL {
+			adminByEmailCacheMu.Unlock()
+			if cached.Admin == nil {
+				return nil, sql.ErrNoRows
+			}
+			copyAdmin := *cached.Admin
+			return &copyAdmin, nil
+		}
+		adminByEmailCacheMu.Unlock()
+	}
 	// Intentar obtener con la columna 'acepta_contrato' (para bases actualizadas).
 	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
 	var a Admin
@@ -797,13 +861,30 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
 			var photo2 sql.NullString
 			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
+				if cacheKey != "" && err2 == sql.ErrNoRows {
+					adminByEmailCacheMu.Lock()
+					adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: nil, LoadedAt: time.Now()}
+					adminByEmailCacheMu.Unlock()
+				}
 				return nil, err2
 			}
 			if photo2.Valid {
 				a.Photo = photo2.String
 			}
 			a.AceptaContrato = 0
-			return &a, nil
+			if cacheKey != "" {
+				adminCopy := a
+				adminByEmailCacheMu.Lock()
+				adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: &adminCopy, LoadedAt: time.Now()}
+				adminByEmailCacheMu.Unlock()
+			}
+			out := a
+			return &out, nil
+		}
+		if cacheKey != "" && err == sql.ErrNoRows {
+			adminByEmailCacheMu.Lock()
+			adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: nil, LoadedAt: time.Now()}
+			adminByEmailCacheMu.Unlock()
 		}
 		return nil, err
 	}
@@ -818,7 +899,14 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	} else {
 		a.AceptaContrato = 0
 	}
-	return &a, nil
+	if cacheKey != "" {
+		adminCopy := a
+		adminByEmailCacheMu.Lock()
+		adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: &adminCopy, LoadedAt: time.Now()}
+		adminByEmailCacheMu.Unlock()
+	}
+	out := a
+	return &out, nil
 }
 
 // GetAdminByID devuelve el administrador por id.
@@ -1348,9 +1436,23 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 
 // GetEmpresaByScopeID resuelve una empresa por id fisico o por alcance logico empresa_id.
 func GetEmpresaByScopeID(dbConn *sql.DB, empresaID int64) (*Empresa, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][empresa] GetEmpresaByScopeID empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	}()
 	if empresaID <= 0 {
 		return nil, nil
 	}
+	empresaByScopeCacheMu.Lock()
+	if cached, ok := empresaByScopeCache[empresaID]; ok && time.Since(cached.LoadedAt) < empresaByScopeCacheTTL {
+		empresaByScopeCacheMu.Unlock()
+		if cached.Empresa == nil {
+			return nil, nil
+		}
+		copyEmpresa := *cached.Empresa
+		return &copyEmpresa, nil
+	}
+	empresaByScopeCacheMu.Unlock()
 	row := queryRowSQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? OR COALESCE(empresa_id, id) = ? ORDER BY CASE WHEN COALESCE(empresa_id, id) = ? THEN 0 ELSE 1 END, id ASC LIMIT 1", empresaID, empresaID, empresaID)
 	var e Empresa
 	var resolvedEmpresaID sql.NullInt64
@@ -1364,6 +1466,9 @@ func GetEmpresaByScopeID(dbConn *sql.DB, empresaID int64) (*Empresa, error) {
 	var obs sql.NullString
 	if err := row.Scan(&e.ID, &resolvedEmpresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 		if err == sql.ErrNoRows {
+			empresaByScopeCacheMu.Lock()
+			empresaByScopeCache[empresaID] = cachedEmpresaByScope{Empresa: nil, LoadedAt: time.Now()}
+			empresaByScopeCacheMu.Unlock()
 			return nil, nil
 		}
 		return nil, err
@@ -1397,7 +1502,11 @@ func GetEmpresaByScopeID(dbConn *sql.DB, empresaID int64) (*Empresa, error) {
 	if obs.Valid {
 		e.Observaciones = obs.String
 	}
-	return &e, nil
+	empresaCopy := e
+	empresaByScopeCacheMu.Lock()
+	empresaByScopeCache[empresaID] = cachedEmpresaByScope{Empresa: &empresaCopy, LoadedAt: time.Now()}
+	empresaByScopeCacheMu.Unlock()
+	return &empresaCopy, nil
 }
 
 // UpdateEmpresa actualiza campos editables de una empresa

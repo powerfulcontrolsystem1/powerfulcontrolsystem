@@ -49,10 +49,53 @@ type empresaRateLimitBucket struct {
 	Count       int64
 }
 
+type empresaPermissionSnapshot struct {
+	AdminRole         string
+	EffectiveRole     string
+	CanAccess         bool
+	AllowedModules    map[string]bool
+	RoleModuleActions map[string]bool
+	AllowedPages      map[string]bool
+	LoadedAt          time.Time
+}
+
+type empresaPermissionSnapshotInflight struct {
+	done     chan struct{}
+	snapshot empresaPermissionSnapshot
+	err      error
+}
+
+type permissionRoleOverrideCacheEntry struct {
+	ModuleOverrides map[string]bool
+	PageOverrides   map[string]bool
+	LoadedAt        time.Time
+}
+
+type empresaPermissionOverrideCacheEntry struct {
+	ModuleOverrides map[string]bool
+	PageOverrides   map[string]bool
+	Ctx             *empresaPermisosFinosCtx
+	LoadedAt        time.Time
+}
+
+type permissionRoleModuleMatrixCacheEntry struct {
+	Rows     []permissionModuleMatrixRow
+	LoadedAt time.Time
+}
+
 var (
-	empresaRateLimitMu      sync.Mutex
-	empresaRateLimitBuckets = map[string]empresaRateLimitBucket{}
+	empresaRateLimitMu              sync.Mutex
+	empresaRateLimitBuckets         = map[string]empresaRateLimitBucket{}
+	empresaPermissionCacheMu        sync.Mutex
+	empresaPermissionCache          = map[string]empresaPermissionSnapshot{}
+	empresaPermissionInflight       = map[string]*empresaPermissionSnapshotInflight{}
+	rolePermissionModuleMatrixCache = map[string]permissionRoleModuleMatrixCacheEntry{}
+	rolePermissionOverrideCache     = map[string]permissionRoleOverrideCacheEntry{}
+	empresaPermissionOverrideCache  = map[int64]empresaPermissionOverrideCacheEntry{}
 )
+
+const empresaPermissionCacheTTL = 60 * time.Second
+const permissionOverrideCacheTTL = 60 * time.Second
 
 var legacyPermissionVisibleTextReplacer = strings.NewReplacer(
 	"Operaci\u00c3\u00b3n", "Operaci\u00f3n",
@@ -609,6 +652,10 @@ func applyEmpresaRateLimitHeaders(w http.ResponseWriter, limit, remaining, retry
 
 func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAction func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		startedAt := time.Now()
+		defer func() {
+			dbpkg.PerfLogf("[perf][authz] module=%s method=%s path=%s dur=%s", module, r.Method, r.URL.Path, time.Since(startedAt))
+		}()
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
 			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
@@ -642,75 +689,45 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			return
 		}
 
-		admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
+		snapshotStartedAt := time.Now()
+		snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID)
+		dbpkg.PerfLogf("[perf][authz] module=%s snapshot empresa=%d email=%s dur=%s", module, empresaID, adminEmail, time.Since(snapshotStartedAt))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
 				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusUnauthorized, 0)
 				return
 			}
-			log.Printf("[authz] get admin email=%s error: %v", adminEmail, err)
+			log.Printf("[authz] snapshot module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, err)
 			http.Error(w, "No se pudo validar permisos del usuario", http.StatusInternalServerError)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
 			return
 		}
 
-		canAccess, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
-		if err != nil {
-			log.Printf("[authz] alcance empresa module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, err)
-			http.Error(w, "No se pudo validar alcance de empresa", http.StatusInternalServerError)
-			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
-			return
-		}
-		if !canAccess {
+		if !snapshot.CanAccess {
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 
-		role := normalizePermissionRole(admin.Role)
-		licenciaPolicy, licErr := dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID)
-		if licErr != nil {
-			log.Printf("[authz] licencia permisos module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, licErr)
-			http.Error(w, "No se pudo validar permisos de licencia", http.StatusInternalServerError)
-			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
-			return
-		}
-
-		allowedModules, _ := parseLicenciaModulosCSV("")
-		if licenciaPolicy != nil {
-			allowedModules, _ = parseLicenciaModulosCSV(licenciaPolicy.ModulosHabilitados)
-		}
+		role := snapshot.AdminRole
 		skipLicenciaModuloCheck := module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")
-		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, allowedModules) {
+		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
 			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 
 		requestPath := strings.TrimSpace(r.URL.Path)
-		skipEmpresaModuloCheck := module == permModuleSeguridad && (strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto") || strings.HasPrefix(requestPath, "/api/empresa/permisos_empresa"))
-		if !skipEmpresaModuloCheck && !empresaAllowsModuleActionWithOverrides(dbSuper, empresaID, module, action) {
-			http.Error(w, "forbidden: permiso fino de empresa deshabilita la accion solicitada", http.StatusForbidden)
-			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
-			return
-		}
-
-		effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
+		effectiveRole := snapshot.EffectiveRole
 		skipRoleModuloCheck := module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")
-		if !skipRoleModuloCheck && !roleAllowsModuleActionWithOverrides(dbSuper, effectiveRole, module, action) {
+		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 		if pageKey := resolvePermissionPageKeyForRequest(r); pageKey != "" {
-			pageRows := buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
-			pageRows = applyLicenciaRestriccionesToModuleRows(pageRows, allowedModules)
-			empresaModuleOverrides, empresaPageOverrides, _ := loadEmpresaPermissionOverrides(dbSuper, empresaID)
-			pageRows = applyEmpresaRestriccionesToModuleRows(pageRows, empresaModuleOverrides)
-			pages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, pageRows)
-			pages = applyEmpresaPageRestrictionsToMap(pages, empresaPageOverrides)
-			if !pages[pageKey] {
+			if !snapshot.AllowedPages[pageKey] {
 				http.Error(w, "forbidden: rol sin acceso a la funcionalidad solicitada", http.StatusForbidden)
 				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 				return
@@ -750,6 +767,7 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		auditStart := time.Now()
 		auditRW := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(auditRW, r)
+		dbpkg.PerfLogf("[perf][authz] module=%s next empresa=%d path=%s dur=%s", module, empresaID, requestPath, time.Since(auditStart))
 		registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, auditRW.status, time.Since(auditStart))
 	}
 }
@@ -1300,6 +1318,13 @@ func loadPermissionOverridesByRoleName(dbSuper *sql.DB, role string) (map[string
 		return moduleOverrides, pageOverrides, nil
 	}
 
+	empresaPermissionCacheMu.Lock()
+	if cached, ok := rolePermissionOverrideCache[normalizedRole]; ok && time.Since(cached.LoadedAt) < permissionOverrideCacheTTL {
+		empresaPermissionCacheMu.Unlock()
+		return clonePermissionBoolMap(cached.ModuleOverrides), clonePermissionBoolMap(cached.PageOverrides), nil
+	}
+	empresaPermissionCacheMu.Unlock()
+
 	rolID, err := dbpkg.ResolveRolDeUsuarioIDByNombre(dbSuper, normalizedRole)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || isPermissionMissingTableError(err) {
@@ -1308,27 +1333,50 @@ func loadPermissionOverridesByRoleName(dbSuper *sql.DB, role string) (map[string
 		return nil, nil, err
 	}
 
-	modulos, err := dbpkg.ListRolPermisosModuloByRolID(dbSuper, rolID)
-	if err != nil {
-		if isPermissionMissingTableError(err) {
+	var (
+		modulos    []dbpkg.RolPermisoModulo
+		paginas    []dbpkg.RolPermisoPagina
+		modulosErr error
+		paginasErr error
+	)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		modulos, modulosErr = dbpkg.ListRolPermisosModuloByRolID(dbSuper, rolID)
+	}()
+	go func() {
+		defer wg.Done()
+		paginas, paginasErr = dbpkg.ListRolPermisosPaginaByRolID(dbSuper, rolID)
+	}()
+	wg.Wait()
+	if modulosErr != nil {
+		if isPermissionMissingTableError(modulosErr) {
 			return moduleOverrides, pageOverrides, nil
 		}
-		return nil, nil, err
+		return nil, nil, modulosErr
 	}
 	for _, item := range modulos {
 		moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
 	}
 
-	paginas, err := dbpkg.ListRolPermisosPaginaByRolID(dbSuper, rolID)
-	if err != nil {
-		if isPermissionMissingTableError(err) {
+	if paginasErr != nil {
+		if isPermissionMissingTableError(paginasErr) {
 			return moduleOverrides, pageOverrides, nil
 		}
-		return nil, nil, err
+		return nil, nil, paginasErr
 	}
 	for _, item := range paginas {
 		pageOverrides[strings.TrimSpace(item.PaginaClave)] = item.Permitido
 	}
+
+	empresaPermissionCacheMu.Lock()
+	rolePermissionOverrideCache[normalizedRole] = permissionRoleOverrideCacheEntry{
+		ModuleOverrides: clonePermissionBoolMap(moduleOverrides),
+		PageOverrides:   clonePermissionBoolMap(pageOverrides),
+		LoadedAt:        time.Now(),
+	}
+	empresaPermissionCacheMu.Unlock()
 
 	return moduleOverrides, pageOverrides, nil
 }
@@ -1341,10 +1389,33 @@ func loadEmpresaPermissionOverrides(dbSuper *sql.DB, empresaID int64) (map[strin
 		return moduleOverrides, pageOverrides, ctx
 	}
 
-	modulos, err := dbpkg.ListEmpresaPermisosModuloByEmpresaID(dbSuper, empresaID)
-	if err != nil {
-		if !isPermissionMissingTableError(err) {
-			log.Printf("[authz] load empresa modulo overrides empresa_id=%d error: %v", empresaID, err)
+	empresaPermissionCacheMu.Lock()
+	if cached, ok := empresaPermissionOverrideCache[empresaID]; ok && time.Since(cached.LoadedAt) < permissionOverrideCacheTTL {
+		empresaPermissionCacheMu.Unlock()
+		return clonePermissionBoolMap(cached.ModuleOverrides), clonePermissionBoolMap(cached.PageOverrides), cloneEmpresaPermisosFinosCtx(cached.Ctx)
+	}
+	empresaPermissionCacheMu.Unlock()
+
+	var (
+		modulos    []dbpkg.EmpresaPermisoModulo
+		paginas    []dbpkg.EmpresaPermisoPagina
+		modulosErr error
+		paginasErr error
+	)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		modulos, modulosErr = dbpkg.ListEmpresaPermisosModuloByEmpresaID(dbSuper, empresaID)
+	}()
+	go func() {
+		defer wg.Done()
+		paginas, paginasErr = dbpkg.ListEmpresaPermisosPaginaByEmpresaID(dbSuper, empresaID)
+	}()
+	wg.Wait()
+	if modulosErr != nil {
+		if !isPermissionMissingTableError(modulosErr) {
+			log.Printf("[authz] load empresa modulo overrides empresa_id=%d error: %v", empresaID, modulosErr)
 		}
 		modulos = []dbpkg.EmpresaPermisoModulo{}
 	}
@@ -1352,10 +1423,9 @@ func loadEmpresaPermissionOverrides(dbSuper *sql.DB, empresaID int64) (map[strin
 		moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
 	}
 
-	paginas, err := dbpkg.ListEmpresaPermisosPaginaByEmpresaID(dbSuper, empresaID)
-	if err != nil {
-		if !isPermissionMissingTableError(err) {
-			log.Printf("[authz] load empresa page overrides empresa_id=%d error: %v", empresaID, err)
+	if paginasErr != nil {
+		if !isPermissionMissingTableError(paginasErr) {
+			log.Printf("[authz] load empresa page overrides empresa_id=%d error: %v", empresaID, paginasErr)
 		}
 		paginas = []dbpkg.EmpresaPermisoPagina{}
 	}
@@ -1366,7 +1436,48 @@ func loadEmpresaPermissionOverrides(dbSuper *sql.DB, empresaID int64) (map[strin
 	ctx.ReglasModulo = len(moduleOverrides)
 	ctx.ReglasPagina = len(pageOverrides)
 	ctx.Activo = ctx.ReglasModulo > 0 || ctx.ReglasPagina > 0
+
+	empresaPermissionCacheMu.Lock()
+	empresaPermissionOverrideCache[empresaID] = empresaPermissionOverrideCacheEntry{
+		ModuleOverrides: clonePermissionBoolMap(moduleOverrides),
+		PageOverrides:   clonePermissionBoolMap(pageOverrides),
+		Ctx:             cloneEmpresaPermisosFinosCtx(ctx),
+		LoadedAt:        time.Now(),
+	}
+	empresaPermissionCacheMu.Unlock()
 	return moduleOverrides, pageOverrides, ctx
+}
+
+func clonePermissionBoolMap(input map[string]bool) map[string]bool {
+	if len(input) == 0 {
+		return map[string]bool{}
+	}
+	out := make(map[string]bool, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
+}
+
+func cloneEmpresaPermisosFinosCtx(input *empresaPermisosFinosCtx) *empresaPermisosFinosCtx {
+	if input == nil {
+		return &empresaPermisosFinosCtx{}
+	}
+	out := *input
+	return &out
+}
+
+func clonePermissionModuleRows(input []permissionModuleMatrixRow) []permissionModuleMatrixRow {
+	if len(input) == 0 {
+		return []permissionModuleMatrixRow{}
+	}
+	out := make([]permissionModuleMatrixRow, 0, len(input))
+	for _, row := range input {
+		copied := row
+		copied.Acciones = clonePermissionBoolMap(row.Acciones)
+		out = append(out, copied)
+	}
+	return out
 }
 
 func permissionModuleActionKey(modulo, accion string) string {
@@ -1444,6 +1555,14 @@ func buildPermissionModuleMatrixForRole(role string) []permissionModuleMatrixRow
 }
 
 func buildPermissionModuleMatrixForRoleDynamic(dbSuper *sql.DB, role string) []permissionModuleMatrixRow {
+	normalizedRole := normalizePermissionRole(role)
+	empresaPermissionCacheMu.Lock()
+	if cached, ok := rolePermissionModuleMatrixCache[normalizedRole]; ok && time.Since(cached.LoadedAt) < permissionOverrideCacheTTL {
+		empresaPermissionCacheMu.Unlock()
+		return clonePermissionModuleRows(cached.Rows)
+	}
+	empresaPermissionCacheMu.Unlock()
+
 	rows := buildPermissionModuleMatrixForRole(role)
 	moduleOverrides, _, err := loadPermissionOverridesByRoleName(dbSuper, role)
 	if err != nil {
@@ -1463,6 +1582,12 @@ func buildPermissionModuleMatrixForRoleDynamic(dbSuper *sql.DB, role string) []p
 		}
 	}
 
+	empresaPermissionCacheMu.Lock()
+	rolePermissionModuleMatrixCache[normalizedRole] = permissionRoleModuleMatrixCacheEntry{
+		Rows:     clonePermissionModuleRows(rows),
+		LoadedAt: time.Now(),
+	}
+	empresaPermissionCacheMu.Unlock()
 	return rows
 }
 
@@ -1721,6 +1846,140 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkReportes"
 	}
 	return ""
+}
+
+func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, empresaID int64) (empresaPermissionSnapshot, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][authz] getEmpresaPermissionSnapshot empresa=%d email=%s dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(startedAt))
+	}()
+	cacheKey := strings.ToLower(strings.TrimSpace(adminEmail)) + "|" + strconv.FormatInt(empresaID, 10)
+	if strings.TrimSpace(adminEmail) == "" || empresaID <= 0 {
+		return empresaPermissionSnapshot{}, sql.ErrNoRows
+	}
+	var snapshotResult empresaPermissionSnapshot
+	var snapshotErr error
+
+	empresaPermissionCacheMu.Lock()
+	if cached, ok := empresaPermissionCache[cacheKey]; ok && time.Since(cached.LoadedAt) < empresaPermissionCacheTTL {
+		empresaPermissionCacheMu.Unlock()
+		return cached, nil
+	}
+	if inflight, ok := empresaPermissionInflight[cacheKey]; ok {
+		empresaPermissionCacheMu.Unlock()
+		<-inflight.done
+		return inflight.snapshot, inflight.err
+	}
+	inflight := &empresaPermissionSnapshotInflight{done: make(chan struct{})}
+	empresaPermissionInflight[cacheKey] = inflight
+	empresaPermissionCacheMu.Unlock()
+	defer func() {
+		empresaPermissionCacheMu.Lock()
+		delete(empresaPermissionInflight, cacheKey)
+		inflight.snapshot = snapshotResult
+		inflight.err = snapshotErr
+		close(inflight.done)
+		empresaPermissionCacheMu.Unlock()
+	}()
+	stepStarted := time.Now()
+	admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
+	if err != nil {
+		snapshotErr = err
+		return empresaPermissionSnapshot{}, err
+	}
+	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+	role := normalizePermissionRole(admin.Role)
+
+	var (
+		canAccess              bool
+		canAccessErr           error
+		licenciaPolicy         *dbpkg.LicenciaPermisoPolicy
+		licenciaErr            error
+		moduleRows             []permissionModuleMatrixRow
+		empresaModuleOverrides map[string]bool
+		empresaPageOverrides   map[string]bool
+	)
+
+	var snapshotWG sync.WaitGroup
+	snapshotWG.Add(4)
+
+	go func() {
+		defer snapshotWG.Done()
+		step := time.Now()
+		canAccess, canAccessErr = dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=access dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+	}()
+
+	go func() {
+		defer snapshotWG.Done()
+		step := time.Now()
+		licenciaPolicy, licenciaErr = dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=licencia dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+	}()
+
+	go func() {
+		defer snapshotWG.Done()
+		step := time.Now()
+		moduleRows = buildPermissionModuleMatrixForRoleDynamic(dbSuper, role)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+	}()
+
+	go func() {
+		defer snapshotWG.Done()
+		step := time.Now()
+		empresaModuleOverrides, empresaPageOverrides, _ = loadEmpresaPermissionOverrides(dbSuper, empresaID)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=empresa_overrides dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+	}()
+
+	snapshotWG.Wait()
+	if canAccessErr != nil {
+		snapshotErr = canAccessErr
+		return empresaPermissionSnapshot{}, canAccessErr
+	}
+	if licenciaErr != nil {
+		snapshotErr = licenciaErr
+		return empresaPermissionSnapshot{}, licenciaErr
+	}
+
+	allowedModules, _ := parseLicenciaModulosCSV("")
+	if licenciaPolicy != nil {
+		allowedModules, _ = parseLicenciaModulosCSV(licenciaPolicy.ModulosHabilitados)
+	}
+	effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
+	if effectiveRole != role {
+		stepStarted = time.Now()
+		moduleRows = buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows_effective dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+	}
+	moduleRows = applyLicenciaRestriccionesToModuleRows(moduleRows, allowedModules)
+	moduleRows = applyEmpresaRestriccionesToModuleRows(moduleRows, empresaModuleOverrides)
+	stepStarted = time.Now()
+	allowedPages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, moduleRows)
+	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+	allowedPages = applyEmpresaPageRestrictionsToMap(allowedPages, empresaPageOverrides)
+
+	roleModuleActions := map[string]bool{}
+	for _, row := range moduleRows {
+		for _, permissionAction := range permissionActionsCatalogOrdered {
+			roleModuleActions[permissionModuleActionKey(row.Modulo, permissionAction)] = row.Acciones[permissionAction]
+		}
+	}
+
+	snapshot := empresaPermissionSnapshot{
+		AdminRole:         role,
+		EffectiveRole:     effectiveRole,
+		CanAccess:         canAccess,
+		AllowedModules:    allowedModules,
+		RoleModuleActions: roleModuleActions,
+		AllowedPages:      allowedPages,
+		LoadedAt:          time.Now(),
+	}
+
+	empresaPermissionCacheMu.Lock()
+	empresaPermissionCache[cacheKey] = snapshot
+	empresaPermissionCacheMu.Unlock()
+	snapshotResult = snapshot
+	return snapshot, nil
 }
 
 func resolveEffectiveRoleByLicencia(role string, licenciaPolicy *dbpkg.LicenciaPermisoPolicy) string {

@@ -1,12 +1,12 @@
 {
   "status": "running",
   "hostname": "NITRO",
-  "process_id": 18288,
+  "process_id": 19892,
   "listen_addr": ":8080",
-  "last_start_at": "2026-05-02 02:40:41",
+  "last_start_at": "2026-05-02 04:25:38",
   "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=15284 previo_inicio=2026-05-02 02:36:21 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/05/01 23:58:42 [compras] evento contable omitido empresa_id=7 modulo=compras evento=orden_compra_pendiente_aprobacion entidad=orden_compra entidad_id=12 error: evento contable no soportado para modulo=compras evento=orden_compra_pendiente_aprobacion",
+  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=9064 previo_inicio=2026-05-02 04:24:15 previo_host=NITRO previo_motivo_cierre=. Ultimo indicio en server.err: 2026/05/01 23:58:42 [compras] evento contable omitido empresa_id=7 modulo=compras evento=orden_compra_pendiente_aprobacion entidad=orden_compra entidad_id=12 error: evento contable no soportado para modulo=compras evento=orden_compra_pendiente_aprobacion",
   "last_unexpected_restart": true,
   "last_known_server_err": "2026/05/01 23:58:42 [compras] evento contable omitido empresa_id=7 modulo=compras evento=orden_compra_pendiente_aprobacion entidad=orden_compra entidad_id=12 error: evento contable no soportado para modulo=compras evento=orden_compra_pendiente_aprobacion",
-  "last_event_id": 9268
+  "last_event_id": 9303
 }

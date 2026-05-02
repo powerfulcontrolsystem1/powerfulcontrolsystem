@@ -90,6 +90,10 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		return
 
 	case "", "listar", "list":
+		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
+			http.Error(w, "No se pudo aplicar la politica operativa de reservas", http.StatusInternalServerError)
+			return
+		}
 		limit, err := parseIntQueryOptional(r, "limit")
 		if err != nil {
 			http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -126,12 +130,12 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			Offset:        offset,
 		}
 
-		total, err := dbpkg.CountReservasHotelByEmpresa(dbEmp, empresaID, filter)
+		total, err := dbpkg.CountReservasHotelByEmpresaRaw(dbEmp, empresaID, filter)
 		if err != nil {
 			http.Error(w, "No se pudo consultar total de reservas", http.StatusInternalServerError)
 			return
 		}
-		rows, err := dbpkg.ListReservasHotelByEmpresa(dbEmp, empresaID, filter)
+		rows, err := dbpkg.ListReservasHotelByEmpresaRaw(dbEmp, empresaID, filter)
 		if err != nil {
 			http.Error(w, "No se pudo listar reservas", http.StatusInternalServerError)
 			return

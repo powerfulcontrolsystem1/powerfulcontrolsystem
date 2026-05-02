@@ -4,8 +4,20 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
+
+var (
+	adminEmpresaCompartidaAccessCacheMu  sync.Mutex
+	adminEmpresaCompartidaAccessCache    = map[string]cachedAdminEmpresaCompartidaAccess{}
+	adminEmpresaCompartidaAccessCacheTTL = 60 * time.Second
+)
+
+type cachedAdminEmpresaCompartidaAccess struct {
+	Item     *AdminEmpresaCompartidaAcceso
+	LoadedAt time.Time
+}
 
 type AdminEmpresaCompartidaAcceso struct {
 	ID                 int64  `json:"id"`
@@ -384,6 +396,17 @@ func GetActiveAdminEmpresaCompartidaAcceso(dbConn *sql.DB, empresaID int64, admi
 	if dbConn == nil || empresaID <= 0 || adminEmail == "" {
 		return nil, nil
 	}
+	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
+	adminEmpresaCompartidaAccessCacheMu.Lock()
+	if cached, ok := adminEmpresaCompartidaAccessCache[cacheKey]; ok && time.Since(cached.LoadedAt) < adminEmpresaCompartidaAccessCacheTTL {
+		adminEmpresaCompartidaAccessCacheMu.Unlock()
+		if cached.Item == nil {
+			return nil, nil
+		}
+		copyItem := *cached.Item
+		return &copyItem, nil
+	}
+	adminEmpresaCompartidaAccessCacheMu.Unlock()
 	if err := EnsureAdminEmpresaCompartidaSchema(dbConn); err != nil {
 		return nil, err
 	}
@@ -415,13 +438,20 @@ func GetActiveAdminEmpresaCompartidaAcceso(dbConn *sql.DB, empresaID int64, admi
 	}
 	defer rows.Close()
 	if !rows.Next() {
+		adminEmpresaCompartidaAccessCacheMu.Lock()
+		adminEmpresaCompartidaAccessCache[cacheKey] = cachedAdminEmpresaCompartidaAccess{Item: nil, LoadedAt: time.Now()}
+		adminEmpresaCompartidaAccessCacheMu.Unlock()
 		return nil, nil
 	}
 	item, scanErr := scanAdminEmpresaCompartidaAcceso(rows)
 	if scanErr != nil {
 		return nil, scanErr
 	}
-	return &item, nil
+	adminEmpresaCompartidaAccessCacheMu.Lock()
+	adminEmpresaCompartidaAccessCache[cacheKey] = cachedAdminEmpresaCompartidaAccess{Item: &item, LoadedAt: time.Now()}
+	adminEmpresaCompartidaAccessCacheMu.Unlock()
+	copyItem := item
+	return &copyItem, nil
 }
 
 func GetPendingAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, empresaID int64, adminEmail string) (*AdminEmpresaCompartidaInvitacion, error) {

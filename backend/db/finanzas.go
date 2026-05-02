@@ -161,6 +161,10 @@ type EmpresaFinanzasConfiguracion struct {
 
 // EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en empresas.db.
 func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][schema] EnsureEmpresaFinanzasSchema dur=%s", time.Since(startedAt))
+	}()
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
@@ -638,22 +642,27 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	ok, err := tableExists(dbConn, "empresa_finanzas_movimientos")
 	if err != nil || !ok {
+		PerfLogf("[perf][schema] finanzas missing table empresa_finanzas_movimientos ok=%v err=%v", ok, err)
 		return false, err
 	}
 	ok, err = tableExists(dbConn, "empresa_finanzas_configuracion")
 	if err != nil || !ok {
+		PerfLogf("[perf][schema] finanzas missing table empresa_finanzas_configuracion ok=%v err=%v", ok, err)
 		return false, err
 	}
 	ok, err = tableExists(dbConn, "empresa_finanzas_periodos")
 	if err != nil || !ok {
+		PerfLogf("[perf][schema] finanzas missing table empresa_finanzas_periodos ok=%v err=%v", ok, err)
 		return false, err
 	}
 	ok, err = tableExists(dbConn, "empresa_cierres_caja")
 	if err != nil || !ok {
+		PerfLogf("[perf][schema] finanzas missing table empresa_cierres_caja ok=%v err=%v", ok, err)
 		return false, err
 	}
 	ok, err = tableExists(dbConn, "empresa_finanzas_bancos_movimientos")
 	if err != nil || !ok {
+		PerfLogf("[perf][schema] finanzas missing table empresa_finanzas_bancos_movimientos ok=%v err=%v", ok, err)
 		return false, err
 	}
 
@@ -666,6 +675,7 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	for _, indexName := range requiredIndexes {
 		indexOK, idxErr := empresaFinanzasIndexExists(dbConn, indexName)
 		if idxErr != nil || !indexOK {
+			PerfLogf("[perf][schema] finanzas missing index %s ok=%v err=%v", indexName, indexOK, idxErr)
 			return false, idxErr
 		}
 	}
@@ -674,13 +684,24 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 
 func empresaFinanzasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
 	var exists bool
-	err := queryRowSQLCompat(dbConn, `
+	query := `
 		SELECT EXISTS (
 			SELECT 1
 			FROM sqlite_master
 			WHERE type = 'index' AND name = ?
 		)
-	`, indexName).Scan(&exists)
+	`
+	if isPostgresDialect() {
+		query = `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_indexes
+				WHERE schemaname = ANY (current_schemas(false))
+				  AND indexname = ?
+			)
+		`
+	}
+	err := queryRowSQLCompat(dbConn, query, strings.TrimSpace(indexName)).Scan(&exists)
 	if err != nil {
 		return false, err
 	}

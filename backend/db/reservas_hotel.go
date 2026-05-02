@@ -490,6 +490,10 @@ func markReservasHotelNoShow(dbConn *sql.DB, empresaID int64, toleranciaMin int)
 
 // ApplyReservasHotelOperationalPolicies aplica expiracion pendiente y politica no_show por empresa.
 func ApplyReservasHotelOperationalPolicies(dbConn *sql.DB, empresaID int64) (int64, int64, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][reservas] ApplyReservasHotelOperationalPolicies empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	}()
 	if empresaID > 0 {
 		reservasHotelPoliciesMu.Lock()
 		lastRun := reservasHotelPoliciesLastRun[empresaID]
@@ -845,11 +849,23 @@ func DeleteReservaHotel(dbConn *sql.DB, empresaID, reservaID int64) error {
 
 // CountReservasHotelByEmpresa cuenta reservas por empresa usando filtros operativos.
 func CountReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter ReservaHotelFilter) (int64, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][reservas] CountReservasHotelByEmpresa empresa=%d limit=%d offset=%d dur=%s", empresaID, filter.Limit, filter.Offset, time.Since(startedAt))
+	}()
 	if empresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
 	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return 0, err
+	}
+	return CountReservasHotelByEmpresaRaw(dbConn, empresaID, filter)
+}
+
+// CountReservasHotelByEmpresaRaw cuenta reservas por empresa sin reaplicar politicas operativas.
+func CountReservasHotelByEmpresaRaw(dbConn *sql.DB, empresaID int64, filter ReservaHotelFilter) (int64, error) {
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
 	where, args := buildReservaHotelFilterClause(empresaID, filter)
 	query := `SELECT COUNT(1)
@@ -865,116 +881,21 @@ func CountReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter Reserva
 
 // ListReservasHotelByEmpresa lista reservas de hotel por empresa.
 func ListReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter ReservaHotelFilter) ([]ReservaHotel, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][reservas] ListReservasHotelByEmpresa empresa=%d limit=%d offset=%d dur=%s", empresaID, filter.Limit, filter.Offset, time.Since(startedAt))
+	}()
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
 	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return nil, err
 	}
-
-	if filter.Limit <= 0 {
-		filter.Limit = 80
-	}
-	if filter.Limit > 500 {
-		filter.Limit = 500
-	}
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
-
-	where, args := buildReservaHotelFilterClause(empresaID, filter)
-	args = append(args, filter.Limit, filter.Offset)
-
-	query := `SELECT
-		r.id,
-		r.empresa_id,
-		r.carrito_id,
-		r.estacion_id,
-		COALESCE(c.codigo, ''),
-		COALESCE(c.nombre, ''),
-		COALESCE(r.codigo_reserva, ''),
-		COALESCE(r.cliente_nombre, ''),
-		COALESCE(r.cliente_documento, ''),
-		COALESCE(r.cliente_email, ''),
-		COALESCE(r.cliente_telefono, ''),
-		COALESCE(r.cantidad_huespedes, 1),
-		COALESCE(r.fecha_entrada, ''),
-		COALESCE(r.fecha_salida, ''),
-		COALESCE(r.monto_total, 0),
-		COALESCE(r.moneda, 'COP'),
-		COALESCE(r.estado_reserva, 'pendiente_pago'),
-		COALESCE(r.estado_pago, 'pendiente'),
-		COALESCE(r.referencia_pago, ''),
-		COALESCE(r.pago_confirmado_en, ''),
-		COALESCE(r.fecha_expiracion, ''),
-		COALESCE(r.confirmado_por, ''),
-		COALESCE(r.canal_origen, ''),
-		COALESCE(r.request_id, ''),
-		COALESCE(r.fecha_creacion, ''),
-		COALESCE(r.fecha_actualizacion, ''),
-		COALESCE(r.usuario_creador, ''),
-		COALESCE(r.estado, 'activo'),
-		COALESCE(r.observaciones, '')
-	FROM reservas_hotel r
-	LEFT JOIN carritos_compras c ON c.empresa_id = r.empresa_id AND c.id = r.carrito_id
-	WHERE ` + where + `
-	ORDER BY r.id DESC
-	LIMIT ? OFFSET ?`
-
-	rows, err := dbConn.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	out := make([]ReservaHotel, 0)
-	for rows.Next() {
-		var item ReservaHotel
-		if err := rows.Scan(
-			&item.ID,
-			&item.EmpresaID,
-			&item.CarritoID,
-			&item.EstacionID,
-			&item.EstacionCodigo,
-			&item.EstacionNombre,
-			&item.CodigoReserva,
-			&item.ClienteNombre,
-			&item.ClienteDocumento,
-			&item.ClienteEmail,
-			&item.ClienteTelefono,
-			&item.CantidadHuespedes,
-			&item.FechaEntrada,
-			&item.FechaSalida,
-			&item.MontoTotal,
-			&item.Moneda,
-			&item.EstadoReserva,
-			&item.EstadoPago,
-			&item.ReferenciaPago,
-			&item.PagoConfirmadoEn,
-			&item.FechaExpiracion,
-			&item.ConfirmadoPor,
-			&item.CanalOrigen,
-			&item.RequestID,
-			&item.FechaCreacion,
-			&item.FechaActualizacion,
-			&item.UsuarioCreador,
-			&item.Estado,
-			&item.Observaciones,
-		); err != nil {
-			return nil, err
-		}
-		out = append(out, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return ListReservasHotelByEmpresaRaw(dbConn, empresaID, filter)
 }
 
 // ListReservasHotelByEmpresaRaw lista reservas de hotel por empresa SIN aplicar
-// las políticas operativas automáticas (expiracion/no_show). Esta función es
-// útil para reports y consultas históricas que requieren el estado tal cual se
-// encuentra en la base de datos sin mutaciones automáticas.
+// las politicas operativas automaticas (expiracion/no_show).
 func ListReservasHotelByEmpresaRaw(dbConn *sql.DB, empresaID int64, filter ReservaHotelFilter) ([]ReservaHotel, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
@@ -1080,7 +1001,7 @@ func ListReservasHotelByEmpresaRaw(dbConn *sql.DB, empresaID int64, filter Reser
 }
 
 func buildReservaHotelFilterClause(empresaID int64, filter ReservaHotelFilter) (string, []interface{}) {
-	where := []string{"r.empresa_id = ?", "COALESCE(r.estado, 'activo') = 'activo'"}
+	where := []string{"r.empresa_id = ?", buildReservaHotelEstadoActivoClause("r.estado")}
 	args := []interface{}{empresaID}
 
 	if filter.EstacionID > 0 {
@@ -1088,22 +1009,22 @@ func buildReservaHotelFilterClause(empresaID int64, filter ReservaHotelFilter) (
 		args = append(args, filter.EstacionID)
 	}
 	if estadoReserva := strings.TrimSpace(strings.ToLower(filter.EstadoReserva)); estadoReserva != "" {
-		where = append(where, "lower(COALESCE(r.estado_reserva, '')) = ?")
+		where = append(where, buildReservaHotelExactTextClause("r.estado_reserva"))
 		args = append(args, estadoReserva)
 	}
 	if estadoPago := strings.TrimSpace(strings.ToLower(filter.EstadoPago)); estadoPago != "" {
-		where = append(where, "lower(COALESCE(r.estado_pago, '')) = ?")
+		where = append(where, buildReservaHotelExactTextClause("r.estado_pago"))
 		args = append(args, estadoPago)
 	}
 	if strings.TrimSpace(filter.FechaDesde) != "" {
 		if parsed, err := parseReservaHotelDateTime(filter.FechaDesde); err == nil {
-			where = append(where, "datetime(r.fecha_entrada) >= datetime(?)")
+			where = append(where, buildReservaHotelDateGTEClause("r.fecha_entrada"))
 			args = append(args, parsed.Format("2006-01-02 15:04:05"))
 		}
 	}
 	if strings.TrimSpace(filter.FechaHasta) != "" {
 		if parsed, err := parseReservaHotelDateTime(filter.FechaHasta); err == nil {
-			where = append(where, "datetime(r.fecha_salida) <= datetime(?)")
+			where = append(where, buildReservaHotelDateLTEClause("r.fecha_salida"))
 			args = append(args, parsed.Format("2006-01-02 15:04:05"))
 		}
 	}
@@ -1114,6 +1035,50 @@ func buildReservaHotelFilterClause(empresaID int64, filter ReservaHotelFilter) (
 		args = append(args, pat, pat, pat, pat, pat)
 	}
 	return strings.Join(where, " AND "), args
+}
+
+func buildReservaHotelEstadoActivoClause(column string) string {
+	column = strings.TrimSpace(column)
+	if column == "" {
+		column = "r.estado"
+	}
+	if isPostgresDialect() {
+		return "(" + column + " = 'activo' OR " + column + " IS NULL)"
+	}
+	return "COALESCE(" + column + ", 'activo') = 'activo'"
+}
+
+func buildReservaHotelExactTextClause(column string) string {
+	column = strings.TrimSpace(column)
+	if column == "" {
+		column = "r.estado_reserva"
+	}
+	if isPostgresDialect() {
+		return column + " = ?"
+	}
+	return "lower(COALESCE(" + column + ", '')) = ?"
+}
+
+func buildReservaHotelDateGTEClause(column string) string {
+	column = strings.TrimSpace(column)
+	if column == "" {
+		column = "r.fecha_entrada"
+	}
+	if isPostgresDialect() {
+		return column + " >= ?"
+	}
+	return "datetime(" + column + ") >= datetime(?)"
+}
+
+func buildReservaHotelDateLTEClause(column string) string {
+	column = strings.TrimSpace(column)
+	if column == "" {
+		column = "r.fecha_salida"
+	}
+	if isPostgresDialect() {
+		return column + " <= ?"
+	}
+	return "datetime(" + column + ") <= datetime(?)"
 }
 
 // GetReservaHotelByID obtiene una reserva puntual por empresa.
@@ -1401,6 +1366,10 @@ func CancelReservaHotel(dbConn *sql.DB, empresaID, reservaID int64, motivo, usua
 
 // ListReservasHotelEstacionesDisponibles lista estaciones y disponibilidad para un rango de fechas.
 func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fechaEntrada, fechaSalida string) ([]ReservaHotelEstacion, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][reservas] ListReservasHotelEstacionesDisponibles empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	}()
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}

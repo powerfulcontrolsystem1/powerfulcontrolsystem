@@ -166,6 +166,10 @@ type CarritoStationMetricSummary struct {
 
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en empresas.db.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][schema] EnsureEmpresaCarritosSchema dur=%s", time.Since(startedAt))
+	}()
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
