@@ -35,6 +35,9 @@
   </main>
 
   <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
     (function () {
       var titleEl = document.getElementById('contractTitle');
       var summaryEl = document.getElementById('contractSummary');
@@ -117,5 +120,6 @@
       loadContract();
     })();
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

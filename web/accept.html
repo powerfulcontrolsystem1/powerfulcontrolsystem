@@ -34,7 +34,10 @@
 
   <script src="/js/recaptcha_helper.js?v=20260423-login-fix"></script>
   <script>
-  (function(){
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
+    (function(){
     var acceptBtn = document.getElementById('acceptBtn');
     var checkbox = document.getElementById('acceptCheckbox');
     var statusEl = document.getElementById('statusEl');
@@ -118,6 +121,7 @@
     updateState();
   })();
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
 
