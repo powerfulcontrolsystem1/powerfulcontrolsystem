@@ -29,6 +29,9 @@
   </div>
 
   <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
     (function(){
       const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
 
@@ -1201,5 +1204,6 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
     })();
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

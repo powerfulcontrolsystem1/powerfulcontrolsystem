@@ -51,6 +51,9 @@
     </section>
   </main>
   <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'venta_publica' };
+
     const params=new URLSearchParams(location.search);
     const state={
       slug:params.get('empresa_slug')||'',
@@ -234,5 +237,6 @@
       }
     };
   </script>
+  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
