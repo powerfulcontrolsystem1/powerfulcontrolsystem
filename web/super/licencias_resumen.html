@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    .super-overview-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:stretch;margin-bottom:10px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 92%, var(--accent) 8%),color-mix(in srgb,var(--surface-soft) 86%, var(--accent-yellow,#facc15) 14%));box-shadow:0 14px 30px rgba(3,10,20,.12)}
+    .super-overview-kicker{margin:0 0 6px 0;color:var(--muted);font-size:.74rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .super-overview-hero h2{margin:0;color:var(--text);font-size:1.35rem;line-height:1.12}
+    .super-overview-hero p{margin:10px 0 0;color:var(--muted);line-height:1.55}
+    .super-overview-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .super-overview-tags span{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.6);border:1px solid color-mix(in srgb,var(--border) 76%, white 24%);font-size:.75rem;font-weight:800;color:var(--text)}
+    .super-overview-aside{display:grid;gap:8px;align-content:center}
+    .super-overview-note{padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.55);border:1px solid color-mix(in srgb,var(--border) 74%, white 26%)}
+    .super-overview-note strong{display:block;color:var(--text);font-size:.86rem}
+    .super-overview-note span{display:block;margin-top:4px;color:var(--muted);font-size:.76rem;line-height:1.4}
     .summary-grid,.ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface);margin-top:8px}
     .summary-card,.ops-card{padding:7px 9px;text-align:left;min-height:0;border-radius:0;box-shadow:none;border:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
     .summary-card .form-help{font-size:.66rem;line-height:1.08;margin-top:1px}
@@ -39,17 +49,44 @@
     @media (max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:680px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
     @media (max-width:460px){.summary-grid,.ops-grid,.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-header{align-items:flex-start}}
+    @media (max-width:860px){.super-overview-hero{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page">
   <div class="container">
     <div class="page-header">
-      <h1>Resumen de Licencias</h1>
+      <div>
+        <h1>Resumen de Licencias</h1>
+        <p class="form-help page-header-lead">Sigue el pulso de licencias, empresas activas, consumos y salud operativa del portal desde una sola vista.</p>
+      </div>
       <div>
         <button id="refreshBtn" class="btn" aria-label="Actualizar recuento">Actualizar</button>
         <a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a>
       </div>
     </div>
+    <section class="super-overview-hero" aria-label="Panorama global de licencias">
+      <div>
+        <p class="super-overview-kicker">Vista ejecutiva</p>
+        <h2>Controla crecimiento, consumo y estabilidad sin salir del resumen global.</h2>
+        <p>Este tablero concentra métricas críticas del portal para detectar saturación, vigilar consumos y responder rápido a riesgos operativos o comerciales.</p>
+        <div class="super-overview-tags" aria-hidden="true">
+          <span>Licencias</span>
+          <span>Empresas</span>
+          <span>Consumos IA</span>
+          <span>VPS</span>
+        </div>
+      </div>
+      <aside class="super-overview-aside">
+        <div class="super-overview-note">
+          <strong>Lectura rápida</strong>
+          <span>Revisa primero licencias activas, errores del sistema y consumos OpenAI para detectar presión operativa.</span>
+        </div>
+        <div class="super-overview-note">
+          <strong>Acción sugerida</strong>
+          <span>Usa “Administrar licencias” cuando identifiques crecimiento, vencimientos o ajustes comerciales pendientes.</span>
+        </div>
+      </aside>
+    </section>
     <div class="summary-grid">
       <div class="card summary-card">
         <div class="muted">Licencias activas</div>
