@@ -33,6 +33,11 @@
   var contractNote = document.getElementById("contractNote");
   var contractStatus = document.getElementById("contractStatus");
   var contractLink = document.getElementById("contractLink");
+  var contractDialog = document.getElementById("contractDialog");
+  var contractDialogTitle = document.getElementById("contractDialogTitle");
+  var contractDialogSummary = document.getElementById("contractDialogSummary");
+  var contractDialogContent = document.getElementById("contractDialogContent");
+  var contractDialogClose = document.getElementById("contractDialogClose");
   var recaptchaManagers = {
     login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha", action: "empresa_login" }) : null,
     setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha", action: "empresa_setup_password" }) : null,
@@ -149,6 +154,51 @@
     contractPanel.classList.toggle("requires-attention", !!required);
   }
 
+  function formatContractContent(content) {
+    if (!content) {
+      return "<p>No hay contenido contractual disponible en este momento.</p>";
+    }
+    var normalized = String(content).trim();
+    if (!normalized) {
+      return "<p>No hay contenido contractual disponible en este momento.</p>";
+    }
+    if (/<\/?[a-z][\s\S]*>/i.test(normalized)) {
+      return normalized;
+    }
+    return normalized
+      .split(/\n{2,}/)
+      .map(function (block) {
+        var safeText = block
+          .split(/\n/)
+          .map(function (line) { return line.trim(); })
+          .filter(Boolean)
+          .join("<br>");
+        return safeText ? "<p>" + safeText + "</p>" : "";
+      })
+      .join("");
+  }
+
+  function closeContractDialog() {
+    if (!contractDialog) return;
+    contractDialog.hidden = true;
+    contractDialog.setAttribute("aria-hidden", "true");
+  }
+
+  function openContractDialog() {
+    if (!contractDialog) return;
+    if (state.contract) {
+      contractDialogTitle.textContent = state.contract.titulo || "Contrato vigente";
+      contractDialogSummary.textContent = state.contract.resumen || "Lee el contrato vigente antes de continuar.";
+      contractDialogContent.innerHTML = formatContractContent(state.contract.contenido);
+    } else {
+      contractDialogTitle.textContent = "Contrato vigente";
+      contractDialogSummary.textContent = "No fue posible cargar el contenido del contrato.";
+      contractDialogContent.innerHTML = "<p>Recarga esta página o intenta de nuevo en unos segundos.</p>";
+    }
+    contractDialog.hidden = false;
+    contractDialog.setAttribute("aria-hidden", "false");
+  }
+
   function applyContract(contract) {
     state.contract = contract || null;
     if (!contract) {
@@ -156,6 +206,9 @@
       contractVersion.textContent = "Versión --";
       contractSummary.textContent = "No fue posible cargar el contrato vigente. Intenta recargar esta página.";
       contractNote.textContent = "";
+      if (contractDialogTitle) contractDialogTitle.textContent = "Contrato no disponible";
+      if (contractDialogSummary) contractDialogSummary.textContent = "No fue posible cargar el contenido contractual.";
+      if (contractDialogContent) contractDialogContent.innerHTML = "<p>Intenta recargar esta página para volver a consultar el contrato vigente.</p>";
       setContractStatus("Si el problema persiste, informa al administrador.", true);
       return;
     }
@@ -164,7 +217,12 @@
     contractVersion.textContent = "Versión " + String(contract.version || "--");
     contractSummary.textContent = contract.resumen || "Lee el contrato antes de continuar con el acceso.";
     contractNote.textContent = contract.nota_aceptacion || "";
-    contractLink.href = "/contrato.html" + (contract.version ? "?version=" + encodeURIComponent(contract.version) : "");
+    if (contractLink) {
+      contractLink.href = "#contrato-interno";
+    }
+    if (contractDialogTitle) contractDialogTitle.textContent = contract.titulo || "Contrato vigente";
+    if (contractDialogSummary) contractDialogSummary.textContent = contract.resumen || "Lee el contrato vigente antes de continuar.";
+    if (contractDialogContent) contractDialogContent.innerHTML = formatContractContent(contract.contenido);
     setContractStatus("La aceptación se registrará cuando completes el flujo de acceso.", false);
   }
 
@@ -584,6 +642,34 @@
       }
     });
   }
+
+  if (contractLink) {
+    contractLink.addEventListener("click", function (event) {
+      event.preventDefault();
+      openContractDialog();
+    });
+  }
+
+  if (contractDialogClose) {
+    contractDialogClose.addEventListener("click", function (event) {
+      event.preventDefault();
+      closeContractDialog();
+    });
+  }
+
+  if (contractDialog) {
+    contractDialog.addEventListener("click", function (event) {
+      if (event.target && event.target.hasAttribute("data-close-contract")) {
+        closeContractDialog();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && contractDialog && !contractDialog.hidden) {
+      closeContractDialog();
+    }
+  });
 
   if (forms.login) forms.login.addEventListener("submit", onLoginSubmit);
   if (forms.setup) forms.setup.addEventListener("submit", onSetupSubmit);
