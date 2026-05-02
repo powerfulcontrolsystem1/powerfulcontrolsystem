@@ -3,12 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración de empresa</title>
+  <title>Configuración de impresora</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    #configuracionCaja,
-    #configuracionDocumentoImpresion,
-    #configuracionImpresorasSistema {
+    #configuracionFormatoNumerico,
+    #configuracionCobroOperativo,
+    #configuracionFormatoMonetario,
+    #configuracionBackupsPasarelas,
+    #configuracionPasarelasPago,
+    #configuracionImpresoraAtajo {
       display: none !important;
     }
   </style>
@@ -16,39 +19,27 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Centro de configuraci?n empresarial</h1>
+      <h1>Centro de impresi?n empresarial</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Administra reglas comerciales, cobro, documentos, formato monetario, respaldos y pasarelas desde una vista organizada por temas.</p>
-      <div class="empresa-config-map" aria-label="Mapa de configuraci?n">
-        <a href="#configuracionFormatoNumerico" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Operaci?n comercial</span>
-          <span>Productos, pedidos y descuentos.</span>
+      <p class="form-help">Concentra caj?n monedero, documento de venta e impresoras del sistema en una sola vista operativa.</p>
+      <div class="empresa-config-map" aria-label="Mapa de configuraci?n de impresora">
+        <a href="#configuracionCaja" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Caja y caj?n</span>
+          <span>Apertura autom?tica y comportamiento del caj?n monedero.</span>
         </a>
-        <a href="#configuracionCobroOperativo" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Cobro y comisiones</span>
-          <span>M?todos de pago, propinas y reglas por rol.</span>
+        <a href="#configuracionDocumentoImpresion" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Documento de venta</span>
+          <span>Formato, tama?o de hoja y salida operativa de impresi?n.</span>
         </a>
-        <a href="#configuracionFormatoMonetario" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Formato monetario</span>
-          <span>Moneda operativa, sistema num?rico y precisi?n decimal.</span>
+        <a href="#configuracionImpresorasSistema" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Impresoras del sistema</span>
+          <span>Equipos, asignaciones por funcionalidad y asignaciones por producto.</span>
         </a>
-        <a href="/administrar_empresa/configuracion_impresora.html" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Impresora</span>
-          <span>Caj?n monedero, documentos de venta e impresoras del sistema.</span>
-        </a>
-        <a href="#configuracionBackupsPasarelas" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Continuidad y canales</span>
-          <span>Backups y pasarelas para venta p?blica.</span>
+        <a href="/administrar_empresa/configuracion.html" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Volver a General</span>
+          <span>Regresa a la configuraci?n empresarial principal.</span>
         </a>
       </div>
-    </section>
-
-    <section id="configuracionImpresoraAtajo" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Impresora</h2>
-        <a href="/administrar_empresa/configuracion_impresora.html" class="btn">Abrir configuraci?n de impresora</a>
-      </div>
-      <p class="form-help">Toda la configuraci?n de impresi?n, caj?n monedero, documento de venta e impresoras del sistema qued? concentrada en una p?gina independiente para que General se mantenga m?s limpia.</p>
     </section>
 
 <section id="configuracionFormatoNumerico" class="card empresa-section">

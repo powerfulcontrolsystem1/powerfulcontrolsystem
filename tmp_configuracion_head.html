@@ -5,53 +5,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configuración de empresa</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    #configuracionCaja,
-    #configuracionDocumentoImpresion,
-    #configuracionImpresorasSistema {
-      display: none !important;
-    }
-  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Centro de configuraci?n empresarial</h1>
+      <h1>Centro de configuración empresarial</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Administra reglas comerciales, cobro, documentos, formato monetario, respaldos y pasarelas desde una vista organizada por temas.</p>
-      <div class="empresa-config-map" aria-label="Mapa de configuraci?n">
+      <p class="form-help">Administra reglas comerciales, cobro, documentos, formato monetario, impresoras, respaldos y pasarelas desde una vista organizada por temas.</p>
+      <div class="empresa-config-map" aria-label="Mapa de configuración">
         <a href="#configuracionFormatoNumerico" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Operaci?n comercial</span>
+          <span class="empresa-config-map-title">Operación comercial</span>
           <span>Productos, pedidos y descuentos.</span>
         </a>
         <a href="#configuracionCobroOperativo" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Cobro y comisiones</span>
-          <span>M?todos de pago, propinas y reglas por rol.</span>
+          <span>Metodos de pago, propinas y reglas por rol.</span>
         </a>
-        <a href="#configuracionFormatoMonetario" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Formato monetario</span>
-          <span>Moneda operativa, sistema num?rico y precisi?n decimal.</span>
+        <a href="#configuracionCaja" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Caja y cajon</span>
+          <span>Apertura automatica del cajon monedero.</span>
         </a>
-        <a href="/administrar_empresa/configuracion_impresora.html" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Impresora</span>
-          <span>Caj?n monedero, documentos de venta e impresoras del sistema.</span>
+        <a href="#configuracionDocumentoImpresion" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Documentos e impresion</span>
+          <span>Documento de venta, formatos e impresoras.</span>
         </a>
         <a href="#configuracionBackupsPasarelas" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Continuidad y canales</span>
-          <span>Backups y pasarelas para venta p?blica.</span>
+          <span>Backups y pasarelas para venta publica.</span>
         </a>
       </div>
     </section>
 
-    <section id="configuracionImpresoraAtajo" class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Impresora</h2>
-        <a href="/administrar_empresa/configuracion_impresora.html" class="btn">Abrir configuraci?n de impresora</a>
-      </div>
-      <p class="form-help">Toda la configuraci?n de impresi?n, caj?n monedero, documento de venta e impresoras del sistema qued? concentrada en una p?gina independiente para que General se mantenga m?s limpia.</p>
-    </section>
-
-<section id="configuracionFormatoNumerico" class="card empresa-section">
+    <section id="configuracionFormatoNumerico" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Productos y pedidos</h2>
         <button id="btnGuardarConfig" type="button" class="btn">Guardar configuración</button>

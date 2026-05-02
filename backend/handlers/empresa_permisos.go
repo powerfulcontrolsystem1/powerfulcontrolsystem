@@ -202,6 +202,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Finanzas y nómina"},
