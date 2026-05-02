@@ -594,11 +594,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if empresaVentaPublicaSchemaReady {
 		return nil
 	}
-	ready, err := empresaVentaPublicaSchemaLooksReady(dbConn)
-	if err == nil && ready {
-		empresaVentaPublicaSchemaReady = true
-		return nil
-	}
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_configuracion (
