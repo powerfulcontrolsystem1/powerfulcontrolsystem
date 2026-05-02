@@ -3612,3 +3612,7 @@ Archivos modificados:
 Archivos modificados:
 - web/index.html
 - web/js/ai_chat_drawer.js
+
+2026-05-02 16:45:25 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: ccfc261; PushStatus: OK
+Archivos modificados:
+- web/super/licencias_resumen.html
