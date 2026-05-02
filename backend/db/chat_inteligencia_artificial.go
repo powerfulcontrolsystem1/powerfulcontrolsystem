@@ -1627,7 +1627,7 @@ func aiFullReadTerms(pregunta string) []string {
 	seen := map[string]struct{}{}
 	out := make([]string, 0, 12)
 	add := func(v string) {
-		v = strings.Trim(strings.TrimSpace(aiFoldText(v)), ".,;:()[]{}Â¿?Â¡!\"'")
+		v = strings.Trim(strings.TrimSpace(aiFoldText(v)), ".,;:()[]{}¿?¡!\"'")
 		if len([]rune(v)) < 3 {
 			return
 		}
@@ -1642,7 +1642,7 @@ func aiFullReadTerms(pregunta string) []string {
 	}
 	stop := map[string]bool{"que": true, "quien": true, "como": true, "para": true, "por": true, "con": true, "los": true, "las": true, "una": true, "uno": true, "del": true, "base": true, "datos": true, "tabla": true, "tablas": true, "consulta": true, "consultar": true, "empresa": true, "sistema": true}
 	for _, part := range strings.Fields(aiFoldText(pregunta)) {
-		part = strings.Trim(part, ".,;:()[]{}Â¿?Â¡!\"'")
+		part = strings.Trim(part, ".,;:()[]{}¿?¡!\"'")
 		if stop[part] {
 			continue
 		}

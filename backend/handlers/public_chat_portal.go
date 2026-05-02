@@ -808,7 +808,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// PublicPortalCompanyChatStreamHandler expone un chat pÃºblico contextual con soporte para streaming SSE.
+// PublicPortalCompanyChatStreamHandler expone un chat público contextual con soporte para streaming SSE.
 func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

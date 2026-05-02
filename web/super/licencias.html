@@ -31,12 +31,12 @@
           <select id="tipo_id" class="form-input"></select>
         </div>
         <div class="form-col">
-          <label class="form-label">PaÃ­s</label>
+          <label class="form-label">País</label>
           <select id="pais_codigo" class="form-input" required>
             <option value="CO">Colombia</option>
-            <option value="PE">PerÃº</option>
+            <option value="PE">Perú</option>
             <option value="EC">Ecuador</option>
-            <option value="MX">MÃ©xico</option>
+            <option value="MX">México</option>
             <option value="CL">Chile</option>
             <option value="AR">Argentina</option>
           </select>
@@ -52,43 +52,43 @@
           <input id="valor" type="number" step="0.01" class="form-input" />
         </div>
         <div class="form-col">
-          <label class="form-label">DuraciÃ³n (dÃ­as)</label>
+          <label class="form-label">Duración (días)</label>
           <input id="duracion_dias" type="number" class="form-input" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">DescripciÃ³n</label>
+          <label class="form-label">Descripción</label>
           <textarea id="descripcion" class="form-textarea"></textarea>
         </div>
       </div>
       <div class="form-row">
         <div class="form-col" style="grid-column:1/-1">
-          <label class="form-label">Cobertura de mÃ³dulos (licencia)</label>
-          <p class="lic-coverage-lead">Define <strong>quÃ© mÃ³dulos negocio</strong> incluye el plan. Si dejas <strong>todo sin marcar</strong>, la licencia <strong>no restringe</strong> mÃ³dulos (el administrador aplica luego <a href="/super/permisos_rol.html" target="_blank" rel="noopener">permisos por rol</a> sin techo de licencia). Si marcas uno o varios, la empresa <strong>solo</strong> accede a esos mÃ³dulos; el resto queda inaccesible aunque el rol estÃ© lleno.</p>
+          <label class="form-label">Cobertura de módulos (licencia)</label>
+          <p class="lic-coverage-lead">Define <strong>qué módulos negocio</strong> incluye el plan. Si dejas <strong>todo sin marcar</strong>, la licencia <strong>no restringe</strong> módulos (el administrador aplica luego <a href="/super/permisos_rol.html" target="_blank" rel="noopener">permisos por rol</a> sin techo de licencia). Si marcas uno o varios, la empresa <strong>solo</strong> accede a esos módulos; el resto queda inaccesible aunque el rol esté lleno.</p>
           <div id="modulosLicenciaBox" class="lic-coverage">
-            <p class="lic-coverage-title">MÃ³dulos del plan</p>
+            <p class="lic-coverage-title">Módulos del plan</p>
             <div class="lic-coverage-grid">
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="ventas"><span class="lic-coverage-h">Ventas y servicio</span><span class="lic-coverage-d">TPV, carritos, estaciones, venta pÃºblica, tarifas.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="inventario"><span class="lic-coverage-h">Inventario y almacÃ©n</span><span class="lic-coverage-d">Productos, combos, ubicaciÃ³n, stock.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="finanzas"><span class="lic-coverage-h">Finanzas y reportes</span><span class="lic-coverage-d">Caja, cierres, crÃ©ditos, grÃ¡ficos, nÃ³mina.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="clientes"><span class="lic-coverage-h">Clientes y cartera</span><span class="lic-coverage-d">CRM bÃ¡sico y seguimiento comercial.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="compras"><span class="lic-coverage-h">Compras y proveedores</span><span class="lic-coverage-d">Ã“rdenes y abastecimiento.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">FacturaciÃ³n electrÃ³nica (DIAN)</span><span class="lic-coverage-d">EmisiÃ³n y consulta de documentos.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Seguridad e integraciÃ³n</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditorÃ­a, ERP.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="ventas"><span class="lic-coverage-h">Ventas y servicio</span><span class="lic-coverage-d">TPV, carritos, estaciones, venta pública, tarifas.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="inventario"><span class="lic-coverage-h">Inventario y almacén</span><span class="lic-coverage-d">Productos, combos, ubicación, stock.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="finanzas"><span class="lic-coverage-h">Finanzas y reportes</span><span class="lic-coverage-d">Caja, cierres, créditos, gráficos, nómina.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="clientes"><span class="lic-coverage-h">Clientes y cartera</span><span class="lic-coverage-d">CRM básico y seguimiento comercial.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="compras"><span class="lic-coverage-h">Compras y proveedores</span><span class="lic-coverage-d">Órdenes y abastecimiento.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">Facturación electrónica (DIAN)</span><span class="lic-coverage-d">Emisión y consulta de documentos.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Seguridad e integración</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditoría, ERP.</span></label>
             </div>
           </div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">PolÃ­tica de rol jerÃ¡rquico</label>
-          <label class="lic-superrol-item"><input id="super_rol_habilitado" type="checkbox"> Permitir que el <strong>supervisor de sucursal</strong> comparta mÃ³dulo de aprobaciÃ³n ampliada previsto en el plan (segÃºn reglas de licencia y rol).</label>
+          <label class="form-label">Política de rol jerárquico</label>
+          <label class="lic-superrol-item"><input id="super_rol_habilitado" type="checkbox"> Permitir que el <strong>supervisor de sucursal</strong> comparta módulo de aprobación ampliada previsto en el plan (según reglas de licencia y rol).</label>
         </div>
         <div class="form-col">
           <label class="form-label">Licencia adicional</label>
-          <label class="lic-superrol-item"><input id="es_adicional" type="checkbox"> Esta licencia sirve para ampliar mÃ³dulos o funciones sobre una licencia base ya contratada.</label>
-          <label class="form-label mt-8">CÃ³digo de funciÃ³n</label>
+          <label class="lic-superrol-item"><input id="es_adicional" type="checkbox"> Esta licencia sirve para ampliar módulos o funciones sobre una licencia base ya contratada.</label>
+          <label class="form-label mt-8">Código de función</label>
           <input id="codigo_funcion" class="form-input" maxlength="80" placeholder="Ej: CRM_PLUS o REPORTES_ADV">
         </div>
       </div>
@@ -100,7 +100,7 @@
     </form>
     <div id="list">Cargando...</div>
 
-  <!-- MenÃº flotante eliminado en pÃ¡ginas del panel /super -->
+  <!-- Menú flotante eliminado en páginas del panel /super -->
 
   <script>
     (function(){
@@ -120,7 +120,7 @@
           case '1':
           case 'true':
           case 'si':
-          case 'sÃ­':
+          case 'sí':
           case 'yes':
           case 'on':
           case 'activo':
@@ -402,7 +402,7 @@
               '<div><span>Inicio</span><strong>' + escapeHTML(formatDate(item.fecha_inicio)) + '</strong></div>' +
               '<div><span>Vence</span><strong>' + escapeHTML(formatDate(item.fecha_fin)) + '</strong></div>' +
               '<div><span>Valor pagado</span><strong>' + escapeHTML(formatMoney(item.valor)) + '</strong></div>' +
-              '<div><span>DuraciÃ³n</span><strong>' + escapeHTML(String(item.duracion_dias || 0)) + ' dÃ­as</strong></div>' +
+              '<div><span>Duración</span><strong>' + escapeHTML(String(item.duracion_dias || 0)) + ' días</strong></div>' +
             '</div>' +
             '<div class="lic-history-foot">' +
               '<div class="lic-history-meta">Modulos: ' + escapeHTML(modulosToLabel(item.modulos_habilitados || '')) + '</div>' +
@@ -418,7 +418,7 @@
 
       async function loadHistory(){
         pageTitle.textContent = 'Estado e historial de licencias';
-        pageLead.textContent = 'AquÃ­ se muestran todas las licencias asociadas a tus empresas (vigentes o vencidas). Puedes renovar la licencia actual o cambiar a una nueva.';
+        pageLead.textContent = 'Aquí se muestran todas las licencias asociadas a tus empresas (vigentes o vencidas). Puedes renovar la licencia actual o cambiar a una nueva.';
         addBtn.style.display = 'none';
         form.style.display = 'none';
         historyToolbar.hidden = false;
@@ -450,14 +450,14 @@
         const data = await fetchJSONOrThrow(buildLicenciasApiURL());
         const table = document.createElement('table');
         table.className = 'table';
-        table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Clase</th><th>Valor</th><th>DuraciÃ³n (dÃ­as)</th><th>MÃ³dulos</th><th>Super rol</th><th>Acciones</th></thead>';
+        table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Clase</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
         const tbody = document.createElement('tbody');
         data.forEach(function(i){
           const tr = document.createElement('tr');
           const activo = (i.activo === 'activo' || i.activo == 1) ? 1 : (i.activo || 0);
           const toggleLabel = (activo == 1) ? 'Desactivar' : 'Activar';
           const modulos = modulosToLabel(i.modulos_habilitados || '');
-          const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'SÃ­' : 'No';
+          const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'Sí' : 'No';
           const clase = Number(i.es_adicional || 0) === 1
             ? ('Adicional' + (String(i.codigo_funcion || '').trim() ? ' - ' + String(i.codigo_funcion || '').trim() : ''))
             : 'Base';
@@ -527,9 +527,9 @@
         };
         try {
           if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return; }
-          if(!payload.pais_codigo){ document.getElementById('msg').innerText='PaÃ­s requerido'; return; }
+          if(!payload.pais_codigo){ document.getElementById('msg').innerText='País requerido'; return; }
           if(payload.es_adicional === 1 && !payload.modulos_habilitados){
-            document.getElementById('msg').innerText='Una licencia adicional debe especificar al menos un mÃ³dulo o funciÃ³n.';
+            document.getElementById('msg').innerText='Una licencia adicional debe especificar al menos un módulo o función.';
             return;
           }
           if(id){
@@ -588,10 +588,10 @@
       var sessionLink = document.getElementById('sessionLink');
       if (sessionLink){
         if (getCookie('session_token')){
-          sessionLink.textContent = 'Cerrar sesiÃ³n';
+          sessionLink.textContent = 'Cerrar sesión';
           sessionLink.href = '/auth/logout';
         } else {
-          sessionLink.textContent = 'Iniciar sesiÃ³n';
+          sessionLink.textContent = 'Iniciar sesión';
           sessionLink.href = '/login.html';
         }
       }

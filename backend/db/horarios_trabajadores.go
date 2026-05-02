@@ -403,7 +403,7 @@ func BuildHorarioTrabajadorDashboard(dbConn *sql.DB, empresaID int64, desde, has
 		if item.HorasProgramadas > cfg.HorasObjetivoDia {
 			horasRiesgo += item.HorasProgramadas - cfg.HorasObjetivoDia
 		}
-		accumulateHorarioResumen(areaMap, normalizeHorarioKey(item.Area, "Sin Ã¡rea"), item.HorasProgramadas)
+		accumulateHorarioResumen(areaMap, normalizeHorarioKey(item.Area, "Sin área"), item.HorasProgramadas)
 		accumulateHorarioResumen(sedeMap, normalizeHorarioKey(item.Sede, "Sin sede"), item.HorasProgramadas)
 		accumulateHorarioResumen(estadoMap, normalizeHorarioKey(item.Estado, "programado"), item.HorasProgramadas)
 	}
@@ -415,10 +415,10 @@ func BuildHorarioTrabajadorDashboard(dbConn *sql.DB, empresaID int64, desde, has
 	dashboard.Sedes = flattenHorarioResumen(sedeMap)
 	dashboard.Estados = flattenHorarioResumen(estadoMap)
 	dashboard.Semaforos = []HorarioTrabajadorSemaforo{
-		buildHorarioSemaforo("publicacion", "PublicaciÃ³n", ratioHorarioEstado(dashboard.TurnosPublicados, dashboard.TotalTurnos), fmt.Sprintf("%d de %d turnos ya fueron publicados al equipo.", dashboard.TurnosPublicados, dashboard.TotalTurnos)),
-		buildHorarioSemaforo("conflictos", "Solapes y conflictos", inverseRatioHorarioEstado(dashboard.Conflictos, maxHorarioInt(dashboard.TotalTurnos, 1)), fmt.Sprintf("%d turnos presentan conflicto o superposiciÃ³n.", dashboard.Conflictos)),
+		buildHorarioSemaforo("publicacion", "Publicación", ratioHorarioEstado(dashboard.TurnosPublicados, dashboard.TotalTurnos), fmt.Sprintf("%d de %d turnos ya fueron publicados al equipo.", dashboard.TurnosPublicados, dashboard.TotalTurnos)),
+		buildHorarioSemaforo("conflictos", "Solapes y conflictos", inverseRatioHorarioEstado(dashboard.Conflictos, maxHorarioInt(dashboard.TotalTurnos, 1)), fmt.Sprintf("%d turnos presentan conflicto o superposición.", dashboard.Conflictos)),
 		buildHorarioSemaforo("cobertura", "Cobertura", inverseRatioHorarioEstado(dashboard.CoberturasPendientes, maxHorarioInt(dashboard.TotalTurnos, 1)), fmt.Sprintf("%d turnos siguen marcados como cobertura pendiente.", dashboard.CoberturasPendientes)),
-		buildHorarioSemaforo("carga", "Carga horaria", inverseRatioHorarioEstado(int(math.Round(horasRiesgo)), maxHorarioInt(int(math.Round(cfg.HorasObjetivoDia*float64(maxHorarioInt(dashboard.EmpleadosProgramados, 1)))), 1)), fmt.Sprintf("%.1f horas estÃ¡n por encima del objetivo diario configurado.", horasRiesgo)),
+		buildHorarioSemaforo("carga", "Carga horaria", inverseRatioHorarioEstado(int(math.Round(horasRiesgo)), maxHorarioInt(int(math.Round(cfg.HorasObjetivoDia*float64(maxHorarioInt(dashboard.EmpleadosProgramados, 1)))), 1)), fmt.Sprintf("%.1f horas están por encima del objetivo diario configurado.", horasRiesgo)),
 	}
 	if dashboard.TurnosPendientes > 0 {
 		dashboard.Alertas = append(dashboard.Alertas, fmt.Sprintf("Hay %d turnos pendientes por publicar al equipo.", dashboard.TurnosPendientes))
@@ -430,16 +430,16 @@ func BuildHorarioTrabajadorDashboard(dbConn *sql.DB, empresaID int64, desde, has
 		dashboard.Alertas = append(dashboard.Alertas, fmt.Sprintf("Existen %d turnos que necesitan reemplazo o cobertura adicional.", dashboard.CoberturasPendientes))
 	}
 	if len(dashboard.Alertas) == 0 {
-		dashboard.Alertas = append(dashboard.Alertas, "La programaciÃ³n actual luce consistente y lista para operar.")
+		dashboard.Alertas = append(dashboard.Alertas, "La programación actual luce consistente y lista para operar.")
 	}
 	if dashboard.HorasProgramadas > 0 {
-		dashboard.Oportunidades = append(dashboard.Oportunidades, fmt.Sprintf("Publicar las %.1f horas aÃºn pendientes le darÃ¡ al equipo un cierre operativo mÃ¡s claro.", horasNoPublicadas))
+		dashboard.Oportunidades = append(dashboard.Oportunidades, fmt.Sprintf("Publicar las %.1f horas aún pendientes le dará al equipo un cierre operativo más claro.", horasNoPublicadas))
 	}
 	if len(dashboard.Areas) > 0 {
 		dashboard.Oportunidades = append(dashboard.Oportunidades, fmt.Sprintf("El frente con mayor carga es %s con %.1f horas programadas.", dashboard.Areas[0].Etiqueta, dashboard.Areas[0].Horas))
 	}
 	if len(dashboard.Oportunidades) == 0 {
-		dashboard.Oportunidades = append(dashboard.Oportunidades, "TodavÃ­a no hay suficientes turnos para generar recomendaciones de programaciÃ³n.")
+		dashboard.Oportunidades = append(dashboard.Oportunidades, "Todavía no hay suficientes turnos para generar recomendaciones de programación.")
 	}
 	dashboard.HorasProgramadas = roundHorarioFloat(dashboard.HorasProgramadas)
 	dashboard.HorasPublicadas = roundHorarioFloat(dashboard.HorasPublicadas)
@@ -452,7 +452,7 @@ func CreateHorarioTrabajador(dbConn *sql.DB, item *HorarioTrabajador) (int64, er
 		return 0, err
 	}
 	if item == nil {
-		return 0, fmt.Errorf("horario vacÃ­o")
+		return 0, fmt.Errorf("horario vacío")
 	}
 	cfg, err := GetHorarioTrabajadorConfig(dbConn, item.EmpresaID)
 	if err != nil {
@@ -505,7 +505,7 @@ func UpdateHorarioTrabajador(dbConn *sql.DB, item *HorarioTrabajador) error {
 		return err
 	}
 	if item == nil || item.ID <= 0 {
-		return fmt.Errorf("horario invÃ¡lido")
+		return fmt.Errorf("horario inválido")
 	}
 	cfg, err := GetHorarioTrabajadorConfig(dbConn, item.EmpresaID)
 	if err != nil {
@@ -553,7 +553,7 @@ func UpdateHorarioTrabajador(dbConn *sql.DB, item *HorarioTrabajador) error {
 	}
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return fmt.Errorf("no se encontrÃ³ el turno a actualizar")
+		return fmt.Errorf("no se encontró el turno a actualizar")
 	}
 	return nil
 }
@@ -612,11 +612,11 @@ func CreateHorariosTrabajadoresBulk(dbConn *sql.DB, payload HorarioTrabajadorBul
 	payload = normalizeHorarioTrabajadorBulkInput(payload, cfg)
 	startDate, err := time.Parse("2006-01-02", payload.FechaInicio)
 	if err != nil {
-		return 0, nil, fmt.Errorf("fecha_inicio invÃ¡lida")
+		return 0, nil, fmt.Errorf("fecha_inicio inválida")
 	}
 	endDate, err := time.Parse("2006-01-02", payload.FechaFin)
 	if err != nil {
-		return 0, nil, fmt.Errorf("fecha_fin invÃ¡lida")
+		return 0, nil, fmt.Errorf("fecha_fin inválida")
 	}
 	if endDate.Before(startDate) {
 		return 0, nil, fmt.Errorf("fecha_fin no puede ser anterior a fecha_inicio")
@@ -773,7 +773,7 @@ func findHorarioTrabajadorConflicts(dbConn *sql.DB, item HorarioTrabajador) ([]s
 	defer rows.Close()
 	startCandidate, endCandidate, err := horarioInterval(item.HoraInicio, item.HoraFin)
 	if err != nil {
-		return []string{"horario invÃ¡lido"}, nil
+		return []string{"horario inválido"}, nil
 	}
 	var conflicts []string
 	for rows.Next() {
@@ -787,7 +787,7 @@ func findHorarioTrabajadorConflicts(dbConn *sql.DB, item HorarioTrabajador) ([]s
 			continue
 		}
 		if startCandidate.Before(endExisting) && endCandidate.After(startExisting) {
-			conflicts = append(conflicts, fmt.Sprintf("Se cruza con %s (%s-%s) en %s / %s", strings.TrimSpace(nombre), horaInicio, horaFin, normalizeHorarioKey(area, "sin Ã¡rea"), normalizeHorarioKey(sede, "sin sede")))
+			conflicts = append(conflicts, fmt.Sprintf("Se cruza con %s (%s-%s) en %s / %s", strings.TrimSpace(nombre), horaInicio, horaFin, normalizeHorarioKey(area, "sin área"), normalizeHorarioKey(sede, "sin sede")))
 		}
 	}
 	return conflicts, rows.Err()

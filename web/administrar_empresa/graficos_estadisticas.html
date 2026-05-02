@@ -655,12 +655,12 @@
       const acciones = [];
 
       if (num(operativo.productos_bajo_minimo) > 0) {
-        acciones.push({ title: "Lanza reposiciÃ³n priorizada", detail: "Abre inventario y compras para resolver primero productos bajo mínimo." });
+        acciones.push({ title: "Lanza reposición priorizada", detail: "Abre inventario y compras para resolver primero productos bajo mínimo." });
       }
       if (num(financiero.balance) < 0) {
         acciones.push({ title: "Revisa egresos del período", detail: "Analiza movimientos financieros y flujo de caja para cortar fugas de margen." });
       }
-      acciones.push({ title: "Comparar contra otro período", detail: "Activa el comparativo para medir tendencia, no solo fotografÃ­a del rango." });
+      acciones.push({ title: "Comparar contra otro período", detail: "Activa el comparativo para medir tendencia, no solo fotografía del rango." });
       acciones.push({ title: "Exportar y compartir", detail: "Usa CSV, PDF o reportes IA para bajar esta lectura a equipo gerencial y responsables." });
       return acciones.slice(0, 4);
     }

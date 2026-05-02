@@ -817,7 +817,7 @@ func isTransientTxRetryError(err error) bool {
 		return false
 	}
 	lower := strings.ToLower(strings.TrimSpace(err.Error()))
-	// Reintentar en errores transitorios tÃ­picos de Postgres (serializaciÃ³n/deadlock).
+	// Reintentar en errores transitorios típicos de Postgres (serialización/deadlock).
 	return strings.Contains(lower, "deadlock detected") ||
 		strings.Contains(lower, "could not serialize access") ||
 		strings.Contains(lower, "serialization failure")
@@ -1135,7 +1135,7 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 	return &item, nil
 }
 
-// GetCarritoCompraByCodigo obtiene un carrito por empresa y cÃ³digo (p. ej. EST-{empresa}-{estacion}).
+// GetCarritoCompraByCodigo obtiene un carrito por empresa y código (p. ej. EST-{empresa}-{estacion}).
 func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*CarritoCompra, error) {
 	codigo = strings.TrimSpace(codigo)
 	if codigo == "" {
@@ -1380,7 +1380,7 @@ func SetCarritoOperacionEstado(dbConn *sql.DB, empresaID, carritoID int64, estad
 	return tx.Commit()
 }
 
-// ActivateCarritoStationSession activa un carrito de estaciÃ³n y opcionalmente reinicia sus items.
+// ActivateCarritoStationSession activa un carrito de estación y opcionalmente reinicia sus items.
 func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, resetItems bool) error {
 	tx, err := dbConn.Begin()
 	if err != nil {

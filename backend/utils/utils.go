@@ -559,15 +559,15 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 }
 
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
-// Permite un conjunto pÃºblico de rutas (login/callback/activos). Para rutas que comienzan con /super/
-// exige rol 'super_administrador'. AÃ±ade `adminEmail` en el contexto de la peticiÃ³n.
+// Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
+// exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
 func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		// VerificaciÃ³n de Modo Mantenimiento
+		// Verificación de Modo Mantenimiento
 		if getCachedMaintenanceActive(dbSuper) {
-			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estÃ¡ticos)
+			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
 			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
 			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js"
 			if !isMntAllowed && !isStatic {
@@ -576,7 +576,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			}
 		}
 
-		// Rutas pÃºblicas exactas (no usar prefijo "/" porque abrirÃ­a todo el sistema).
+		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
 			"/":                                                     {},
 			"/index.html":                                           {},
@@ -662,7 +662,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			}
 		}
 
-		// Recursos estÃ¡ticos pÃºblicos
+		// Recursos estáticos públicos
 		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/descargas/", "/emulador/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
@@ -710,10 +710,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 
-		// Propagar informaciÃ³n del admin en el contexto
+		// Propagar información del admin en el contexto
 		ctx := context.WithValue(r.Context(), "adminEmail", admin.Email)
 		r = r.WithContext(ctx)
-		// AÃ±adir cabecera informativa
+		// Añadir cabecera informativa
 		r.Header.Set("X-Admin-Email", admin.Email)
 
 		next.ServeHTTP(w, r)
@@ -732,7 +732,7 @@ func DecryptString(payload string) (string, error) {
 	return secure.DecryptString(payload)
 }
 
-// EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY estÃ¡ disponible y vÃ¡lida.
+// EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY está disponible y válida.
 func EncryptionAvailable() bool {
 	return secure.EncryptionAvailable()
 }

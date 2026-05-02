@@ -380,7 +380,7 @@ func readConfigValueFromDB(dbConn *sql.DB, keys []string) (string, string, error
 		if enc {
 			dec, derr := utils.DecryptString(clean)
 			if derr != nil {
-				log.Printf("warning: no se pudo descifrar la configuraciÃ³n %s: %v", key, derr)
+				log.Printf("warning: no se pudo descifrar la configuración %s: %v", key, derr)
 				continue
 			}
 			clean = strings.TrimSpace(dec)
@@ -431,7 +431,7 @@ func loadGoogleOAuthFromDB(dbConn *sql.DB) {
 		log.Printf("warning: no se pudo leer GOOGLE_REDIRECT_URL desde DB: %v", err)
 	}
 
-	// Prioridad: variables de entorno > configuraciÃ³n en DB.
+	// Prioridad: variables de entorno > configuración en DB.
 	// La DB solo completa faltantes para evitar sobreescrituras inesperadas en VPS.
 	if clientID == "" && dbClientID != "" {
 		clientID = dbClientID
@@ -724,7 +724,7 @@ func main() {
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 	startupTrace("after_error_monitor")
 
-	// Inicializar tabla de mÃ©tricas y arrancar collector periÃ³dico
+	// Inicializar tabla de métricas y arrancar collector periódico
 	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
 		log.Printf("warning: failed to init metrics table: %v", err)
 		utils.ReportProcessError("metrics.collector", "metrics_schema_init", "No se pudo inicializar la tabla de metricas", err, utils.ErrorLevelError, nil)
@@ -764,16 +764,16 @@ func main() {
 	startupTrace("after_vps_security_service")
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
-	// Pasar la conexiÃ³n de la base `empresas` al callback para persistir usuarios y empresas
-	// Pasar tanto la conexiÃ³n de empresas como la de superadministrador al callback
+	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
+	// Pasar tanto la conexión de empresas como la de superadministrador al callback
 	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, dbSuper, clientID, clientSecret, redirectURL))
 
-	// Endpoint que expone configuraciÃ³n pÃºblica simple en JS.
+	// Endpoint que expone configuración pública simple en JS.
 	http.HandleFunc("/config.js", handlers.PublicConfigJSHandler(dbSuper))
-	// Endpoint para procesar la aceptaciÃ³n del contrato desde la pÃ¡gina /accept.html
+	// Endpoint para procesar la aceptación del contrato desde la página /accept.html
 	http.HandleFunc("/accept/complete", handlers.AcceptCompleteHandler(dbSuper))
 
-	// Endpoints para administraciÃ³n y auditorÃ­a (listar administradores y sesiones)
+	// Endpoints para administración y auditoría (listar administradores y sesiones)
 	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
 	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
 	http.HandleFunc("/api/user/configuracion", handlers.UserConfiguracionHandler(dbSuper))
@@ -797,7 +797,7 @@ func main() {
 	http.HandleFunc("/api/asesor_comercial/mis_clientes", handlers.AsesorComercialMisClientesHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
 	startupTrace("after_super_and_core_routes")
-	// MÃ³dulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
+	// Módulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductosHandler(dbEmpresas)))
@@ -913,24 +913,24 @@ func main() {
 	http.HandleFunc("/api/empresa/frecuencia_fp/permitido", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaFrecuenciaFPAllowedHandler(dbSuper)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
-	// Rutas del mÃ³dulo sensor de puertas: configuraciÃ³n protegida y endpoint pÃºblico para heartbeats
+	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_empresa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosFinosHandler(dbSuper)))
-	// Endpoint para obtener admin actual desde la cookie de sesiÃ³n
+	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint para obtener perfil/cuenta enriquecida (admin + usuario de empresa)
 	http.HandleFunc("/api/account", handlers.AccountHandler(dbEmpresas, dbSuper))
-	// Endpoints para actualizar perfil y cambiar contraseÃ±a (usuario autenticado)
+	// Endpoints para actualizar perfil y cambiar contraseña (usuario autenticado)
 	http.HandleFunc("/api/account/update_profile", handlers.AccountUpdateProfileHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/change_password", handlers.AccountChangePasswordHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/set_google_password", handlers.AccountSetGooglePasswordHandler(dbEmpresas, dbSuper))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
-	// Endpoints adicionales para flujo de autenticaciÃ³n de administradores (registro, login, confirmaciÃ³n, recuperaciÃ³n)
+	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
@@ -997,21 +997,21 @@ func main() {
 	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.SuperContextoIALogicaNegocioHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
-	// Endpoints Wompi (Nequi): crear transacciÃ³n y consultar estado
+	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper, dbEmpresas))
-	// Endpoints Epayco: crear transacciÃ³n y consultar estado
+	// Endpoints Epayco: crear transacción y consultar estado
 	http.HandleFunc("/epayco/create_transaction", handlers.EpaycoCreateTransactionHandler(dbSuper))
 	http.HandleFunc("/epayco/transaction_status", handlers.EpaycoTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper, dbEmpresas))
-	// ActivaciÃ³n manual de licencia sin pago (uso interno de avance/prototipo)
+	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper, dbEmpresas))
-	// ConfirmaciÃ³n de correo para usuarios de empresa.
+	// Confirmación de correo para usuarios de empresa.
 	http.HandleFunc("/auth/confirmar_correo", handlers.ConfirmarCorreoUsuarioHandler(dbEmpresas))
 
-	// Endpoints de mÃ©tricas (actual y histÃ³rico)
+	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
@@ -1028,7 +1028,7 @@ func main() {
 	http.HandleFunc("/super/api/security/vps/compare", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService))
 	startupTrace("after_super_config_routes")
 
-	// Logout handler: limpiar cookie de sesiÃ³n (si existe) y redirigir a la pÃ¡gina de login
+	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
 		token := ""
 		if c, err := r.Cookie("session_token"); err == nil {
@@ -1067,7 +1067,7 @@ func main() {
 	registerLocalEmulatorRoutes(backendDir, webDir)
 	startupTrace("after_static_helper_routes")
 
-	// Servir pÃ¡ginas estÃ¡ticas desde la carpeta `web` detectada
+	// Servir páginas estáticas desde la carpeta `web` detectada
 	// Verificar existencia de index.html y loguear la ruta usada
 	indexPath := filepath.Join(webDir, "index.html")
 	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
@@ -1139,7 +1139,7 @@ func main() {
 	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))))
 	startupTrace("after_handler_wrap")
 
-	// Respetar la variable de entorno PORT si estÃ¡ definida; por defecto usar 8080
+	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
