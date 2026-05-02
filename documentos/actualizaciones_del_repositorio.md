@@ -3651,3 +3651,22 @@ Archivos modificados:
 - web/administrar_empresa/configuracion.html
 - web/administrar_empresa/configuracion_impresora.html
 - web/administrar_empresa/ventas.html
+
+2026-05-02 18:02:59 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 74daa80; PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/horarios_trabajadores.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/public_chat_portal.go
+- backend/main.go
+- backend/utils/utils.go
+- web/administrar_empresa.html
+- web/administrar_empresa/graficos_estadisticas.html
+- web/index.html
+- web/js/administrar_empresa.js
+- web/pagar_licencia.html
+- web/pagar_productos_de_venta_publica.html
+- web/seleccionar_empresa.html
+- web/super/licencias.html
+- web/super/licencias_resumen.html
