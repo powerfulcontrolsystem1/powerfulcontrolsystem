@@ -17917,3 +17917,10 @@ Archivos modificados:
 - web/administrar_empresa/compras_menu.html
 - web/administrar_empresa/finanzas_menu.html
 - web/administrar_empresa/reportes_menu.html
+
+2026-05-02: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/egresos_ingresos_menu.html
+- web/administrar_empresa/facturacion_electronica_menu.html
