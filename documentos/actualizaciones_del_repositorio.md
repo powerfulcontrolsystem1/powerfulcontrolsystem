@@ -3337,3 +3337,10 @@ Archivos modificados:
 2026-05-02 06:54:27 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 28ed117; PushStatus: OK
 Archivos modificados:
 - backend/utils/utils.go
+
+2026-05-02 06:57:36 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 98054b2; PushStatus: OK
+Archivos modificados:
+- web/Informacion_de_contacto.html
+- web/elegir_licencia.html
+- web/login.html
+- web/registrar_nuevo_usuario_administrador.html
