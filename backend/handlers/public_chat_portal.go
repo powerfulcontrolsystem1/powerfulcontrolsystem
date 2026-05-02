@@ -207,6 +207,55 @@ func portalPublicQuestionWantsCatalog(question string) bool {
 	return false
 }
 
+func portalPublicQuestionWantsPages(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"paginas", "páginas", "pagina", "página", "secciones", "categorias", "categorías",
+		"que paginas", "qué páginas", "que secciones", "qué secciones",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func portalPublicQuestionWantsPromotions(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"promo", "promos", "promocion", "promoción", "promociones", "destacado", "destacados", "oferta", "ofertas",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func portalPublicQuestionWantsPrices(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"precio", "precios", "valor", "valores", "cuanto cuesta", "cuánto cuesta", "cuanto vale", "cuánto vale",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
 func buildPortalPublicCatalogAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages []dbpkg.EmpresaVentaPublicaPagina, items []dbpkg.EmpresaVentaPublicaItem) string {
 	var b strings.Builder
 	storeName := strings.TrimSpace(cfg.NombreTienda)
@@ -214,7 +263,7 @@ func buildPortalPublicCatalogAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages [
 		storeName = "esta tienda"
 	}
 	if len(items) > 0 {
-		b.WriteString(storeName + " tiene publicado este catálogo público:\n\n")
+		b.WriteString(storeName + " tiene publicado este catalogo publico:\n\n")
 		limit := len(items)
 		if limit > 8 {
 			limit = 8
@@ -230,10 +279,10 @@ func buildPortalPublicCatalogAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages [
 				if moneda == "" {
 					moneda = "COP"
 				}
-				b.WriteString(fmt.Sprintf(" — %0.0f %s", item.Precio, moneda))
+				b.WriteString(fmt.Sprintf(" - %0.0f %s", item.Precio, moneda))
 			}
 			if page := strings.TrimSpace(item.PaginaNombre); page != "" {
-				b.WriteString(" | página: " + page)
+				b.WriteString(" | pagina: " + page)
 			}
 			if desc := strings.TrimSpace(item.Descripcion); desc != "" {
 				b.WriteString(" | " + desc)
@@ -245,26 +294,126 @@ func buildPortalPublicCatalogAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages [
 		} else {
 			b.WriteString("\n")
 		}
-		b.WriteString("Si quieres, también puedo ayudarte a revisar una página específica o indicarte cómo comprar/reservar.")
+		b.WriteString("Si quieres, tambien puedo ayudarte a revisar una pagina especifica o indicarte como comprar o reservar.")
 		return b.String()
 	}
 
 	if len(pages) > 0 {
-		b.WriteString("Ahora mismo no veo productos individuales publicados, pero sí estas páginas públicas activas:\n\n")
+		b.WriteString("Ahora mismo no veo productos individuales publicados, pero si estas paginas publicas activas:\n\n")
 		for _, page := range pages {
 			b.WriteString("- **" + strings.TrimSpace(page.Nombre) + "**")
 			if desc := strings.TrimSpace(page.Descripcion); desc != "" {
-				b.WriteString(" — " + desc)
+				b.WriteString(" - " + desc)
 			}
 			b.WriteString("\n")
 		}
-		b.WriteString("\nSi quieres, puedo ayudarte a revisar una de esas páginas o indicarte cómo comprar/reservar.")
+		b.WriteString("\nSi quieres, puedo ayudarte a revisar una de esas paginas o indicarte como comprar o reservar.")
 		return b.String()
 	}
 
-	return "Ahora mismo no veo productos ni páginas públicas activas para esta tienda. Si quieres, puedo ayudarte a intentar otra consulta o indicarte cómo contactar a la empresa."
+	return "Ahora mismo no veo productos ni paginas publicas activas para esta tienda. Si quieres, puedo ayudarte a intentar otra consulta o indicarte como contactar a la empresa."
 }
 
+func buildPortalPublicPagesAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages []dbpkg.EmpresaVentaPublicaPagina) string {
+	storeName := strings.TrimSpace(cfg.NombreTienda)
+	if storeName == "" {
+		storeName = "Esta tienda"
+	}
+	if len(pages) == 0 {
+		return storeName + " no tiene paginas publicas activas en este momento."
+	}
+	var b strings.Builder
+	b.WriteString(storeName + " tiene estas paginas publicas activas:\n\n")
+	for _, page := range pages {
+		b.WriteString("- **" + strings.TrimSpace(page.Nombre) + "**")
+		if slug := strings.TrimSpace(page.Slug); slug != "" {
+			b.WriteString(" | slug: " + slug)
+		}
+		if desc := strings.TrimSpace(page.Descripcion); desc != "" {
+			b.WriteString(" | " + desc)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("\nSi quieres, tambien puedo mostrarte las promociones o el catalogo publicado.")
+	return b.String()
+}
+
+func buildPortalPublicPromotionsAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages []dbpkg.EmpresaVentaPublicaPagina, items []dbpkg.EmpresaVentaPublicaItem) string {
+	storeName := strings.TrimSpace(cfg.NombreTienda)
+	if storeName == "" {
+		storeName = "Esta tienda"
+	}
+	featured := make([]dbpkg.EmpresaVentaPublicaItem, 0, len(items))
+	for _, item := range items {
+		if item.Destacado {
+			featured = append(featured, item)
+		}
+	}
+	if len(featured) == 0 {
+		if len(items) == 0 {
+			return buildPortalPublicPagesAnswer(cfg, pages)
+		}
+		return buildPortalPublicCatalogAnswer(cfg, pages, items)
+	}
+	var b strings.Builder
+	b.WriteString(storeName + " tiene estas promociones o destacados visibles:\n\n")
+	limit := len(featured)
+	if limit > 8 {
+		limit = 8
+	}
+	for i := 0; i < limit; i++ {
+		item := featured[i]
+		b.WriteString("- **" + strings.TrimSpace(item.Nombre) + "**")
+		if item.Precio > 0 {
+			moneda := strings.TrimSpace(item.Moneda)
+			if moneda == "" {
+				moneda = strings.TrimSpace(cfg.Moneda)
+			}
+			if moneda == "" {
+				moneda = "COP"
+			}
+			b.WriteString(fmt.Sprintf(" - %0.0f %s", item.Precio, moneda))
+		}
+		if desc := strings.TrimSpace(item.Descripcion); desc != "" {
+			b.WriteString(" | " + desc)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("\nSi quieres, tambien puedo mostrarte el catalogo completo o las paginas publicas.")
+	return b.String()
+}
+
+func buildPortalPublicPricesAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, items []dbpkg.EmpresaVentaPublicaItem) string {
+	if len(items) == 0 {
+		return "Ahora mismo no veo precios publicos activos para esta tienda."
+	}
+	var b strings.Builder
+	b.WriteString("Estos son los precios publicos visibles en este momento:\n\n")
+	limit := len(items)
+	if limit > 8 {
+		limit = 8
+	}
+	for i := 0; i < limit; i++ {
+		item := items[i]
+		moneda := strings.TrimSpace(item.Moneda)
+		if moneda == "" {
+			moneda = strings.TrimSpace(cfg.Moneda)
+		}
+		if moneda == "" {
+			moneda = "COP"
+		}
+		b.WriteString("- **" + strings.TrimSpace(item.Nombre) + "**")
+		if item.Precio > 0 {
+			b.WriteString(fmt.Sprintf(" - %0.0f %s", item.Precio, moneda))
+		}
+		if page := strings.TrimSpace(item.PaginaNombre); page != "" {
+			b.WriteString(" | pagina: " + page)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("\nSi quieres, tambien puedo mostrarte las promociones o el catalogo completo.")
+	return b.String()
+}
 func loadPortalPublicStoreItems(dbEmp *sql.DB, empresaID int64, pages []dbpkg.EmpresaVentaPublicaPagina) ([]dbpkg.EmpresaVentaPublicaItem, error) {
 	items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
 		IncludeInactive: false,
@@ -470,6 +619,36 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				})
 				return
 			}
+			if portalPublicQuestionWantsPrices(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalPublicPricesAnswer(cfg, items),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
+			if portalPublicQuestionWantsPromotions(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalPublicPromotionsAnswer(cfg, pages, items),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
+			if portalPublicQuestionWantsPages(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalPublicPagesAnswer(cfg, pages),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
 			systemPrompt = buildPortalPublicStoreSystemPrompt(cfg, pages, items)
 		} else {
 			if extra := portalChatLoadExtraInfo(dbSuper); extra != "" {
@@ -514,7 +693,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// PublicPortalCompanyChatStreamHandler expone un chat público contextual con soporte para streaming SSE.
+// PublicPortalCompanyChatStreamHandler expone un chat pÃºblico contextual con soporte para streaming SSE.
 func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -628,6 +807,48 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				w.Header().Set("Connection", "keep-alive")
 				w.WriteHeader(http.StatusOK)
 				text := buildPortalPublicCatalogAnswer(cfg, pages, items)
+				payload, _ := json.Marshal(map[string]interface{}{"text": text})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalPublicQuestionWantsPrices(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				text := buildPortalPublicPricesAnswer(cfg, items)
+				payload, _ := json.Marshal(map[string]interface{}{"text": text})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalPublicQuestionWantsPromotions(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				text := buildPortalPublicPromotionsAnswer(cfg, pages, items)
+				payload, _ := json.Marshal(map[string]interface{}{"text": text})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalPublicQuestionWantsPages(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				text := buildPortalPublicPagesAnswer(cfg, pages)
 				payload, _ := json.Marshal(map[string]interface{}{"text": text})
 				fmt.Fprintf(w, "data: %s\n\n", payload)
 				fmt.Fprintf(w, "data: [DONE]\n\n")
