@@ -3411,3 +3411,8 @@ Archivos modificados:
 2026-05-02 07:54:39 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bd88b94; PushStatus: OK
 Archivos modificados:
 - web/pantalla_publica.html
+
+2026-05-02 08:00:04 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 8b20986; PushStatus: OK
+Archivos modificados:
+- web/login_usuario.html
+- web/seleccionar_empresa.html
