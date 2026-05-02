@@ -3493,3 +3493,9 @@ Archivos modificados:
 - web/administrar_empresa/asistencia_empleados.html
 - web/administrar_empresa/nomina_sueldos.html
 - web/administrar_empresa/vehiculos_registro.html
+
+2026-05-02 12:25:20 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: db5dea3; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/crm_comercial.html
