@@ -609,16 +609,6 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudo cargar el catalogo publico", http.StatusInternalServerError)
 				return
 			}
-			if portalPublicQuestionWantsCatalog(p) {
-				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":                  true,
-					"respuesta":           buildPortalPublicCatalogAnswer(cfg, pages, items),
-					"remaining_in_window": remaining,
-					"window_seconds":      300,
-					"scope":               scope,
-				})
-				return
-			}
 			if portalPublicQuestionWantsPrices(p) {
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                  true,
@@ -643,6 +633,16 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                  true,
 					"respuesta":           buildPortalPublicPagesAnswer(cfg, pages),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
+			if portalPublicQuestionWantsCatalog(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalPublicCatalogAnswer(cfg, pages, items),
 					"remaining_in_window": remaining,
 					"window_seconds":      300,
 					"scope":               scope,
@@ -801,20 +801,6 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				http.Error(w, "No se pudo cargar el catalogo publico", http.StatusInternalServerError)
 				return
 			}
-			if portalPublicQuestionWantsCatalog(p) {
-				w.Header().Set("Content-Type", "text/event-stream")
-				w.Header().Set("Cache-Control", "no-cache")
-				w.Header().Set("Connection", "keep-alive")
-				w.WriteHeader(http.StatusOK)
-				text := buildPortalPublicCatalogAnswer(cfg, pages, items)
-				payload, _ := json.Marshal(map[string]interface{}{"text": text})
-				fmt.Fprintf(w, "data: %s\n\n", payload)
-				fmt.Fprintf(w, "data: [DONE]\n\n")
-				if flusher, okFlusher := w.(http.Flusher); okFlusher {
-					flusher.Flush()
-				}
-				return
-			}
 			if portalPublicQuestionWantsPrices(p) {
 				w.Header().Set("Content-Type", "text/event-stream")
 				w.Header().Set("Cache-Control", "no-cache")
@@ -849,6 +835,20 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				w.Header().Set("Connection", "keep-alive")
 				w.WriteHeader(http.StatusOK)
 				text := buildPortalPublicPagesAnswer(cfg, pages)
+				payload, _ := json.Marshal(map[string]interface{}{"text": text})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalPublicQuestionWantsCatalog(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				text := buildPortalPublicCatalogAnswer(cfg, pages, items)
 				payload, _ := json.Marshal(map[string]interface{}{"text": text})
 				fmt.Fprintf(w, "data: %s\n\n", payload)
 				fmt.Fprintf(w, "data: [DONE]\n\n")
