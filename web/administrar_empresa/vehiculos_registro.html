@@ -3,17 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Registro de vehiculos</title>
+  <title>Registro de vehículos</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1 id="pageTitle">Registro de vehiculos</h1>
+      <div>
+        <h1 id="pageTitle">Registro de vehículos</h1>
+        <p class="form-help page-header-lead">Controla ingresos, salidas y permanencia de vehículos con reglas por país y trazabilidad por conductor o propietario.</p>
+      </div>
       <button id="addBtn" class="btn add" type="button">Agregar registro</button>
     </div>
 
-    <p class="form-help" style="margin:0 0 12px 0;">Registra la patente y el control de ingreso/salida de vehiculos por empresa.</p>
+    <p class="form-help" style="margin:0 0 12px 0;">Registra la patente y el control de ingreso/salida de vehículos por empresa.</p>
 
     <section class="form" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Configuración de placa/patente por país</h2>
@@ -33,8 +36,8 @@
           <input id="cfg_patente_regex" class="form-input" placeholder="Ej: ^[A-Z0-9]{6,7}$">
         </div>
         <div class="form-col">
-          <label class="form-label">Descripcion formato</label>
-          <input id="cfg_patente_descripcion" class="form-input" placeholder="Descripcion del formato esperado">
+          <label class="form-label">Descripción formato</label>
+          <input id="cfg_patente_descripcion" class="form-input" placeholder="Descripción del formato esperado">
         </div>
       </div>
       <div class="form-row" style="margin-bottom:0;">
@@ -43,7 +46,7 @@
           <label class="form-label" for="cfg_evitar_duplicado" style="margin:0;">Evitar duplicidad activa en patio/empresa</label>
         </div>
         <div class="form-col" style="display:flex;align-items:flex-end;gap:8px;max-width:300px;">
-          <button id="cfgGuardarBtn" class="btn secondary" type="button" style="flex:1;">Guardar configuracion</button>
+          <button id="cfgGuardarBtn" class="btn secondary" type="button" style="flex:1;">Guardar configuración</button>
           <button id="cfgRecargarBtn" class="btn secondary" type="button" style="flex:1;">Recargar</button>
         </div>
       </div>
@@ -60,9 +63,9 @@
           <input id="patente" class="form-input" required placeholder="Ej: ABC123, XYZ-789">
         </div>
         <div class="form-col">
-          <label class="form-label">Tipo de vehiculo</label>
+          <label class="form-label">Tipo de vehículo</label>
           <select id="tipo_vehiculo" class="form-input">
-            <option value="automovil">Automovil</option>
+            <option value="automovil">Automóvil</option>
             <option value="moto">Moto</option>
             <option value="camion">Camion</option>
             <option value="camioneta">Camioneta</option>
@@ -197,7 +200,7 @@
       <h2 style="margin:0 0 8px 0;">Reporte de permanencia y tiempos de estancia</h2>
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label">Formato exportacion</label>
+          <label class="form-label">Formato exportación</label>
           <select id="reporteFormato" class="form-input">
             <option value="pdf">PDF</option>
             <option value="xls">Excel (XLS)</option>
