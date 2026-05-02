@@ -631,7 +631,7 @@
 
   function getRobotStatusText(mood) {
     var modelLabel = buildResponseModelLabel(state.lastResponseModelMeta);
-    var suffix = modelLabel ? (' Â· ' + modelLabel) : '';
+    var suffix = modelLabel ? (' · ' + modelLabel) : '';
     switch (normalizeRobotMood(mood)) {
       case 'listening':
         return 'Escuchando tu voz' + suffix;
@@ -4116,6 +4116,7 @@
 
   document.addEventListener('DOMContentLoaded', initDrawer);
 })();
+
 
 
 
