@@ -24,6 +24,24 @@
     .analytics-section-note{margin-top:8px}
     .analytics-badge-high{color:#fecaca}
     .analytics-badge-ok{color:#bbf7d0}
+    .analytics-health-shell{display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:14px;margin:18px 0}
+    .analytics-health-overview,.analytics-health-priorities,.analytics-health-area{padding:16px 18px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 90%,var(--accent) 10%),color-mix(in srgb,var(--surface) 96%,black 4%));box-shadow:0 14px 28px rgba(0,0,0,.10)}
+    .analytics-health-overview span,.analytics-health-area span{display:block;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .analytics-health-overview strong{display:block;font-size:2rem;line-height:1;margin-bottom:8px}
+    .analytics-health-overview p,.analytics-health-area p,.analytics-health-priorities p{margin:0;color:var(--muted);line-height:1.5}
+    .analytics-health-area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .analytics-health-area header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+    .analytics-health-area strong{font-size:1.1rem}
+    .analytics-health-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent}
+    .analytics-health-badge.solido{background:rgba(34,197,94,.12);color:#86efac;border-color:rgba(34,197,94,.25)}
+    .analytics-health-badge.estable{background:rgba(56,189,248,.12);color:#7dd3fc;border-color:rgba(56,189,248,.25)}
+    .analytics-health-badge.atencion{background:rgba(245,158,11,.12);color:#fcd34d;border-color:rgba(245,158,11,.25)}
+    .analytics-health-badge.critico{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.25)}
+    .analytics-priority-list{display:grid;gap:10px;margin:12px 0 0;padding:0;list-style:none}
+    .analytics-priority-list li{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);line-height:1.5;color:var(--text)}
+    @media (max-width: 900px){
+      .analytics-health-shell{grid-template-columns:1fr}
+    }
   </style>
 </head>
 <body class="empresa-subpage">
@@ -97,6 +115,22 @@
         </article>
       </div>
 
+      <div class="analytics-health-shell">
+        <article class="analytics-health-overview">
+          <span>Salud ejecutiva global</span>
+          <strong id="analyticsHealthScore">0/100</strong>
+          <div id="analyticsHealthStatus" class="analytics-health-badge estable">Estable</div>
+          <p id="analyticsHealthSummary">Esperando consolidación ejecutiva...</p>
+        </article>
+        <article class="analytics-health-priorities">
+          <span>Prioridades del período</span>
+          <p>Acciones sugeridas para intervenir primero lo que más mueve margen, control y continuidad.</p>
+          <ul id="analyticsHealthPriorities" class="analytics-priority-list"></ul>
+        </article>
+      </div>
+
+      <div id="analyticsHealthAreas" class="analytics-health-area-grid"></div>
+
       <div class="kpi-grid graficos-kpi-grid">
         <div class="kpi-box"><span class="kpi-label">Ventas cerradas</span><strong id="kpiVentas">0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Ingresos de ventas</span><strong id="kpiIngresos">$0</strong></div>
@@ -105,7 +139,7 @@
         <div class="kpi-box"><span class="kpi-label">Costo compras</span><strong id="kpiComprasCosto">$0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Clientes activos</span><strong id="kpiClientes">0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Productos activos</span><strong id="kpiProductos">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Bajo minimo</span><strong id="kpiBajoMinimo">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Bajo mínimo</span><strong id="kpiBajoMinimo">0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Ingresos financieros</span><strong id="kpiFinIngresos">$0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Egresos financieros</span><strong id="kpiFinEgresos">$0</strong></div>
         <div class="kpi-box"><span class="kpi-label">Balance financiero</span><strong id="kpiFinBalance">$0</strong></div>
@@ -564,6 +598,57 @@
         : "No hay alertas de inventario bajo mínimo visibles en este rango.");
     }
 
+    function healthStatusLabel(status) {
+      const value = normalize(status).toLowerCase();
+      if (value === "solido") return "Sólido";
+      if (value === "estable") return "Estable";
+      if (value === "atencion") return "Atención";
+      if (value === "critico") return "Crítico";
+      return "Estable";
+    }
+
+    function renderExecutiveHealth(panel) {
+      const salud = panel?.salud || {};
+      const scoreEl = document.getElementById("analyticsHealthScore");
+      const statusEl = document.getElementById("analyticsHealthStatus");
+      const summaryEl = document.getElementById("analyticsHealthSummary");
+      const areasEl = document.getElementById("analyticsHealthAreas");
+      const prioritiesEl = document.getElementById("analyticsHealthPriorities");
+
+      if (scoreEl) scoreEl.textContent = fmtNumber(num(salud.global_score)) + "/100";
+      if (statusEl) {
+        const status = normalize(salud.status).toLowerCase() || "estable";
+        statusEl.className = "analytics-health-badge " + status;
+        statusEl.textContent = healthStatusLabel(status);
+      }
+      if (summaryEl) {
+        summaryEl.textContent = normalize(salud.resumen) || "Esperando consolidación ejecutiva...";
+      }
+      if (areasEl) {
+        const areas = Array.isArray(salud.areas) ? salud.areas : [];
+        areasEl.innerHTML = areas.map(function(area){
+          const status = normalize(area.status).toLowerCase() || "estable";
+          return '' +
+            '<article class="analytics-health-area">' +
+              '<header>' +
+                '<div>' +
+                  '<span>' + sanitize(area.label || '-') + '</span>' +
+                  '<strong>' + sanitize(fmtNumber(num(area.score)) + '/100') + '</strong>' +
+                '</div>' +
+                '<div class="analytics-health-badge ' + sanitize(status) + '">' + sanitize(healthStatusLabel(status)) + '</div>' +
+              '</header>' +
+              '<p>' + sanitize(area.resumen || '') + '</p>' +
+            '</article>';
+        }).join('');
+      }
+      if (prioritiesEl) {
+        const priorities = Array.isArray(salud.prioridades) ? salud.prioridades : [];
+        prioritiesEl.innerHTML = priorities.map(function(item){
+          return '<li>' + sanitize(item || '') + '</li>';
+        }).join('');
+      }
+    }
+
     function applyKpis(panel) {
       const tablero = panel?.tablero || {};
       const operativo = tablero.operativo || {};
@@ -740,6 +825,7 @@
       renderInsightList("oportunidadesEjecutivas", buildExecutiveOpportunities(panel));
       renderInsightList("accionesEjecutivas", buildExecutiveActions(panel));
       renderExecutiveNarrative(panel);
+      renderExecutiveHealth(panel);
 
       const ventas = panel?.series?.ventas || [];
       const finanzas = panel?.series?.finanzas || [];

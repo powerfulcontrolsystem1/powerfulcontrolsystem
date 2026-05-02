@@ -77,6 +77,23 @@ type empresaGraficosDistribuciones struct {
 	AsistenciaEstado []empresaGraficoDistribucionItem `json:"asistencia_estado"`
 }
 
+type empresaGraficosSaludArea struct {
+	Key      string `json:"key"`
+	Label    string `json:"label"`
+	Score    int    `json:"score"`
+	Status   string `json:"status"`
+	Resumen  string `json:"resumen"`
+	Prioridad bool  `json:"prioridad"`
+}
+
+type empresaGraficosSaludEjecutiva struct {
+	GlobalScore int                        `json:"global_score"`
+	Status      string                     `json:"status"`
+	Resumen     string                     `json:"resumen"`
+	Areas       []empresaGraficosSaludArea `json:"areas"`
+	Prioridades []string                   `json:"prioridades"`
+}
+
 type empresaGraficosPanelResponse struct {
 	EmpresaID      int64                               `json:"empresa_id"`
 	Desde          string                              `json:"desde"`
@@ -86,6 +103,7 @@ type empresaGraficosPanelResponse struct {
 	Series         empresaGraficosSeries               `json:"series"`
 	Rankings       empresaGraficosRankings             `json:"rankings"`
 	Distribuciones empresaGraficosDistribuciones       `json:"distribuciones"`
+	Salud          empresaGraficosSaludEjecutiva       `json:"salud"`
 	Filtros        empresaGraficosFiltrosAplicados     `json:"filtros"`
 	Comparativo    *empresaGraficosComparativo         `json:"comparativo,omitempty"`
 	Cache          empresaGraficosCacheEstado          `json:"cache"`
@@ -546,8 +564,186 @@ func buildEmpresaGraficosPanel(dbEmp *sql.DB, builder *reportesBuilder, maxPoint
 			referenciaHasta,
 		)
 	}
+	panel.Salud = graficosBuildExecutiveHealth(panel.Tablero, panel.Comparativo)
 
 	return panel, nil
+}
+
+func graficosBuildExecutiveHealth(tablero dbpkg.EmpresaReportesTableroResumen, comparativo *empresaGraficosComparativo) empresaGraficosSaludEjecutiva {
+	operativo := tablero.Operativo
+	financiero := tablero.Financiero
+	contable := tablero.Contable
+	estado := tablero.EstadoResultados
+	balance := tablero.BalanceGeneral
+
+	areas := make([]empresaGraficosSaludArea, 0, 4)
+	prioridades := make([]string, 0, 6)
+
+	comercialScore := 45
+	if operativo.VentasCerradas > 0 {
+		comercialScore += 20
+	}
+	if operativo.TicketPromedio > 0 {
+		comercialScore += 10
+	}
+	if operativo.ClientesActivos > 0 {
+		comercialScore += 10
+	}
+	if comparativo != nil {
+		if metric, ok := comparativo.Metricas["ingresos_ventas"]; ok && metric.VariacionPct > 0 {
+			comercialScore += 10
+		}
+	}
+	comercialScore = graficosClampScore(comercialScore)
+	comercialArea := empresaGraficosSaludArea{
+		Key:     "comercial",
+		Label:   "Comercial",
+		Score:   comercialScore,
+		Status:  graficosHealthStatus(comercialScore),
+		Resumen: fmt.Sprintf("%d ventas cerradas, ticket promedio %s y %d clientes activos en el rango.", operativo.VentasCerradas, graficosFmtMoneyShort(operativo.TicketPromedio), operativo.ClientesActivos),
+	}
+	if operativo.VentasCerradas == 0 || operativo.ClientesActivos == 0 {
+		comercialArea.Prioridad = true
+		prioridades = append(prioridades, "Activar ventas y recompra: el frente comercial todavía no muestra suficiente tracción en el período.")
+	}
+	areas = append(areas, comercialArea)
+
+	financieroScore := 40
+	if financiero.Balance >= 0 {
+		financieroScore += 25
+	} else {
+		prioridades = append(prioridades, "Corregir balance financiero negativo antes de seguir expandiendo egresos o compras.")
+	}
+	if estado.UtilidadOperacional >= 0 {
+		financieroScore += 20
+	} else {
+		prioridades = append(prioridades, "La utilidad operacional está en rojo; conviene revisar margen, precios y costos de inmediato.")
+	}
+	if financiero.Ingresos >= financiero.Egresos {
+		financieroScore += 10
+	}
+	financieroScore = graficosClampScore(financieroScore)
+	financieroArea := empresaGraficosSaludArea{
+		Key:     "financiero",
+		Label:   "Financiero",
+		Score:   financieroScore,
+		Status:  graficosHealthStatus(financieroScore),
+		Resumen: fmt.Sprintf("Balance %s, utilidad operacional %s e ingresos %s frente a egresos %s.", graficosFmtMoneyShort(financiero.Balance), graficosFmtMoneyShort(estado.UtilidadOperacional), graficosFmtMoneyShort(financiero.Ingresos), graficosFmtMoneyShort(financiero.Egresos)),
+		Prioridad: financiero.Balance < 0 || estado.UtilidadOperacional < 0,
+	}
+	areas = append(areas, financieroArea)
+
+	operativoScore := 55
+	if operativo.ProductosBajoMinimo == 0 {
+		operativoScore += 20
+	} else {
+		prioridades = append(prioridades, fmt.Sprintf("Reabastecer %d productos bajo mínimo para proteger continuidad de venta.", operativo.ProductosBajoMinimo))
+	}
+	if operativo.ProductosActivos > 0 {
+		operativoScore += 10
+	}
+	if contable.EventosPendientes == 0 {
+		operativoScore += 10
+	}
+	if financiero.PeriodosAbiertos <= 1 {
+		operativoScore += 5
+	}
+	operativoScore = graficosClampScore(operativoScore)
+	operativoArea := empresaGraficosSaludArea{
+		Key:      "operativo",
+		Label:    "Operativo",
+		Score:    operativoScore,
+		Status:   graficosHealthStatus(operativoScore),
+		Resumen:  fmt.Sprintf("%d productos activos, %d bajo mínimo y %d eventos pendientes por procesar.", operativo.ProductosActivos, operativo.ProductosBajoMinimo, contable.EventosPendientes),
+		Prioridad: operativo.ProductosBajoMinimo > 0 || contable.EventosPendientes > 0,
+	}
+	areas = append(areas, operativoArea)
+
+	controlScore := 60
+	if math.Abs(balance.Cuadre) <= 1 {
+		controlScore += 20
+	} else {
+		prioridades = append(prioridades, "Revisar el cuadre contable: el balance aún muestra diferencias que deben resolverse.")
+	}
+	if contable.EventosPendientes == 0 {
+		controlScore += 10
+	}
+	if financiero.PeriodosAbiertos <= 1 {
+		controlScore += 10
+	} else {
+		prioridades = append(prioridades, fmt.Sprintf("Cerrar %d períodos abiertos para mejorar control y trazabilidad.", financiero.PeriodosAbiertos))
+	}
+	controlScore = graficosClampScore(controlScore)
+	controlArea := empresaGraficosSaludArea{
+		Key:      "control",
+		Label:    "Control",
+		Score:    controlScore,
+		Status:   graficosHealthStatus(controlScore),
+		Resumen:  fmt.Sprintf("Cuadre %s, %d períodos abiertos y %d eventos pendientes.", graficosFmtMoneyShort(balance.Cuadre), financiero.PeriodosAbiertos, contable.EventosPendientes),
+		Prioridad: math.Abs(balance.Cuadre) > 1 || financiero.PeriodosAbiertos > 1,
+	}
+	areas = append(areas, controlArea)
+
+	if len(prioridades) == 0 {
+		prioridades = append(prioridades, "Mantener el ritmo actual: no se detectan desvíos críticos en ventas, control o rentabilidad para este período.")
+	}
+	if len(prioridades) > 5 {
+		prioridades = prioridades[:5]
+	}
+
+	total := 0
+	for _, area := range areas {
+		total += area.Score
+	}
+	globalScore := 0
+	if len(areas) > 0 {
+		globalScore = int(math.Round(float64(total) / float64(len(areas))))
+	}
+	status := graficosHealthStatus(globalScore)
+	resumen := "La empresa muestra una salud ejecutiva estable, con espacio para seguir afinando foco comercial, control y margen."
+	switch status {
+	case "critico":
+		resumen = "La lectura ejecutiva exige intervención inmediata: margen, control o continuidad operativa están comprometidos."
+	case "atencion":
+		resumen = "La operación sigue en pie, pero hay señales que conviene intervenir pronto para no perder margen ni control."
+	case "solido":
+		resumen = "La empresa sostiene una lectura ejecutiva fuerte y controlada para el rango analizado."
+	}
+
+	return empresaGraficosSaludEjecutiva{
+		GlobalScore: globalScore,
+		Status:      status,
+		Resumen:     resumen,
+		Areas:       areas,
+		Prioridades: prioridades,
+	}
+}
+
+func graficosClampScore(score int) int {
+	if score < 0 {
+		return 0
+	}
+	if score > 100 {
+		return 100
+	}
+	return score
+}
+
+func graficosHealthStatus(score int) string {
+	switch {
+	case score >= 80:
+		return "solido"
+	case score >= 60:
+		return "estable"
+	case score >= 40:
+		return "atencion"
+	default:
+		return "critico"
+	}
+}
+
+func graficosFmtMoneyShort(value float64) string {
+	return fmt.Sprintf("$%.0f", math.Round(value))
 }
 
 type empresaGraficosFilterContext struct {
