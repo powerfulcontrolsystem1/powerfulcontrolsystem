@@ -265,6 +265,42 @@ func buildPortalPublicCatalogAnswer(cfg dbpkg.EmpresaVentaPublicaConfig, pages [
 	return "Ahora mismo no veo productos ni páginas públicas activas para esta tienda. Si quieres, puedo ayudarte a intentar otra consulta o indicarte cómo contactar a la empresa."
 }
 
+func loadPortalPublicStoreItems(dbEmp *sql.DB, empresaID int64, pages []dbpkg.EmpresaVentaPublicaPagina) ([]dbpkg.EmpresaVentaPublicaItem, error) {
+	items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
+		IncludeInactive: false,
+		Limit:           120,
+		Offset:          0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(items) > 0 || len(pages) == 0 {
+		return items, nil
+	}
+
+	merged := make([]dbpkg.EmpresaVentaPublicaItem, 0, len(pages)*4)
+	seen := map[int64]struct{}{}
+	for _, page := range pages {
+		pageItems, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
+			IncludeInactive: false,
+			PaginaSlug:      page.Slug,
+			Limit:           120,
+			Offset:          0,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range pageItems {
+			if _, ok := seen[item.ID]; ok {
+				continue
+			}
+			seen[item.ID] = struct{}{}
+			merged = append(merged, item)
+		}
+	}
+	return merged, nil
+}
+
 func pickPortalChatModel(dbSuper *sql.DB, question string, wantsVision bool) (empresaAIModelDef, bool) {
 	modelMap := empresaAIModelMap()
 	defs := aiCredentialCatalogModels()
@@ -419,11 +455,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudieron cargar las paginas publicas", http.StatusInternalServerError)
 				return
 			}
-			items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
-				IncludeInactive: false,
-				Limit:           120,
-				Offset:          0,
-			})
+			items, err := loadPortalPublicStoreItems(dbEmp, empresaID, pages)
 			if err != nil {
 				http.Error(w, "No se pudo cargar el catalogo publico", http.StatusInternalServerError)
 				return
@@ -585,11 +617,7 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				http.Error(w, "No se pudieron cargar las paginas publicas", http.StatusInternalServerError)
 				return
 			}
-			items, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, empresaID, dbpkg.EmpresaVentaPublicaItemsFilter{
-				IncludeInactive: false,
-				Limit:           120,
-				Offset:          0,
-			})
+			items, err := loadPortalPublicStoreItems(dbEmp, empresaID, pages)
 			if err != nil {
 				http.Error(w, "No se pudo cargar el catalogo publico", http.StatusInternalServerError)
 				return
