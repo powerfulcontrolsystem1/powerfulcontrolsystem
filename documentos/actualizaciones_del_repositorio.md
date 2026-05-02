@@ -3481,3 +3481,9 @@ Archivos modificados:
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/ventas.html
+
+2026-05-02 12:19:43 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 78fe4d9; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/administrar_clientes.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/impuestos.html
