@@ -655,7 +655,8 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			return
 		}
 
-		skipEmpresaModuloCheck := module == permModuleSeguridad && (strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto") || strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_empresa"))
+		requestPath := strings.TrimSpace(r.URL.Path)
+		skipEmpresaModuloCheck := module == permModuleSeguridad && (strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto") || strings.HasPrefix(requestPath, "/api/empresa/permisos_empresa"))
 		if !skipEmpresaModuloCheck && !empresaAllowsModuleActionWithOverrides(dbSuper, empresaID, module, action) {
 			http.Error(w, "forbidden: permiso fino de empresa deshabilita la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
@@ -663,7 +664,8 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		}
 
 		effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
-		if !roleAllowsModuleActionWithOverrides(dbSuper, effectiveRole, module, action) {
+		skipRoleModuloCheck := module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")
+		if !skipRoleModuloCheck && !roleAllowsModuleActionWithOverrides(dbSuper, effectiveRole, module, action) {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return

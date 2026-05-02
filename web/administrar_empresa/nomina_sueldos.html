@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nomina de sueldos</title>
+  <title>Nómina de sueldos</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage nomina-page">
@@ -11,14 +11,14 @@
     <section class="card empresa-section">
       <div class="empresa-section-header">
         <div>
-          <h1>Nomina de sueldos</h1>
+          <h1>Nómina de sueldos</h1>
           <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
         </div>
         <div class="form-actions">
           <button id="btnRecargarTodo" class="btn secondary" type="button">Actualizar</button>
         </div>
       </div>
-      <p class="form-help">Modulo de nomina integrado con asistencia para calcular horas ordinarias, recargos nocturnos, horas extras y liquidacion salarial por periodo.</p>
+      <p class="form-help">Módulo de nómina integrado con asistencia para calcular horas ordinarias, recargos nocturnos, horas extras, provisiones, pagos y liquidación salarial por período.</p>
       <div class="kpi-grid nomina-kpi-grid">
         <div class="kpi-box">
           <span class="kpi-label">Empleados nomina</span>
@@ -35,6 +35,14 @@
         <div class="kpi-box">
           <span class="kpi-label">Neto total</span>
           <strong id="kpiNeto">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Pagos generados</span>
+          <strong id="kpiPagos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Costo empresa</span>
+          <strong id="kpiCostoEmpresa">$0</strong>
         </div>
       </div>
       <div id="mainMsg" class="form-help"></div>
@@ -429,6 +437,76 @@
         </table>
       </div>
     </section>
+
+    <div class="empresa-grid-2 nomina-layout-grid">
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Provisiones y costo empresa</h2>
+        </div>
+        <div class="form-row nomina-summary-grid">
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>IBC total</strong><br><span id="provIBC">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Aportes patronales</strong><br><span id="provAportes">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Provisiones</strong><br><span id="provProvision">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Costo total empresa</strong><br><span id="provCostoEmpresa">$0</span></div>
+          </div>
+        </div>
+        <div id="provResumen" class="nomina-result-summary">Sin provisiones consultadas.</div>
+      </section>
+
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Pagos de nómina</h2>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="payMetodo">Método de pago</label>
+            <select id="payMetodo" class="form-input">
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="nequi">Nequi</option>
+              <option value="daviplata">Daviplata</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="payCuenta">Cuenta o referencia de pago</label>
+            <input id="payCuenta" class="form-input" placeholder="Cuenta origen o referencia interna">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="payGenerarBtn" type="button" class="btn">Generar pagos del período</button>
+          <button id="payConsultarBtn" type="button" class="btn secondary">Consultar pagos</button>
+          <button id="provConsultarBtn" type="button" class="btn secondary">Consultar provisiones</button>
+        </div>
+        <div id="payMsg" class="form-help"></div>
+        <div id="payResumen" class="nomina-result-summary">Sin pagos generados para mostrar.</div>
+        <div id="dashboardAlertas" class="nomina-alert-list"></div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Período</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Estado</th>
+                <th>Neto pagado</th>
+              </tr>
+            </thead>
+            <tbody id="payTableBody">
+              <tr><td colspan="6">Sin pagos para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
@@ -439,7 +517,10 @@
         config: null,
         empleados: [],
         festivos: [],
-        liquidaciones: []
+        liquidaciones: [],
+        pagos: [],
+        dashboard: null,
+        provisiones: null
       };
 
       function getQueryParam(name) {
@@ -478,6 +559,14 @@
         } catch (_) {
           return moneda + ' ' + n.toFixed(2);
         }
+      }
+
+      function periodoActual() {
+        return {
+          desde: normalize(document.getElementById('calcDesde').value),
+          hasta: normalize(document.getElementById('calcHasta').value),
+          empleadoNominaID: Number(document.getElementById('calcEmpleado').value || 0)
+        };
       }
 
       async function requestJSON(url, options) {
@@ -1041,20 +1130,148 @@
       }
 
       async function loadLiquidaciones() {
-        const desde = normalize(document.getElementById('calcDesde').value);
-        const hasta = normalize(document.getElementById('calcHasta').value);
-        const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+        const current = periodoActual();
         const params = new URLSearchParams();
         params.set('empresa_id', String(state.empresaID));
         params.set('action', 'liquidaciones');
         params.set('limit', '500');
-        if (desde) params.set('periodo_desde', desde);
-        if (hasta) params.set('periodo_hasta', hasta);
-        if (empleadoNominaID > 0) params.set('empleado_nomina_id', String(empleadoNominaID));
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
 
         const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
         state.liquidaciones = Array.isArray(rows) ? rows : [];
         renderLiquidaciones(state.liquidaciones, 'Liquidaciones consultadas para el rango seleccionado.');
+      }
+
+      function renderPagos(rows, summaryText) {
+        const body = document.getElementById('payTableBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="6">Sin pagos para mostrar.</td></tr>';
+          document.getElementById('payResumen').textContent = summaryText || 'Sin pagos generados para mostrar.';
+          updateKpis();
+          return;
+        }
+        body.innerHTML = list.map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || '-') + '</small></td>' +
+            '<td>' + esc((item.periodo_desde || '-') + ' a ' + (item.periodo_hasta || '-')) + '</td>' +
+            '<td>' + esc(item.metodo_pago || '-') + '</td>' +
+            '<td>' + esc(item.referencia_pago || '-') + '</td>' +
+            '<td>' + esc(item.estado_pago || 'pagado') + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagado)) + '</strong></td>' +
+          '</tr>';
+        }).join('');
+        document.getElementById('payResumen').textContent = summaryText || ('Pagos registrados: ' + list.length);
+        updateKpis();
+      }
+
+      function renderProvisiones(resumen) {
+        state.provisiones = resumen || null;
+        if (!resumen || typeof resumen !== 'object') {
+          document.getElementById('provIBC').textContent = money(0);
+          document.getElementById('provAportes').textContent = money(0);
+          document.getElementById('provProvision').textContent = money(0);
+          document.getElementById('provCostoEmpresa').textContent = money(0);
+          document.getElementById('provResumen').textContent = 'Sin provisiones consultadas.';
+          updateKpis();
+          return;
+        }
+        const aportes = toNumber(resumen.aporte_salud_empleador, 0) +
+          toNumber(resumen.aporte_pension_empleador, 0) +
+          toNumber(resumen.aporte_arl, 0) +
+          toNumber(resumen.aporte_caja_compensacion, 0) +
+          toNumber(resumen.aporte_icbf, 0) +
+          toNumber(resumen.aporte_sena, 0);
+        const provisiones = toNumber(resumen.provision_cesantias, 0) +
+          toNumber(resumen.provision_intereses_cesantias, 0) +
+          toNumber(resumen.provision_prima, 0) +
+          toNumber(resumen.provision_vacaciones, 0);
+        document.getElementById('provIBC').textContent = money(resumen.total_ibc);
+        document.getElementById('provAportes').textContent = money(aportes);
+        document.getElementById('provProvision').textContent = money(provisiones);
+        document.getElementById('provCostoEmpresa').textContent = money(resumen.costo_empresa_estimado);
+        document.getElementById('provResumen').textContent =
+          'Liquidaciones: ' + Number(resumen.liquidaciones || 0) +
+          ' | Devengado: ' + money(resumen.total_devengado) +
+          ' | Neto: ' + money(resumen.total_neto_pagar) +
+          ' | Costo empresa: ' + money(resumen.costo_empresa_estimado);
+        updateKpis();
+      }
+
+      function renderDashboard(data) {
+        state.dashboard = data || null;
+        const alerts = Array.isArray(data && data.alertas) ? data.alertas : [];
+        document.getElementById('dashboardAlertas').innerHTML = alerts.length
+          ? alerts.map(function (item) { return '<div class="nomina-alert-item">' + esc(item) + '</div>'; }).join('')
+          : '<div class="form-help">Sin alertas críticas para el período actual.</div>';
+        if (data && data.provisiones) {
+          renderProvisiones(data.provisiones);
+        }
+        updateKpis();
+      }
+
+      async function loadPagos() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'pagos');
+        params.set('limit', '500');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.pagos = Array.isArray(rows) ? rows : [];
+        renderPagos(state.pagos, 'Pagos consultados para el período seleccionado.');
+      }
+
+      async function loadProvisiones() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'provisiones');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderProvisiones(data);
+      }
+
+      async function loadDashboard() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'dashboard');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderDashboard(data);
+      }
+
+      async function generarPagosNomina() {
+        const current = periodoActual();
+        if (!current.desde || !current.hasta) {
+          throw new Error('Debes indicar período desde y hasta para generar pagos.');
+        }
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          periodo_desde: current.desde,
+          periodo_hasta: current.hasta,
+          empleado_nomina_id: current.empleadoNominaID > 0 ? current.empleadoNominaID : 0,
+          metodo_pago: normalize(document.getElementById('payMetodo').value),
+          cuenta_bancaria: normalize(document.getElementById('payCuenta').value)
+        };
+        const result = await requestJSON('/api/empresa/nomina?action=generar_pagos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        state.pagos = Array.isArray(result && result.pagos) ? result.pagos : [];
+        renderPagos(state.pagos, 'Pagos generados: ' + Number(result && result.generados || 0) + ' | Omitidos: ' + Number(result && result.omitidos || 0) + ' | Total pagado: ' + money(result && result.total_neto_pagado || 0));
+        await loadDashboard();
+        return result;
       }
 
       async function exportarLiquidaciones() {
@@ -1133,6 +1350,7 @@
             ' | Neto: ' + money(result && result.total_neto || 0);
 
           renderLiquidaciones(state.liquidaciones, resumen);
+          await Promise.all([loadDashboard(), loadProvisiones(), loadPagos()]);
           setMessage('calcMsg', 'Nomina calculada correctamente.', 'success');
         } catch (err) {
           setMessage('calcMsg', err.message || 'No se pudo calcular la nomina.', 'error');
@@ -1143,6 +1361,9 @@
         const empleados = Array.isArray(state.empleados) ? state.empleados : [];
         const festivos = Array.isArray(state.festivos) ? state.festivos : [];
         const liquidaciones = Array.isArray(state.liquidaciones) ? state.liquidaciones : [];
+        const pagos = Array.isArray(state.pagos) ? state.pagos : [];
+        const dashboard = state.dashboard || {};
+        const provisiones = state.provisiones || {};
 
         const neto = liquidaciones.reduce(function (acc, item) {
           return acc + toNumber(item.neto_pagar, 0);
@@ -1152,11 +1373,13 @@
         document.getElementById('kpiFestivos').textContent = String(festivos.length);
         document.getElementById('kpiLiquidaciones').textContent = String(liquidaciones.length);
         document.getElementById('kpiNeto').textContent = money(neto);
+        document.getElementById('kpiPagos').textContent = String(pagos.length || Number(dashboard.pagos_generados || 0));
+        document.getElementById('kpiCostoEmpresa').textContent = money(provisiones.costo_empresa_estimado || dashboard.costo_empresa_estimado || 0);
       }
 
       async function refreshAll() {
         await Promise.all([loadConfig(), loadEmployees(), loadFestivos()]);
-        await loadLiquidaciones();
+        await Promise.all([loadLiquidaciones(), loadPagos(), loadDashboard(), loadProvisiones()]);
         updateKpis();
       }
 
@@ -1207,7 +1430,7 @@
 
         document.getElementById('calcForm').addEventListener('submit', calcularNomina);
         document.getElementById('calcListarBtn').addEventListener('click', function () {
-          loadLiquidaciones().catch(function (err) {
+          Promise.all([loadLiquidaciones(), loadPagos(), loadDashboard(), loadProvisiones()]).catch(function (err) {
             setMessage('calcMsg', err.message || 'No se pudo consultar liquidaciones.', 'error');
           });
         });
@@ -1239,6 +1462,32 @@
             .catch(function (err) {
               setMessage('calcMsg', err.message || 'No se pudo conciliar asistencia contra nomina.', 'error');
             });
+        });
+
+        document.getElementById('payGenerarBtn').addEventListener('click', function () {
+          generarPagosNomina()
+            .then(function (result) {
+              setMessage('payMsg', 'Pagos generados: ' + Number(result && result.generados || 0) + '. Omitidos: ' + Number(result && result.omitidos || 0) + '.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('payMsg', err.message || 'No se pudieron generar pagos de nómina.', 'error');
+            });
+        });
+
+        document.getElementById('payConsultarBtn').addEventListener('click', function () {
+          Promise.all([loadPagos(), loadDashboard()]).then(function () {
+            setMessage('payMsg', 'Pagos consultados correctamente.', 'success');
+          }).catch(function (err) {
+            setMessage('payMsg', err.message || 'No se pudieron consultar los pagos.', 'error');
+          });
+        });
+
+        document.getElementById('provConsultarBtn').addEventListener('click', function () {
+          Promise.all([loadProvisiones(), loadDashboard()]).then(function () {
+            setMessage('payMsg', 'Provisiones consultadas correctamente.', 'success');
+          }).catch(function (err) {
+            setMessage('payMsg', err.message || 'No se pudieron consultar las provisiones.', 'error');
+          });
         });
 
         document.getElementById('liqTableBody').addEventListener('click', function (ev) {

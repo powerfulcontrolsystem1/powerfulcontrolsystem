@@ -540,7 +540,7 @@ func UpsertEmpresaPropinasConfiguracion(dbConn *sql.DB, payload EmpresaPropinasC
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_propinas_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_propinas_configuracion (
 		empresa_id,
 		habilitar_propina,
 		porcentaje_propina,
@@ -572,7 +572,7 @@ func UpsertEmpresaPropinasConfiguracion(dbConn *sql.DB, payload EmpresaPropinasC
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaPropinaMovimiento registra una propina asociada al cierre de una venta.
@@ -656,7 +656,7 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 		payload.Observaciones = "ajuste manual de propina"
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_propinas_movimientos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_propinas_movimientos (
 		empresa_id,
 		carrito_id,
 		cierre_caja_id,
@@ -714,7 +714,7 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaPropinaAjusteManual registra un ajuste manual de propina (positivo o negativo).

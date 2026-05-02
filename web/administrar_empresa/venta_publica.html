@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     body{margin:0;padding:18px;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
-    .vp-shell{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+    .vp-shell{max-width:1240px;margin:0 auto;display:grid;gap:18px}
     .vp-hero{padding:22px;border-radius:24px;border:1px solid var(--border);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface) 84%),var(--surface));box-shadow:0 18px 42px rgba(0,0,0,.12)}
     .vp-hero h1{margin:0 0 6px;font-size:clamp(1.8rem,3vw,2.6rem);font-weight:900;letter-spacing:-.03em}
-    .vp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.72fr);gap:18px;align-items:start}
+    .vp-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:18px;align-items:start}
     .vp-card{border:1px solid var(--border);border-radius:22px;background:var(--surface);box-shadow:0 14px 32px rgba(0,0,0,.10);padding:18px}
     .vp-card h2,.vp-card h3{margin-top:0}
     .vp-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -18,36 +18,53 @@
     .vp-page-list,.vp-product-list,.vp-published-list{display:grid;gap:10px;margin-top:12px}
     .vp-page,.vp-product,.vp-published{border:1px solid var(--border);border-radius:16px;background:var(--surface-soft);padding:12px;display:grid;gap:8px}
     .vp-page.active{outline:3px solid color-mix(in srgb,var(--accent) 32%,transparent);border-color:var(--accent)}
+    .vp-page-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .vp-page-status{padding:5px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
     .vp-product{grid-template-columns:72px minmax(0,1fr) auto;align-items:center}
     .vp-thumb{width:72px;height:72px;border-radius:14px;background:var(--input-bg-soft);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-size:.78rem}
-    .vp-muted{color:var(--muted);font-size:.92rem}.vp-price{font-weight:900}
+    .vp-muted{color:var(--muted);font-size:.92rem}
+    .vp-price{font-weight:900}
     .vp-public-url{word-break:break-all}
-    @media(max-width:860px){body{padding:10px}.vp-grid,.vp-row{grid-template-columns:1fr}.vp-product{grid-template-columns:56px 1fr}.vp-product .vp-actions{grid-column:1/-1}.vp-thumb{width:56px;height:56px}}
+    .vp-profile{position:relative;overflow:hidden;padding:0}
+    .vp-cover{min-height:180px;padding:20px;display:flex;align-items:flex-end;background:linear-gradient(135deg,var(--vp-primary,#0f4c81),color-mix(in srgb,var(--vp-primary,#0f4c81) 28%,#ffffff 72%));color:#fff}
+    .vp-cover-overlay{width:100%;display:flex;justify-content:space-between;gap:18px;align-items:flex-end;flex-wrap:wrap}
+    .vp-avatar{width:88px;height:88px;border-radius:24px;border:4px solid rgba(255,255,255,.8);background:rgba(255,255,255,.16);backdrop-filter:blur(8px);display:grid;place-items:center;font-size:1.7rem;font-weight:900;overflow:hidden}
+    .vp-avatar img{width:100%;height:100%;object-fit:cover}
+    .vp-profile-body{padding:18px;display:grid;gap:14px}
+    .vp-profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .vp-stat{border:1px solid var(--border);border-radius:16px;padding:12px;background:var(--surface-soft)}
+    .vp-stat strong{display:block;font-size:1.1rem}
+    .vp-chip-list{display:flex;gap:8px;flex-wrap:wrap}
+    .vp-chip{padding:7px 12px;border-radius:999px;background:var(--input-bg-soft);border:1px solid var(--border);font-size:.85rem;font-weight:700}
+    .vp-preview-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .vp-anchor{scroll-margin-top:24px}
+    @media(max-width:860px){body{padding:10px}.vp-grid,.vp-row,.vp-profile-stats{grid-template-columns:1fr}.vp-product{grid-template-columns:56px 1fr}.vp-product .vp-actions{grid-column:1/-1}.vp-thumb{width:56px;height:56px}.vp-cover{min-height:150px}.vp-avatar{width:74px;height:74px;border-radius:20px}}
   </style>
 </head>
 <body>
   <main class="vp-shell">
     <section class="vp-hero">
       <h1>Venta pública</h1>
-      <p class="vp-muted">Crea páginas bajo el dominio/slug de la empresa, publica productos existentes del sistema y deja listo el botón <strong>Pagar</strong> con las credenciales Wompi o Epayco propias de la empresa.</p>
+      <p class="vp-muted">Crea páginas públicas por empresa, publica productos existentes del sistema y presenta tu negocio con un perfil comercial fuerte, listo para compartir con clientes.</p>
       <div class="vp-actions">
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
-        <button id="openPublicBtn" class="btn" type="button">Visitar página de venta pública</button>
-        <button id="previewPublicBtn" class="btn secondary" type="button">Ver la página como cliente público</button>
+        <button id="openPublicBtn" class="btn" type="button">Abrir perfil público</button>
+        <button id="previewPublicBtn" class="btn secondary" type="button">Ver página como cliente</button>
+        <button id="viewPagesBtn" class="btn secondary" type="button">Ver mis páginas</button>
       </div>
       <div id="msg" class="form-help"></div>
     </section>
 
     <section class="vp-grid">
       <div class="vp-card">
-        <h2>1. Página pública</h2>
+        <h2>1. Perfil comercial público</h2>
         <div class="vp-row">
           <div>
             <label class="form-label" for="storeName">Nombre de la tienda</label>
             <input id="storeName" class="form-input" placeholder="Mi empresa">
           </div>
           <div>
-            <label class="form-label" for="storeSlug">Slug/dominio de tienda</label>
+            <label class="form-label" for="storeSlug">Slug o subdominio</label>
             <input id="storeSlug" class="form-input" placeholder="mi-empresa">
           </div>
           <div>
@@ -57,6 +74,26 @@
           <div>
             <label class="form-label" for="storeCurrency">Moneda</label>
             <input id="storeCurrency" class="form-input" value="COP">
+          </div>
+          <div>
+            <label class="form-label" for="storeLogo">Logo URL</label>
+            <input id="storeLogo" class="form-input" placeholder="https://.../logo.jpg">
+          </div>
+          <div>
+            <label class="form-label" for="storeBanner">Portada URL</label>
+            <input id="storeBanner" class="form-input" placeholder="https://.../banner.jpg">
+          </div>
+          <div>
+            <label class="form-label" for="storeColor">Color principal</label>
+            <input id="storeColor" class="form-input" type="color" value="#0f4c81">
+          </div>
+          <div>
+            <label class="form-label" for="storeTheme">Tema visual</label>
+            <select id="storeTheme" class="form-input">
+              <option value="default">Corporativo</option>
+              <option value="premium">Premium</option>
+              <option value="hospitality">Hospitalidad</option>
+            </select>
           </div>
         </div>
         <label class="form-label" for="storeDesc">Descripción de la tienda</label>
@@ -80,29 +117,61 @@
           </div>
         </div>
         <div class="vp-actions" style="margin-top:12px">
-          <button id="saveConfigBtn" class="btn" type="button">Guardar configuración</button>
+          <button id="saveConfigBtn" class="btn" type="button">Guardar perfil público</button>
         </div>
       </div>
 
-      <aside class="vp-card">
+      <aside class="vp-card vp-profile">
+        <div id="profilePreview" class="vp-cover"></div>
+        <div class="vp-profile-body">
+          <div>
+            <h2 style="margin-bottom:6px">Vista previa del perfil</h2>
+            <p class="vp-muted">Así verán tu empresa cuando entren a la venta pública.</p>
+          </div>
+          <div class="vp-profile-stats">
+            <div class="vp-stat"><span class="vp-muted">Páginas activas</span><strong id="statPages">0</strong></div>
+            <div class="vp-stat"><span class="vp-muted">Productos publicados</span><strong id="statProducts">0</strong></div>
+            <div class="vp-stat"><span class="vp-muted">Moneda</span><strong id="statCurrency">COP</strong></div>
+          </div>
+          <div>
+            <div class="vp-muted" style="margin-bottom:8px">Páginas destacadas</div>
+            <div id="profilePages" class="vp-chip-list"></div>
+          </div>
+          <div class="vp-preview-actions">
+            <button id="openProfilePreviewBtn" class="btn" type="button">Abrir perfil</button>
+            <button id="openSelectedPageBtn" class="btn secondary" type="button">Abrir página seleccionada</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="vp-grid vp-anchor" id="pagesSection">
+      <div class="vp-card">
         <h2>2. Páginas creadas</h2>
+        <p class="vp-muted">Crea campañas, líneas de negocio o vitrinas especiales dentro del perfil público de la empresa.</p>
         <label class="form-label" for="pageName">Nombre de página</label>
         <input id="pageName" class="form-input" placeholder="Ej. Promociones abril">
         <label class="form-label" for="pageSlug">Slug de página</label>
         <input id="pageSlug" class="form-input" placeholder="promociones-abril">
         <label class="form-label" for="pageDesc">Descripción</label>
-        <textarea id="pageDesc" class="form-textarea" rows="3"></textarea>
+        <textarea id="pageDesc" class="form-textarea" rows="3" placeholder="Qué encontrará el cliente en esta página"></textarea>
+        <label class="form-label" for="pageBanner">Portada de página (URL)</label>
+        <input id="pageBanner" class="form-input" placeholder="https://.../portada.jpg">
         <div class="vp-actions">
-          <button id="savePageBtn" class="btn" type="button">Crear/guardar página</button>
-          <button id="clearPageBtn" class="btn secondary" type="button">Nueva</button>
+          <button id="savePageBtn" class="btn" type="button">Guardar página</button>
+          <button id="clearPageBtn" class="btn secondary" type="button">Nueva página</button>
         </div>
+      </div>
+
+      <aside class="vp-card">
+        <h2>3. Lista de páginas</h2>
         <div id="pagesList" class="vp-page-list">Cargando páginas...</div>
       </aside>
     </section>
 
     <section class="vp-grid">
       <div class="vp-card">
-        <h2>3. Productos del sistema</h2>
+        <h2>4. Productos del sistema</h2>
         <p class="vp-muted">Selecciona una página y agrega productos que ya existen en inventario.</p>
         <input id="productSearch" class="form-input" placeholder="Buscar producto por nombre, SKU o código">
         <div class="vp-actions" style="margin-top:10px">
@@ -111,7 +180,7 @@
         <div id="productsList" class="vp-product-list">Cargando productos...</div>
       </div>
       <div class="vp-card">
-        <h2>4. Productos publicados</h2>
+        <h2>5. Productos publicados</h2>
         <p id="selectedPageLabel" class="vp-muted">Selecciona una página para publicar productos.</p>
         <div id="publishedList" class="vp-published-list"></div>
       </div>
@@ -119,12 +188,13 @@
   </main>
 
   <script>
-    const state = { empresaId: 0, config: {}, pages: [], selectedPage: null, products: [], published: [] };
+    const state = { empresaId: 0, config: {}, pages: [], selectedPage: null, editingPageId: 0, products: [], published: [] };
     function n(v){ const x = Number(String(v||'').trim()); return Number.isFinite(x) && x > 0 ? Math.trunc(x) : 0; }
     function txt(v){ return String(v == null ? '' : v).trim(); }
     function esc(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     function setMsg(m,e){ const el=document.getElementById('msg'); el.textContent=m||''; el.style.color=e?'#ef5350':''; }
     function money(v,c){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:c||'COP',maximumFractionDigits:0}).format(Number(v||0)); }
+    function initialLetter(name){ return txt(name).charAt(0).toUpperCase() || 'E'; }
     function resolveEmpresaId(){ try{ const p=new URLSearchParams(location.search); const id=n(p.get('empresa_id')||p.get('id')); if(id) return id; }catch(_){} try{ if(parent&&parent.__resolveEmpresaIdContext) return n(parent.__resolveEmpresaIdContext()); }catch(_){} return n(sessionStorage.getItem('empresa_id')||localStorage.getItem('empresa_id')); }
     async function api(path, opts){ const res=await fetch(path, Object.assign({credentials:'same-origin'}, opts||{})); const text=await res.text(); let data={}; try{ data=text?JSON.parse(text):{}; }catch(_){ data={raw:text}; } if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status)); return data; }
     function publicBaseUrl(){
@@ -158,24 +228,182 @@
       const ps=page&&page.slug ? '&pagina_slug='+encodeURIComponent(page.slug) : '';
       return '/venta_publica.html?empresa_slug='+encodeURIComponent(slug)+ps;
     }
-    function fillConfig(cfg){ state.config=cfg||{}; storeName.value=txt(cfg.nombre_tienda); storeSlug.value=txt(cfg.empresa_slug); storeDomain.value=txt(cfg.dominio_publico); storeCurrency.value=txt(cfg.moneda||'COP'); storeDesc.value=txt(cfg.descripcion_tienda); wompiActivo.checked=!!cfg.wompi_activo; wompiMode.value=(txt(cfg.wompi_mode||'sandbox')==='production'||txt(cfg.wompi_mode)==='real')?'production':'sandbox'; wompiPublicKey.value=txt(cfg.wompi_public_key); wompiPrivateRef.value=txt(cfg.wompi_private_key_ref); wompiIntegrityRef.value=txt(cfg.wompi_integrity_key_ref); epaycoActivo.checked=!!cfg.epayco_activo; epaycoMode.value=txt(cfg.epayco_mode||'sandbox')==='production'?'production':'sandbox'; epaycoPublicKey.value=txt(cfg.epayco_public_key); epaycoPrivateRef.value=txt(cfg.epayco_private_key_ref); epaycoCustomerId.value=txt(cfg.epayco_customer_id); }
-    function configPayload(){ return {empresa_id:state.empresaId, nombre_tienda:txt(storeName.value), empresa_slug:txt(storeSlug.value), dominio_publico:txt(storeDomain.value), moneda:txt(storeCurrency.value)||'COP', descripcion_tienda:txt(storeDesc.value), mostrar_stock:true, wompi_activo:wompiActivo.checked, wompi_mode:wompiMode.value, wompi_public_key:txt(wompiPublicKey.value), wompi_private_key_ref:txt(wompiPrivateRef.value), wompi_integrity_key_ref:txt(wompiIntegrityRef.value), epayco_activo:epaycoActivo.checked, epayco_mode:epaycoMode.value, epayco_public_key:txt(epaycoPublicKey.value), epayco_private_key_ref:txt(epaycoPrivateRef.value), epayco_customer_id:txt(epaycoCustomerId.value)}; }
+    function fillConfig(cfg){
+      state.config=cfg||{};
+      storeName.value=txt(cfg.nombre_tienda);
+      storeSlug.value=txt(cfg.empresa_slug);
+      storeDomain.value=txt(cfg.dominio_publico);
+      storeCurrency.value=txt(cfg.moneda||'COP');
+      storeDesc.value=txt(cfg.descripcion_tienda);
+      storeLogo.value=txt(cfg.logo_url);
+      storeBanner.value=txt(cfg.banner_url);
+      storeColor.value=txt(cfg.color_primario||'#0f4c81') || '#0f4c81';
+      storeTheme.value=txt(cfg.tema_visual||'default') || 'default';
+      wompiActivo.checked=!!cfg.wompi_activo;
+      wompiMode.value=(txt(cfg.wompi_mode||'sandbox')==='production'||txt(cfg.wompi_mode)==='real')?'production':'sandbox';
+      wompiPublicKey.value=txt(cfg.wompi_public_key);
+      wompiPrivateRef.value=txt(cfg.wompi_private_key_ref);
+      wompiIntegrityRef.value=txt(cfg.wompi_integrity_key_ref);
+      epaycoActivo.checked=!!cfg.epayco_activo;
+      epaycoMode.value=txt(cfg.epayco_mode||'sandbox')==='production'?'production':'sandbox';
+      epaycoPublicKey.value=txt(cfg.epayco_public_key);
+      epaycoPrivateRef.value=txt(cfg.epayco_private_key_ref);
+      epaycoCustomerId.value=txt(cfg.epayco_customer_id);
+      renderProfilePreview();
+    }
+    function configPayload(){
+      return {
+        empresa_id:state.empresaId,
+        nombre_tienda:txt(storeName.value),
+        empresa_slug:txt(storeSlug.value),
+        dominio_publico:txt(storeDomain.value),
+        moneda:txt(storeCurrency.value)||'COP',
+        descripcion_tienda:txt(storeDesc.value),
+        logo_url:txt(storeLogo.value),
+        banner_url:txt(storeBanner.value),
+        color_primario:txt(storeColor.value)||'#0f4c81',
+        tema_visual:txt(storeTheme.value)||'default',
+        mostrar_stock:true,
+        wompi_activo:wompiActivo.checked,
+        wompi_mode:wompiMode.value,
+        wompi_public_key:txt(wompiPublicKey.value),
+        wompi_private_key_ref:txt(wompiPrivateRef.value),
+        wompi_integrity_key_ref:txt(wompiIntegrityRef.value),
+        epayco_activo:epaycoActivo.checked,
+        epayco_mode:epaycoMode.value,
+        epayco_public_key:txt(epaycoPublicKey.value),
+        epayco_private_key_ref:txt(epaycoPrivateRef.value),
+        epayco_customer_id:txt(epaycoCustomerId.value)
+      };
+    }
+    function renderProfilePreview(){
+      const primary = txt(storeColor.value) || '#0f4c81';
+      const banner = txt(storeBanner.value);
+      const logo = txt(storeLogo.value);
+      const name = txt(storeName.value) || 'Tu empresa';
+      const desc = txt(storeDesc.value) || 'Presenta aquí tu propuesta de valor, tus promociones y tus productos principales.';
+      profilePreview.style.setProperty('--vp-primary', primary);
+      profilePreview.style.background = banner
+        ? 'linear-gradient(0deg, rgba(6,13,21,.44), rgba(6,13,21,.18)), url('+JSON.stringify(banner).slice(1,-1)+') center/cover'
+        : 'linear-gradient(135deg,'+primary+',color-mix(in srgb,'+primary+' 28%,#ffffff 72%))';
+      profilePreview.innerHTML = ''+
+        '<div class="vp-cover-overlay">'+
+          '<div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">'+
+            '<div class="vp-avatar">'+(logo?'<img alt="Logo" src="'+esc(logo)+'">':esc(initialLetter(name)))+'</div>'+
+            '<div><div style="font-size:1.55rem;font-weight:900;line-height:1.05">'+esc(name)+'</div><div style="max-width:560px;opacity:.92;margin-top:6px">'+esc(desc)+'</div></div>'+
+          '</div>'+
+          '<div class="vp-chip">@'+esc(txt(storeSlug.value)||'empresa')+'</div>'+
+        '</div>';
+      statPages.textContent = String(state.pages.length || 0);
+      statProducts.textContent = String(state.published.length || 0);
+      statCurrency.textContent = txt(storeCurrency.value)||'COP';
+      profilePages.innerHTML = state.pages.length
+        ? state.pages.slice(0,8).map(p=>'<span class="vp-chip">'+esc(p.nombre)+'</span>').join('')
+        : '<span class="vp-chip">Sin páginas todavía</span>';
+    }
     async function loadConfig(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config'); fillConfig(data.config||{}); }
-    async function saveConfig(){ setMsg('Guardando configuración...',false); const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(configPayload())}); fillConfig(data.config||configPayload()); setMsg('Configuración guardada.',false); }
-    function renderPages(){ pagesList.innerHTML=''; if(!state.pages.length){ pagesList.innerHTML='<p class="vp-muted">Aún no hay páginas.</p>'; return; } state.pages.forEach(p=>{ const active=state.selectedPage&&state.selectedPage.id===p.id; const div=document.createElement('div'); div.className='vp-page'+(active?' active':''); div.innerHTML='<strong>'+esc(p.nombre)+'</strong><span class="vp-muted">/'+esc(p.slug)+'</span><div class="vp-public-url">'+esc(pageUrl(p))+'</div><div class="vp-actions"><button class="btn secondary" data-sel="'+p.id+'">Seleccionar</button><button class="btn secondary" data-edit="'+p.id+'">Editar</button></div>'; pagesList.appendChild(div); }); pagesList.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>selectPage(n(b.dataset.sel))); pagesList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editPage(n(b.dataset.edit))); }
-    async function loadPages(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas'); state.pages=data.rows||[]; if(!state.selectedPage&&state.pages.length) state.selectedPage=state.pages[0]; renderPages(); await loadPublished(); }
-    function editPage(id){ const p=state.pages.find(x=>x.id===id); if(!p)return; state.selectedPage=p; pageName.value=txt(p.nombre); pageSlug.value=txt(p.slug); pageDesc.value=txt(p.descripcion); renderPages(); loadPublished(); }
-    function selectPage(id){ const p=state.pages.find(x=>x.id===id); if(!p)return; state.selectedPage=p; renderPages(); loadPublished(); }
-    async function savePage(){ if(!txt(pageName.value)){ setMsg('El nombre de la página es obligatorio.',true); return; } const payload={empresa_id:state.empresaId,id:state.selectedPage&&txt(pageName.value)===state.selectedPage.nombre?n(state.selectedPage.id):0,nombre:txt(pageName.value),slug:txt(pageSlug.value),descripcion:txt(pageDesc.value),estado:'activo'}; const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); state.selectedPage=data.page; pageName.value=''; pageSlug.value=''; pageDesc.value=''; await loadPages(); setMsg('Página guardada.',false); }
-    function clearPage(){ state.selectedPage=null; pageName.value=''; pageSlug.value=''; pageDesc.value=''; renderPages(); loadPublished(); }
+    async function saveConfig(){ setMsg('Guardando perfil público...',false); const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(configPayload())}); fillConfig(data.config||configPayload()); setMsg('Perfil público guardado.',false); }
+    function currentEditingPage(){ return state.pages.find(p=>p.id===state.editingPageId) || null; }
+    function renderPages(){
+      pagesList.innerHTML='';
+      if(!state.pages.length){ pagesList.innerHTML='<p class="vp-muted">Aún no hay páginas.</p>'; renderProfilePreview(); return; }
+      state.pages.forEach(p=>{
+        const active=state.selectedPage&&state.selectedPage.id===p.id;
+        const div=document.createElement('div');
+        div.className='vp-page'+(active?' active':'');
+        div.innerHTML=''+
+          '<div class="vp-page-head">'+
+            '<div><strong>'+esc(p.nombre)+'</strong><div class="vp-muted">/'+esc(p.slug)+'</div></div>'+
+            '<span class="vp-page-status">'+esc(txt(p.estado)||'activo')+'</span>'+
+          '</div>'+
+          (txt(p.descripcion)?'<div class="vp-muted">'+esc(p.descripcion)+'</div>':'')+
+          '<div class="vp-public-url">'+esc(pageUrl(p))+'</div>'+
+          '<div class="vp-actions">'+
+            '<button class="btn secondary" data-sel="'+p.id+'">Seleccionar</button>'+
+            '<button class="btn secondary" data-edit="'+p.id+'">Editar</button>'+
+            '<a class="btn" target="_blank" rel="noopener noreferrer" href="'+pageUrl(p)+'">Ver página</a>'+
+          '</div>';
+        pagesList.appendChild(div);
+      });
+      pagesList.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>selectPage(n(b.dataset.sel)));
+      pagesList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editPage(n(b.dataset.edit)));
+      renderProfilePreview();
+    }
+    async function loadPages(){
+      const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas');
+      state.pages=data.rows||[];
+      if(state.selectedPage){
+        state.selectedPage = state.pages.find(p=>p.id===state.selectedPage.id) || state.pages[0] || null;
+      } else if(state.pages.length){
+        state.selectedPage=state.pages[0];
+      }
+      if(state.editingPageId && !currentEditingPage()){
+        state.editingPageId = 0;
+      }
+      renderPages();
+      await loadPublished();
+    }
+    function populatePageForm(p){
+      pageName.value=txt(p&&p.nombre);
+      pageSlug.value=txt(p&&p.slug);
+      pageDesc.value=txt(p&&p.descripcion);
+      pageBanner.value=txt(p&&p.banner_url);
+    }
+    function editPage(id){
+      const p=state.pages.find(x=>x.id===id);
+      if(!p)return;
+      state.selectedPage=p;
+      state.editingPageId=p.id;
+      populatePageForm(p);
+      renderPages();
+      loadPublished();
+      setMsg('Editando página: '+p.nombre,false);
+    }
+    function selectPage(id){
+      const p=state.pages.find(x=>x.id===id);
+      if(!p)return;
+      state.selectedPage=p;
+      renderPages();
+      loadPublished();
+      setMsg('Página seleccionada: '+p.nombre,false);
+    }
+    async function savePage(){
+      if(!txt(pageName.value)){ setMsg('El nombre de la página es obligatorio.',true); return; }
+      const payload={
+        empresa_id:state.empresaId,
+        id:n(state.editingPageId),
+        nombre:txt(pageName.value),
+        slug:txt(pageSlug.value),
+        descripcion:txt(pageDesc.value),
+        banner_url:txt(pageBanner.value),
+        estado:'activo'
+      };
+      const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=paginas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      state.selectedPage=data.page||null;
+      state.editingPageId=n(data.page&&data.page.id);
+      populatePageForm(data.page||{});
+      await loadPages();
+      setMsg(state.editingPageId?'Página guardada correctamente.':'Página creada correctamente.',false);
+    }
+    function clearPage(){ state.editingPageId=0; populatePageForm(null); setMsg('Formulario listo para crear una nueva página.',false); }
     async function loadProducts(){ const q=encodeURIComponent(txt(productSearch.value)); const rows=await api('/api/empresa/productos?empresa_id='+state.empresaId+'&estado=activo&limit=80&q='+q); state.products=Array.isArray(rows)?rows:[]; renderProducts(); }
     function renderProducts(){ productsList.innerHTML=''; if(!state.products.length){ productsList.innerHTML='<p class="vp-muted">No hay productos activos.</p>'; return; } state.products.forEach(p=>{ const div=document.createElement('div'); div.className='vp-product'; div.innerHTML='<div class="vp-thumb" style="'+(p.imagen_url?'background-image:url('+esc(p.imagen_url)+')':'')+'">'+(p.imagen_url?'':'IMG')+'</div><div><strong>'+esc(p.nombre)+'</strong><div class="vp-muted">'+esc(p.sku||p.codigo_barras||'Producto')+'</div><div class="vp-price">'+money(p.precio,state.config.moneda)+'</div></div><div class="vp-actions"><button class="btn" data-add="'+p.id+'">Agregar</button></div>'; productsList.appendChild(div); }); productsList.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>publishProduct(n(b.dataset.add))); }
-    async function publishProduct(productId){ if(!state.selectedPage){ setMsg('Selecciona o crea una página antes de publicar productos.',true); return; } const p=state.products.find(x=>x.id===productId); if(!p)return; const payload={empresa_id:state.empresaId,pagina_id:state.selectedPage.id,producto_id:p.id,codigo_publico:p.codigo_barras||p.sku||'',nombre:p.nombre,descripcion:p.descripcion||'',precio:Number(p.precio||0),moneda:state.config.moneda||'COP',imagen_url:p.imagen_url||'',stock_publicado:Number(p.stock_total||0),destacado:false}; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=crear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); await loadPublished(); setMsg('Producto agregado a la página.',false); }
-    async function loadPublished(){ selectedPageLabel.textContent=state.selectedPage?'Página seleccionada: '+state.selectedPage.nombre:'Selecciona una página para publicar productos.'; if(!state.selectedPage){ publishedList.innerHTML=''; return; } const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=catalogo&pagina_id='+state.selectedPage.id); state.published=data.rows||[]; renderPublished(); }
-    function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
-    async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); }
-    async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
-    reloadBtn.onclick=init; saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true)); savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true)); clearPageBtn.onclick=clearPage; searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true)); openPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); }; previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    async function publishProduct(productId){ if(!state.selectedPage){ setMsg('Selecciona o crea una página antes de publicar productos.',true); return; } const p=state.products.find(x=>x.id===productId); if(!p)return; const payload={empresa_id:state.empresaId,pagina_id:state.selectedPage.id,producto_id:p.id,codigo_publico:p.codigo_barras||p.sku||'',nombre:p.nombre,descripcion:p.descripcion||'',precio:Number(p.precio||0),moneda:state.config.moneda||'COP',imagen_url:p.imagen_url||'',stock_publicado:Number(p.stock_total||0),destacado:false}; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=crear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); await loadPublished(); renderProfilePreview(); setMsg('Producto agregado a la página.',false); }
+    async function loadPublished(){ selectedPageLabel.textContent=state.selectedPage?'Página seleccionada: '+state.selectedPage.nombre:'Selecciona una página para publicar productos.'; if(!state.selectedPage){ state.published=[]; publishedList.innerHTML=''; renderProfilePreview(); return; } const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=catalogo&pagina_id='+state.selectedPage.id); state.published=data.rows||[]; renderPublished(); renderProfilePreview(); }
+    function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" rel="noopener noreferrer" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
+    async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); setMsg('Producto retirado de la página pública.',false); }
+    async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); renderProfilePreview(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
+    reloadBtn.onclick=init;
+    saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true));
+    savePageBtn.onclick=()=>savePage().catch(e=>setMsg(e.message,true));
+    clearPageBtn.onclick=clearPage;
+    searchProductsBtn.onclick=()=>loadProducts().catch(e=>setMsg(e.message,true));
+    viewPagesBtn.onclick=()=>document.getElementById('pagesSection').scrollIntoView({behavior:'smooth',block:'start'});
+    openPublicBtn.onclick=()=>{ window.open(pageUrl(null), '_blank', 'noopener,noreferrer'); };
+    previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    openProfilePreviewBtn.onclick=()=>{ window.open(pageUrl(null), '_blank', 'noopener,noreferrer'); };
+    openSelectedPageBtn.onclick=()=>{ if(!state.selectedPage){ setMsg('Selecciona una página para abrirla.',true); return; } window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    [storeName,storeSlug,storeDesc,storeLogo,storeBanner,storeColor,storeCurrency].forEach(el=>el.addEventListener('input', renderProfilePreview));
     init();
   </script>
 </body>

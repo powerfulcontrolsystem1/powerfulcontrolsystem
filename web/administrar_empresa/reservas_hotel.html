@@ -3,19 +3,156 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Reservas por estacion</title>
+  <title>Reservas por estación</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.reservas-public-shell{
+      background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--bg));
+    }
+    .reservas-hero{
+      position:relative;
+      overflow:hidden;
+      padding:26px;
+      border-radius:28px;
+      border:1px solid color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface) 84%), color-mix(in srgb, var(--surface) 94%, black 6%));
+      box-shadow:0 22px 54px rgba(0,0,0,.18);
+      margin-bottom:16px;
+    }
+    .reservas-hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -80px -80px auto;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:color-mix(in srgb, var(--accent) 20%, transparent);
+      filter:blur(10px);
+      pointer-events:none;
+    }
+    .reservas-hero h1{
+      margin:0 0 8px;
+      font-size:clamp(2rem,4vw,3.1rem);
+      font-weight:900;
+      letter-spacing:-.04em;
+    }
+    .reservas-hero p{
+      margin:0;
+      max-width:760px;
+      color:var(--muted);
+      font-size:1rem;
+      line-height:1.6;
+    }
+    .reservas-page-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:18px;
+    }
+    .reservas-kpi-grid{
+      margin-bottom:14px;
+    }
+    .reservas-kpi-grid .kpi-box{
+      background:linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%), color-mix(in srgb, var(--surface) 94%, black 6%));
+      border-color:color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+      box-shadow:0 10px 24px rgba(0,0,0,.12);
+    }
+    .reservas-panel{
+      border-radius:22px;
+      border:1px solid color-mix(in srgb, var(--border) 74%, var(--accent) 26%);
+      box-shadow:0 14px 34px rgba(0,0,0,.14);
+    }
+    .reservas-panel h2{
+      margin-bottom:10px !important;
+    }
+    .reservas-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .reservas-state-chip{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.04);
+      font-size:.82rem;
+      font-weight:800;
+      text-transform:capitalize;
+    }
+    .reservas-state-chip.is-confirmada,
+    .reservas-state-chip.is-confirmado{
+      border-color:#22c55e;
+      background:rgba(34,197,94,.12);
+    }
+    .reservas-state-chip.is-pendiente,
+    .reservas-state-chip.is-pendiente_pago{
+      border-color:#f59e0b;
+      background:rgba(245,158,11,.12);
+    }
+    .reservas-state-chip.is-cancelada,
+    .reservas-state-chip.is-cancelado,
+    .reservas-state-chip.is-expirada,
+    .reservas-state-chip.is-no_show{
+      border-color:#ef4444;
+      background:rgba(239,68,68,.12);
+    }
+    .reservas-list-shell{
+      margin-top:14px;
+    }
+    .reservas-mini-list{
+      display:grid;
+      gap:10px;
+    }
+    .reservas-mini-card{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+    }
+    .reservas-mini-card strong{
+      display:block;
+      margin-bottom:4px;
+    }
+    .reservas-mini-card span{
+      color:var(--muted);
+      font-size:.92rem;
+      display:block;
+    }
+    @media (max-width: 980px){
+      .reservas-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page form-bg-dark reservas-public-shell">
   <div class="container">
-    <div class="page-header">
-      <h1 id="pageTitle">Modulo de reservas por estacion</h1>
-      <button id="addBtn" class="btn add" type="button">Agregar reserva</button>
-    </div>
+    <section class="reservas-hero">
+      <h1 id="pageTitle">Reservas profesionales por estación</h1>
+      <p>Gestiona reservas por habitación o estación con una vista más clara de disponibilidad, estados, pagos y operación diaria. La experiencia quedó orientada a recepción, supervisión y seguimiento rápido.</p>
+      <div class="reservas-page-actions">
+        <button id="addBtn" class="btn add" type="button">Agregar reserva</button>
+        <button id="disponibilidadHeroBtn" class="btn secondary" type="button">Consultar disponibilidad</button>
+      </div>
+    </section>
 
-    <p class="form-help">Gestiona reservas por estacion/habitacion, disponibilidad por rango y confirmacion de pago.</p>
+    <section class="kpi-grid reservas-kpi-grid">
+      <div class="kpi-box"><span class="kpi-label">Reservas activas</span><strong id="kpiActivas">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Pendientes de pago</span><strong id="kpiPendientesPago">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Confirmadas</span><strong id="kpiConfirmadas">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">No show / exp.</span><strong id="kpiIncidencias">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Ingresos proyectados</span><strong id="kpiMonto">COP 0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Estaciones únicas</span><strong id="kpiEstaciones">0</strong></div>
+    </section>
 
-    <form id="form" class="form">
+    <div class="reservas-grid">
+    <form id="form" class="form reservas-panel">
       <input type="hidden" id="itemId">
       <input type="hidden" id="empresa_id">
 
@@ -97,7 +234,7 @@
       <div id="msg" class="form-help"></div>
     </form>
 
-    <div class="form" >
+    <div class="form reservas-panel" >
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar</label>
@@ -153,15 +290,17 @@
         </div>
       </div>
     </div>
+    </div>
 
-    <div id="disponibilidad" class="form-help" style="margin:12px 0;"></div>
-    <div id="list">Cargando...</div>
+    <div id="disponibilidad" class="form reservas-panel reservas-list-shell" style="margin:12px 0;">Cargando disponibilidad...</div>
+    <div id="list" class="reservas-list-shell">Cargando...</div>
   </div>
 
   <script>
     const state = {
       empresaID: 0,
       items: [],
+      disponibilidad: [],
       q: "",
       estadoReserva: "",
       estadoPago: "",
@@ -249,6 +388,52 @@
       if (!el) return;
       el.textContent = text || "";
       el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function money(value, currency) {
+      const amount = Number(value || 0);
+      const moneda = normalize(currency || "COP").toUpperCase() || "COP";
+      try {
+        return new Intl.NumberFormat("es-CO", {
+          style: "currency",
+          currency: moneda,
+          maximumFractionDigits: 0
+        }).format(amount);
+      } catch (_) {
+        return moneda + " " + amount.toFixed(0);
+      }
+    }
+
+    function stateChip(raw) {
+      const value = normalize(raw).toLowerCase() || "pendiente";
+      return '<span class="reservas-state-chip is-' + esc(value) + '">' + esc(raw || value) + '</span>';
+    }
+
+    function updateKpis() {
+      const rows = Array.isArray(state.items) ? state.items : [];
+      let activas = 0;
+      let pendientesPago = 0;
+      let confirmadas = 0;
+      let incidencias = 0;
+      let monto = 0;
+      const estaciones = new Set();
+      rows.forEach(function(item) {
+        const estado = normalize(item.estado || "activo").toLowerCase();
+        const estadoReserva = normalize(item.estado_reserva).toLowerCase();
+        const estadoPago = normalize(item.estado_pago).toLowerCase();
+        if (estado === "activo") activas += 1;
+        if (estadoPago === "pendiente") pendientesPago += 1;
+        if (estadoReserva === "confirmada" || estadoPago === "confirmado") confirmadas += 1;
+        if (estadoReserva === "expirada" || estadoReserva === "no_show" || estadoReserva === "cancelada") incidencias += 1;
+        monto += Number(item.monto_total || 0);
+        if (Number(item.estacion_id || 0) > 0) estaciones.add(String(item.estacion_id));
+      });
+      document.getElementById("kpiActivas").textContent = String(activas);
+      document.getElementById("kpiPendientesPago").textContent = String(pendientesPago);
+      document.getElementById("kpiConfirmadas").textContent = String(confirmadas);
+      document.getElementById("kpiIncidencias").textContent = String(incidencias);
+      document.getElementById("kpiMonto").textContent = money(monto, rows[0] && rows[0].moneda || "COP");
+      document.getElementById("kpiEstaciones").textContent = String(estaciones.size);
     }
 
     async function ensureOk(resp) {
@@ -351,12 +536,13 @@
       const rows = await resp.json();
       state.items = Array.isArray(rows) ? rows : [];
       renderList();
+      updateKpis();
     }
 
     function renderList() {
       const root = document.getElementById("list");
       if (!Array.isArray(state.items) || state.items.length === 0) {
-        root.innerHTML = '<p class="form-help">No hay reservas para los filtros seleccionados.</p>';
+        root.innerHTML = '<div class="form reservas-panel"><p class="form-help">No hay reservas para los filtros seleccionados.</p></div>';
         return;
       }
 
@@ -371,10 +557,10 @@
           "<td>" + esc(item.cliente_nombre || "-") + "<br><small>" + esc(item.cliente_documento || "") + "</small></td>" +
           "<td>" + esc(item.fecha_entrada || "-") + "</td>" +
           "<td>" + esc(item.fecha_salida || "-") + "</td>" +
-          "<td>" + esc(item.estado_reserva || "-") + "</td>" +
-          "<td>" + esc(item.estado_pago || "-") + "</td>" +
-          "<td>" + esc(item.estado || "activo") + "</td>" +
-          "<td>" + esc(item.monto_total || 0) + " " + esc(item.moneda || "COP") + "</td>" +
+          "<td>" + stateChip(item.estado_reserva || "-") + "</td>" +
+          "<td>" + stateChip(item.estado_pago || "-") + "</td>" +
+          "<td>" + stateChip(item.estado || "activo") + "</td>" +
+          "<td><strong>" + esc(money(item.monto_total || 0, item.moneda || "COP")) + "</strong></td>" +
           "<td>" +
             '<button class="btn secondary" type="button" data-action="edit" data-id="' + id + '">Editar</button> ' +
             '<button class="btn secondary" type="button" data-action="confirmar" data-id="' + id + '">Confirmar pago</button> ' +
@@ -386,7 +572,7 @@
         "</tr>";
       }).join("");
 
-      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+      root.innerHTML = '<div class="form reservas-panel"><div class="table-wrap"><table class="table"><thead><tr>' +
         "<th>Reserva</th>" +
         "<th>Cliente</th>" +
         "<th>Entrada</th>" +
@@ -396,7 +582,7 @@
         "<th>Estado registro</th>" +
         "<th>Monto</th>" +
         "<th>Acciones</th>" +
-      "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+      "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
     }
 
     function fillForm(item) {
@@ -556,25 +742,21 @@
         const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
         await ensureOk(resp);
         const rows = await resp.json();
+        state.disponibilidad = Array.isArray(rows) ? rows : [];
         if (!Array.isArray(rows) || rows.length === 0) {
-          wrap.innerHTML = '<p class="form-help">No hay estaciones para el rango consultado.</p>';
+          wrap.innerHTML = '<h2 style="margin:0 0 8px 0;">Disponibilidad pública</h2><p class="form-help">No hay estaciones para el rango consultado.</p>';
           return;
         }
 
-        const html = rows.map(function (item) {
-          return "<tr>" +
-            "<td>" + esc(item.estacion_id || "-") + "</td>" +
-            "<td>" + esc(item.estacion_codigo || "-") + "</td>" +
-            "<td>" + esc(item.estacion_nombre || "-") + "</td>" +
-            "<td>" + esc(item.estado || "-") + "</td>" +
-            "<td>" + esc(item.reservas_activas || 0) + "</td>" +
-            "<td>" + (item.disponible ? "si" : "no") + "</td>" +
-          "</tr>";
+        const cards = rows.map(function (item) {
+          return '<div class="reservas-mini-card">' +
+            '<strong>' + esc(item.estacion_nombre || ("Estación " + String(item.estacion_id || "-"))) + '</strong>' +
+            '<span>Código: ' + esc(item.estacion_codigo || "-") + ' · Estado: ' + esc(item.estado || "-") + '</span>' +
+            '<span>Reservas activas: ' + esc(item.reservas_activas || 0) + ' · Disponible: ' + (item.disponible ? "Sí" : "No") + '</span>' +
+          '</div>';
         }).join("");
 
-        wrap.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
-          "<th>Estacion ID</th><th>Codigo</th><th>Nombre</th><th>Estado</th><th>Reservas activas</th><th>Disponible</th>" +
-          "</tr></thead><tbody>" + html + "</tbody></table></div>";
+        wrap.innerHTML = '<h2 style="margin:0 0 8px 0;">Disponibilidad pública</h2><p class="form-help">Vista clara de estaciones y habitaciones para el rango consultado.</p><div class="reservas-mini-list">' + cards + '</div>';
       } catch (err) {
         wrap.textContent = err.message || "No se pudo consultar disponibilidad.";
       }
@@ -636,6 +818,13 @@
       document.getElementById("addBtn").addEventListener("click", function () {
         resetForm();
         window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      document.getElementById("disponibilidadHeroBtn").addEventListener("click", function () {
+        loadDisponibilidad().catch(function (err) {
+          setMessage(err.message || "No se pudo consultar la disponibilidad.", true);
+        });
+        const target = document.getElementById("disponibilidad");
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
       });
       document.getElementById("filtrarBtn").addEventListener("click", function () {
         loadItems().catch(function (err) {

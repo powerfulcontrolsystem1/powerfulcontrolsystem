@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -31,6 +32,20 @@ func EmpresaAsistenciaEmpleadosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, cfg)
+				return
+
+			case "dashboard", "resumen", "resumen_operativo":
+				includeInactive := queryBool(r, "include_inactive")
+				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+				estadoAsistencia := strings.TrimSpace(r.URL.Query().Get("estado_asistencia"))
+				q := strings.TrimSpace(r.URL.Query().Get("q"))
+				dashboard, err := buildAsistenciaDashboard(dbEmp, empresaID, includeInactive, desde, hasta, estadoAsistencia, q)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, dashboard)
 				return
 
 			case "periodos_cerrados", "cierres_periodo", "cierre_periodo":
@@ -318,4 +333,138 @@ func EmpresaAsistenciaEmpleadosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+type asistenciaDashboard struct {
+	EmpresaID         int64             `json:"empresa_id"`
+	Desde             string            `json:"desde"`
+	Hasta             string            `json:"hasta"`
+	TotalRegistros    int               `json:"total_registros"`
+	EmpleadosUnicos   int               `json:"empleados_unicos"`
+	Presentes         int               `json:"presentes"`
+	Tardes            int               `json:"tardes"`
+	Ausentes          int               `json:"ausentes"`
+	Permisos          int               `json:"permisos"`
+	Incapacidades     int               `json:"incapacidades"`
+	Vacaciones        int               `json:"vacaciones"`
+	Pendientes        int               `json:"pendientes"`
+	TurnosAbiertos    int               `json:"turnos_abiertos"`
+	MinutosTardeTotal int               `json:"minutos_tarde_total"`
+	HorasTrabajadas   float64           `json:"horas_trabajadas"`
+	PeriodosCerrados  int               `json:"periodos_cerrados"`
+	Estados           map[string]int    `json:"estados"`
+	Alertas           []string          `json:"alertas,omitempty"`
+	TopTardanzas      []asistenciaFicha `json:"top_tardanzas,omitempty"`
+}
+
+type asistenciaFicha struct {
+	EmpleadoNombre    string  `json:"empleado_nombre"`
+	EmpleadoCodigo    string  `json:"empleado_codigo,omitempty"`
+	EmpleadoDocumento string  `json:"empleado_documento,omitempty"`
+	FechaAsistencia   string  `json:"fecha_asistencia,omitempty"`
+	Turno             string  `json:"turno,omitempty"`
+	MinutosTarde      int     `json:"minutos_tarde"`
+	HorasTrabajadas   float64 `json:"horas_trabajadas"`
+	EstadoAsistencia  string  `json:"estado_asistencia,omitempty"`
+}
+
+func buildAsistenciaDashboard(dbEmp *sql.DB, empresaID int64, includeInactive bool, desde, hasta, estadoAsistencia, q string) (*asistenciaDashboard, error) {
+	rows, err := dbpkg.ListEmpresaAsistenciaEmpleados(dbEmp, empresaID, includeInactive, desde, hasta, estadoAsistencia, q, 5000)
+	if err != nil {
+		return nil, err
+	}
+	cierres, err := dbpkg.ListEmpresaAsistenciaPeriodosCerrados(dbEmp, empresaID, false, desde, hasta, 500)
+	if err != nil {
+		return nil, err
+	}
+	out := &asistenciaDashboard{
+		EmpresaID:        empresaID,
+		Desde:            strings.TrimSpace(desde),
+		Hasta:            strings.TrimSpace(hasta),
+		Estados:          make(map[string]int),
+		Alertas:          make([]string, 0),
+		TopTardanzas:     make([]asistenciaFicha, 0),
+		PeriodosCerrados: len(cierres),
+	}
+	unique := make(map[string]struct{})
+	tardanzas := make([]asistenciaFicha, 0)
+	for _, item := range rows {
+		out.TotalRegistros++
+		key := strings.ToLower(strings.TrimSpace(item.EmpleadoDocumento))
+		if key == "" {
+			key = strings.ToLower(strings.TrimSpace(item.EmpleadoCodigo))
+		}
+		if key == "" {
+			key = strings.ToLower(strings.TrimSpace(item.EmpleadoNombre))
+		}
+		if key != "" {
+			unique[key] = struct{}{}
+		}
+		estado := strings.ToLower(strings.TrimSpace(item.EstadoAsistencia))
+		if estado == "" {
+			estado = "pendiente"
+		}
+		out.Estados[estado]++
+		switch estado {
+		case "presente":
+			out.Presentes++
+		case "tarde":
+			out.Tardes++
+		case "ausente":
+			out.Ausentes++
+		case "permiso":
+			out.Permisos++
+		case "incapacidad":
+			out.Incapacidades++
+		case "vacaciones":
+			out.Vacaciones++
+		default:
+			out.Pendientes++
+		}
+		if strings.TrimSpace(item.HoraEntrada) != "" && strings.TrimSpace(item.HoraSalida) == "" && estado != "ausente" && estado != "permiso" && estado != "incapacidad" && estado != "vacaciones" {
+			out.TurnosAbiertos++
+		}
+		out.MinutosTardeTotal += item.MinutosTarde
+		out.HorasTrabajadas += item.HorasTrabajadas
+		if item.MinutosTarde > 0 {
+			tardanzas = append(tardanzas, asistenciaFicha{
+				EmpleadoNombre:    item.EmpleadoNombre,
+				EmpleadoCodigo:    item.EmpleadoCodigo,
+				EmpleadoDocumento: item.EmpleadoDocumento,
+				FechaAsistencia:   item.FechaAsistencia,
+				Turno:             item.Turno,
+				MinutosTarde:      item.MinutosTarde,
+				HorasTrabajadas:   item.HorasTrabajadas,
+				EstadoAsistencia:  item.EstadoAsistencia,
+			})
+		}
+	}
+	out.EmpleadosUnicos = len(unique)
+	sort.Slice(tardanzas, func(i, j int) bool {
+		if tardanzas[i].MinutosTarde == tardanzas[j].MinutosTarde {
+			return tardanzas[i].FechaAsistencia > tardanzas[j].FechaAsistencia
+		}
+		return tardanzas[i].MinutosTarde > tardanzas[j].MinutosTarde
+	})
+	if len(tardanzas) > 5 {
+		tardanzas = tardanzas[:5]
+	}
+	out.TopTardanzas = tardanzas
+
+	if out.TotalRegistros == 0 {
+		out.Alertas = append(out.Alertas, "No hay registros de asistencia para el rango consultado.")
+	}
+	if out.TurnosAbiertos > 0 {
+		out.Alertas = append(out.Alertas, "Hay turnos con entrada marcada pero sin salida registrada.")
+	}
+	if out.Tardes > 0 {
+		out.Alertas = append(out.Alertas, "Existen registros con tardanza que conviene revisar con supervisión.")
+	}
+	if out.Pendientes > 0 {
+		out.Alertas = append(out.Alertas, "Hay asistencias pendientes sin clasificar completamente.")
+	}
+	if out.Ausentes > 0 {
+		out.Alertas = append(out.Alertas, "Se detectaron ausencias en el período actual.")
+	}
+	return out, nil
 }

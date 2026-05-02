@@ -712,7 +712,7 @@ func CreateEmpresaComisionServicioEscala(dbConn *sql.DB, payload EmpresaComision
 		return 0, fmt.Errorf("porcentaje_comision debe ser mayor a cero")
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_comisiones_servicio_escalas (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_comisiones_servicio_escalas (
 		empresa_id,
 		rol_operacion,
 		servicio_filtro,
@@ -738,7 +738,7 @@ func CreateEmpresaComisionServicioEscala(dbConn *sql.DB, payload EmpresaComision
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // UpdateEmpresaComisionServicioEscala actualiza una escala existente.
@@ -922,7 +922,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_comisiones_servicio_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_comisiones_servicio_configuracion (
 		empresa_id,
 		habilitar_comisiones,
 		porcentaje_comision,
@@ -946,7 +946,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaComisionServicioMovimiento registra un movimiento de comision por servicio.
@@ -1056,7 +1056,7 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		payload.LiquidacionNominaID = 0
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_comisiones_servicio_movimientos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_comisiones_servicio_movimientos (
 		empresa_id,
 		carrito_id,
 		carrito_item_id,
@@ -1130,7 +1130,7 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaComisionServicioAjusteManual crea una comision de ajuste en estado pendiente.

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chat usuarios - Chat y tareas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);
+        document.documentElement.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+</head>
+<body class="chat-workspace-shell chat-workspace--users">
+  <main class="container chat-workspace-page chat-usuarios-page">
+    <section class="chat-workspace-hero">
+      <nav class="chat-workspace-subnav" aria-label="Submenu Chat y tareas">
+        <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_chats.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">C</span>
+          <span><strong>Chat</strong><small>Conversaciones y mensajes internos.</small></span>
+        </a>
+        <a class="chat-workspace-tab active" href="/administrar_empresa/chat_tareas_chat_usuarios.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">U</span>
+          <span><strong>Chat usuarios</strong><small>Canal general compartido de la empresa.</small></span>
+        </a>
+        <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_tareas.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">T</span>
+          <span><strong>Tareas</strong><small>Asignaciones, responsables y seguimiento.</small></span>
+        </a>
+        <a class="chat-workspace-tab" href="/administrar_empresa/chat_tareas_agenda.html">
+          <span class="chat-workspace-tab-icon" aria-hidden="true">A</span>
+          <span><strong>Agenda</strong><small>Citas, reuniones y calendario empresarial.</small></span>
+        </a>
+      </nav>
+    </section>
+
+    <section class="chat-usuarios-shell">
+      <div class="chat-usuarios-header">
+        <div>
+          <span id="chatUsuariosLiveBadge" class="chat-usuarios-live-badge">Sincronizacion en vivo</span>
+          <h1 id="chatUsuariosConversationTitle">Chat usuarios</h1>
+          <p id="chatUsuariosConversationDesc" class="form-help">Canal general de comunicacion interna de la empresa.</p>
+        </div>
+        <div class="chat-usuarios-header-actions">
+          <button id="chatUsuariosRefreshBtn" class="btn secondary" type="button">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="chat-usuarios-grid">
+        <aside class="chat-usuarios-sidebar card">
+          <div class="chat-usuarios-sidebar-block">
+            <h2>Participantes</h2>
+            <p class="form-help">Cada mensaje publicado aqui se refleja para todos los usuarios con acceso a esta pagina.</p>
+            <div class="chat-usuarios-counter"><strong id="chatUsuariosParticipantsCount">0</strong><span>participantes visibles</span></div>
+            <ul id="chatUsuariosParticipants" class="chat-usuarios-participant-list">
+              <li class="chat-usuarios-empty-pill">Cargando participantes...</li>
+            </ul>
+          </div>
+          <div class="chat-usuarios-sidebar-block">
+            <h2>Resumen</h2>
+            <div class="chat-usuarios-counter"><strong id="chatUsuariosMessagesCount">0</strong><span>mensajes cargados</span></div>
+            <p id="chatUsuariosStatus" class="form-help">Preparando canal general...</p>
+          </div>
+        </aside>
+
+        <section class="chat-usuarios-main card">
+          <div id="chatUsuariosMessages" class="chat-usuarios-message-list" aria-live="polite">
+            <div class="chat-usuarios-empty-state"><strong>Cargando mensajes...</strong><span>Estamos conectando el canal general de la empresa.</span></div>
+          </div>
+          <form id="chatUsuariosComposer" class="chat-usuarios-composer">
+            <label class="sr-only" for="chatUsuariosInput">Escribe tu mensaje</label>
+            <textarea id="chatUsuariosInput" class="form-input chat-usuarios-textarea" rows="4" maxlength="4000" placeholder="Escribe un mensaje para todo el equipo..."></textarea>
+            <div class="chat-usuarios-composer-actions">
+              <span class="form-help">Este canal se refresca automaticamente cada pocos segundos.</span>
+              <button id="chatUsuariosSendBtn" class="btn" type="submit">Enviar mensaje</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var current = new URLSearchParams(window.location.search || "");
+      document.querySelectorAll(".chat-workspace-tab").forEach(function (link) {
+        var url = new URL(link.getAttribute("href"), window.location.origin);
+        current.forEach(function (value, key) {
+          url.searchParams.set(key, value);
+        });
+        link.href = url.pathname + url.search;
+      });
+    })();
+  </script>
+  <script src="/js/chat_tareas_chat_usuarios.js"></script>
+</body>
+</html>

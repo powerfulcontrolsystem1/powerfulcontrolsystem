@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -145,6 +146,27 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, resumen)
+				return
+
+			case "dashboard", "resumen", "resumen_operativo":
+				periodoDesde := strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				periodoHasta := strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				if periodoDesde == "" || periodoHasta == "" {
+					now := time.Now()
+					periodoDesde = now.Format("2006-01") + "-01"
+					periodoHasta = now.Format("2006-01-02")
+				}
+				empleadoNominaID, err := parseInt64QueryOptional(r, "empleado_nomina_id")
+				if err != nil {
+					http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+					return
+				}
+				dashboard, err := buildEmpresaNominaDashboard(dbEmp, empresaID, periodoDesde, periodoHasta, empleadoNominaID)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, dashboard)
 				return
 
 			case "desprendible", "desprendible_nomina":
@@ -347,12 +369,12 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			case "generar_pagos", "pagar_nomina":
 				var payload struct {
-					EmpresaID         int64  `json:"empresa_id"`
-					PeriodoDesde      string `json:"periodo_desde"`
-					PeriodoHasta      string `json:"periodo_hasta"`
-					EmpleadoNominaID  int64  `json:"empleado_nomina_id"`
-					MetodoPago        string `json:"metodo_pago"`
-					CuentaBancaria    string `json:"cuenta_bancaria"`
+					EmpresaID        int64  `json:"empresa_id"`
+					PeriodoDesde     string `json:"periodo_desde"`
+					PeriodoHasta     string `json:"periodo_hasta"`
+					EmpleadoNominaID int64  `json:"empleado_nomina_id"`
+					MetodoPago       string `json:"metodo_pago"`
+					CuentaBancaria   string `json:"cuenta_bancaria"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -530,4 +552,103 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+type empresaNominaDashboard struct {
+	EmpresaID            int64                                  `json:"empresa_id"`
+	PeriodoDesde         string                                 `json:"periodo_desde"`
+	PeriodoHasta         string                                 `json:"periodo_hasta"`
+	EmpleadosActivos     int                                    `json:"empleados_activos"`
+	EmpleadosInactivos   int                                    `json:"empleados_inactivos"`
+	FestivosActivos      int                                    `json:"festivos_activos"`
+	Liquidaciones        int                                    `json:"liquidaciones"`
+	PagosGenerados       int                                    `json:"pagos_generados"`
+	TotalDevengado       float64                                `json:"total_devengado"`
+	TotalDeducciones     float64                                `json:"total_deducciones"`
+	TotalNeto            float64                                `json:"total_neto"`
+	TotalPagado          float64                                `json:"total_pagado"`
+	CostoEmpresaEstimado float64                                `json:"costo_empresa_estimado"`
+	Provisiones          *dbpkg.EmpresaNominaProvisionesResumen `json:"provisiones,omitempty"`
+	Alertas              []string                               `json:"alertas,omitempty"`
+}
+
+func buildEmpresaNominaDashboard(dbEmp *sql.DB, empresaID int64, periodoDesde, periodoHasta string, empleadoNominaID int64) (*empresaNominaDashboard, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id es obligatorio")
+	}
+	out := &empresaNominaDashboard{
+		EmpresaID:    empresaID,
+		PeriodoDesde: strings.TrimSpace(periodoDesde),
+		PeriodoHasta: strings.TrimSpace(periodoHasta),
+		Alertas:      make([]string, 0),
+	}
+
+	empleados, err := dbpkg.ListEmpresaNominaEmpleados(dbEmp, empresaID, true, "", 5000)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range empleados {
+		if strings.EqualFold(strings.TrimSpace(row.Estado), "activo") {
+			out.EmpleadosActivos++
+		} else {
+			out.EmpleadosInactivos++
+		}
+	}
+
+	festivos, err := dbpkg.ListEmpresaNominaFestivos(dbEmp, empresaID, false, out.PeriodoDesde, out.PeriodoHasta, 5000)
+	if err == nil {
+		out.FestivosActivos = len(festivos)
+	}
+
+	liquidaciones, err := dbpkg.ListEmpresaNominaLiquidaciones(dbEmp, empresaID, dbpkg.EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     out.PeriodoDesde,
+		PeriodoHasta:     out.PeriodoHasta,
+		EmpleadoNominaID: empleadoNominaID,
+		IncludeInactive:  false,
+		Limit:            5000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out.Liquidaciones = len(liquidaciones)
+	for _, item := range liquidaciones {
+		out.TotalDevengado += item.DevengadoTotal
+		out.TotalDeducciones += item.DeduccionTotal
+		out.TotalNeto += item.NetoPagar
+	}
+
+	pagos, err := dbpkg.ListEmpresaNominaPagos(dbEmp, empresaID, dbpkg.EmpresaNominaPagoFilter{
+		PeriodoDesde:     out.PeriodoDesde,
+		PeriodoHasta:     out.PeriodoHasta,
+		EmpleadoNominaID: empleadoNominaID,
+		IncludeInactive:  false,
+		Limit:            5000,
+	})
+	if err == nil {
+		out.PagosGenerados = len(pagos)
+		for _, pago := range pagos {
+			out.TotalPagado += pago.NetoPagado
+		}
+	}
+
+	provisiones, err := dbpkg.GetEmpresaNominaProvisionesResumen(dbEmp, empresaID, out.PeriodoDesde, out.PeriodoHasta, empleadoNominaID)
+	if err == nil && provisiones != nil {
+		out.Provisiones = provisiones
+		out.CostoEmpresaEstimado = provisiones.CostoEmpresaEstimado
+	}
+
+	if out.EmpleadosActivos == 0 {
+		out.Alertas = append(out.Alertas, "No hay empleados activos vinculados a nómina.")
+	}
+	if out.Liquidaciones == 0 {
+		out.Alertas = append(out.Alertas, "Todavía no hay liquidaciones generadas para el rango seleccionado.")
+	}
+	if out.Liquidaciones > 0 && out.PagosGenerados == 0 {
+		out.Alertas = append(out.Alertas, "Hay liquidaciones calculadas sin pagos de nómina registrados.")
+	}
+	if out.PagosGenerados > 0 && out.PagosGenerados < out.Liquidaciones {
+		out.Alertas = append(out.Alertas, "Existen liquidaciones pendientes por pagar o ya pagadas parcialmente.")
+	}
+
+	return out, nil
 }

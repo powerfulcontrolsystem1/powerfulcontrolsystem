@@ -312,6 +312,23 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "chat_usuarios" || action == "canal_general" {
+				actor := resolveChatActor(dbEmp, r, empresaID)
+				item, created, err := dbpkg.EnsureChatUsuariosGeneralConversacion(dbEmp, empresaID, actor.UsuarioCreador)
+				if err != nil {
+					http.Error(w, "No se pudo preparar el canal general", http.StatusInternalServerError)
+					return
+				}
+				ensureChatActorParticipant(dbEmp, empresaID, item.ID, actor)
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":           true,
+					"created":      created,
+					"conversacion": item,
+				})
+				return
+			}
+
 			includeInactive := queryBool(r, "include_inactive")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
 			rows, err := dbpkg.GetChatConversaciones(dbEmp, empresaID, includeInactive, q)
@@ -1439,8 +1456,8 @@ func EmpresaChatTareasPapeleraHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			var payload struct {
 				EmpresaID int64  `json:"empresa_id"`
-				Tipo     string `json:"tipo"`
-				ID       int64  `json:"id"`
+				Tipo      string `json:"tipo"`
+				ID        int64  `json:"id"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)

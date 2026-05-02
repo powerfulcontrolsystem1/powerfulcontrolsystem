@@ -598,7 +598,7 @@ func CreateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) (int64, erro
 			return 0, err
 		}
 
-		res, err := dbConn.Exec(`INSERT INTO codigos_de_descuento (
+		id, err := insertSQLCompat(dbConn, `INSERT INTO codigos_de_descuento (
 			empresa_id,
 			codigo,
 			tipo_descuento,
@@ -642,7 +642,7 @@ func CreateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) (int64, erro
 			strings.TrimSpace(candidate.Observaciones),
 		)
 		if err == nil {
-			return res.LastInsertId()
+			return id, nil
 		}
 
 		if !autoGenerate || !strings.Contains(strings.ToLower(err.Error()), "unique") {

@@ -374,7 +374,7 @@ func UpsertEmpresaVehiculosRegistroConfiguracion(dbConn *sql.DB, payload Empresa
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_vehiculos_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_vehiculos_configuracion (
 		empresa_id,
 		pais_codigo,
 		patente_regex,
@@ -398,7 +398,7 @@ func UpsertEmpresaVehiculosRegistroConfiguracion(dbConn *sql.DB, payload Empresa
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaVehiculoRegistro crea un registro de ingreso de vehiculo.
@@ -443,7 +443,7 @@ func CreateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_vehiculos_registro (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_vehiculos_registro (
 		empresa_id, patente, tipo_vehiculo, marca, modelo, color,
 		propietario_nombre, propietario_documento,
 		conductor_nombre, conductor_documento,
@@ -483,7 +483,7 @@ func CreateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaVehiculosRegistros lista registros de vehiculos por empresa con filtros.

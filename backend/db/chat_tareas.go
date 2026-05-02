@@ -135,6 +135,8 @@ type ChatCita struct {
 	Observaciones         string `json:"observaciones,omitempty"`
 }
 
+const chatUsuariosGeneralMarker = "sistema:chat_usuarios_general"
+
 // EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en la base operativa por empresa.
 func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -668,6 +670,95 @@ func CreateChatConversacion(dbConn *sql.DB, payload ChatConversacion) (int64, er
 	return id, nil
 }
 
+// EnsureChatUsuariosGeneralConversacion garantiza la existencia del canal general
+// empresarial usado por la subpagina chat_usuarios.
+func EnsureChatUsuariosGeneralConversacion(dbConn *sql.DB, empresaID int64, usuarioCreador string) (*ChatConversacion, bool, error) {
+	if dbConn == nil {
+		return nil, false, fmt.Errorf("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return nil, false, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaChatTareasSchema(dbConn); err != nil {
+		return nil, false, err
+	}
+
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		COALESCE(titulo, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(prioridad, 'media'),
+		COALESCE(estado_conversacion, 'abierta'),
+		COALESCE(ultimo_mensaje_en, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM chat_tareas_conversaciones
+	WHERE empresa_id = ?
+	  AND (
+		COALESCE(observaciones, '') = ?
+		OR lower(COALESCE(titulo, '')) = lower('Chat usuarios')
+	  )
+	ORDER BY id ASC
+	LIMIT 1`, empresaID, chatUsuariosGeneralMarker)
+
+	var item ChatConversacion
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Titulo,
+		&item.Descripcion,
+		&item.Prioridad,
+		&item.EstadoConversacion,
+		&item.UltimoMensajeEn,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err == nil {
+		return &item, false, nil
+	} else if err != sql.ErrNoRows {
+		return nil, false, err
+	}
+
+	if strings.TrimSpace(usuarioCreador) == "" {
+		usuarioCreador = "sistema"
+	}
+
+	id, err := CreateChatConversacion(dbConn, ChatConversacion{
+		EmpresaID:          empresaID,
+		Titulo:             "Chat usuarios",
+		Descripcion:        "Canal general de comunicacion interna para la empresa.",
+		Prioridad:          "media",
+		EstadoConversacion: "abierta",
+		UsuarioCreador:     strings.TrimSpace(usuarioCreador),
+		Estado:             "activo",
+		Observaciones:      chatUsuariosGeneralMarker,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	created, err := GetChatConversacionByID(dbConn, empresaID, id)
+	if err != nil {
+		return &ChatConversacion{
+			ID:                 id,
+			EmpresaID:          empresaID,
+			Titulo:             "Chat usuarios",
+			Descripcion:        "Canal general de comunicacion interna para la empresa.",
+			Prioridad:          "media",
+			EstadoConversacion: "abierta",
+			UsuarioCreador:     strings.TrimSpace(usuarioCreador),
+			Estado:             "activo",
+			Observaciones:      chatUsuariosGeneralMarker,
+		}, true, nil
+	}
+	return created, true, nil
+}
+
 // GetChatConversaciones lista conversaciones por empresa.
 func GetChatConversaciones(dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]ChatConversacion, error) {
 	query := `SELECT
@@ -751,6 +842,69 @@ func GetChatConversaciones(dbConn *sql.DB, empresaID int64, includeInactive bool
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// GetChatConversacionByID obtiene una conversacion puntual por empresa.
+func GetChatConversacionByID(dbConn *sql.DB, empresaID, conversacionID int64) (*ChatConversacion, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("db connection is nil")
+	}
+	if empresaID <= 0 || conversacionID <= 0 {
+		return nil, fmt.Errorf("empresa_id y conversacion_id son obligatorios")
+	}
+	row := queryRowSQLCompat(dbConn, `SELECT
+		c.id,
+		c.empresa_id,
+		COALESCE(c.titulo, ''),
+		COALESCE(c.descripcion, ''),
+		COALESCE(c.prioridad, 'media'),
+		COALESCE(c.estado_conversacion, 'abierta'),
+		COALESCE(c.ultimo_mensaje_en, ''),
+		COALESCE((
+			SELECT COUNT(1)
+			FROM chat_tareas_mensajes m
+			WHERE m.empresa_id = c.empresa_id
+			  AND m.conversacion_id = c.id
+			  AND COALESCE(m.estado, 'activo') = 'activo'
+		), 0) AS mensajes_count,
+		COALESCE((
+			SELECT COUNT(1)
+			FROM chat_tareas t
+			WHERE t.empresa_id = c.empresa_id
+			  AND t.conversacion_id = c.id
+			  AND COALESCE(t.estado, 'activo') = 'activo'
+			  AND COALESCE(t.estado_tarea, 'pendiente') NOT IN ('completada', 'cancelada')
+		), 0) AS tareas_pendientes,
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, ''),
+		COALESCE(c.estado, 'activo'),
+		COALESCE(c.observaciones, '')
+	FROM chat_tareas_conversaciones c
+	WHERE c.empresa_id = ?
+	  AND c.id = ?
+	LIMIT 1`, empresaID, conversacionID)
+
+	var item ChatConversacion
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Titulo,
+		&item.Descripcion,
+		&item.Prioridad,
+		&item.EstadoConversacion,
+		&item.UltimoMensajeEn,
+		&item.MensajesCount,
+		&item.TareasPendientes,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
 }
 
 // UpdateChatConversacion actualiza metadata de una conversacion.
@@ -1693,26 +1847,26 @@ func CreateChatCita(dbConn *sql.DB, payload ChatCita) (int64, error) {
 		fecha_creacion,
 		fecha_actualizacion
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
-		payload.EmpresaID,
-		nullableInt64(payload.ConversacionID),
-		strings.TrimSpace(payload.Titulo),
-		strings.TrimSpace(payload.Descripcion),
-		normalizeTipoCita(payload.TipoCita),
-		fechaInicio,
-		fechaFin,
-		strings.TrimSpace(payload.Ubicacion),
-		normalizeReminderMinutes(payload.NotificarMinutosAntes),
-		normalizeAutorTipo(payload.CreadoPorTipo),
-		nullableInt64(payload.CreadoPorRefID),
-		strings.TrimSpace(payload.CreadoPorNombre),
-		strings.ToLower(strings.TrimSpace(payload.CreadoPorEmail)),
-		normalizeEstadoCita(payload.EstadoCita),
-		recordatorioEnviado,
-		recordatorioEnviado,
-		normalizeVisibilidadCita(payload.Visibilidad),
-		strings.TrimSpace(payload.UsuarioCreador),
-		normalizeChatEstado(payload.Estado),
-		strings.TrimSpace(payload.Observaciones),
+			payload.EmpresaID,
+			nullableInt64(payload.ConversacionID),
+			strings.TrimSpace(payload.Titulo),
+			strings.TrimSpace(payload.Descripcion),
+			normalizeTipoCita(payload.TipoCita),
+			fechaInicio,
+			fechaFin,
+			strings.TrimSpace(payload.Ubicacion),
+			normalizeReminderMinutes(payload.NotificarMinutosAntes),
+			normalizeAutorTipo(payload.CreadoPorTipo),
+			nullableInt64(payload.CreadoPorRefID),
+			strings.TrimSpace(payload.CreadoPorNombre),
+			strings.ToLower(strings.TrimSpace(payload.CreadoPorEmail)),
+			normalizeEstadoCita(payload.EstadoCita),
+			recordatorioEnviado,
+			recordatorioEnviado,
+			normalizeVisibilidadCita(payload.Visibilidad),
+			strings.TrimSpace(payload.UsuarioCreador),
+			normalizeChatEstado(payload.Estado),
+			strings.TrimSpace(payload.Observaciones),
 		)
 	}
 

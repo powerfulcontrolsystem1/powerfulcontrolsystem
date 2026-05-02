@@ -494,8 +494,12 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 	}
 
 	fechaExpiracion := strings.TrimSpace(payload.FechaExpiracion)
-	if fechaExpiracion == "" {
-		fechaExpiracion = time.Now().Add(time.Duration(reservaHotelExpiracionDefaultMin) * time.Minute).Format("2006-01-02 15:04:05")
+	if fechaExpiracion != "" {
+		parsedExp, err := parseReservaHotelDateTime(fechaExpiracion)
+		if err != nil {
+			return 0, fmt.Errorf("fecha_expiracion invalida")
+		}
+		fechaExpiracion = parsedExp.Format("2006-01-02 15:04:05")
 	}
 
 	canalOrigen := strings.TrimSpace(payload.CanalOrigen)
@@ -535,7 +539,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', NULL, ?, '', ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', NULL, COALESCE(NULLIF(?, ''), datetime('now','localtime', '+30 minutes')), '', ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		carritoID,
 		payload.EstacionID,
@@ -649,7 +653,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 
 	fechaExpiracion := strings.TrimSpace(firstNonEmpty(payload.FechaExpiracion, current.FechaExpiracion))
 	if fechaExpiracion == "" {
-		fechaExpiracion = time.Now().Add(time.Duration(reservaHotelExpiracionDefaultMin) * time.Minute).Format("2006-01-02 15:04:05")
+		fechaExpiracion = ""
 	} else if parsedExp, err := parseReservaHotelDateTime(fechaExpiracion); err == nil {
 		fechaExpiracion = parsedExp.Format("2006-01-02 15:04:05")
 	} else {
@@ -670,7 +674,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 		fecha_salida = ?,
 		monto_total = ?,
 		moneda = ?,
-		fecha_expiracion = ?,
+		fecha_expiracion = COALESCE(NULLIF(?, ''), datetime('now','localtime', '+30 minutes')),
 		canal_origen = ?,
 		request_id = ?,
 		observaciones = ?,

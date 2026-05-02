@@ -15,6 +15,30 @@
 
     <p class="form-help" style="margin:0 0 12px 0;">Registra entrada, salida, estado y novedad diaria por empleado y empresa.</p>
 
+    <section class="form asistencia-dashboard-shell" style="margin-bottom:14px;">
+      <h2 style="margin:0 0 8px 0;">Resumen operativo de llegadas</h2>
+      <div class="kpi-grid asistencia-kpi-grid">
+        <div class="kpi-box"><span class="kpi-label">Registros</span><strong id="kpiRegistros">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Empleados únicos</span><strong id="kpiEmpleados">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Presentes</span><strong id="kpiPresentes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Tardanzas</span><strong id="kpiTardes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ausencias</span><strong id="kpiAusentes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Turnos abiertos</span><strong id="kpiAbiertos">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Minutos tarde</span><strong id="kpiMinTarde">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Horas trabajadas</span><strong id="kpiHoras">0.00</strong></div>
+      </div>
+      <div class="asistencia-dashboard-grid">
+        <div class="nomina-result-summary">
+          <strong>Alertas operativas</strong>
+          <div id="dashboardAlertas" class="asistencia-alert-list">Sin alertas críticas.</div>
+        </div>
+        <div class="nomina-result-summary">
+          <strong>Top tardanzas</strong>
+          <div id="dashboardTardanzas" class="asistencia-rank-list">Sin tardanzas destacadas.</div>
+        </div>
+      </div>
+    </section>
+
     <section class="form" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Configuración de turnos y tolerancias</h2>
       <div class="form-row">
@@ -148,6 +172,7 @@
         <div class="form-col">
           <label class="form-label">Hora entrada</label>
           <input id="hora_entrada" type="time" step="1" class="form-input">
+          <div id="entradaPreview" class="form-help">Sin hora de entrada calculada todavía.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Hora salida</label>
@@ -236,6 +261,7 @@
       empresaID: 0,
       items: [],
       users: [],
+      dashboard: null,
       q: '',
       desde: '',
       hasta: '',
@@ -327,6 +353,64 @@
       }
     }
 
+    function timeToMinutes(raw) {
+      const value = normalize(raw);
+      if (!value) return null;
+      const parts = value.split(':');
+      if (parts.length < 2) return null;
+      const hh = Number(parts[0]);
+      const mm = Number(parts[1]);
+      if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+      return (hh * 60) + mm;
+    }
+
+    function resolveTurnoInicio(turno) {
+      const cfg = state.config || {};
+      switch (normalize(turno).toLowerCase()) {
+        case 'manana':
+          return normalize(cfg.hora_inicio_turno_manana || '06:00:00');
+        case 'tarde':
+          return normalize(cfg.hora_inicio_turno_tarde || '14:00:00');
+        case 'noche':
+          return normalize(cfg.hora_inicio_turno_noche || '22:00:00');
+        default:
+          return '';
+      }
+    }
+
+    function computeTardanzaPreview() {
+      const turno = normalize(document.getElementById('turno').value).toLowerCase();
+      const entrada = normalize(document.getElementById('hora_entrada').value);
+      const preview = document.getElementById('entradaPreview');
+      if (!preview) return;
+      if (!entrada) {
+        preview.textContent = 'Sin hora de entrada calculada todavía.';
+        return;
+      }
+      const expected = resolveTurnoInicio(turno);
+      const tolerancia = Number(state.config && state.config.tolerancia_entrada_minutos || 0);
+      const entradaMin = timeToMinutes(entrada);
+      const expectedMin = timeToMinutes(expected);
+      if (expectedMin == null || entradaMin == null) {
+        preview.textContent = 'Hora registrada sin comparación automática de turno.';
+        return;
+      }
+      let diff = entradaMin - expectedMin;
+      if (diff < -720) diff += 24 * 60;
+      if (diff > 720) diff -= 24 * 60;
+      const tardanza = diff > tolerancia ? diff - tolerancia : 0;
+      document.getElementById('minutos_tarde').value = String(Math.max(0, tardanza));
+      if (tardanza > 0) {
+        document.getElementById('estado_asistencia').value = 'tarde';
+        preview.textContent = 'Entrada esperada: ' + expected + ' | Tardanza calculada: ' + tardanza + ' min.';
+      } else {
+        if (normalize(document.getElementById('estado_asistencia').value) === 'pendiente') {
+          document.getElementById('estado_asistencia').value = 'presente';
+        }
+        preview.textContent = 'Entrada esperada: ' + expected + ' | Puntual dentro de la tolerancia.';
+      }
+    }
+
     function buildPayloadFromForm() {
       return {
         id: Number(document.getElementById('itemId').value || 0),
@@ -366,6 +450,7 @@
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById('fecha_asistencia').value = yyyy + '-' + mm + '-' + dd;
+      document.getElementById('entradaPreview').textContent = 'Sin hora de entrada calculada todavía.';
       setMessage('', false);
     }
 
@@ -431,6 +516,7 @@
       document.getElementById('cfg_hora_noche').value = normalize(cfg && cfg.hora_inicio_turno_noche || '22:00:00');
       document.getElementById('cfg_permitir_nocturno').checked = !!(cfg && cfg.permitir_turno_nocturno);
       document.getElementById('cfg_permitir_cruzado').checked = !!(cfg && cfg.permitir_turno_cruzado);
+      computeTardanzaPreview();
     }
 
     async function saveAsistenciaConfig() {
@@ -490,6 +576,47 @@
       const rows = await resp.json();
       state.periodosCerrados = Array.isArray(rows) ? rows : [];
       renderPeriodosCerrados();
+    }
+
+    function renderDashboard() {
+      const data = state.dashboard || {};
+      document.getElementById('kpiRegistros').textContent = String(Number(data.total_registros || 0));
+      document.getElementById('kpiEmpleados').textContent = String(Number(data.empleados_unicos || 0));
+      document.getElementById('kpiPresentes').textContent = String(Number(data.presentes || 0));
+      document.getElementById('kpiTardes').textContent = String(Number(data.tardes || 0));
+      document.getElementById('kpiAusentes').textContent = String(Number(data.ausentes || 0));
+      document.getElementById('kpiAbiertos').textContent = String(Number(data.turnos_abiertos || 0));
+      document.getElementById('kpiMinTarde').textContent = String(Number(data.minutos_tarde_total || 0));
+      document.getElementById('kpiHoras').textContent = formatHours(data.horas_trabajadas || 0);
+
+      const alerts = Array.isArray(data.alertas) ? data.alertas : [];
+      document.getElementById('dashboardAlertas').innerHTML = alerts.length
+        ? alerts.map(function(item) { return '<div class="asistencia-alert-item">' + esc(item) + '</div>'; }).join('')
+        : '<div class="form-help">Sin alertas críticas.</div>';
+
+      const tardanzas = Array.isArray(data.top_tardanzas) ? data.top_tardanzas : [];
+      document.getElementById('dashboardTardanzas').innerHTML = tardanzas.length
+        ? tardanzas.map(function(item) {
+            return '<div class="asistencia-rank-item"><strong>' + esc(item.empleado_nombre || '-') + '</strong>' +
+              '<span>' + esc(item.fecha_asistencia || '-') + ' · ' + esc(item.turno || '-') + ' · ' + esc(String(Number(item.minutos_tarde || 0))) + ' min</span></div>';
+          }).join('')
+        : '<div class="form-help">Sin tardanzas destacadas.</div>';
+    }
+
+    async function loadDashboard() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set('action', 'dashboard');
+      params.set('empresa_id', String(state.empresaID));
+      params.set('include_inactive', '1');
+      if (state.q) params.set('q', state.q);
+      if (state.desde) params.set('desde', state.desde);
+      if (state.hasta) params.set('hasta', state.hasta);
+      if (state.estadoAsistencia) params.set('estado_asistencia', state.estadoAsistencia);
+      const resp = await fetch('/api/empresa/asistencia_empleados?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      state.dashboard = await resp.json();
+      renderDashboard();
     }
 
     async function cerrarPeriodoAsistencia() {
@@ -559,6 +686,7 @@
       const rows = await resp.json();
       state.items = Array.isArray(rows) ? rows : [];
       renderList();
+      await loadDashboard();
     }
 
     function formatHours(value) {
@@ -576,9 +704,12 @@
       const html = state.items.map(function(item) {
         const id = Number(item.id || 0);
         const estadoRegistro = normalize(item.estado || 'activo').toLowerCase();
+        const estadoAsistencia = normalize(item.estado_asistencia || 'pendiente').toLowerCase();
         const nextAction = estadoRegistro === 'activo' ? 'desactivar' : 'activar';
         const nextLabel = estadoRegistro === 'activo' ? 'Desactivar' : 'Activar';
         const rowData = esc(JSON.stringify(item));
+        const isOpen = normalize(item.hora_entrada) && !normalize(item.hora_salida) && ['ausente','permiso','incapacidad','vacaciones'].indexOf(estadoAsistencia) < 0;
+        const estadoClass = estadoAsistencia === 'tarde' ? 'asistencia-state-late' : (estadoAsistencia === 'ausente' ? 'asistencia-state-absent' : (estadoAsistencia === 'presente' ? 'asistencia-state-ok' : ''));
 
         return '<tr>' +
           '<td>' + esc(item.fecha_asistencia || '-') + '</td>' +
@@ -588,8 +719,8 @@
           '<td>' + esc(item.turno || '-') + '</td>' +
           '<td>' + esc(item.hora_entrada || '-') + '</td>' +
           '<td>' + esc(item.hora_salida || '-') + '</td>' +
-          '<td>' + formatHours(item.horas_trabajadas) + '</td>' +
-          '<td>' + esc(item.estado_asistencia || 'pendiente') + '</td>' +
+          '<td>' + formatHours(item.horas_trabajadas) + '<br><small>' + esc(String(Number(item.minutos_tarde || 0))) + ' min tarde</small></td>' +
+          '<td><span class="asistencia-state-chip ' + estadoClass + '">' + esc(item.estado_asistencia || 'pendiente') + '</span>' + (isOpen ? '<br><small>Turno abierto</small>' : '') + '</td>' +
           '<td>' + esc(estadoRegistro) + '</td>' +
           '<td>' +
             '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
@@ -665,6 +796,7 @@
       document.getElementById('estado_asistencia').value = normalize(item.estado_asistencia) || 'pendiente';
       document.getElementById('novedad').value = normalize(item.novedad);
       document.getElementById('observaciones').value = normalize(item.observaciones);
+      computeTardanzaPreview();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -752,6 +884,8 @@
       document.getElementById('usuario_empresa_id').addEventListener('change', function(ev) {
         applyUserToForm(ev.target.value);
       });
+      document.getElementById('turno').addEventListener('change', computeTardanzaPreview);
+      document.getElementById('hora_entrada').addEventListener('input', computeTardanzaPreview);
       document.getElementById('cancelBtn').addEventListener('click', resetForm);
       document.getElementById('addBtn').addEventListener('click', function() {
         resetForm();
