@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Venta pública</title>
   <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <script src="/menu.js"></script>
   <style>
     body{margin:0;min-height:100vh;color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI",Arial,sans-serif}
@@ -56,6 +57,10 @@
     .page-link{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--surface-soft);text-decoration:none;color:var(--text);font-weight:700}
     .page-link.active{border-color:var(--store-primary,#0f4c81);box-shadow:0 0 0 2px color-mix(in srgb,var(--store-primary,#0f4c81) 24%,transparent)}
     .page-link small{color:var(--muted);font-weight:600}
+    .order-form{display:grid;gap:10px}
+    .order-form input,.order-form textarea,.order-form select{background:var(--input-bg-soft);border:1px solid var(--border);border-radius:14px;padding:11px 12px;color:var(--text)}
+    .order-map{height:250px;border-radius:18px;overflow:hidden;background:var(--input-bg-soft);display:none}
+    .order-map.active{display:block}
     .drawer{position:fixed;top:0;right:0;height:100vh;width:min(420px,92vw);background:var(--surface);border-left:1px solid var(--border);box-shadow:-20px 0 60px rgba(0,0,0,.22);transform:translateX(110%);transition:transform .18s ease;z-index:60;display:flex;flex-direction:column}
     .drawer.open{transform:translateX(0)}
     .drawer-header{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -132,6 +137,32 @@
             <div class="summary-card">
               <h3>Páginas de esta empresa</h3>
               <div id="pageList" class="page-list"></div>
+            </div>
+            <div id="restaurantOrderCard" class="summary-card" hidden>
+              <h3>Pedidos para restaurante</h3>
+              <div id="restaurantOrderHint" class="form-help">Arma tu pedido y compártelo al restaurante desde esta misma página.</div>
+              <form id="restaurantOrderForm" class="order-form" style="margin-top:10px">
+                <input id="orderName" placeholder="Nombre de quien recibe">
+                <input id="orderPhone" placeholder="Teléfono">
+                <input id="orderEmail" placeholder="Correo opcional">
+                <select id="orderChannel">
+                  <option value="domicilio">Domicilio</option>
+                  <option value="recoger">Recoger en tienda</option>
+                </select>
+                <input id="orderAddress" placeholder="Dirección de entrega">
+                <textarea id="orderNotes" rows="3" placeholder="Notas del pedido. Ej: sin picante, portería, apartamento"></textarea>
+                <label><input id="orderShareLocation" type="checkbox" checked> Compartir mi ubicación para ubicar el domicilio</label>
+                <div class="vp-actions">
+                  <button id="useCustomerLocationBtn" class="btn secondary" type="button">Usar mi ubicación</button>
+                  <button class="btn" type="submit">Enviar pedido</button>
+                </div>
+                <div id="restaurantOrderMsg" class="form-help"></div>
+              </form>
+            </div>
+            <div id="trackingCard" class="summary-card" hidden>
+              <h3>Seguimiento del pedido</h3>
+              <div id="trackingSummary" class="form-help">Aún no hay un pedido para seguir.</div>
+              <div id="trackingMap" class="order-map"></div>
             </div>
           </section>
         </aside>
@@ -234,6 +265,7 @@
       </form>
     </div>
   </section>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     window.__pcsPublicChatContext = { scope: 'venta_publica' };
 
@@ -244,7 +276,11 @@
       data:null,
       paging:{limit: 18, offset: 0, done:false, loading:false},
       q: params.get('q') || '',
-      sort: params.get('sort') || 'relevancia'
+      sort: params.get('sort') || 'relevancia',
+      trackingToken: params.get('tracking_token') || '',
+      customerLocation: null,
+      map: null,
+      mapLayer: null
     };
     const cartCountEl = document.getElementById('cartCount');
     function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -311,8 +347,100 @@
         : 'linear-gradient(135deg,'+primary+',color-mix(in srgb,'+primary+' 20%,#fff 80%))';
       avatar.innerHTML = logo ? '<img alt="Logo" src="'+esc(logo)+'">' : esc(initials(titleText));
       profileSummaryText.textContent = descText;
+      restaurantOrderCard.hidden = !tienda.pedidos_restaurante_activo;
+      if(!restaurantOrderCard.hidden){
+        restaurantOrderHint.textContent=(tienda.pedidos_nombre_sistema||'Pedidos restaurante')+'. Envía tu pedido, espera la preparación y sigue al domiciliario si la empresa tiene tracking activo.';
+        orderChannel.querySelector('option[value="recoger"]').hidden = tienda.pedidos_permitir_recoger_en_tienda === false;
+        orderChannel.querySelector('option[value="domicilio"]').hidden = tienda.pedidos_permitir_domicilio === false;
+        if (tienda.pedidos_permitir_domicilio === false) orderChannel.value='recoger';
+      }
       pageList.innerHTML = '<a class="page-link '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'"><span>Perfil general</span><small>Ver todo</small></a>' +
         pages.map(p=>'<a class="page-link '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'"><span>'+esc(p.nombre)+'</span><small>/'+esc(p.slug)+'</small></a>').join('');
+    }
+
+    function ensureTrackingMap(){
+      if(state.map || typeof L==='undefined') return;
+      state.map = L.map('trackingMap').setView([4.711,-74.0721], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(state.map);
+      state.mapLayer = L.layerGroup().addTo(state.map);
+    }
+
+    function renderTracking(data){
+      const order=data&&data.order?data.order:null;
+      const tracking=data&&data.tracking?data.tracking:null;
+      trackingCard.hidden=!order;
+      if(!order){
+        trackingSummary.textContent='Aún no hay un pedido para seguir.';
+        trackingMap.classList.remove('active');
+        return;
+      }
+      const req=tracking&&tracking.request?tracking.request:null;
+      trackingSummary.textContent='Pedido '+(order.codigo_orden||'')+' · Estado: '+(order.estado_pedido||'recibido')+(req&&req.conductor_nombre?' · Mensajero: '+req.conductor_nombre:'');
+      if(req && tracking && Array.isArray(tracking.route) && tracking.route.length){
+        ensureTrackingMap();
+        trackingMap.classList.add('active');
+        state.mapLayer.clearLayers();
+        const points=tracking.route.map(p=>[Number(p.latitud||0),Number(p.longitud||0)]).filter(p=>p[0]&&p[1]);
+        if(order.entrega_latitud && order.entrega_longitud){
+          L.marker([Number(order.entrega_latitud),Number(order.entrega_longitud)]).addTo(state.mapLayer).bindPopup('Entrega');
+        }
+        if(points.length){
+          L.polyline(points,{color:'#1f7ae0',weight:4}).addTo(state.mapLayer);
+          L.marker(points[points.length-1]).addTo(state.mapLayer).bindPopup('Domiciliario');
+          state.map.fitBounds(points,{padding:[24,24]});
+        }
+      } else {
+        trackingMap.classList.remove('active');
+      }
+    }
+
+    async function loadTracking(){
+      if(!state.trackingToken) return;
+      const qs='action=estado_pedido&empresa_slug='+encodeURIComponent(state.data&&state.data.empresa_slug?state.data.empresa_slug:state.slug)+'&tracking_token='+encodeURIComponent(state.trackingToken);
+      const res=await fetch('/api/public/venta_publica?'+qs,{credentials:'same-origin'});
+      const text=await res.text();
+      if(!res.ok) return;
+      const data=text?JSON.parse(text):{};
+      renderTracking(data);
+    }
+
+    async function sendCustomerLocation(){
+      if(!navigator.geolocation) throw new Error('Tu navegador no soporta ubicación');
+      const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,e=>reject(new Error(e.message||'No se pudo obtener GPS')),{enableHighAccuracy:true,maximumAge:5000,timeout:12000}));
+      state.customerLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      restaurantOrderMsg.textContent='Ubicación capturada para el domicilio.';
+    }
+
+    async function createRestaurantOrder(ev){
+      ev.preventDefault();
+      const cart=getCart();
+      if(!cart.length){ restaurantOrderMsg.textContent='Agrega productos al carrito antes de enviar el pedido.'; return; }
+      const payload={
+        empresa_slug:state.data&&state.data.empresa_slug?state.data.empresa_slug:state.slug,
+        comprador_nombre:orderName.value.trim(),
+        comprador_telefono:orderPhone.value.trim(),
+        comprador_email:orderEmail.value.trim(),
+        canal_entrega:orderChannel.value,
+        direccion_entrega:orderAddress.value.trim(),
+        notas_entrega:orderNotes.value.trim(),
+        cliente_comparte_ubicacion:!!orderShareLocation.checked,
+        entrega_latitud:state.customerLocation?Number(state.customerLocation.lat||0):0,
+        entrega_longitud:state.customerLocation?Number(state.customerLocation.lng||0):0,
+        items:cart.map(it=>({item_id:Number(it.id||0),cantidad:Number(it.qty||0)}))
+      };
+      const res=await fetch('/api/public/venta_publica?action=crear_pedido',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const text=await res.text();
+      const data=text?JSON.parse(text):{};
+      if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status));
+      saveCart([]); updateCartBadge(); renderCart();
+      state.trackingToken=data.tracking_token||'';
+      if(state.trackingToken){
+        const u=new URL(location.href);
+        u.searchParams.set('tracking_token', state.trackingToken);
+        history.replaceState({},'',u.toString());
+      }
+      restaurantOrderMsg.textContent='Pedido enviado al restaurante.';
+      await loadTracking();
     }
 
     async function loadCatalog(reset){
@@ -409,7 +537,7 @@
       sort.value = state.sort || 'relevancia';
       updateCartBadge();
       if(!("IntersectionObserver" in window)){
-        loadCatalog(true);
+        loadCatalog(true).then(()=>loadTracking()).catch(()=>{});
         return;
       }
       const io=new IntersectionObserver(function(entries){
@@ -418,7 +546,7 @@
         });
       }, {rootMargin:"900px 0px"});
       io.observe(feedSentinel);
-      loadCatalog(true);
+      loadCatalog(true).then(()=>loadTracking()).catch(()=>{});
     })();
 
     document.addEventListener('click', async function(ev){
@@ -466,6 +594,9 @@
     searchBtn.onclick=applySearch;
     sort.onchange=applySearch;
     q.addEventListener('keydown', function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); applySearch(); } });
+    restaurantOrderForm.addEventListener('submit', function(ev){ createRestaurantOrder(ev).catch(err=>restaurantOrderMsg.textContent=err.message||String(err)); });
+    useCustomerLocationBtn.onclick=function(){ sendCustomerLocation().catch(err=>restaurantOrderMsg.textContent=err.message||String(err)); };
+    setInterval(function(){ loadTracking().catch(function(){}); }, 12000);
   </script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>

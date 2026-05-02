@@ -217,6 +217,14 @@ type EmpresaVentaPublicaConfig struct {
 	Moneda              string `json:"moneda"`
 	DominioPublico      string `json:"dominio_publico,omitempty"`
 	MostrarStock        bool   `json:"mostrar_stock"`
+	PedidosRestauranteActivo          bool   `json:"pedidos_restaurante_activo"`
+	PedidosRegistroOpcionalCliente    bool   `json:"pedidos_registro_opcional_cliente"`
+	PedidosPermitirRecogerEnTienda    bool   `json:"pedidos_permitir_recoger_en_tienda"`
+	PedidosPermitirDomicilio          bool   `json:"pedidos_permitir_domicilio"`
+	PedidosTrackingDomiciliario       bool   `json:"pedidos_tracking_domiciliario"`
+	PedidosDespachoAutomatico         bool   `json:"pedidos_despacho_automatico"`
+	PedidosNombreSistema              string `json:"pedidos_nombre_sistema,omitempty"`
+	PedidosTiempoPreparacionMinutos   int    `json:"pedidos_tiempo_preparacion_minutos,omitempty"`
 	WompiActivo         bool   `json:"wompi_activo"`
 	WompiMode           string `json:"wompi_mode"`
 	WompiPublicKey      string `json:"wompi_public_key,omitempty"`
@@ -291,6 +299,7 @@ type EmpresaVentaPublicaOrder struct {
 	ID                  int64   `json:"id"`
 	EmpresaID           int64   `json:"empresa_id"`
 	CodigoOrden         string  `json:"codigo_orden"`
+	TipoOrden           string  `json:"tipo_orden,omitempty"`
 	CompradorNombre     string  `json:"comprador_nombre,omitempty"`
 	CompradorEmail      string  `json:"comprador_email,omitempty"`
 	CompradorTelefono   string  `json:"comprador_telefono,omitempty"`
@@ -301,6 +310,15 @@ type EmpresaVentaPublicaOrder struct {
 	Total               float64 `json:"total"`
 	MetodoPago          string  `json:"metodo_pago"`
 	EstadoPago          string  `json:"estado_pago"`
+	EstadoPedido        string  `json:"estado_pedido,omitempty"`
+	CanalEntrega        string  `json:"canal_entrega,omitempty"`
+	DireccionEntrega    string  `json:"direccion_entrega,omitempty"`
+	NotasEntrega        string  `json:"notas_entrega,omitempty"`
+	ClienteComparteUbicacion bool `json:"cliente_comparte_ubicacion"`
+	EntregaLatitud      float64 `json:"entrega_latitud,omitempty"`
+	EntregaLongitud     float64 `json:"entrega_longitud,omitempty"`
+	TaxiRequestID       int64   `json:"taxi_request_id,omitempty"`
+	TrackingToken       string  `json:"tracking_token,omitempty"`
 	ReferenciaExterna   string  `json:"referencia_externa,omitempty"`
 	TransactionID       string  `json:"transaction_id,omitempty"`
 	ItemsJSON           string  `json:"items_json,omitempty"`
@@ -351,6 +369,47 @@ func ventaPublicaNormalizeMoneda(raw string) string {
 		moneda = moneda[:8]
 	}
 	return moneda
+}
+
+func ventaPublicaNormalizeOrderType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "restaurante", "pedido_restaurante", "restaurant":
+		return "pedido_restaurante"
+	default:
+		return "catalogo"
+	}
+}
+
+func ventaPublicaNormalizeDeliveryChannel(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "recoger", "pickup", "retiro":
+		return "recoger"
+	case "domicilio", "delivery":
+		return "domicilio"
+	default:
+		return "domicilio"
+	}
+}
+
+func ventaPublicaNormalizeOrderOperationalState(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "nuevo", "recibido":
+		return "recibido"
+	case "preparando", "cocinando":
+		return "preparando"
+	case "listo", "listo_para_entrega":
+		return "listo_para_entrega"
+	case "entregado_al_mensajero", "despachado":
+		return "entregado_al_mensajero"
+	case "en_camino":
+		return "en_camino"
+	case "entregado", "completado":
+		return "entregado"
+	case "cancelado", "cancelada":
+		return "cancelado"
+	default:
+		return "recibido"
+	}
 }
 
 func ventaPublicaNormalizeTemaVisual(raw string) string {
@@ -555,6 +614,14 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			dominio_publico TEXT,
 			mostrar_stock INTEGER DEFAULT 1,
+			pedidos_restaurante_activo INTEGER DEFAULT 0,
+			pedidos_registro_opcional_cliente INTEGER DEFAULT 1,
+			pedidos_permitir_recoger_en_tienda INTEGER DEFAULT 1,
+			pedidos_permitir_domicilio INTEGER DEFAULT 1,
+			pedidos_tracking_domiciliario INTEGER DEFAULT 1,
+			pedidos_despacho_automatico INTEGER DEFAULT 1,
+			pedidos_nombre_sistema TEXT DEFAULT 'Pedidos restaurante',
+			pedidos_tiempo_preparacion_minutos INTEGER DEFAULT 25,
 			wompi_activo INTEGER DEFAULT 0,
 			wompi_mode TEXT DEFAULT 'sandbox',
 			wompi_public_key TEXT,
@@ -615,6 +682,7 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			comprador_nombre TEXT,
 			comprador_email TEXT,
 			comprador_telefono TEXT,
+			tipo_orden TEXT DEFAULT 'catalogo',
 			moneda TEXT DEFAULT 'COP',
 			subtotal REAL DEFAULT 0,
 			descuento_total REAL DEFAULT 0,
@@ -622,6 +690,15 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			total REAL DEFAULT 0,
 			metodo_pago TEXT DEFAULT 'wompi_nequi',
 			estado_pago TEXT DEFAULT 'pendiente',
+			estado_pedido TEXT DEFAULT 'recibido',
+			canal_entrega TEXT DEFAULT 'domicilio',
+			direccion_entrega TEXT,
+			notas_entrega TEXT,
+			cliente_comparte_ubicacion INTEGER DEFAULT 0,
+			entrega_latitud REAL DEFAULT 0,
+			entrega_longitud REAL DEFAULT 0,
+			taxi_request_id BIGINT DEFAULT 0,
+			tracking_token TEXT,
 			referencia_externa TEXT,
 			transaction_id TEXT,
 			items_json TEXT,
@@ -690,6 +767,30 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "dominio_publico", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_restaurante_activo", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_registro_opcional_cliente", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_permitir_recoger_en_tienda", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_permitir_domicilio", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_tracking_domiciliario", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_despacho_automatico", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_nombre_sistema", "TEXT DEFAULT 'Pedidos restaurante'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_tiempo_preparacion_minutos", "INTEGER DEFAULT 25"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_private_key_ref", "TEXT"); err != nil {
 		return err
 	}
@@ -744,6 +845,36 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "descuento_total", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "tipo_orden", "TEXT DEFAULT 'catalogo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "estado_pedido", "TEXT DEFAULT 'recibido'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "canal_entrega", "TEXT DEFAULT 'domicilio'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "direccion_entrega", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "notas_entrega", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "cliente_comparte_ubicacion", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "entrega_latitud", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "entrega_longitud", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "taxi_request_id", "BIGINT DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "tracking_token", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "impuesto_total", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
@@ -793,6 +924,9 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id)`); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tracking ON empresa_venta_publica_ordenes(empresa_id, tracking_token)`); err != nil {
 		return err
 	}
 	empresaVentaPublicaSchemaReady = true
@@ -1004,6 +1138,12 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 
 	var out EmpresaVentaPublicaConfig
 	var mostrarStock sql.NullInt64
+	var pedidosRestauranteActivo sql.NullInt64
+	var pedidosRegistroOpcional sql.NullInt64
+	var pedidosPermitirRecoger sql.NullInt64
+	var pedidosPermitirDomicilio sql.NullInt64
+	var pedidosTracking sql.NullInt64
+	var pedidosDespacho sql.NullInt64
 	var wompiActivo sql.NullInt64
 	var epaycoActivo sql.NullInt64
 	err := queryRowSQLCompat(dbConn, `SELECT
@@ -1019,6 +1159,14 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(moneda, 'COP'),
 		COALESCE(dominio_publico, ''),
 		COALESCE(mostrar_stock, 1),
+		COALESCE(pedidos_restaurante_activo, 0),
+		COALESCE(pedidos_registro_opcional_cliente, 1),
+		COALESCE(pedidos_permitir_recoger_en_tienda, 1),
+		COALESCE(pedidos_permitir_domicilio, 1),
+		COALESCE(pedidos_tracking_domiciliario, 1),
+		COALESCE(pedidos_despacho_automatico, 1),
+		COALESCE(pedidos_nombre_sistema, 'Pedidos restaurante'),
+		COALESCE(pedidos_tiempo_preparacion_minutos, 25),
 		COALESCE(wompi_activo, 0),
 		COALESCE(wompi_mode, 'sandbox'),
 		COALESCE(wompi_public_key, ''),
@@ -1050,6 +1198,14 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		&out.Moneda,
 		&out.DominioPublico,
 		&mostrarStock,
+		&pedidosRestauranteActivo,
+		&pedidosRegistroOpcional,
+		&pedidosPermitirRecoger,
+		&pedidosPermitirDomicilio,
+		&pedidosTracking,
+		&pedidosDespacho,
+		&out.PedidosNombreSistema,
+		&out.PedidosTiempoPreparacionMinutos,
 		&wompiActivo,
 		&out.WompiMode,
 		&out.WompiPublicKey,
@@ -1083,6 +1239,13 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			TemaVisual:    "default",
 			Moneda:        "COP",
 			MostrarStock:  true,
+			PedidosRegistroOpcionalCliente:  true,
+			PedidosPermitirRecogerEnTienda:  true,
+			PedidosPermitirDomicilio:        true,
+			PedidosTrackingDomiciliario:     true,
+			PedidosDespachoAutomatico:       true,
+			PedidosNombreSistema:            "Pedidos restaurante",
+			PedidosTiempoPreparacionMinutos: 25,
 			WompiActivo:   false,
 			WompiMode:     ventaPublicaWompiModeSandbox,
 			EpaycoActivo:  false,
@@ -1116,6 +1279,18 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	out.MostrarStock = mostrarStock.Valid && mostrarStock.Int64 > 0
 	if !mostrarStock.Valid {
 		out.MostrarStock = true
+	}
+	out.PedidosRestauranteActivo = pedidosRestauranteActivo.Valid && pedidosRestauranteActivo.Int64 > 0
+	out.PedidosRegistroOpcionalCliente = !pedidosRegistroOpcional.Valid || pedidosRegistroOpcional.Int64 > 0
+	out.PedidosPermitirRecogerEnTienda = !pedidosPermitirRecoger.Valid || pedidosPermitirRecoger.Int64 > 0
+	out.PedidosPermitirDomicilio = !pedidosPermitirDomicilio.Valid || pedidosPermitirDomicilio.Int64 > 0
+	out.PedidosTrackingDomiciliario = !pedidosTracking.Valid || pedidosTracking.Int64 > 0
+	out.PedidosDespachoAutomatico = !pedidosDespacho.Valid || pedidosDespacho.Int64 > 0
+	if out.PedidosTiempoPreparacionMinutos <= 0 {
+		out.PedidosTiempoPreparacionMinutos = 25
+	}
+	if strings.TrimSpace(out.PedidosNombreSistema) == "" {
+		out.PedidosNombreSistema = "Pedidos restaurante"
 	}
 	out.WompiActivo = wompiActivo.Valid && wompiActivo.Int64 > 0
 	out.EpaycoActivo = epaycoActivo.Valid && epaycoActivo.Int64 > 0
@@ -1159,6 +1334,12 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 	if strings.TrimSpace(cfg.ColorPrimario) == "" {
 		cfg.ColorPrimario = "#0f4c81"
 	}
+	if strings.TrimSpace(cfg.PedidosNombreSistema) == "" {
+		cfg.PedidosNombreSistema = "Pedidos restaurante"
+	}
+	if cfg.PedidosTiempoPreparacionMinutos <= 0 {
+		cfg.PedidosTiempoPreparacionMinutos = 25
+	}
 
 	var existingID int64
 	err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_venta_publica_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
@@ -1178,6 +1359,14 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 				moneda = ?,
 				dominio_publico = ?,
 				mostrar_stock = ?,
+				pedidos_restaurante_activo = ?,
+				pedidos_registro_opcional_cliente = ?,
+				pedidos_permitir_recoger_en_tienda = ?,
+				pedidos_permitir_domicilio = ?,
+				pedidos_tracking_domiciliario = ?,
+				pedidos_despacho_automatico = ?,
+				pedidos_nombre_sistema = ?,
+				pedidos_tiempo_preparacion_minutos = ?,
 				wompi_activo = ?,
 				wompi_mode = ?,
 				wompi_public_key = ?,
@@ -1204,6 +1393,14 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			cfg.Moneda,
 			strings.TrimSpace(cfg.DominioPublico),
 			ventaPublicaBoolToInt(cfg.MostrarStock),
+			ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),
+			ventaPublicaBoolToInt(cfg.PedidosRegistroOpcionalCliente),
+			ventaPublicaBoolToInt(cfg.PedidosPermitirRecogerEnTienda),
+			ventaPublicaBoolToInt(cfg.PedidosPermitirDomicilio),
+			ventaPublicaBoolToInt(cfg.PedidosTrackingDomiciliario),
+			ventaPublicaBoolToInt(cfg.PedidosDespachoAutomatico),
+			strings.TrimSpace(cfg.PedidosNombreSistema),
+			cfg.PedidosTiempoPreparacionMinutos,
 			ventaPublicaBoolToInt(cfg.WompiActivo),
 			cfg.WompiMode,
 			strings.TrimSpace(cfg.WompiPublicKey),
@@ -1238,6 +1435,14 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		moneda,
 		dominio_publico,
 		mostrar_stock,
+		pedidos_restaurante_activo,
+		pedidos_registro_opcional_cliente,
+		pedidos_permitir_recoger_en_tienda,
+		pedidos_permitir_domicilio,
+		pedidos_tracking_domiciliario,
+		pedidos_despacho_automatico,
+		pedidos_nombre_sistema,
+		pedidos_tiempo_preparacion_minutos,
 		wompi_activo,
 		wompi_mode,
 		wompi_public_key,
@@ -1252,7 +1457,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		cfg.EmpresaSlug,
 		cfg.NombreTienda,
@@ -1264,6 +1469,14 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		cfg.Moneda,
 		strings.TrimSpace(cfg.DominioPublico),
 		ventaPublicaBoolToInt(cfg.MostrarStock),
+		ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),
+		ventaPublicaBoolToInt(cfg.PedidosRegistroOpcionalCliente),
+		ventaPublicaBoolToInt(cfg.PedidosPermitirRecogerEnTienda),
+		ventaPublicaBoolToInt(cfg.PedidosPermitirDomicilio),
+		ventaPublicaBoolToInt(cfg.PedidosTrackingDomiciliario),
+		ventaPublicaBoolToInt(cfg.PedidosDespachoAutomatico),
+		strings.TrimSpace(cfg.PedidosNombreSistema),
+		cfg.PedidosTiempoPreparacionMinutos,
 		ventaPublicaBoolToInt(cfg.WompiActivo),
 		cfg.WompiMode,
 		strings.TrimSpace(cfg.WompiPublicKey),
@@ -1793,6 +2006,9 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 	if strings.TrimSpace(order.EstadoPago) == "" {
 		order.EstadoPago = "pendiente"
 	}
+	order.TipoOrden = ventaPublicaNormalizeOrderType(order.TipoOrden)
+	order.EstadoPedido = ventaPublicaNormalizeOrderOperationalState(order.EstadoPedido)
+	order.CanalEntrega = ventaPublicaNormalizeDeliveryChannel(order.CanalEntrega)
 	if strings.TrimSpace(order.MetodoPago) == "" {
 		order.MetodoPago = "wompi_nequi"
 	}
@@ -1808,6 +2024,7 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		comprador_nombre,
 		comprador_email,
 		comprador_telefono,
+		tipo_orden,
 		moneda,
 		subtotal,
 		descuento_total,
@@ -1815,6 +2032,15 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		total,
 		metodo_pago,
 		estado_pago,
+		estado_pedido,
+		canal_entrega,
+		direccion_entrega,
+		notas_entrega,
+		cliente_comparte_ubicacion,
+		entrega_latitud,
+		entrega_longitud,
+		taxi_request_id,
+		tracking_token,
 		referencia_externa,
 		transaction_id,
 		items_json,
@@ -1823,12 +2049,13 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		order.EmpresaID,
 		order.CodigoOrden,
 		strings.TrimSpace(order.CompradorNombre),
 		strings.TrimSpace(order.CompradorEmail),
 		strings.TrimSpace(order.CompradorTelefono),
+		order.TipoOrden,
 		order.Moneda,
 		order.Subtotal,
 		order.DescuentoTotal,
@@ -1836,6 +2063,15 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		order.Total,
 		strings.TrimSpace(order.MetodoPago),
 		strings.TrimSpace(order.EstadoPago),
+		order.EstadoPedido,
+		order.CanalEntrega,
+		strings.TrimSpace(order.DireccionEntrega),
+		strings.TrimSpace(order.NotasEntrega),
+		ventaPublicaBoolToInt(order.ClienteComparteUbicacion),
+		order.EntregaLatitud,
+		order.EntregaLongitud,
+		order.TaxiRequestID,
+		strings.TrimSpace(order.TrackingToken),
 		strings.TrimSpace(order.ReferenciaExterna),
 		strings.TrimSpace(order.TransactionID),
 		strings.TrimSpace(order.ItemsJSON),
@@ -1915,6 +2151,7 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 	}
 
 	var out EmpresaVentaPublicaOrder
+	var comparteUbicacion int64
 	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
@@ -1922,6 +2159,7 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		COALESCE(comprador_nombre, ''),
 		COALESCE(comprador_email, ''),
 		COALESCE(comprador_telefono, ''),
+		COALESCE(tipo_orden, 'catalogo'),
 		COALESCE(moneda, 'COP'),
 		COALESCE(subtotal, 0),
 		COALESCE(descuento_total, 0),
@@ -1929,6 +2167,15 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		COALESCE(total, 0),
 		COALESCE(metodo_pago, ''),
 		COALESCE(estado_pago, 'pendiente'),
+		COALESCE(estado_pedido, 'recibido'),
+		COALESCE(canal_entrega, 'domicilio'),
+		COALESCE(direccion_entrega, ''),
+		COALESCE(notas_entrega, ''),
+		COALESCE(cliente_comparte_ubicacion, 0),
+		COALESCE(entrega_latitud, 0),
+		COALESCE(entrega_longitud, 0),
+		COALESCE(taxi_request_id, 0),
+		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
 		COALESCE(items_json, ''),
@@ -1948,6 +2195,7 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		&out.CompradorNombre,
 		&out.CompradorEmail,
 		&out.CompradorTelefono,
+		&out.TipoOrden,
 		&out.Moneda,
 		&out.Subtotal,
 		&out.DescuentoTotal,
@@ -1955,6 +2203,15 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		&out.Total,
 		&out.MetodoPago,
 		&out.EstadoPago,
+		&out.EstadoPedido,
+		&out.CanalEntrega,
+		&out.DireccionEntrega,
+		&out.NotasEntrega,
+		&comparteUbicacion,
+		&out.EntregaLatitud,
+		&out.EntregaLongitud,
+		&out.TaxiRequestID,
+		&out.TrackingToken,
 		&out.ReferenciaExterna,
 		&out.TransactionID,
 		&out.ItemsJSON,
@@ -1970,7 +2227,11 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		return EmpresaVentaPublicaOrder{}, err
 	}
 	out.Moneda = ventaPublicaNormalizeMoneda(out.Moneda)
+	out.TipoOrden = ventaPublicaNormalizeOrderType(out.TipoOrden)
 	out.Estado = ventaPublicaNormalizeEstado(out.Estado)
+	out.EstadoPedido = ventaPublicaNormalizeOrderOperationalState(out.EstadoPedido)
+	out.CanalEntrega = ventaPublicaNormalizeDeliveryChannel(out.CanalEntrega)
+	out.ClienteComparteUbicacion = comparteUbicacion > 0
 	if strings.TrimSpace(out.EstadoPago) == "" {
 		out.EstadoPago = "pendiente"
 	}
@@ -1989,6 +2250,7 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 	}
 
 	var out EmpresaVentaPublicaOrder
+	var comparteUbicacion int64
 	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
@@ -1996,6 +2258,7 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		COALESCE(comprador_nombre, ''),
 		COALESCE(comprador_email, ''),
 		COALESCE(comprador_telefono, ''),
+		COALESCE(tipo_orden, 'catalogo'),
 		COALESCE(moneda, 'COP'),
 		COALESCE(subtotal, 0),
 		COALESCE(descuento_total, 0),
@@ -2003,6 +2266,15 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		COALESCE(total, 0),
 		COALESCE(metodo_pago, ''),
 		COALESCE(estado_pago, 'pendiente'),
+		COALESCE(estado_pedido, 'recibido'),
+		COALESCE(canal_entrega, 'domicilio'),
+		COALESCE(direccion_entrega, ''),
+		COALESCE(notas_entrega, ''),
+		COALESCE(cliente_comparte_ubicacion, 0),
+		COALESCE(entrega_latitud, 0),
+		COALESCE(entrega_longitud, 0),
+		COALESCE(taxi_request_id, 0),
+		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
 		COALESCE(items_json, ''),
@@ -2023,6 +2295,7 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		&out.CompradorNombre,
 		&out.CompradorEmail,
 		&out.CompradorTelefono,
+		&out.TipoOrden,
 		&out.Moneda,
 		&out.Subtotal,
 		&out.DescuentoTotal,
@@ -2030,6 +2303,15 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		&out.Total,
 		&out.MetodoPago,
 		&out.EstadoPago,
+		&out.EstadoPedido,
+		&out.CanalEntrega,
+		&out.DireccionEntrega,
+		&out.NotasEntrega,
+		&comparteUbicacion,
+		&out.EntregaLatitud,
+		&out.EntregaLongitud,
+		&out.TaxiRequestID,
+		&out.TrackingToken,
 		&out.ReferenciaExterna,
 		&out.TransactionID,
 		&out.ItemsJSON,
@@ -2045,7 +2327,11 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		return EmpresaVentaPublicaOrder{}, err
 	}
 	out.Moneda = ventaPublicaNormalizeMoneda(out.Moneda)
+	out.TipoOrden = ventaPublicaNormalizeOrderType(out.TipoOrden)
 	out.Estado = ventaPublicaNormalizeEstado(out.Estado)
+	out.EstadoPedido = ventaPublicaNormalizeOrderOperationalState(out.EstadoPedido)
+	out.CanalEntrega = ventaPublicaNormalizeDeliveryChannel(out.CanalEntrega)
+	out.ClienteComparteUbicacion = comparteUbicacion > 0
 	if strings.TrimSpace(out.EstadoPago) == "" {
 		out.EstadoPago = "pendiente"
 	}
@@ -2094,6 +2380,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		COALESCE(comprador_nombre, ''),
 		COALESCE(comprador_email, ''),
 		COALESCE(comprador_telefono, ''),
+		COALESCE(tipo_orden, 'catalogo'),
 		COALESCE(moneda, 'COP'),
 		COALESCE(subtotal, 0),
 		COALESCE(descuento_total, 0),
@@ -2101,6 +2388,15 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		COALESCE(total, 0),
 		COALESCE(metodo_pago, ''),
 		COALESCE(estado_pago, 'pendiente'),
+		COALESCE(estado_pedido, 'recibido'),
+		COALESCE(canal_entrega, 'domicilio'),
+		COALESCE(direccion_entrega, ''),
+		COALESCE(notas_entrega, ''),
+		COALESCE(cliente_comparte_ubicacion, 0),
+		COALESCE(entrega_latitud, 0),
+		COALESCE(entrega_longitud, 0),
+		COALESCE(taxi_request_id, 0),
+		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
 		COALESCE(items_json, ''),
@@ -2123,6 +2419,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 	out := make([]EmpresaVentaPublicaOrder, 0)
 	for rows.Next() {
 		var item EmpresaVentaPublicaOrder
+		var comparteUbicacion int64
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
@@ -2130,6 +2427,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 			&item.CompradorNombre,
 			&item.CompradorEmail,
 			&item.CompradorTelefono,
+			&item.TipoOrden,
 			&item.Moneda,
 			&item.Subtotal,
 			&item.DescuentoTotal,
@@ -2137,6 +2435,15 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 			&item.Total,
 			&item.MetodoPago,
 			&item.EstadoPago,
+			&item.EstadoPedido,
+			&item.CanalEntrega,
+			&item.DireccionEntrega,
+			&item.NotasEntrega,
+			&comparteUbicacion,
+			&item.EntregaLatitud,
+			&item.EntregaLongitud,
+			&item.TaxiRequestID,
+			&item.TrackingToken,
 			&item.ReferenciaExterna,
 			&item.TransactionID,
 			&item.ItemsJSON,
@@ -2151,7 +2458,11 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 			return nil, 0, err
 		}
 		item.Moneda = ventaPublicaNormalizeMoneda(item.Moneda)
+		item.TipoOrden = ventaPublicaNormalizeOrderType(item.TipoOrden)
 		item.Estado = ventaPublicaNormalizeEstado(item.Estado)
+		item.EstadoPedido = ventaPublicaNormalizeOrderOperationalState(item.EstadoPedido)
+		item.CanalEntrega = ventaPublicaNormalizeDeliveryChannel(item.CanalEntrega)
+		item.ClienteComparteUbicacion = comparteUbicacion > 0
 		if strings.TrimSpace(item.EstadoPago) == "" {
 			item.EstadoPago = "pendiente"
 		}
@@ -2161,6 +2472,88 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		return nil, 0, err
 	}
 	return out, total, nil
+}
+
+func GetEmpresaVentaPublicaOrderByTrackingToken(dbConn *sql.DB, empresaID int64, trackingToken string) (EmpresaVentaPublicaOrder, error) {
+	if dbConn == nil {
+		return EmpresaVentaPublicaOrder{}, errors.New("db connection is nil")
+	}
+	trackingToken = strings.TrimSpace(trackingToken)
+	if empresaID <= 0 || trackingToken == "" {
+		return EmpresaVentaPublicaOrder{}, fmt.Errorf("tracking_token invalido")
+	}
+	var orderCode string
+	if err := queryRowSQLCompat(dbConn, `SELECT COALESCE(codigo_orden,'') FROM empresa_venta_publica_ordenes WHERE empresa_id = ? AND tracking_token = ? LIMIT 1`, empresaID, trackingToken).Scan(&orderCode); err != nil {
+		return EmpresaVentaPublicaOrder{}, err
+	}
+	return GetEmpresaVentaPublicaOrderByCodigo(dbConn, empresaID, orderCode)
+}
+
+func UpdateEmpresaVentaPublicaOrderOperationalState(dbConn *sql.DB, empresaID int64, codigoOrden, estadoPedido, observaciones string, taxiRequestID int64) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || strings.TrimSpace(codigoOrden) == "" {
+		return fmt.Errorf("empresa_id o codigo_orden invalido")
+	}
+	estadoPedido = ventaPublicaNormalizeOrderOperationalState(estadoPedido)
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
+		SET estado_pedido = ?,
+			taxi_request_id = CASE WHEN ? > 0 THEN ? ELSE taxi_request_id END,
+			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND codigo_orden = ?`,
+		estadoPedido,
+		taxiRequestID,
+		taxiRequestID,
+		strings.TrimSpace(observaciones),
+		strings.TrimSpace(observaciones),
+		empresaID,
+		strings.TrimSpace(codigoOrden),
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected <= 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func UpdateEmpresaVentaPublicaOrderTracking(dbConn *sql.DB, empresaID int64, codigoOrden string, taxiRequestID int64, trackingToken string) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || strings.TrimSpace(codigoOrden) == "" {
+		return fmt.Errorf("empresa_id o codigo_orden invalido")
+	}
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
+		SET taxi_request_id = CASE WHEN ? > 0 THEN ? ELSE taxi_request_id END,
+			tracking_token = CASE WHEN ? = '' THEN tracking_token ELSE ? END,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND codigo_orden = ?`,
+		taxiRequestID,
+		taxiRequestID,
+		strings.TrimSpace(trackingToken),
+		strings.TrimSpace(trackingToken),
+		empresaID,
+		strings.TrimSpace(codigoOrden),
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected <= 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // ParseEmpresaVentaPublicaOrderItems interpreta payload de items en formato JSON.

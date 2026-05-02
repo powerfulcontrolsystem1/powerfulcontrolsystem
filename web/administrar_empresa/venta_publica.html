@@ -99,6 +99,22 @@
         <label class="form-label" for="storeDesc">Descripción de la tienda</label>
         <textarea id="storeDesc" class="form-textarea" rows="3" placeholder="Describe la oferta pública de esta empresa"></textarea>
 
+        <h3>Pedidos para restaurante</h3>
+        <div class="vp-row">
+          <div>
+            <label><input id="pedidosActivo" type="checkbox"> Activar pedidos desde la web pública</label>
+            <label><input id="pedidosRegistroOpcional" type="checkbox" checked> Permitir registro opcional del cliente</label>
+            <label><input id="pedidosRecojo" type="checkbox" checked> Permitir recoger en tienda</label>
+            <label><input id="pedidosDomicilio" type="checkbox" checked> Permitir domicilio</label>
+          </div>
+          <div>
+            <label><input id="pedidosTracking" type="checkbox" checked> Activar tracking del domiciliario</label>
+            <label><input id="pedidosDespacho" type="checkbox" checked> Despacho automático al mensajero</label>
+            <input id="pedidosNombreSistema" class="form-input" placeholder="Nombre del sistema. Ej: Pedidos Pepita">
+            <input id="pedidosTiempo" class="form-input" type="number" min="5" max="180" placeholder="Tiempo base de preparación (min)">
+          </div>
+        </div>
+
         <h3>Pasarelas de esta empresa</h3>
         <div class="vp-row">
           <div>
@@ -185,6 +201,17 @@
         <div id="publishedList" class="vp-published-list"></div>
       </div>
     </section>
+
+    <section class="vp-grid">
+      <div class="vp-card" style="grid-column:1/-1">
+        <h2>6. Pedidos del restaurante</h2>
+        <p class="vp-muted">Monitorea pedidos web, cambia estados operativos y comparte el seguimiento del domiciliario cuando el restaurante lo tenga activo.</p>
+        <div class="vp-actions">
+          <button id="reloadOrdersBtn" class="btn secondary" type="button">Actualizar pedidos</button>
+        </div>
+        <div id="ordersList" class="vp-published-list"></div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -239,6 +266,14 @@
       storeBanner.value=txt(cfg.banner_url);
       storeColor.value=txt(cfg.color_primario||'#0f4c81') || '#0f4c81';
       storeTheme.value=txt(cfg.tema_visual||'default') || 'default';
+      pedidosActivo.checked=!!cfg.pedidos_restaurante_activo;
+      pedidosRegistroOpcional.checked=cfg.pedidos_registro_opcional_cliente!==false;
+      pedidosRecojo.checked=cfg.pedidos_permitir_recoger_en_tienda!==false;
+      pedidosDomicilio.checked=cfg.pedidos_permitir_domicilio!==false;
+      pedidosTracking.checked=cfg.pedidos_tracking_domiciliario!==false;
+      pedidosDespacho.checked=cfg.pedidos_despacho_automatico!==false;
+      pedidosNombreSistema.value=txt(cfg.pedidos_nombre_sistema||'Pedidos restaurante');
+      pedidosTiempo.value=String(Number(cfg.pedidos_tiempo_preparacion_minutos||25)||25);
       wompiActivo.checked=!!cfg.wompi_activo;
       wompiMode.value=(txt(cfg.wompi_mode||'sandbox')==='production'||txt(cfg.wompi_mode)==='real')?'production':'sandbox';
       wompiPublicKey.value=txt(cfg.wompi_public_key);
@@ -264,6 +299,14 @@
         color_primario:txt(storeColor.value)||'#0f4c81',
         tema_visual:txt(storeTheme.value)||'default',
         mostrar_stock:true,
+        pedidos_restaurante_activo:pedidosActivo.checked,
+        pedidos_registro_opcional_cliente:pedidosRegistroOpcional.checked,
+        pedidos_permitir_recoger_en_tienda:pedidosRecojo.checked,
+        pedidos_permitir_domicilio:pedidosDomicilio.checked,
+        pedidos_tracking_domiciliario:pedidosTracking.checked,
+        pedidos_despacho_automatico:pedidosDespacho.checked,
+        pedidos_nombre_sistema:txt(pedidosNombreSistema.value)||'Pedidos restaurante',
+        pedidos_tiempo_preparacion_minutos:n(pedidosTiempo.value)||25,
         wompi_activo:wompiActivo.checked,
         wompi_mode:wompiMode.value,
         wompi_public_key:txt(wompiPublicKey.value),
@@ -392,6 +435,37 @@
     async function loadPublished(){ selectedPageLabel.textContent=state.selectedPage?'Página seleccionada: '+state.selectedPage.nombre:'Selecciona una página para publicar productos.'; if(!state.selectedPage){ state.published=[]; publishedList.innerHTML=''; renderProfilePreview(); return; } const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=catalogo&pagina_id='+state.selectedPage.id); state.published=data.rows||[]; renderPublished(); renderProfilePreview(); }
     function renderPublished(){ publishedList.innerHTML=''; if(!state.published.length){ publishedList.innerHTML='<p class="vp-muted">Esta página todavía no tiene productos.</p>'; return; } state.published.forEach(it=>{ const div=document.createElement('div'); div.className='vp-published'; div.innerHTML='<strong>'+esc(it.nombre)+'</strong><span class="vp-muted">'+esc(it.codigo_publico||'')+'</span><span class="vp-price">'+money(it.precio,it.moneda)+'</span><div class="vp-actions"><a class="btn secondary" target="_blank" rel="noopener noreferrer" href="'+pageUrl(state.selectedPage)+'">Ver página</a><button class="btn danger" data-del="'+it.id+'">Quitar</button></div>'; publishedList.appendChild(div); }); publishedList.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removePublished(n(b.dataset.del))); }
     async function removePublished(id){ if(!confirm('¿Quitar este producto de la página pública?'))return; await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&id='+id,{method:'DELETE'}); await loadPublished(); setMsg('Producto retirado de la página pública.',false); }
+    async function loadOrders(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=ordenes&limit=80'); renderOrders((data.rows||[]).filter(x=>String(x.tipo_orden||'')==='pedido_restaurante')); }
+    function renderOrders(rows){
+      ordersList.innerHTML='';
+      if(!rows.length){ ordersList.innerHTML='<p class="vp-muted">Todavía no hay pedidos de restaurante.</p>'; return; }
+      rows.forEach(order=>{
+        const trackUrl='/venta_publica.html?empresa_slug='+encodeURIComponent(txt(state.config.empresa_slug))+'&tracking_token='+encodeURIComponent(order.tracking_token||'')+'&modo=pedido';
+        const div=document.createElement('div');
+        div.className='vp-published';
+        div.innerHTML='<strong>'+esc(order.codigo_orden)+'</strong>'+
+          '<span class="vp-muted">'+esc(order.comprador_nombre||'Cliente')+' · '+esc(order.canal_entrega||'domicilio')+'</span>'+
+          '<span class="vp-price">'+money(order.total, order.moneda)+'</span>'+
+          '<span class="vp-muted">Pago: '+esc(order.estado_pago||'pendiente')+' · Pedido: '+esc(order.estado_pedido||'recibido')+'</span>'+
+          (order.direccion_entrega?'<span class="vp-muted">'+esc(order.direccion_entrega)+'</span>':'')+
+          '<div class="vp-actions">'+
+            '<button class="btn secondary" data-state="'+esc(order.codigo_orden)+'|preparando">Preparando</button>'+
+            '<button class="btn secondary" data-state="'+esc(order.codigo_orden)+'|listo_para_entrega">Listo</button>'+
+            '<button class="btn secondary" data-state="'+esc(order.codigo_orden)+'|entregado_al_mensajero">Mensajero</button>'+
+            '<button class="btn secondary" data-state="'+esc(order.codigo_orden)+'|entregado">Entregado</button>'+
+            (order.tracking_token?'<a class="btn" target="_blank" rel="noopener noreferrer" href="'+trackUrl+'">Seguimiento</a>':'')+
+          '</div>';
+        ordersList.appendChild(div);
+      });
+      ordersList.querySelectorAll('[data-state]').forEach(b=>b.onclick=()=>updateOrderState(String(b.dataset.state||'')));
+    }
+    async function updateOrderState(raw){
+      const parts=String(raw||'').split('|');
+      if(parts.length<2)return;
+      await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=pedido_estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo_orden:parts[0],estado_pedido:parts[1]})});
+      await loadOrders();
+      setMsg('Estado del pedido actualizado.',false);
+    }
     async function init(){ state.empresaId=resolveEmpresaId(); if(!state.empresaId){ setMsg('No se encontró empresa_id.',true); return; } try{ await loadConfig(); await loadPages(); await loadProducts(); renderProfilePreview(); setMsg('Venta pública lista.',false); }catch(e){ setMsg(e.message||String(e),true); } }
     reloadBtn.onclick=init;
     saveConfigBtn.onclick=()=>saveConfig().catch(e=>setMsg(e.message,true));
@@ -403,8 +477,9 @@
     previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
     openProfilePreviewBtn.onclick=()=>{ window.open(pageUrl(null), '_blank', 'noopener,noreferrer'); };
     openSelectedPageBtn.onclick=()=>{ if(!state.selectedPage){ setMsg('Selecciona una página para abrirla.',true); return; } window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    reloadOrdersBtn.onclick=()=>loadOrders().catch(e=>setMsg(e.message,true));
     [storeName,storeSlug,storeDesc,storeLogo,storeBanner,storeColor,storeCurrency].forEach(el=>el.addEventListener('input', renderProfilePreview));
-    init();
+    init().then(()=>loadOrders()).catch(()=>{});
   </script>
 </body>
 </html>

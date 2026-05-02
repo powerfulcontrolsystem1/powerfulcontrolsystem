@@ -203,6 +203,14 @@ type empresaVentaPublicaConfigPayload struct {
 	Moneda              string `json:"moneda"`
 	DominioPublico      string `json:"dominio_publico"`
 	MostrarStock        *bool  `json:"mostrar_stock"`
+	PedidosRestauranteActivo        *bool  `json:"pedidos_restaurante_activo"`
+	PedidosRegistroOpcionalCliente  *bool  `json:"pedidos_registro_opcional_cliente"`
+	PedidosPermitirRecogerEnTienda  *bool  `json:"pedidos_permitir_recoger_en_tienda"`
+	PedidosPermitirDomicilio        *bool  `json:"pedidos_permitir_domicilio"`
+	PedidosTrackingDomiciliario     *bool  `json:"pedidos_tracking_domiciliario"`
+	PedidosDespachoAutomatico       *bool  `json:"pedidos_despacho_automatico"`
+	PedidosNombreSistema            string `json:"pedidos_nombre_sistema"`
+	PedidosTiempoPreparacionMinutos int    `json:"pedidos_tiempo_preparacion_minutos"`
 	WompiActivo         *bool  `json:"wompi_activo"`
 	WompiMode           string `json:"wompi_mode"`
 	WompiPublicKey      string `json:"wompi_public_key"`
@@ -266,6 +274,21 @@ type ventaPublicaCrearPagoPayload struct {
 	Items             []ventaPublicaPagoItemPayload `json:"items"`
 }
 
+type ventaPublicaCrearPedidoPayload struct {
+	EmpresaID                    int64                         `json:"empresa_id"`
+	EmpresaSlug                  string                        `json:"empresa_slug"`
+	CompradorNombre              string                        `json:"comprador_nombre"`
+	CompradorTelefono            string                        `json:"comprador_telefono"`
+	CompradorEmail               string                        `json:"comprador_email"`
+	CanalEntrega                 string                        `json:"canal_entrega"`
+	DireccionEntrega             string                        `json:"direccion_entrega"`
+	NotasEntrega                 string                        `json:"notas_entrega"`
+	ClienteComparteUbicacion     bool                          `json:"cliente_comparte_ubicacion"`
+	EntregaLatitud               float64                       `json:"entrega_latitud"`
+	EntregaLongitud              float64                       `json:"entrega_longitud"`
+	Items                        []ventaPublicaPagoItemPayload `json:"items"`
+}
+
 func empresaVentaPublicaNormalizeAction(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "listar", "list", "catalogo", "catalog":
@@ -286,6 +309,8 @@ func empresaVentaPublicaNormalizeAction(raw string) string {
 		return "paginas"
 	case "ordenes", "orders":
 		return "ordenes"
+	case "pedido_estado", "order_state", "estado_pedido":
+		return "pedido_estado"
 	case "subir_imagen", "upload_image", "imagen":
 		return "subir_imagen"
 	default:
@@ -301,6 +326,10 @@ func ventaPublicaNormalizeAction(raw string) string {
 		return "crear_pago"
 	case "estado_pago", "status", "payment_status":
 		return "estado_pago"
+	case "crear_pedido", "pedido", "restaurant_order":
+		return "crear_pedido"
+	case "estado_pedido", "order_status", "tracking":
+		return "estado_pedido"
 	default:
 		return ""
 	}
@@ -576,6 +605,14 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		"moneda":             cfg.Moneda,
 		"dominio_publico":    cfg.DominioPublico,
 		"mostrar_stock":      cfg.MostrarStock,
+		"pedidos_restaurante_activo": cfg.PedidosRestauranteActivo,
+		"pedidos_registro_opcional_cliente": cfg.PedidosRegistroOpcionalCliente,
+		"pedidos_permitir_recoger_en_tienda": cfg.PedidosPermitirRecogerEnTienda,
+		"pedidos_permitir_domicilio": cfg.PedidosPermitirDomicilio,
+		"pedidos_tracking_domiciliario": cfg.PedidosTrackingDomiciliario,
+		"pedidos_despacho_automatico": cfg.PedidosDespachoAutomatico,
+		"pedidos_nombre_sistema": cfg.PedidosNombreSistema,
+		"pedidos_tiempo_preparacion_minutos": cfg.PedidosTiempoPreparacionMinutos,
 		"wompi_activo":       cfg.WompiActivo,
 		"wompi_mode":         cfg.WompiMode,
 		"epayco_activo":      cfg.EpaycoActivo,
@@ -630,6 +667,8 @@ func EmpresaVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleEmpresaVentaPublicaPageUpsert(w, r, dbEmp)
 			case "subir_imagen":
 				handleEmpresaVentaPublicaUploadImage(w, r, dbEmp)
+			case "pedido_estado":
+				handleEmpresaVentaPublicaOrderState(w, r, dbEmp)
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
@@ -1017,6 +1056,30 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	if payload.MostrarStock != nil {
 		mostrarStock = *payload.MostrarStock
 	}
+	pedidosRestauranteActivo := false
+	if payload.PedidosRestauranteActivo != nil {
+		pedidosRestauranteActivo = *payload.PedidosRestauranteActivo
+	}
+	pedidosRegistroOpcional := true
+	if payload.PedidosRegistroOpcionalCliente != nil {
+		pedidosRegistroOpcional = *payload.PedidosRegistroOpcionalCliente
+	}
+	pedidosPermitirRecoger := true
+	if payload.PedidosPermitirRecogerEnTienda != nil {
+		pedidosPermitirRecoger = *payload.PedidosPermitirRecogerEnTienda
+	}
+	pedidosPermitirDomicilio := true
+	if payload.PedidosPermitirDomicilio != nil {
+		pedidosPermitirDomicilio = *payload.PedidosPermitirDomicilio
+	}
+	pedidosTracking := true
+	if payload.PedidosTrackingDomiciliario != nil {
+		pedidosTracking = *payload.PedidosTrackingDomiciliario
+	}
+	pedidosDespacho := true
+	if payload.PedidosDespachoAutomatico != nil {
+		pedidosDespacho = *payload.PedidosDespachoAutomatico
+	}
 	wompiActivo := false
 	if payload.WompiActivo != nil {
 		wompiActivo = *payload.WompiActivo
@@ -1058,6 +1121,14 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		Moneda:              payload.Moneda,
 		DominioPublico:      payload.DominioPublico,
 		MostrarStock:        mostrarStock,
+		PedidosRestauranteActivo:        pedidosRestauranteActivo,
+		PedidosRegistroOpcionalCliente:  pedidosRegistroOpcional,
+		PedidosPermitirRecogerEnTienda:  pedidosPermitirRecoger,
+		PedidosPermitirDomicilio:        pedidosPermitirDomicilio,
+		PedidosTrackingDomiciliario:     pedidosTracking,
+		PedidosDespachoAutomatico:       pedidosDespacho,
+		PedidosNombreSistema:            payload.PedidosNombreSistema,
+		PedidosTiempoPreparacionMinutos: payload.PedidosTiempoPreparacionMinutos,
 		WompiActivo:         wompiActivo,
 		WompiMode:           payload.WompiMode,
 		WompiPublicKey:      payload.WompiPublicKey,
@@ -1124,6 +1195,73 @@ func handleEmpresaVentaPublicaOrders(w http.ResponseWriter, r *http.Request, dbE
 		"total":      total,
 		"rows":       rows,
 	})
+}
+
+func handleEmpresaVentaPublicaOrderState(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var payload struct {
+		CodigoOrden   string `json:"codigo_orden"`
+		EstadoPedido  string `json:"estado_pedido"`
+		Observaciones string `json:"observaciones"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	order, err := dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, empresaID, payload.CodigoOrden)
+	if err != nil {
+		http.Error(w, "orden no encontrada", http.StatusNotFound)
+		return
+	}
+	cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "No se pudo cargar configuracion", http.StatusInternalServerError)
+		return
+	}
+	estadoPedido := payload.EstadoPedido
+	taxiRequestID := order.TaxiRequestID
+	trackingToken := strings.TrimSpace(order.TrackingToken)
+	if order.TipoOrden == "pedido_restaurante" && estadoPedido == "entregado_al_mensajero" && order.CanalEntrega == "domicilio" && cfg.PedidosTrackingDomiciliario && cfg.PedidosDespachoAutomatico {
+		if taxiRequestID <= 0 {
+			if trackingToken == "" {
+				sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%s|%d", empresaID, order.CodigoOrden, time.Now().UnixNano())))
+				trackingToken = hex.EncodeToString(sum[:])[:24]
+			}
+			req, err := dbpkg.CreateTaxiRequest(dbEmp, dbpkg.EmpresaTaxiRequest{
+				EmpresaID:                empresaID,
+				ClienteNombre:            firstNonEmptyString(order.CompradorNombre, "Cliente"),
+				ClienteTelefono:          order.CompradorTelefono,
+				RecogerTexto:             firstNonEmptyString(cfg.NombreTienda, "Restaurante"),
+				RecogerLatitud:           0,
+				RecogerLongitud:          0,
+				DestinoTexto:             firstNonEmptyString(order.DireccionEntrega, "Entrega a domicilio"),
+				DestinoLatitud:           order.EntregaLatitud,
+				DestinoLongitud:          order.EntregaLongitud,
+				ComparteUbicacionCliente: order.ClienteComparteUbicacion,
+				MetodoSolicitud:          "pedido_restaurante",
+				Canal:                    "venta_publica",
+				Notas:                    "Entrega de pedido " + order.CodigoOrden,
+			})
+			if err == nil {
+				taxiRequestID = req.ID
+				_ = dbpkg.UpdateEmpresaVentaPublicaOrderTracking(dbEmp, empresaID, order.CodigoOrden, taxiRequestID, trackingToken)
+			}
+		}
+	}
+	if err := dbpkg.UpdateEmpresaVentaPublicaOrderOperationalState(dbEmp, empresaID, order.CodigoOrden, estadoPedido, payload.Observaciones, taxiRequestID); err != nil {
+		http.Error(w, "No se pudo actualizar el pedido", http.StatusBadRequest)
+		return
+	}
+	updated, err := dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, empresaID, order.CodigoOrden)
+	if err != nil {
+		http.Error(w, "pedido actualizado pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "order": updated})
 }
 
 func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -1211,6 +1349,8 @@ func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleVentaPublicaCatalogoPublico(w, r, dbEmp)
 			case "estado_pago":
 				handleVentaPublicaEstadoPagoPublico(w, r, dbEmp)
+			case "estado_pedido":
+				handleVentaPublicaEstadoPedidoPublico(w, r, dbEmp)
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
@@ -1218,6 +1358,8 @@ func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			switch action {
 			case "crear_pago":
 				handleVentaPublicaCrearPagoPublico(w, r, dbEmp)
+			case "crear_pedido":
+				handleVentaPublicaCrearPedidoPublico(w, r, dbEmp)
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
@@ -1795,6 +1937,182 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 			"script_url": epaycoSmartCheckoutScriptURL,
 		},
 	})
+}
+
+func handleVentaPublicaCrearPedidoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	var payload ventaPublicaCrearPedidoPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	resolvedEmpresaID, err := dbpkg.ResolveVentaPublicaEmpresaIDFromAny(dbEmp, payload.EmpresaID, payload.EmpresaSlug)
+	if err != nil {
+		http.Error(w, "empresa no encontrada", http.StatusNotFound)
+		return
+	}
+	cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, resolvedEmpresaID)
+	if err != nil {
+		http.Error(w, "No se pudo cargar la configuracion", http.StatusInternalServerError)
+		return
+	}
+	if !cfg.PedidosRestauranteActivo {
+		http.Error(w, "Los pedidos de restaurante no estan activos en esta empresa", http.StatusForbidden)
+		return
+	}
+	if len(payload.Items) == 0 {
+		http.Error(w, "items es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(payload.CompradorNombre) == "" || strings.TrimSpace(payload.CompradorTelefono) == "" {
+		http.Error(w, "comprador_nombre y comprador_telefono son obligatorios", http.StatusBadRequest)
+		return
+	}
+	canalEntrega := strings.ToLower(strings.TrimSpace(payload.CanalEntrega))
+	if canalEntrega == "" || canalEntrega == "delivery" {
+		canalEntrega = "domicilio"
+	}
+	if canalEntrega == "retiro" || canalEntrega == "pickup" {
+		canalEntrega = "recoger"
+	}
+	if canalEntrega == "recoger" && !cfg.PedidosPermitirRecogerEnTienda {
+		http.Error(w, "La empresa no tiene activo recoger en tienda", http.StatusBadRequest)
+		return
+	}
+	if canalEntrega != "recoger" && !cfg.PedidosPermitirDomicilio {
+		http.Error(w, "La empresa no tiene activo domicilio", http.StatusBadRequest)
+		return
+	}
+	if canalEntrega != "recoger" && strings.TrimSpace(payload.DireccionEntrega) == "" {
+		http.Error(w, "direccion_entrega es obligatoria para domicilio", http.StatusBadRequest)
+		return
+	}
+
+	rows, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, resolvedEmpresaID, dbpkg.EmpresaVentaPublicaItemsFilter{IncludeInactive: false, Limit: 500})
+	if err != nil {
+		http.Error(w, "No se pudo validar el catalogo", http.StatusInternalServerError)
+		return
+	}
+	itemsMap := make(map[int64]dbpkg.EmpresaVentaPublicaItem, len(rows))
+	for _, row := range rows {
+		itemsMap[row.ID] = row
+	}
+
+	subtotal := 0.0
+	persistedItems := make([]map[string]interface{}, 0, len(payload.Items))
+	for _, reqItem := range payload.Items {
+		if reqItem.ItemID <= 0 || reqItem.Cantidad <= 0 {
+			continue
+		}
+		catalogItem, ok := itemsMap[reqItem.ItemID]
+		if !ok {
+			http.Error(w, fmt.Sprintf("item_id %d no disponible", reqItem.ItemID), http.StatusBadRequest)
+			return
+		}
+		lineSubtotal := catalogItem.Precio * reqItem.Cantidad
+		subtotal += lineSubtotal
+		persistedItems = append(persistedItems, map[string]interface{}{
+			"item_id":        catalogItem.ID,
+			"producto_id":    catalogItem.ProductoID,
+			"codigo_publico": catalogItem.CodigoPublico,
+			"nombre":         catalogItem.Nombre,
+			"precio":         catalogItem.Precio,
+			"cantidad":       reqItem.Cantidad,
+			"subtotal":       lineSubtotal,
+			"moneda":         cfg.Moneda,
+			"imagen_url":     catalogItem.ImagenURL,
+		})
+	}
+	if len(persistedItems) == 0 || subtotal <= 0 {
+		http.Error(w, "No hay productos validos para el pedido", http.StatusBadRequest)
+		return
+	}
+
+	orderCode := fmt.Sprintf("VP-FOOD-%d-%d", resolvedEmpresaID, time.Now().UnixNano())
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%s|%d|%d", orderCode, resolvedEmpresaID, time.Now().UnixNano())))
+	trackingToken := hex.EncodeToString(sum[:])
+	if len(trackingToken) > 24 {
+		trackingToken = trackingToken[:24]
+	}
+	orderID, err := dbpkg.CreateEmpresaVentaPublicaOrder(dbEmp, dbpkg.EmpresaVentaPublicaOrder{
+		EmpresaID:                resolvedEmpresaID,
+		CodigoOrden:              orderCode,
+		TipoOrden:                "pedido_restaurante",
+		CompradorNombre:          strings.TrimSpace(payload.CompradorNombre),
+		CompradorEmail:           strings.TrimSpace(payload.CompradorEmail),
+		CompradorTelefono:        strings.TrimSpace(payload.CompradorTelefono),
+		Moneda:                   cfg.Moneda,
+		Subtotal:                 subtotal,
+		Total:                    subtotal,
+		MetodoPago:               "pedido_restaurante",
+		EstadoPago:               "pendiente",
+		EstadoPedido:             "recibido",
+		CanalEntrega:             canalEntrega,
+		DireccionEntrega:         strings.TrimSpace(payload.DireccionEntrega),
+		NotasEntrega:             strings.TrimSpace(payload.NotasEntrega),
+		ClienteComparteUbicacion: payload.ClienteComparteUbicacion,
+		EntregaLatitud:           payload.EntregaLatitud,
+		EntregaLongitud:          payload.EntregaLongitud,
+		TrackingToken:            trackingToken,
+		ItemsJSON:                dbpkg.EncodeEmpresaVentaPublicaOrderItems(persistedItems),
+		UsuarioCreador:           "publico",
+		Estado:                   "activo",
+		Observaciones:            "pedido_restaurante_web",
+	})
+	if err != nil {
+		http.Error(w, "No se pudo crear el pedido", http.StatusInternalServerError)
+		return
+	}
+	_ = orderID
+	order, err := dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
+	if err != nil {
+		http.Error(w, "Pedido creado, pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"ok":            true,
+		"empresa_id":    resolvedEmpresaID,
+		"empresa_slug":  cfg.EmpresaSlug,
+		"order":         order,
+		"tracking_token": trackingToken,
+	})
+}
+
+func handleVentaPublicaEstadoPedidoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, _ := parseInt64QueryOptional(r, "empresa_id")
+	slug := ventaPublicaSlugFromRequest(r)
+	resolvedEmpresaID, err := dbpkg.ResolveVentaPublicaEmpresaIDFromAny(dbEmp, empresaID, slug)
+	if err != nil {
+		http.Error(w, "empresa no encontrada", http.StatusNotFound)
+		return
+	}
+	orderCode := strings.TrimSpace(r.URL.Query().Get("order_code"))
+	trackingToken := strings.TrimSpace(r.URL.Query().Get("tracking_token"))
+	var order dbpkg.EmpresaVentaPublicaOrder
+	if trackingToken != "" {
+		order, err = dbpkg.GetEmpresaVentaPublicaOrderByTrackingToken(dbEmp, resolvedEmpresaID, trackingToken)
+	} else {
+		order, err = dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
+	}
+	if err != nil {
+		http.Error(w, "pedido no encontrado", http.StatusNotFound)
+		return
+	}
+	resp := map[string]interface{}{
+		"ok":      true,
+		"order":   order,
+		"tracking": map[string]interface{}{"enabled": false},
+	}
+	if order.TaxiRequestID > 0 {
+		if req, err := dbpkg.GetTaxiRequestByID(dbEmp, resolvedEmpresaID, order.TaxiRequestID); err == nil {
+			route, _ := dbpkg.ListTaxiRoutePoints(dbEmp, resolvedEmpresaID, order.TaxiRequestID, 300)
+			resp["tracking"] = map[string]interface{}{
+				"enabled": true,
+				"request": req,
+				"route":   route,
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func handleVentaPublicaEstadoPagoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
