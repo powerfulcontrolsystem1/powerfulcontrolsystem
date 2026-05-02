@@ -3627,3 +3627,14 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/ai_chat_drawer.js
 - web/js/seleccionar_empresa.js
+
+2026-05-02 17:19:46 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: dbcd26c; PushStatus: OK
+Archivos modificados:
+- backend/db/odontologia.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/odontologia.go
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/consultorio_odontologico.html
+- web/js/administrar_empresa.js
+- web/js/consultorio_odontologico.js
