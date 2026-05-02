@@ -497,7 +497,8 @@
   }
 
   function setChatEnabledPreference(enabled) {
-    state.chatEnabled = writeEnabledPreference(CHAT_ENABLED_STORAGE_KEY, enabled);
+    var next = isPublicPortalContext() ? true : !!enabled;
+    state.chatEnabled = writeEnabledPreference(CHAT_ENABLED_STORAGE_KEY, next);
     if (!state.chatEnabled) {
       closeChatDrawerFully();
       setRobotInlineVisible(false);
@@ -674,7 +675,7 @@
 
   function loadVoicePreference(micBtn, voiceBtn, convBtn) {
     try {
-      state.chatEnabled = readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
+      state.chatEnabled = isPublicPortalContext() ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
       state.robotEnabled = readEnabledPreference(ROBOT_ENABLED_STORAGE_KEY, true);
       state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
       setRobotVoicePreference(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || state.robotVoice);
@@ -752,6 +753,9 @@
   }
 
   function getChatPersonalityMode() {
+    if (isPublicPortalContext()) {
+      return 'normal';
+    }
     var raw = '';
     try {
       raw = window.localStorage.getItem(CHAT_PERSONALITY_STORAGE_KEY) || '';
