@@ -1024,6 +1024,11 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:2px 0 26px rgba(3,10,20,0.24);border-right:1px solid var(--border)}
 .admin-sidebar h2{margin:0 0 12px 0}
 .admin-sidebar h2{color:var(--accent-yellow);font-weight:800;font-size:0.95rem;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.admin-sidebar-kicker{margin:0 0 8px 0;color:var(--accent-yellow);font-size:.72rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.admin-sidebar-summary{margin:0 0 14px 0;padding:14px;border-radius:16px;background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, var(--surface-soft)), var(--surface));border:1px solid color-mix(in srgb, var(--accent) 16%, var(--border));box-shadow:0 14px 28px rgba(3,10,20,0.16)}
+.admin-sidebar-summary p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.55}
+.admin-sidebar-summary-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.admin-sidebar-summary-tags span{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid color-mix(in srgb, var(--accent-yellow) 18%, var(--border));color:var(--text);font-size:.74rem;font-weight:800;letter-spacing:.03em}
 .admin-sidebar .nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
 .admin-sidebar .nav a{display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:10px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);font-weight:700;font-size:0.95rem;min-height:44px}
 .admin-sidebar .nav a:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}
@@ -1371,10 +1376,12 @@ ul{padding-left:18px}
   .admin-sidebar .nav .admin-nav-sublist{width:100%}
   .admin-menu-visibility-item{display:block}
   .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .nav{gap:0}
-  .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .nav > li:not(.admin-menu-visibility-item){display:none}
-  .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed h2,
-  .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .empresa-name-menu{display:none}
-  .admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed{padding-bottom:10px}
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .nav > li:not(.admin-menu-visibility-item){display:none}
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed h2,
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .empresa-name-menu,
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .admin-sidebar-kicker,
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed .admin-sidebar-summary{display:none}
+.admin-sidebar.admin-sidebar-mobile-collapsible.is-collapsed{padding-bottom:10px}
 }
 
 @media (max-width:640px){
@@ -1403,6 +1410,10 @@ ul{padding-left:18px}
 /* Sidebar: mostrar el nombre de la empresa debajo del título y alinear a la izquierda */
 .admin-sidebar #empresaTitleMenu{display:block;white-space:normal;text-align:left;padding-right:8px}
 .admin-sidebar .empresa-name-menu{display:block;text-align:left;color:var(--muted);font-weight:600;font-size:0.95rem;margin-top:4px}
+.admin-sidebar-summary{padding:12px}
+.admin-sidebar-summary p{font-size:.84rem}
+.admin-sidebar-summary-tags{gap:6px}
+.admin-sidebar-summary-tags span{padding:6px 10px;font-size:.71rem}
 
 @media (max-width:420px){
   .admin-sidebar .nav{gap:6px}
