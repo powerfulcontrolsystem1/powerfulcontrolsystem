@@ -3163,3 +3163,37 @@ Archivos modificados:
 - web/estilos.css
 - web/js/chat_tareas_chat_usuarios.js
 - web/venta_publica.html
+
+2026-05-02 02:42:37 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 2505208; PushStatus: OK
+Archivos modificados:
+- backend/db/asesor_comercial.go
+- backend/db/carritos_compras.go
+- backend/db/chat_tareas.go
+- backend/db/contrato_super.go
+- backend/db/eventos_contables.go
+- backend/db/finanzas.go
+- backend/db/finanzas_conciliacion_bancaria.go
+- backend/db/propinas.go
+- backend/db/reservas_hotel.go
+- backend/db/sensor_puertas.go
+- backend/db/sql_compat.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/usuarios_empresa.go
+- backend/db/venta_publica.go
+- backend/handlers/clientes.go
+- backend/handlers/corte_caja.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/public_chat_portal.go
+- backend/handlers/recaptcha.go
+- backend/handlers/reservas_hotel.go
+- backend/handlers/usuarios_empresa.go
+- backend/handlers/venta_publica.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/tmp_run_local_server.ps1
+- tmp_login_page.html
+- tmp_recaptcha_helper.js
+- web/js/ai_chat_drawer.js
