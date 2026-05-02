@@ -3327,3 +3327,9 @@ Archivos modificados:
 - web/index.html
 - web/js/ai_chat_drawer.js
 - web/venta_publica.html
+
+2026-05-02 06:51:23 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 31f5df4; PushStatus: OK
+Archivos modificados:
+- web/js/ai_chat_drawer.js
+- web/perfil_red_social.html
+- web/red_social_comercial.html
