@@ -197,6 +197,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "OperaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n y venta"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Turnos de atenciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n y fila", Grupo: "OperaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n y venta"},
 	{PaginaClave: "linkGimnasio", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "GestiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de gimnasio", Grupo: "OperaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n y venta"},
+	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Consultorio odontologico", Grupo: "Clientes"},
 	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºblica (eÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œcommerce)", Grupo: "OperaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n y venta"},
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡logo"},
 	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡logo"},
@@ -1850,6 +1851,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkVehiculosRegistro"
 	case path == "/api/empresa/gimnasio":
 		return "linkGimnasio"
+	case path == "/api/empresa/odontologia":
+		return "linkConsultorioOdontologico"
 	case path == "/api/empresa/turnos_atencion":
 		return "linkTurnosAtencion"
 	case strings.HasPrefix(path, "/api/empresa/reportes"):
