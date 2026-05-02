@@ -3559,3 +3559,15 @@ Archivos modificados:
 - web/administrar_empresa/reportes_menu.html
 - web/administrar_empresa/reservas_hotel.html
 - web/administrar_empresa/vehiculos_registro.html
+
+2026-05-02 15:55:10 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a833ae5; PushStatus: OK
+Archivos modificados:
+- backend/db/horarios_trabajadores.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/horarios_trabajadores.go
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/horarios_trabajadores.html
+- web/index.html
+- web/js/administrar_empresa.js
+- web/js/horarios_trabajadores.js
