@@ -3517,3 +3517,9 @@ Archivos modificados:
 - backend/handlers/empresa_permisos.go
 - web/administrar_empresa/graficos_estadisticas.html
 - web/administrar_empresa/reportes_menu.html
+
+2026-05-02 14:02:10 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 6b9ab17; PushStatus: OK
+Archivos modificados:
+- backend/handlers/graficos_estadisticas.go
+- web/administrar_empresa/graficos_estadisticas.html
+- web/login.html
