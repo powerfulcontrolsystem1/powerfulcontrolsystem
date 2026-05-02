@@ -89,6 +89,38 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "acceso_config":
+				cfg, err := dbpkg.GetEmpresaGimnasioAccesoConfig(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar la configuracion de acceso", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, cfg)
+				return
+			case "credenciales":
+				rows, err := dbpkg.ListEmpresaGimnasioCredenciales(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar las credenciales", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			case "dispositivos":
+				rows, err := dbpkg.ListEmpresaGimnasioDispositivosAcceso(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar los dispositivos de acceso", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			case "eventos_acceso":
+				rows, err := dbpkg.ListEmpresaGimnasioEventosAcceso(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar la bitacora de acceso", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -194,6 +226,52 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 				return
+			case "credenciales":
+				var payload dbpkg.EmpresaGimnasioCredencial
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.CreateEmpresaGimnasioCredencial(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "dispositivos":
+				var payload dbpkg.EmpresaGimnasioDispositivoAcceso
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.CreateEmpresaGimnasioDispositivoAcceso(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "validar_acceso":
+				var payload struct {
+					EmpresaID        int64  `json:"empresa_id"`
+					CodigoCredencial string `json:"codigo_credencial"`
+					MetodoAcceso     string `json:"metodo_acceso"`
+					DispositivoID    int64  `json:"dispositivo_id"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				evento, err := dbpkg.ValidarEmpresaGimnasioAcceso(dbEmp, payload.EmpresaID, payload.CodigoCredencial, payload.MetodoAcceso, payload.DispositivoID, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": evento.Resultado == "aprobado", "evento": evento})
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -249,6 +327,45 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
+			case "acceso_config":
+				var payload dbpkg.EmpresaGimnasioAccesoConfig
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaGimnasioAccesoConfig(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				cfg, _ := dbpkg.GetEmpresaGimnasioAccesoConfig(dbEmp, payload.EmpresaID)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "configuracion": cfg})
+				return
+			case "credenciales":
+				var payload dbpkg.EmpresaGimnasioCredencial
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.UpdateEmpresaGimnasioCredencial(dbEmp, payload); err != nil {
+					handleGimnasioUpdateError(w, err, "credencial")
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			case "dispositivos":
+				var payload dbpkg.EmpresaGimnasioDispositivoAcceso
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.UpdateEmpresaGimnasioDispositivoAcceso(dbEmp, payload); err != nil {
+					handleGimnasioUpdateError(w, err, "dispositivo")
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
 			case "cancelar_inscripcion":
 				empresaID, err := parseInt64Query(r, "empresa_id")
 				if err != nil {
@@ -291,6 +408,10 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				err = dbpkg.DeleteEmpresaGimnasioEntrenador(dbEmp, empresaID, id)
 			case "clases":
 				err = dbpkg.DeleteEmpresaGimnasioClase(dbEmp, empresaID, id)
+			case "credenciales":
+				err = dbpkg.DeleteEmpresaGimnasioCredencial(dbEmp, empresaID, id)
+			case "dispositivos":
+				err = dbpkg.DeleteEmpresaGimnasioDispositivoAcceso(dbEmp, empresaID, id)
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return

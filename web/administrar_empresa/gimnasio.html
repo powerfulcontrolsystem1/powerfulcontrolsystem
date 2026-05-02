@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -10,7 +10,7 @@
   <div class="page-shell">
     <section class="card">
       <h1>Gestión de gimnasio</h1>
-      <p class="form-help">Administra socios, planes, entrenadores, clases, asistencias y pagos desde un solo módulo operativo.</p>
+      <p class="form-help">Opera socios, membresías, entrenadores, clases, credenciales y control de acceso con trazabilidad empresarial.</p>
       <div class="form-actions" style="justify-content:flex-start;flex-wrap:wrap;">
         <button type="button" class="btn secondary" data-gym-tab="dashboard">Dashboard</button>
         <button type="button" class="btn secondary" data-gym-tab="socios">Socios</button>
@@ -20,6 +20,7 @@
         <button type="button" class="btn secondary" data-gym-tab="inscripciones">Inscripciones</button>
         <button type="button" class="btn secondary" data-gym-tab="asistencias">Asistencias</button>
         <button type="button" class="btn secondary" data-gym-tab="pagos">Pagos</button>
+        <button type="button" class="btn secondary" data-gym-tab="acceso">Control de acceso</button>
       </div>
       <div id="gymMsg" class="form-help auth-message is-hidden"></div>
     </section>
@@ -206,9 +207,105 @@
       </form>
       <div id="gymPaymentsTable"></div>
     </section>
+
+    <section id="gymTab-acceso" class="card gym-tab" hidden>
+      <h2>Control de acceso</h2>
+      <div class="three-col-grid">
+        <article class="card">
+          <h3>Política de acceso</h3>
+          <form id="gymAccessConfigForm" class="form">
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymAccessMode">Modo principal</label><select id="gymAccessMode" class="form-input"><option value="rfid">RFID</option><option value="nfc">NFC</option><option value="qr">QR</option><option value="pin">PIN</option><option value="biometria">Biometría</option><option value="facial">Reconocimiento facial</option></select></div>
+              <div class="form-col"><label class="form-label" for="gymAntiPassback">Anti-passback (min)</label><input id="gymAntiPassback" type="number" class="form-input" value="10"></div>
+              <div class="form-col"><label class="form-label" for="gymGraceMorosity">Tolerancia mora (min)</label><input id="gymGraceMorosity" type="number" class="form-input" value="0"></div>
+            </div>
+            <div class="remember-row" style="flex-wrap:wrap;gap:14px;">
+              <label class="remember-label" for="gymAllowRFID"><input id="gymAllowRFID" type="checkbox"><span>RFID</span></label>
+              <label class="remember-label" for="gymAllowNFC"><input id="gymAllowNFC" type="checkbox"><span>NFC</span></label>
+              <label class="remember-label" for="gymAllowQR"><input id="gymAllowQR" type="checkbox"><span>QR</span></label>
+              <label class="remember-label" for="gymAllowPIN"><input id="gymAllowPIN" type="checkbox"><span>PIN</span></label>
+              <label class="remember-label" for="gymAllowBiometria"><input id="gymAllowBiometria" type="checkbox"><span>Biometría</span></label>
+              <label class="remember-label" for="gymAllowFacial"><input id="gymAllowFacial" type="checkbox"><span>Facial</span></label>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Guardar política</button></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h3>Credenciales</h3>
+          <form id="gymCredentialForm" class="form">
+            <input type="hidden" id="gymCredentialId">
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymCredentialSocio">Socio</label><select id="gymCredentialSocio" class="form-input"></select></div>
+              <div class="form-col"><label class="form-label" for="gymCredentialTipo">Tipo</label><select id="gymCredentialTipo" class="form-input"><option value="rfid">Tarjeta RFID</option><option value="nfc">Credencial NFC</option><option value="qr">QR</option><option value="pin">PIN</option><option value="biometria">Biometría</option><option value="facial">Facial</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymCredentialCode">Código</label><input id="gymCredentialCode" class="form-input"></div>
+              <div class="form-col"><label class="form-label" for="gymCredentialAlias">Alias</label><input id="gymCredentialAlias" class="form-input"></div>
+              <div class="form-col"><label class="form-label" for="gymCredentialExpiry">Expira</label><input id="gymCredentialExpiry" type="date" class="form-input"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymCredentialEstado">Estado</label><select id="gymCredentialEstado" class="form-input"><option value="activa">Activa</option><option value="bloqueada">Bloqueada</option><option value="expirada">Expirada</option></select></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Guardar credencial</button><button type="button" class="btn secondary" data-gym-reset="gymCredentialForm">Limpiar</button></div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h3>Dispositivos de acceso</h3>
+          <form id="gymDeviceForm" class="form">
+            <input type="hidden" id="gymDeviceId">
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymDeviceName">Nombre</label><input id="gymDeviceName" class="form-input"></div>
+              <div class="form-col"><label class="form-label" for="gymDeviceType">Tipo</label><select id="gymDeviceType" class="form-input"><option value="lector_rfid">Lector RFID</option><option value="lector_nfc">Lector NFC</option><option value="torniquete_qr">Torniquete QR</option><option value="tablet_biometrica">Tablet biométrica</option><option value="camara_facial">Cámara facial</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymDeviceLocation">Ubicación</label><input id="gymDeviceLocation" class="form-input"></div>
+              <div class="form-col"><label class="form-label" for="gymDeviceSede">Sede</label><input id="gymDeviceSede" class="form-input" value="principal"></div>
+              <div class="form-col"><label class="form-label" for="gymDeviceIdentifier">Identificador</label><input id="gymDeviceIdentifier" class="form-input"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymDeviceEstado">Estado</label><select id="gymDeviceEstado" class="form-input"><option value="activo">Activo</option><option value="mantenimiento">Mantenimiento</option><option value="inactivo">Inactivo</option></select></div>
+              <div class="form-col"><label class="form-label" for="gymDeviceCanal">Canal</label><input id="gymDeviceCanal" class="form-input" value="ingreso"></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Guardar dispositivo</button><button type="button" class="btn secondary" data-gym-reset="gymDeviceForm">Limpiar</button></div>
+          </form>
+        </article>
+      </div>
+
+      <div class="two-col-grid">
+        <article class="card">
+          <h3>Validación de ingreso</h3>
+          <form id="gymAccessValidationForm" class="form">
+            <div class="form-row">
+              <div class="form-col"><label class="form-label" for="gymValidateCode">Código de credencial</label><input id="gymValidateCode" class="form-input" placeholder="RFID, NFC, QR, PIN"></div>
+              <div class="form-col"><label class="form-label" for="gymValidateMethod">Método</label><select id="gymValidateMethod" class="form-input"><option value="rfid">RFID</option><option value="nfc">NFC</option><option value="qr">QR</option><option value="pin">PIN</option><option value="biometria">Biometría</option><option value="facial">Facial</option></select></div>
+              <div class="form-col"><label class="form-label" for="gymValidateDevice">Dispositivo</label><select id="gymValidateDevice" class="form-input"></select></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Validar acceso</button></div>
+          </form>
+          <div id="gymAccessResult"></div>
+        </article>
+        <article class="card">
+          <h3>Bitácora reciente</h3>
+          <div id="gymAccessEventsTable"></div>
+        </article>
+      </div>
+
+      <div class="two-col-grid">
+        <article class="card">
+          <h3>Credenciales registradas</h3>
+          <div id="gymCredentialsTable"></div>
+        </article>
+        <article class="card">
+          <h3>Dispositivos activos</h3>
+          <div id="gymDevicesTable"></div>
+        </article>
+      </div>
+    </section>
   </div>
 
   <script src="/js/administrar_empresa.js"></script>
-  <script src="/js/gimnasio.js"></script>
+  <script src="/js/gimnasio.js?v=20260502-access-enterprise"></script>
 </body>
 </html>

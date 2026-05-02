@@ -136,6 +136,74 @@ type EmpresaGimnasioPago struct {
 	UsuarioCreador string  `json:"usuario_creador,omitempty"`
 }
 
+type EmpresaGimnasioAccesoConfig struct {
+	ID                      int64  `json:"id"`
+	EmpresaID               int64  `json:"empresa_id"`
+	ModoValidacionPrincipal string `json:"modo_validacion_principal"`
+	PermitirRFID            bool   `json:"permitir_rfid"`
+	PermitirNFC             bool   `json:"permitir_nfc"`
+	PermitirQR              bool   `json:"permitir_qr"`
+	PermitirPIN             bool   `json:"permitir_pin"`
+	PermitirBiometria       bool   `json:"permitir_biometria"`
+	PermitirFacial          bool   `json:"permitir_facial"`
+	AntiPassbackMinutos     int    `json:"anti_passback_minutos"`
+	MinutosToleranciaMora   int    `json:"minutos_tolerancia_mora"`
+	Estado                  string `json:"estado,omitempty"`
+	FechaActualizacion      string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador          string `json:"usuario_creador,omitempty"`
+}
+
+type EmpresaGimnasioCredencial struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	SocioID            int64  `json:"socio_id"`
+	SocioNombre        string `json:"socio_nombre,omitempty"`
+	TipoCredencial     string `json:"tipo_credencial"`
+	CodigoCredencial   string `json:"codigo_credencial"`
+	AliasCredencial    string `json:"alias_credencial,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	FechaExpiracion    string `json:"fecha_expiracion,omitempty"`
+	UltimoUso          string `json:"ultimo_uso,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+}
+
+type EmpresaGimnasioDispositivoAcceso struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	Nombre             string `json:"nombre"`
+	TipoDispositivo    string `json:"tipo_dispositivo"`
+	Ubicacion          string `json:"ubicacion,omitempty"`
+	Sede               string `json:"sede,omitempty"`
+	Canal              string `json:"canal,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Identificador      string `json:"identificador,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+}
+
+type EmpresaGimnasioEventoAcceso struct {
+	ID                int64  `json:"id"`
+	EmpresaID         int64  `json:"empresa_id"`
+	SocioID           int64  `json:"socio_id,omitempty"`
+	SocioNombre       string `json:"socio_nombre,omitempty"`
+	CredencialID      int64  `json:"credencial_id,omitempty"`
+	CodigoCredencial  string `json:"codigo_credencial,omitempty"`
+	DispositivoID     int64  `json:"dispositivo_id,omitempty"`
+	DispositivoNombre string `json:"dispositivo_nombre,omitempty"`
+	MetodoAcceso      string `json:"metodo_acceso,omitempty"`
+	Resultado         string `json:"resultado,omitempty"`
+	Motivo            string `json:"motivo,omitempty"`
+	FechaEvento       string `json:"fecha_evento,omitempty"`
+	Canal             string `json:"canal,omitempty"`
+	Sede              string `json:"sede,omitempty"`
+	Observaciones     string `json:"observaciones,omitempty"`
+	UsuarioCreador    string `json:"usuario_creador,omitempty"`
+}
+
 type EmpresaGimnasioResumenGrupo struct {
 	Clave     string  `json:"clave"`
 	Etiqueta  string  `json:"etiqueta"`
@@ -285,6 +353,71 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_empresa_fecha ON empresa_gimnasio_pagos(empresa_id, fecha_pago DESC, id DESC);`,
+		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_acceso_config (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL UNIQUE,
+			modo_validacion_principal TEXT DEFAULT 'rfid',
+			permitir_rfid INTEGER DEFAULT 1,
+			permitir_nfc INTEGER DEFAULT 1,
+			permitir_qr INTEGER DEFAULT 1,
+			permitir_pin INTEGER DEFAULT 0,
+			permitir_biometria INTEGER DEFAULT 0,
+			permitir_facial INTEGER DEFAULT 0,
+			anti_passback_minutos INTEGER DEFAULT 10,
+			minutos_tolerancia_mora INTEGER DEFAULT 0,
+			estado TEXT DEFAULT 'activo',
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_credenciales (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			socio_id INTEGER NOT NULL,
+			tipo_credencial TEXT NOT NULL,
+			codigo_credencial TEXT NOT NULL,
+			alias_credencial TEXT,
+			estado TEXT DEFAULT 'activa',
+			fecha_expiracion TEXT,
+			ultimo_uso TEXT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_credenciales_empresa ON empresa_gimnasio_credenciales(empresa_id, socio_id, estado, id DESC);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_gimnasio_credenciales_codigo ON empresa_gimnasio_credenciales(empresa_id, codigo_credencial);`,
+		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_dispositivos_acceso (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			nombre TEXT NOT NULL,
+			tipo_dispositivo TEXT NOT NULL,
+			ubicacion TEXT,
+			sede TEXT,
+			canal TEXT,
+			estado TEXT DEFAULT 'activo',
+			identificador TEXT,
+			observaciones TEXT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_dispositivos_empresa ON empresa_gimnasio_dispositivos_acceso(empresa_id, estado, id DESC);`,
+		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_eventos_acceso (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			socio_id INTEGER,
+			credencial_id INTEGER,
+			dispositivo_id INTEGER,
+			codigo_credencial TEXT,
+			metodo_acceso TEXT,
+			resultado TEXT DEFAULT 'aprobado',
+			motivo TEXT,
+			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			canal TEXT,
+			sede TEXT,
+			observaciones TEXT,
+			usuario_creador TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_eventos_empresa_fecha ON empresa_gimnasio_eventos_acceso(empresa_id, fecha_evento DESC, id DESC);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -472,6 +605,72 @@ func normalizeGymPago(payload EmpresaGimnasioPago) (*EmpresaGimnasioPago, error)
 	}
 	if out.FechaPago == "" {
 		out.FechaPago = time.Now().Format("2006-01-02 15:04:05")
+	}
+	return &out, nil
+}
+
+func normalizeGymAccessConfig(payload EmpresaGimnasioAccesoConfig) *EmpresaGimnasioAccesoConfig {
+	out := payload
+	out.ModoValidacionPrincipal = strings.ToLower(strings.TrimSpace(out.ModoValidacionPrincipal))
+	if out.ModoValidacionPrincipal == "" {
+		out.ModoValidacionPrincipal = "rfid"
+	}
+	out.Estado = normalizeGymState(out.Estado, "activo")
+	if out.AntiPassbackMinutos < 0 {
+		out.AntiPassbackMinutos = 0
+	}
+	if out.MinutosToleranciaMora < 0 {
+		out.MinutosToleranciaMora = 0
+	}
+	out.UsuarioCreador = strings.TrimSpace(out.UsuarioCreador)
+	return &out
+}
+
+func normalizeGymCredencial(payload EmpresaGimnasioCredencial) (*EmpresaGimnasioCredencial, error) {
+	if payload.EmpresaID <= 0 || payload.SocioID <= 0 {
+		return nil, fmt.Errorf("empresa_id y socio_id son obligatorios")
+	}
+	out := payload
+	out.TipoCredencial = strings.ToLower(strings.TrimSpace(out.TipoCredencial))
+	out.CodigoCredencial = strings.TrimSpace(out.CodigoCredencial)
+	out.AliasCredencial = strings.TrimSpace(out.AliasCredencial)
+	out.Estado = normalizeGymState(out.Estado, "activa")
+	out.FechaExpiracion = strings.TrimSpace(out.FechaExpiracion)
+	out.UsuarioCreador = strings.TrimSpace(out.UsuarioCreador)
+	if out.TipoCredencial == "" {
+		out.TipoCredencial = "rfid"
+	}
+	if out.CodigoCredencial == "" {
+		return nil, fmt.Errorf("codigo_credencial es obligatorio")
+	}
+	return &out, nil
+}
+
+func normalizeGymDispositivo(payload EmpresaGimnasioDispositivoAcceso) (*EmpresaGimnasioDispositivoAcceso, error) {
+	if payload.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	out := payload
+	out.Nombre = strings.TrimSpace(out.Nombre)
+	out.TipoDispositivo = strings.ToLower(strings.TrimSpace(out.TipoDispositivo))
+	out.Ubicacion = strings.TrimSpace(out.Ubicacion)
+	out.Sede = strings.TrimSpace(out.Sede)
+	out.Canal = strings.TrimSpace(out.Canal)
+	out.Estado = normalizeGymState(out.Estado, "activo")
+	out.Identificador = strings.TrimSpace(out.Identificador)
+	out.Observaciones = strings.TrimSpace(out.Observaciones)
+	out.UsuarioCreador = strings.TrimSpace(out.UsuarioCreador)
+	if out.Nombre == "" {
+		return nil, fmt.Errorf("nombre es obligatorio")
+	}
+	if out.TipoDispositivo == "" {
+		out.TipoDispositivo = "lector_rfid"
+	}
+	if out.Sede == "" {
+		out.Sede = "principal"
+	}
+	if out.Canal == "" {
+		out.Canal = "ingreso"
 	}
 	return &out, nil
 }
@@ -1038,6 +1237,366 @@ func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimna
 	out.RentabilidadPorSede, _ = listGymResumenGrupo(dbConn, `SELECT COALESCE(sede,'Principal'), COUNT(1), COALESCE(SUM(monto),0), COALESCE(SUM(monto),0) - (COUNT(1) * 9000), 0 FROM empresa_gimnasio_pagos WHERE empresa_id=? AND COALESCE(estado,'pagado')='pagado' GROUP BY COALESCE(sede,'Principal') ORDER BY COALESCE(SUM(monto),0) DESC`, empresaID)
 
 	return out, nil
+}
+
+func GetEmpresaGimnasioAccesoConfig(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioAccesoConfig, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	cfg := normalizeGymAccessConfig(EmpresaGimnasioAccesoConfig{EmpresaID: empresaID, PermitirRFID: true, PermitirNFC: true, PermitirQR: true, Estado: "activo", AntiPassbackMinutos: 10})
+	var permitirRFID, permitirNFC, permitirQR, permitirPIN, permitirBiometria, permitirFacial int
+	err := dbConn.QueryRow(`SELECT id, empresa_id, COALESCE(modo_validacion_principal,'rfid'),
+		COALESCE(permitir_rfid,1), COALESCE(permitir_nfc,1), COALESCE(permitir_qr,1), COALESCE(permitir_pin,0),
+		COALESCE(permitir_biometria,0), COALESCE(permitir_facial,0), COALESCE(anti_passback_minutos,10), COALESCE(minutos_tolerancia_mora,0),
+		COALESCE(estado,'activo'), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_gimnasio_acceso_config WHERE empresa_id=? LIMIT 1`, empresaID).Scan(
+		&cfg.ID, &cfg.EmpresaID, &cfg.ModoValidacionPrincipal,
+		&permitirRFID, &permitirNFC, &permitirQR, &permitirPIN, &permitirBiometria, &permitirFacial, &cfg.AntiPassbackMinutos, &cfg.MinutosToleranciaMora,
+		&cfg.Estado, &cfg.FechaActualizacion, &cfg.UsuarioCreador,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return cfg, nil
+		}
+		return nil, err
+	}
+	cfg.PermitirRFID = permitirRFID > 0
+	cfg.PermitirNFC = permitirNFC > 0
+	cfg.PermitirQR = permitirQR > 0
+	cfg.PermitirPIN = permitirPIN > 0
+	cfg.PermitirBiometria = permitirBiometria > 0
+	cfg.PermitirFacial = permitirFacial > 0
+	return cfg, nil
+}
+
+func UpsertEmpresaGimnasioAccesoConfig(dbConn *sql.DB, payload EmpresaGimnasioAccesoConfig) (int64, error) {
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return 0, err
+	}
+	cfg := normalizeGymAccessConfig(payload)
+	toInt := func(v bool) int {
+		if v {
+			return 1
+		}
+		return 0
+	}
+	var existingID int64
+	err := dbConn.QueryRow(`SELECT id FROM empresa_gimnasio_acceso_config WHERE empresa_id=? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	if err == sql.ErrNoRows {
+		res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_acceso_config (
+			empresa_id, modo_validacion_principal, permitir_rfid, permitir_nfc, permitir_qr, permitir_pin, permitir_biometria, permitir_facial,
+			anti_passback_minutos, minutos_tolerancia_mora, estado, fecha_actualizacion, usuario_creador
+		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			cfg.EmpresaID, cfg.ModoValidacionPrincipal, toInt(cfg.PermitirRFID), toInt(cfg.PermitirNFC), toInt(cfg.PermitirQR), toInt(cfg.PermitirPIN), toInt(cfg.PermitirBiometria), toInt(cfg.PermitirFacial),
+			cfg.AntiPassbackMinutos, cfg.MinutosToleranciaMora, cfg.Estado, time.Now().Format("2006-01-02 15:04:05"), cfg.UsuarioCreador,
+		)
+		if err != nil {
+			return 0, err
+		}
+		return res.LastInsertId()
+	}
+	if err != nil {
+		return 0, err
+	}
+	_, err = dbConn.Exec(`UPDATE empresa_gimnasio_acceso_config SET
+		modo_validacion_principal=?, permitir_rfid=?, permitir_nfc=?, permitir_qr=?, permitir_pin=?, permitir_biometria=?, permitir_facial=?,
+		anti_passback_minutos=?, minutos_tolerancia_mora=?, estado=?, fecha_actualizacion=?, usuario_creador=?
+	WHERE empresa_id=?`,
+		cfg.ModoValidacionPrincipal, toInt(cfg.PermitirRFID), toInt(cfg.PermitirNFC), toInt(cfg.PermitirQR), toInt(cfg.PermitirPIN), toInt(cfg.PermitirBiometria), toInt(cfg.PermitirFacial),
+		cfg.AntiPassbackMinutos, cfg.MinutosToleranciaMora, cfg.Estado, time.Now().Format("2006-01-02 15:04:05"), cfg.UsuarioCreador, cfg.EmpresaID,
+	)
+	return existingID, err
+}
+
+func ListEmpresaGimnasioCredenciales(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasioCredencial, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := dbConn.Query(`SELECT c.id, c.empresa_id, c.socio_id, COALESCE(s.nombre_completo,''), COALESCE(c.tipo_credencial,''), COALESCE(c.codigo_credencial,''),
+		COALESCE(c.alias_credencial,''), COALESCE(c.estado,'activa'), COALESCE(c.fecha_expiracion,''), COALESCE(c.ultimo_uso,''), COALESCE(c.fecha_creacion,''),
+		COALESCE(c.fecha_actualizacion,''), COALESCE(c.usuario_creador,'')
+	FROM empresa_gimnasio_credenciales c
+	INNER JOIN empresa_gimnasio_socios s ON s.id=c.socio_id AND s.empresa_id=c.empresa_id
+	WHERE c.empresa_id=?
+	ORDER BY c.id DESC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []EmpresaGimnasioCredencial
+	for rows.Next() {
+		var item EmpresaGimnasioCredencial
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.SocioID, &item.SocioNombre, &item.TipoCredencial, &item.CodigoCredencial,
+			&item.AliasCredencial, &item.Estado, &item.FechaExpiracion, &item.UltimoUso, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func CreateEmpresaGimnasioCredencial(dbConn *sql.DB, payload EmpresaGimnasioCredencial) (int64, error) {
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return 0, err
+	}
+	item, err := normalizeGymCredencial(payload)
+	if err != nil {
+		return 0, err
+	}
+	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_credenciales (
+		empresa_id, socio_id, tipo_credencial, codigo_credencial, alias_credencial, estado, fecha_expiracion, fecha_actualizacion, usuario_creador
+	) VALUES (?,?,?,?,?,?,?,?,?)`,
+		item.EmpresaID, item.SocioID, item.TipoCredencial, item.CodigoCredencial, item.AliasCredencial, item.Estado, item.FechaExpiracion, time.Now().Format("2006-01-02 15:04:05"), item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func UpdateEmpresaGimnasioCredencial(dbConn *sql.DB, payload EmpresaGimnasioCredencial) error {
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return err
+	}
+	item, err := normalizeGymCredencial(payload)
+	if err != nil {
+		return err
+	}
+	if item.ID <= 0 {
+		return fmt.Errorf("id es obligatorio")
+	}
+	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_credenciales SET socio_id=?, tipo_credencial=?, codigo_credencial=?, alias_credencial=?, estado=?, fecha_expiracion=?, fecha_actualizacion=? WHERE id=? AND empresa_id=?`,
+		item.SocioID, item.TipoCredencial, item.CodigoCredencial, item.AliasCredencial, item.Estado, item.FechaExpiracion, time.Now().Format("2006-01-02 15:04:05"), item.ID, item.EmpresaID)
+	if err != nil {
+		return err
+	}
+	return ensureRowsAffected(res)
+}
+
+func DeleteEmpresaGimnasioCredencial(dbConn *sql.DB, empresaID, id int64) error {
+	return simpleDeleteByEmpresa(dbConn, empresaID, id, "empresa_gimnasio_credenciales")
+}
+
+func ListEmpresaGimnasioDispositivosAcceso(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasioDispositivoAcceso, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := dbConn.Query(`SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(tipo_dispositivo,''), COALESCE(ubicacion,''), COALESCE(sede,''), COALESCE(canal,''), COALESCE(estado,'activo'), COALESCE(identificador,''), COALESCE(observaciones,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_gimnasio_dispositivos_acceso WHERE empresa_id=? ORDER BY id DESC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []EmpresaGimnasioDispositivoAcceso
+	for rows.Next() {
+		var item EmpresaGimnasioDispositivoAcceso
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.TipoDispositivo, &item.Ubicacion, &item.Sede, &item.Canal, &item.Estado, &item.Identificador, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func CreateEmpresaGimnasioDispositivoAcceso(dbConn *sql.DB, payload EmpresaGimnasioDispositivoAcceso) (int64, error) {
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return 0, err
+	}
+	item, err := normalizeGymDispositivo(payload)
+	if err != nil {
+		return 0, err
+	}
+	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_dispositivos_acceso (empresa_id, nombre, tipo_dispositivo, ubicacion, sede, canal, estado, identificador, observaciones, fecha_actualizacion, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+		item.EmpresaID, item.Nombre, item.TipoDispositivo, item.Ubicacion, item.Sede, item.Canal, item.Estado, item.Identificador, item.Observaciones, time.Now().Format("2006-01-02 15:04:05"), item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func UpdateEmpresaGimnasioDispositivoAcceso(dbConn *sql.DB, payload EmpresaGimnasioDispositivoAcceso) error {
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return err
+	}
+	item, err := normalizeGymDispositivo(payload)
+	if err != nil {
+		return err
+	}
+	if item.ID <= 0 {
+		return fmt.Errorf("id es obligatorio")
+	}
+	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_dispositivos_acceso SET nombre=?, tipo_dispositivo=?, ubicacion=?, sede=?, canal=?, estado=?, identificador=?, observaciones=?, fecha_actualizacion=? WHERE id=? AND empresa_id=?`,
+		item.Nombre, item.TipoDispositivo, item.Ubicacion, item.Sede, item.Canal, item.Estado, item.Identificador, item.Observaciones, time.Now().Format("2006-01-02 15:04:05"), item.ID, item.EmpresaID)
+	if err != nil {
+		return err
+	}
+	return ensureRowsAffected(res)
+}
+
+func DeleteEmpresaGimnasioDispositivoAcceso(dbConn *sql.DB, empresaID, id int64) error {
+	return simpleDeleteByEmpresa(dbConn, empresaID, id, "empresa_gimnasio_dispositivos_acceso")
+}
+
+func ListEmpresaGimnasioEventosAcceso(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasioEventoAcceso, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := dbConn.Query(`SELECT e.id, e.empresa_id, COALESCE(e.socio_id,0), COALESCE(s.nombre_completo,''), COALESCE(e.credencial_id,0), COALESCE(e.codigo_credencial,''), COALESCE(e.dispositivo_id,0), COALESCE(d.nombre,''), COALESCE(e.metodo_acceso,''), COALESCE(e.resultado,''), COALESCE(e.motivo,''), COALESCE(e.fecha_evento,''), COALESCE(e.canal,''), COALESCE(e.sede,''), COALESCE(e.observaciones,''), COALESCE(e.usuario_creador,'')
+	FROM empresa_gimnasio_eventos_acceso e
+	LEFT JOIN empresa_gimnasio_socios s ON s.id=e.socio_id AND s.empresa_id=e.empresa_id
+	LEFT JOIN empresa_gimnasio_dispositivos_acceso d ON d.id=e.dispositivo_id AND d.empresa_id=e.empresa_id
+	WHERE e.empresa_id=?
+	ORDER BY e.fecha_evento DESC, e.id DESC LIMIT 120`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []EmpresaGimnasioEventoAcceso
+	for rows.Next() {
+		var item EmpresaGimnasioEventoAcceso
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.SocioID, &item.SocioNombre, &item.CredencialID, &item.CodigoCredencial, &item.DispositivoID, &item.DispositivoNombre, &item.MetodoAcceso, &item.Resultado, &item.Motivo, &item.FechaEvento, &item.Canal, &item.Sede, &item.Observaciones, &item.UsuarioCreador); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func RegistrarEmpresaGimnasioEventoAcceso(dbConn *sql.DB, payload EmpresaGimnasioEventoAcceso) (int64, error) {
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if strings.TrimSpace(payload.FechaEvento) == "" {
+		payload.FechaEvento = time.Now().Format("2006-01-02 15:04:05")
+	}
+	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_eventos_acceso (empresa_id, socio_id, credencial_id, dispositivo_id, codigo_credencial, metodo_acceso, resultado, motivo, fecha_evento, canal, sede, observaciones, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		payload.EmpresaID, payload.SocioID, payload.CredencialID, payload.DispositivoID, strings.TrimSpace(payload.CodigoCredencial), strings.TrimSpace(payload.MetodoAcceso), normalizeGymState(payload.Resultado, "aprobado"), strings.TrimSpace(payload.Motivo), payload.FechaEvento, strings.TrimSpace(payload.Canal), strings.TrimSpace(payload.Sede), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func ValidarEmpresaGimnasioAcceso(dbConn *sql.DB, empresaID int64, codigoCredencial, metodo string, dispositivoID int64, usuario string) (*EmpresaGimnasioEventoAcceso, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	codigoCredencial = strings.TrimSpace(codigoCredencial)
+	metodo = strings.ToLower(strings.TrimSpace(metodo))
+	if codigoCredencial == "" {
+		return nil, fmt.Errorf("codigo_credencial es obligatorio")
+	}
+	cfg, err := GetEmpresaGimnasioAccesoConfig(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	evento := &EmpresaGimnasioEventoAcceso{EmpresaID: empresaID, CodigoCredencial: codigoCredencial, MetodoAcceso: metodo, DispositivoID: dispositivoID, UsuarioCreador: strings.TrimSpace(usuario), Resultado: "denegado"}
+	var cred EmpresaGimnasioCredencial
+	err = dbConn.QueryRow(`SELECT c.id, c.empresa_id, c.socio_id, COALESCE(s.nombre_completo,''), COALESCE(c.tipo_credencial,''), COALESCE(c.codigo_credencial,''), COALESCE(c.alias_credencial,''), COALESCE(c.estado,'activa'), COALESCE(c.fecha_expiracion,''), COALESCE(c.ultimo_uso,''), COALESCE(c.fecha_creacion,''), COALESCE(c.fecha_actualizacion,''), COALESCE(c.usuario_creador,'')
+	FROM empresa_gimnasio_credenciales c
+	INNER JOIN empresa_gimnasio_socios s ON s.id=c.socio_id AND s.empresa_id=c.empresa_id
+	WHERE c.empresa_id=? AND c.codigo_credencial=? LIMIT 1`, empresaID, codigoCredencial).Scan(&cred.ID, &cred.EmpresaID, &cred.SocioID, &cred.SocioNombre, &cred.TipoCredencial, &cred.CodigoCredencial, &cred.AliasCredencial, &cred.Estado, &cred.FechaExpiracion, &cred.UltimoUso, &cred.FechaCreacion, &cred.FechaActualizacion, &cred.UsuarioCreador)
+	if err != nil {
+		evento.Motivo = "credencial_no_encontrada"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	evento.SocioID = cred.SocioID
+	evento.SocioNombre = cred.SocioNombre
+	evento.CredencialID = cred.ID
+	if !isGymMethodAllowed(cfg, cred.TipoCredencial) {
+		evento.Motivo = "metodo_no_habilitado"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	if strings.ToLower(cred.Estado) != "activa" {
+		evento.Motivo = "credencial_inactiva"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	var socioEstado, fechaFinPlan string
+	var saldo float64
+	err = dbConn.QueryRow(`SELECT COALESCE(estado,'activo'), COALESCE(fecha_fin_plan,''), COALESCE(saldo,0) FROM empresa_gimnasio_socios WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, cred.SocioID).Scan(&socioEstado, &fechaFinPlan, &saldo)
+	if err != nil {
+		evento.Motivo = "socio_no_encontrado"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	if strings.ToLower(socioEstado) != "activo" {
+		evento.Motivo = "socio_inactivo"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	if strings.TrimSpace(fechaFinPlan) != "" {
+		today := time.Now().Format("2006-01-02")
+		if strings.TrimSpace(fechaFinPlan) < today {
+			evento.Motivo = "membresia_vencida"
+			_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+			return evento, nil
+		}
+	}
+	if cfg.MinutosToleranciaMora <= 0 && saldo > 0 {
+		evento.Motivo = "saldo_pendiente"
+		_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+		return evento, nil
+	}
+	if cfg.AntiPassbackMinutos > 0 {
+		var ultimo string
+		_ = dbConn.QueryRow(`SELECT COALESCE(fecha_evento,'') FROM empresa_gimnasio_eventos_acceso WHERE empresa_id=? AND socio_id=? AND resultado='aprobado' ORDER BY id DESC LIMIT 1`, empresaID, cred.SocioID).Scan(&ultimo)
+		if strings.TrimSpace(ultimo) != "" {
+			if t, parseErr := time.Parse("2006-01-02 15:04:05", ultimo); parseErr == nil && time.Since(t) < time.Duration(cfg.AntiPassbackMinutos)*time.Minute {
+				evento.Motivo = "anti_passback"
+				_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+				return evento, nil
+			}
+		}
+	}
+	evento.Resultado = "aprobado"
+	evento.Motivo = "ok"
+	evento.FechaEvento = time.Now().Format("2006-01-02 15:04:05")
+	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_credenciales SET ultimo_uso=?, fecha_actualizacion=? WHERE id=? AND empresa_id=?`, evento.FechaEvento, evento.FechaEvento, cred.ID, empresaID)
+	_, _ = RegistrarEmpresaGimnasioEventoAcceso(dbConn, *evento)
+	return evento, nil
+}
+
+func isGymMethodAllowed(cfg *EmpresaGimnasioAccesoConfig, method string) bool {
+	method = strings.ToLower(strings.TrimSpace(method))
+	switch method {
+	case "rfid", "tarjeta_rfid":
+		return cfg.PermitirRFID
+	case "nfc", "tarjeta_nfc":
+		return cfg.PermitirNFC
+	case "qr", "qr_dinamico", "qr_estatico", "codigo_barras":
+		return cfg.PermitirQR
+	case "pin":
+		return cfg.PermitirPIN
+	case "biometria":
+		return cfg.PermitirBiometria
+	case "facial", "reconocimiento_facial":
+		return cfg.PermitirFacial
+	default:
+		return true
+	}
 }
 
 func listGymResumenGrupo(dbConn *sql.DB, query string, empresaID int64) ([]EmpresaGimnasioResumenGrupo, error) {
