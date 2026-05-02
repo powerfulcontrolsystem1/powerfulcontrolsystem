@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -54,63 +54,13 @@
 </head>
 <body class="super-page">
   <div class="container">
-    <section class="empresa-module-header" style="margin-bottom:18px;">
-      <div>
-        <span class="empresa-module-kicker">Supervisión global</span>
-        <h2 style="margin:6px 0 8px;">Licencias, salud del portal y consumo en una vista</h2>
-        <p class="page-header-lead" style="margin:0;">
-          Complementa el resumen ejecutivo con un bloque de lectura rápida para vigilar crecimiento, estabilidad y presión operativa del sistema.
-        </p>
-      </div>
-      <div class="empresa-module-overview">
-        <div class="empresa-module-kpi">
-          <strong>Licencias</strong>
-          <span>Activas, vencimientos y gestión</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Consumo</strong>
-          <span>IA, VPS y costos</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Estabilidad</strong>
-          <span>Errores y presión operativa</span>
-        </div>
-      </div>
-    </section>
-
     <div class="page-header">
-      <div>
-        <h1>Resumen de Licencias</h1>
-        <p class="form-help page-header-lead">Sigue el pulso de licencias, empresas activas, consumos y salud operativa del portal desde una sola vista.</p>
-      </div>
+      <div>`r`n        <h1>Resumen de Licencias</h1>`r`n      </div>
       <div>
         <button id="refreshBtn" class="btn" aria-label="Actualizar recuento">Actualizar</button>
         <a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a>
       </div>
     </div>
-    <section class="super-overview-hero" aria-label="Panorama global de licencias">
-      <div>
-        <p class="super-overview-kicker">Vista ejecutiva</p>
-        <h2>Controla crecimiento, consumo y estabilidad sin salir del resumen global.</h2>
-        <p>Este tablero concentra métricas críticas del portal para detectar saturación, vigilar consumos y responder rápido a riesgos operativos o comerciales.</p>
-        <div class="super-overview-tags" aria-hidden="true">
-          <span>Licencias</span>
-          <span>Empresas</span>
-          <span>Consumos IA</span>
-          <span>VPS</span>
-        </div>
-      </div>
-      <aside class="super-overview-aside">
-        <div class="super-overview-note">
-          <strong>Lectura rápida</strong>
-          <span>Revisa primero licencias activas, errores del sistema y consumos OpenAI para detectar presión operativa.</span>
-        </div>
-        <div class="super-overview-note">
-          <strong>Acción sugerida</strong>
-          <span>Usa “Administrar licencias” cuando identifiques crecimiento, vencimientos o ajustes comerciales pendientes.</span>
-        </div>
-      </aside>
-    </section>
     <div class="summary-grid">
       <div class="card summary-card">
         <div class="muted">Licencias activas</div>
@@ -128,15 +78,15 @@
       <div class="card ops-card">
         <div class="muted">Errores del sistema (total)</div>
         <div id="errTotal" class="ops-kpi">-</div>
-        <div class="form-help muted ops-sub">Solo contador. Detalle en “Errores del sistema”.</div>
+        <div class="form-help muted ops-sub">Solo contador. Detalle en â€œErrores del sistemaâ€.</div>
       </div>
       <div class="card ops-card">
-        <div class="muted">OpenAI (hoy) — Super</div>
+        <div class="muted">OpenAI (hoy) â€” Super</div>
         <div id="openaiSuper" class="ops-kpi">-</div>
         <div id="openaiSuperCost" class="form-help muted ops-sub"></div>
       </div>
       <div class="card ops-card">
-        <div class="muted">OpenAI (hoy) — Empresas</div>
+        <div class="muted">OpenAI (hoy) â€” Empresas</div>
         <div id="openaiEmp" class="ops-kpi">-</div>
         <div id="openaiEmpCost" class="form-help muted ops-sub"></div>
       </div>
@@ -156,14 +106,14 @@
         </div>
       </div>
       <div class="form-help muted" style="margin-top:6px">
-        Hostinger/Cursor: por ahora captura manual. Se deja campo de API token/key para habilitar consulta automática cuando exista API estable.
+        Hostinger/Cursor: por ahora captura manual. Se deja campo de API token/key para habilitar consulta automÃ¡tica cuando exista API estable.
       </div>
 
       <div class="ops-form">
         <div class="form-col">
           <label class="form-label">OpenAI: costo por 1M tokens (USD)</label>
           <input id="openaiCostPer1M" class="form-input" placeholder="ej: 0.25">
-          <div class="form-help muted">Opcional. Si lo configuras, se estima costo en USD según tokens diarios.</div>
+          <div class="form-help muted">Opcional. Si lo configuras, se estima costo en USD segÃºn tokens diarios.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Hostinger: habilitado</label>
@@ -177,7 +127,7 @@
           <input id="hostBwUsed" class="form-input" placeholder="ej: 120">
         </div>
         <div class="form-col">
-          <label class="form-label">Hostinger: ancho de banda límite (GB)</label>
+          <label class="form-label">Hostinger: ancho de banda lÃ­mite (GB)</label>
           <input id="hostBwLimit" class="form-input" placeholder="ej: 1000">
         </div>
         <div class="form-col">
@@ -185,7 +135,7 @@
           <input id="hostDiskUsed" class="form-input" placeholder="ej: 28">
         </div>
         <div class="form-col">
-          <label class="form-label">Hostinger: disco límite (GB)</label>
+          <label class="form-label">Hostinger: disco lÃ­mite (GB)</label>
           <input id="hostDiskLimit" class="form-input" placeholder="ej: 200">
         </div>
         <div class="form-col">
@@ -194,8 +144,8 @@
         </div>
         <div class="form-col">
           <label class="form-label">Hostinger: API token (opcional)</label>
-          <input id="hostApiToken" class="form-input" placeholder="(se guardará cifrado)">
-          <div class="form-help muted">No se muestra luego; solo marca “token configurado”.</div>
+          <input id="hostApiToken" class="form-input" placeholder="(se guardarÃ¡ cifrado)">
+          <div class="form-help muted">No se muestra luego; solo marca â€œtoken configuradoâ€.</div>
         </div>
 
         <div class="form-col">
@@ -210,11 +160,11 @@
         </div>
         <div class="form-col">
           <label class="form-label">Cursor: API key (opcional)</label>
-          <input id="cursorApiKey" class="form-input" placeholder="(se guardará cifrado)">
+          <input id="cursorApiKey" class="form-input" placeholder="(se guardarÃ¡ cifrado)">
         </div>
         <div class="form-col">
           <label class="form-label">Cursor: notas (opcional)</label>
-          <input id="cursorNotes" class="form-input" placeholder="ej: plan Pro, 2 seats…">
+          <input id="cursorNotes" class="form-input" placeholder="ej: plan Pro, 2 seatsâ€¦">
         </div>
       </div>
 
@@ -315,7 +265,7 @@
         const arr = await res.json();
         const active = Array.isArray(arr) ? arr.length : 0;
         document.getElementById('activeCount').textContent = active;
-        document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleString();
+        document.getElementById('lastUpdate').textContent = 'Ãšltima actualizaciÃ³n: ' + new Date().toLocaleString();
       }catch(e){
         console.error(e);
         document.getElementById('activeCount').textContent = 'Error';
@@ -347,7 +297,7 @@
     function fmtUSD(v){
       const n = Number(v||0);
       if(!Number.isFinite(n) || n<=0) return '';
-      return '≈ $' + n.toFixed(2) + ' USD';
+      return 'â‰ˆ $' + n.toFixed(2) + ' USD';
     }
     function setMsg(text, isErr){
       const el = document.getElementById('consumosMsg');
@@ -422,7 +372,7 @@
           }
         };
 
-        // No enviar null explícito para openai si está vacío
+        // No enviar null explÃ­cito para openai si estÃ¡ vacÃ­o
         if(payload.openai_cost_per_1m_tokens_usd === null) delete payload.openai_cost_per_1m_tokens_usd;
 
         const res = await fetch('/super/api/consumos', {
@@ -642,3 +592,4 @@
   </script>
 </body>
 </html>
+
