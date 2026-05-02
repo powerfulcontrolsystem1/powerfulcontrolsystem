@@ -253,7 +253,7 @@ func ListEmpresaTurnosAtencionServicios(dbConn *sql.DB, empresaID int64) ([]Empr
 		return nil, err
 	}
 	defer rows.Close()
-	var items []EmpresaTurnoAtencionServicio
+	items := make([]EmpresaTurnoAtencionServicio, 0)
 	for rows.Next() {
 		var item EmpresaTurnoAtencionServicio
 		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Descripcion, &item.Prefijo, &item.Prioridad, &item.Color, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
@@ -295,7 +295,7 @@ func ListEmpresaTurnosAtencionPuestos(dbConn *sql.DB, empresaID int64) ([]Empres
 		return nil, err
 	}
 	defer rows.Close()
-	var items []EmpresaTurnoAtencionPuesto
+	items := make([]EmpresaTurnoAtencionPuesto, 0)
 	for rows.Next() {
 		var item EmpresaTurnoAtencionPuesto
 		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Area, &item.Ubicacion, &item.ServiciosPermitidos, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
@@ -397,7 +397,7 @@ func ListEmpresaTurnosAtencionTickets(dbConn *sql.DB, empresaID int64, fecha, es
 		return nil, err
 	}
 	defer rows.Close()
-	var items []EmpresaTurnoAtencionTicket
+	items := make([]EmpresaTurnoAtencionTicket, 0)
 	for rows.Next() {
 		var item EmpresaTurnoAtencionTicket
 		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.ServicioNombre, &item.ServicioColor, &item.PuestoID, &item.PuestoNombre, &item.NumeroDia, &item.CodigoTurno, &item.DocumentoCliente, &item.NombreCliente, &item.CanalEmision, &item.Estado, &item.Observaciones, &item.FechaOperacion, &item.FechaEmision, &item.FechaLlamado, &item.FechaInicioAtencion, &item.FechaCierre, &item.TiempoEsperaMin, &item.TiempoAtencionMin, &item.UsuarioCreador); err != nil {
@@ -413,7 +413,13 @@ func BuildEmpresaTurnosAtencionDashboard(dbConn *sql.DB, empresaID int64, fecha 
 	if err != nil {
 		return EmpresaTurnoAtencionDashboard{}, err
 	}
-	dashboard := EmpresaTurnoAtencionDashboard{EmpresaID: empresaID, Fecha: defaultText(fecha, time.Now().Format("2006-01-02"))}
+	dashboard := EmpresaTurnoAtencionDashboard{
+		EmpresaID:         empresaID,
+		Fecha:             defaultText(fecha, time.Now().Format("2006-01-02")),
+		Servicios:         make([]EmpresaTurnoAtencionResumen, 0),
+		Puestos:           make([]EmpresaTurnoAtencionResumen, 0),
+		LlamadosRecientes: make([]EmpresaTurnoAtencionTicket, 0),
+	}
 	serviceMap := map[string]*EmpresaTurnoAtencionResumen{}
 	puestoMap := map[string]*EmpresaTurnoAtencionResumen{}
 	var waitSum, waitCount, attendSum, attendCount float64
@@ -468,10 +474,12 @@ func BuildEmpresaTurnosAtencionDisplay(dbConn *sql.DB, empresaID int64, fecha st
 		return EmpresaTurnoAtencionDisplay{}, err
 	}
 	out := EmpresaTurnoAtencionDisplay{
-		EmpresaID:        empresaID,
-		Titulo:           cfg.NombrePantalla,
-		Fecha:            dashboard.Fecha,
-		ResumenServicios: dashboard.Servicios,
+		EmpresaID:         empresaID,
+		Titulo:            cfg.NombrePantalla,
+		Fecha:             dashboard.Fecha,
+		ResumenServicios:  dashboard.Servicios,
+		TicketsLlamando:   make([]EmpresaTurnoAtencionTicket, 0),
+		LlamadosRecientes: make([]EmpresaTurnoAtencionTicket, 0),
 	}
 	for _, item := range dashboard.LlamadosRecientes {
 		if item.Estado == "llamando" || item.Estado == "atendiendo" {
