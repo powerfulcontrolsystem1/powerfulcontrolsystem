@@ -31,6 +31,8 @@
   var DOCUMENT_TOOLS_ID = 'aiChatDocumentTools';
   var DOCUMENT_FORMAT_ID = 'aiChatDocumentFormat';
   var DOCUMENT_DOWNLOAD_ID = 'aiChatDocumentDownload';
+  var DOCUMENT_EMAIL_ID = 'aiChatDocumentEmail';
+  var DOCUMENT_WHATSAPP_ID = 'aiChatDocumentWhatsApp';
   var MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
   var CHAT_PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
 
@@ -55,7 +57,8 @@
     robotVoice: 'es-CO',
     robotAssistantVisible: false,
     robotMoodTimer: null,
-    generatedDocument: null
+    generatedDocument: null,
+    shareArtifact: null
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
@@ -1368,34 +1371,64 @@
     if (!controls) return null;
 
     tools = document.createElement('div');
-    tools.id = DOCUMENT_TOOLS_ID;
-    tools.className = 'ai-chat-control-field ai-chat-document-tools is-hidden';
-    tools.innerHTML =
-      '<span>Documento</span>' +
-      '<div class="ai-chat-document-tool-row">' +
-      '<select id="' + DOCUMENT_FORMAT_ID + '" class="form-input" aria-label="Formato de descarga del documento">' +
+      tools.id = DOCUMENT_TOOLS_ID;
+      tools.className = 'ai-chat-control-field ai-chat-document-tools is-hidden';
+      tools.innerHTML =
+        '<span>Archivo IA</span>' +
+        '<div class="ai-chat-document-tool-row">' +
+        '<select id="' + DOCUMENT_FORMAT_ID + '" class="form-input" aria-label="Formato de descarga del documento">' +
       '<option value="pdf">PDF</option>' +
       '<option value="docx">Word</option>' +
       '<option value="xlsx">Excel</option>' +
-      '<option value="txt">TXT</option>' +
-      '<option value="json">JSON</option>' +
-      '</select>' +
-      '<button id="' + DOCUMENT_DOWNLOAD_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Descargar</button>' +
-      '</div>';
+        '<option value="txt">TXT</option>' +
+        '<option value="json">JSON</option>' +
+        '</select>' +
+        '<button id="' + DOCUMENT_DOWNLOAD_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Descargar</button>' +
+        '<button id="' + DOCUMENT_EMAIL_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Correo</button>' +
+        '<button id="' + DOCUMENT_WHATSAPP_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>WhatsApp</button>' +
+        '</div>';
     controls.appendChild(tools);
 
-    var downloadBtn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
-    if (downloadBtn) {
-      downloadBtn.addEventListener('click', function (event) {
-        event.preventDefault();
-        downloadCurrentGeneratedDocument();
-      });
+      var downloadBtn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          downloadCurrentGeneratedDocument();
+        });
+      }
+      var emailBtn = document.getElementById(DOCUMENT_EMAIL_ID);
+      if (emailBtn) {
+        emailBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          shareCurrentArtifactByEmail();
+        });
+      }
+      var whatsAppBtn = document.getElementById(DOCUMENT_WHATSAPP_ID);
+      if (whatsAppBtn) {
+        whatsAppBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          shareCurrentArtifactByWhatsApp();
+        });
+      }
+      return tools;
     }
-    return tools;
-  }
 
   function setGeneratedDocument(doc) {
     state.generatedDocument = doc || null;
+    if (doc) {
+      var selectedFormat = getSelectedDocumentFormat();
+      var urls = doc.download_urls || {};
+      var url = normalize(urls[selectedFormat]) || normalize(urls.pdf) || normalize(urls.docx) || normalize(urls.xlsx) || normalize(urls.txt) || normalize(urls.json);
+      setShareArtifact({
+        kind: 'document',
+        title: normalize(doc.title || 'Documento IA'),
+        format: selectedFormat,
+        url: url,
+        summary: normalize(doc.preview_text || '')
+      });
+    } else {
+      setShareArtifact(null);
+    }
     updateDocumentDownloadButton();
   }
 
@@ -1407,22 +1440,122 @@
 
   function updateDocumentDownloadButton() {
     var btn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
-    if (!btn) return;
-    btn.disabled = !state.generatedDocument;
-    btn.textContent = state.generatedDocument ? 'Descargar' : 'Genera primero';
+    var emailBtn = document.getElementById(DOCUMENT_EMAIL_ID);
+    var whatsAppBtn = document.getElementById(DOCUMENT_WHATSAPP_ID);
+    var hasArtifact = !!(state.generatedDocument || state.shareArtifact);
+    if (btn) {
+      btn.disabled = !state.generatedDocument && !state.shareArtifact;
+      btn.textContent = hasArtifact ? 'Descargar' : 'Genera primero';
+    }
+    if (emailBtn) emailBtn.disabled = !hasArtifact;
+    if (whatsAppBtn) whatsAppBtn.disabled = !hasArtifact;
+  }
+
+  function toAbsoluteURL(url) {
+    var raw = normalize(url);
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    try {
+      return new URL(raw, window.location.origin).toString();
+    } catch (error) {
+      return raw;
+    }
+  }
+
+  function setShareArtifact(artifact) {
+    state.shareArtifact = artifact || null;
+    if (artifact && artifact.format) {
+      var select = document.getElementById(DOCUMENT_FORMAT_ID);
+      if (select) {
+        var normalized = normalize(String(artifact.format)).toLowerCase();
+        if (select.querySelector('option[value="' + normalized + '"]')) {
+          select.value = normalized;
+        }
+      }
+    }
+    updateDocumentDownloadButton();
+  }
+
+  function getCurrentShareArtifact() {
+    if (state.generatedDocument) {
+      var format = getSelectedDocumentFormat();
+      var urls = state.generatedDocument.download_urls || {};
+      var picked = normalize(urls[format]) || normalize(urls.pdf) || normalize(urls.docx) || normalize(urls.xlsx) || normalize(urls.txt) || normalize(urls.json);
+      return {
+        kind: 'document',
+        title: normalize(state.generatedDocument.title || 'Documento IA'),
+        format: format,
+        url: picked,
+        summary: normalize(state.generatedDocument.preview_text || '')
+      };
+    }
+    return state.shareArtifact || null;
+  }
+
+  function buildArtifactShareMessage(artifact) {
+    if (!artifact) return '';
+    var title = normalize(artifact.title || 'Archivo generado desde chat IA');
+    var url = toAbsoluteURL(artifact.url);
+    var parts = [title];
+    if (artifact.format) {
+      parts.push('Formato: ' + String(artifact.format).toUpperCase());
+    }
+    if (artifact.summary) {
+      parts.push(normalize(String(artifact.summary)).slice(0, 280));
+    }
+    if (url) {
+      parts.push('Enlace: ' + url);
+    }
+    return parts.join('\n');
+  }
+
+  function shareCurrentArtifactByWhatsApp() {
+    var artifact = getCurrentShareArtifact();
+    if (!artifact) {
+      setNotice('Primero genera un documento o reporte para compartirlo.', true);
+      return;
+    }
+    var text = buildArtifactShareMessage(artifact);
+    if (!text) {
+      setNotice('No se pudo preparar el contenido para WhatsApp.', true);
+      return;
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+    setNotice('Se abrio WhatsApp para compartir el archivo generado.');
+  }
+
+  function shareCurrentArtifactByEmail() {
+    var artifact = getCurrentShareArtifact();
+    if (!artifact) {
+      setNotice('Primero genera un documento o reporte para compartirlo.', true);
+      return;
+    }
+    var target = window.prompt('Correo destino:', '');
+    if (target === null) return;
+    var email = normalize(target);
+    if (!email) {
+      setNotice('No se ingreso un correo de destino.', true);
+      return;
+    }
+    var subject = artifact.title || 'Archivo generado desde chat IA';
+    var body = buildArtifactShareMessage(artifact);
+    window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    setNotice('Se preparo el correo para compartir el archivo generado.');
   }
 
   function downloadCurrentGeneratedDocument() {
-    var doc = state.generatedDocument;
-    if (!doc) {
-      setNotice('Primero genera un documento en modo Documentos IA.', true);
+    var artifact = getCurrentShareArtifact();
+    if (!artifact) {
+      setNotice('Primero genera un documento o reporte para descargarlo.', true);
       return;
     }
-    var format = getSelectedDocumentFormat();
-    var urls = doc.download_urls || {};
-    var url = normalize(urls[format]) || ('/download?id=' + encodeURIComponent(doc.document_id || doc.id || '') + '&type=' + encodeURIComponent(format));
+    var url = normalize(artifact.url);
     if (!url || url.indexOf('/download?') !== 0) {
-      setNotice('No se pudo resolver la descarga del documento.', true);
+      if (/^https?:\/\//i.test(url)) {
+        window.location.href = url;
+        return;
+      }
+      setNotice('No se pudo resolver la descarga del archivo.', true);
       return;
     }
     window.location.href = url;
@@ -2080,6 +2213,7 @@
     var reportOption = modeEl && modeEl.querySelector('option[value="reportes"]');
     var documentOption = modeEl && modeEl.querySelector('option[value="documentos"]');
     var documentTools = document.getElementById(DOCUMENT_TOOLS_ID);
+    var documentFormatSelect = document.getElementById(DOCUMENT_FORMAT_ID);
     var reportMode = isReportMode();
     var documentMode = isDocumentMode();
     var superContext = isSuperContext();
@@ -2102,10 +2236,16 @@
     }
 
     if (documentTools) {
-      documentTools.classList.toggle('is-hidden', !documentMode);
+      documentTools.classList.toggle('is-hidden', !(documentMode || reportMode));
+    }
+    if (documentFormatSelect) {
+      documentFormatSelect.disabled = reportMode;
     }
     if (!documentMode) {
       updateDocumentDownloadButton();
+    }
+    if (!reportMode && !documentMode && !state.generatedDocument) {
+      setShareArtifact(null);
     }
 
     if (attachBtn) attachBtn.disabled = reportMode || documentMode;
@@ -2144,6 +2284,7 @@
     state.proposals = [];
     state.exportables = [];
     setGeneratedDocument(null);
+    setShareArtifact(null);
     clearAttachmentSelection();
     var input = document.getElementById(INPUT_ID);
     if (input) {
@@ -2392,6 +2533,13 @@
       if (!data || data.ok === false) {
         throw new Error((data && data.error) ? String(data.error) : 'No se pudo exportar el documento.');
       }
+      setShareArtifact({
+        kind: 'document',
+        title: normalize(data.title || item.title || 'Documento IA'),
+        format: normalize(data.format || format),
+        url: normalize(data.download_url),
+        summary: normalize(item.content || '')
+      });
       if (data.warning) {
         setNotice(String(data.warning), true);
       } else {
@@ -2584,6 +2732,14 @@
         if (!data || data.ok === false) {
           throw new Error((data && data.error) ? String(data.error) : 'No se pudo obtener respuesta de reportes IA.');
         }
+        setGeneratedDocument(null);
+        setShareArtifact({
+          kind: 'report',
+          title: normalize(data.title || 'Reporte IA'),
+          format: normalize(data.format || 'pdf'),
+          url: normalize(data.export_url),
+          summary: normalize(data.respuesta || '')
+        });
         var text = normalize(data.respuesta || 'Reporte listo.');
         if (normalize(data.title)) {
           text += '\n\nReporte: ' + normalize(data.title);
