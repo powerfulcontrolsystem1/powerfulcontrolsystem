@@ -3445,3 +3445,9 @@ Archivos modificados:
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/egresos_ingresos_menu.html
 - web/administrar_empresa/facturacion_electronica_menu.html
+
+2026-05-02 11:56:43 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 14bc3c0; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/administrar_clientes.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/impuestos.html
