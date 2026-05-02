@@ -3416,3 +3416,8 @@ Archivos modificados:
 Archivos modificados:
 - web/login_usuario.html
 - web/seleccionar_empresa.html
+
+2026-05-02 08:04:01 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: f926d77; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/super_administrador.html
