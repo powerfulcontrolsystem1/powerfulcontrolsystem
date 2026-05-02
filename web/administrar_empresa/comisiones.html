@@ -8,11 +8,35 @@
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
+    <section class="empresa-module-header" style="margin-bottom:18px;">
+      <div>
+        <span class="empresa-module-kicker">Liquidación variable</span>
+        <h2 style="margin:6px 0 8px;">Comisiones por servicio con reglas claras</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Define porcentajes, escalas y topes por rol o servicio para sostener pagos variables con trazabilidad y control de nómina.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Escalas</strong>
+          <span>Prioridades y topes</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Ajustes</strong>
+          <span>Trazabilidad manual auditada</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Reporte</strong>
+          <span>Base para liquidación</span>
+        </div>
+      </div>
+    </section>
+
     <div class="page-header">
       <h1>Módulo de comisiones por servicio</h1>
     </div>
     <p class="form-help" style="margin:0 0 12px 0;">
-      Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidacion de nomina.
+      Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidación de nómina.
     </p>
 
     <div class="form" >
@@ -27,7 +51,7 @@
           </label>
         </div>
         <div class="form-col" style="max-width:260px;">
-          <label class="form-label" for="cfgPorcentaje">Porcentaje de comision (%)</label>
+          <label class="form-label" for="cfgPorcentaje">Porcentaje de comisión (%)</label>
           <input id="cfgPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
         </div>
         <div class="form-col" style="max-width:280px;">
@@ -35,9 +59,9 @@
           <input id="cfgFiltroServicio" class="form-input" placeholder="Ej: lavado" value="lavado">
         </div>
         <div class="form-col" style="max-width:280px;">
-          <label class="form-label">Aplicacion por defecto</label>
+          <label class="form-label">Aplicación por defecto</label>
           <label class="form-help" style="display:flex;gap:8px;align-items:center;">
-            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automaticamente al cobrar
+            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automáticamente al cobrar
           </label>
         </div>
       </div>
@@ -62,7 +86,7 @@
       <input id="escalaId" type="hidden" value="0">
       <div class="form-row">
         <div class="form-col" style="max-width:240px;">
-          <label class="form-label" for="escalaRol">Rol operacion</label>
+          <label class="form-label" for="escalaRol">Rol operación</label>
           <input id="escalaRol" class="form-input" placeholder="Ej: lavador, supervisor">
         </div>
         <div class="form-col" style="max-width:260px;">
@@ -74,7 +98,7 @@
           <input id="escalaPct" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
         </div>
         <div class="form-col" style="max-width:200px;">
-          <label class="form-label" for="escalaTope">Tope comision</label>
+          <label class="form-label" for="escalaTope">Tope comisión</label>
           <input id="escalaTope" class="form-input" type="number" min="0" step="0.01" value="0">
         </div>
         <div class="form-col" style="max-width:180px;">
@@ -118,7 +142,7 @@
 
     <div class="form" >
       <div class="page-header" style="margin-bottom:8px;">
-        <h2 style="margin:0;font-size:1rem;">Ajuste manual de comision</h2>
+        <h2 style="margin:0;font-size:1rem;">Ajuste manual de comisión</h2>
       </div>
       <div class="form-row">
         <div class="form-col" style="max-width:220px;">
@@ -126,7 +150,7 @@
           <input id="ajUsuarioLavador" class="form-input" placeholder="email o codigo" maxlength="180">
         </div>
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="ajRolOperacion">Rol operacion</label>
+          <label class="form-label" for="ajRolOperacion">Rol operación</label>
           <input id="ajRolOperacion" class="form-input" placeholder="Ej: lavador" maxlength="120">
         </div>
         <div class="form-col" style="max-width:220px;">
@@ -148,7 +172,7 @@
           <input id="ajItem" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
         </div>
         <div class="form-col" style="max-width:260px;">
-          <label class="form-label" for="ajServicioCodigo">Servicio codigo</label>
+          <label class="form-label" for="ajServicioCodigo">Servicio código</label>
           <input id="ajServicioCodigo" class="form-input" maxlength="64" placeholder="Opcional">
         </div>
         <div class="form-col" style="max-width:260px;">
@@ -170,7 +194,7 @@
           <input id="ajMoneda" class="form-input" maxlength="16" value="COP">
         </div>
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="ajServicioCategoria">Categoria servicio</label>
+          <label class="form-label" for="ajServicioCategoria">Categoría servicio</label>
           <input id="ajServicioCategoria" class="form-input" maxlength="120" placeholder="Opcional">
         </div>
       </div>
@@ -204,7 +228,7 @@
           <input id="fUsuarioLavador" class="form-input" placeholder="email o nombre">
         </div>
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="fRolOperacion">Rol operacion</label>
+          <label class="form-label" for="fRolOperacion">Rol operación</label>
           <input id="fRolOperacion" class="form-input" placeholder="Ej: lavador">
         </div>
         <div class="form-col" style="max-width:220px;">

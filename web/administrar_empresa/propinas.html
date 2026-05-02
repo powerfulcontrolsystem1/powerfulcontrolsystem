@@ -8,12 +8,36 @@
 </head>
 <body class="empresa-subpage">
   <div class="container">
+    <section class="empresa-module-header" style="margin-bottom:18px;">
+      <div>
+        <span class="empresa-module-kicker">Caja y conciliación</span>
+        <h2 style="margin:6px 0 8px;">Propinas con trazabilidad</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Configura distribución, tratamiento fiscal y ajustes auditados para mantener control transparente entre operación y cierres de caja.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Distribución</strong>
+          <span>Por usuario o universal</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Fiscal</strong>
+          <span>Tratamiento e impuesto</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Conciliación</strong>
+          <span>Reporte por cierre de caja</span>
+        </div>
+      </div>
+    </section>
+
     <div class="page-header">
       <h1>Módulo de propinas</h1>
     </div>
     <p id="empresaContextoPropinas" class="form-help" style="margin:0 0 8px 0;"></p>
     <p class="form-help" style="margin:0 0 12px 0;">
-      Configura reglas de propinas y tratamiento fiscal, registra ajustes manuales auditados y revisa la conciliacion por cierre de caja.
+      Configura reglas de propinas y tratamiento fiscal, registra ajustes manuales auditados y revisa la conciliación por cierre de caja.
     </p>
 
     <div class="form" >
@@ -32,26 +56,26 @@
           <input id="cfgPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
         </div>
         <div class="form-col" style="max-width:260px;">
-          <label class="form-label" for="cfgModo">Modo de distribucion</label>
+          <label class="form-label" for="cfgModo">Modo de distribución</label>
           <select id="cfgModo" class="form-input">
             <option value="por_usuario">Por usuario</option>
             <option value="universal">Universal (repartida en usuarios activos)</option>
           </select>
         </div>
         <div class="form-col" style="max-width:280px;">
-          <label class="form-label">Aplicacion por defecto</label>
+          <label class="form-label">Aplicación por defecto</label>
           <label class="form-help" style="display:flex;gap:8px;align-items:center;">
-            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automaticamente al cobrar
+            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automáticamente al cobrar
           </label>
         </div>
       </div>
       <div class="form-row">
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="cfgPaisFiscal">Pais fiscal</label>
+          <label class="form-label" for="cfgPaisFiscal">País fiscal</label>
           <input id="cfgPaisFiscal" class="form-input" type="text" maxlength="32" placeholder="co">
         </div>
         <div class="form-col" style="max-width:240px;">
-          <label class="form-label" for="cfgRegimenFiscal">Regimen fiscal</label>
+          <label class="form-label" for="cfgRegimenFiscal">Régimen fiscal</label>
           <input id="cfgRegimenFiscal" class="form-input" type="text" maxlength="64" placeholder="general">
         </div>
         <div class="form-col" style="max-width:260px;">
@@ -73,7 +97,7 @@
         </div>
       </div>
       <div class="form-actions">
-        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuracion</button>
+        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuración</button>
         <button id="btnActivarCfg" type="button" class="btn secondary">Activar</button>
         <button id="btnDesactivarCfg" type="button" class="btn secondary">Desactivar</button>
       </div>
@@ -124,7 +148,7 @@
           </label>
         </div>
         <div class="form-col" style="max-width:180px;">
-          <label class="form-label" for="fLimit">Max. filas</label>
+          <label class="form-label" for="fLimit">Máx. filas</label>
           <input id="fLimit" class="form-input" type="number" min="10" max="2000" step="10" value="200">
         </div>
       </div>
@@ -203,7 +227,7 @@
           <input id="ajUsuario" class="form-input" type="text" maxlength="180" placeholder="usuario@empresa.com">
         </div>
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="ajModo">Modo de distribucion</label>
+          <label class="form-label" for="ajModo">Modo de distribución</label>
           <select id="ajModo" class="form-input">
             <option value="por_usuario">Por usuario</option>
             <option value="universal">Universal</option>
