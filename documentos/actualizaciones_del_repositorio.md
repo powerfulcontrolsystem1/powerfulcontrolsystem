@@ -3670,3 +3670,12 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/licencias.html
 - web/super/licencias_resumen.html
+
+2026-05-02 18:10:31 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bb6ab1c; PushStatus: OK
+Archivos modificados:
+- web/descripcion_de_los_sistemas.ht
+- web/img/dental-logo.svg
+- web/img/dental-system-hero.svg
+- web/img/gym-logo.svg
+- web/img/gym-system-hero.svg
+- web/index.html
