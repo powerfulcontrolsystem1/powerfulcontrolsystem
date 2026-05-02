@@ -3534,3 +3534,28 @@ Archivos modificados:
 - web/administrar_empresa/configuracion_menu.html
 - web/index.html
 - web/js/administrar_empresa.js
+
+2026-05-02 14:26:14 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: fc06f06; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_clientes.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/asistencia_empleados.html
+- web/administrar_empresa/auditoria.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/codigos_de_descuento.html
+- web/administrar_empresa/compras_menu.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/crm_comercial.html
+- web/administrar_empresa/egresos_ingresos_menu.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/facturacion_electronica_menu.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/hoja_vida_operativa.html
+- web/administrar_empresa/impuestos.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/publicar_red_social.html
+- web/administrar_empresa/reportes_menu.html
+- web/administrar_empresa/reservas_hotel.html
+- web/administrar_empresa/vehiculos_registro.html
