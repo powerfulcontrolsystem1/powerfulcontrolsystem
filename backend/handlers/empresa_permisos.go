@@ -148,7 +148,7 @@ var permissionActionsCatalogOrdered = []string{
 	permActionApprove,
 }
 
-// Etiquetas cortas para UI (super: permisos por rol) y documentación.
+// Etiquetas cortas para UI (super: permisos por rol) y documentaciÃ³n.
 var permissionActionDisplayNames = map[string]string{
 	permActionRead:    "Leer / consultar",
 	permActionCreate:  "Crear / registrar",
@@ -157,15 +157,15 @@ var permissionActionDisplayNames = map[string]string{
 	permActionApprove: "Aprobar / auditar",
 }
 
-// permissionModuleDisplayNames nombres de negocio por clave de módulo.
+// permissionModuleDisplayNames nombres de negocio por clave de mÃ³dulo.
 var permissionModuleDisplayNames = map[string]string{
 	permModuleVentas:      "Ventas y servicio al cliente",
-	permModuleInventario:  "Inventario y almacén",
+	permModuleInventario:  "Inventario y almacÃ©n",
 	permModuleFinanzas:    "Finanzas, caja y reportes",
 	permModuleClientes:    "Clientes y cartera comercial",
 	permModuleCompras:     "Compras y proveedores",
-	permModuleFacturacion: "Facturación electrónica (DIAN)",
-	permModuleSeguridad:   "Seguridad, usuarios e integración",
+	permModuleFacturacion: "FacturaciÃ³n electrÃ³nica (DIAN)",
+	permModuleSeguridad:   "Seguridad, usuarios e integraciÃ³n",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -192,48 +192,49 @@ type permissionPageRule struct {
 var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
-	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación y venta"},
-	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "Operación y venta"},
-	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "Operación y venta"},
-	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pública (e‑commerce)", Grupo: "Operación y venta"},
-	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
-	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catálogo"},
-	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de códigos de barras", Grupo: "Inventario y catálogo"},
-	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
-	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
-	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Finanzas y nómina"},
-	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehículos", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación y venta"},
-	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
+	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkGimnasio", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
+	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pÃºblica (eâ€‘commerce)", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catÃ¡logo"},
+	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catÃ¡logo"},
+	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de cÃ³digos de barras", Grupo: "Inventario y catÃ¡logo"},
+	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "CÃ³digos de descuento", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y Ã³rdenes", Grupo: "Compras"},
+	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "ConfiguraciÃ³n de empresa", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "ConfiguraciÃ³n de impresora", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "NÃ³mina y sueldos", Grupo: "Finanzas y nÃ³mina"},
+	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehÃ­culos", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "AuditorÃ­a de acciones", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM bÃ¡sico", Grupo: "Clientes"},
 	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM comercial y embudo", Grupo: "Clientes"},
-	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
-	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
-	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
-	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "FacturaciÃ³n electrÃ³nica (emitir)", Grupo: "FacturaciÃ³n DIAN"},
+	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "FacturaciÃ³n DIAN"},
+	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Seguridad e integraciÃ³n"},
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
-	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
-	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "CrÃ©ditos y cartera", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integraciÃ³n"},
 	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Finanzas y reportes"},
-	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Inventario y catálogo"},
-	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobación: configuración de estaciones", Grupo: "Operación y venta"},
-	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
-	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
-	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
-	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "UbicaciÃ³n / GPS (activos)", Grupo: "Inventario y catÃ¡logo"},
+	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "AprobaciÃ³n: configuraciÃ³n de estaciones", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Seguridad e integraciÃ³n"},
+	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por dÃ­a", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "OperaciÃ³n y venta"},
+	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "OperaciÃ³n y venta"},
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkReportesIAChat", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Finanzas y reportes"},
-	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Analítica ejecutiva avanzada", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "AnalÃ­tica ejecutiva avanzada", Grupo: "Finanzas y reportes"},
 }
 
 type permissionModuleMatrixRow struct {
@@ -1840,6 +1841,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkAsistenciaEmpleados"
 	case path == "/api/empresa/vehiculos_registro":
 		return "linkVehiculosRegistro"
+	case path == "/api/empresa/gimnasio":
+		return "linkGimnasio"
 	case strings.HasPrefix(path, "/api/empresa/reportes"):
 		if strings.Contains(path, "/ia") {
 			return "linkReportesIAChat"
@@ -2018,7 +2021,7 @@ func summarizePermissionModules(rows []permissionModuleMatrixRow) permissionSumm
 	return summary
 }
 
-// PermissionModuleDisplayNameMap devuelve etiquetas de negocio por clave de módulo (API super: permisos por rol).
+// PermissionModuleDisplayNameMap devuelve etiquetas de negocio por clave de mÃ³dulo (API super: permisos por rol).
 func PermissionModuleDisplayNameMap() map[string]string {
 	out := make(map[string]string, len(permissionModulesCatalogOrdered))
 	for _, m := range permissionModulesCatalogOrdered {
@@ -2031,7 +2034,7 @@ func PermissionModuleDisplayNameMap() map[string]string {
 	return out
 }
 
-// PermissionActionDisplayNameMap devuelve etiquetas por letra de acción (R/C/U/D/A).
+// PermissionActionDisplayNameMap devuelve etiquetas por letra de acciÃ³n (R/C/U/D/A).
 func PermissionActionDisplayNameMap() map[string]string {
 	out := make(map[string]string, len(permissionActionsCatalogOrdered))
 	for _, a := range permissionActionsCatalogOrdered {

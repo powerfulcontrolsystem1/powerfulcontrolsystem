@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gimnasio</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="admin-empresa-shell">
+  <div class="page-shell">
+    <section class="card">
+      <h1>Gestión de gimnasio</h1>
+      <p class="form-help">Administra socios, planes, entrenadores, clases, asistencias y pagos desde un solo módulo operativo.</p>
+      <div class="form-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+        <button type="button" class="btn secondary" data-gym-tab="dashboard">Dashboard</button>
+        <button type="button" class="btn secondary" data-gym-tab="socios">Socios</button>
+        <button type="button" class="btn secondary" data-gym-tab="planes">Planes</button>
+        <button type="button" class="btn secondary" data-gym-tab="entrenadores">Entrenadores</button>
+        <button type="button" class="btn secondary" data-gym-tab="clases">Clases</button>
+        <button type="button" class="btn secondary" data-gym-tab="inscripciones">Inscripciones</button>
+        <button type="button" class="btn secondary" data-gym-tab="asistencias">Asistencias</button>
+        <button type="button" class="btn secondary" data-gym-tab="pagos">Pagos</button>
+      </div>
+      <div id="gymMsg" class="form-help auth-message is-hidden"></div>
+    </section>
+
+    <section id="gymTab-dashboard" class="card gym-tab">
+      <h2>Dashboard ejecutivo</h2>
+      <div id="gymDashboardCards" class="kpi-grid"></div>
+      <div class="two-col-grid">
+        <article class="card">
+          <h3>Renovaciones próximas</h3>
+          <div id="gymRenewals"></div>
+        </article>
+        <article class="card">
+          <h3>Clases programadas hoy</h3>
+          <div id="gymTodayClasses"></div>
+        </article>
+      </div>
+      <div class="three-col-grid">
+        <article class="card">
+          <h3>Ingresos por canal</h3>
+          <div id="gymByChannel"></div>
+        </article>
+        <article class="card">
+          <h3>Rentabilidad por línea</h3>
+          <div id="gymByLine"></div>
+        </article>
+        <article class="card">
+          <h3>Rentabilidad por sede</h3>
+          <div id="gymBySede"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="gymTab-socios" class="card gym-tab" hidden>
+      <h2>Socios</h2>
+      <form id="gymSocioForm" class="form">
+        <input type="hidden" id="gymSocioId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymSocioNombre">Nombre</label><input id="gymSocioNombre" class="form-input" required></div>
+          <div class="form-col"><label class="form-label" for="gymSocioCodigo">Código</label><input id="gymSocioCodigo" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymSocioTelefono">Teléfono</label><input id="gymSocioTelefono" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymSocioEmail">Correo</label><input id="gymSocioEmail" type="email" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymSocioPlan">Plan</label><select id="gymSocioPlan" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymSocioFechaFin">Fin del plan</label><input id="gymSocioFechaFin" type="date" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymSocioObjetivo">Objetivo</label><input id="gymSocioObjetivo" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymSocioSaldo">Saldo</label><input id="gymSocioSaldo" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="gymSocioEstado">Estado</label><select id="gymSocioEstado" class="form-input"><option value="activo">Activo</option><option value="congelado">Congelado</option><option value="retirado">Retirado</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar socio</button>
+          <button type="button" class="btn secondary" data-gym-reset="gymSocioForm">Limpiar</button>
+        </div>
+      </form>
+      <div id="gymSociosTable"></div>
+    </section>
+
+    <section id="gymTab-planes" class="card gym-tab" hidden>
+      <h2>Planes</h2>
+      <form id="gymPlanForm" class="form">
+        <input type="hidden" id="gymPlanId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymPlanNombre">Nombre</label><input id="gymPlanNombre" class="form-input" required></div>
+          <div class="form-col"><label class="form-label" for="gymPlanPrecio">Precio</label><input id="gymPlanPrecio" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="gymPlanDias">Duración días</label><input id="gymPlanDias" type="number" class="form-input" value="30"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymPlanClases">Clases incluidas</label><input id="gymPlanClases" type="number" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="gymPlanSesiones">Sesiones personalizadas</label><input id="gymPlanSesiones" type="number" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="gymPlanEstado">Estado</label><select id="gymPlanEstado" class="form-input"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+        </div>
+        <div class="remember-row"><label class="remember-label" for="gymPlanIlimitado"><input id="gymPlanIlimitado" type="checkbox"><span>Acceso ilimitado</span></label></div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar plan</button>
+          <button type="button" class="btn secondary" data-gym-reset="gymPlanForm">Limpiar</button>
+        </div>
+      </form>
+      <div id="gymPlanesTable"></div>
+    </section>
+
+    <section id="gymTab-entrenadores" class="card gym-tab" hidden>
+      <h2>Entrenadores</h2>
+      <form id="gymTrainerForm" class="form">
+        <input type="hidden" id="gymTrainerId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymTrainerNombre">Nombre</label><input id="gymTrainerNombre" class="form-input" required></div>
+          <div class="form-col"><label class="form-label" for="gymTrainerEspecialidad">Especialidad</label><input id="gymTrainerEspecialidad" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymTrainerTelefono">Teléfono</label><input id="gymTrainerTelefono" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymTrainerEmail">Correo</label><input id="gymTrainerEmail" type="email" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymTrainerDisponibilidad">Disponibilidad</label><input id="gymTrainerDisponibilidad" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymTrainerEstado">Estado</label><select id="gymTrainerEstado" class="form-input"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar entrenador</button>
+          <button type="button" class="btn secondary" data-gym-reset="gymTrainerForm">Limpiar</button>
+        </div>
+      </form>
+      <div id="gymTrainersTable"></div>
+    </section>
+
+    <section id="gymTab-clases" class="card gym-tab" hidden>
+      <h2>Clases</h2>
+      <form id="gymClassForm" class="form">
+        <input type="hidden" id="gymClassId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymClassNombre">Nombre</label><input id="gymClassNombre" class="form-input" required></div>
+          <div class="form-col"><label class="form-label" for="gymClassCategoria">Categoría</label><input id="gymClassCategoria" class="form-input" placeholder="Spinning, yoga, funcional"></div>
+          <div class="form-col"><label class="form-label" for="gymClassTrainer">Entrenador</label><select id="gymClassTrainer" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymClassSede">Sede</label><input id="gymClassSede" class="form-input" value="principal"></div>
+          <div class="form-col"><label class="form-label" for="gymClassCanal">Canal</label><select id="gymClassCanal" class="form-input"><option value="presencial">Presencial</option><option value="virtual">Virtual</option><option value="mixto">Mixto</option></select></div>
+          <div class="form-col"><label class="form-label" for="gymClassFecha">Fecha y hora</label><input id="gymClassFecha" type="datetime-local" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymClassCupos">Cupos</label><input id="gymClassCupos" type="number" class="form-input" value="20"></div>
+          <div class="form-col"><label class="form-label" for="gymClassDuracion">Duración minutos</label><input id="gymClassDuracion" type="number" class="form-input" value="60"></div>
+          <div class="form-col"><label class="form-label" for="gymClassPrecio">Precio</label><input id="gymClassPrecio" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar clase</button>
+          <button type="button" class="btn secondary" data-gym-reset="gymClassForm">Limpiar</button>
+        </div>
+      </form>
+      <div id="gymClassesTable"></div>
+    </section>
+
+    <section id="gymTab-inscripciones" class="card gym-tab" hidden>
+      <h2>Inscripciones</h2>
+      <form id="gymEnrollmentForm" class="form">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymEnrollmentSocio">Socio</label><select id="gymEnrollmentSocio" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymEnrollmentClase">Clase</label><select id="gymEnrollmentClase" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymEnrollmentEstado">Estado</label><select id="gymEnrollmentEstado" class="form-input"><option value="activa">Activa</option><option value="espera">Espera</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Registrar inscripción</button>
+        </div>
+      </form>
+      <div id="gymEnrollmentsTable"></div>
+    </section>
+
+    <section id="gymTab-asistencias" class="card gym-tab" hidden>
+      <h2>Asistencias</h2>
+      <form id="gymAttendanceForm" class="form">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymAttendanceSocio">Socio</label><select id="gymAttendanceSocio" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymAttendanceClase">Clase</label><select id="gymAttendanceClase" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymAttendanceSede">Sede</label><input id="gymAttendanceSede" class="form-input" value="principal"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymAttendanceCanal">Canal</label><input id="gymAttendanceCanal" class="form-input" value="recepcion"></div>
+          <div class="form-col"><label class="form-label" for="gymAttendanceFecha">Fecha y hora</label><input id="gymAttendanceFecha" type="datetime-local" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="gymAttendanceTipo">Tipo</label><select id="gymAttendanceTipo" class="form-input"><option value="checkin">Check-in</option><option value="clase">Asistencia a clase</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Registrar asistencia</button>
+        </div>
+      </form>
+      <div id="gymAttendanceTable"></div>
+    </section>
+
+    <section id="gymTab-pagos" class="card gym-tab" hidden>
+      <h2>Pagos</h2>
+      <form id="gymPaymentForm" class="form">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymPaymentSocio">Socio</label><select id="gymPaymentSocio" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymPaymentPlan">Plan</label><select id="gymPaymentPlan" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="gymPaymentConcepto">Concepto</label><input id="gymPaymentConcepto" class="form-input" value="Mensualidad"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="gymPaymentMonto">Monto</label><input id="gymPaymentMonto" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="gymPaymentMetodo">Método</label><select id="gymPaymentMetodo" class="form-input"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="qr">QR</option></select></div>
+          <div class="form-col"><label class="form-label" for="gymPaymentCanal">Canal</label><input id="gymPaymentCanal" class="form-input" value="mostrador"></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Registrar pago</button>
+        </div>
+      </form>
+      <div id="gymPaymentsTable"></div>
+    </section>
+  </div>
+
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/js/gimnasio.js"></script>
+</body>
+</html>

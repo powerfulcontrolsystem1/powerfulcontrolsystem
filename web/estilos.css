@@ -490,6 +490,45 @@ html[data-theme="dark-emerald"] {
   filter:none !important;
 }
 
+.page-shell{
+  display:grid;
+  gap:16px;
+  padding:16px;
+}
+
+.two-col-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;
+}
+
+.three-col-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+}
+
+.data-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.94rem;
+}
+
+.data-table th,
+.data-table td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  text-align:left;
+  vertical-align:top;
+}
+
+.data-table thead th{
+  font-size:.82rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:#4b5563;
+}
+
 /* Ultimos movimientos de caja: lectura movil sin texto apilado */
 .caja-movements-page .card{overflow:hidden}
 .caja-movements-page .table{width:100%;table-layout:auto}
