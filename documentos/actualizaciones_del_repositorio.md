@@ -3321,3 +3321,9 @@ Archivos modificados:
 Archivos modificados:
 - backend/logs/empresa_global.log
 - web/administrar_empresa/facturas_electronicas.html
+
+2026-05-02 06:45:54 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 9be002a; PushStatus: OK
+Archivos modificados:
+- web/index.html
+- web/js/ai_chat_drawer.js
+- web/venta_publica.html
