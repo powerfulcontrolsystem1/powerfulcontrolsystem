@@ -8378,3 +8378,25 @@
 2026-05-02T05:34:07-05:00 [INFO] req_id=req-1777718046715601200-16c62f305047 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=738
 2026-05-02T05:36:37-05:00 [INFO] req_id=req-1777718197443889100-1675acd86e3a event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
 2026-05-02T05:36:38-05:00 [INFO] req_id=req-1777718197443889100-1675acd86e3a event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=977
+2026-05-02T05:53:33-05:00 [INFO] req_id=req-1777719213505720400-40d5a968213e event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:53:34-05:00 [INFO] req_id=req-1777719213505720400-40d5a968213e event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=982
+2026-05-02T05:55:39-05:00 [INFO] req_id=req-1777719339186216400-42d5a6c19eb8 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:55:39-05:00 [INFO] req_id=req-1777719339186216400-42d5a6c19eb8 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=449
+2026-05-02T05:55:53-05:00 [INFO] req_id=req-1777719353645652000-651218105ec7 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:55:54-05:00 [INFO] req_id=req-1777719353645652000-651218105ec7 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=350
+2026-05-02T05:56:39-05:00 [INFO] req_id=req-1777719399517377900-19370762756f event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:56:40-05:00 [INFO] req_id=req-1777719399517377900-19370762756f event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=662
+2026-05-02T05:57:38-05:00 [INFO] req_id=req-1777719458213858300-78404ab8a634 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:57:38-05:00 [INFO] req_id=req-1777719458213858300-78404ab8a634 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=472
+2026-05-02T05:58:41-05:00 [INFO] req_id=req-1777719521942318200-3cf60d698bc0 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:58:42-05:00 [INFO] req_id=req-1777719521942318200-3cf60d698bc0 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=813
+2026-05-02T05:59:07-05:00 [INFO] req_id=req-1777719547143458900-0ccdf331106d event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:59:07-05:00 [INFO] req_id=req-1777719547143458900-0ccdf331106d event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=375
+2026-05-02T05:59:31-05:00 [INFO] req_id=req-1777719571884206600-ead30d35fbe1 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T05:59:32-05:00 [INFO] req_id=req-1777719571884206600-ead30d35fbe1 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=364
+2026-05-02T06:02:24-05:00 [INFO] req_id=req-1777719744864105500-a60c2d44722e event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T06:02:25-05:00 [INFO] req_id=req-1777719744864105500-a60c2d44722e event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=725
+2026-05-02T06:04:55-05:00 [INFO] req_id=req-1777719895896706000-fdb593d8af77 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T06:04:56-05:00 [INFO] req_id=req-1777719895896706000-fdb593d8af77 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=719
+2026-05-02T06:05:24-05:00 [INFO] req_id=req-1777719924263792300-c8bd454e8720 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-02T06:05:24-05:00 [INFO] req_id=req-1777719924263792300-c8bd454e8720 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=622

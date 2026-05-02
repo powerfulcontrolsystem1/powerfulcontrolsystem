@@ -371,7 +371,13 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			payload.EstadoActual = comprasFirstNonBlank(payload.EstadoActual, docActual.EstadoDocumento)
+			estadoActualPayload := normalizeComprasAction(payload.EstadoActual)
+			estadoActualReal := normalizeComprasAction(docActual.EstadoDocumento)
+			if estadoActualPayload != "" && estadoActualReal != "" && estadoActualPayload != estadoActualReal {
+				http.Error(w, fmt.Sprintf("estado_actual no coincide con el estado real del documento: esperado=%s recibido=%s", estadoActualReal, estadoActualPayload), http.StatusConflict)
+				return
+			}
+			payload.EstadoActual = comprasFirstNonBlank(docActual.EstadoDocumento, payload.EstadoActual)
 			payload.ProveedorID = comprasFirstNonBlankInt64(payload.ProveedorID, docActual.ProveedorID)
 
 			estadoDocumento := docActual.EstadoDocumento
@@ -421,12 +427,14 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			hasRecepcionResumen := false
 			recepcionResumen := comprasRecepcionResumen{}
 
+			estadoActualDocumento := normalizeComprasAction(docActual.EstadoDocumento)
+
 			switch action {
 			case "actualizar":
 				// Actualizacion simple sin transicion.
 
 			case "solicitar_aprobacion":
-				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				estadoActualNorm := estadoActualDocumento
 				if estadoActualNorm != "borrador" && estadoActualNorm != "pendiente_emision" && estadoActualNorm != "rechazada" {
 					http.Error(w, "transicion invalida: solicitar_aprobacion requiere estado borrador, pendiente_emision o rechazada", http.StatusConflict)
 					return
@@ -443,7 +451,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = "solicitar_aprobacion"
 
 			case "aprobar_compra":
-				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				estadoActualNorm := estadoActualDocumento
 				if estadoActualNorm != "pendiente_aprobacion" {
 					http.Error(w, "transicion invalida: aprobar_compra requiere estado pendiente_aprobacion", http.StatusConflict)
 					return
@@ -469,7 +477,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = "aprobar_compra"
 
 			case "rechazar_compra":
-				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				estadoActualNorm := estadoActualDocumento
 				if estadoActualNorm != "pendiente_aprobacion" {
 					http.Error(w, "transicion invalida: rechazar_compra requiere estado pendiente_aprobacion", http.StatusConflict)
 					return
@@ -480,6 +488,10 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = "rechazar_compra"
 
 			case "recepcionar_parcial_compra":
+				if estadoActualDocumento != "emitida" && estadoActualDocumento != "recepcion_parcial" {
+					http.Error(w, "transicion invalida: recepcionar_parcial_compra requiere estado emitida o recepcion_parcial", http.StatusConflict)
+					return
+				}
 				resumen, err := buildComprasRecepcionResumen(payload.RecepcionItems)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
@@ -497,6 +509,10 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = "recepcionar_parcial_compra"
 
 			case "recepcionar_compra":
+				if estadoActualDocumento != "emitida" && estadoActualDocumento != "recepcion_parcial" {
+					http.Error(w, "transicion invalida: recepcionar_compra requiere estado emitida o recepcion_parcial", http.StatusConflict)
+					return
+				}
 				if len(payload.RecepcionItems) > 0 {
 					resumen, err := buildComprasRecepcionResumen(payload.RecepcionItems)
 					if err != nil {
@@ -572,6 +588,12 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 
 			default:
+				if action == "contabilizar" || action == "contabilizar_compra" {
+					if estadoActualDocumento != "recepcionada" {
+						http.Error(w, "transicion invalida: contabilizar_compra requiere estado real recepcionada", http.StatusConflict)
+						return
+					}
+				}
 				if (action == "emitir" || action == "emitir_orden") && requiereAprobacion && nivelAprobacion < nivelesAprobacion {
 					http.Error(w, "la orden requiere aprobacion multinivel antes de emitir", http.StatusConflict)
 					return
