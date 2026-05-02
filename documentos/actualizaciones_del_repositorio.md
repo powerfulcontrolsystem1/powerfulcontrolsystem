@@ -3298,3 +3298,10 @@ Archivos modificados:
 2026-05-02 05:51:53 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 895af7b; PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-05-02 06:06:22 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b3d9266; PushStatus: OK
+Archivos modificados:
+- backend/handlers/compras.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json

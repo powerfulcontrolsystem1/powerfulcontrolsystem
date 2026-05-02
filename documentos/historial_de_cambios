@@ -17751,3 +17751,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-05-02: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/compras.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
