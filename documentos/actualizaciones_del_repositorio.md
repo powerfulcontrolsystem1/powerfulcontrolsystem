@@ -3587,3 +3587,7 @@ Archivos modificados:
 - web/js/turnos_publicos.js
 - web/pantalla_turnos.html
 - web/turnos_publicos.html
+
+2026-05-02 16:13:55 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 060cbd7; PushStatus: OK
+Archivos modificados:
+- backend/db/turnos_atencion.go
