@@ -3457,3 +3457,9 @@ Archivos modificados:
 - web/administrar_empresa/asistencia_empleados.html
 - web/administrar_empresa/nomina_sueldos.html
 - web/administrar_empresa/vehiculos_registro.html
+
+2026-05-02 12:06:37 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: dfe35ad; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/crm_comercial.html
