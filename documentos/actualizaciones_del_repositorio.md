@@ -3679,3 +3679,10 @@ Archivos modificados:
 - web/img/gym-logo.svg
 - web/img/gym-system-hero.svg
 - web/index.html
+
+2026-05-02 18:50:47 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: bb7a225; PushStatus: OK
+Archivos modificados:
+- backend/db/venta_publica.go
+- backend/handlers/venta_publica.go
+- web/administrar_empresa/venta_publica.html
+- web/venta_publica.html
