@@ -3433,3 +3433,9 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/administrar_empresa/panel.html
 - web/super/licencias_resumen.html
+
+2026-05-02 08:13:43 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: dede049; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/compras_menu.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/reportes_menu.html
