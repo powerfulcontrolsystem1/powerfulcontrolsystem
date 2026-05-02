@@ -1239,8 +1239,9 @@ p{color:var(--muted);line-height:1.5}
   .ai-chat-control-field{flex:0 0 auto;min-width:0;gap:0}
   .ai-chat-control-field > span{display:none}
   .ai-chat-control-field select.form-input{width:108px;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
-  .ai-chat-document-tool-row{gap:5px}
-  .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem}
+  .ai-chat-document-tool-row{gap:5px;flex-wrap:wrap;align-items:stretch}
+  .ai-chat-document-tool-row select.form-input{width:100%;min-width:0;flex:1 1 100%}
+  .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem;flex:1 1 calc(50% - 5px);justify-content:center}
   .ai-chat-attachment-row{flex:0 0 auto;min-width:0;gap:6px}
   .ai-chat-attachment-name{font-size:.74rem;line-height:1.2;max-height:2.4em;overflow:hidden}
   .ai-chat-form textarea{min-height:68px;max-height:112px;padding:9px 10px;border-radius:12px}
@@ -10490,7 +10491,9 @@ html.theme-light .ai-gemini-inline-alert{
   .ai-chat-drawer .ai-chat-control-field{flex:0 0 auto;min-width:0;gap:0}
   .ai-chat-drawer .ai-chat-control-field > span{display:none}
   .ai-chat-drawer .ai-chat-control-field select.form-input{width:108px;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
-  .ai-chat-drawer .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem}
+  .ai-chat-drawer .ai-chat-document-tool-row{gap:5px;flex-wrap:wrap;align-items:stretch}
+  .ai-chat-drawer .ai-chat-document-tool-row select.form-input{width:100%;min-width:0;flex:1 1 100%}
+  .ai-chat-drawer .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem;flex:1 1 calc(50% - 5px);justify-content:center}
   .ai-chat-drawer .ai-chat-attachment-row{flex:0 0 auto;min-width:0;gap:6px}
   .ai-chat-drawer .ai-chat-attachment-name{font-size:.74rem;line-height:1.2;max-height:2.4em;overflow:hidden}
   .ai-chat-drawer .ai-chat-form textarea{min-height:68px;max-height:112px;padding:9px 10px;border-radius:12px}
