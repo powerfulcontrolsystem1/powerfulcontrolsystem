@@ -450,6 +450,91 @@ func loadPortalPublicStoreItems(dbEmp *sql.DB, empresaID int64, pages []dbpkg.Em
 	return merged, nil
 }
 
+func portalCompanyQuestionWantsPrices(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"precio", "precios", "plan", "planes", "licencia", "licencias",
+		"valor", "valores", "cuanto cuesta", "cuanto vale", "costos", "tarifa", "tarifas",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func portalCompanyQuestionWantsContact(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"contacto", "whatsapp", "correo", "email", "telefono", "soporte", "asesor", "hablar con",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func portalCompanyQuestionWantsModules(question string) bool {
+	q := strings.ToLower(strings.TrimSpace(question))
+	if q == "" {
+		return false
+	}
+	keywords := []string{
+		"modulo", "modulos", "funciona", "funciones", "caracteristicas", "caracteristicas", "que hace", "que incluye",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(q, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func buildPortalCompanyPricesAnswer(dbSuper *sql.DB) string {
+	lics, err := dbpkg.GetLicenciasFilteredByPais(dbSuper, true, "", false, "")
+	if err != nil || len(lics) == 0 {
+		return "Los precios dependen del plan y del pais. Puedes escribirnos por WhatsApp al +57 304 330 6506 o al correo powerfulcontrolsystem@gmail.com para una cotizacion exacta.\n\nNo olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
+	}
+	var b strings.Builder
+	b.WriteString("Estos son los planes o licencias visibles en este momento:\n\n")
+	limit := len(lics)
+	if limit > 10 {
+		limit = 10
+	}
+	for i := 0; i < limit; i++ {
+		l := lics[i]
+		nombre := strings.TrimSpace(l.Nombre)
+		if nombre == "" {
+			nombre = "Licencia"
+		}
+		pais := strings.ToUpper(strings.TrimSpace(l.PaisCodigo))
+		if pais == "" {
+			pais = "CO"
+		}
+		b.WriteString(fmt.Sprintf("- **%s** | %d dias | %s %.2f\n", nombre, l.DuracionDias, pais, l.Valor))
+	}
+	b.WriteString("\nSi quieres, te puedo orientar sobre cual plan conviene mas para tu negocio.\n\n")
+	b.WriteString("No olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte.")
+	return b.String()
+}
+
+func buildPortalCompanyContactAnswer() string {
+	return "Puedes contactar a Powerful Control System por estos canales:\n\n- **WhatsApp:** https://wa.me/573043306506\n- **Correo:** powerfulcontrolsystem@gmail.com\n\nSi me dices tu tipo de negocio, tambien te puedo orientar antes de que hables con un asesor.\n\nNo olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
+}
+
+func buildPortalCompanyModulesAnswer() string {
+	return "Powerful Control System es una plataforma SaaS POS multiempresa. Segun el modulo o plan, puede ayudarte con ventas, inventario, compras, reservas, estaciones, facturacion electronica, finanzas, nomina, creditos, CRM comercial, chat y tareas, venta publica y otros procesos del negocio.\n\nSi me dices que tipo de empresa tienes, te sugiero el modulo o licencia mas conveniente.\n\nNo olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
+}
+
 func pickPortalChatModel(dbSuper *sql.DB, question string, wantsVision bool) (empresaAIModelDef, bool) {
 	modelMap := empresaAIModelMap()
 	defs := aiCredentialCatalogModels()
@@ -651,6 +736,36 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			systemPrompt = buildPortalPublicStoreSystemPrompt(cfg, pages, items)
 		} else {
+			if portalCompanyQuestionWantsContact(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalCompanyContactAnswer(),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
+			if portalCompanyQuestionWantsPrices(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalCompanyPricesAnswer(dbSuper),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
+			if portalCompanyQuestionWantsModules(p) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                  true,
+					"respuesta":           buildPortalCompanyModulesAnswer(),
+					"remaining_in_window": remaining,
+					"window_seconds":      300,
+					"scope":               scope,
+				})
+				return
+			}
 			if extra := portalChatLoadExtraInfo(dbSuper); extra != "" {
 				systemPrompt += "\n\n=== Informacion oficial editable (super administrador) ===\n" + extra
 			}
@@ -859,6 +974,45 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 			systemPrompt = buildPortalPublicStoreSystemPrompt(cfg, pages, items)
 		} else {
+			if portalCompanyQuestionWantsContact(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				payload, _ := json.Marshal(map[string]interface{}{"text": buildPortalCompanyContactAnswer()})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalCompanyQuestionWantsPrices(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				payload, _ := json.Marshal(map[string]interface{}{"text": buildPortalCompanyPricesAnswer(dbSuper)})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
+			if portalCompanyQuestionWantsModules(p) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+				payload, _ := json.Marshal(map[string]interface{}{"text": buildPortalCompanyModulesAnswer()})
+				fmt.Fprintf(w, "data: %s\n\n", payload)
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				if flusher, okFlusher := w.(http.Flusher); okFlusher {
+					flusher.Flush()
+				}
+				return
+			}
 			if extra := portalChatLoadExtraInfo(dbSuper); extra != "" {
 				systemPrompt += "\n\n=== Informacion oficial editable (super administrador) ===\n" + extra
 			}
