@@ -3595,3 +3595,15 @@ Archivos modificados:
 2026-05-02 16:15:59 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 6c7d270; PushStatus: OK
 Archivos modificados:
 - backend/handlers/turnos_atencion.go
+
+2026-05-02 16:38:57 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 13ad717; PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/db/licencias_adicionales.go
+- backend/handlers/licencias_empresa.go
+- backend/handlers/payments_handlers.go
+- backend/main.go
+- web/editar_empresa.html
+- web/js/editar_empresa.js
+- web/pagar_licencia.html
+- web/super/licencias.html
