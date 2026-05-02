@@ -476,18 +476,18 @@
         <h2>Documento de venta e impresion</h2>
         <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar documento</button>
       </div>
-      <p class="form-help">Elige si la venta genera factura electrónica o comprobante de pago sin envío a DIAN. El flujo operativo de venta sigue siendo el mismo.</p>
+      <p class="form-help">Toda venta genera su comprobante. Aquí decides si además se debe emitir factura electrónica automáticamente al cerrar el cobro.</p>
 
       <div class="empresa-config-grid">
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="facturaModoDocumentoVenta">Documento al vender</label>
+              <label class="form-label" for="facturaModoDocumentoVenta">Facturación electrónica automática</label>
               <select id="facturaModoDocumentoVenta" class="form-input">
-                <option value="comprobante_pago">Comprobante de pago</option>
-                <option value="factura_electronica">Factura electrónica</option>
+                <option value="comprobante_pago">No, solo generar la venta/comprobante</option>
+                <option value="factura_electronica">Sí, generar además factura electrónica</option>
               </select>
-              <p class="form-help">Si se selecciona factura electrónica y falta configuración legal, la venta se guarda y el documento queda pendiente de emisión.</p>
+              <p class="form-help">La venta siempre queda registrada. Si activas esta opción, el sistema añadirá la factura electrónica sobre esa venta y podrás volver a generarla manualmente desde la bandeja de ventas.</p>
             </div>
             <div class="form-col">
               <label class="form-label" for="facturaFormatoImpresion">Tamaño de hoja</label>
@@ -2564,4 +2564,3 @@
   </script>
 </body>
 </html>
-

@@ -224,6 +224,15 @@
       }
 
       function makeKey(it){ return norm(it.tipo_documento).toLowerCase()+"::"+norm(it.documento_codigo).toUpperCase(); }
+      function ventaBaseCode(code){
+        var raw = norm(code).toUpperCase().replace(/\s+/g, "");
+        if (raw.indexOf("CP-") === 0 || raw.indexOf("FV-") === 0) return raw.slice(3);
+        return raw;
+      }
+      function facturaCodeFromVentaCode(code){
+        var base = ventaBaseCode(code);
+        return base ? ("FV-" + base) : "";
+      }
 
       function setDefaultDates(){
         var now=new Date(); var y=now.getFullYear(); var m=String(now.getMonth()+1).padStart(2,"0"); var d=String(now.getDate()).padStart(2,"0");
@@ -334,6 +343,12 @@
 
       function renderTable(){
         state.index = Object.create(null);
+        var facturasPorBase = Object.create(null);
+        state.items.forEach(function(it){
+          if (norm(it.tipo_documento).toLowerCase() === "factura_electronica") {
+            facturasPorBase[ventaBaseCode(it.documento_codigo)] = it;
+          }
+        });
         if(!state.items.length){
           tbody.innerHTML='<tr><td colspan="8">No se encontraron ventas para los filtros seleccionados.</td></tr>';
           renderDetail(null);
@@ -343,6 +358,16 @@
         var rows = state.items.map(function(it){
           var key=makeKey(it); state.index[key]=it;
           var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || "Sin cliente";
+          var tipo = norm(it.tipo_documento).toLowerCase();
+          var facturaRelacionada = tipo === "comprobante_pago" ? facturasPorBase[ventaBaseCode(it.documento_codigo)] : null;
+          var accionesFactura = "";
+          if (tipo === "comprobante_pago") {
+            if (facturaRelacionada) {
+              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Ver factura FE</button> ';
+            } else {
+              accionesFactura = '<button type="button" class="btn secondary" data-action="facturar" data-key="'+esc(key)+'">Hacer factura electrónica</button> ';
+            }
+          }
           return '<tr data-key="'+esc(key)+'">' +
             '<td>'+esc(formatDate(it.fecha_documento||it.fecha_creacion))+'</td>' +
             '<td>'+esc(it.tipo_documento||"")+'</td>' +
@@ -354,6 +379,7 @@
             '<td>' +
               '<button type="button" class="btn secondary" data-action="ver" data-key="'+esc(key)+'">Ver</button> ' +
               '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Visualizar</button> ' +
+              accionesFactura +
               '<button type="button" class="btn secondary" data-action="ver_facturas" data-key="'+esc(key)+'">Ver en Facturas electrónicas</button> ' +
               '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button>' +
             '</td>' +
@@ -443,6 +469,31 @@
         });
       }
 
+      function facturarDesdeVenta(item){
+        return api("/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            tipo_documento: item.tipo_documento,
+            documento_codigo: item.documento_codigo
+          })
+        }).then(function(out){
+          var factura = out && out.factura_generada ? out.factura_generada : null;
+          if (factura && norm(factura.documento_codigo)) {
+            state.selectedKey = "factura_electronica::" + norm(factura.documento_codigo).toUpperCase();
+          }
+          if (factura && factura.ya_existia) {
+            msg("La factura electrónica ya existía para esta venta.", "ok");
+          } else if (factura && norm(factura.documento_codigo)) {
+            msg("Factura electrónica generada: " + norm(factura.documento_codigo), "ok");
+          } else {
+            msg("La factura electrónica quedó generada desde la venta.", "ok");
+          }
+          return run();
+        });
+      }
+
       function exportCSV(){
         if(!state.items.length){ msg("No hay ventas para exportar.", "error"); return; }
         var headers = ["fecha","tipo_documento","documento_codigo","numero_legal","cliente","cliente_email","monto_total","moneda","estado_documento","pais_codigo","ambiente_fe"];
@@ -517,10 +568,24 @@
         var action = norm(btn.getAttribute("data-action")).toLowerCase();
         var key = norm(btn.getAttribute("data-key"));
         var item = state.index[key];
+        var targetKey = norm(btn.getAttribute("data-target-key"));
+        if(action === "ver_fe"){
+          if (targetKey && state.index[targetKey]) {
+            state.selectedKey = targetKey;
+            renderDetail(state.index[targetKey]);
+          }
+          return;
+        }
         if(!item) return;
         state.selectedKey = key;
         if(action==="ver"){ renderDetail(item); return; }
         if(action==="visualizar"){ visualizar(item); return; }
+        if(action==="facturar"){
+          facturarDesdeVenta(item).catch(function(err){
+            msg(err.message || "No se pudo generar la factura electrónica desde la venta.", "error");
+          });
+          return;
+        }
         if(action==="ver_facturas"){
           try {
             var u = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);

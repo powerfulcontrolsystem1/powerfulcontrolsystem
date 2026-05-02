@@ -1612,22 +1612,198 @@ func normalizeVentaDocumentMode(raw string) string {
 	return "comprobante_pago"
 }
 
-func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
-	base := ""
-	if carrito != nil {
-		base = strings.ToUpper(strings.TrimSpace(carrito.Codigo))
-		if base == "" && carrito.ID > 0 {
-			base = fmt.Sprintf("CRT-%d", carrito.ID)
-		}
-	}
+func extractVentaDocumentoBase(raw string) string {
+	base := strings.ToUpper(strings.TrimSpace(raw))
 	base = strings.ReplaceAll(base, " ", "")
+	switch {
+	case strings.HasPrefix(base, "CP-"), strings.HasPrefix(base, "FV-"):
+		base = strings.TrimSpace(base[3:])
+	}
 	if base == "" {
 		base = "VENTA"
 	}
+	return base
+}
+
+func buildVentaDocumentoCodigoFromBase(base, modo string) string {
+	base = extractVentaDocumentoBase(base)
 	if normalizeVentaDocumentMode(modo) == "factura_electronica" {
 		return "FV-" + base
 	}
 	return "CP-" + base
+}
+
+func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
+	base := ""
+	if carrito != nil {
+		base = strings.TrimSpace(carrito.Codigo)
+		if base == "" && carrito.ID > 0 {
+			base = fmt.Sprintf("CRT-%d", carrito.ID)
+		}
+	}
+	return buildVentaDocumentoCodigoFromBase(base, modo)
+}
+
+func carritoAutoFacturaElectronicaActiva(cfg *dbpkg.EmpresaConfiguracionAvanzada) bool {
+	if cfg == nil {
+		return false
+	}
+	return normalizeVentaDocumentMode(cfg.ModoDocumentoVenta) == "factura_electronica"
+}
+
+func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, ventaDoc *dbpkg.EmpresaDocumentoFacturacion, usuario, observaciones string) (map[string]interface{}, error) {
+	if dbEmp == nil || ventaDoc == nil || ventaDoc.EmpresaID <= 0 || strings.TrimSpace(ventaDoc.DocumentoCodigo) == "" {
+		return nil, nil
+	}
+
+	cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, ventaDoc.EmpresaID)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		cfg = &dbpkg.EmpresaConfiguracionAvanzada{EmpresaID: ventaDoc.EmpresaID}
+	}
+
+	documentoCodigo := buildVentaDocumentoCodigoFromBase(ventaDoc.DocumentoCodigo, "factura_electronica")
+	existingDoc, existingErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, ventaDoc.EmpresaID, "factura_electronica", documentoCodigo)
+	if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
+		return nil, existingErr
+	}
+	if existingDoc != nil {
+		return map[string]interface{}{
+			"ok":                true,
+			"ya_existia":        true,
+			"modo":              "factura_electronica",
+			"requiere_dian":     true,
+			"documento_id":      existingDoc.ID,
+			"tipo_documento":    existingDoc.TipoDocumento,
+			"documento_codigo":  existingDoc.DocumentoCodigo,
+			"estado_documento":  existingDoc.EstadoDocumento,
+			"numero_legal":      existingDoc.NumeroLegal,
+			"codigo_validacion": existingDoc.CodigoValidacion,
+			"pais_codigo":       existingDoc.PaisCodigo,
+			"ambiente_fe":       existingDoc.AmbienteFE,
+		}, nil
+	}
+
+	periodoContable := strings.TrimSpace(ventaDoc.PeriodoContable)
+	if periodoContable == "" {
+		periodoContable = time.Now().Format("2006-01")
+	}
+	fechaDocumento := strings.TrimSpace(ventaDoc.FechaDocumento)
+	if fechaDocumento == "" {
+		fechaDocumento = time.Now().Format("2006-01-02 15:04:05")
+	}
+	observacionBase := strings.TrimSpace(observaciones)
+	if observacionBase == "" {
+		observacionBase = "factura electronica generada desde la venta " + strings.TrimSpace(ventaDoc.DocumentoCodigo)
+	}
+
+	docPayload := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:            ventaDoc.EmpresaID,
+		TipoDocumento:        "factura_electronica",
+		DocumentoCodigo:      documentoCodigo,
+		EstadoDocumento:      "emitida",
+		EstadoAnterior:       "borrador",
+		EventoUltimo:         "factura_emitida",
+		PeriodoContable:      periodoContable,
+		MontoTotal:           ventaDoc.MontoTotal,
+		Moneda:               strings.TrimSpace(ventaDoc.Moneda),
+		FechaDocumento:       fechaDocumento,
+		EntidadRelacionadaID: ventaDoc.EntidadRelacionadaID,
+		UsuarioCreador:       strings.TrimSpace(usuario),
+		Estado:               "activo",
+		Observaciones:        observacionBase,
+	}
+
+	warning := ""
+	legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, ventaDoc.EmpresaID, strings.TrimSpace(ventaDoc.PaisCodigo), documentoCodigo, ventaDoc.MontoTotal, ventaDoc.Moneda)
+	if legalErr != nil {
+		warning = legalErr.Error()
+		docPayload.EstadoDocumento = "pendiente_emision"
+		docPayload.EventoUltimo = "factura_pendiente_emision"
+		docPayload.Observaciones = strings.TrimSpace(docPayload.Observaciones + ". Pendiente de emision legal: " + warning)
+	} else if legalDoc != nil {
+		docPayload.NumeroLegal = legalDoc.NumeroLegal
+		docPayload.CodigoValidacion = legalDoc.CodigoValidacion
+		docPayload.PaisCodigo = legalDoc.PaisCodigo
+		docPayload.AmbienteFE = legalDoc.Ambiente
+		docPayload.FechaDocumento = legalDoc.FechaEmisionLegal
+	}
+
+	docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	integracionFiscal := map[string]interface{}{}
+	if strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
+		payloadOperacion := facturacionOperacionPayload{
+			EmpresaID:       ventaDoc.EmpresaID,
+			EntidadID:       ventaDoc.EntidadRelacionadaID,
+			ClienteID:       ventaDoc.EntidadRelacionadaID,
+			TipoDocumento:   "factura_electronica",
+			PaisCodigo:      strings.TrimSpace(docPersistido.PaisCodigo),
+			DocumentoCodigo: strings.TrimSpace(docPersistido.DocumentoCodigo),
+			EstadoActual:    strings.TrimSpace(docPersistido.EstadoDocumento),
+			MontoTotal:      ventaDoc.MontoTotal,
+			Moneda:          strings.TrimSpace(docPersistido.Moneda),
+			PeriodoContable: periodoContable,
+			Observaciones:   observacionBase,
+		}
+		resultadoIntegracion, retryItem, integErr := processFacturacionIntegracionForDocumento(
+			dbEmp,
+			payloadOperacion,
+			*docPersistido,
+			"emitir",
+			strings.TrimSpace(usuario),
+		)
+		if integErr != nil {
+			integracionFiscal["error"] = integErr.Error()
+		}
+		integracionFiscal["resultado"] = resultadoIntegracion
+		if retryItem != nil {
+			integracionFiscal["cola_reintentos"] = retryItem
+		}
+	}
+
+	payloadCorreo := facturacionOperacionPayload{
+		EmpresaID:       ventaDoc.EmpresaID,
+		EntidadID:       ventaDoc.EntidadRelacionadaID,
+		ClienteID:       ventaDoc.EntidadRelacionadaID,
+		TipoDocumento:   "factura_electronica",
+		PaisCodigo:      strings.TrimSpace(docPersistido.PaisCodigo),
+		DocumentoCodigo: strings.TrimSpace(docPersistido.DocumentoCodigo),
+		EstadoActual:    strings.TrimSpace(docPersistido.EstadoDocumento),
+		MontoTotal:      ventaDoc.MontoTotal,
+		Moneda:          strings.TrimSpace(docPersistido.Moneda),
+		PeriodoContable: periodoContable,
+		Observaciones:   observacionBase,
+	}
+	var envioCorreoFactura interface{} = map[string]interface{}{"intentado": false}
+	if cfg.EnviarFacturaElectronicaVenta {
+		envioCorreoFactura = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
+	}
+
+	return map[string]interface{}{
+		"ok":                      true,
+		"ya_existia":              false,
+		"modo":                    "factura_electronica",
+		"requiere_dian":           true,
+		"documento_id":            docPersistido.ID,
+		"tipo_documento":          docPersistido.TipoDocumento,
+		"documento_codigo":        docPersistido.DocumentoCodigo,
+		"estado_documento":        docPersistido.EstadoDocumento,
+		"numero_legal":            docPersistido.NumeroLegal,
+		"codigo_validacion":       docPersistido.CodigoValidacion,
+		"pais_codigo":             docPersistido.PaisCodigo,
+		"ambiente_fe":             docPersistido.AmbienteFE,
+		"warning":                 warning,
+		"integracion_fiscal":      integracionFiscal,
+		"envio_correo_factura_fe": envioCorreoFactura,
+		"documento_origen_codigo": ventaDoc.DocumentoCodigo,
+		"documento_origen_tipo":   ventaDoc.TipoDocumento,
+	}, nil
 }
 
 func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *dbpkg.CarritoCompra, montoTotal float64, usuario string) (map[string]interface{}, error) {
@@ -1644,14 +1820,13 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		cfg = &empty
 	}
 
-	feActiva := normalizeVentaDocumentMode(cfg.ModoDocumentoVenta) == "factura_electronica"
-	emitirFacturaEnEstaVenta := feActiva
+	emitirFacturaEnEstaVenta := carritoAutoFacturaElectronicaActiva(cfg)
 	frecuenciaAplicada := false
 	frecuenciaCadaNNo := int64(0)
 	frecuenciaContadorAnterior := int64(0)
 	frecuenciaContadorNuevo := int64(0)
 
-	if feActiva && cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
+	if emitirFacturaEnEstaVenta && cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
 		frecuenciaAplicada = true
 		frecuenciaCadaNNo = cfg.FacturacionFrecuenciaCadaNNo
 		ciclo := frecuenciaCadaNNo + 1
@@ -1665,12 +1840,7 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		}
 	}
 
-	modo := "comprobante_pago"
-	if emitirFacturaEnEstaVenta {
-		modo = "factura_electronica"
-	}
-
-	documentoCodigo := buildVentaDocumentoCodigo(carrito, modo)
+	documentoCodigo := buildVentaDocumentoCodigo(carrito, "comprobante_pago")
 	periodoContable := time.Now().Format("2006-01")
 	fechaDocumento := strings.TrimSpace(carrito.PagadoEn)
 	if fechaDocumento == "" {
@@ -1682,7 +1852,7 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 
 	docPayload := dbpkg.EmpresaDocumentoFacturacion{
 		EmpresaID:            carrito.EmpresaID,
-		TipoDocumento:        modo,
+		TipoDocumento:        "comprobante_pago",
 		DocumentoCodigo:      documentoCodigo,
 		EstadoDocumento:      "emitida",
 		EstadoAnterior:       "borrador",
@@ -1694,79 +1864,27 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		EntidadRelacionadaID: carrito.ClienteID,
 		UsuarioCreador:       strings.TrimSpace(usuario),
 		Estado:               "activo",
-		Observaciones:        "documento generado automaticamente al cerrar la venta del carrito " + strings.TrimSpace(carrito.Codigo),
+		Observaciones:        "venta/comprobante generado automaticamente al cerrar la venta del carrito " + strings.TrimSpace(carrito.Codigo),
 	}
-
-	warning := ""
-	requiereDIAN := modo == "factura_electronica"
-	if requiereDIAN {
-		docPayload.EventoUltimo = "factura_emitida"
-		legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, carrito.EmpresaID, "", documentoCodigo, montoTotal, carrito.Moneda)
-		if legalErr != nil {
-			warning = legalErr.Error()
-			docPayload.EstadoDocumento = "pendiente_emision"
-			docPayload.EventoUltimo = "factura_pendiente_emision"
-			docPayload.Observaciones = strings.TrimSpace(docPayload.Observaciones + ". Pendiente de emision legal: " + warning)
-		} else if legalDoc != nil {
-			docPayload.NumeroLegal = legalDoc.NumeroLegal
-			docPayload.CodigoValidacion = legalDoc.CodigoValidacion
-			docPayload.PaisCodigo = legalDoc.PaisCodigo
-			docPayload.AmbienteFE = legalDoc.Ambiente
-			docPayload.FechaDocumento = legalDoc.FechaEmisionLegal
-		}
-	} else {
-		docPayload.NumeroLegal = documentoCodigo
-		docPayload.AmbienteFE = "no_aplica"
-		docPayload.EventoUltimo = "comprobante_pago_emitido"
-		if cfg != nil {
-			docPayload.PaisCodigo = strings.TrimSpace(cfg.PaisCodigo)
-		}
+	if docPayload.Moneda == "" {
+		docPayload.Moneda = "COP"
 	}
+	if cfg != nil {
+		docPayload.PaisCodigo = strings.TrimSpace(cfg.PaisCodigo)
+	}
+	docPayload.NumeroLegal = documentoCodigo
+	docPayload.AmbienteFE = "no_aplica"
 
 	docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
 	if err != nil {
 		return nil, err
 	}
 
-	// Si se emitió FE, intentar integración fiscal en caliente.
-	integracionFiscal := map[string]interface{}{}
-	if requiereDIAN && strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
-		payloadOperacion := facturacionOperacionPayload{
-			EmpresaID:       carrito.EmpresaID,
-			EntidadID:       carrito.ClienteID,
-			ClienteID:       carrito.ClienteID,
-			TipoDocumento:   "factura_electronica",
-			PaisCodigo:      strings.TrimSpace(docPersistido.PaisCodigo),
-			DocumentoCodigo: strings.TrimSpace(docPersistido.DocumentoCodigo),
-			EstadoActual:    strings.TrimSpace(docPersistido.EstadoDocumento),
-			MontoTotal:      montoTotal,
-			Moneda:          strings.TrimSpace(docPersistido.Moneda),
-			PeriodoContable: periodoContable,
-			Observaciones:   "integracion fiscal automatica desde pago de carrito",
-		}
-		resultadoIntegracion, retryItem, integErr := processFacturacionIntegracionForDocumento(
-			dbEmp,
-			payloadOperacion,
-			*docPersistido,
-			"emitir",
-			strings.TrimSpace(usuario),
-		)
-		if integErr != nil {
-			log.Printf("[carritos] integracion fiscal documento_venta empresa_id=%d carrito_id=%d err=%v", carrito.EmpresaID, carrito.ID, integErr)
-			integracionFiscal["error"] = integErr.Error()
-		}
-		integracionFiscal["resultado"] = resultadoIntegracion
-		if retryItem != nil {
-			integracionFiscal["cola_reintentos"] = retryItem
-		}
-	}
-
-	// Envíos automáticos por email según configuración.
 	payloadCorreo := facturacionOperacionPayload{
 		EmpresaID:       carrito.EmpresaID,
 		EntidadID:       carrito.ClienteID,
 		ClienteID:       carrito.ClienteID,
-		TipoDocumento:   modo,
+		TipoDocumento:   "comprobante_pago",
 		PaisCodigo:      strings.TrimSpace(docPersistido.PaisCodigo),
 		DocumentoCodigo: strings.TrimSpace(docPersistido.DocumentoCodigo),
 		EstadoActual:    strings.TrimSpace(docPersistido.EstadoDocumento),
@@ -1776,18 +1894,30 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		Observaciones:   "envio automatico desde pago de carrito",
 	}
 	var envioCorreoVenta interface{} = map[string]interface{}{"intentado": false}
-	var envioCorreoFactura interface{} = map[string]interface{}{"intentado": false}
-	if !requiereDIAN && cfg.EnviarEmailVenta {
+	if cfg.EnviarEmailVenta {
 		envioCorreoVenta = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
 	}
-	if requiereDIAN && cfg.EnviarFacturaElectronicaVenta {
-		envioCorreoFactura = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
+
+	var facturaElectronica map[string]interface{}
+	if emitirFacturaEnEstaVenta {
+		facturaOut, facturaErr := registrarFacturaElectronicaDesdeDocumentoVenta(
+			dbEmp,
+			dbSuper,
+			docPersistido,
+			strings.TrimSpace(usuario),
+			"factura electronica generada automaticamente desde la venta " + strings.TrimSpace(docPersistido.DocumentoCodigo),
+		)
+		if facturaErr != nil {
+			log.Printf("[carritos] factura_electronica_automatica empresa_id=%d carrito_id=%d error: %v", carrito.EmpresaID, carrito.ID, facturaErr)
+		} else if facturaOut != nil {
+			facturaElectronica = facturaOut
+		}
 	}
 
 	return map[string]interface{}{
 		"ok":                true,
-		"modo":              modo,
-		"requiere_dian":     requiereDIAN,
+		"modo":              "comprobante_pago",
+		"requiere_dian":     false,
 		"documento_id":      docPersistido.ID,
 		"tipo_documento":    docPersistido.TipoDocumento,
 		"documento_codigo":  docPersistido.DocumentoCodigo,
@@ -1796,7 +1926,7 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		"codigo_validacion": docPersistido.CodigoValidacion,
 		"pais_codigo":       docPersistido.PaisCodigo,
 		"ambiente_fe":       docPersistido.AmbienteFE,
-		"warning":           warning,
+		"warning":           "",
 		"frecuencia": map[string]interface{}{
 			"aplicada":             frecuenciaAplicada,
 			"cada_n_no":            frecuenciaCadaNNo,
@@ -1804,9 +1934,9 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 			"contador_nuevo":       frecuenciaContadorNuevo,
 			"emitio_en_esta_venta": emitirFacturaEnEstaVenta,
 		},
-		"integracion_fiscal":      integracionFiscal,
-		"envio_correo_venta":      envioCorreoVenta,
-		"envio_correo_factura_fe": envioCorreoFactura,
+		"facturacion_automatica_activa": emitirFacturaEnEstaVenta,
+		"envio_correo_venta":            envioCorreoVenta,
+		"factura_electronica":           facturaElectronica,
 	}, nil
 }
 
@@ -1895,7 +2025,7 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 }
 
 func carritoShouldEmitFacturaElectronica(cfg *dbpkg.EmpresaConfiguracionAvanzada) bool {
-	if cfg == nil || normalizeVentaDocumentMode(cfg.ModoDocumentoVenta) != "factura_electronica" {
+	if !carritoAutoFacturaElectronicaActiva(cfg) {
 		return false
 	}
 	if cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {

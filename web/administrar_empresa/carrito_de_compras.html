@@ -2672,6 +2672,7 @@
         await ensureOk(res);
         const payResp = await res.json().catch(function() { return null; });
         const documentoVenta = payResp && payResp.documento_venta && typeof payResp.documento_venta === 'object' ? payResp.documento_venta : null;
+        const facturaElectronica = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
         var successMsg = 'Pago registrado. El carrito quedó inactivo.';
         if (payResp && payResp.propina && Number(payResp.propina.monto || 0) > 0) {
           successMsg += ' Propina registrada: ' + formatAmount(payResp.propina.monto, selected.moneda) + '.';
@@ -2685,6 +2686,12 @@
         if (payResp && payResp.comision && normalize(payResp.comision.warning)) {
           successMsg += ' Aviso comision: ' + normalize(payResp.comision.warning) + '.';
         }
+        if (documentoVenta && normalize(documentoVenta.documento_codigo)) {
+          successMsg += ' Venta registrada: ' + normalize(documentoVenta.documento_codigo) + '.';
+        }
+        if (facturaElectronica && normalize(facturaElectronica.documento_codigo)) {
+          successMsg += ' Factura electrónica: ' + normalize(facturaElectronica.documento_codigo) + '.';
+        }
         setStationPaymentMessage(successMsg, false);
         try {
           await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot);
@@ -2692,7 +2699,7 @@
           console.warn(printErr);
         }
         try {
-          await printFacturaElectronicaIfEnabled(documentoVenta, selected, pay, itemsSnapshot);
+          await printFacturaElectronicaIfEnabled(facturaElectronica, selected, pay, itemsSnapshot);
         } catch (printFacturaErr) {
           console.warn(printFacturaErr);
         }

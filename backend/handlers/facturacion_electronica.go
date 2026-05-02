@@ -321,6 +321,74 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				return
 			}
 
+			if action == "facturar_desde_venta" {
+				var payload facturacionOperacionPayload
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.TipoDocumento) == "" {
+					payload.TipoDocumento = strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
+				}
+				if strings.TrimSpace(payload.TipoDocumento) == "" {
+					payload.TipoDocumento = "comprobante_pago"
+				}
+
+				ventaDoc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "venta no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar la venta", http.StatusInternalServerError)
+					return
+				}
+				if strings.TrimSpace(strings.ToLower(ventaDoc.TipoDocumento)) != "comprobante_pago" {
+					http.Error(w, "solo se puede facturar electronicamente una venta/comprobante", http.StatusConflict)
+					return
+				}
+				if strings.TrimSpace(strings.ToLower(ventaDoc.EstadoDocumento)) != "emitida" {
+					http.Error(w, "la venta debe estar emitida para generar la factura electronica", http.StatusConflict)
+					return
+				}
+
+				resultado, err := registrarFacturaElectronicaDesdeDocumentoVenta(
+					dbEmp,
+					dbSuper,
+					ventaDoc,
+					strings.TrimSpace(adminEmailFromRequest(r)),
+					"factura electronica generada manualmente desde la bandeja de ventas",
+				)
+				if err != nil {
+					http.Error(w, "No se pudo generar la factura electronica desde la venta", http.StatusInternalServerError)
+					return
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":               true,
+					"accion":           "facturar_desde_venta",
+					"empresa_id":       payload.EmpresaID,
+					"venta_origen":     ventaDoc,
+					"factura_generada": resultado,
+				})
+				return
+			}
+
 			if action == "reenviar_correo" || action == "enviar_correo" {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {
