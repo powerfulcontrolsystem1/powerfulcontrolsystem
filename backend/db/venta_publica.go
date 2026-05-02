@@ -1135,6 +1135,9 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	if empresaID <= 0 {
 		return EmpresaVentaPublicaConfig{}, fmt.Errorf("empresa_id invalido")
 	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return EmpresaVentaPublicaConfig{}, err
+	}
 
 	var out EmpresaVentaPublicaConfig
 	var mostrarStock sql.NullInt64
@@ -2145,6 +2148,9 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 	if empresaID <= 0 {
 		return EmpresaVentaPublicaOrder{}, fmt.Errorf("empresa_id invalido")
 	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return EmpresaVentaPublicaOrder{}, err
+	}
 	codigoOrden = strings.TrimSpace(codigoOrden)
 	if codigoOrden == "" {
 		return EmpresaVentaPublicaOrder{}, fmt.Errorf("codigo_orden invalido")
@@ -2242,6 +2248,9 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transactionID, referencia string) (EmpresaVentaPublicaOrder, error) {
 	if dbConn == nil {
 		return EmpresaVentaPublicaOrder{}, errors.New("db connection is nil")
+	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return EmpresaVentaPublicaOrder{}, err
 	}
 	transactionID = strings.TrimSpace(transactionID)
 	referencia = strings.TrimSpace(referencia)
@@ -2345,6 +2354,9 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 	}
 	if empresaID <= 0 {
 		return nil, 0, fmt.Errorf("empresa_id invalido")
+	}
+	if err := EnsureEmpresaVentaPublicaSchema(dbConn); err != nil {
+		return nil, 0, err
 	}
 
 	limit, offset := ventaPublicaNormalizeLimitOffset(filter.Limit, filter.Offset)
