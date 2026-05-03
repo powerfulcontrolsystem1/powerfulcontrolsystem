@@ -992,20 +992,7 @@
       setStatus('');
     }
 
-    function handleStationCardActivation(ev, card) {
-      const stationID = Number(card.getAttribute('data-estacion-id') || 0);
-      const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-      if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
-        if (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-        }
-        clearDirtyState(stationID).catch(function(err) {
-          console.warn('No se pudo limpiar estacion sucia', err);
-        });
-        return;
-      }
-
+    function continueStationCardActivation(ev, card, stationID, stationName) {
       if (shouldOpenCartWhenStationClicked()) {
         openStationCarrito(stationID, stationName);
         return;
@@ -1025,6 +1012,29 @@
         .finally(function() {
           card.removeAttribute('aria-busy');
         });
+    }
+
+    async function handleStationCardActivation(ev, card) {
+      const stationID = Number(card.getAttribute('data-estacion-id') || 0);
+      const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+      if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        card.setAttribute('aria-busy', 'true');
+        setStatus('Preparando ' + (stationName || ('estacion ' + stationID)) + '...');
+        try {
+          await clearDirtyState(stationID);
+        } catch (err) {
+          console.warn('No se pudo limpiar estacion sucia', err);
+          setStatus('No se pudo preparar la estacion: ' + (err && err.message ? err.message : 'error de servidor'));
+          card.removeAttribute('aria-busy');
+          return;
+        }
+        card.removeAttribute('aria-busy');
+      }
+      continueStationCardActivation(ev, card, stationID, stationName);
     }
 
     // readConfig replaced by server-backed getConfigFromServer
