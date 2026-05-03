@@ -3741,3 +3741,13 @@ Archivos modificados:
 - web/administrar_empresa/ventas.html
 - web/ayuda/ayuda.html
 - web/estilos.css
+
+2026-05-03 18:03:32 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 78a6627b; PushStatus: OK
+Archivos modificados:
+- backend/db/tarifas_motel.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- web/administrar_empresa.html
+- web/administrar_empresa/tarifas_de_motel.html
+- web/js/administrar_empresa.js
+- web/js/tarifas_de_motel.js
