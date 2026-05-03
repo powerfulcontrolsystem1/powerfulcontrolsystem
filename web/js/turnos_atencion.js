@@ -1,13 +1,38 @@
 (function () {
   "use strict";
 
+  var tabMeta = {
+    configuracion: {
+      title: "Configuración",
+      summary: "Define la identidad del sistema, tiempos visuales y reglas de emisión pública para la fila."
+    },
+    catalogo: {
+      title: "Servicios y puestos",
+      summary: "Gestiona servicios, prefijos, prioridades y puestos habilitados por área."
+    },
+    operacion: {
+      title: "Emisión y llamado",
+      summary: "Emite tickets, llama el siguiente turno y opera la cola activa desde el puesto."
+    },
+    seguimiento: {
+      title: "Seguimiento",
+      summary: "Consulta llamados recientes y usa el historial para supervisar la sala."
+    }
+  };
+
   function q(name) { return (new URLSearchParams(window.location.search)).get(name) || ""; }
   function empresaId() {
     var direct = q("empresa_id") || q("id");
     if (direct) return direct;
     return sessionStorage.getItem("active_empresa_id") || localStorage.getItem("active_empresa_id") || "";
   }
-  function esc(v) { return String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function esc(v) {
+    return String(v || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
   async function j(url, opts) {
     var res = await fetch(url, Object.assign({ credentials: "same-origin" }, opts || {}));
     var text = await res.text();
@@ -54,10 +79,39 @@
     ticketsList: document.getElementById("ticketsList"),
     recentCallsList: document.getElementById("recentCallsList"),
     openPublicKiosk: document.getElementById("openPublicKiosk"),
-    openDisplayScreen: document.getElementById("openDisplayScreen")
+    openDisplayScreen: document.getElementById("openDisplayScreen"),
+    pageMsg: document.getElementById("turnosPageMsg")
   };
 
-  function setMsg(el, text, bad) { if (!el) return; el.textContent = text || ""; el.style.color = bad ? "#ffb4b4" : "#b8d8ff"; }
+  function setMsg(el, text, bad) {
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.color = bad ? "#b91c1c" : "";
+  }
+
+  function setPageMsg(text, bad) {
+    if (!els.pageMsg) return;
+    els.pageMsg.textContent = text || "";
+    els.pageMsg.style.color = bad ? "#b91c1c" : "";
+    els.pageMsg.style.background = bad ? "rgba(254,242,242,.92)" : "";
+    els.pageMsg.style.borderColor = bad ? "rgba(185,28,28,.22)" : "";
+  }
+
+  function setTab(tab) {
+    var meta = tabMeta[tab] || tabMeta.configuracion;
+    document.querySelectorAll("[data-turnos-tab]").forEach(function (button) {
+      var active = button.getAttribute("data-turnos-tab") === tab;
+      button.classList.toggle("is-active", active);
+      button.classList.toggle("secondary", !active);
+    });
+    document.querySelectorAll(".turnos-panel").forEach(function (panel) {
+      panel.hidden = panel.id !== ("turnosPanel-" + tab);
+    });
+    var titleEl = document.getElementById("turnosSectionTitle");
+    var summaryEl = document.getElementById("turnosSectionSummary");
+    if (titleEl) titleEl.textContent = meta.title;
+    if (summaryEl) summaryEl.textContent = meta.summary;
+  }
 
   async function loadConfig() {
     var cfg = await j(base + "&action=config");
@@ -71,12 +125,13 @@
 
   function serviceOptionHtml(items) {
     return '<option value="">Seleccione...</option>' + items.map(function (x) {
-      return '<option value="' + esc(x.id) + '">' + esc(x.nombre) + " · " + esc(x.prefijo) + "</option>";
+      return '<option value="' + esc(x.id) + '">' + esc(x.nombre) + " | " + esc(x.prefijo) + "</option>";
     }).join("");
   }
+
   function puestoOptionHtml(items) {
     return '<option value="">Seleccione...</option>' + items.map(function (x) {
-      return '<option value="' + esc(x.id) + '">' + esc(x.nombre) + (x.area ? " · " + esc(x.area) : "") + "</option>";
+      return '<option value="' + esc(x.id) + '">' + esc(x.nombre) + (x.area ? " | " + esc(x.area) : "") + "</option>";
     }).join("");
   }
 
@@ -88,17 +143,21 @@
 
     els.emitServicio.innerHTML = serviceOptionHtml(services);
     els.emitPuesto.innerHTML = puestoOptionHtml(puestos);
+
     els.servicesList.innerHTML = services.length ? services.map(function (x) {
-      return '<div class="turnos-list-item"><strong>' + esc(x.nombre) + '</strong><span class="form-help">Código ' + esc(x.codigo) + ' · Prefijo ' + esc(x.prefijo) + ' · Prioridad ' + esc(x.prioridad) + '</span></div>';
+      return '<div class="turnos-list-item"><strong>' + esc(x.nombre) + '</strong><span class="form-help">Código ' + esc(x.codigo) + ' | Prefijo ' + esc(x.prefijo) + ' | Prioridad ' + esc(x.prioridad) + '</span></div>';
     }).join("") : '<div class="turnos-list-item">Sin servicios.</div>';
+
     els.puestosList.innerHTML = puestos.length ? puestos.map(function (x) {
-      return '<div class="turnos-list-item"><strong>' + esc(x.nombre) + '</strong><span class="form-help">' + esc(x.area || "Sin área") + ' · ' + esc(x.ubicacion || "Sin ubicación") + '</span></div>';
+      return '<div class="turnos-list-item"><strong>' + esc(x.nombre) + '</strong><span class="form-help">' + esc(x.area || "Sin área") + ' | ' + esc(x.ubicacion || "Sin ubicación") + '</span></div>';
     }).join("") : '<div class="turnos-list-item">Sin puestos.</div>';
+
     els.ticketsList.innerHTML = tickets.length ? tickets.map(function (x) {
-      return '<div class="turnos-list-item"><strong><span class="turno-code" style="font-size:1.3rem;">' + esc(x.codigo_turno) + '</span></strong><span>' + esc(x.servicio_nombre) + ' · ' + esc(x.estado) + (x.puesto_nombre ? ' · ' + esc(x.puesto_nombre) : '') + '</span><div class="turnos-actions" style="margin-top:10px;"><button class="btn secondary" data-action="llamar" data-id="' + x.id + '">Re-llamar</button><button class="btn secondary" data-action="atender" data-id="' + x.id + '">Atender</button><button class="btn secondary" data-action="completar" data-id="' + x.id + '">Completar</button><button class="btn danger" data-action="cancelar" data-id="' + x.id + '">Cancelar</button></div></div>';
+      return '<div class="turnos-list-item"><strong><span class="turno-code" style="font-size:1.3rem;">' + esc(x.codigo_turno) + '</span></strong><span>' + esc(x.servicio_nombre) + ' | ' + esc(x.estado) + (x.puesto_nombre ? ' | ' + esc(x.puesto_nombre) : '') + '</span><div class="turnos-actions" style="margin-top:10px;"><button class="btn secondary" data-action="llamar" data-id="' + x.id + '">Re-llamar</button><button class="btn secondary" data-action="atender" data-id="' + x.id + '">Atender</button><button class="btn secondary" data-action="completar" data-id="' + x.id + '">Completar</button><button class="btn danger" data-action="cancelar" data-id="' + x.id + '">Cancelar</button></div></div>';
     }).join("") : '<div class="turnos-list-item">Sin tickets activos.</div>';
+
     els.recentCallsList.innerHTML = (dashboard.llamados_recientes || []).length ? dashboard.llamados_recientes.map(function (x) {
-      return '<div class="turnos-list-item"><strong>' + esc(x.codigo_turno) + '</strong><span>' + esc(x.servicio_nombre) + (x.puesto_nombre ? ' · ' + esc(x.puesto_nombre) : '') + ' · ' + esc(x.estado) + '</span></div>';
+      return '<div class="turnos-list-item"><strong>' + esc(x.codigo_turno) + '</strong><span>' + esc(x.servicio_nombre) + (x.puesto_nombre ? ' | ' + esc(x.puesto_nombre) : '') + ' | ' + esc(x.estado) + '</span></div>';
     }).join("") : '<div class="turnos-list-item">Todavía no hay llamados.</div>';
 
     document.getElementById("kpiEsperando").textContent = dashboard.esperando || 0;
@@ -130,8 +189,12 @@
         })
       });
       setMsg(els.configMsg, "Configuración guardada.");
+      setPageMsg("Configuración guardada correctamente.");
       await refreshAll();
-    } catch (e) { setMsg(els.configMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.configMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   async function createServicio(ev) {
@@ -153,8 +216,12 @@
       els.svcPrioridad.value = 100;
       els.svcColor.value = "#2563eb";
       setMsg(els.serviceMsg, "Servicio creado.");
+      setPageMsg("Servicio creado correctamente.");
       await refreshAll();
-    } catch (e) { setMsg(els.serviceMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.serviceMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   async function createPuesto(ev) {
@@ -173,8 +240,12 @@
       });
       els.puestoForm.reset();
       setMsg(els.puestoMsg, "Puesto creado.");
+      setPageMsg("Puesto creado correctamente.");
       await refreshAll();
-    } catch (e) { setMsg(els.puestoMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.puestoMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   async function emitirTicket() {
@@ -191,8 +262,12 @@
       });
       els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Ticket emitido</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + '</span></div>';
       setMsg(els.emitMsg, "Ticket emitido correctamente.");
+      setPageMsg("Ticket emitido correctamente.");
       await refreshAll();
-    } catch (e) { setMsg(els.emitMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.emitMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   async function llamarSiguiente() {
@@ -203,10 +278,14 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ puesto_id: Number(els.emitPuesto.value || 0) })
       });
-      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Llamando ahora</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + ' · ' + esc(item.puesto_nombre) + '</span></div>';
+      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Llamando ahora</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + ' | ' + esc(item.puesto_nombre) + '</span></div>';
       setMsg(els.emitMsg, "Se llamó el siguiente turno.");
+      setPageMsg("Se llamó el siguiente turno.");
       await refreshAll();
-    } catch (e) { setMsg(els.emitMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.emitMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   async function changeTicketState(id, estado) {
@@ -220,11 +299,18 @@
           estado: estado
         })
       });
+      setPageMsg("Estado del ticket actualizado.");
       await refreshAll();
-    } catch (e) { setMsg(els.emitMsg, e.message, true); }
+    } catch (e) {
+      setMsg(els.emitMsg, e.message, true);
+      setPageMsg(e.message, true);
+    }
   }
 
   function wireActions() {
+    document.querySelectorAll("[data-turnos-tab]").forEach(function (button) {
+      button.addEventListener("click", function () { setTab(button.getAttribute("data-turnos-tab")); });
+    });
     els.configForm.addEventListener("submit", saveConfig);
     els.serviceForm.addEventListener("submit", createServicio);
     els.puestoForm.addEventListener("submit", createPuesto);
@@ -245,6 +331,12 @@
   }
 
   wireActions();
-  refreshAll().catch(function (e) { setMsg(els.emitMsg, e.message, true); });
+  setTab("configuracion");
+  setPageMsg("Listo para configurar servicios, emitir tickets y operar la cola.");
+  refreshAll().catch(function (e) {
+    setMsg(els.emitMsg, e.message, true);
+    setPageMsg(e.message, true);
+  });
   setInterval(function () { refreshAll().catch(function () {}); }, 10000);
 })();
+

@@ -12,9 +12,48 @@
     asistencias: [],
     pagos: [],
     accesoConfig: null,
+    preconfiguracion: null,
     credenciales: [],
     dispositivos: [],
     eventosAcceso: []
+  };
+  var gymTabMeta = {
+    dashboard: {
+      title: "Dashboard",
+      summary: "Consulta indicadores clave, renovaciones próximas, clases de hoy y rentabilidad del gimnasio."
+    },
+    socios: {
+      title: "Socios",
+      summary: "Gestiona la base activa, el plan, el saldo y el objetivo deportivo de cada socio."
+    },
+    planes: {
+      title: "Planes",
+      summary: "Define precio, duración, acceso y estructura comercial de las membresías."
+    },
+    entrenadores: {
+      title: "Entrenadores",
+      summary: "Coordina especialidades, disponibilidad y estado del equipo deportivo."
+    },
+    clases: {
+      title: "Clases",
+      summary: "Programa sesiones por sede, entrenador, canal, horario y capacidad."
+    },
+    inscripciones: {
+      title: "Inscripciones",
+      summary: "Controla cupos, lista de espera y estado de cada inscripción por socio."
+    },
+    asistencias: {
+      title: "Asistencias",
+      summary: "Registra actividad real, check-in y presencia en clase por canal y sede."
+    },
+    pagos: {
+      title: "Pagos",
+      summary: "Concilia mensualidades, método de pago y recaudo del gimnasio."
+    },
+    acceso: {
+      title: "Control de acceso",
+      summary: "Administra política, credenciales, dispositivos y validación de ingreso."
+    }
   };
 
   function resolveEmpresaID() {
@@ -72,6 +111,13 @@
     Array.prototype.slice.call(document.querySelectorAll(".gym-tab")).forEach(function (section) {
       section.hidden = section.id !== ("gymTab-" + tab);
     });
+    Array.prototype.slice.call(document.querySelectorAll("[data-gym-tab]")).forEach(function (button) {
+      button.classList.toggle("is-active", button.getAttribute("data-gym-tab") === tab);
+      button.classList.toggle("secondary", button.getAttribute("data-gym-tab") !== tab);
+    });
+    var meta = gymTabMeta[tab] || gymTabMeta.dashboard;
+    if (byId("gymSectionTitle")) byId("gymSectionTitle").textContent = meta.title;
+    if (byId("gymSectionSummary")) byId("gymSectionSummary").textContent = meta.summary;
   }
 
   function populateSelect(selectId, items, valueKey, labelBuilder, includeBlank) {
@@ -124,6 +170,37 @@
     byId("gymBySede").innerHTML = renderList(data.rentabilidad_por_sede || [], [
       { key: "etiqueta", label: "Sede" }, { key: "monto", label: "Ingresos", format: function (v) { return formatMoney(v); } }, { key: "margen", label: "Margen", format: function (v) { return formatMoney(v); } }
     ]);
+  }
+
+  function payloadPreconfig() {
+    return {
+      empresa_id: state.empresaID,
+      nombre_sede_principal: collectValue("gymSetupSede"),
+      permitir_rfid: byId("gymSetupRFID").checked,
+      permitir_nfc: byId("gymSetupNFC").checked,
+      permitir_qr: byId("gymSetupQR").checked,
+      crear_planes_base: byId("gymSetupPlanes").checked,
+      crear_clases_base: byId("gymSetupClases").checked,
+      crear_dispositivos_base: byId("gymSetupDevices").checked,
+      cupos_base_clase: parseNumber("gymSetupCupos"),
+      duracion_base_clase: parseNumber("gymSetupDuracion")
+    };
+  }
+
+  function renderPreconfig() {
+    var summaryNode = byId("gymPreconfigSummary");
+    if (!summaryNode) return;
+    var cfg = state.preconfiguracion || {};
+    byId("gymSetupSede").value = cfg.sede_principal || "principal";
+    if (!collectValue("gymSetupCupos")) byId("gymSetupCupos").value = 18;
+    if (!collectValue("gymSetupDuracion")) byId("gymSetupDuracion").value = 60;
+    summaryNode.innerHTML = 'Estado actual: ' +
+      'Socios <strong>' + escapeHTML(cfg.socios || 0) + '</strong> · ' +
+      'Planes <strong>' + escapeHTML(cfg.planes || 0) + '</strong> · ' +
+      'Clases <strong>' + escapeHTML(cfg.clases || 0) + '</strong> · ' +
+      'Credenciales <strong>' + escapeHTML(cfg.credenciales || 0) + '</strong> · ' +
+      'Dispositivos <strong>' + escapeHTML(cfg.dispositivos || 0) + '</strong> · ' +
+      'Acceso ' + (cfg.acceso_configurado ? '<strong>configurado</strong>' : '<strong>pendiente</strong>');
   }
 
   function renderTables() {
@@ -250,12 +327,14 @@
       fetchJSON("asistencias").then(function (rows) { state.asistencias = rows || []; }),
       fetchJSON("pagos").then(function (rows) { state.pagos = rows || []; }),
       fetchJSON("acceso_config").then(function (row) { state.accesoConfig = row || {}; }),
+      fetchJSON("preconfiguracion").then(function (row) { state.preconfiguracion = row || {}; }),
       fetchJSON("credenciales").then(function (rows) { state.credenciales = rows || []; }),
       fetchJSON("dispositivos").then(function (rows) { state.dispositivos = rows || []; }),
       fetchJSON("eventos_acceso").then(function (rows) { state.eventosAcceso = rows || []; })
     ]).then(function () {
       syncSelects();
       renderAccessConfig();
+      renderPreconfig();
       renderTables();
     });
   }
@@ -269,6 +348,7 @@
     byId("gymAttendanceForm").addEventListener("submit", function (e) { e.preventDefault(); var f = collectValue("gymAttendanceFecha"); sendJSON("POST", "asistencias", { empresa_id: state.empresaID, socio_id: parseNumber("gymAttendanceSocio"), clase_id: parseNumber("gymAttendanceClase"), sede: collectValue("gymAttendanceSede"), canal: collectValue("gymAttendanceCanal"), tipo_acceso: collectValue("gymAttendanceTipo"), fecha_hora: f ? f.replace("T", " ") + ":00" : "" }).then(refreshAllWithMessage.bind(null, "Asistencia registrada.")).catch(showError); });
     byId("gymPaymentForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "pagos", { empresa_id: state.empresaID, socio_id: parseNumber("gymPaymentSocio"), plan_id: parseNumber("gymPaymentPlan"), concepto: collectValue("gymPaymentConcepto"), monto: parseNumber("gymPaymentMonto"), metodo_pago: collectValue("gymPaymentMetodo"), canal: collectValue("gymPaymentCanal") }).then(refreshAllWithMessage.bind(null, "Pago registrado.")).catch(showError); });
     byId("gymAccessConfigForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("PUT", "acceso_config", payloadAccessConfig()).then(refreshAllWithMessage.bind(null, "Política de acceso guardada.")).catch(showError); });
+    byId("gymPreconfigForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "aplicar_preconfiguracion", payloadPreconfig()).then(function () { return refreshAllWithMessage("Preconfiguración aplicada correctamente."); }).catch(showError); });
     byId("gymCredentialForm").addEventListener("submit", function (e) { e.preventDefault(); var p = payloadCredential(); sendJSON(p.id ? "PUT" : "POST", "credenciales", p).then(refreshAllWithMessage.bind(null, "Credencial guardada.")).catch(showError); });
     byId("gymDeviceForm").addEventListener("submit", function (e) { e.preventDefault(); var p = payloadDevice(); sendJSON(p.id ? "PUT" : "POST", "dispositivos", p).then(refreshAllWithMessage.bind(null, "Dispositivo guardado.")).catch(showError); });
     byId("gymAccessValidationForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "validar_acceso", { empresa_id: state.empresaID, codigo_credencial: collectValue("gymValidateCode"), metodo_acceso: collectValue("gymValidateMethod"), dispositivo_id: parseNumber("gymValidateDevice") }).then(function (payload) { showAccessResult(payload); refreshAll().catch(showError); }).catch(showError); });

@@ -229,6 +229,33 @@ type EmpresaGimnasioDashboard struct {
 	RentabilidadPorSede  []EmpresaGimnasioResumenGrupo `json:"rentabilidad_por_sede"`
 }
 
+type EmpresaGimnasioPreconfiguracion struct {
+	EmpresaID              int64  `json:"empresa_id"`
+	NombreSedePrincipal    string `json:"nombre_sede_principal"`
+	PermitirRFID           bool   `json:"permitir_rfid"`
+	PermitirNFC            bool   `json:"permitir_nfc"`
+	PermitirQR             bool   `json:"permitir_qr"`
+	CrearPlanesBase        bool   `json:"crear_planes_base"`
+	CrearClasesBase        bool   `json:"crear_clases_base"`
+	CrearDispositivosBase  bool   `json:"crear_dispositivos_base"`
+	CuposBaseClase         int    `json:"cupos_base_clase"`
+	DuracionBaseClase      int    `json:"duracion_base_clase"`
+	UsuarioCreador         string `json:"usuario_creador,omitempty"`
+}
+
+type EmpresaGimnasioPreconfiguracionResumen struct {
+	EmpresaID         int64  `json:"empresa_id"`
+	SedePrincipal     string `json:"sede_principal"`
+	Socios            int    `json:"socios"`
+	Planes            int    `json:"planes"`
+	Entrenadores      int    `json:"entrenadores"`
+	Clases            int    `json:"clases"`
+	Credenciales      int    `json:"credenciales"`
+	Dispositivos      int    `json:"dispositivos"`
+	AccesoConfigurado bool   `json:"acceso_configurado"`
+	TieneDatos        bool   `json:"tiene_datos"`
+}
+
 func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_planes (
@@ -422,6 +449,251 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
+		}
+	}
+	columnGroups := []struct {
+		table   string
+		columns []struct {
+			name string
+			def  string
+		}
+	}{
+		{
+			table: "empresa_gimnasio_planes",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"nombre", "TEXT NOT NULL"},
+				{"descripcion", "TEXT"},
+				{"precio", "REAL DEFAULT 0"},
+				{"duracion_dias", "INTEGER DEFAULT 30"},
+				{"clases_incluidas", "INTEGER DEFAULT 0"},
+				{"acceso_ilimitado", "INTEGER DEFAULT 0"},
+				{"sesiones_personalizadas", "INTEGER DEFAULT 0"},
+				{"estado", "TEXT DEFAULT 'activo'"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_socios",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"codigo", "TEXT"},
+				{"nombre_completo", "TEXT NOT NULL"},
+				{"documento", "TEXT"},
+				{"telefono", "TEXT"},
+				{"email", "TEXT"},
+				{"fecha_nacimiento", "TEXT"},
+				{"genero", "TEXT"},
+				{"objetivo", "TEXT"},
+				{"estado", "TEXT DEFAULT 'activo'"},
+				{"plan_id", "INTEGER"},
+				{"fecha_inicio_plan", "TEXT"},
+				{"fecha_fin_plan", "TEXT"},
+				{"saldo", "REAL DEFAULT 0"},
+				{"contacto_emergencia_nombre", "TEXT"},
+				{"contacto_emergencia_telefono", "TEXT"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_entrenadores",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"nombre_completo", "TEXT NOT NULL"},
+				{"especialidad", "TEXT"},
+				{"telefono", "TEXT"},
+				{"email", "TEXT"},
+				{"certificaciones", "TEXT"},
+				{"estado", "TEXT DEFAULT 'activo'"},
+				{"disponibilidad", "TEXT"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_clases",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"nombre", "TEXT NOT NULL"},
+				{"categoria", "TEXT"},
+				{"entrenador_id", "INTEGER"},
+				{"sede", "TEXT"},
+				{"canal", "TEXT"},
+				{"cupos", "INTEGER DEFAULT 0"},
+				{"duracion_minutos", "INTEGER DEFAULT 60"},
+				{"fecha_programada", "TEXT"},
+				{"estado", "TEXT DEFAULT 'programada'"},
+				{"precio", "REAL DEFAULT 0"},
+				{"descripcion", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_inscripciones",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"socio_id", "INTEGER NOT NULL"},
+				{"clase_id", "INTEGER NOT NULL"},
+				{"estado", "TEXT DEFAULT 'activa'"},
+				{"fecha_inscripcion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"asistencia_marcada", "INTEGER DEFAULT 0"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_asistencias",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"socio_id", "INTEGER NOT NULL"},
+				{"clase_id", "INTEGER"},
+				{"fecha_hora", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"tipo_acceso", "TEXT DEFAULT 'checkin'"},
+				{"canal", "TEXT"},
+				{"sede", "TEXT"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_pagos",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"socio_id", "INTEGER NOT NULL"},
+				{"plan_id", "INTEGER"},
+				{"concepto", "TEXT NOT NULL"},
+				{"monto", "REAL DEFAULT 0"},
+				{"moneda", "TEXT DEFAULT 'COP'"},
+				{"metodo_pago", "TEXT DEFAULT 'efectivo'"},
+				{"canal", "TEXT"},
+				{"sede", "TEXT"},
+				{"estado", "TEXT DEFAULT 'pagado'"},
+				{"referencia", "TEXT"},
+				{"fecha_pago", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_acceso_config",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL UNIQUE"},
+				{"modo_validacion_principal", "TEXT DEFAULT 'rfid'"},
+				{"permitir_rfid", "INTEGER DEFAULT 1"},
+				{"permitir_nfc", "INTEGER DEFAULT 1"},
+				{"permitir_qr", "INTEGER DEFAULT 1"},
+				{"permitir_pin", "INTEGER DEFAULT 0"},
+				{"permitir_biometria", "INTEGER DEFAULT 0"},
+				{"permitir_facial", "INTEGER DEFAULT 0"},
+				{"anti_passback_minutos", "INTEGER DEFAULT 10"},
+				{"minutos_tolerancia_mora", "INTEGER DEFAULT 0"},
+				{"estado", "TEXT DEFAULT 'activo'"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_credenciales",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"socio_id", "INTEGER NOT NULL"},
+				{"tipo_credencial", "TEXT NOT NULL"},
+				{"codigo_credencial", "TEXT NOT NULL"},
+				{"alias_credencial", "TEXT"},
+				{"estado", "TEXT DEFAULT 'activa'"},
+				{"fecha_expiracion", "TEXT"},
+				{"ultimo_uso", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_dispositivos_acceso",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"nombre", "TEXT NOT NULL"},
+				{"tipo_dispositivo", "TEXT NOT NULL"},
+				{"ubicacion", "TEXT"},
+				{"sede", "TEXT"},
+				{"canal", "TEXT"},
+				{"estado", "TEXT DEFAULT 'activo'"},
+				{"identificador", "TEXT"},
+				{"observaciones", "TEXT"},
+				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+		{
+			table: "empresa_gimnasio_eventos_acceso",
+			columns: []struct {
+				name string
+				def  string
+			}{
+				{"empresa_id", "INTEGER NOT NULL"},
+				{"socio_id", "INTEGER"},
+				{"credencial_id", "INTEGER"},
+				{"dispositivo_id", "INTEGER"},
+				{"codigo_credencial", "TEXT"},
+				{"metodo_acceso", "TEXT"},
+				{"resultado", "TEXT DEFAULT 'aprobado'"},
+				{"motivo", "TEXT"},
+				{"fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"canal", "TEXT"},
+				{"sede", "TEXT"},
+				{"observaciones", "TEXT"},
+				{"usuario_creador", "TEXT"},
+			},
+		},
+	}
+	for _, group := range columnGroups {
+		for _, column := range group.columns {
+			if err := ensureColumnIfMissing(dbConn, group.table, column.name, column.def); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -1237,6 +1509,187 @@ func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimna
 	out.RentabilidadPorSede, _ = listGymResumenGrupo(dbConn, `SELECT COALESCE(sede,'Principal'), COUNT(1), COALESCE(SUM(monto),0), COALESCE(SUM(monto),0) - (COUNT(1) * 9000), 0 FROM empresa_gimnasio_pagos WHERE empresa_id=? AND COALESCE(estado,'pagado')='pagado' GROUP BY COALESCE(sede,'Principal') ORDER BY COALESCE(SUM(monto),0) DESC`, empresaID)
 
 	return out, nil
+}
+
+func normalizeGymPreconfig(payload EmpresaGimnasioPreconfiguracion) *EmpresaGimnasioPreconfiguracion {
+	out := payload
+	out.NombreSedePrincipal = strings.TrimSpace(out.NombreSedePrincipal)
+	if out.NombreSedePrincipal == "" {
+		out.NombreSedePrincipal = "principal"
+	}
+	if out.CuposBaseClase <= 0 {
+		out.CuposBaseClase = 18
+	}
+	if out.DuracionBaseClase <= 0 {
+		out.DuracionBaseClase = 60
+	}
+	if !out.PermitirRFID && !out.PermitirNFC && !out.PermitirQR {
+		out.PermitirRFID = true
+		out.PermitirQR = true
+	}
+	if !out.CrearPlanesBase && !out.CrearClasesBase && !out.CrearDispositivosBase {
+		out.CrearPlanesBase = true
+		out.CrearClasesBase = true
+		out.CrearDispositivosBase = true
+	}
+	out.UsuarioCreador = strings.TrimSpace(out.UsuarioCreador)
+	return &out
+}
+
+func GetEmpresaGimnasioPreconfiguracionResumen(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioPreconfiguracionResumen, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	out := &EmpresaGimnasioPreconfiguracionResumen{EmpresaID: empresaID, SedePrincipal: "principal"}
+	var accesoConfigCount int
+	if err := dbConn.QueryRow(`SELECT
+		(SELECT COUNT(1) FROM empresa_gimnasio_socios WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_planes WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_entrenadores WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_clases WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_credenciales WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_dispositivos_acceso WHERE empresa_id=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_acceso_config WHERE empresa_id=?)`,
+		empresaID, empresaID, empresaID, empresaID, empresaID, empresaID, empresaID,
+	).Scan(&out.Socios, &out.Planes, &out.Entrenadores, &out.Clases, &out.Credenciales, &out.Dispositivos, &accesoConfigCount); err != nil {
+		return nil, err
+	}
+	out.AccesoConfigurado = accesoConfigCount > 0
+	out.TieneDatos = out.Socios > 0 || out.Planes > 0 || out.Entrenadores > 0 || out.Clases > 0 || out.Credenciales > 0 || out.Dispositivos > 0 || out.AccesoConfigurado
+	if row := dbConn.QueryRow(`SELECT COALESCE(sede,'') FROM empresa_gimnasio_clases WHERE empresa_id=? AND TRIM(COALESCE(sede,''))<>'' ORDER BY id ASC LIMIT 1`, empresaID); row != nil {
+		var sede string
+		if err := row.Scan(&sede); err == nil && strings.TrimSpace(sede) != "" {
+			out.SedePrincipal = strings.TrimSpace(sede)
+		}
+	}
+	return out, nil
+}
+
+func ApplyEmpresaGimnasioPreconfiguracion(dbConn *sql.DB, payload EmpresaGimnasioPreconfiguracion) (*EmpresaGimnasioPreconfiguracionResumen, error) {
+	if payload.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	cfg := normalizeGymPreconfig(payload)
+	accessCfg := EmpresaGimnasioAccesoConfig{
+		EmpresaID:               cfg.EmpresaID,
+		ModoValidacionPrincipal: "rfid",
+		PermitirRFID:            cfg.PermitirRFID,
+		PermitirNFC:             cfg.PermitirNFC,
+		PermitirQR:              cfg.PermitirQR,
+		PermitirPIN:             false,
+		PermitirBiometria:       false,
+		PermitirFacial:          false,
+		AntiPassbackMinutos:     10,
+		MinutosToleranciaMora:   0,
+		Estado:                  "activo",
+		UsuarioCreador:          cfg.UsuarioCreador,
+	}
+	if cfg.PermitirRFID {
+		accessCfg.ModoValidacionPrincipal = "rfid"
+	} else if cfg.PermitirNFC {
+		accessCfg.ModoValidacionPrincipal = "nfc"
+	} else if cfg.PermitirQR {
+		accessCfg.ModoValidacionPrincipal = "qr"
+	}
+	if _, err := UpsertEmpresaGimnasioAccesoConfig(dbConn, accessCfg); err != nil {
+		return nil, err
+	}
+	if cfg.CrearPlanesBase {
+		plans := []EmpresaGimnasioPlan{
+			{EmpresaID: cfg.EmpresaID, Nombre: "Pase diario", Precio: 25000, DuracionDias: 1, ClasesIncluidas: 0, AccesoIlimitado: true, Estado: "activo", UsuarioCreador: cfg.UsuarioCreador},
+			{EmpresaID: cfg.EmpresaID, Nombre: "Mensual estándar", Precio: 119000, DuracionDias: 30, ClasesIncluidas: 8, AccesoIlimitado: true, Estado: "activo", UsuarioCreador: cfg.UsuarioCreador},
+			{EmpresaID: cfg.EmpresaID, Nombre: "Trimestral rendimiento", Precio: 309000, DuracionDias: 90, ClasesIncluidas: 24, AccesoIlimitado: true, SesionesPersonalizadas: 2, Estado: "activo", UsuarioCreador: cfg.UsuarioCreador},
+		}
+		for _, plan := range plans {
+			var existingID int64
+			err := dbConn.QueryRow(`SELECT id FROM empresa_gimnasio_planes WHERE empresa_id=? AND lower(nombre)=lower(?) LIMIT 1`, cfg.EmpresaID, plan.Nombre).Scan(&existingID)
+			if err == sql.ErrNoRows {
+				if _, createErr := CreateEmpresaGimnasioPlan(dbConn, plan); createErr != nil {
+					return nil, createErr
+				}
+			} else if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if cfg.CrearClasesBase {
+		classes := []EmpresaGimnasioClase{
+			{EmpresaID: cfg.EmpresaID, Nombre: "Funcional AM", Categoria: "funcional", Sede: cfg.NombreSedePrincipal, Canal: "presencial", Cupos: cfg.CuposBaseClase, DuracionMinutos: cfg.DuracionBaseClase, Precio: 0, Estado: "programada", UsuarioCreador: cfg.UsuarioCreador},
+			{EmpresaID: cfg.EmpresaID, Nombre: "Spinning prime", Categoria: "spinning", Sede: cfg.NombreSedePrincipal, Canal: "presencial", Cupos: cfg.CuposBaseClase, DuracionMinutos: cfg.DuracionBaseClase, Precio: 0, Estado: "programada", UsuarioCreador: cfg.UsuarioCreador},
+			{EmpresaID: cfg.EmpresaID, Nombre: "Movilidad y core", Categoria: "movilidad", Sede: cfg.NombreSedePrincipal, Canal: "presencial", Cupos: cfg.CuposBaseClase, DuracionMinutos: cfg.DuracionBaseClase, Precio: 0, Estado: "programada", UsuarioCreador: cfg.UsuarioCreador},
+		}
+		for _, classItem := range classes {
+			var existingID int64
+			err := dbConn.QueryRow(`SELECT id FROM empresa_gimnasio_clases WHERE empresa_id=? AND lower(nombre)=lower(?) AND lower(COALESCE(sede,''))=lower(?) LIMIT 1`, cfg.EmpresaID, classItem.Nombre, classItem.Sede).Scan(&existingID)
+			if err == sql.ErrNoRows {
+				if _, createErr := CreateEmpresaGimnasioClase(dbConn, classItem); createErr != nil {
+					return nil, createErr
+				}
+			} else if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if cfg.CrearDispositivosBase {
+		devices := []EmpresaGimnasioDispositivoAcceso{}
+		if cfg.PermitirRFID {
+			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
+				EmpresaID:      cfg.EmpresaID,
+				Nombre:         "Ingreso principal RFID",
+				TipoDispositivo:"lector_rfid",
+				Ubicacion:      "Recepción principal",
+				Sede:           cfg.NombreSedePrincipal,
+				Canal:          "ingreso",
+				Estado:         "activo",
+				Identificador:  "RFID-PRINCIPAL",
+				UsuarioCreador: cfg.UsuarioCreador,
+			})
+		}
+		if cfg.PermitirNFC {
+			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
+				EmpresaID:      cfg.EmpresaID,
+				Nombre:         "Acceso NFC lobby",
+				TipoDispositivo:"lector_nfc",
+				Ubicacion:      "Lobby de ingreso",
+				Sede:           cfg.NombreSedePrincipal,
+				Canal:          "ingreso",
+				Estado:         "activo",
+				Identificador:  "NFC-LOBBY",
+				UsuarioCreador: cfg.UsuarioCreador,
+			})
+		}
+		if cfg.PermitirQR {
+			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
+				EmpresaID:      cfg.EmpresaID,
+				Nombre:         "Torniquete QR recepción",
+				TipoDispositivo:"torniquete_qr",
+				Ubicacion:      "Recepción principal",
+				Sede:           cfg.NombreSedePrincipal,
+				Canal:          "ingreso",
+				Estado:         "activo",
+				Identificador:  "QR-RECEPCION",
+				UsuarioCreador: cfg.UsuarioCreador,
+			})
+		}
+		for _, device := range devices {
+			var existingID int64
+			err := dbConn.QueryRow(`SELECT id FROM empresa_gimnasio_dispositivos_acceso WHERE empresa_id=? AND lower(nombre)=lower(?) LIMIT 1`, cfg.EmpresaID, device.Nombre).Scan(&existingID)
+			if err == sql.ErrNoRows {
+				if _, createErr := CreateEmpresaGimnasioDispositivoAcceso(dbConn, device); createErr != nil {
+					return nil, createErr
+				}
+			} else if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return GetEmpresaGimnasioPreconfiguracionResumen(dbConn, cfg.EmpresaID)
 }
 
 func GetEmpresaGimnasioAccesoConfig(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioAccesoConfig, error) {

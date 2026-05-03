@@ -1,5 +1,25 @@
 (function () {
   "use strict";
+
+  var tabMeta = {
+    configuracion: {
+      title: "Configuración",
+      summary: "Define identidad comercial, radio de búsqueda y reglas del portal de clientes y conductores."
+    },
+    conductores: {
+      title: "Conductores",
+      summary: "Registra la flota, administra acceso móvil y controla disponibilidad y último GPS."
+    },
+    despacho: {
+      title: "Despacho",
+      summary: "Opera solicitudes, relanza ofertas y decide cancelaciones desde la central."
+    },
+    seguimiento: {
+      title: "Seguimiento",
+      summary: "Consulta rutas, ofertas recientes y trazabilidad GPS de la operación en vivo."
+    }
+  };
+
   function q(name) { return (new URLSearchParams(window.location.search)).get(name) || ""; }
   function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
@@ -11,6 +31,7 @@
     if (!res.ok) throw new Error(data.error || data.message || data.raw || ("HTTP " + res.status));
     return data;
   }
+
   var empresaId = q("empresa_id") || (window.__resolveEmpresaIdContext ? window.__resolveEmpresaIdContext() : "");
   var base = "/api/empresa/taxi_system?empresa_id=" + encodeURIComponent(empresaId);
   var map = L.map("taxiMap").setView([4.711, -74.0721], 12);
@@ -22,7 +43,32 @@
     var el = document.getElementById(id);
     if (!el) return;
     el.textContent = text || "";
-    el.style.color = bad ? "#ffb4b4" : "";
+    el.style.color = bad ? "#b91c1c" : "";
+  }
+
+  function setPageMsg(text, bad) {
+    var el = document.getElementById("taxiPageMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.color = bad ? "#b91c1c" : "";
+    el.style.background = bad ? "rgba(254,242,242,.92)" : "";
+    el.style.borderColor = bad ? "rgba(185,28,28,.22)" : "";
+  }
+
+  function setTab(tab) {
+    var meta = tabMeta[tab] || tabMeta.configuracion;
+    document.querySelectorAll("[data-taxi-tab]").forEach(function (button) {
+      var active = button.getAttribute("data-taxi-tab") === tab;
+      button.classList.toggle("is-active", active);
+      button.classList.toggle("secondary", !active);
+    });
+    document.querySelectorAll(".taxi-panel").forEach(function (panel) {
+      panel.hidden = panel.id !== ("taxiPanel-" + tab);
+    });
+    var titleEl = document.getElementById("taxiSectionTitle");
+    var summaryEl = document.getElementById("taxiSectionSummary");
+    if (titleEl) titleEl.textContent = meta.title;
+    if (summaryEl) summaryEl.textContent = meta.summary;
   }
 
   function fillKpis(d) {
@@ -41,7 +87,7 @@
     }
     box.innerHTML = items.map(function (x) {
       return '<article class="taxi-item">' +
-        '<strong>#' + x.id + ' · ' + esc(x.cliente_nombre) + '</strong>' +
+        '<strong>#' + x.id + ' | ' + esc(x.cliente_nombre) + '</strong>' +
         '<div>' + esc(x.recoger_texto || "-") + '</div>' +
         '<div class="taxi-badges">' +
         '<span class="taxi-badge">Estado: ' + esc(x.estado || "-") + '</span>' +
@@ -66,7 +112,7 @@
     }
     box.innerHTML = items.map(function (x) {
       return '<article class="taxi-item">' +
-        '<strong>' + esc(x.nombre) + ' · ' + esc(x.vehiculo_placa || x.codigo || "") + '</strong>' +
+        '<strong>' + esc(x.nombre) + ' | ' + esc(x.vehiculo_placa || x.codigo || "") + '</strong>' +
         '<div>' + esc(x.vehiculo_modelo || x.vehiculo_tipo || "Sin vehículo definido") + '</div>' +
         '<div class="taxi-badges">' +
         '<span class="taxi-badge">' + (x.online ? "Online" : "Offline") + '</span>' +
@@ -84,7 +130,7 @@
       return;
     }
     box.innerHTML = items.map(function (x) {
-      return '<article class="taxi-item"><strong>#' + x.request_id + ' · ' + esc(x.conductor_nombre || "-") + '</strong><div class="taxi-badges"><span class="taxi-badge">Estado: ' + esc(x.estado) + '</span><span class="taxi-badge">Distancia: ' + esc(x.distancia_km) + ' km</span><span class="taxi-badge">ETA: ' + esc(x.tiempo_aproximado_min) + ' min</span></div></article>';
+      return '<article class="taxi-item"><strong>#' + x.request_id + ' | ' + esc(x.conductor_nombre || "-") + '</strong><div class="taxi-badges"><span class="taxi-badge">Estado: ' + esc(x.estado) + '</span><span class="taxi-badge">Distancia: ' + esc(x.distancia_km) + ' km</span><span class="taxi-badge">ETA: ' + esc(x.tiempo_aproximado_min) + ' min</span></div></article>';
     }).join("");
   }
 
@@ -152,10 +198,18 @@
       L.polyline(latlngs, { color: "#5dade2", weight: 4 }).addTo(layer);
       map.fitBounds(latlngs, { padding: [18, 18] });
       setMsg("mapMsg", "Ruta mostrada para el servicio #" + requestId + ".", false);
+      setPageMsg("Ruta cargada en el mapa para seguimiento del servicio.");
     } catch (e) {
       setMsg("mapMsg", e.message, true);
+      setPageMsg(e.message, true);
     }
   }
+
+  document.querySelectorAll("[data-taxi-tab]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      setTab(button.getAttribute("data-taxi-tab"));
+    });
+  });
 
   document.getElementById("taxiConfigForm").addEventListener("submit", async function (ev) {
     ev.preventDefault();
@@ -173,8 +227,12 @@
         permitir_despacho_automatico: document.getElementById("cfgAutoDispatch").checked
       }) });
       setMsg("configMsg", "Configuración guardada.");
+      setPageMsg("Configuración actualizada correctamente.");
       await loadConfig();
-    } catch (e) { setMsg("configMsg", e.message, true); }
+    } catch (e) {
+      setMsg("configMsg", e.message, true);
+      setPageMsg(e.message, true);
+    }
   });
 
   document.getElementById("driverForm").addEventListener("submit", async function (ev) {
@@ -191,9 +249,13 @@
         pin: document.getElementById("drvPin").value
       }) });
       setMsg("driverMsg", "Conductor creado correctamente.");
+      setPageMsg("Conductor registrado y disponible para la operación.");
       ev.target.reset();
       await loadDashboard();
-    } catch (e) { setMsg("driverMsg", e.message, true); }
+    } catch (e) {
+      setMsg("driverMsg", e.message, true);
+      setPageMsg(e.message, true);
+    }
   });
 
   document.getElementById("requestsList").addEventListener("click", async function (ev) {
@@ -204,25 +266,31 @@
       if (dispatchId) {
         await j(base + "&action=dispatch&request_id=" + encodeURIComponent(dispatchId), { method: "POST" });
         setMsg("mapMsg", "Oferta relanzada para el servicio #" + dispatchId + ".");
+        setPageMsg("Oferta relanzada para mejorar la cobertura del servicio.");
         await loadDashboard();
       } else if (routeId) {
         await drawRoute(routeId);
       } else if (cancelId) {
         await j(base + "&action=request_state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request_id: Number(cancelId), state: "cancelado", notes: "cancelado desde central" }) });
+        setPageMsg("Servicio cancelado desde la central.");
         await loadDashboard();
       }
     } catch (e) {
       setMsg("mapMsg", e.message, true);
+      setPageMsg(e.message, true);
     }
   });
 
   (async function init() {
     try {
+      setTab("configuracion");
+      setPageMsg("Listo para configurar el despacho, registrar conductores y monitorear la operación.");
       await loadConfig();
       await loadDashboard();
       setInterval(loadDashboard, 15000);
     } catch (e) {
       setMsg("mapMsg", e.message, true);
+      setPageMsg(e.message, true);
     }
   })();
 })();

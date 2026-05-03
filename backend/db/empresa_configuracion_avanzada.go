@@ -626,11 +626,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 
 	payload.TipoDocumentoEmisor = strings.TrimSpace(payload.TipoDocumentoEmisor)
-	if payload.FacturacionElectronicaActiva {
-		payload.ModoDocumentoVenta = "factura_electronica"
-	} else {
-		payload.ModoDocumentoVenta = defaultModoDocumentoVentaValue(payload.ModoDocumentoVenta)
-	}
+	payload.ModoDocumentoVenta = defaultModoDocumentoVentaValue(payload.ModoDocumentoVenta)
+	payload.FacturacionElectronicaActiva = payload.ModoDocumentoVenta == "factura_electronica"
 	if payload.TipoDocumentoEmisor == "" {
 		payload.TipoDocumentoEmisor = "NIT"
 	}

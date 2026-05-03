@@ -6,177 +6,407 @@
   <title>Consultorio odontologico</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
-<body>
-  <main class="erp-shell" style="padding:20px;">
-    <section class="erp-card">
-      <div class="erp-kicker">Odontologia</div>
-      <h1 style="margin:0 0 8px;">Operacion clinica y comercial del consultorio</h1>
-      <p class="muted" style="margin:0;">Controla pacientes, agenda, historia, odontograma, tratamientos, presupuestos y recaudo desde una sola vista.</p>
+<body class="odonto-module-body">
+  <main class="page-shell odonto-module-shell">
+    <section class="odonto-hero-card">
+      <div class="odonto-hero-copy">
+        <span class="odonto-kicker">Consultorio odontologico</span>
+        <h1>Operacion clinica, agenda y recaudo en una sola vista</h1>
+        <p>Gestiona pacientes, historia clinica, odontogramas, tratamientos, presupuestos y pagos desde una interfaz mas clara para recepcion, profesionales y direccion.</p>
+        <div class="odonto-hero-tags">
+          <span>Agenda</span>
+          <span>Historia clinica</span>
+          <span>Tratamientos</span>
+          <span>Presupuestos</span>
+          <span>Recaudo</span>
+        </div>
+      </div>
+      <aside class="odonto-hero-side">
+        <h2>Flujo del consultorio</h2>
+        <ol>
+          <li>Registrar paciente y contexto medico.</li>
+          <li>Programar cita y asignar profesional.</li>
+          <li>Documentar historia y odontograma.</li>
+          <li>Construir tratamiento, presupuesto y recaudo.</li>
+        </ol>
+      </aside>
     </section>
 
-    <section id="odontoDashboard" class="erp-metric-grid" style="margin-top:16px;"></section>
+    <section id="odontoDashboard" class="erp-metric-grid odonto-dashboard-grid"></section>
 
-    <section class="erp-card" style="margin-top:16px;">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button type="button" class="btn secondary" data-tab="pacientes">Pacientes</button>
-        <button type="button" class="btn secondary" data-tab="profesionales">Profesionales</button>
-        <button type="button" class="btn secondary" data-tab="consultorios">Consultorios</button>
-        <button type="button" class="btn secondary" data-tab="citas">Citas</button>
-        <button type="button" class="btn secondary" data-tab="historias">Historias</button>
-        <button type="button" class="btn secondary" data-tab="odontogramas">Odontogramas</button>
-        <button type="button" class="btn secondary" data-tab="tratamientos">Tratamientos</button>
-        <button type="button" class="btn secondary" data-tab="presupuestos">Presupuestos</button>
-        <button type="button" class="btn secondary" data-tab="pagos">Pagos</button>
-      </div>
-    </section>
+    <section class="odonto-workspace">
+      <aside class="odonto-sidebar">
+        <div class="odonto-sidebar-card">
+          <span class="odonto-sidebar-kicker">Menu clinico</span>
+          <h2>Navegacion del consultorio</h2>
+          <p>Entra directo al bloque que necesita recepcion, el profesional o el frente financiero.</p>
+        </div>
+        <nav class="odonto-nav" aria-label="Secciones de odontologia">
+          <button type="button" class="odonto-nav-btn is-active" data-tab="pacientes">
+            <strong>Pacientes</strong>
+            <span>Base clinica, contacto y riesgo medico</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="profesionales">
+            <strong>Profesionales</strong>
+            <span>Especialidades, registro y agenda</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="consultorios">
+            <strong>Consultorios</strong>
+            <span>Sedes, sillones y disponibilidad</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="citas">
+            <strong>Citas</strong>
+            <span>Programacion y atencion del dia</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="historias">
+            <strong>Historias clinicas</strong>
+            <span>Diagnostico, evolucion y formula</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="odontogramas">
+            <strong>Odontogramas</strong>
+            <span>Piezas, observaciones y control dental</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="tratamientos">
+            <strong>Tratamientos</strong>
+            <span>Sesiones, costos y ejecucion</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="presupuestos">
+            <strong>Presupuestos</strong>
+            <span>Planes economicos, vigencia y saldo</span>
+          </button>
+          <button type="button" class="odonto-nav-btn" data-tab="pagos">
+            <strong>Pagos</strong>
+            <span>Recaudo, referencias y conciliacion</span>
+          </button>
+        </nav>
+      </aside>
 
-    <section class="erp-card" style="margin-top:16px;">
-      <div id="odontoNotice" class="muted" style="margin-bottom:12px;"></div>
+      <section class="odonto-content">
+        <article class="erp-card odonto-context-card">
+          <div>
+            <span class="odonto-sidebar-kicker">Panel activo</span>
+            <h2 id="odontoSectionTitle">Pacientes</h2>
+            <p id="odontoSectionSummary" class="muted">Centraliza datos personales, aseguradora, riesgo medico y observaciones de cada paciente.</p>
+          </div>
+          <div id="odontoNotice" class="odonto-notice muted"></div>
+        </article>
 
-      <div class="odonto-tab" data-panel="pacientes">
-        <h2>Pacientes</h2>
-        <form id="odontoPacienteForm" class="grid-form">
-          <input name="nombre_completo" class="form-input" placeholder="Nombre completo" required>
-          <input name="documento" class="form-input" placeholder="Documento">
-          <input name="telefono" class="form-input" placeholder="Telefono">
-          <input name="email" class="form-input" placeholder="Email">
-          <input name="aseguradora" class="form-input" placeholder="Aseguradora">
-          <input name="fecha_nacimiento" class="form-input" placeholder="Fecha nacimiento YYYY-MM-DD">
-          <input name="genero" class="form-input" placeholder="Genero">
-          <input name="alergias" class="form-input" placeholder="Alergias">
-          <input name="riesgo_medico" class="form-input" placeholder="Riesgo medico">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar paciente</button>
-        </form>
-        <div id="odontoPacientesList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="pacientes">
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Registro</span>
+                  <h3>Nuevo paciente</h3>
+                </div>
+                <p class="muted">Documenta identificacion, riesgo y observaciones para recepcion y seguimiento.</p>
+              </div>
+              <form id="odontoPacienteForm" class="grid-form">
+                <input name="nombre_completo" class="form-input" placeholder="Nombre completo" required>
+                <input name="documento" class="form-input" placeholder="Documento">
+                <input name="telefono" class="form-input" placeholder="Telefono">
+                <input name="email" class="form-input" placeholder="Email">
+                <input name="aseguradora" class="form-input" placeholder="Aseguradora">
+                <input name="fecha_nacimiento" class="form-input" placeholder="Fecha nacimiento YYYY-MM-DD">
+                <input name="genero" class="form-input" placeholder="Genero">
+                <input name="alergias" class="form-input" placeholder="Alergias">
+                <input name="riesgo_medico" class="form-input" placeholder="Riesgo medico">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar paciente</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Base clinica</span>
+                  <h3>Pacientes registrados</h3>
+                </div>
+                <p class="muted">Consulta estado, aseguradora, telefono y saldo desde la lista operativa.</p>
+              </div>
+              <div id="odontoPacientesList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="profesionales" hidden>
-        <h2>Profesionales</h2>
-        <form id="odontoProfesionalForm" class="grid-form">
-          <input name="nombre_completo" class="form-input" placeholder="Nombre completo" required>
-          <input name="especialidad" class="form-input" placeholder="Especialidad">
-          <input name="registro_profesional" class="form-input" placeholder="Registro profesional">
-          <input name="telefono" class="form-input" placeholder="Telefono">
-          <input name="email" class="form-input" placeholder="Email">
-          <input name="color_agenda" class="form-input" placeholder="Color agenda #0ea5e9">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar profesional</button>
-        </form>
-        <div id="odontoProfesionalesList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="profesionales" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Equipo clinico</span>
+                  <h3>Nuevo profesional</h3>
+                </div>
+                <p class="muted">Registra especialidad, contacto y color de agenda para coordinar la atencion.</p>
+              </div>
+              <form id="odontoProfesionalForm" class="grid-form">
+                <input name="nombre_completo" class="form-input" placeholder="Nombre completo" required>
+                <input name="especialidad" class="form-input" placeholder="Especialidad">
+                <input name="registro_profesional" class="form-input" placeholder="Registro profesional">
+                <input name="telefono" class="form-input" placeholder="Telefono">
+                <input name="email" class="form-input" placeholder="Email">
+                <input name="color_agenda" class="form-input" placeholder="Color agenda #0ea5e9">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar profesional</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Agenda y talento</span>
+                  <h3>Profesionales activos</h3>
+                </div>
+                <p class="muted">Visualiza especialidad, registro y disponibilidad para el frente operativo.</p>
+              </div>
+              <div id="odontoProfesionalesList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="consultorios" hidden>
-        <h2>Consultorios</h2>
-        <form id="odontoConsultorioForm" class="grid-form">
-          <input name="nombre" class="form-input" placeholder="Nombre consultorio" required>
-          <input name="sede" class="form-input" placeholder="Sede">
-          <input name="sillon" class="form-input" placeholder="Sillon o unidad">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar consultorio</button>
-        </form>
-        <div id="odontoConsultoriosList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="consultorios" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Infraestructura</span>
+                  <h3>Nuevo consultorio</h3>
+                </div>
+                <p class="muted">Organiza sedes, sillones y unidades para un mejor reparto de agenda.</p>
+              </div>
+              <form id="odontoConsultorioForm" class="grid-form">
+                <input name="nombre" class="form-input" placeholder="Nombre consultorio" required>
+                <input name="sede" class="form-input" placeholder="Sede">
+                <input name="sillon" class="form-input" placeholder="Sillon o unidad">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar consultorio</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Capacidad</span>
+                  <h3>Consultorios disponibles</h3>
+                </div>
+                <p class="muted">Mantiene clara la sede, el sillon y el estado de cada espacio clinico.</p>
+              </div>
+              <div id="odontoConsultoriosList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="citas" hidden>
-        <h2>Citas</h2>
-        <form id="odontoCitaForm" class="grid-form">
-          <select name="paciente_id" class="form-input" required></select>
-          <select name="profesional_id" class="form-input" required></select>
-          <select name="consultorio_id" class="form-input"></select>
-          <input name="fecha_hora" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS" required>
-          <input name="duracion_minutos" class="form-input" placeholder="Duracion minutos">
-          <input name="motivo" class="form-input" placeholder="Motivo">
-          <input name="canal" class="form-input" placeholder="Canal">
-          <input name="prioridad" class="form-input" placeholder="Prioridad">
-          <input name="aseguradora" class="form-input" placeholder="Aseguradora">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar cita</button>
-        </form>
-        <div id="odontoCitasList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="citas" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Agenda</span>
+                  <h3>Programar cita</h3>
+                </div>
+                <p class="muted">Relaciona paciente, profesional y consultorio con prioridad, canal y aseguradora.</p>
+              </div>
+              <form id="odontoCitaForm" class="grid-form">
+                <select name="paciente_id" class="form-input" required></select>
+                <select name="profesional_id" class="form-input" required></select>
+                <select name="consultorio_id" class="form-input"></select>
+                <input name="fecha_hora" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS" required>
+                <input name="duracion_minutos" class="form-input" placeholder="Duracion minutos">
+                <input name="motivo" class="form-input" placeholder="Motivo">
+                <input name="canal" class="form-input" placeholder="Canal">
+                <input name="prioridad" class="form-input" placeholder="Prioridad">
+                <input name="aseguradora" class="form-input" placeholder="Aseguradora">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar cita</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Operacion del dia</span>
+                  <h3>Citas registradas</h3>
+                </div>
+                <p class="muted">Supervisa agenda, consultorio, profesional y paso a estado atendida.</p>
+              </div>
+              <div id="odontoCitasList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="historias" hidden>
-        <h2>Historias clinicas</h2>
-        <form id="odontoHistoriaForm" class="grid-form">
-          <select name="paciente_id" class="form-input" required></select>
-          <select name="profesional_id" class="form-input"></select>
-          <input name="fecha_atencion" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS">
-          <input name="motivo_consulta" class="form-input" placeholder="Motivo consulta">
-          <textarea name="diagnostico" class="form-input" placeholder="Diagnostico"></textarea>
-          <textarea name="plan_tratamiento" class="form-input" placeholder="Plan tratamiento"></textarea>
-          <textarea name="evolucion" class="form-input" placeholder="Evolucion"></textarea>
-          <textarea name="formula" class="form-input" placeholder="Formula o formula medica"></textarea>
-          <textarea name="recomendaciones" class="form-input" placeholder="Recomendaciones"></textarea>
-          <input name="proxima_cita" class="form-input" placeholder="Proxima cita">
-          <button type="submit" class="btn primary">Guardar historia</button>
-        </form>
-        <div id="odontoHistoriasList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="historias" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Historia clinica</span>
+                  <h3>Registrar atencion</h3>
+                </div>
+                <p class="muted">Documenta diagnostico, plan de tratamiento, formula y recomendaciones.</p>
+              </div>
+              <form id="odontoHistoriaForm" class="grid-form">
+                <select name="paciente_id" class="form-input" required></select>
+                <select name="profesional_id" class="form-input"></select>
+                <input name="fecha_atencion" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS">
+                <input name="motivo_consulta" class="form-input" placeholder="Motivo consulta">
+                <textarea name="diagnostico" class="form-input" placeholder="Diagnostico"></textarea>
+                <textarea name="plan_tratamiento" class="form-input" placeholder="Plan tratamiento"></textarea>
+                <textarea name="evolucion" class="form-input" placeholder="Evolucion"></textarea>
+                <textarea name="formula" class="form-input" placeholder="Formula o formula medica"></textarea>
+                <textarea name="recomendaciones" class="form-input" placeholder="Recomendaciones"></textarea>
+                <input name="proxima_cita" class="form-input" placeholder="Proxima cita">
+                <button type="submit" class="btn primary">Guardar historia</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Seguimiento</span>
+                  <h3>Historias registradas</h3>
+                </div>
+                <p class="muted">Consulta fecha, diagnostico y profesional para continuidad asistencial.</p>
+              </div>
+              <div id="odontoHistoriasList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="odontogramas" hidden>
-        <h2>Odontogramas</h2>
-        <form id="odontoOdontogramaForm" class="grid-form">
-          <select name="paciente_id" class="form-input" required></select>
-          <select name="profesional_id" class="form-input"></select>
-          <input name="fecha_registro" class="form-input" placeholder="YYYY-MM-DD">
-          <textarea name="piezas_json" class="form-input" placeholder='JSON de piezas, ejemplo: {\"11\":\"caries\",\"26\":\"ausente\"}'></textarea>
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar odontograma</button>
-        </form>
-        <div id="odontoOdontogramasList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="odontogramas" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Odontograma</span>
+                  <h3>Registrar piezas</h3>
+                </div>
+                <p class="muted">Guarda piezas en formato JSON y deja observaciones para control por paciente.</p>
+              </div>
+              <form id="odontoOdontogramaForm" class="grid-form">
+                <select name="paciente_id" class="form-input" required></select>
+                <select name="profesional_id" class="form-input"></select>
+                <input name="fecha_registro" class="form-input" placeholder="YYYY-MM-DD">
+                <textarea name="piezas_json" class="form-input" placeholder='JSON de piezas, ejemplo: {"11":"caries","26":"ausente"}'></textarea>
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar odontograma</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Control dental</span>
+                  <h3>Odontogramas guardados</h3>
+                </div>
+                <p class="muted">Mantiene visible la fecha y el estado de la lectura dental por paciente.</p>
+              </div>
+              <div id="odontoOdontogramasList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="tratamientos" hidden>
-        <h2>Tratamientos</h2>
-        <form id="odontoTratamientoForm" class="grid-form">
-          <select name="paciente_id" class="form-input" required></select>
-          <select name="profesional_id" class="form-input"></select>
-          <input name="nombre" class="form-input" placeholder="Nombre tratamiento" required>
-          <input name="categoria" class="form-input" placeholder="Categoria">
-          <input name="piezas" class="form-input" placeholder="Piezas">
-          <input name="sesiones_total" class="form-input" placeholder="Sesiones total">
-          <input name="sesiones_realizadas" class="form-input" placeholder="Sesiones realizadas">
-          <input name="costo_estimado" class="form-input" placeholder="Costo estimado">
-          <input name="costo_real" class="form-input" placeholder="Costo real">
-          <input name="fecha_inicio" class="form-input" placeholder="Fecha inicio">
-          <input name="fecha_fin" class="form-input" placeholder="Fecha fin">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar tratamiento</button>
-        </form>
-        <div id="odontoTratamientosList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="tratamientos" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Tratamiento</span>
+                  <h3>Crear plan de atencion</h3>
+                </div>
+                <p class="muted">Gestiona sesiones, piezas, fechas y costos del tratamiento acordado.</p>
+              </div>
+              <form id="odontoTratamientoForm" class="grid-form">
+                <select name="paciente_id" class="form-input" required></select>
+                <select name="profesional_id" class="form-input"></select>
+                <input name="nombre" class="form-input" placeholder="Nombre tratamiento" required>
+                <input name="categoria" class="form-input" placeholder="Categoria">
+                <input name="piezas" class="form-input" placeholder="Piezas">
+                <input name="sesiones_total" class="form-input" placeholder="Sesiones total">
+                <input name="sesiones_realizadas" class="form-input" placeholder="Sesiones realizadas">
+                <input name="costo_estimado" class="form-input" placeholder="Costo estimado">
+                <input name="costo_real" class="form-input" placeholder="Costo real">
+                <input name="fecha_inicio" class="form-input" placeholder="Fecha inicio">
+                <input name="fecha_fin" class="form-input" placeholder="Fecha fin">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar tratamiento</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Ejecucion</span>
+                  <h3>Tratamientos activos</h3>
+                </div>
+                <p class="muted">Monitorea sesiones, avance y costos para el control clinico y financiero.</p>
+              </div>
+              <div id="odontoTratamientosList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="presupuestos" hidden>
-        <h2>Presupuestos</h2>
-        <form id="odontoPresupuestoForm" class="grid-form">
-          <select name="paciente_id" class="form-input" required></select>
-          <select name="tratamiento_id" class="form-input"></select>
-          <input name="nombre" class="form-input" placeholder="Nombre presupuesto" required>
-          <input name="valor_total" class="form-input" placeholder="Valor total">
-          <input name="cuota_inicial" class="form-input" placeholder="Cuota inicial">
-          <input name="vigencia_hasta" class="form-input" placeholder="Vigencia hasta">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Guardar presupuesto</button>
-        </form>
-        <div id="odontoPresupuestosList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="presupuestos" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Presupuesto</span>
+                  <h3>Armar propuesta economica</h3>
+                </div>
+                <p class="muted">Relaciona tratamiento, cuota inicial, vigencia y observaciones comerciales.</p>
+              </div>
+              <form id="odontoPresupuestoForm" class="grid-form">
+                <select name="paciente_id" class="form-input" required></select>
+                <select name="tratamiento_id" class="form-input"></select>
+                <input name="nombre" class="form-input" placeholder="Nombre presupuesto" required>
+                <input name="valor_total" class="form-input" placeholder="Valor total">
+                <input name="cuota_inicial" class="form-input" placeholder="Cuota inicial">
+                <input name="vigencia_hasta" class="form-input" placeholder="Vigencia hasta">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Guardar presupuesto</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Frente comercial</span>
+                  <h3>Presupuestos vigentes</h3>
+                </div>
+                <p class="muted">Consulta aprobacion, saldo y vigencia para cierre comercial y seguimiento.</p>
+              </div>
+              <div id="odontoPresupuestosList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
 
-      <div class="odonto-tab" data-panel="pagos" hidden>
-        <h2>Pagos</h2>
-        <form id="odontoPagoForm" class="grid-form">
-          <select name="paciente_id" class="form-input"></select>
-          <select name="presupuesto_id" class="form-input"></select>
-          <input name="concepto" class="form-input" placeholder="Concepto" required>
-          <input name="monto" class="form-input" placeholder="Monto" required>
-          <input name="metodo_pago" class="form-input" placeholder="Metodo de pago">
-          <input name="referencia" class="form-input" placeholder="Referencia">
-          <input name="fecha_pago" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS">
-          <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
-          <button type="submit" class="btn primary">Registrar pago</button>
-        </form>
-        <div id="odontoPagosList" class="erp-list" style="margin-top:16px;"></div>
-      </div>
+        <div class="odonto-tab" data-panel="pagos" hidden>
+          <section class="two-col-grid odonto-main-grid">
+            <article class="erp-card odonto-form-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Caja del consultorio</span>
+                  <h3>Registrar pago</h3>
+                </div>
+                <p class="muted">Concilia monto, metodo, referencia y aplicacion sobre presupuesto o paciente.</p>
+              </div>
+              <form id="odontoPagoForm" class="grid-form">
+                <select name="paciente_id" class="form-input"></select>
+                <select name="presupuesto_id" class="form-input"></select>
+                <input name="concepto" class="form-input" placeholder="Concepto" required>
+                <input name="monto" class="form-input" placeholder="Monto" required>
+                <input name="metodo_pago" class="form-input" placeholder="Metodo de pago">
+                <input name="referencia" class="form-input" placeholder="Referencia">
+                <input name="fecha_pago" class="form-input" placeholder="YYYY-MM-DD HH:MM:SS">
+                <textarea name="observaciones" class="form-input" placeholder="Observaciones"></textarea>
+                <button type="submit" class="btn primary">Registrar pago</button>
+              </form>
+            </article>
+            <article class="erp-card odonto-list-card">
+              <div class="odonto-card-head">
+                <div>
+                  <span class="odonto-sidebar-kicker">Recaudo</span>
+                  <h3>Pagos registrados</h3>
+                </div>
+                <p class="muted">Supervisa fecha, paciente, metodo y concepto del recaudo del consultorio.</p>
+              </div>
+              <div id="odontoPagosList" class="erp-list odonto-list"></div>
+            </article>
+          </section>
+        </div>
+      </section>
     </section>
   </main>
   <script src="/js/administrar_empresa.js"></script>

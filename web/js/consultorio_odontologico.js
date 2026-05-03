@@ -19,6 +19,45 @@
 
   var empresaId = getEmpresaId();
   var apiBase = "/api/empresa/odontologia?empresa_id=" + encodeURIComponent(empresaId);
+  var separator = " | ";
+  var tabMeta = {
+    pacientes: {
+      title: "Pacientes",
+      summary: "Centraliza datos personales, aseguradora, riesgo medico y observaciones de cada paciente."
+    },
+    profesionales: {
+      title: "Profesionales",
+      summary: "Coordina especialidades, agenda, registros y estado del equipo clinico."
+    },
+    consultorios: {
+      title: "Consultorios",
+      summary: "Organiza sedes, sillones y capacidad instalada para la atencion odontologica."
+    },
+    citas: {
+      title: "Citas",
+      summary: "Programa agenda, prioridad, canal y seguimiento de la atencion diaria."
+    },
+    historias: {
+      title: "Historias clinicas",
+      summary: "Documenta diagnostico, evolucion, formula y proxima cita en cada atencion."
+    },
+    odontogramas: {
+      title: "Odontogramas",
+      summary: "Lleva control de piezas, observaciones y lectura dental por paciente."
+    },
+    tratamientos: {
+      title: "Tratamientos",
+      summary: "Gestiona sesiones, costos y estado de cada plan de atencion."
+    },
+    presupuestos: {
+      title: "Presupuestos",
+      summary: "Convierte tratamientos en propuestas economicas claras, vigentes y medibles."
+    },
+    pagos: {
+      title: "Pagos",
+      summary: "Concilia recaudo, referencias, metodo de pago y aplicacion sobre cada paciente."
+    }
+  };
   var state = {
     pacientes: [],
     profesionales: [],
@@ -38,6 +77,8 @@
     if (!el) return;
     el.textContent = text || "";
     el.style.color = isError ? "#b91c1c" : "";
+    el.style.borderColor = isError ? "rgba(185,28,28,.22)" : "rgba(148,163,184,.18)";
+    el.style.background = isError ? "rgba(254,242,242,.92)" : "rgba(248,250,252,.9)";
   }
 
   async function fetchJSON(url, options) {
@@ -68,6 +109,15 @@
     return data;
   }
 
+  function formatMoney(value) {
+    var amount = Number(value || 0);
+    return amount.toLocaleString("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0
+    });
+  }
+
   function metricCard(label, value) {
     return '<article class="erp-metric-card"><span class="erp-metric-label">' + escapeHtml(label) + '</span><strong class="erp-metric-value">' + escapeHtml(value) + "</strong></article>";
   }
@@ -77,13 +127,13 @@
     if (!host || !row) return;
     host.innerHTML = [
       metricCard("Pacientes activos", row.pacientes_activos || 0),
-      metricCard("Profesionales", row.profesionales_activos || 0),
-      metricCard("Citas hoy", row.citas_hoy || 0),
-      metricCard("Pendientes", row.citas_pendientes || 0),
-      metricCard("Tratamientos", row.tratamientos_activos || 0),
-      metricCard("Presupuestos", row.presupuestos_vigentes || 0),
-      metricCard("Recaudo mes", row.recaudo_mes || 0),
-      metricCard("Saldo pendiente", row.saldo_pendiente || 0)
+      metricCard("Profesionales activos", row.profesionales_activos || 0),
+      metricCard("Citas de hoy", row.citas_hoy || 0),
+      metricCard("Citas pendientes", row.citas_pendientes || 0),
+      metricCard("Tratamientos activos", row.tratamientos_activos || 0),
+      metricCard("Presupuestos vigentes", row.presupuestos_vigentes || 0),
+      metricCard("Recaudo del mes", formatMoney(row.recaudo_mes || 0)),
+      metricCard("Saldo pendiente", formatMoney(row.saldo_pendiente || 0))
     ].join("");
   }
 
@@ -98,7 +148,7 @@
   }
 
   function itemCard(title, lines, actionsHtml) {
-    return '<article class="erp-list-card"><strong>' + escapeHtml(title) + '</strong><div class="muted" style="margin-top:6px;">' + lines.map(escapeHtml).join(" · ") + '</div>' + (actionsHtml || "") + "</article>";
+    return '<article class="erp-list-card"><strong>' + escapeHtml(title) + '</strong><div class="muted" style="margin-top:6px;">' + lines.map(escapeHtml).join(separator) + '</div>' + (actionsHtml || "") + "</article>";
   }
 
   function renderSelectOptions(selector, items, valueKey, labelFn, includeEmptyLabel) {
@@ -126,11 +176,13 @@
         item.documento || "Sin documento",
         item.telefono || "Sin telefono",
         item.aseguradora || "Particular",
-        "Saldo " + (item.saldo || 0),
+        "Saldo " + formatMoney(item.saldo || 0),
         item.estado || "activo"
       ], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="paciente" data-id="' + escapeHtml(item.id) + '" data-next="' + escapeHtml(item.estado === "inactivo" ? "activo" : "inactivo") + '">Cambiar estado</button></div>');
     });
-    renderSelectOptions('select[name="paciente_id"]', state.pacientes, "id", function (item) { return (item.nombre_completo || "Paciente") + " · " + (item.documento || item.codigo || ""); }, "Seleccione paciente");
+    renderSelectOptions('select[name="paciente_id"]', state.pacientes, "id", function (item) {
+      return (item.nombre_completo || "Paciente") + separator + (item.documento || item.codigo || "");
+    }, "Seleccione paciente");
   }
 
   async function loadProfesionales() {
@@ -142,15 +194,23 @@
         item.estado || "activo"
       ], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="profesional" data-id="' + escapeHtml(item.id) + '" data-next="' + escapeHtml(item.estado === "inactivo" ? "activo" : "inactivo") + '">Cambiar estado</button></div>');
     });
-    renderSelectOptions('select[name="profesional_id"]', state.profesionales, "id", function (item) { return (item.nombre_completo || "Profesional") + " · " + (item.especialidad || "General"); }, "Seleccione profesional");
+    renderSelectOptions('select[name="profesional_id"]', state.profesionales, "id", function (item) {
+      return (item.nombre_completo || "Profesional") + separator + (item.especialidad || "General");
+    }, "Seleccione profesional");
   }
 
   async function loadConsultorios() {
     state.consultorios = await fetchJSON(apiBase + "&action=consultorios");
     renderSimpleList("odontoConsultoriosList", state.consultorios, function (item) {
-      return itemCard(item.nombre || "Consultorio", [item.sede || "Sin sede", item.sillon || "Sin sillon", item.estado || "activo"], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="consultorio" data-id="' + escapeHtml(item.id) + '" data-next="' + escapeHtml(item.estado === "inactivo" ? "activo" : "inactivo") + '">Cambiar estado</button></div>');
+      return itemCard(item.nombre || "Consultorio", [
+        item.sede || "Sin sede",
+        item.sillon || "Sin sillon",
+        item.estado || "activo"
+      ], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="consultorio" data-id="' + escapeHtml(item.id) + '" data-next="' + escapeHtml(item.estado === "inactivo" ? "activo" : "inactivo") + '">Cambiar estado</button></div>');
     });
-    renderSelectOptions('select[name="consultorio_id"]', state.consultorios, "id", function (item) { return (item.nombre || "Consultorio") + " · " + (item.sede || ""); }, "Sin consultorio");
+    renderSelectOptions('select[name="consultorio_id"]', state.consultorios, "id", function (item) {
+      return (item.nombre || "Consultorio") + separator + (item.sede || "");
+    }, "Sin consultorio");
   }
 
   async function loadCitas() {
@@ -168,14 +228,21 @@
   async function loadHistorias() {
     var rows = await fetchJSON(apiBase + "&action=historias");
     renderSimpleList("odontoHistoriasList", rows, function (item) {
-      return itemCard(item.paciente_nombre || "Historia", [item.fecha_atencion || "Sin fecha", item.diagnostico || "Sin diagnostico", item.profesional_nombre || "Sin profesional"]);
+      return itemCard(item.paciente_nombre || "Historia", [
+        item.fecha_atencion || "Sin fecha",
+        item.diagnostico || "Sin diagnostico",
+        item.profesional_nombre || "Sin profesional"
+      ]);
     });
   }
 
   async function loadOdontogramas() {
     var rows = await fetchJSON(apiBase + "&action=odontogramas");
     renderSimpleList("odontoOdontogramasList", rows, function (item) {
-      return itemCard(item.paciente_nombre || "Odontograma", [item.fecha_registro || "Sin fecha", item.estado || "activo"]);
+      return itemCard(item.paciente_nombre || "Odontograma", [
+        item.fecha_registro || "Sin fecha",
+        item.estado || "activo"
+      ]);
     });
   }
 
@@ -185,11 +252,13 @@
       return itemCard(item.nombre || "Tratamiento", [
         item.paciente_nombre || "Sin paciente",
         "Sesiones " + (item.sesiones_realizadas || 0) + "/" + (item.sesiones_total || 0),
-        "Estimado " + (item.costo_estimado || 0),
+        "Estimado " + formatMoney(item.costo_estimado || 0),
         item.estado || "planificado"
       ], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="tratamiento" data-id="' + escapeHtml(item.id) + '" data-next="en_proceso">Pasar a en proceso</button></div>');
     });
-    renderSelectOptions('select[name="tratamiento_id"]', state.tratamientos, "id", function (item) { return (item.nombre || "Tratamiento") + " · " + (item.paciente_nombre || ""); }, "Sin tratamiento");
+    renderSelectOptions('select[name="tratamiento_id"]', state.tratamientos, "id", function (item) {
+      return (item.nombre || "Tratamiento") + separator + (item.paciente_nombre || "");
+    }, "Sin tratamiento");
   }
 
   async function loadPresupuestos() {
@@ -197,12 +266,14 @@
     renderSimpleList("odontoPresupuestosList", state.presupuestos, function (item) {
       return itemCard(item.nombre || "Presupuesto", [
         item.paciente_nombre || "Sin paciente",
-        "Total " + (item.valor_total || 0),
-        "Saldo " + (item.saldo || 0),
+        "Total " + formatMoney(item.valor_total || 0),
+        "Saldo " + formatMoney(item.saldo || 0),
         item.estado || "vigente"
       ], '<div style="margin-top:8px;"><button type="button" class="btn secondary small" data-entity="presupuesto" data-id="' + escapeHtml(item.id) + '" data-next="aprobado">Aprobar</button></div>');
     });
-    renderSelectOptions('select[name="presupuesto_id"]', state.presupuestos, "id", function (item) { return (item.nombre || "Presupuesto") + " · saldo " + (item.saldo || 0); }, "Sin presupuesto");
+    renderSelectOptions('select[name="presupuesto_id"]', state.presupuestos, "id", function (item) {
+      return (item.nombre || "Presupuesto") + separator + "saldo " + formatMoney(item.saldo || 0);
+    }, "Sin presupuesto");
   }
 
   async function loadPagos() {
@@ -210,7 +281,7 @@
     renderSimpleList("odontoPagosList", rows, function (item) {
       return itemCard(item.concepto || "Pago", [
         item.paciente_nombre || "Sin paciente",
-        "Monto " + (item.monto || 0),
+        "Monto " + formatMoney(item.monto || 0),
         item.metodo_pago || "Sin metodo",
         item.fecha_pago || "Sin fecha"
       ]);
@@ -231,9 +302,20 @@
   }
 
   function showTab(name) {
+    var meta = tabMeta[name] || tabMeta.pacientes;
     document.querySelectorAll(".odonto-tab").forEach(function (panel) {
       panel.hidden = panel.getAttribute("data-panel") !== name;
     });
+    document.querySelectorAll(".odonto-nav-btn[data-tab]").forEach(function (btn) {
+      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+    });
+    document.querySelectorAll('[data-tab].btn.secondary').forEach(function (btn) {
+      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+    });
+    var titleEl = document.getElementById("odontoSectionTitle");
+    var summaryEl = document.getElementById("odontoSectionSummary");
+    if (titleEl) titleEl.textContent = meta.title;
+    if (summaryEl) summaryEl.textContent = meta.summary;
   }
 
   async function submitCreate(formId, action, successMessage) {
@@ -270,6 +352,7 @@
     await fetchJSON(apiBase + "&action=" + encodeURIComponent(action) + "&id=" + encodeURIComponent(id) + "&estado=" + encodeURIComponent(nextState), {
       method: "PUT"
     });
+    setNotice("Estado actualizado correctamente.", false);
     await refreshAll();
   }
 

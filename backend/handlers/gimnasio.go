@@ -121,6 +121,14 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "preconfiguracion":
+				resumen, err := dbpkg.GetEmpresaGimnasioPreconfiguracionResumen(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar la preconfiguracion de gimnasio", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, resumen)
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -271,6 +279,20 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": evento.Resultado == "aprobado", "evento": evento})
+				return
+			case "aplicar_preconfiguracion":
+				var payload dbpkg.EmpresaGimnasioPreconfiguracion
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				resumen, err := dbpkg.ApplyEmpresaGimnasioPreconfiguracion(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resumen": resumen})
 				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)

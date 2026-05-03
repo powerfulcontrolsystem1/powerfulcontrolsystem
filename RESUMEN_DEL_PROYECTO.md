@@ -1,6 +1,6 @@
 # Resumen del proyecto Powerful Control System
 
-Actualizacion: 2026-04-30
+Actualizacion: 2026-05-02
 
 Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, inventario, finanzas, facturacion, reportes, soporte remoto y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
 
@@ -34,6 +34,8 @@ Desde 2026-04-30, el flujo de pago de licencias por Epayco conserva Smart Checko
 
 Cada empresa opera su propio panel con aislamiento por `empresa_id`. El panel incluye usuarios internos, roles, clientes, productos, bodegas, inventario, compras, ventas, carritos, estaciones, facturacion, finanzas, reportes, auditoria, asistencia de empleados, backups, venta publica, soporte remoto, integraciones y chat/tareas.
 
+La administracion empresarial incorpora una configuracion guiada asistida por IA para la puesta en marcha de nuevas empresas. El robot puede levantar datos del negocio, sugerir parametros por industria y aplicar configuraciones base para estaciones, impresion, cobro, facturacion y operacion inicial.
+
 La administracion empresarial tambien permite ver desde el editor de empresa a que administradores se compartio el acceso, tanto para quien comparte como para quien recibe. Cualquier administrador con acceso vigente puede retirar otro acceso compartido con trazabilidad y registro del actor.
 
 La hoja de vida operativa universal permite llevar historial de motos de taller, pacientes, vehiculos, equipos, activos o mascotas dentro de Administrar empresa. Cada ficha concentra eventos, servicios, alertas, recurrencias y resumen operativo para seguimiento empresarial.
@@ -41,6 +43,8 @@ La hoja de vida operativa universal permite llevar historial de motos de taller,
 ### Ventas, carritos y estaciones
 
 El flujo de venta se basa en carritos de compra. Puede operar como mostrador, estacion, habitacion, mesa o punto de caja. Soporta productos, servicios, combos, descuentos, impuestos, propinas, comisiones, pagos mixtos, recuperacion de sesiones y cierre de venta. El carrito puede generar documentos de venta, descontar inventario, registrar metricas y dejar auditoria. El lector de codigo de barras funciona con `codigo_barras` o `sku`; tambien existe generador de etiquetas Code 128 para productos.
+
+La configuracion de impresoras ya esta separada de la configuracion general y permite definir impresoras por equipo, funcionalidad y producto. La venta siempre genera comprobante y puede, si asi se configura, emitir ademas factura electronica automaticamente o manualmente a partir de una venta ya realizada.
 
 ### Inventario y compras
 
@@ -61,6 +65,30 @@ Los usuarios internos de empresa se crean desde el panel empresarial, reciben co
 ### RRHH, asistencia y operacion interna
 
 Asistencia registra entrada, salida, estado, novedades, horas trabajadas y cierres de periodo. Puede vincular registros con usuarios internos de empresa para mantener coherencia entre usuario, rol y empleado. Tambien existen modulos de nomina, vacaciones/licencias, vehiculos, agenda, chat/tareas y calendario compartido.
+
+El sistema tambien incluye un modulo profesional de horarios laborales para programar turnos de trabajadores por sede, area, cargo y recurrencia, con reglas de jornada, publicacion, conflictos y cobertura pendiente.
+
+## Modulos verticales especializados
+
+### Gimnasios
+
+El sistema incluye un modulo de gimnasio con dashboard, socios, planes, entrenadores, clases, inscripciones, asistencias, pagos y control de acceso. Soporta RFID, NFC, QR, PIN, biometria y facial, con credenciales, dispositivos, bitacora de eventos y politica de acceso configurable. Desde 2026-05-02 el modulo incorpora preconfiguracion operativa para crear planes base, clases iniciales y dispositivos de ingreso, y el esquema de base de datos migra de forma defensiva para empresas que vengan de versiones anteriores.
+
+### Consultorios odontologicos
+
+Existe un modulo de consultorio odontologico con pacientes, profesionales, consultorios, citas, historias clinicas, odontogramas, tratamientos, presupuestos y pagos. La intencion es cubrir agenda, trazabilidad clinica y operacion financiera del consultorio desde el mismo panel empresarial.
+
+### Taxi system y movilidad
+
+El proyecto incorpora `Taxi system`, un modulo de despacho tipo ridesharing con clientes web opcionales registrados, conductores, central, ofertas por cercania, GPS en tiempo real, mapas, estados del servicio y uso del celular del conductor para geoposicion. Esta capa tambien sirve como base de tracking para domicilios y otros flujos de movilidad.
+
+### Turnos de atencion
+
+Se dispone de un modulo de turnos tipo banco/EPS con emision de tickets, puestos de atencion, kiosco publico, pantalla TV y estados del turno. Esto permite operar recepciones, ventanillas, cajas o procesos de fila ordenada dentro de la misma plataforma.
+
+### Alquileres
+
+El modulo de alquileres administra activos rentables como herramientas, equipos, vehiculos o maquinaria. Incluye catalogo de activos, tarifas, contratos, reservas, entrega, devolucion, garantias, mantenimientos, GPS y KPI de utilizacion e ingresos.
 
 ### IA, documentos y automatizacion
 
