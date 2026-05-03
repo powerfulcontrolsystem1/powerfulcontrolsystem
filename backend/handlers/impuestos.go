@@ -11,14 +11,14 @@ import (
 )
 
 type impuestosContextResponse struct {
-	EmpresaID      int64                        `json:"empresa_id"`
-	PaisCodigo     string                       `json:"pais_codigo"`
-	PaisNombre     string                       `json:"pais_nombre"`
-	Bandera        string                       `json:"bandera"`
-	Moneda         string                       `json:"moneda"`
-	CatalogoBase   []dbpkg.EmpresaImpuestoConfig `json:"catalogo_base"`
-	Configurados   []dbpkg.EmpresaImpuestoConfig `json:"configurados"`
-	GeneradoEn     string                       `json:"generado_en"`
+	EmpresaID    int64                         `json:"empresa_id"`
+	PaisCodigo   string                        `json:"pais_codigo"`
+	PaisNombre   string                        `json:"pais_nombre"`
+	Bandera      string                        `json:"bandera"`
+	Moneda       string                        `json:"moneda"`
+	CatalogoBase []dbpkg.EmpresaImpuestoConfig `json:"catalogo_base"`
+	Configurados []dbpkg.EmpresaImpuestoConfig `json:"configurados"`
+	GeneradoEn   string                        `json:"generado_en"`
 }
 
 func impuestosCatalogoBase(pais string) []dbpkg.EmpresaImpuestoConfig {
@@ -39,7 +39,7 @@ func impuestosCatalogoBase(pais string) []dbpkg.EmpresaImpuestoConfig {
 			{PaisCodigo: "PA", Codigo: "ISC", Nombre: "ISC (selectivo al consumo)", Tipo: "impuesto", TasaPorcentaje: 0, Habilitado: 0, AplicaEn: "ventas"},
 			{PaisCodigo: "PA", Codigo: "RET_ITBMS", Nombre: "Retención ITBMS (gran comprador)", Tipo: "retencion", TasaPorcentaje: 50, Habilitado: 0, AplicaEn: "compras"},
 		}
-	default: // CO
+	default:
 		return []dbpkg.EmpresaImpuestoConfig{
 			{PaisCodigo: "CO", Codigo: "IVA", Nombre: "IVA (tarifa general)", Tipo: "impuesto", TasaPorcentaje: 19, Habilitado: 1, AplicaEn: "ventas"},
 			{PaisCodigo: "CO", Codigo: "ICA", Nombre: "ICA (municipal, variable)", Tipo: "impuesto", TasaPorcentaje: 0, Habilitado: 0, AplicaEn: "ventas"},
@@ -50,8 +50,9 @@ func impuestosCatalogoBase(pais string) []dbpkg.EmpresaImpuestoConfig {
 	}
 }
 
-// EmpresaImpuestosHandler gestiona catálogo y configuración de impuestos por empresa.
+// EmpresaImpuestosHandler gestiona catálogo, configuración y reportes fiscales por empresa.
 // GET  /api/empresa/impuestos?action=context
+// GET  /api/empresa/impuestos?action=dashboard
 // POST /api/empresa/impuestos?action=upsert   body: EmpresaImpuestoConfig
 func EmpresaImpuestosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +74,6 @@ func EmpresaImpuestosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			pais, _, err := dbpkg.DetectFacturacionPais(dbEmp, empresaID, "", "")
 			if err != nil {
-				// fallback seguro
 				pais = dbpkg.PaisFacturacion{Codigo: "CO", Nombre: "Colombia", Bandera: "🇨🇴", Moneda: "COP"}
 			}
 			config, err := dbpkg.ListEmpresaImpuestos(dbEmp, empresaID)
@@ -91,6 +91,20 @@ func EmpresaImpuestosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				Configurados: config,
 				GeneradoEn:   time.Now().Format("2006-01-02 15:04:05"),
 			})
+			return
+		case "dashboard":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+			hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+			dashboard, err := dbpkg.EmpresaImpuestosDashboardData(dbEmp, empresaID, desde, hasta)
+			if err != nil {
+				http.Error(w, "no se pudo construir dashboard fiscal", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, dashboard)
 			return
 		case "upsert":
 			if r.Method != http.MethodPost {
@@ -119,9 +133,8 @@ func EmpresaImpuestosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			})
 			return
 		default:
-			http.Error(w, "action invalida (use context o upsert)", http.StatusBadRequest)
+			http.Error(w, "action invalida (use context, dashboard o upsert)", http.StatusBadRequest)
 			return
 		}
 	}
 }
-

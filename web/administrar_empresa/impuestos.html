@@ -1,40 +1,168 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Impuestos</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .impuestos-shell { display:grid; gap:18px; }
+    .impuestos-hero { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .impuestos-hero-copy { max-width:780px; }
+    .impuestos-kicker { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; background:#eef7ff; color:#0f4c81; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+    .impuestos-summary { margin:8px 0 0; color:#5c6672; max-width:72ch; }
+    .impuestos-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .impuestos-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; align-items:end; }
+    .impuestos-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .impuestos-kpi { border:1px solid #e5e7eb; border-radius:18px; padding:16px; background:linear-gradient(180deg,#ffffff,#f8fbff); }
+    .impuestos-kpi-label { color:#667085; font-size:12px; text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px; }
+    .impuestos-kpi-value { font-size:28px; font-weight:800; color:#0f172a; margin:0; }
+    .impuestos-kpi-help { margin:6px 0 0; color:#64748b; font-size:13px; }
+    .impuestos-grid-2 { display:grid; grid-template-columns:1.2fr .8fr; gap:16px; }
+    .impuestos-card-title { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:12px; }
+    .impuestos-card-title h2 { margin:0; font-size:20px; }
+    .impuestos-export { display:flex; gap:8px; flex-wrap:wrap; }
+    .impuestos-table-note { margin-top:10px; color:#64748b; font-size:13px; }
+    .impuestos-pais { font-weight:700; color:#0f172a; }
+    @media (max-width: 980px) {
+      .impuestos-grid-2 { grid-template-columns:1fr; }
+    }
+  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container">
-<section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h1 class="empresa-section-title">Impuestos</h1>
-        <div class="empresa-inline-actions">
-          <div id="impuestosPaisBadge" class="form-help"></div>
-          <button id="btnImpuestosRefrescar" class="btn secondary" type="button">Actualizar</button>
-          <button id="btnImpuestosSembrar" class="btn" type="button">Cargar catálogo base</button>
+    <section class="card empresa-section">
+      <div class="impuestos-shell">
+        <div class="impuestos-hero">
+          <div class="impuestos-hero-copy">
+            <span class="impuestos-kicker">Gobierno fiscal</span>
+            <h1 class="empresa-section-title">Impuestos</h1>
+            <p class="impuestos-summary">Consolida configuración tributaria, impuestos generados por ventas, estimación de pasivo fiscal y reportes contables sugeridos para sostener una operación más ordenada frente a contabilidad y cumplimiento.</p>
+          </div>
+          <div class="impuestos-actions">
+            <div id="impuestosPaisBadge" class="form-help impuestos-pais"></div>
+            <button id="btnImpuestosRefrescar" class="btn secondary" type="button">Actualizar</button>
+            <button id="btnImpuestosSembrar" class="btn" type="button">Cargar catálogo base</button>
+          </div>
         </div>
-      </div>
-      <p class="form-help">Administra los impuestos por empresa (habilitar/deshabilitar y tasa). El país se detecta automáticamente.</p>
-      <div id="impuestosMsg" class="form-help"></div>
 
-      <div class="table-wrap">
-        <table class="table table-compact" id="impuestosTable">
-          <thead>
-            <tr>
-              <th>Habil.</th>
-              <th>Código</th>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Aplica</th>
-              <th>Tasa %</th>
-              <th>Guardar</th>
-            </tr>
-          </thead>
-          <tbody id="impuestosTbody"></tbody>
-        </table>
+        <div class="card" style="padding:16px; border-radius:20px;">
+          <div class="impuestos-filters">
+            <label class="form-field">
+              <span>Desde</span>
+              <input id="impuestosDesde" class="form-input" type="date">
+            </label>
+            <label class="form-field">
+              <span>Hasta</span>
+              <input id="impuestosHasta" class="form-input" type="date">
+            </label>
+            <div class="empresa-inline-actions">
+              <button id="btnImpuestosAplicar" class="btn" type="button">Aplicar período</button>
+              <button id="btnImpuestosMes" class="btn secondary" type="button">Últimos 30 días</button>
+            </div>
+          </div>
+          <div id="impuestosMsg" class="form-help" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="impuestos-kpis" id="impuestosKpis"></div>
+
+        <div class="impuestos-grid-2">
+          <section class="card" style="padding:18px; border-radius:20px;">
+            <div class="impuestos-card-title">
+              <h2>Resumen fiscal por código</h2>
+              <div class="impuestos-export">
+                <button id="btnExportCodigos" class="btn secondary" type="button">Exportar CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table table-compact">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Base gravable</th>
+                    <th>Impuesto</th>
+                    <th>Tasa efectiva</th>
+                    <th>Participación</th>
+                  </tr>
+                </thead>
+                <tbody id="impuestosCodigosBody"></tbody>
+              </table>
+            </div>
+            <div class="impuestos-table-note">Este bloque resume cómo se está generando el impuesto en ventas reales cerradas del período.</div>
+          </section>
+
+          <section class="card" style="padding:18px; border-radius:20px;">
+            <div class="impuestos-card-title">
+              <h2>Asientos contables sugeridos</h2>
+              <div class="impuestos-export">
+                <button id="btnExportAsientos" class="btn secondary" type="button">Exportar CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table table-compact">
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Concepto</th>
+                    <th>Naturaleza</th>
+                    <th>Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="impuestosAsientosBody"></tbody>
+              </table>
+            </div>
+            <div class="impuestos-table-note">Se entrega como guía operativa para conciliación contable, no como asiento automático irrevocable.</div>
+          </section>
+        </div>
+
+        <section class="card" style="padding:18px; border-radius:20px;">
+          <div class="impuestos-card-title">
+            <h2>Detalle diario</h2>
+            <div class="impuestos-export">
+              <button id="btnExportDiario" class="btn secondary" type="button">Exportar CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-compact">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Ventas</th>
+                  <th>Base gravable</th>
+                  <th>Impuesto</th>
+                  <th>Tasa efectiva</th>
+                  <th>Total facturado</th>
+                </tr>
+              </thead>
+              <tbody id="impuestosDiarioBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card empresa-section">
+          <div class="empresa-section-header">
+            <h2 class="empresa-section-title">Configuración tributaria</h2>
+          </div>
+          <p class="form-help">Administra los impuestos activos por empresa, su tasa de referencia y el frente donde aplican. El país se detecta automáticamente desde la configuración fiscal.</p>
+          <div class="table-wrap">
+            <table class="table table-compact" id="impuestosTable">
+              <thead>
+                <tr>
+                  <th>Activo</th>
+                  <th>Código</th>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Aplica en</th>
+                  <th>Tasa %</th>
+                  <th>Guardar</th>
+                </tr>
+              </thead>
+              <tbody id="impuestosTbody"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -43,23 +171,49 @@
   <script>
   (function(){
     var empresaId = (window.__resolveEmpresaIdContext ? window.__resolveEmpresaIdContext() : "") || "";
+    var state = { context: null, dashboard: null };
     var msg = document.getElementById('impuestosMsg');
     var badge = document.getElementById('impuestosPaisBadge');
     var tbody = document.getElementById('impuestosTbody');
-    var btnRefresh = document.getElementById('btnImpuestosRefrescar');
-    var btnSembrar = document.getElementById('btnImpuestosSembrar');
+    var codigosBody = document.getElementById('impuestosCodigosBody');
+    var diarioBody = document.getElementById('impuestosDiarioBody');
+    var asientosBody = document.getElementById('impuestosAsientosBody');
+    var kpis = document.getElementById('impuestosKpis');
+    var desdeInput = document.getElementById('impuestosDesde');
+    var hastaInput = document.getElementById('impuestosHasta');
 
     function setMsg(t, isErr){
       if (!msg) return;
-      msg.textContent = t || "";
-      msg.style.color = isErr ? "#b00020" : "";
+      msg.textContent = t || '';
+      msg.style.color = isErr ? '#b00020' : '';
+    }
+
+    function money(v){
+      return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits: 0 }).format(Number(v || 0));
+    }
+
+    function pct(v){
+      return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v || 0)) + '%';
+    }
+
+    function intFmt(v){
+      return new Intl.NumberFormat('es-CO').format(Number(v || 0));
+    }
+
+    function esc(v){
+      return String(v == null ? '' : v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
     }
 
     function byKey(arr, key){
       var map = {};
       (arr || []).forEach(function(it){
         if (!it) return;
-        var k = String(it[key] || "").toUpperCase().trim();
+        var k = String(it[key] || '').toUpperCase().trim();
         if (!k) return;
         map[k] = it;
       });
@@ -67,21 +221,74 @@
     }
 
     function fmtPais(resp){
-      if (!resp) return "";
-      var flag = String(resp.bandera || "").trim();
-      var code = String(resp.pais_codigo || "").trim();
-      var name = String(resp.pais_nombre || "").trim();
-      var moneda = String(resp.moneda || "").trim();
+      if (!resp) return '';
       var parts = [];
-      if (flag) parts.push(flag);
-      if (name || code) parts.push((name || code) + (code && name ? " (" + code + ")" : ""));
-      if (moneda) parts.push("Moneda: " + moneda);
-      return parts.join(" · ");
+      if (resp.bandera) parts.push(String(resp.bandera).trim());
+      if (resp.pais_nombre || resp.pais_codigo) parts.push(String(resp.pais_nombre || resp.pais_codigo).trim());
+      if (resp.moneda) parts.push('Moneda ' + String(resp.moneda).trim());
+      return parts.join(' · ');
+    }
+
+    function buildKpis(summary){
+      var cards = [
+        { label:'Impuesto generado', value: money(summary.impuesto_generado), help:'Pasivo fiscal estimado del período' },
+        { label:'Base gravable', value: money(summary.base_gravable), help:'Ventas afectadas por tributos' },
+        { label:'Ventas cerradas', value: intFmt(summary.ventas_cerradas), help:'Operaciones pagadas en el período' },
+        { label:'Ventas gravadas', value: intFmt(summary.ventas_gravadas), help:'Ventas con impuesto efectivo' },
+        { label:'Tasa efectiva', value: pct(summary.tasa_efectiva), help:'Carga tributaria promedio sobre la base' },
+        { label:'Promedio impuesto / venta', value: money(summary.promedio_impuesto_venta), help:'Presión fiscal por transacción' },
+        { label:'Impuestos activos', value: intFmt(summary.impuestos_activos), help:'Tributos comerciales habilitados' },
+        { label:'Retenciones activas', value: intFmt(summary.retenciones_activas), help:'Configuración de compras y retenciones' }
+      ];
+      kpis.innerHTML = cards.map(function(card){
+        return '<article class="impuestos-kpi">'
+          + '<p class="impuestos-kpi-label">' + esc(card.label) + '</p>'
+          + '<p class="impuestos-kpi-value">' + esc(card.value) + '</p>'
+          + '<p class="impuestos-kpi-help">' + esc(card.help) + '</p>'
+          + '</article>';
+      }).join('');
+    }
+
+    function renderCodigos(rows){
+      codigosBody.innerHTML = (rows || []).map(function(row){
+        return '<tr>'
+          + '<td>' + esc(row.codigo) + '</td>'
+          + '<td>' + esc(row.nombre) + '</td>'
+          + '<td>' + esc(row.tipo || 'impuesto') + '</td>'
+          + '<td>' + esc(money(row.base_gravable)) + '</td>'
+          + '<td>' + esc(money(row.impuesto_generado)) + '</td>'
+          + '<td>' + esc(pct(row.tasa_efectiva)) + '</td>'
+          + '<td>' + esc(pct(row.participacion)) + '</td>'
+          + '</tr>';
+      }).join('') || '<tr><td colspan="7" class="form-help">Sin movimientos tributarios para este período.</td></tr>';
+    }
+
+    function renderDiario(rows){
+      diarioBody.innerHTML = (rows || []).map(function(row){
+        return '<tr>'
+          + '<td>' + esc(row.fecha) + '</td>'
+          + '<td>' + esc(intFmt(row.ventas)) + '</td>'
+          + '<td>' + esc(money(row.base_gravable)) + '</td>'
+          + '<td>' + esc(money(row.impuesto_generado)) + '</td>'
+          + '<td>' + esc(pct(row.tasa_efectiva)) + '</td>'
+          + '<td>' + esc(money(row.total_facturado)) + '</td>'
+          + '</tr>';
+      }).join('') || '<tr><td colspan="6" class="form-help">Sin detalle diario para este período.</td></tr>';
+    }
+
+    function renderAsientos(rows){
+      asientosBody.innerHTML = (rows || []).map(function(row){
+        return '<tr>'
+          + '<td>' + esc(row.cuenta_sugerida) + '</td>'
+          + '<td>' + esc(row.concepto) + '</td>'
+          + '<td>' + esc(row.naturaleza) + '</td>'
+          + '<td>' + esc(money(row.monto)) + '</td>'
+          + '</tr>';
+      }).join('') || '<tr><td colspan="4" class="form-help">No hay asientos sugeridos todavía.</td></tr>';
     }
 
     function buildRow(it){
       var tr = document.createElement('tr');
-
       var tdOn = document.createElement('td');
       var chk = document.createElement('input');
       chk.type = 'checkbox';
@@ -114,11 +321,11 @@
       var aplica = document.createElement('select');
       aplica.className = 'form-input';
       ['ventas','compras','ambos'].forEach(function(v){
-        var opt2 = document.createElement('option');
-        opt2.value = v;
-        opt2.textContent = v;
-        if (String(it.aplica_en || 'ventas').toLowerCase() === v) opt2.selected = true;
-        aplica.appendChild(opt2);
+        var opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        if (String(it.aplica_en || 'ventas').toLowerCase() === v) opt.selected = true;
+        aplica.appendChild(opt);
       });
       tdAplica.appendChild(aplica);
 
@@ -140,7 +347,7 @@
 
       btn.addEventListener('click', async function(){
         try {
-          setMsg('Guardando...', false);
+          setMsg('Guardando configuración tributaria...', false);
           var payload = {
             codigo: String(it.codigo || '').toUpperCase().trim(),
             nombre: String(nombre.value || '').trim(),
@@ -152,10 +359,11 @@
           };
           var url = '/api/empresa/impuestos?action=upsert';
           if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
-          var res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          var res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
           var txt = await res.text();
           if (!res.ok) throw new Error(txt || 'error');
-          setMsg('Guardado.', false);
+          await Promise.all([loadContext(), loadDashboard()]);
+          setMsg('Configuración actualizada.', false);
         } catch (e) {
           setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
         }
@@ -165,90 +373,148 @@
       return tr;
     }
 
-    async function load(){
-      try {
-        setMsg('Cargando...', false);
-        if (tbody) tbody.innerHTML = '';
-        var url = '/api/empresa/impuestos?action=context';
-        if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
-        var res = await fetch(url, { method: 'GET' });
-        var txt = await res.text();
-        var data = {};
-        try { data = txt ? JSON.parse(txt) : {}; } catch(e) { data = {}; }
-        if (!res.ok) throw new Error(txt || 'error');
-        if (badge) badge.textContent = fmtPais(data);
+    async function loadContext(){
+      var url = '/api/empresa/impuestos?action=context';
+      if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
+      var res = await fetch(url);
+      var txt = await res.text();
+      var data = txt ? JSON.parse(txt) : {};
+      if (!res.ok) throw new Error(txt || 'error');
+      state.context = data;
+      badge.textContent = fmtPais(data);
+      var cfgMap = byKey(data.configurados || [], 'codigo');
+      var base = (data.catalogo_base || []).map(function(it){
+        var code = String(it.codigo || '').toUpperCase().trim();
+        var merged = Object.assign({}, it);
+        if (cfgMap[code]) merged = Object.assign({}, merged, cfgMap[code]);
+        merged.codigo = code;
+        merged.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
+        return merged;
+      });
+      (data.configurados || []).forEach(function(it){
+        var code = String(it.codigo || '').toUpperCase().trim();
+        if (!code) return;
+        if (base.some(function(x){ return String(x.codigo || '').toUpperCase().trim() === code; })) return;
+        var extra = Object.assign({}, it, { codigo: code, pais_codigo: String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim() });
+        base.push(extra);
+      });
+      base.sort(function(a,b){
+        var ta = String(a.tipo || 'impuesto');
+        var tb = String(b.tipo || 'impuesto');
+        if (ta !== tb) return ta < tb ? -1 : 1;
+        var ca = String(a.codigo || '');
+        var cb = String(b.codigo || '');
+        return ca < cb ? -1 : (ca > cb ? 1 : 0);
+      });
+      tbody.innerHTML = '';
+      base.forEach(function(it){ tbody.appendChild(buildRow(it)); });
+    }
 
-        var cfgMap = byKey(data.configurados || [], 'codigo');
-        var base = (data.catalogo_base || []).map(function(it){
-          var code = String(it.codigo || '').toUpperCase().trim();
-          var merged = Object.assign({}, it);
-          if (cfgMap[code]) merged = Object.assign({}, merged, cfgMap[code]);
-          merged.codigo = code;
-          merged.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
-          return merged;
-        });
-
-        // incluir configurados que no estén en catálogo base
-        (data.configurados || []).forEach(function(it){
-          var code2 = String(it.codigo || '').toUpperCase().trim();
-          if (!code2) return;
-          if (base.some(function(x){ return String(x.codigo||'').toUpperCase().trim() === code2; })) return;
-          var extra = Object.assign({}, it);
-          extra.codigo = code2;
-          extra.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
-          base.push(extra);
-        });
-
-        base.sort(function(a,b){
-          var ta = String(a.tipo||'impuesto'); var tb = String(b.tipo||'impuesto');
-          if (ta !== tb) return ta < tb ? -1 : 1;
-          var ca = String(a.codigo||''); var cb = String(b.codigo||'');
-          return ca < cb ? -1 : (ca > cb ? 1 : 0);
-        });
-
-        base.forEach(function(it){
-          if (!tbody) return;
-          tbody.appendChild(buildRow(it));
-        });
-        setMsg('', false);
-      } catch(e) {
-        setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
-      }
+    async function loadDashboard(){
+      var desde = desdeInput.value || '';
+      var hasta = hastaInput.value || '';
+      var url = '/api/empresa/impuestos?action=dashboard';
+      var params = [];
+      if (empresaId) params.push('empresa_id=' + encodeURIComponent(empresaId));
+      if (desde) params.push('desde=' + encodeURIComponent(desde));
+      if (hasta) params.push('hasta=' + encodeURIComponent(hasta));
+      if (params.length) url += '&' + params.join('&');
+      var res = await fetch(url);
+      var txt = await res.text();
+      var data = txt ? JSON.parse(txt) : {};
+      if (!res.ok) throw new Error(txt || 'error');
+      state.dashboard = data;
+      if (!desdeInput.value && data.resumen && data.resumen.desde) desdeInput.value = data.resumen.desde;
+      if (!hastaInput.value && data.resumen && data.resumen.hasta) hastaInput.value = data.resumen.hasta;
+      buildKpis(data.resumen || {});
+      renderCodigos(data.por_codigo || []);
+      renderDiario(data.diario || []);
+      renderAsientos(data.asientos || []);
     }
 
     async function sembrar(){
       try {
-        setMsg('Sembrando catálogo base...', false);
-        var url = '/api/empresa/impuestos?action=context';
-        if (empresaId) url += '&empresa_id=' + encodeURIComponent(empresaId);
-        var res = await fetch(url, { method: 'GET' });
-        var txt = await res.text();
-        var data = {};
-        try { data = txt ? JSON.parse(txt) : {}; } catch(e) { data = {}; }
-        if (!res.ok) throw new Error(txt || 'error');
+        setMsg('Cargando catálogo base...', false);
+        var data = state.context;
+        if (!data) {
+          await loadContext();
+          data = state.context;
+        }
         var base = data.catalogo_base || [];
-        for (var i=0; i<base.length; i++){
-          var it = base[i] || {};
-          var up = Object.assign({}, it);
-          up.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
+        for (var i = 0; i < base.length; i++) {
+          var it = Object.assign({}, base[i] || {});
+          it.pais_codigo = String(data.pais_codigo || it.pais_codigo || '').toUpperCase().trim();
           var postUrl = '/api/empresa/impuestos?action=upsert';
           if (empresaId) postUrl += '&empresa_id=' + encodeURIComponent(empresaId);
-          var r2 = await fetch(postUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(up) });
+          var r2 = await fetch(postUrl, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(it) });
           if (!r2.ok) {
             var t2 = await r2.text();
             throw new Error(t2 || 'error');
           }
         }
-        await load();
+        await Promise.all([loadContext(), loadDashboard()]);
         setMsg('Catálogo base cargado.', false);
-      } catch(e) {
+      } catch (e) {
         setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
       }
     }
 
-    if (btnRefresh) btnRefresh.addEventListener('click', load);
-    if (btnSembrar) btnSembrar.addEventListener('click', sembrar);
-    load();
+    function exportCsv(filename, headers, rows){
+      var csv = [headers.join(',')].concat((rows || []).map(function(row){
+        return row.map(function(value){
+          var text = String(value == null ? '' : value).replace(/"/g, '""');
+          return '"' + text + '"';
+        }).join(',');
+      })).join('\n');
+      var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function loadAll(){
+      try {
+        setMsg('Cargando panel fiscal...', false);
+        await Promise.all([loadContext(), loadDashboard()]);
+        setMsg('', false);
+      } catch (e) {
+        setMsg('Error: ' + (e && e.message ? e.message : String(e)), true);
+      }
+    }
+
+    document.getElementById('btnImpuestosRefrescar').addEventListener('click', loadAll);
+    document.getElementById('btnImpuestosSembrar').addEventListener('click', sembrar);
+    document.getElementById('btnImpuestosAplicar').addEventListener('click', loadDashboard);
+    document.getElementById('btnImpuestosMes').addEventListener('click', function(){
+      var now = new Date();
+      var start = new Date(now.getTime() - (29 * 24 * 60 * 60 * 1000));
+      desdeInput.value = start.toISOString().slice(0, 10);
+      hastaInput.value = now.toISOString().slice(0, 10);
+      loadDashboard();
+    });
+    document.getElementById('btnExportCodigos').addEventListener('click', function(){
+      var rows = (state.dashboard && state.dashboard.por_codigo || []).map(function(row){
+        return [row.codigo, row.nombre, row.tipo, row.base_gravable, row.impuesto_generado, row.tasa_efectiva, row.participacion];
+      });
+      exportCsv('impuestos_por_codigo.csv', ['codigo','nombre','tipo','base_gravable','impuesto_generado','tasa_efectiva','participacion'], rows);
+    });
+    document.getElementById('btnExportDiario').addEventListener('click', function(){
+      var rows = (state.dashboard && state.dashboard.diario || []).map(function(row){
+        return [row.fecha, row.ventas, row.base_gravable, row.impuesto_generado, row.tasa_efectiva, row.total_facturado];
+      });
+      exportCsv('impuestos_detalle_diario.csv', ['fecha','ventas','base_gravable','impuesto_generado','tasa_efectiva','total_facturado'], rows);
+    });
+    document.getElementById('btnExportAsientos').addEventListener('click', function(){
+      var rows = (state.dashboard && state.dashboard.asientos || []).map(function(row){
+        return [row.orden, row.cuenta_sugerida, row.concepto, row.naturaleza, row.monto, row.tipo];
+      });
+      exportCsv('impuestos_asientos_sugeridos.csv', ['orden','cuenta_sugerida','concepto','naturaleza','monto','tipo'], rows);
+    });
+
+    loadAll();
   })();
   </script>
 </body>
