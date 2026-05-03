@@ -1,0 +1,793 @@
+# test log
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.record.json
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.pdf
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.html
+getenv WKHTMLTOPDF_PATH
+getenv PATHEXT
+stat wkhtmltopdf.com
+stat wkhtmltopdf.exe
+stat wkhtmltopdf.bat
+stat wkhtmltopdf.cmd
+stat wkhtmltopdf.vbs
+stat wkhtmltopdf.vbe
+stat wkhtmltopdf.js
+stat wkhtmltopdf.jse
+stat wkhtmltopdf.wsf
+stat wkhtmltopdf.wsh
+stat wkhtmltopdf.msc
+stat wkhtmltopdf.py
+stat wkhtmltopdf.pyw
+stat wkhtmltopdf.cpl
+getenv path
+stat D:\Program Files\Go\bin\wkhtmltopdf.com
+stat D:\Program Files\Go\bin\wkhtmltopdf.exe
+stat D:\Program Files\Go\bin\wkhtmltopdf.bat
+stat D:\Program Files\Go\bin\wkhtmltopdf.cmd
+stat D:\Program Files\Go\bin\wkhtmltopdf.vbs
+stat D:\Program Files\Go\bin\wkhtmltopdf.vbe
+stat D:\Program Files\Go\bin\wkhtmltopdf.js
+stat D:\Program Files\Go\bin\wkhtmltopdf.jse
+stat D:\Program Files\Go\bin\wkhtmltopdf.wsf
+stat D:\Program Files\Go\bin\wkhtmltopdf.wsh
+stat D:\Program Files\Go\bin\wkhtmltopdf.msc
+stat D:\Program Files\Go\bin\wkhtmltopdf.py
+stat D:\Program Files\Go\bin\wkhtmltopdf.pyw
+stat D:\Program Files\Go\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.com
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.exe
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.bat
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.cmd
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.vbs
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.vbe
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.js
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.jse
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.wsf
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.wsh
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.msc
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.py
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.pyw
+stat C:\Users\ivanm\.codex\tmp\arg0\codex-arg0LGM7LM\wkhtmltopdf.cpl
+stat C:\Python314\Scripts\wkhtmltopdf.com
+stat C:\Python314\Scripts\wkhtmltopdf.exe
+stat C:\Python314\Scripts\wkhtmltopdf.bat
+stat C:\Python314\Scripts\wkhtmltopdf.cmd
+stat C:\Python314\Scripts\wkhtmltopdf.vbs
+stat C:\Python314\Scripts\wkhtmltopdf.vbe
+stat C:\Python314\Scripts\wkhtmltopdf.js
+stat C:\Python314\Scripts\wkhtmltopdf.jse
+stat C:\Python314\Scripts\wkhtmltopdf.wsf
+stat C:\Python314\Scripts\wkhtmltopdf.wsh
+stat C:\Python314\Scripts\wkhtmltopdf.msc
+stat C:\Python314\Scripts\wkhtmltopdf.py
+stat C:\Python314\Scripts\wkhtmltopdf.pyw
+stat C:\Python314\Scripts\wkhtmltopdf.cpl
+stat C:\Python314\wkhtmltopdf.com
+stat C:\Python314\wkhtmltopdf.exe
+stat C:\Python314\wkhtmltopdf.bat
+stat C:\Python314\wkhtmltopdf.cmd
+stat C:\Python314\wkhtmltopdf.vbs
+stat C:\Python314\wkhtmltopdf.vbe
+stat C:\Python314\wkhtmltopdf.js
+stat C:\Python314\wkhtmltopdf.jse
+stat C:\Python314\wkhtmltopdf.wsf
+stat C:\Python314\wkhtmltopdf.wsh
+stat C:\Python314\wkhtmltopdf.msc
+stat C:\Python314\wkhtmltopdf.py
+stat C:\Python314\wkhtmltopdf.pyw
+stat C:\Python314\wkhtmltopdf.cpl
+stat C:\Windows\system32\wkhtmltopdf.com
+stat C:\Windows\system32\wkhtmltopdf.exe
+stat C:\Windows\system32\wkhtmltopdf.bat
+stat C:\Windows\system32\wkhtmltopdf.cmd
+stat C:\Windows\system32\wkhtmltopdf.vbs
+stat C:\Windows\system32\wkhtmltopdf.vbe
+stat C:\Windows\system32\wkhtmltopdf.js
+stat C:\Windows\system32\wkhtmltopdf.jse
+stat C:\Windows\system32\wkhtmltopdf.wsf
+stat C:\Windows\system32\wkhtmltopdf.wsh
+stat C:\Windows\system32\wkhtmltopdf.msc
+stat C:\Windows\system32\wkhtmltopdf.py
+stat C:\Windows\system32\wkhtmltopdf.pyw
+stat C:\Windows\system32\wkhtmltopdf.cpl
+stat C:\Windows\wkhtmltopdf.com
+stat C:\Windows\wkhtmltopdf.exe
+stat C:\Windows\wkhtmltopdf.bat
+stat C:\Windows\wkhtmltopdf.cmd
+stat C:\Windows\wkhtmltopdf.vbs
+stat C:\Windows\wkhtmltopdf.vbe
+stat C:\Windows\wkhtmltopdf.js
+stat C:\Windows\wkhtmltopdf.jse
+stat C:\Windows\wkhtmltopdf.wsf
+stat C:\Windows\wkhtmltopdf.wsh
+stat C:\Windows\wkhtmltopdf.msc
+stat C:\Windows\wkhtmltopdf.py
+stat C:\Windows\wkhtmltopdf.pyw
+stat C:\Windows\wkhtmltopdf.cpl
+stat C:\Windows\System32\Wbem\wkhtmltopdf.com
+stat C:\Windows\System32\Wbem\wkhtmltopdf.exe
+stat C:\Windows\System32\Wbem\wkhtmltopdf.bat
+stat C:\Windows\System32\Wbem\wkhtmltopdf.cmd
+stat C:\Windows\System32\Wbem\wkhtmltopdf.vbs
+stat C:\Windows\System32\Wbem\wkhtmltopdf.vbe
+stat C:\Windows\System32\Wbem\wkhtmltopdf.js
+stat C:\Windows\System32\Wbem\wkhtmltopdf.jse
+stat C:\Windows\System32\Wbem\wkhtmltopdf.wsf
+stat C:\Windows\System32\Wbem\wkhtmltopdf.wsh
+stat C:\Windows\System32\Wbem\wkhtmltopdf.msc
+stat C:\Windows\System32\Wbem\wkhtmltopdf.py
+stat C:\Windows\System32\Wbem\wkhtmltopdf.pyw
+stat C:\Windows\System32\Wbem\wkhtmltopdf.cpl
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.com
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.exe
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.bat
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.cmd
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.vbs
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.vbe
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.js
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.jse
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.wsf
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.wsh
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.msc
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.py
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.pyw
+stat C:\Windows\System32\WindowsPowerShell\v1.0\wkhtmltopdf.cpl
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.com
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.exe
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.bat
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.cmd
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.vbs
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.vbe
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.js
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.jse
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.wsf
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.wsh
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.msc
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.py
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.pyw
+stat C:\Windows\System32\OpenSSH\wkhtmltopdf.cpl
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.com
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.exe
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.bat
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.cmd
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.vbs
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.vbe
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.js
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.jse
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.wsf
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.wsh
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.msc
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.py
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.pyw
+stat C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common\wkhtmltopdf.cpl
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.com
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.exe
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.bat
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.cmd
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.vbs
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.vbe
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.js
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.jse
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.wsf
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.wsh
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.msc
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.py
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.pyw
+stat C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR\wkhtmltopdf.cpl
+stat C:\WINDOWS\system32\wkhtmltopdf.com
+stat C:\WINDOWS\system32\wkhtmltopdf.exe
+stat C:\WINDOWS\system32\wkhtmltopdf.bat
+stat C:\WINDOWS\system32\wkhtmltopdf.cmd
+stat C:\WINDOWS\system32\wkhtmltopdf.vbs
+stat C:\WINDOWS\system32\wkhtmltopdf.vbe
+stat C:\WINDOWS\system32\wkhtmltopdf.js
+stat C:\WINDOWS\system32\wkhtmltopdf.jse
+stat C:\WINDOWS\system32\wkhtmltopdf.wsf
+stat C:\WINDOWS\system32\wkhtmltopdf.wsh
+stat C:\WINDOWS\system32\wkhtmltopdf.msc
+stat C:\WINDOWS\system32\wkhtmltopdf.py
+stat C:\WINDOWS\system32\wkhtmltopdf.pyw
+stat C:\WINDOWS\system32\wkhtmltopdf.cpl
+stat C:\WINDOWS\wkhtmltopdf.com
+stat C:\WINDOWS\wkhtmltopdf.exe
+stat C:\WINDOWS\wkhtmltopdf.bat
+stat C:\WINDOWS\wkhtmltopdf.cmd
+stat C:\WINDOWS\wkhtmltopdf.vbs
+stat C:\WINDOWS\wkhtmltopdf.vbe
+stat C:\WINDOWS\wkhtmltopdf.js
+stat C:\WINDOWS\wkhtmltopdf.jse
+stat C:\WINDOWS\wkhtmltopdf.wsf
+stat C:\WINDOWS\wkhtmltopdf.wsh
+stat C:\WINDOWS\wkhtmltopdf.msc
+stat C:\WINDOWS\wkhtmltopdf.py
+stat C:\WINDOWS\wkhtmltopdf.pyw
+stat C:\WINDOWS\wkhtmltopdf.cpl
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.com
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.exe
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.bat
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.cmd
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.vbs
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.vbe
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.js
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.jse
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.wsf
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.wsh
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.msc
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.py
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.pyw
+stat C:\WINDOWS\System32\Wbem\wkhtmltopdf.cpl
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.com
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.exe
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.bat
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.cmd
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.vbs
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.vbe
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.js
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.jse
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.wsf
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.wsh
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.msc
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.py
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.pyw
+stat C:\WINDOWS\System32\WindowsPowerShell\v1.0\wkhtmltopdf.cpl
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.com
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.exe
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.bat
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.cmd
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.vbs
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.vbe
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.js
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.jse
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.wsf
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.wsh
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.msc
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.py
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.pyw
+stat C:\WINDOWS\System32\OpenSSH\wkhtmltopdf.cpl
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.com
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.exe
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.bat
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.cmd
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.vbs
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.vbe
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.js
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.jse
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.wsf
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.wsh
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.msc
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.py
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.pyw
+stat C:\AUTOPUBLIC\SISTEMA\yt-dlp_win\wkhtmltopdf.cpl
+stat D:\Program Files\Go\bin\wkhtmltopdf.com
+stat D:\Program Files\Go\bin\wkhtmltopdf.exe
+stat D:\Program Files\Go\bin\wkhtmltopdf.bat
+stat D:\Program Files\Go\bin\wkhtmltopdf.cmd
+stat D:\Program Files\Go\bin\wkhtmltopdf.vbs
+stat D:\Program Files\Go\bin\wkhtmltopdf.vbe
+stat D:\Program Files\Go\bin\wkhtmltopdf.js
+stat D:\Program Files\Go\bin\wkhtmltopdf.jse
+stat D:\Program Files\Go\bin\wkhtmltopdf.wsf
+stat D:\Program Files\Go\bin\wkhtmltopdf.wsh
+stat D:\Program Files\Go\bin\wkhtmltopdf.msc
+stat D:\Program Files\Go\bin\wkhtmltopdf.py
+stat D:\Program Files\Go\bin\wkhtmltopdf.pyw
+stat D:\Program Files\Go\bin\wkhtmltopdf.cpl
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.com
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.exe
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.bat
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.cmd
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.vbs
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.vbe
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.js
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.jse
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.wsf
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.wsh
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.msc
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.py
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.pyw
+stat C:\Program Files\Microsoft SQL Server\150\Tools\Binn\wkhtmltopdf.cpl
+stat d:\Program Files\Git\cmd\wkhtmltopdf.com
+stat d:\Program Files\Git\cmd\wkhtmltopdf.exe
+stat d:\Program Files\Git\cmd\wkhtmltopdf.bat
+stat d:\Program Files\Git\cmd\wkhtmltopdf.cmd
+stat d:\Program Files\Git\cmd\wkhtmltopdf.vbs
+stat d:\Program Files\Git\cmd\wkhtmltopdf.vbe
+stat d:\Program Files\Git\cmd\wkhtmltopdf.js
+stat d:\Program Files\Git\cmd\wkhtmltopdf.jse
+stat d:\Program Files\Git\cmd\wkhtmltopdf.wsf
+stat d:\Program Files\Git\cmd\wkhtmltopdf.wsh
+stat d:\Program Files\Git\cmd\wkhtmltopdf.msc
+stat d:\Program Files\Git\cmd\wkhtmltopdf.py
+stat d:\Program Files\Git\cmd\wkhtmltopdf.pyw
+stat d:\Program Files\Git\cmd\wkhtmltopdf.cpl
+stat D:\Program Files\PuTTY\wkhtmltopdf.com
+stat D:\Program Files\PuTTY\wkhtmltopdf.exe
+stat D:\Program Files\PuTTY\wkhtmltopdf.bat
+stat D:\Program Files\PuTTY\wkhtmltopdf.cmd
+stat D:\Program Files\PuTTY\wkhtmltopdf.vbs
+stat D:\Program Files\PuTTY\wkhtmltopdf.vbe
+stat D:\Program Files\PuTTY\wkhtmltopdf.js
+stat D:\Program Files\PuTTY\wkhtmltopdf.jse
+stat D:\Program Files\PuTTY\wkhtmltopdf.wsf
+stat D:\Program Files\PuTTY\wkhtmltopdf.wsh
+stat D:\Program Files\PuTTY\wkhtmltopdf.msc
+stat D:\Program Files\PuTTY\wkhtmltopdf.py
+stat D:\Program Files\PuTTY\wkhtmltopdf.pyw
+stat D:\Program Files\PuTTY\wkhtmltopdf.cpl
+stat C:\Program Files\dotnet\wkhtmltopdf.com
+stat C:\Program Files\dotnet\wkhtmltopdf.exe
+stat C:\Program Files\dotnet\wkhtmltopdf.bat
+stat C:\Program Files\dotnet\wkhtmltopdf.cmd
+stat C:\Program Files\dotnet\wkhtmltopdf.vbs
+stat C:\Program Files\dotnet\wkhtmltopdf.vbe
+stat C:\Program Files\dotnet\wkhtmltopdf.js
+stat C:\Program Files\dotnet\wkhtmltopdf.jse
+stat C:\Program Files\dotnet\wkhtmltopdf.wsf
+stat C:\Program Files\dotnet\wkhtmltopdf.wsh
+stat C:\Program Files\dotnet\wkhtmltopdf.msc
+stat C:\Program Files\dotnet\wkhtmltopdf.py
+stat C:\Program Files\dotnet\wkhtmltopdf.pyw
+stat C:\Program Files\dotnet\wkhtmltopdf.cpl
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.com
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.exe
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.bat
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.cmd
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.vbs
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.vbe
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.js
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.jse
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.wsf
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.wsh
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.msc
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.py
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.pyw
+stat C:\Program Files\GitHub CLI\wkhtmltopdf.cpl
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.com
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.exe
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.bat
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.cmd
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.vbs
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.vbe
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.js
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.jse
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.wsf
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.wsh
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.msc
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.py
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.pyw
+stat C:\ProgramData\chocolatey\bin\wkhtmltopdf.cpl
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.com
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.exe
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.bat
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.cmd
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.vbs
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.vbe
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.js
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.jse
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.wsf
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.wsh
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.msc
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.py
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.pyw
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand\wkhtmltopdf.cpl
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.com
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.exe
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.bat
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.cmd
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.vbs
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.vbe
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.js
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.jse
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.wsf
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.wsh
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.msc
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.py
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.pyw
+stat c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\wkhtmltopdf.cpl
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.com
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.exe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.bat
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.cmd
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.vbs
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.vbe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.js
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.jse
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.wsf
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.wsh
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.msc
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.py
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.pyw
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\WinNT\wkhtmltopdf.cpl
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.com
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.exe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.bat
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.cmd
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.vbs
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.vbe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.js
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.jse
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.wsf
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.wsh
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.msc
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.py
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.pyw
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\MSDev98\Bin\wkhtmltopdf.cpl
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.com
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.exe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.bat
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.cmd
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.vbs
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.vbe
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.js
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.jse
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.wsf
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.wsh
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.msc
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.py
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.pyw
+stat C:\Program Files (x86)\Microsoft Visual Studio\Common\Tools\wkhtmltopdf.cpl
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.com
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.exe
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.bat
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.cmd
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.vbs
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.vbe
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.js
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.jse
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.wsf
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.wsh
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.msc
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.py
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.pyw
+stat C:\Program Files (x86)\Microsoft Visual Studio\VC98\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Microsoft\WindowsApps\wkhtmltopdf.cpl
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\go\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\GitHubDesktop\bin\wkhtmltopdf.cpl
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.com
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.exe
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.bat
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.cmd
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.vbs
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.vbe
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.js
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.jse
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.wsf
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.wsh
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.msc
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.py
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.pyw
+stat d:\AppServ\Apache24\bin\wkhtmltopdf.cpl
+stat d:\AppServ\php7\wkhtmltopdf.com
+stat d:\AppServ\php7\wkhtmltopdf.exe
+stat d:\AppServ\php7\wkhtmltopdf.bat
+stat d:\AppServ\php7\wkhtmltopdf.cmd
+stat d:\AppServ\php7\wkhtmltopdf.vbs
+stat d:\AppServ\php7\wkhtmltopdf.vbe
+stat d:\AppServ\php7\wkhtmltopdf.js
+stat d:\AppServ\php7\wkhtmltopdf.jse
+stat d:\AppServ\php7\wkhtmltopdf.wsf
+stat d:\AppServ\php7\wkhtmltopdf.wsh
+stat d:\AppServ\php7\wkhtmltopdf.msc
+stat d:\AppServ\php7\wkhtmltopdf.py
+stat d:\AppServ\php7\wkhtmltopdf.pyw
+stat d:\AppServ\php7\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Programs\Ollama\wkhtmltopdf.cpl
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.com
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.exe
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.bat
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.cmd
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.vbs
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.vbe
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.js
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.jse
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.wsf
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.wsh
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.msc
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.py
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.pyw
+stat D:\AppServ\Apache2.2\bin\wkhtmltopdf.cpl
+stat D:\AppServ\php5\wkhtmltopdf.com
+stat D:\AppServ\php5\wkhtmltopdf.exe
+stat D:\AppServ\php5\wkhtmltopdf.bat
+stat D:\AppServ\php5\wkhtmltopdf.cmd
+stat D:\AppServ\php5\wkhtmltopdf.vbs
+stat D:\AppServ\php5\wkhtmltopdf.vbe
+stat D:\AppServ\php5\wkhtmltopdf.js
+stat D:\AppServ\php5\wkhtmltopdf.jse
+stat D:\AppServ\php5\wkhtmltopdf.wsf
+stat D:\AppServ\php5\wkhtmltopdf.wsh
+stat D:\AppServ\php5\wkhtmltopdf.msc
+stat D:\AppServ\php5\wkhtmltopdf.py
+stat D:\AppServ\php5\wkhtmltopdf.pyw
+stat D:\AppServ\php5\wkhtmltopdf.cpl
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.com
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.exe
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.bat
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.cmd
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.vbs
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.vbe
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.js
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.jse
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.wsf
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.wsh
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.msc
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.py
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.pyw
+stat D:\AppServ\MySQL\bin\wkhtmltopdf.cpl
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.com
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.exe
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.bat
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.cmd
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.vbs
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.vbe
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.js
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.jse
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.wsf
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.wsh
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.msc
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.py
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.pyw
+stat d:\AppServ\Apache2.2\bin\wkhtmltopdf.cpl
+stat d:\AppServ\php5\wkhtmltopdf.com
+stat d:\AppServ\php5\wkhtmltopdf.exe
+stat d:\AppServ\php5\wkhtmltopdf.bat
+stat d:\AppServ\php5\wkhtmltopdf.cmd
+stat d:\AppServ\php5\wkhtmltopdf.vbs
+stat d:\AppServ\php5\wkhtmltopdf.vbe
+stat d:\AppServ\php5\wkhtmltopdf.js
+stat d:\AppServ\php5\wkhtmltopdf.jse
+stat d:\AppServ\php5\wkhtmltopdf.wsf
+stat d:\AppServ\php5\wkhtmltopdf.wsh
+stat d:\AppServ\php5\wkhtmltopdf.msc
+stat d:\AppServ\php5\wkhtmltopdf.py
+stat d:\AppServ\php5\wkhtmltopdf.pyw
+stat d:\AppServ\php5\wkhtmltopdf.cpl
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.com
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.exe
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.bat
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.cmd
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.vbs
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.vbe
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.js
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.jse
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.wsf
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.wsh
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.msc
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.py
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.pyw
+stat d:\AppServ\MySQL\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\.lmstudio\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Python\bin\wkhtmltopdf.cpl
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.com
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.exe
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.bat
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.cmd
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.vbs
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.vbe
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.js
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.jse
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.wsf
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.wsh
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.msc
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.py
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.pyw
+stat d:\Users\ivanm\AppData\Local\Programs\Antigravity\bin\wkhtmltopdf.cpl
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.com
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.exe
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.bat
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.cmd
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.vbs
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.vbe
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.js
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.jse
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.wsf
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.wsh
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.msc
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.py
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.pyw
+stat C:\ProgramData\ivanm\GitHubDesktop\bin\wkhtmltopdf.cpl
+stat D:\powerfulcontrolsystem\wkhtmltopdf.com
+stat D:\powerfulcontrolsystem\wkhtmltopdf.exe
+stat D:\powerfulcontrolsystem\wkhtmltopdf.bat
+stat D:\powerfulcontrolsystem\wkhtmltopdf.cmd
+stat D:\powerfulcontrolsystem\wkhtmltopdf.vbs
+stat D:\powerfulcontrolsystem\wkhtmltopdf.vbe
+stat D:\powerfulcontrolsystem\wkhtmltopdf.js
+stat D:\powerfulcontrolsystem\wkhtmltopdf.jse
+stat D:\powerfulcontrolsystem\wkhtmltopdf.wsf
+stat D:\powerfulcontrolsystem\wkhtmltopdf.wsh
+stat D:\powerfulcontrolsystem\wkhtmltopdf.msc
+stat D:\powerfulcontrolsystem\wkhtmltopdf.py
+stat D:\powerfulcontrolsystem\wkhtmltopdf.pyw
+stat D:\powerfulcontrolsystem\wkhtmltopdf.cpl
+stat D:\powerfulcontrolsystem\wkhtmltopdf.com
+stat D:\powerfulcontrolsystem\wkhtmltopdf.exe
+stat D:\powerfulcontrolsystem\wkhtmltopdf.bat
+stat D:\powerfulcontrolsystem\wkhtmltopdf.cmd
+stat D:\powerfulcontrolsystem\wkhtmltopdf.vbs
+stat D:\powerfulcontrolsystem\wkhtmltopdf.vbe
+stat D:\powerfulcontrolsystem\wkhtmltopdf.js
+stat D:\powerfulcontrolsystem\wkhtmltopdf.jse
+stat D:\powerfulcontrolsystem\wkhtmltopdf.wsf
+stat D:\powerfulcontrolsystem\wkhtmltopdf.wsh
+stat D:\powerfulcontrolsystem\wkhtmltopdf.msc
+stat D:\powerfulcontrolsystem\wkhtmltopdf.py
+stat D:\powerfulcontrolsystem\wkhtmltopdf.pyw
+stat D:\powerfulcontrolsystem\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Programs\cursor\resources\app\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\Programs\Microsoft VS Code\bin\wkhtmltopdf.cpl
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.com
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.exe
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.bat
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.cmd
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.vbs
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.vbe
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.js
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.jse
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.wsf
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.wsh
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.msc
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.py
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.pyw
+stat C:\Users\ivanm\AppData\Local\OpenAI\Codex\bin\wkhtmltopdf.cpl
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.com
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.exe
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.bat
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.cmd
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.vbs
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.vbe
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.js
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.jse
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.wsf
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.wsh
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.msc
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.py
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.pyw
+stat C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\wkhtmltopdf.cpl
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.pdf
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.pdf
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.docx
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.docx
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.docx
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.xlsx
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.xlsx
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.xlsx
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.txt
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.txt
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.txt
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.json
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.json
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.json
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.html
+stat D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.html
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.pdf
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.docx
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.xlsx
+open D:\powerfulcontrolsystem\.gotmp\powerfulcontrolsystem-documents\0123456789abcdef0123456789abcdef.json

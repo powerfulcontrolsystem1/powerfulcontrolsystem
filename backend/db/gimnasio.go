@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -230,17 +231,17 @@ type EmpresaGimnasioDashboard struct {
 }
 
 type EmpresaGimnasioPreconfiguracion struct {
-	EmpresaID              int64  `json:"empresa_id"`
-	NombreSedePrincipal    string `json:"nombre_sede_principal"`
-	PermitirRFID           bool   `json:"permitir_rfid"`
-	PermitirNFC            bool   `json:"permitir_nfc"`
-	PermitirQR             bool   `json:"permitir_qr"`
-	CrearPlanesBase        bool   `json:"crear_planes_base"`
-	CrearClasesBase        bool   `json:"crear_clases_base"`
-	CrearDispositivosBase  bool   `json:"crear_dispositivos_base"`
-	CuposBaseClase         int    `json:"cupos_base_clase"`
-	DuracionBaseClase      int    `json:"duracion_base_clase"`
-	UsuarioCreador         string `json:"usuario_creador,omitempty"`
+	EmpresaID             int64  `json:"empresa_id"`
+	NombreSedePrincipal   string `json:"nombre_sede_principal"`
+	PermitirRFID          bool   `json:"permitir_rfid"`
+	PermitirNFC           bool   `json:"permitir_nfc"`
+	PermitirQR            bool   `json:"permitir_qr"`
+	CrearPlanesBase       bool   `json:"crear_planes_base"`
+	CrearClasesBase       bool   `json:"crear_clases_base"`
+	CrearDispositivosBase bool   `json:"crear_dispositivos_base"`
+	CuposBaseClase        int    `json:"cupos_base_clase"`
+	DuracionBaseClase     int    `json:"duracion_base_clase"`
+	UsuarioCreador        string `json:"usuario_creador,omitempty"`
 }
 
 type EmpresaGimnasioPreconfiguracionResumen struct {
@@ -256,7 +257,25 @@ type EmpresaGimnasioPreconfiguracionResumen struct {
 	TieneDatos        bool   `json:"tiene_datos"`
 }
 
+var (
+	empresaGimnasioSchemaEnsured sync.Map
+	empresaGimnasioSchemaMu      sync.Mutex
+)
+
 func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("dbConn es obligatorio")
+	}
+	cacheKey := fmt.Sprintf("%p", dbConn)
+	if _, ok := empresaGimnasioSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+	empresaGimnasioSchemaMu.Lock()
+	defer empresaGimnasioSchemaMu.Unlock()
+	if _, ok := empresaGimnasioSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_planes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -696,6 +715,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			}
 		}
 	}
+	empresaGimnasioSchemaEnsured.Store(cacheKey, true)
 	return nil
 }
 
@@ -1471,15 +1491,19 @@ func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimna
 		return nil, err
 	}
 	out := &EmpresaGimnasioDashboard{EmpresaID: empresaID}
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	currentMonth := now.Format("2006-01")
+	renewalUntil := now.AddDate(0, 0, 10).Format("2006-01-02")
 	err := dbConn.QueryRow(`SELECT
 		(SELECT COUNT(1) FROM empresa_gimnasio_socios WHERE empresa_id=? AND COALESCE(estado,'activo')='activo'),
 		(SELECT COUNT(1) FROM empresa_gimnasio_planes WHERE empresa_id=? AND COALESCE(estado,'activo')='activo'),
-		(SELECT COUNT(1) FROM empresa_gimnasio_clases WHERE empresa_id=? AND substr(COALESCE(fecha_programada,''),1,10)=date('now','localtime')),
-		(SELECT COUNT(1) FROM empresa_gimnasio_asistencias WHERE empresa_id=? AND substr(COALESCE(fecha_hora,''),1,10)=date('now','localtime')),
-		(SELECT COALESCE(SUM(monto),0) FROM empresa_gimnasio_pagos WHERE empresa_id=? AND substr(COALESCE(fecha_pago,''),1,7)=substr(date('now','localtime'),1,7) AND COALESCE(estado,'pagado')='pagado'),
-		(SELECT COUNT(1) FROM empresa_gimnasio_socios WHERE empresa_id=? AND COALESCE(fecha_fin_plan,'')<>'' AND date(fecha_fin_plan) BETWEEN date('now','localtime') AND date('now','localtime','+10 day')),
+		(SELECT COUNT(1) FROM empresa_gimnasio_clases WHERE empresa_id=? AND substr(COALESCE(fecha_programada,''),1,10)=?),
+		(SELECT COUNT(1) FROM empresa_gimnasio_asistencias WHERE empresa_id=? AND substr(COALESCE(fecha_hora,''),1,10)=?),
+		(SELECT COALESCE(SUM(monto),0) FROM empresa_gimnasio_pagos WHERE empresa_id=? AND substr(COALESCE(fecha_pago,''),1,7)=? AND COALESCE(estado,'pagado')='pagado'),
+		(SELECT COUNT(1) FROM empresa_gimnasio_socios WHERE empresa_id=? AND COALESCE(fecha_fin_plan,'')<>'' AND substr(COALESCE(fecha_fin_plan,''),1,10) BETWEEN ? AND ?),
 		(SELECT COUNT(1) FROM empresa_gimnasio_inscripciones WHERE empresa_id=? AND COALESCE(estado,'activa')='activa')`,
-		empresaID, empresaID, empresaID, empresaID, empresaID, empresaID, empresaID,
+		empresaID, empresaID, empresaID, today, empresaID, today, empresaID, currentMonth, empresaID, today, renewalUntil, empresaID,
 	).Scan(&out.SociosActivos, &out.PlanesActivos, &out.ClasesHoy, &out.AccesosHoy, &out.IngresosMes, &out.RenovacionesProximas, &out.InscripcionesActivas)
 	if err != nil {
 		return nil, err
@@ -1640,41 +1664,41 @@ func ApplyEmpresaGimnasioPreconfiguracion(dbConn *sql.DB, payload EmpresaGimnasi
 		devices := []EmpresaGimnasioDispositivoAcceso{}
 		if cfg.PermitirRFID {
 			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
-				EmpresaID:      cfg.EmpresaID,
-				Nombre:         "Ingreso principal RFID",
-				TipoDispositivo:"lector_rfid",
-				Ubicacion:      "Recepción principal",
-				Sede:           cfg.NombreSedePrincipal,
-				Canal:          "ingreso",
-				Estado:         "activo",
-				Identificador:  "RFID-PRINCIPAL",
-				UsuarioCreador: cfg.UsuarioCreador,
+				EmpresaID:       cfg.EmpresaID,
+				Nombre:          "Ingreso principal RFID",
+				TipoDispositivo: "lector_rfid",
+				Ubicacion:       "Recepción principal",
+				Sede:            cfg.NombreSedePrincipal,
+				Canal:           "ingreso",
+				Estado:          "activo",
+				Identificador:   "RFID-PRINCIPAL",
+				UsuarioCreador:  cfg.UsuarioCreador,
 			})
 		}
 		if cfg.PermitirNFC {
 			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
-				EmpresaID:      cfg.EmpresaID,
-				Nombre:         "Acceso NFC lobby",
-				TipoDispositivo:"lector_nfc",
-				Ubicacion:      "Lobby de ingreso",
-				Sede:           cfg.NombreSedePrincipal,
-				Canal:          "ingreso",
-				Estado:         "activo",
-				Identificador:  "NFC-LOBBY",
-				UsuarioCreador: cfg.UsuarioCreador,
+				EmpresaID:       cfg.EmpresaID,
+				Nombre:          "Acceso NFC lobby",
+				TipoDispositivo: "lector_nfc",
+				Ubicacion:       "Lobby de ingreso",
+				Sede:            cfg.NombreSedePrincipal,
+				Canal:           "ingreso",
+				Estado:          "activo",
+				Identificador:   "NFC-LOBBY",
+				UsuarioCreador:  cfg.UsuarioCreador,
 			})
 		}
 		if cfg.PermitirQR {
 			devices = append(devices, EmpresaGimnasioDispositivoAcceso{
-				EmpresaID:      cfg.EmpresaID,
-				Nombre:         "Torniquete QR recepción",
-				TipoDispositivo:"torniquete_qr",
-				Ubicacion:      "Recepción principal",
-				Sede:           cfg.NombreSedePrincipal,
-				Canal:          "ingreso",
-				Estado:         "activo",
-				Identificador:  "QR-RECEPCION",
-				UsuarioCreador: cfg.UsuarioCreador,
+				EmpresaID:       cfg.EmpresaID,
+				Nombre:          "Torniquete QR recepción",
+				TipoDispositivo: "torniquete_qr",
+				Ubicacion:       "Recepción principal",
+				Sede:            cfg.NombreSedePrincipal,
+				Canal:           "ingreso",
+				Estado:          "activo",
+				Identificador:   "QR-RECEPCION",
+				UsuarioCreador:  cfg.UsuarioCreador,
 			})
 		}
 		for _, device := range devices {

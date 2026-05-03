@@ -326,10 +326,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "venta pagada: use reset_items=1 para iniciar una nueva sesion", http.StatusConflict)
 					return
 				}
-				if !resetItems && normalizeCarritoRegistroEstado(carrito.Estado) == "activo" && normalizeCarritoOperativoEstado(carrito.EstadoCarrito) == "abierto" {
-					http.Error(w, "la venta ya se encuentra activa y abierta", http.StatusConflict)
-					return
-				}
 				if resetItems {
 					if err := validateStationCancelMargin(dbEmp, empresaID, carrito); err != nil {
 						http.Error(w, err.Error(), http.StatusConflict)
@@ -1920,7 +1916,7 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 			dbSuper,
 			docPersistido,
 			strings.TrimSpace(usuario),
-			"factura electronica generada automaticamente desde la venta " + strings.TrimSpace(docPersistido.DocumentoCodigo),
+			"factura electronica generada automaticamente desde la venta "+strings.TrimSpace(docPersistido.DocumentoCodigo),
 		)
 		if facturaErr != nil {
 			log.Printf("[carritos] factura_electronica_automatica empresa_id=%d carrito_id=%d error: %v", carrito.EmpresaID, carrito.ID, facturaErr)

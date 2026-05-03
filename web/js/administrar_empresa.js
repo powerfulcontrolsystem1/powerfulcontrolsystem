@@ -135,6 +135,7 @@ try {
     document.getElementById("linkSoporteRemoto"),
     document.getElementById("linkUbicacionGPS"),
     document.getElementById("linkReservasHotel"),
+    document.getElementById("linkTarifasHotel"),
     document.getElementById("linkConsultorioOdontologico"),
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
@@ -225,6 +226,7 @@ try {
     linkConfiguracionSensoresRaspberry: { module: permModuleSeguridad, action: permActionUpdate },
     linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
     linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
+    linkTarifasHotel: { module: permModuleVentas, action: permActionCreate },
     linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
     linkImpuestos: { module: permModuleFacturacion, action: permActionUpdate },
     linkDocumentosOnlyOffice: { module: permModuleSeguridad, action: permActionRead },
@@ -1033,7 +1035,7 @@ try {
   }
 
   function loadEmpresaTitle(empresaId) {
-    return fetch("/super/api/empresas?id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
+    return fetch("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
       .then(function (resp) {
         if (!resp.ok) {
           if (titleMenu) titleMenu.textContent = "Administrar Empresa";
@@ -1043,7 +1045,8 @@ try {
         return resp.json();
       })
       .then(function (data) {
-          var nombre = data && (data.nombre || data.Nombre);
+          var estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
+          var nombre = estado && (estado.empresa_nombre || estado.nombre || estado.Nombre);
           if (nombre) {
             if (titleMenu) titleMenu.textContent = "Administrar Empresa";
             if (empresaNameMenu) empresaNameMenu.textContent = String(nombre);

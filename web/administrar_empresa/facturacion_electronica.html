@@ -123,6 +123,49 @@
       </div>
     </div>
 
+    <div id="feEstructuradoCR" class="card is-hidden fe-estructurado fe-estructurado-cr">
+      <h3>Campos estructurados - Costa Rica (Hacienda)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: cedula, tipo_identificacion, sucursal, terminal, actividad_economica y version_xml.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_cr_cedula">Cedula</label><input id="fe_cr_cedula" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_tipo_identificacion">Tipo identificacion</label><input id="fe_cr_tipo_identificacion" class="form-input" placeholder="01/02/03/04" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_actividad">Actividad economica</label><input id="fe_cr_actividad" class="form-input" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_cr_sucursal">Sucursal</label><input id="fe_cr_sucursal" class="form-input" placeholder="001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_terminal">Terminal</label><input id="fe_cr_terminal" class="form-input" placeholder="00001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_version_xml">Version XML</label><input id="fe_cr_version_xml" class="form-input" placeholder="4.4" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoAR" class="card is-hidden fe-estructurado fe-estructurado-ar">
+      <h3>Campos estructurados - Argentina (ARCA)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: cuit, punto_venta, condicion_iva, tipo_comprobante y ws_servicio.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ar_cuit">CUIT</label><input id="fe_ar_cuit" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_punto_venta">Punto de venta</label><input id="fe_ar_punto_venta" class="form-input" placeholder="0001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_condicion_iva">Condicion IVA</label><input id="fe_ar_condicion_iva" class="form-input" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ar_tipo_comprobante">Tipo comprobante</label><input id="fe_ar_tipo_comprobante" class="form-input" placeholder="factura" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_ws_servicio">Web service</label><input id="fe_ar_ws_servicio" class="form-input" placeholder="wsfev1" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoVE" class="card is-hidden fe-estructurado fe-estructurado-ve">
+      <h3>Campos estructurados - Venezuela (SENIAT)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: rif, serie, imprenta_digital, proveedor_homologado y moneda_referencia.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ve_rif">RIF</label><input id="fe_ve_rif" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_serie">Serie</label><input id="fe_ve_serie" class="form-input" placeholder="A" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_moneda_ref">Moneda referencia</label><input id="fe_ve_moneda_ref" class="form-input" placeholder="VES" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ve_imprenta">Imprenta digital</label><input id="fe_ve_imprenta" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_proveedor">Proveedor homologado</label><input id="fe_ve_proveedor" class="form-input" autocomplete="off"></div>
+      </div>
+    </div>
+
     <form id="feForm" class="form">
       <input type="hidden" id="empresa_id">
       <div class="form-row">
@@ -812,8 +855,14 @@
       }
       var ec = document.getElementById("feEstructuradoEC");
       var pa = document.getElementById("feEstructuradoPA");
+      var cr = document.getElementById("feEstructuradoCR");
+      var ar = document.getElementById("feEstructuradoAR");
+      var ve = document.getElementById("feEstructuradoVE");
       if (ec) ec.classList.toggle("is-hidden", codeU !== "EC");
       if (pa) pa.classList.toggle("is-hidden", codeU !== "PA");
+      if (cr) cr.classList.toggle("is-hidden", codeU !== "CR");
+      if (ar) ar.classList.toggle("is-hidden", codeU !== "AR");
+      if (ve) ve.classList.toggle("is-hidden", codeU !== "VE");
       fillCountryHint(codeU);
       defaultMonedaForPais(codeU);
     }
@@ -822,15 +871,30 @@
       var c = (codeU || "").toUpperCase();
       var m = document.getElementById("moneda_codigo");
       var op = document.getElementById("op_moneda");
+      var autoCurrencies = { COP: true, USD: true, PAB: true, CRC: true, ARS: true, VES: true };
+      function setAutoCurrency(input, value) {
+        if (!input) return;
+        var current = txt(input.value).toUpperCase();
+        if (!current || autoCurrencies[current]) input.value = value;
+      }
       if (c === "EC") {
-        if (m && !txt(m.value)) m.value = "USD";
-        if (op && !txt(op.value)) op.value = "USD";
+        setAutoCurrency(m, "USD");
+        setAutoCurrency(op, "USD");
       } else if (c === "PA") {
-        if (m && !txt(m.value)) m.value = "PAB";
-        if (op && !txt(op.value)) op.value = "PAB";
+        setAutoCurrency(m, "PAB");
+        setAutoCurrency(op, "PAB");
+      } else if (c === "CR") {
+        setAutoCurrency(m, "CRC");
+        setAutoCurrency(op, "CRC");
+      } else if (c === "AR") {
+        setAutoCurrency(m, "ARS");
+        setAutoCurrency(op, "ARS");
+      } else if (c === "VE") {
+        setAutoCurrency(m, "VES");
+        setAutoCurrency(op, "VES");
       } else if (c === "CO") {
-        if (m && !txt(m.value)) m.value = "COP";
-        if (op && !txt(op.value)) op.value = "COP";
+        setAutoCurrency(m, "COP");
+        setAutoCurrency(op, "COP");
       }
     }
 
@@ -904,6 +968,28 @@
         if (document.getElementById("fe_pa_ruc")) extra.ruc = txt(document.getElementById("fe_pa_ruc").value) || extra.ruc;
         if (document.getElementById("fe_pa_dv")) extra.dv = txt(document.getElementById("fe_pa_dv").value) || extra.dv;
       }
+      if (code === "CR") {
+        if (document.getElementById("fe_cr_cedula")) extra.cedula = txt(document.getElementById("fe_cr_cedula").value) || extra.cedula;
+        if (document.getElementById("fe_cr_tipo_identificacion")) extra.tipo_identificacion = txt(document.getElementById("fe_cr_tipo_identificacion").value) || extra.tipo_identificacion;
+        if (document.getElementById("fe_cr_actividad")) extra.actividad_economica = txt(document.getElementById("fe_cr_actividad").value) || extra.actividad_economica;
+        if (document.getElementById("fe_cr_sucursal")) extra.sucursal = txt(document.getElementById("fe_cr_sucursal").value) || extra.sucursal;
+        if (document.getElementById("fe_cr_terminal")) extra.terminal = txt(document.getElementById("fe_cr_terminal").value) || extra.terminal;
+        if (document.getElementById("fe_cr_version_xml")) extra.version_xml = txt(document.getElementById("fe_cr_version_xml").value) || extra.version_xml;
+      }
+      if (code === "AR") {
+        if (document.getElementById("fe_ar_cuit")) extra.cuit = txt(document.getElementById("fe_ar_cuit").value) || extra.cuit;
+        if (document.getElementById("fe_ar_punto_venta")) extra.punto_venta = txt(document.getElementById("fe_ar_punto_venta").value) || extra.punto_venta;
+        if (document.getElementById("fe_ar_condicion_iva")) extra.condicion_iva = txt(document.getElementById("fe_ar_condicion_iva").value) || extra.condicion_iva;
+        if (document.getElementById("fe_ar_tipo_comprobante")) extra.tipo_comprobante = txt(document.getElementById("fe_ar_tipo_comprobante").value) || extra.tipo_comprobante;
+        if (document.getElementById("fe_ar_ws_servicio")) extra.ws_servicio = txt(document.getElementById("fe_ar_ws_servicio").value) || extra.ws_servicio;
+      }
+      if (code === "VE") {
+        if (document.getElementById("fe_ve_rif")) extra.rif = txt(document.getElementById("fe_ve_rif").value) || extra.rif;
+        if (document.getElementById("fe_ve_serie")) extra.serie = txt(document.getElementById("fe_ve_serie").value) || extra.serie;
+        if (document.getElementById("fe_ve_moneda_ref")) extra.moneda_referencia = txt(document.getElementById("fe_ve_moneda_ref").value) || extra.moneda_referencia;
+        if (document.getElementById("fe_ve_imprenta")) extra.imprenta_digital = txt(document.getElementById("fe_ve_imprenta").value) || extra.imprenta_digital;
+        if (document.getElementById("fe_ve_proveedor")) extra.proveedor_homologado = txt(document.getElementById("fe_ve_proveedor").value) || extra.proveedor_homologado;
+      }
       if (code === "CO") {
         var offlineActivo = document.getElementById("feDianOfflineActivo");
         var offlinePreguntar = document.getElementById("feDianOfflinePreguntar");
@@ -933,6 +1019,28 @@
         document.getElementById("fe_pa_ruc").value = j.ruc || "";
         document.getElementById("fe_pa_dv").value = j.dv || "";
       }
+      if (document.getElementById("fe_cr_cedula")) {
+        document.getElementById("fe_cr_cedula").value = j.cedula || "";
+        document.getElementById("fe_cr_tipo_identificacion").value = j.tipo_identificacion || "";
+        document.getElementById("fe_cr_actividad").value = j.actividad_economica || "";
+        document.getElementById("fe_cr_sucursal").value = j.sucursal || "";
+        document.getElementById("fe_cr_terminal").value = j.terminal || "";
+        document.getElementById("fe_cr_version_xml").value = j.version_xml || "";
+      }
+      if (document.getElementById("fe_ar_cuit")) {
+        document.getElementById("fe_ar_cuit").value = j.cuit || "";
+        document.getElementById("fe_ar_punto_venta").value = j.punto_venta || "";
+        document.getElementById("fe_ar_condicion_iva").value = j.condicion_iva || "";
+        document.getElementById("fe_ar_tipo_comprobante").value = j.tipo_comprobante || "";
+        document.getElementById("fe_ar_ws_servicio").value = j.ws_servicio || "";
+      }
+      if (document.getElementById("fe_ve_rif")) {
+        document.getElementById("fe_ve_rif").value = j.rif || "";
+        document.getElementById("fe_ve_serie").value = j.serie || "";
+        document.getElementById("fe_ve_moneda_ref").value = j.moneda_referencia || "";
+        document.getElementById("fe_ve_imprenta").value = j.imprenta_digital || "";
+        document.getElementById("fe_ve_proveedor").value = j.proveedor_homologado || "";
+      }
       var offlineActivo = document.getElementById("feDianOfflineActivo");
       var offlinePreguntar = document.getElementById("feDianOfflinePreguntar");
       var offlineAuto = document.getElementById("feDianOfflineAuto");
@@ -953,6 +1061,18 @@
       }
       if (key === "EC") {
         hint.textContent = "Use los campos estructurados o JSON con ruc, establecimiento, punto_emision, ambiente_sri. No se mezcla con resolución DIAN.";
+        return;
+      }
+      if (key === "CR") {
+        hint.textContent = "Costa Rica: configure cedula, sucursal, terminal, actividad_economica y version_xml para integracion con Hacienda/API o proveedor.";
+        return;
+      }
+      if (key === "AR") {
+        hint.textContent = "Argentina: configure CUIT, punto_venta, condicion IVA y servicio wsfev1/ARCA. En produccion requiere certificado y autorizacion CAE/CAEA.";
+        return;
+      }
+      if (key === "VE") {
+        hint.textContent = "Venezuela: perfil para RIF, serie fiscal, imprenta digital y proveedor homologado SENIAT. La emision final depende del proveedor autorizado.";
         return;
       }
       hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). La DIAN detallada está en el módulo del ERP (enlace arriba).";
@@ -1449,11 +1569,13 @@
       } catch (_) {}
 
       try {
-        const empRes = await fetch("/super/api/empresas?id=" + encodeURIComponent(empresaID));
+        const empRes = await fetch("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaID), { credentials: "same-origin" });
         if (empRes.ok) {
-          const empresa = await empRes.json();
-          if (empresa && empresa.nombre) {
-            document.getElementById("pageTitle").textContent = "Facturación electrónica por país - " + empresa.nombre;
+          const data = await empRes.json();
+          const estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
+          const nombre = estado && (estado.empresa_nombre || estado.nombre);
+          if (nombre) {
+            document.getElementById("pageTitle").textContent = "Facturación electrónica por país - " + nombre;
           }
         }
       } catch (_) {}
@@ -1476,4 +1598,3 @@
   </script>
 </body>
 </html>
-

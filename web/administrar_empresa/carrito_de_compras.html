@@ -116,6 +116,9 @@
             <label class="form-label" for="scannerCantidad">Cantidad</label>
             <input id="scannerCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
           </div>
+          <div class="form-col maxw-180 flex-end">
+            <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
+          </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
       </div>
@@ -512,7 +515,7 @@
     let scannerAutoTimer = null;
     let scannerProcessing = false;
     let scannerAutofocusPaused = false;
-    const REQUEST_TIMEOUT_MS = 15000;
+    const REQUEST_TIMEOUT_MS = 45000;
 
     function getQueryParam(name) {
       const p = new URLSearchParams(window.location.search);
@@ -563,6 +566,11 @@
     function getStationReference() {
       if (!(state.stationID > 0)) return '';
       return 'ESTACION_' + state.stationID;
+    }
+
+    function getDefaultStationCarritoCode() {
+      if (!state.stationMode || !(state.empresaID > 0) || !(state.stationID > 0)) return '';
+      return 'EST-' + state.empresaID + '-' + state.stationID;
     }
 
     function findExistingCarritoByCode(code) {
@@ -914,6 +922,25 @@
       return state.empresaGeneralConfig;
     }
 
+    async function loadEmpresaAvanzadaConfigFromServer() {
+      if (!state.empresaID) {
+        state.empresaAvanzadaConfig = {};
+        return state.empresaAvanzadaConfig;
+      }
+      try {
+        const res = await fetchWithTimeout('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(state.empresaID), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('No se pudo cargar la configuración avanzada.');
+        const payload = await res.json();
+        state.empresaAvanzadaConfig = payload && typeof payload === 'object' ? payload : {};
+      } catch (err) {
+        console.warn('No se pudo cargar configuración avanzada; se usan valores seguros.', err);
+        state.empresaAvanzadaConfig = {};
+      }
+      return state.empresaAvanzadaConfig;
+    }
+
     async function loadStationConfigFromServer() {
       if (!state.empresaID) {
         state.stationConfig = normalizeStationConfig({});
@@ -982,10 +1009,22 @@
         return globalCfg;
       }
       const station = getStationConfigRecord(state.empresaID, state.stationID);
+      let cfg = globalCfg;
       if (station && station.carrito && station.carrito.usar_configuracion_global === false) {
-        return Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
+        cfg = Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
       }
-      return globalCfg;
+
+      // La vista de estación no puede quedar sin operación básica por una preferencia antigua o incompleta.
+      const stationCoreHidden = !cfg.mostrar_tarjeta_items_carrito && !cfg.mostrar_tarjeta_cobro_estados && !cfg.mostrar_tarjeta_acciones_carrito;
+      if (stationCoreHidden) {
+        cfg.mostrar_tarjeta_items_carrito = true;
+        cfg.mostrar_tarjeta_cobro_estados = true;
+        cfg.mostrar_tarjeta_acciones_carrito = true;
+        cfg.mostrar_tarjeta_totales_detalles = true;
+        cfg.mostrar_boton_pagar = true;
+        cfg.mostrar_tarjetas_pago = true;
+      }
+      return cfg;
     }
 
     function setFieldColumnVisibility(id, visible) {
@@ -3771,6 +3810,106 @@
       box.appendChild(table);
     }
 
+    function buildAutomaticChargeRows(selected) {
+      if (!selected) return [];
+      const rows = [];
+      const moneda = selected.moneda || 'COP';
+      const tpm = selected.tarifa_por_minutos;
+      const tpd = selected.tarifa_por_dia;
+
+      if (tpm && (Number(tpm.tarifa_id || 0) > 0 || Number(tpm.monto_total || tpm.monto_tarifa || tpm.total_actual || 0) > 0 || Number(tpm.minutos_consumidos || 0) > 0)) {
+        const minutos = Number(tpm.minutos_consumidos || 0);
+        const base = Number(tpm.monto_base || tpm.valor_base || 0);
+        const extra = Number(tpm.monto_extra || tpm.valor_extra || 0);
+        const total = roundMoney(Number(tpm.monto_total || tpm.monto_tarifa || tpm.total_actual || 0) || Number(selected.subtotal || selected.total || 0));
+        rows.push({
+          id: 'AUTO-TIEMPO',
+          descripcion: 'Tarifa automática por tiempo',
+          cantidad: minutos > 0 ? minutos.toFixed(1) + ' min' : '1 sesión',
+          precio: formatAmount(base || total || 0, moneda),
+          descuento: '-',
+          impuesto: '-',
+          total: formatAmount(total, moneda),
+          detalle: 'Base ' + formatAmount(base, moneda) +
+            ' | Extra ' + formatAmount(extra, moneda) +
+            ' | Bloques extra ' + Number(tpm.bloques_extra || 0)
+        });
+      }
+
+      if (tpd && (Number(tpd.tarifa_id || 0) > 0 || Number(tpd.monto_total || 0) > 0 || Number(tpd.dias_cobrados || 0) > 0)) {
+        const dias = Number(tpd.dias_cobrados || tpd.dias_equivalentes || 0);
+        const total = roundMoney(Number(tpd.monto_total || 0) || Number(selected.subtotal || selected.total || 0));
+        rows.push({
+          id: 'AUTO-DIA',
+          descripcion: 'Tarifa automática por hospedaje',
+          cantidad: dias > 0 ? dias + ' día(s)' : '1 hospedaje',
+          precio: formatAmount(Number(tpd.valor_dia || total || 0), moneda),
+          descuento: '-',
+          impuesto: '-',
+          total: formatAmount(total, moneda),
+          detalle: 'Check-in ' + escapeHtml(tpd.hora_check_in || '-') +
+            ' | Check-out ' + escapeHtml(tpd.hora_check_out || '-') +
+            ' | Regla ' + escapeHtml(tpd.regla_prorrateo || 'tarifa diaria')
+        });
+      }
+
+      if (!rows.length && (roundMoney(selected.subtotal) > 0 || roundMoney(selected.total) > 0)) {
+        const total = roundMoney(Number(selected.total || 0) || Number(selected.subtotal || 0));
+        rows.push({
+          id: 'AUTO-CARGO',
+          descripcion: 'Cargo operativo del carrito',
+          cantidad: '1 cargo',
+          precio: formatAmount(total, moneda),
+          descuento: '-',
+          impuesto: '-',
+          total: formatAmount(total, moneda),
+          detalle: 'Este valor viene del estado operativo del carrito.'
+        });
+      }
+
+      return rows;
+    }
+
+    function renderAutomaticChargeRows(box, selected, readOnlyMode) {
+      const rows = buildAutomaticChargeRows(selected);
+      if (!rows.length) {
+        box.textContent = readOnlyMode ? 'Este carrito no tiene items activos para mostrar.' : 'Este carrito aún no tiene items.';
+        return;
+      }
+
+      const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Descripción</th>' +
+        '<th>Cant.</th>' +
+        '<th>Precio</th>' +
+        '<th>Desc %</th>' +
+        '<th>Imp %</th>' +
+        (showTotal ? '<th>Total línea</th>' : '') +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(function(row) {
+        const tr = document.createElement('tr');
+        let html = '<td>' + escapeHtml(row.id) + '</td>' +
+          '<td><strong>' + escapeHtml(row.descripcion) + '</strong><div class="form-help">' + row.detalle + '</div></td>' +
+          '<td>' + escapeHtml(row.cantidad) + '</td>' +
+          '<td>' + escapeHtml(row.precio) + '</td>' +
+          '<td>' + escapeHtml(row.descuento) + '</td>' +
+          '<td>' + escapeHtml(row.impuesto) + '</td>';
+        if (showTotal) html += '<td>' + escapeHtml(row.total) + '</td>';
+        html += '<td class="actions"><span class="form-help">Automático</span></td>';
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
+    }
+
     function renderItemsInto(box) {
       if (!box) return;
       const selected = getSelectedCarrito();
@@ -3782,7 +3921,7 @@
       const readOnlyMode = state.stationMode && !isCarritoOperativoActivo(selected);
 
       if (!state.items.length) {
-        box.textContent = readOnlyMode ? 'Este carrito no tiene items activos para mostrar.' : 'Este carrito aún no tiene items.';
+        renderAutomaticChargeRows(box, selected, readOnlyMode);
         return;
       }
 
@@ -3985,6 +4124,12 @@
 
     async function loadEmpresaTitle() {
       try {
+        const meRes = await fetch('/me', { credentials: 'same-origin' });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          const role = normalize(me && me.role).toLowerCase();
+          if (role !== 'super_admin' && role !== 'superadministrador' && role !== 'super') return;
+        }
         const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
         if (!res.ok) return;
         const empresa = await res.json();
@@ -4079,6 +4224,10 @@
 
     async function ensureStationCarritoLifecycle() {
       if (!state.stationMode) return;
+
+      if (!state.selectedCarritoCode && state.stationID > 0) {
+        state.selectedCarritoCode = getDefaultStationCarritoCode();
+      }
 
       let selected = getSelectedCarrito();
       if (!selected) {
@@ -4515,8 +4664,8 @@
       const carritoID = Number(getQueryParam('carrito_id') || 0);
       const carritoCode = normalizedCode(getQueryParam('carrito_codigo') || '');
       const directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
-      const stationID = Number(getQueryParam('estacion_id') || 0);
-      const stationName = normalize(getQueryParam('estacion_nombre') || '');
+      const stationID = Number(getQueryParam('estacion_id') || getQueryParam('station_id') || 0);
+      const stationName = normalize(getQueryParam('estacion_nombre') || getQueryParam('station_name') || '');
       if (!empresaID) {
         document.getElementById('carritosList').textContent = 'empresa_id requerido en la URL';
         document.getElementById('addCarritoBtn').disabled = true;

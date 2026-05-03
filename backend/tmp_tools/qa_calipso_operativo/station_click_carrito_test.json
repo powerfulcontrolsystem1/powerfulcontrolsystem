@@ -1,0 +1,55 @@
+﻿{
+    "before":  {
+                   "url":  "http://127.0.0.1:8080/administrar_empresa/estaciones.html?empresa_id=7",
+                   "title":  "Estaciones",
+                   "cards":  [
+                                 {
+                                     "id":  "0",
+                                     "name":  "Caja",
+                                     "text":  "Caja\nEfectivo\n$ 406.845,00\nDébito\n$ 0,00\nCrédito\n$ 0,00\nVer últimos movimientos"
+                                 },
+                                 {
+                                     "id":  "1",
+                                     "name":  "Estación 1",
+                                     "text":  "Estación 1\nEstado\nOcupada\nTarifa\n120 min + 60 min extra\nDuracion\n4 h 47 min\nInicio\n03/05/2026, 06:11 a. m.\nFin\n03/05/202"
+                                 },
+                                 {
+                                     "id":  "2",
+                                     "name":  "Estación 2",
+                                     "text":  "Estación 2\nEstado\nAlerta\nTarifa\n120 min + 60 min extra\nDuracion\n60 h 52 min\nInicio\n30/04/2026, 10:06 p. m.\nFin\n03/05/202"
+                                 },
+                                 {
+                                     "id":  "3",
+                                     "name":  "Estación 3",
+                                     "text":  "Estación 3\nEstado\nDisponible"
+                                 },
+                                 {
+                                     "id":  "4",
+                                     "name":  "Estación 4",
+                                     "text":  "Estación 4\nEstado\nAlerta\nTarifa\n120 min + 60 min extra\nDuracion\n60 h 52 min\nInicio\n30/04/2026, 10:06 p. m.\nFin\n03/05/202"
+                                 },
+                                 {
+                                     "id":  "5",
+                                     "name":  "Estación 5",
+                                     "text":  "Estación 5\nEstado\nOcupada\nTarifa\n120 min + 60 min extra\nDuracion\n38 h 1 min\nInicio\n01/05/2026, 08:57 p. m.\nFin\n03/05/202"
+                                 }
+                             ],
+                   "text":  "Mapa operativo\n\nAlterna la vista visual o revisa las tarjetas completas según el ritmo de la operación.\n\nCaja\nEfectivo\n$ 406.845,00\nDébito\n$ 0,00\nCrédito\n$ 0,00\nVer últimos movimientos\nEstación 1\nEstado\nOcupada\nTarifa\n120 min + 60 min extra\nDuracion\n4 h 47 min\nInicio\n03/05/2026, 06:11 a. m.\nFin\n03/05/2026, 11:11 a. m.\nExtra\n3\nTotal\n$ 125.000,00\nEstación 2\nEstado\nAlerta\nTarifa\n120 min + 60 min extra\nDuracion\n60 h 52 min\nInicio\n30/04/2026, 10:06 p. m.\nFin\n03/05/2026, 11:06 a. m.\nExtra\n59\nTotal\n$ 1.525.000,00\nEstación 3\nEstado\nDisponible\nEstación 4\nEstado\nAlerta\nTarifa\n120 min + 60 min extra\nDuracion\n60 h 52 min\nInicio\n30/04/2026, 10:06 p. m.\nFin\n03/05/2026, 11:06 a. m.\nExtra\n59\nTotal\n$ 1.525.000,00\nEstación 5\nEstado\nOcupada\nTarifa\n120 min + 60 min extra\nDuracion\n38 h 1 min\nInicio\n01/05/2026, 08:57 p. m.\nFin\n03/05/2026, 11:57 a. m.\nExtra\n37\nTotal\n$ 975.000,00"
+               },
+    "click":  {
+                  "clicked":  true
+              },
+    "after":  {
+                  "url":  "http://127.0.0.1:8080/administrar_empresa/carrito_de_compras.html?empresa_id=7\u0026estacion_id=1\u0026estacion_nombre=Estaci%C3%B3n%201\u0026carrito_codigo=EST-7-1",
+                  "title":  "Carrito de compras",
+                  "hasAutoTiempo":  true,
+                  "hasCargando":  false,
+                  "hasVacio":  false,
+                  "hasPagar":  true,
+                  "hasError":  false,
+                  "sample":  "Carrito de compras\nItems de estación: Estación 1\nRegresar a estaciones\nBuscar (botones)\nLector de código de barras\nCódigo de barras o SKU\nCantidad\nAgregar\n\nItems del carrito\n\nID\tDescripción\tCant.\tPrecio\tDesc %\tImp %\tTotal línea\tAcciones\nAUTO-TIEMPO\tTarifa automática por tiempo\nBase COP 50000.00 | Extra COP 25000.00 | Bloques extra 3\n\t289.6 min\tCOP 50000.00\t-\t-\tCOP 125000.00\t\nAutomático\nAcciones del carrito\nDescuentos\nCambiar tarifa\nCancelar carrito\nAlerta visual 10 min\nTaxi\nClientes\nAbonos\nVehículo\nValores por medio de pago\nEfectivo\nDébito\nCrédito\nOtro\nTotales y detalles\nTotal\nCOP 125000.00\nSaldo\nCOP 125000.00\nEntrada\n2026-05-03 06:11:39\nSalida\n-\nItems totales\n0\nProductos / combos (ítems)\n0\nServicios (ítems)\n0\nProductos facturados (suma líneas)\nCOP 0.00\nServicio facturado (suma líneas)\nCOP 0.00\nHoras extras (tarifa tiempo)\n1.00 h (60 min)\nCliente\n-\nSubtotal\nCOP 125000.00\nDescuento\nCOP 0.00\nImpuesto\nCOP 0.00\nPagado\nCOP 0.00\nPagar y cerrar carrito\nAcceso cliente VIP (público)\n\nGenera un código temporal para que el cliente pueda pedir productos desde su celular. Se desactiva al pagar.\n\nGenerar codigo para cliente vip"
+              },
+    "errors":  [
+
+               ]
+}

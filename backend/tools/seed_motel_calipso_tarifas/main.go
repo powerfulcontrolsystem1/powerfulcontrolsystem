@@ -65,6 +65,8 @@ func main() {
 		minExtra          = flag.Int("min_extra", 60, "minutos_extra")
 		valExtra          = flag.Float64("valor_extra", 20000, "valor_extra")
 		valDia            = flag.Float64("valor_dia", 150000, "valor_dia")
+		valMotelExpress   = flag.Float64("valor_motel_express", 50000, "valor base del plan motel express")
+		valMotelNocturno  = flag.Float64("valor_motel_nocturno", 90000, "valor base del plan motel nocturno")
 		servicio          = flag.String("servicio", "hospedaje", "servicio_nombre")
 		checkIn           = flag.String("check_in", "15:00", "hora_check_in")
 		checkOut          = flag.String("check_out", "12:00", "hora_check_out")
@@ -103,6 +105,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(db); err != nil {
 		log.Fatalf("EnsureEmpresaTarifasPorDiaSchema: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaTarifasMotelSchema(db); err != nil {
+		log.Fatalf("EnsureEmpresaTarifasMotelSchema: %v", err)
+	}
 
 	pref, err := dbpkg.GetEmpresaEstacionPref(db, *empresaID, 0, "estaciones_config")
 	if err != nil {
@@ -129,6 +134,8 @@ func main() {
 	updatedMin := 0
 	createdDia := 0
 	updatedDia := 0
+	createdMotel := 0
+	updatedMotel := 0
 
 	for stationID := int64(1); stationID <= int64(cfg.Cantidad); stationID++ {
 		stationName := strings.TrimSpace(nombres[stationID])
@@ -240,10 +247,77 @@ func main() {
 			}
 			updatedDia++
 		}
+
+		motelPlans := []dbpkg.EmpresaTarifaMotel{
+			{
+				NombrePlan:          "Express 2 horas",
+				TipoPlan:            "express",
+				CategoriaHabitacion: "estandar",
+				HoraInicio:          "00:00",
+				HoraFin:             "23:59",
+				MinutosIncluidos:    *minBase,
+				ValorBase:           *valMotelExpress,
+				MinutosExtra:        *minExtra,
+				ValorExtra:          *valExtra,
+				ToleranciaMinutos:   10,
+				Prioridad:           1,
+			},
+			{
+				NombrePlan:          "Nocturno",
+				TipoPlan:            "nocturno",
+				CategoriaHabitacion: "estandar",
+				HoraInicio:          "20:00",
+				HoraFin:             "08:00",
+				MinutosIncluidos:    720,
+				ValorBase:           *valMotelNocturno,
+				MinutosExtra:        *minExtra,
+				ValorExtra:          *valExtra,
+				ToleranciaMinutos:   15,
+				Prioridad:           2,
+			},
+		}
+		for _, plan := range motelPlans {
+			existingMotel, err := dbpkg.ListEmpresaTarifasMotel(db, *empresaID, dbpkg.EmpresaTarifaMotelFilter{
+				EstacionID:      stationID,
+				TipoPlan:        plan.TipoPlan,
+				IncludeInactive: true,
+				Limit:           10,
+			})
+			if err != nil {
+				log.Fatalf("ListEmpresaTarifasMotel station=%d tipo=%s: %v", stationID, plan.TipoPlan, err)
+			}
+			plan.EmpresaID = *empresaID
+			plan.EstacionID = stationID
+			plan.EstacionCodigo = stationCode
+			plan.EstacionNombre = stationName
+			plan.DiaSemanaDesde = 1
+			plan.DiaSemanaHasta = 7
+			plan.Moneda = strings.ToUpper(strings.TrimSpace(*moneda))
+			plan.CobrarPorFraccion = true
+			plan.AplicarAutomatico = true
+			plan.UsuarioCreador = strings.TrimSpace(*usuarioCreador)
+			plan.Estado = "activo"
+			plan.Observaciones = "seed motel calipso"
+
+			if len(existingMotel) == 0 {
+				if _, err := dbpkg.CreateEmpresaTarifaMotel(db, plan); err != nil {
+					log.Fatalf("CreateEmpresaTarifaMotel station=%d tipo=%s: %v", stationID, plan.TipoPlan, err)
+				}
+				createdMotel++
+				continue
+			}
+			if *overwriteExisting {
+				plan.ID = existingMotel[0].ID
+				plan.Observaciones = "seed motel calipso (overwrite)"
+				if err := dbpkg.UpdateEmpresaTarifaMotel(db, plan); err != nil {
+					log.Fatalf("UpdateEmpresaTarifaMotel station=%d tipo=%s: %v", stationID, plan.TipoPlan, err)
+				}
+				updatedMotel++
+			}
+		}
 	}
 
-	log.Printf("OK seed empresa_id=%d estaciones=%d | minutos: creadas=%d actualizadas=%d | dia: creadas=%d actualizadas=%d",
-		*empresaID, cfg.Cantidad, createdMin, updatedMin, createdDia, updatedDia,
+	log.Printf("OK seed empresa_id=%d estaciones=%d | minutos: creadas=%d actualizadas=%d | dia: creadas=%d actualizadas=%d | motel: creadas=%d actualizadas=%d",
+		*empresaID, cfg.Cantidad, createdMin, updatedMin, createdDia, updatedDia, createdMotel, updatedMotel,
 	)
 }
-

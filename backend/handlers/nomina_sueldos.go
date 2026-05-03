@@ -15,6 +15,12 @@ import (
 // EmpresaNominaSueldosHandler gestiona configuracion, empleados y liquidaciones de nomina integradas con asistencia.
 func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := dbpkg.EnsureEmpresaNominaSchema(dbEmp); err != nil {
+			log.Printf("[nomina] ensure schema error: %v", err)
+			http.Error(w, "No se pudo preparar el modulo de nomina", http.StatusInternalServerError)
+			return
+		}
+
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 
 		switch r.Method {

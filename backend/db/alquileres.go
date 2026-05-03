@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -194,7 +195,25 @@ type EmpresaAlquilerDashboard struct {
 	IngresosPorSede        []EmpresaAlquilerResumenGrupo `json:"ingresos_por_sede"`
 }
 
+var (
+	empresaAlquileresSchemaEnsured sync.Map
+	empresaAlquileresSchemaMu      sync.Mutex
+)
+
 func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("dbConn es obligatorio")
+	}
+	cacheKey := fmt.Sprintf("%p", dbConn)
+	if _, ok := empresaAlquileresSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+	empresaAlquileresSchemaMu.Lock()
+	defer empresaAlquileresSchemaMu.Unlock()
+	if _, ok := empresaAlquileresSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_alquileres_config (
 			empresa_id BIGINT PRIMARY KEY,
@@ -358,6 +377,7 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+	empresaAlquileresSchemaEnsured.Store(cacheKey, true)
 	return nil
 }
 

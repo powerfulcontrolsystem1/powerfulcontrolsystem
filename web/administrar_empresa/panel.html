@@ -1547,6 +1547,17 @@
         });
       }
 
+      function detectLocationByTimezone() {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
+        if (!cityFromTZ) throw new Error("timezone city unavailable");
+        return buildLocation({
+          city: cityFromTZ,
+          displayName: cityFromTZ,
+          source: "navegador"
+        });
+      }
+
       function detectLocationByGPS() {
         return getBrowserLocation().then(function (pos) {
           var coords = pos && pos.coords ? pos.coords : {};
@@ -1572,20 +1583,13 @@
           cached.source = cached.source || "navegador";
           return Promise.resolve(cached);
         }
-        return detectLocationByIP().catch(function () {
-          try {
-            var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-            var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
-            if (!cityFromTZ) throw new Error("timezone city unavailable");
-            return buildLocation({
-              city: cityFromTZ,
-              displayName: cityFromTZ,
-              source: "navegador"
-            });
-          } catch (e) {
+        try {
+          return Promise.resolve(detectLocationByTimezone());
+        } catch (e) {
+          return detectLocationByIP().catch(function () {
             throw new Error("browser location unavailable");
-          }
-        });
+          });
+        }
       }
 
       function detectLocation(admin, empresa) {
@@ -1869,7 +1873,13 @@
         renderFavorites();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var empresaPromise = empresaId
-          ? fetchJSON("/super/api/empresas?id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).then(function (data) {
+              var estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
+              return {
+                nombre: estado && (estado.empresa_nombre || estado.nombre || ""),
+                tipo_nombre: estado && (estado.tipo_empresa_nombre || "")
+              };
+            }).catch(function () { return {}; })
           : Promise.resolve({});
         Promise.all([adminPromise, empresaPromise]).then(function (values) {
           var admin = values[0] || {};

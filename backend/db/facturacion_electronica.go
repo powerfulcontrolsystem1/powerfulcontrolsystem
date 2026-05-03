@@ -51,12 +51,12 @@ type PaisFacturacion struct {
 type FacturacionPaisVista struct {
 	EnteFiscal         string `json:"ente_fiscal"`
 	NotaIndependencia  string `json:"nota_independencia"`
-	ResumenOperativo     string `json:"resumen_operativo"`
-	LabelResolucion      string `json:"label_resolucion"`
-	LabelIdentificador   string `json:"label_identificador"`
-	LabelPrefijo         string `json:"label_prefijo"`
-	PlaceholderRazon     string `json:"placeholder_razon_social"`
-	ModuloDianRuta      string `json:"modulo_dian_ruta,omitempty"`
+	ResumenOperativo   string `json:"resumen_operativo"`
+	LabelResolucion    string `json:"label_resolucion"`
+	LabelIdentificador string `json:"label_identificador"`
+	LabelPrefijo       string `json:"label_prefijo"`
+	PlaceholderRazon   string `json:"placeholder_razon_social"`
+	ModuloDianRuta     string `json:"modulo_dian_ruta,omitempty"`
 }
 
 // FacturacionPaisVistaFor retorna textos y etiquetas para la configuración según el país (CO / EC / PA).
@@ -66,39 +66,69 @@ func FacturacionPaisVistaFor(codigo string) FacturacionPaisVista {
 		return FacturacionPaisVista{
 			EnteFiscal:         "Ecuador (SRI): comprobantes de venta electrónicos, retenciones, notas y guías.",
 			NotaIndependencia:  "Ecuador (SRI) no utiliza el módulo de la DIAN Colombia. Guarde RUC, establecimiento, punto de emisión y ambiente; la integración con un proveedor o el SRI se configura con proveedor y API base URL, sin afectar Colombia.",
-			ResumenOperativo:     "Moneda habitual: USD. En campos estructurados: RUC, establecimiento, punto_emision, ambiente_sri (1=pruebas, 2=producción).",
-			LabelResolucion:      "Autorización SRI o referencia (según comprobante)",
-			LabelIdentificador:   "RUC",
-			LabelPrefijo:         "Establecimiento - punto (ej. 001-001)",
-			PlaceholderRazon:     "Razón social inscrita en el SRI",
+			ResumenOperativo:   "Moneda habitual: USD. En campos estructurados: RUC, establecimiento, punto_emision, ambiente_sri (1=pruebas, 2=producción).",
+			LabelResolucion:    "Autorización SRI o referencia (según comprobante)",
+			LabelIdentificador: "RUC",
+			LabelPrefijo:       "Establecimiento - punto (ej. 001-001)",
+			PlaceholderRazon:   "Razón social inscrita en el SRI",
 		}
 	case "PA":
 		return FacturacionPaisVista{
 			EnteFiscal:         "Panamá (DGI): facturación electrónica y validación a través de PSE o proveedores homologados.",
 			NotaIndependencia:  "Panamá (DGI) no utiliza el módulo de la DIAN Colombia. RUC, DV, folios y conexión con su PSE/ proveedor se definen solo en este perfil, sin tocar resoluciones DIAN.",
-			ResumenOperativo:     "Moneda habitual: PAB o USD. En campos estructurados: ruc, dv, (opcionales) folio_inicial, codigo_ubicación según su proveedor.",
-			LabelResolucion:      "Autorización o folio (según proveedor DGI / PSE)",
-			LabelIdentificador:   "RUC y dígito verificador (DV)",
-			LabelPrefijo:         "Punto de expedición o prefijo de documento",
-			PlaceholderRazon:     "Razón social o nombre fiscal inscrito en DGI",
+			ResumenOperativo:   "Moneda habitual: PAB o USD. En campos estructurados: ruc, dv, (opcionales) folio_inicial, codigo_ubicación según su proveedor.",
+			LabelResolucion:    "Autorización o folio (según proveedor DGI / PSE)",
+			LabelIdentificador: "RUC y dígito verificador (DV)",
+			LabelPrefijo:       "Punto de expedición o prefijo de documento",
+			PlaceholderRazon:   "Razón social o nombre fiscal inscrito en DGI",
+		}
+	case "CR":
+		return FacturacionPaisVista{
+			EnteFiscal:         "Costa Rica (Ministerio de Hacienda): comprobantes electronicos XML y recepcion mediante API protegida con OAuth/OIDC.",
+			NotaIndependencia:  "Costa Rica no utiliza DIAN. El perfil conserva cedula juridica/fisica, sucursal, terminal, actividad economica y credenciales del proveedor o API de Hacienda sin afectar otros paises.",
+			ResumenOperativo:   "Moneda habitual: CRC. En campos estructurados: cedula, tipo_identificacion, sucursal, terminal, actividad_economica, version_xml.",
+			LabelResolucion:    "Clave/consecutivo o referencia de autorizacion Hacienda",
+			LabelIdentificador: "Cedula juridica/fisica",
+			LabelPrefijo:       "Sucursal-terminal o prefijo interno",
+			PlaceholderRazon:   "Nombre fiscal registrado ante Hacienda",
+		}
+	case "AR":
+		return FacturacionPaisVista{
+			EnteFiscal:         "Argentina (ARCA): factura electronica mediante WSFEv1/WSMTXCA/Comprobantes en linea y CAE.",
+			NotaIndependencia:  "Argentina no utiliza DIAN. Configure CUIT, punto de venta, condicion frente al IVA, tipo de comprobante y certificado del web service o proveedor homologado.",
+			ResumenOperativo:   "Moneda habitual: ARS. En campos estructurados: cuit, punto_venta, condicion_iva, tipo_comprobante, ws_servicio.",
+			LabelResolucion:    "CAE/CAEA o referencia ARCA",
+			LabelIdentificador: "CUIT",
+			LabelPrefijo:       "Punto de venta",
+			PlaceholderRazon:   "Razon social registrada ante ARCA",
+		}
+	case "VE":
+		return FacturacionPaisVista{
+			EnteFiscal:         "Venezuela (SENIAT): facturacion digital mediante sistema homologado o imprenta digital autorizada.",
+			NotaIndependencia:  "Venezuela no utiliza DIAN. Configure RIF, serie, proveedor homologado/imprenta digital y reglas de numeracion fiscal segun la providencia vigente.",
+			ResumenOperativo:   "Moneda habitual: VES. En campos estructurados: rif, serie, imprenta_digital, proveedor_homologado, moneda_referencia.",
+			LabelResolucion:    "Providencia/autorizacion o referencia SENIAT",
+			LabelIdentificador: "RIF",
+			LabelPrefijo:       "Serie fiscal",
+			PlaceholderRazon:   "Razon social registrada ante SENIAT",
 		}
 	default: // CO
 		return FacturacionPaisVista{
 			EnteFiscal:         "Colombia (DIAN UBL 2.1): resolución de numeración, set de pruebas y transmisión en ambientes de habilitación o producción.",
 			NotaIndependencia:  "La operación consecutiva, firma, Software ID/PIN, CUFE y el set de pruebas DIAN se configuran en el módulo DIAN/Documental (ERP) de su empresa; el perfil por país genérico aquí no aplica a Ecuador ni Panamá.",
-			ResumenOperativo:     "Moneda: COP. Vincule proveedor o API; en producción use credenciales homologadas con la DIAN.",
-			LabelResolucion:      "Número de resolución de facturación / autorización DIAN",
-			LabelIdentificador:   "NIT (con dígito de verificación)",
-			LabelPrefijo:         "Prefijo homologado (p. ej. SEFC)",
-			PlaceholderRazon:     "Razón social inscrita ante la DIAN",
-			ModuloDianRuta:       "/administrar_empresa/modulos_erp_dominio.html?empresa_id=",
+			ResumenOperativo:   "Moneda: COP. Vincule proveedor o API; en producción use credenciales homologadas con la DIAN.",
+			LabelResolucion:    "Número de resolución de facturación / autorización DIAN",
+			LabelIdentificador: "NIT (con dígito de verificación)",
+			LabelPrefijo:       "Prefijo homologado (p. ej. SEFC)",
+			PlaceholderRazon:   "Razón social inscrita ante la DIAN",
+			ModuloDianRuta:     "/administrar_empresa/modulos_erp_dominio.html?empresa_id=",
 		}
 	}
 }
 
 // ListFacturacionPaisesConVista retorna el catálogo con metadatos de UI por país.
 func ListFacturacionPaisesConVista() []map[string]interface{} {
-	out := make([]map[string]interface{}, 0, 4)
+	out := make([]map[string]interface{}, 0, 6)
 	for _, p := range ListPaisesFacturacionDisponibles() {
 		out = append(out, map[string]interface{}{
 			"codigo":  p.Codigo,
@@ -171,16 +201,19 @@ type FacturacionElectronicaRetryFilter struct {
 
 func supportedPaisesFacturacionMap() map[string]PaisFacturacion {
 	return map[string]PaisFacturacion{
-		"CO": {Codigo: "CO", Nombre: "Colombia", Bandera: "🇨🇴", Moneda: "COP"},
-		"PA": {Codigo: "PA", Nombre: "Panamá", Bandera: "🇵🇦", Moneda: "PAB"},
-		"EC": {Codigo: "EC", Nombre: "Ecuador", Bandera: "🇪🇨", Moneda: "USD"},
+		"AR": {Codigo: "AR", Nombre: "Argentina", Bandera: "AR", Moneda: "ARS"},
+		"CO": {Codigo: "CO", Nombre: "Colombia", Bandera: "CO", Moneda: "COP"},
+		"CR": {Codigo: "CR", Nombre: "Costa Rica", Bandera: "CR", Moneda: "CRC"},
+		"EC": {Codigo: "EC", Nombre: "Ecuador", Bandera: "EC", Moneda: "USD"},
+		"PA": {Codigo: "PA", Nombre: "Panama", Bandera: "PA", Moneda: "PAB"},
+		"VE": {Codigo: "VE", Nombre: "Venezuela", Bandera: "VE", Moneda: "VES"},
 	}
 }
 
-// ListPaisesFacturacionDisponibles retorna los países FE soportados.
+// ListPaisesFacturacionDisponibles retorna los paises FE soportados.
 func ListPaisesFacturacionDisponibles() []PaisFacturacion {
 	catalog := supportedPaisesFacturacionMap()
-	return []PaisFacturacion{catalog["CO"], catalog["PA"], catalog["EC"]}
+	return []PaisFacturacion{catalog["CO"], catalog["EC"], catalog["PA"], catalog["CR"], catalog["AR"], catalog["VE"]}
 }
 
 func normalizePaisCodigo(v string) string {
@@ -413,7 +446,7 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 
 func defaultFacturacionConfig(empresaID int64, paisCodigo string) FacturacionElectronicaPaisConfig {
 	pais := paisFacturacionByCodigo(paisCodigo)
-	return FacturacionElectronicaPaisConfig{
+	cfg := FacturacionElectronicaPaisConfig{
 		EmpresaID:      empresaID,
 		PaisCodigo:     pais.Codigo,
 		PaisNombre:     pais.Nombre,
@@ -422,6 +455,110 @@ func defaultFacturacionConfig(empresaID int64, paisCodigo string) FacturacionEle
 		Ambiente:       "sandbox",
 		Estado:         "activo",
 		CamposPaisJSON: "{}",
+	}
+	applyFacturacionPaisDefaults(&cfg)
+	return cfg
+}
+
+func defaultCamposPaisJSON(paisCodigo string) string {
+	fields := map[string]interface{}{"perfil_auto": true}
+	switch normalizePaisCodigo(paisCodigo) {
+	case "EC":
+		fields["integracion"] = "sri_xml_firmado"
+		fields["ambiente_sri"] = "1"
+		fields["establecimiento"] = "001"
+		fields["punto_emision"] = "001"
+		fields["documentos_soportados"] = []string{"factura", "nota_credito", "nota_debito", "retencion", "guia_remision"}
+	case "PA":
+		fields["integracion"] = "dgi_pac_o_facturador"
+		fields["dv"] = ""
+		fields["modalidad"] = "pac_o_facturador_gratuito"
+	case "CR":
+		fields["integracion"] = "hacienda_api_xml"
+		fields["version_xml"] = "4.4"
+		fields["sucursal"] = "001"
+		fields["terminal"] = "00001"
+		fields["actividad_economica"] = ""
+	case "AR":
+		fields["integracion"] = "arca_wsfev1"
+		fields["punto_venta"] = "0001"
+		fields["condicion_iva"] = ""
+		fields["tipo_comprobante"] = "factura"
+		fields["ws_servicio"] = "wsfev1"
+	case "VE":
+		fields["integracion"] = "seniat_facturacion_digital"
+		fields["serie"] = "A"
+		fields["imprenta_digital"] = ""
+		fields["proveedor_homologado"] = ""
+		fields["moneda_referencia"] = "VES"
+	default:
+		fields["integracion"] = "dian_ubl_2_1"
+		fields["modo_offline_dian_activo"] = false
+		fields["modo_offline_preguntar"] = true
+		fields["modo_offline_auto_reintentar"] = true
+	}
+	raw, _ := json.Marshal(fields)
+	return string(raw)
+}
+
+func applyFacturacionPaisDefaults(cfg *FacturacionElectronicaPaisConfig) {
+	if cfg == nil {
+		return
+	}
+	pais := paisFacturacionByCodigo(cfg.PaisCodigo)
+	if strings.TrimSpace(cfg.MonedaCodigo) == "" {
+		cfg.MonedaCodigo = pais.Moneda
+	}
+	if strings.TrimSpace(cfg.Proveedor) == "" {
+		switch pais.Codigo {
+		case "EC":
+			cfg.Proveedor = "sri_ecuador"
+		case "PA":
+			cfg.Proveedor = "dgi_panama_pac"
+		case "CR":
+			cfg.Proveedor = "hacienda_cr"
+		case "AR":
+			cfg.Proveedor = "arca_wsfev1"
+		case "VE":
+			cfg.Proveedor = "seniat_imprenta_digital"
+		case "CO":
+			cfg.Proveedor = "dian_colombia"
+		default:
+			cfg.Proveedor = "manual"
+		}
+	}
+	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
+		switch pais.Codigo {
+		case "AR":
+			cfg.TipoDocumentoEmisor = "CUIT"
+		case "CR":
+			cfg.TipoDocumentoEmisor = "CEDULA"
+		case "EC", "PA":
+			cfg.TipoDocumentoEmisor = "RUC"
+		case "VE":
+			cfg.TipoDocumentoEmisor = "RIF"
+		default:
+			cfg.TipoDocumentoEmisor = "NIT"
+		}
+	}
+	if strings.TrimSpace(cfg.PrefijoFactura) == "" {
+		switch pais.Codigo {
+		case "EC":
+			cfg.PrefijoFactura = "001-001"
+		case "PA":
+			cfg.PrefijoFactura = "FE"
+		case "CR":
+			cfg.PrefijoFactura = "001-00001"
+		case "AR":
+			cfg.PrefijoFactura = "0001"
+		case "VE":
+			cfg.PrefijoFactura = "A"
+		default:
+			cfg.PrefijoFactura = "FE"
+		}
+	}
+	if strings.TrimSpace(cfg.CamposPaisJSON) == "" || strings.TrimSpace(cfg.CamposPaisJSON) == "{}" {
+		cfg.CamposPaisJSON = defaultCamposPaisJSON(pais.Codigo)
 	}
 }
 
@@ -511,6 +648,7 @@ func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 	payload.PaisCodigo = pais.Codigo
 	payload.PaisNombre = pais.Nombre
 	payload.BanderaPais = pais.Bandera
+	applyFacturacionPaisDefaults(payload)
 	if strings.TrimSpace(payload.MonedaCodigo) == "" {
 		payload.MonedaCodigo = pais.Moneda
 	} else {
@@ -822,6 +960,12 @@ func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (str
 func detectPaisByTimezone(tz string) string {
 	tz = strings.ToLower(strings.TrimSpace(tz))
 	switch {
+	case strings.Contains(tz, "argentina"), strings.Contains(tz, "buenos_aires"), strings.Contains(tz, "cordoba"), strings.Contains(tz, "mendoza"):
+		return "AR"
+	case strings.Contains(tz, "costa_rica"):
+		return "CR"
+	case strings.Contains(tz, "caracas"):
+		return "VE"
 	case strings.Contains(tz, "panama"):
 		return "PA"
 	case strings.Contains(tz, "guayaquil"), strings.Contains(tz, "quito"), strings.Contains(tz, "galapagos"):
@@ -836,6 +980,12 @@ func detectPaisByTimezone(tz string) string {
 func detectPaisByLanguage(lang string) string {
 	lang = strings.ToLower(strings.TrimSpace(lang))
 	switch {
+	case strings.HasPrefix(lang, "es-ar"):
+		return "AR"
+	case strings.HasPrefix(lang, "es-cr"):
+		return "CR"
+	case strings.HasPrefix(lang, "es-ve"):
+		return "VE"
 	case strings.HasPrefix(lang, "es-pa"):
 		return "PA"
 	case strings.HasPrefix(lang, "es-ec"):

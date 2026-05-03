@@ -5,7 +5,50 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Licencias</title>
   <link rel="stylesheet" href="/estilos.css">
-  
+  <style>
+    .lic-admin-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:14px;margin:0 0 14px;padding:16px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 88%,#0f766e 12%),color-mix(in srgb,var(--surface-soft) 82%,#f59e0b 18%));box-shadow:0 18px 48px rgba(15,23,42,.13)}
+    .lic-admin-hero h2{margin:0;color:var(--text);font-size:1.35rem;line-height:1.1}
+    .lic-admin-hero p{margin:8px 0 0;color:var(--muted);line-height:1.45}
+    .lic-admin-kicker{margin:0 0 6px;color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .lic-admin-hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .lic-admin-health{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .lic-admin-health-card{padding:11px;border:1px solid color-mix(in srgb,var(--border) 75%,white 25%);border-radius:14px;background:rgba(255,255,255,.58)}
+    .lic-admin-health-card span{display:block;color:var(--muted);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .lic-admin-health-card strong{display:block;margin-top:4px;color:var(--text);font-size:1.12rem}
+    .lic-admin-panel{margin:0 0 12px}
+    .lic-admin-kpis{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+    .lic-admin-kpi{padding:10px 11px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+    .lic-admin-kpi span{display:block;color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase;letter-spacing:.045em}
+    .lic-admin-kpi strong{display:block;margin-top:5px;color:var(--text);font-size:1.25rem;line-height:1}
+    .lic-admin-kpi small{display:block;margin-top:4px;color:var(--muted);font-size:.68rem;line-height:1.15}
+    .lic-admin-toolbar{display:grid;grid-template-columns:minmax(210px,1.2fr) repeat(4,minmax(135px,.7fr));gap:8px;align-items:end;margin:10px 0;padding:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+    .lic-admin-toolbar .btn{min-height:38px}
+    .lic-admin-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+    .lic-admin-table{min-width:1120px;margin:0}
+    .lic-admin-table td,.lic-admin-table th{vertical-align:top}
+    .lic-plan-name{font-weight:900;color:var(--text)}
+    .lic-plan-sub{margin-top:3px;color:var(--muted);font-size:.72rem;line-height:1.25}
+    .lic-badge{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 8px;border-radius:999px;font-size:.7rem;font-weight:900;border:1px solid var(--border);background:var(--surface-soft);color:var(--text);white-space:nowrap}
+    .lic-badge.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:#047857}
+    .lic-badge.warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35);color:#92400e}
+    .lic-badge.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#b91c1c}
+    .lic-mod-chip{display:inline-flex;margin:2px 4px 2px 0;padding:4px 7px;border-radius:999px;background:color-mix(in srgb,var(--surface-soft) 82%,#0f766e 18%);border:1px solid var(--border);font-size:.68rem;font-weight:800;color:var(--text)}
+    .lic-mod-all{background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}
+    .lic-admin-empty{padding:18px;border:1px dashed var(--border);border-radius:16px;background:var(--surface);color:var(--muted);text-align:center}
+    .lic-form-shell{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--surface),var(--surface-soft));padding:14px;margin-bottom:12px}
+    .lic-form-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+    .lic-form-title h2{margin:0;font-size:1.08rem;color:var(--text)}
+    .lic-form-title p{margin:4px 0 0;color:var(--muted);font-size:.78rem}
+    .lic-module-presets{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 10px}
+    .lic-module-presets button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 9px;font-size:.72rem;font-weight:850;color:var(--text);cursor:pointer}
+    .lic-module-presets button:hover{border-color:var(--accent);color:var(--accent)}
+    .lic-risk-list{display:grid;gap:7px;margin-top:8px}
+    .lic-risk-item{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.45);font-size:.76rem;color:var(--text)}
+    .lic-risk-item strong{white-space:nowrap}
+    @media (max-width:1120px){.lic-admin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:1fr}}
+    @media (max-width:480px){.lic-admin-kpis,.lic-admin-health{grid-template-columns:1fr}}
+  </style>
 </head>
 <body class="super-page licencias-page">
   <div class="container">
@@ -23,7 +66,64 @@
       </div>
       <div id="historySummary" class="lic-history-summary"></div>
     </section>
-    <form id="form" class="form">
+    <section id="crudExecutivePanel" class="lic-admin-panel">
+      <div class="lic-admin-hero">
+        <div>
+          <p class="lic-admin-kicker">Gobierno comercial de licencias</p>
+          <h2>Planes, addons, cobertura y riesgo operativo en una sola vista</h2>
+          <p>Administra el catálogo con control por país, tipo de empresa, módulos habilitados, funciones adicionales y señales de vencimiento para tomar decisiones más rápidas.</p>
+          <div class="lic-admin-hero-actions">
+            <button id="quickBaseBtn" class="btn secondary" type="button">Nuevo plan base</button>
+            <button id="quickAddonBtn" class="btn secondary" type="button">Nuevo addon</button>
+          </div>
+        </div>
+        <div class="lic-admin-health" id="licHealthCards">
+          <div class="lic-admin-health-card"><span>Cargando</span><strong>-</strong></div>
+        </div>
+      </div>
+      <div class="lic-admin-kpis" id="licKpiGrid"></div>
+      <div class="lic-admin-toolbar" aria-label="Filtros de licencias">
+        <div>
+          <label class="form-label" for="licSearch">Buscar</label>
+          <input id="licSearch" class="form-input" placeholder="Nombre, módulo, función, país...">
+        </div>
+        <div>
+          <label class="form-label" for="licTypeFilter">Tipo</label>
+          <select id="licTypeFilter" class="form-input"><option value="">Todos</option></select>
+        </div>
+        <div>
+          <label class="form-label" for="licCountryFilter">País</label>
+          <select id="licCountryFilter" class="form-input"><option value="">Todos</option></select>
+        </div>
+        <div>
+          <label class="form-label" for="licClassFilter">Clase</label>
+          <select id="licClassFilter" class="form-input">
+            <option value="">Todas</option>
+            <option value="base">Base</option>
+            <option value="addon">Adicional</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="licStatusFilter">Estado</label>
+          <select id="licStatusFilter" class="form-input">
+            <option value="">Todos</option>
+            <option value="activo">Activas</option>
+            <option value="inactivo">Inactivas</option>
+            <option value="asignada">Asignadas</option>
+            <option value="catalogo">Catálogo</option>
+          </select>
+        </div>
+        <button id="clearFiltersBtn" class="btn secondary" type="button">Limpiar filtros</button>
+      </div>
+    </section>
+    <form id="form" class="form lic-form-shell">
+      <div class="lic-form-title">
+        <div>
+          <h2 id="formTitle">Nueva licencia</h2>
+          <p id="formSubtitle">Define precio, duración, país, cobertura modular y si el plan funciona como addon.</p>
+        </div>
+        <span class="lic-badge" id="formModeBadge">Catálogo</span>
+      </div>
       <input type="hidden" id="itemId">
       <div class="form-row">
         <div class="form-col">
@@ -66,6 +166,13 @@
         <div class="form-col" style="grid-column:1/-1">
           <label class="form-label">Cobertura de módulos (licencia)</label>
           <p class="lic-coverage-lead">Define <strong>qué módulos negocio</strong> incluye el plan. Si dejas <strong>todo sin marcar</strong>, la licencia <strong>no restringe</strong> módulos (el administrador aplica luego <a href="/super/permisos_rol.html" target="_blank" rel="noopener">permisos por rol</a> sin techo de licencia). Si marcas uno o varios, la empresa <strong>solo</strong> accede a esos módulos; el resto queda inaccesible aunque el rol esté lleno.</p>
+          <div class="lic-module-presets" aria-label="Presets de módulos">
+            <button type="button" data-module-preset="all">Todos sin restricción</button>
+            <button type="button" data-module-preset="operativo">Operativo</button>
+            <button type="button" data-module-preset="financiero">Financiero</button>
+            <button type="button" data-module-preset="comercial">Comercial</button>
+            <button type="button" data-module-preset="enterprise">Enterprise</button>
+          </div>
           <div id="modulosLicenciaBox" class="lic-coverage">
             <p class="lic-coverage-title">Módulos del plan</p>
             <div class="lic-coverage-grid">
@@ -114,6 +221,37 @@
       const pageTitle = document.getElementById('pageTitle');
       const pageLead = document.getElementById('pageLead');
       const historyState = { empresaID: '' };
+      const crudExecutivePanel = document.getElementById('crudExecutivePanel');
+      const licKpiGrid = document.getElementById('licKpiGrid');
+      const licHealthCards = document.getElementById('licHealthCards');
+      const licSearch = document.getElementById('licSearch');
+      const licTypeFilter = document.getElementById('licTypeFilter');
+      const licCountryFilter = document.getElementById('licCountryFilter');
+      const licClassFilter = document.getElementById('licClassFilter');
+      const licStatusFilter = document.getElementById('licStatusFilter');
+      const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+      const quickBaseBtn = document.getElementById('quickBaseBtn');
+      const quickAddonBtn = document.getElementById('quickAddonBtn');
+      const formTitle = document.getElementById('formTitle');
+      const formSubtitle = document.getElementById('formSubtitle');
+      const formModeBadge = document.getElementById('formModeBadge');
+      const crudState = { licencias: [], tipos: [], filtersReady: false };
+      const moduleLabels = {
+        ventas: 'Ventas',
+        inventario: 'Inventario',
+        finanzas: 'Finanzas',
+        clientes: 'Clientes',
+        compras: 'Compras',
+        facturacion: 'Facturación',
+        seguridad: 'Seguridad'
+      };
+      const modulePresets = {
+        all: '',
+        operativo: 'ventas,inventario,clientes',
+        financiero: 'ventas,finanzas,facturacion',
+        comercial: 'ventas,clientes,compras',
+        enterprise: 'ventas,inventario,finanzas,clientes,compras,facturacion,seguridad'
+      };
 
       function parseTruthy(v){
         switch (String(v || '').trim().toLowerCase()) {
@@ -198,6 +336,125 @@
         return normalized || 'Todos';
       }
 
+      function moduleChips(rawCSV){
+        const normalized = normalizeCSV(rawCSV);
+        if (!normalized) return '<span class="lic-mod-chip lic-mod-all">Todos los módulos</span>';
+        return normalized.split(',').filter(Boolean).map(function(key){
+          return '<span class="lic-mod-chip">' + escapeHTML(moduleLabels[key] || key) + '</span>';
+        }).join('');
+      }
+
+      function isActiveLic(item){
+        return Number(item && item.activo) === 1 || String(item && item.activo || '').toLowerCase() === 'activo';
+      }
+
+      function isAddon(item){
+        return Number(item && item.es_adicional || 0) === 1;
+      }
+
+      function isAssigned(item){
+        return Number(item && item.empresa_id || 0) > 0;
+      }
+
+      function licenseClassLabel(item){
+        return isAddon(item)
+          ? ('Adicional' + (String(item.codigo_funcion || '').trim() ? ' - ' + String(item.codigo_funcion || '').trim() : ''))
+          : 'Base';
+      }
+
+      function renderMoney(value){
+        const num = Number(value || 0);
+        try {
+          return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+        } catch (e) {
+          return '$ ' + num.toLocaleString('es-CO');
+        }
+      }
+
+      function averageValue(rows){
+        const priced = rows.filter(function(item){ return Number(item.valor || 0) > 0; });
+        if (!priced.length) return 0;
+        return priced.reduce(function(sum, item){ return sum + Number(item.valor || 0); }, 0) / priced.length;
+      }
+
+      function catalogSearchText(item){
+        return [
+          item.id,
+          item.nombre,
+          item.descripcion,
+          item.tipo_nombre,
+          item.pais_codigo,
+          item.modulos_habilitados,
+          item.codigo_funcion,
+          item.empresa_nombre,
+          licenseClassLabel(item)
+        ].join(' ').toLowerCase();
+      }
+
+      function currentFilteredLicencias(){
+        const q = String(licSearch.value || '').trim().toLowerCase();
+        const type = String(licTypeFilter.value || '');
+        const country = String(licCountryFilter.value || '');
+        const klass = String(licClassFilter.value || '');
+        const status = String(licStatusFilter.value || '');
+        return crudState.licencias.filter(function(item){
+          if (q && catalogSearchText(item).indexOf(q) === -1) return false;
+          if (type && String(item.tipo_id || '') !== type) return false;
+          if (country && String(item.pais_codigo || 'CO').toUpperCase() !== country) return false;
+          if (klass === 'base' && isAddon(item)) return false;
+          if (klass === 'addon' && !isAddon(item)) return false;
+          if (status === 'activo' && !isActiveLic(item)) return false;
+          if (status === 'inactivo' && isActiveLic(item)) return false;
+          if (status === 'asignada' && !isAssigned(item)) return false;
+          if (status === 'catalogo' && isAssigned(item)) return false;
+          return true;
+        });
+      }
+
+      function fillCrudFilters(rows){
+        const selectedType = licTypeFilter.value;
+        const selectedCountry = licCountryFilter.value;
+        const typeMap = new Map();
+        crudState.tipos.forEach(function(t){ if (t && t.id) typeMap.set(String(t.id), t.nombre || ('Tipo #' + t.id)); });
+        rows.forEach(function(item){ if (item.tipo_id) typeMap.set(String(item.tipo_id), item.tipo_nombre || typeMap.get(String(item.tipo_id)) || ('Tipo #' + item.tipo_id)); });
+        licTypeFilter.innerHTML = '<option value="">Todos</option>' + Array.from(typeMap.entries())
+          .sort(function(a, b){ return String(a[1]).localeCompare(String(b[1]), 'es'); })
+          .map(function(pair){ return '<option value="' + escapeHTML(pair[0]) + '">' + escapeHTML(pair[1]) + '</option>'; }).join('');
+        if (selectedType && Array.from(licTypeFilter.options).some(function(o){ return o.value === selectedType; })) licTypeFilter.value = selectedType;
+
+        const countries = Array.from(new Set(rows.map(function(item){ return String(item.pais_codigo || 'CO').toUpperCase(); }).filter(Boolean))).sort();
+        licCountryFilter.innerHTML = '<option value="">Todos</option>' + countries.map(function(code){ return '<option value="' + escapeHTML(code) + '">' + escapeHTML(code) + '</option>'; }).join('');
+        if (selectedCountry && countries.indexOf(selectedCountry) !== -1) licCountryFilter.value = selectedCountry;
+      }
+
+      function renderCrudInsights(rows){
+        const total = rows.length;
+        const active = rows.filter(isActiveLic).length;
+        const addons = rows.filter(isAddon).length;
+        const assigned = rows.filter(isAssigned).length;
+        const openCatalog = rows.filter(function(item){ return !isAssigned(item); }).length;
+        const unrestricted = rows.filter(function(item){ return !normalizeCSV(item.modulos_habilitados || ''); }).length;
+        const avg = averageValue(rows);
+        licKpiGrid.innerHTML = [
+          '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>Planes base, addons y licencias asignadas.</small></div>',
+          '<div class="lic-admin-kpi"><span>Activas</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% del portafolio visible.</small></div>',
+          '<div class="lic-admin-kpi"><span>Licencias addon</span><strong>' + addons + '</strong><small>Ampliaciones modulares o funcionales.</small></div>',
+          '<div class="lic-admin-kpi"><span>Asignadas</span><strong>' + assigned + '</strong><small>' + openCatalog + ' registros de catálogo sin empresa.</small></div>',
+          '<div class="lic-admin-kpi"><span>Ticket promedio</span><strong>' + escapeHTML(renderMoney(avg)) + '</strong><small>' + unrestricted + ' planes sin techo modular.</small></div>'
+        ].join('');
+
+        const riskItems = [];
+        if (rows.some(function(item){ return isAddon(item) && !normalizeCSV(item.modulos_habilitados || ''); })) riskItems.push(['Addons sin módulo', 'Un addon debe declarar cobertura para evitar ampliaciones ambiguas.']);
+        if (rows.some(function(item){ return Number(item.valor || 0) <= 0 && !String(item.nombre || '').toLowerCase().includes('prueba'); })) riskItems.push(['Planes en cero', 'Revisa si son cortesías controladas o errores de tarifa.']);
+        if (rows.some(function(item){ return isActiveLic(item) && Number(item.duracion_dias || 0) <= 0; })) riskItems.push(['Duración pendiente', 'Hay licencias activas sin duración comercial definida.']);
+        licHealthCards.innerHTML = [
+          '<div class="lic-admin-health-card"><span>Salud comercial</span><strong>' + (riskItems.length ? 'Revisar' : 'Estable') + '</strong></div>',
+          '<div class="lic-admin-health-card"><span>Países</span><strong>' + new Set(rows.map(function(i){ return String(i.pais_codigo || 'CO').toUpperCase(); })).size + '</strong></div>',
+          '<div class="lic-admin-health-card"><span>Sin restricción</span><strong>' + unrestricted + '</strong></div>',
+          '<div class="lic-admin-health-card"><span>Valor catálogo</span><strong>' + escapeHTML(renderMoney(rows.reduce(function(sum, i){ return sum + Number(i.valor || 0); }, 0))) + '</strong></div>'
+        ].join('') + (riskItems.length ? '<div class="lic-risk-list" style="grid-column:1/-1">' + riskItems.slice(0, 3).map(function(item){ return '<div class="lic-risk-item"><span>' + escapeHTML(item[1]) + '</span><strong>' + escapeHTML(item[0]) + '</strong></div>'; }).join('') + '</div>' : '');
+      }
+
       function resetLicenciaForm(){
         document.getElementById('itemId').value='';
         document.getElementById('nombre').value='';
@@ -211,6 +468,10 @@
         document.getElementById('codigo_funcion').value = '';
         setSelectedLicenciaModulos('');
         document.getElementById('saveBtn').innerText='Guardar';
+        formTitle.textContent = 'Nueva licencia';
+        formSubtitle.textContent = 'Define precio, duración, país, cobertura modular y si el plan funciona como addon.';
+        formModeBadge.textContent = 'Catálogo';
+        formModeBadge.className = 'lic-badge';
         document.getElementById('cancelBtn').style.display='none';
         document.getElementById('msg').innerText='';
       }
@@ -421,6 +682,7 @@
         pageLead.textContent = 'Aquí se muestran todas las licencias asociadas a tus empresas (vigentes o vencidas). Puedes renovar la licencia actual o cambiar a una nueva.';
         addBtn.style.display = 'none';
         form.style.display = 'none';
+        crudExecutivePanel.hidden = true;
         historyToolbar.hidden = false;
         list.innerHTML = 'Cargando historial...';
         const [licencias, empresas] = await Promise.all([
@@ -430,48 +692,45 @@
         renderHistoryList(licencias, empresas);
       }
 
-      async function loadCrud(){
-        pageTitle.textContent = 'Licencias';
-        pageLead.textContent = '';
-        historyToolbar.hidden = true;
+      function renderCrudList(){
+        const data = currentFilteredLicencias();
+        renderCrudInsights(crudState.licencias);
 
-        try{
-          const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
-          const tipoSelect = document.getElementById('tipo_id');
-          tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
-          (Array.isArray(tipos) ? tipos : []).forEach(function(t){
-            const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.text = t.nombre;
-            tipoSelect.appendChild(opt);
-          });
-        }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
+        if (!data.length) {
+          list.innerHTML = '<div class="lic-admin-empty">No hay licencias que coincidan con los filtros actuales.</div>';
+          return;
+        }
 
-        const data = await fetchJSONOrThrow(buildLicenciasApiURL());
         const table = document.createElement('table');
-        table.className = 'table';
-        table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Clase</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
+        table.className = 'table lic-admin-table';
+        table.innerHTML = '<thead><tr><th>Plan</th><th>Segmento</th><th>Precio y duración</th><th>Cobertura</th><th>Uso</th><th>Estado</th><th>Acciones</th></tr></thead>';
         const tbody = document.createElement('tbody');
         data.forEach(function(i){
           const tr = document.createElement('tr');
-          const activo = (i.activo === 'activo' || i.activo == 1) ? 1 : (i.activo || 0);
-          const toggleLabel = (activo == 1) ? 'Desactivar' : 'Activar';
-          const modulos = modulosToLabel(i.modulos_habilitados || '');
-          const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'Sí' : 'No';
-          const clase = Number(i.es_adicional || 0) === 1
-            ? ('Adicional' + (String(i.codigo_funcion || '').trim() ? ' - ' + String(i.codigo_funcion || '').trim() : ''))
-            : 'Base';
-          tr.innerHTML = '<td>' + i.id + '</td><td>' + escapeHTML(i.tipo_nombre || '') + '</td><td>' + escapeHTML(i.nombre || '') + '</td><td>' + escapeHTML(clase) + '</td><td>' + escapeHTML(cellValue(i.valor)) + '</td><td>' + escapeHTML(cellValue(i.duracion_dias)) + '</td><td>' + escapeHTML(modulos) + '</td><td>' + superRol + '</td><td class="actions"><button data-id="' + i.id + '" class="edit btn secondary">Editar</button> <button data-id="' + i.id + '" class="del btn danger">Eliminar</button> <button data-id="' + i.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button></td>';
+          const activo = isActiveLic(i) ? 1 : 0;
+          const toggleLabel = activo ? 'Desactivar' : 'Activar';
+          const statusClass = activo ? 'ok' : 'danger';
+          const statusLabel = activo ? 'Activa' : 'Inactiva';
+          const classLabel = licenseClassLabel(i);
+          const assigned = isAssigned(i);
+          tr.innerHTML = '' +
+            '<td><div class="lic-plan-name">#' + escapeHTML(i.id) + ' · ' + escapeHTML(i.nombre || 'Licencia') + '</div><div class="lic-plan-sub">' + escapeHTML(i.descripcion || 'Sin descripción comercial') + '</div></td>' +
+            '<td><span class="lic-badge">' + escapeHTML(i.tipo_nombre || 'Tipo general') + '</span><div class="lic-plan-sub">País: <strong>' + escapeHTML(i.pais_codigo || 'CO') + '</strong></div><div class="lic-plan-sub">' + escapeHTML(classLabel) + '</div></td>' +
+            '<td><strong>' + escapeHTML(renderMoney(i.valor)) + '</strong><div class="lic-plan-sub">' + escapeHTML(String(i.duracion_dias || 0)) + ' días de vigencia</div></td>' +
+            '<td>' + moduleChips(i.modulos_habilitados || '') + '<div class="lic-plan-sub">Super rol: ' + (Number(i.super_rol_habilitado || 0) === 1 ? 'habilitado' : 'no') + '</div></td>' +
+            '<td><span class="lic-badge ' + (assigned ? 'warn' : '') + '">' + (assigned ? 'Asignada' : 'Catálogo') + '</span><div class="lic-plan-sub">' + escapeHTML(i.empresa_nombre || (assigned ? ('Empresa #' + i.empresa_id) : 'Disponible para venta')) + '</div></td>' +
+            '<td><span class="lic-badge ' + statusClass + '">' + statusLabel + '</span><div class="lic-plan-sub">Creada: ' + escapeHTML(formatDate(i.fecha_creacion)) + '</div></td>' +
+            '<td class="actions"><button data-id="' + escapeHTML(i.id) + '" class="edit btn secondary">Editar</button> <button data-id="' + escapeHTML(i.id) + '" class="del btn danger">Eliminar</button> <button data-id="' + escapeHTML(i.id) + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button></td>';
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        list.innerHTML='';
-        list.appendChild(table);
+        list.innerHTML = '<div class="lic-admin-table-wrap"></div>';
+        list.querySelector('.lic-admin-table-wrap').appendChild(table);
 
-        document.querySelectorAll('.edit').forEach(function(b){
-          b.onclick = async function(){
+        list.querySelectorAll('.edit').forEach(function(b){
+          b.onclick = function(){
             const id = b.getAttribute('data-id');
-            const item = data.find(function(x){ return String(x.id) === String(id); });
+            const item = crudState.licencias.find(function(x){ return String(x.id) === String(id); });
             if(!item) return alert('Registro no encontrado');
             form.style.display = '';
             addBtn.style.display = 'none';
@@ -487,28 +746,102 @@
             document.getElementById('es_adicional').checked = Number(item.es_adicional || 0) === 1;
             document.getElementById('codigo_funcion').value = item.codigo_funcion || '';
             document.getElementById('saveBtn').innerText = 'Actualizar';
+            formTitle.textContent = 'Editar licencia #' + item.id;
+            formSubtitle.textContent = isAssigned(item) ? 'Esta licencia está asociada a una empresa. Ajusta con cuidado precio, módulos y vigencia comercial.' : 'Actualiza el plan del catálogo comercial.';
+            formModeBadge.textContent = isAddon(item) ? 'Addon' : 'Base';
+            formModeBadge.className = 'lic-badge ' + (isAddon(item) ? 'warn' : 'ok');
             document.getElementById('cancelBtn').style.display = '';
             window.scrollTo({ top: 0, behavior: 'smooth' });
           };
         });
-        document.querySelectorAll('.del').forEach(function(b){
+        list.querySelectorAll('.del').forEach(function(b){
           b.onclick = async function(){
-            if(!confirm('Eliminar licencia?')) return;
             const id = b.getAttribute('data-id');
-            await fetchTextOrThrow('/super/api/licencias?id=' + id, { method: 'DELETE' });
-            loadCrud();
+            const item = crudState.licencias.find(function(x){ return String(x.id) === String(id); });
+            const warning = item && isAssigned(item)
+              ? 'Esta licencia está asignada a una empresa. Eliminarla puede afectar trazabilidad comercial. ¿Eliminar de todos modos?'
+              : '¿Eliminar licencia del catálogo?';
+            if(!confirm(warning)) return;
+            await fetchTextOrThrow('/super/api/licencias?id=' + encodeURIComponent(id), { method: 'DELETE' });
+            await loadCrud();
           };
         });
-        document.querySelectorAll('.toggle').forEach(function(b){
+        list.querySelectorAll('.toggle').forEach(function(b){
           b.onclick = async function(){
             const id = b.getAttribute('data-id');
             const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
             if(!confirm((activo === '1' ? 'Activar' : 'Desactivar') + ' licencia?')) return;
-            await fetchTextOrThrow('/super/api/licencias?id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
-            loadCrud();
+            await fetchTextOrThrow('/super/api/licencias?id=' + encodeURIComponent(id) + '&action=activar&activo=' + activo, { method: 'PUT' });
+            await loadCrud();
           };
         });
       }
+
+      async function loadCrud(){
+        pageTitle.textContent = 'Licencias';
+        pageLead.textContent = 'Catálogo comercial, licencias adicionales y control de cobertura por módulos.';
+        crudExecutivePanel.hidden = false;
+        historyToolbar.hidden = true;
+
+        try{
+          const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
+          crudState.tipos = Array.isArray(tipos) ? tipos : [];
+          const tipoSelect = document.getElementById('tipo_id');
+          tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+          crudState.tipos.forEach(function(t){
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.text = t.nombre;
+            tipoSelect.appendChild(opt);
+          });
+        }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
+
+        const data = await fetchJSONOrThrow(buildLicenciasApiURL());
+        crudState.licencias = Array.isArray(data) ? data : [];
+        fillCrudFilters(crudState.licencias);
+        renderCrudList();
+      }
+
+      [licSearch, licTypeFilter, licCountryFilter, licClassFilter, licStatusFilter].forEach(function(control){
+        if (!control) return;
+        control.addEventListener(control.tagName === 'INPUT' ? 'input' : 'change', function(){
+          renderCrudList();
+        });
+      });
+
+      clearFiltersBtn.addEventListener('click', function(){
+        licSearch.value = '';
+        licTypeFilter.value = '';
+        licCountryFilter.value = '';
+        licClassFilter.value = '';
+        licStatusFilter.value = '';
+        renderCrudList();
+      });
+
+      document.querySelectorAll('[data-module-preset]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          setSelectedLicenciaModulos(modulePresets[btn.getAttribute('data-module-preset')] || '');
+        });
+      });
+
+      function openNewLicenseForm(addon){
+        form.style.display = '';
+        addBtn.style.display = 'none';
+        resetLicenciaForm();
+        document.getElementById('es_adicional').checked = !!addon;
+        if (addon) {
+          document.getElementById('codigo_funcion').value = 'ADDON_';
+          setSelectedLicenciaModulos('seguridad');
+          formTitle.textContent = 'Nueva licencia adicional';
+          formSubtitle.textContent = 'Crea una ampliación modular o funcional que pueda sumarse a una licencia base.';
+          formModeBadge.textContent = 'Addon';
+          formModeBadge.className = 'lic-badge warn';
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      quickBaseBtn.addEventListener('click', function(){ openNewLicenseForm(false); });
+      quickAddonBtn.addEventListener('click', function(){ openNewLicenseForm(true); });
 
       form.onsubmit = async function(e){
         e.preventDefault();
@@ -553,10 +886,7 @@
       };
 
       addBtn.onclick = function(){
-        form.style.display = '';
-        addBtn.style.display = 'none';
-        resetLicenciaForm();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        openNewLicenseForm(false);
       };
 
       historyEmpresaFilter.addEventListener('change', function(){

@@ -332,7 +332,7 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		aplicarAuto = 1
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_tarifas_por_dia (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_tarifas_por_dia (
 		empresa_id,
 		estacion_id,
 		estacion_codigo,
@@ -365,10 +365,6 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		payload.Estado,
 		payload.Observaciones,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 // UpdateEmpresaTarifaPorDia actualiza una tarifa diaria existente.

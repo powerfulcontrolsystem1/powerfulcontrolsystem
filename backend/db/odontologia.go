@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -193,7 +194,25 @@ type EmpresaOdontologiaDashboard struct {
 	TratamientosPrioridad []EmpresaOdontologiaTratamiento `json:"tratamientos_prioridad"`
 }
 
+var (
+	empresaOdontologiaSchemaEnsured sync.Map
+	empresaOdontologiaSchemaMu      sync.Mutex
+)
+
 func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("dbConn es obligatorio")
+	}
+	cacheKey := fmt.Sprintf("%p", dbConn)
+	if _, ok := empresaOdontologiaSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+	empresaOdontologiaSchemaMu.Lock()
+	defer empresaOdontologiaSchemaMu.Unlock()
+	if _, ok := empresaOdontologiaSchemaEnsured.Load(cacheKey); ok {
+		return nil
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_pacientes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -360,6 +379,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+	empresaOdontologiaSchemaEnsured.Store(cacheKey, true)
 	return nil
 }
 

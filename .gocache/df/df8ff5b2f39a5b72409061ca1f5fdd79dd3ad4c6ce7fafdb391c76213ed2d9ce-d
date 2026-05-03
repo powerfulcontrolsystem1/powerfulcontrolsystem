@@ -1,0 +1,6 @@
+./emulador_local.go
+./main.go
+./emulador_local_test.go
+./main_empresa_routes_security_test.go
+./main_frontend_routes_contract_test.go
+./main_frontend_static_resources_test.go

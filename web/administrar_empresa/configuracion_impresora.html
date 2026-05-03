@@ -19,17 +19,17 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
-      <h1>Centro de impresi?n empresarial</h1>
+      <h1>Centro de impresión empresarial</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Concentra caj?n monedero, documento de venta e impresoras del sistema en una sola vista operativa.</p>
-      <div class="empresa-config-map" aria-label="Mapa de configuraci?n de impresora">
+      <p class="form-help">Concentra cajón monedero, documento de venta e impresoras del sistema en una sola vista operativa.</p>
+      <div class="empresa-config-map" aria-label="Mapa de configuración de impresora">
         <a href="#configuracionCaja" class="empresa-config-map-item">
-          <span class="empresa-config-map-title">Caja y caj?n</span>
-          <span>Apertura autom?tica y comportamiento del caj?n monedero.</span>
+          <span class="empresa-config-map-title">Caja y cajón</span>
+          <span>Apertura automática y comportamiento del cajón monedero.</span>
         </a>
         <a href="#configuracionDocumentoImpresion" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Documento de venta</span>
-          <span>Formato, tama?o de hoja y salida operativa de impresi?n.</span>
+          <span>Formato, tamaño de hoja y salida operativa de impresión.</span>
         </a>
         <a href="#configuracionImpresorasSistema" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Impresoras del sistema</span>
@@ -37,7 +37,7 @@
         </a>
         <a href="/administrar_empresa/configuracion.html" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Volver a General</span>
-          <span>Regresa a la configuraci?n empresarial principal.</span>
+          <span>Regresa a la configuración empresarial principal.</span>
         </a>
       </div>
     </section>
@@ -164,7 +164,7 @@
               </label>
               <label class="empresa-config-check" for="opMetodoCodigoDescuento" >
                 <input id="opMetodoCodigoDescuento" type="checkbox">
-                <span>Codigo de descuento</span>
+                <span>Código de descuento</span>
               </label>
             </div>
             <div class="form-col">
@@ -228,7 +228,7 @@
               </label>
               <label class="empresa-config-check" for="opRolMetodoCodigoDescuento" >
                 <input id="opRolMetodoCodigoDescuento" type="checkbox">
-                <span>Codigo de descuento</span>
+                <span>Código de descuento</span>
               </label>
             </div>
             <div class="form-col">
@@ -311,7 +311,7 @@
               </label>
               <label class="empresa-config-check" for="opPoliticaMetodoCodigoDescuento" >
                 <input id="opPoliticaMetodoCodigoDescuento" type="checkbox">
-                <span>Codigo de descuento</span>
+                <span>Código de descuento</span>
               </label>
             </div>
             <div class="form-col">
@@ -404,7 +404,7 @@
 
     <section id="configuracionCaja" class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Caja y cajon monedero</h2>
+        <h2>Caja y cajón monedero</h2>
         <button id="btnGuardarCajaConfig" type="button" class="btn">Guardar caja</button>
       </div>
       <p class="form-help">Configura la caja operativa de la empresa y define si el cajón monedero se abre automáticamente al terminar el pago de un carrito o una transacción.</p>
@@ -419,7 +419,7 @@
           <label for="cajaNombre">Nombre de la caja</label>
           <input id="cajaNombre" type="text" maxlength="120" placeholder="Caja principal">
 
-          <label for="cajaCodigo">Codigo interno</label>
+          <label for="cajaCodigo">Código interno</label>
           <input id="cajaCodigo" type="text" maxlength="80" placeholder="CAJA-01">
 
           <label for="cajaObservaciones">Observaciones</label>
@@ -429,7 +429,7 @@
         <div class="form">
           <label class="empresa-config-check" for="cajonMonederoHabilitado">
             <input id="cajonMonederoHabilitado" type="checkbox">
-            <span>Habilitar cajon monedero</span>
+            <span>Habilitar cajón monedero</span>
           </label>
 
           <label class="empresa-config-check" for="abrirCajonAlPagarCarrito">
@@ -442,20 +442,20 @@
             <span>Abrir automáticamente al terminar la transacción</span>
           </label>
 
-          <label for="cajonMonederoMetodo">Metodo de apertura</label>
+          <label for="cajonMonederoMetodo">Método de apertura</label>
           <select id="cajonMonederoMetodo">
-            <option value="impresion_pos">Impresion POS / driver de impresora</option>
+            <option value="impresion_pos">Impresión POS / driver de impresora</option>
             <option value="manual">Manual, solo aviso operativo</option>
           </select>
 
           <label for="cajonMonederoImpresoraFuncionalidad">Funcionalidad de impresora</label>
           <input id="cajonMonederoImpresoraFuncionalidad" type="text" maxlength="80" value="cajon_monedero">
-          <p class="form-help">Asigna una impresora con la funcionalidad <strong>cajon_monedero</strong>. El navegador envia una impresion minima y el driver POS debe estar configurado para abrir el cajon.</p>
+          <p class="form-help">Asigna una impresora con la funcionalidad <strong>cajon_monedero</strong>. El navegador envía una impresión mínima y el driver POS debe estar configurado para abrir el cajón.</p>
 
           <label for="cajonMonederoComando">Comportamiento esperado</label>
           <select id="cajonMonederoComando">
             <option value="escpos_pulse">Pulso ESC/POS por impresora</option>
-            <option value="driver_auto_open">Apertura automatica del driver</option>
+            <option value="driver_auto_open">Apertura automática del driver</option>
           </select>
         </div>
       </div>
@@ -464,7 +464,7 @@
 
     <section id="configuracionDocumentoImpresion" class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Documento de venta e impresion</h2>
+        <h2>Documento de venta e impresión</h2>
         <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar documento</button>
       </div>
       <p class="form-help">Toda venta genera su comprobante. Aquí decides si además se debe emitir factura electrónica automáticamente al cerrar el cobro.</p>
@@ -494,14 +494,14 @@
                 <input id="facturaImprimirVenta" type="checkbox">
                 <span>Imprimir la venta al cerrar el cobro</span>
               </label>
-              <p class="form-help">Activa o desactiva el recibo de venta autom?tico cuando se paga un carrito o una estaci?n.</p>
+              <p class="form-help">Activa o desactiva el recibo de venta automático cuando se paga un carrito o una estación.</p>
             </div>
             <div class="form-col">
               <label class="empresa-config-check" for="facturaImprimirFacturaElectronica" >
                 <input id="facturaImprimirFacturaElectronica" type="checkbox">
-                <span>Imprimir la factura electr?nica al emitirse</span>
+                <span>Imprimir la factura electrónica al emitirse</span>
               </label>
-              <p class="form-help">Si est? activa, al emitir una factura electr?nica el sistema abrir? la impresi?n autom?ticamente.</p>
+              <p class="form-help">Si está activa, al emitir una factura electrónica el sistema abrirá la impresión automáticamente.</p>
             </div>
           </div>
           <div class="form-row">
@@ -542,7 +542,7 @@
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="formatoMonedaCodigo">Codigo de moneda</label>
+              <label class="form-label" for="formatoMonedaCodigo">Código de moneda</label>
               <input id="formatoMonedaCodigo" class="form-input" maxlength="10" placeholder="COP, USD, EUR">
               <p class="form-help">Se usa como valor por defecto en nuevos carritos cuando no se envia una moneda explicita.</p>
             </div>
@@ -587,7 +587,7 @@
           <input id="impresoraId" type="hidden" value="0">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="impresoraCodigo">Codigo</label>
+              <label class="form-label" for="impresoraCodigo">Código</label>
               <input id="impresoraCodigo" class="form-input" maxlength="60" placeholder="COCINA_1">
             </div>
             <div class="form-col">
@@ -651,7 +651,7 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Codigo</th>
+                  <th>Código</th>
                   <th>Nombre</th>
                   <th>Area</th>
                   <th>Estado</th>
@@ -2394,10 +2394,11 @@
         return;
       }
       try {
-        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        const resp = await fetch('/api/empresa/configuracion_guiada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
         if (!resp.ok) throw new Error('No encontrada');
         const data = await resp.json();
-        label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
+        const estado = data && data.estado && typeof data.estado === 'object' ? data.estado : data;
+        label.textContent = 'Empresa: ' + ((estado && (estado.empresa_nombre || estado.nombre)) || 'Sin nombre');
       } catch (_) {
         label.textContent = 'Empresa no disponible';
       }
