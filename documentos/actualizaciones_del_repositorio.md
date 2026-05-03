@@ -3710,3 +3710,34 @@ Archivos modificados:
 - documentos/reporte_estado_modulos_2026-05-02.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/estaciones.html
+
+2026-05-03 13:14:08 - Mensaje: Actualizacion DIAN facturacion electronica y corte de caja; Commit: 4131e0d; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- RESUMEN_DEL_PROYECTO.md
+- backend/db/carritos_compras.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/corte_caja.go
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- backend/tmp_tools/seed_calipso_combos/main.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/reporte_estado_modulos_2026-05-03.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/ventas.html
+- web/ayuda/ayuda.html
+- web/estilos.css
