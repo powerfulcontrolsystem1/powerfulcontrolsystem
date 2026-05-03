@@ -30,7 +30,9 @@
     .table-wrap { overflow:auto; }
     .error-table { min-width:1160px; }
     .error-table td { vertical-align:top; }
+    .error-table tr.is-selected { background: color-mix(in srgb, var(--accent) 10%, transparent 90%); }
     .error-table .message-cell { min-width:280px; }
+    .error-table .action-cell { min-width:140px; }
     .details-card pre {
       margin:0;
       padding:14px;
@@ -308,7 +310,7 @@
               '<td>' + escapeHTML(item.tipo_error || '-') + '</td>' +
               '<td>' + escapeHTML(item.metodo_http || '') + ' ' + escapeHTML(item.endpoint || '-') + '</td>' +
               '<td class="message-cell">' + escapeHTML(item.mensaje || item.mensaje_publico || '-') + '</td>' +
-              '<td><button type="button" class="btn secondary" data-index="' + index + '">Detalle</button></td>' +
+              '<td class="action-cell"><button type="button" class="btn secondary small" data-index="' + index + '" aria-label="Ver error ' + escapeHTML(item.id || index + 1) + '">Ver error</button></td>' +
             '</tr>';
         }).join('');
       }
@@ -321,6 +323,9 @@
         if (!item) {
           elements.detailsPanel.hidden = true;
           elements.detailsEmpty.hidden = false;
+          Array.prototype.slice.call(elements.tableBody.querySelectorAll('tr')).forEach(function (row) {
+            row.classList.remove('is-selected');
+          });
           return;
         }
         elements.detailsEmpty.hidden = true;
@@ -344,6 +349,12 @@
         elements.detailsDetail.textContent = item.detalle || '-';
         elements.detailsStack.textContent = item.stack_trace || 'Sin stack trace disponible';
         elements.detailsMetadata.textContent = item.metadata_json || '{}';
+      }
+
+      function markSelectedRow(index) {
+        Array.prototype.slice.call(elements.tableBody.querySelectorAll('tr')).forEach(function (row, rowIndex) {
+          row.classList.toggle('is-selected', rowIndex === index);
+        });
       }
 
       function buildQuery() {
@@ -455,7 +466,9 @@
         if (!target || !target.getAttribute) return;
         var index = target.getAttribute('data-index');
         if (index == null) return;
-        var item = state.items[Number(index)];
+        var numericIndex = Number(index);
+        var item = state.items[numericIndex];
+        markSelectedRow(numericIndex);
         renderDetails(item || null);
       });
 
