@@ -1239,6 +1239,10 @@ function Get-SyncExcludePatterns {
     ".agents/*",
     ".cache",
     ".cache/*",
+    ".gocache",
+    ".gocache/*",
+    ".gotmp",
+    ".gotmp/*",
     ".cursor",
     ".cursor/*",
     ".github",
@@ -1373,7 +1377,7 @@ function Invoke-PuttySync {
   $transportLabel = "OpenSSH"
   $excludePatterns = Get-SyncExcludePatterns -ExcludeFile $ExcludeFile
 
-  $tmpDir = Join-Path $env:TEMP "pcs_sync_staging"
+  $tmpDir = Join-Path $LocalResolvedPath ".gotmp\pcs_sync_staging"
   if (-not (Test-Path $tmpDir)) {
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
   }

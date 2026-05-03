@@ -18,6 +18,8 @@ tmp/*.txt
 tmp/*.js
 backend/.env.local
 .env.local
+.gocache/
+.gotmp/
 juegos/roms/*
 !juegos/roms/README.md
 juegos/empresas/*
