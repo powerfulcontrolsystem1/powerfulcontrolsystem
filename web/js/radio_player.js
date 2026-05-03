@@ -1,0 +1,195 @@
+(function () {
+  "use strict";
+
+  if (!window.__pcsRadioStations || !document.getElementById("radioMiniAudio")) {
+    return;
+  }
+
+  var STORAGE_KEY = "pcs_radio_player_state";
+  var stations = window.__pcsRadioStations.slice();
+  var drawer = document.getElementById("radioDrawer");
+  var openBtn = document.getElementById("openRadioDrawer");
+  var closeBtn = document.getElementById("closeRadioDrawer");
+  var grid = document.getElementById("radioStationGrid");
+  var mini = document.getElementById("radioMiniPlayer");
+  var miniAudio = document.getElementById("radioMiniAudio");
+  var miniName = document.getElementById("radioMiniName");
+  var miniTagline = document.getElementById("radioMiniTagline");
+  var miniPlayPause = document.getElementById("radioMiniPlayPause");
+  var miniVolume = document.getElementById("radioMiniVolume");
+  var miniClose = document.getElementById("radioMiniClose");
+
+  var state = {
+    stationId: "",
+    playing: false,
+    volume: 0.7
+  };
+
+  function saveState() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function loadState() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY) || "";
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        state.stationId = String(parsed.stationId || "");
+        state.playing = !!parsed.playing;
+        state.volume = Number(parsed.volume || 0.7);
+      }
+    } catch (_) {}
+  }
+
+  function stationById(id) {
+    return stations.find(function (item) { return item.id === id; }) || null;
+  }
+
+  function setDrawerOpen(open) {
+    if (!drawer || !openBtn) return;
+    drawer.classList.toggle("is-open", !!open);
+    drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    openBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function renderGrid() {
+    if (!grid) return;
+    grid.innerHTML = stations.map(function (station) {
+      var active = state.stationId === station.id;
+      return '' +
+        '<article class="radio-station-card' + (active ? ' is-active' : '') + '">' +
+        '  <div class="radio-station-badge">' + escapeHTML(station.country) + '</div>' +
+        '  <h3>' + escapeHTML(station.name) + '</h3>' +
+        '  <p>' + escapeHTML(station.tagline) + '</p>' +
+        '  <div class="radio-station-meta">' +
+        '    <span>' + escapeHTML(station.genre) + '</span>' +
+        '  </div>' +
+        '  <div class="radio-station-actions">' +
+        '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '">' + (active && state.playing ? 'Sonando' : 'Escuchar') + '</button>' +
+        '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' +
+        '  </div>' +
+        '</article>';
+    }).join("");
+  }
+
+  function escapeHTML(value) {
+    return String(value || "").replace(/[&<>\"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; });
+  }
+
+  function updateMiniPlayer() {
+    var station = stationById(state.stationId);
+    if (!station) {
+      mini.hidden = true;
+      return;
+    }
+    mini.hidden = false;
+    miniName.textContent = station.name;
+    miniTagline.textContent = station.tagline;
+    miniVolume.value = String(state.volume);
+    miniPlayPause.textContent = state.playing ? "Pausar" : "Reanudar";
+    renderGrid();
+  }
+
+  function playStation(id, autoplay) {
+    var station = stationById(id);
+    if (!station) return;
+    state.stationId = station.id;
+    state.volume = Number(miniVolume.value || state.volume || 0.7);
+    miniAudio.volume = state.volume;
+    if (miniAudio.src !== station.streamUrl) {
+      miniAudio.src = station.streamUrl;
+    }
+    if (autoplay !== false) {
+      var playPromise = miniAudio.play();
+      state.playing = true;
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function () {
+          state.playing = false;
+          updateMiniPlayer();
+          saveState();
+        });
+      }
+    } else {
+      state.playing = false;
+    }
+    updateMiniPlayer();
+    saveState();
+  }
+
+  function stopPlayback() {
+    miniAudio.pause();
+    miniAudio.removeAttribute("src");
+    miniAudio.load();
+    state.stationId = "";
+    state.playing = false;
+    saveState();
+    updateMiniPlayer();
+    renderGrid();
+  }
+
+  function togglePlayback() {
+    if (!state.stationId) return;
+    if (miniAudio.paused) {
+      miniAudio.play().then(function () {
+        state.playing = true;
+        updateMiniPlayer();
+        saveState();
+      }).catch(function () {});
+    } else {
+      miniAudio.pause();
+      state.playing = false;
+      updateMiniPlayer();
+      saveState();
+    }
+  }
+
+  function wireEvents() {
+    if (openBtn) openBtn.addEventListener("click", function () { setDrawerOpen(!drawer.classList.contains("is-open")); });
+    if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
+    if (miniClose) miniClose.addEventListener("click", stopPlayback);
+    if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
+    if (miniVolume) miniVolume.addEventListener("input", function () {
+      state.volume = Number(miniVolume.value || 0.7);
+      miniAudio.volume = state.volume;
+      saveState();
+    });
+    if (grid) {
+      grid.addEventListener("click", function (ev) {
+        var button = ev.target.closest("[data-radio-play]");
+        if (!button) return;
+        playStation(button.getAttribute("data-radio-play"), true);
+      });
+    }
+    miniAudio.addEventListener("pause", function () {
+      state.playing = false;
+      updateMiniPlayer();
+      saveState();
+    });
+    miniAudio.addEventListener("play", function () {
+      state.playing = true;
+      updateMiniPlayer();
+      saveState();
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && drawer && drawer.classList.contains("is-open")) {
+        setDrawerOpen(false);
+      }
+    });
+  }
+
+  window.__pcsRadioPlayerOpenStation = function (id) {
+    setDrawerOpen(true);
+    playStation(id, true);
+  };
+
+  loadState();
+  wireEvents();
+  renderGrid();
+  if (state.stationId) {
+    playStation(state.stationId, false);
+    updateMiniPlayer();
+  }
+})();

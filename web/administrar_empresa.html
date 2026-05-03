@@ -92,6 +92,7 @@
           <ul class="admin-nav-sublist">
             <li><a id="linkDocumentosOnlyOffice" href="/administrar_empresa/documentos_onlyoffice.html" target="contentFrame"><img class="icon" src="/img/excel.svg" alt="">OnlyOffice</a></li>
             <li><a id="linkNextcloud" href="/administrar_empresa/nextcloud.html" target="contentFrame"><img class="icon" src="/img/google-drive.svg" alt="">Nextcloud</a></li>
+            <li><a id="linkRadioOnline" href="/administrar_empresa/radio_online.html" target="contentFrame"><img class="icon" src="/img/play.svg" alt="">Radio online</a></li>
             <li><a id="linkSoporteRemoto" href="/administrar_empresa/soporte_remoto.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Soporte remoto</a></li>
           </ul>
         </li>
@@ -123,6 +124,39 @@
   <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
     <img class="icon" src="/img/gpt.svg" alt=""><span class="ai-chat-toggle-label">Asistente IA</span>
   </button>
+
+  <button id="openRadioDrawer" class="ai-chat-toggle-button radio-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon" src="/img/play.svg" alt=""><span class="ai-chat-toggle-label">Radio online</span>
+  </button>
+
+  <section id="radioDrawer" class="radio-drawer" aria-hidden="true">
+    <div class="radio-drawer-header">
+      <div>
+        <h2>10 emisoras top de internet</h2>
+        <p>Activa una emisora y sigue trabajando con el reproductor compacto.</p>
+      </div>
+      <button id="closeRadioDrawer" type="button" class="ai-chat-close" aria-label="Cerrar radio">×</button>
+    </div>
+    <div id="radioStationGrid" class="radio-station-grid"></div>
+  </section>
+
+  <section id="radioMiniPlayer" class="radio-mini-player" hidden>
+    <div class="radio-mini-topline">
+      <span class="radio-mini-kicker">Sonando ahora</span>
+      <button id="radioMiniClose" type="button" class="radio-mini-close" aria-label="Cerrar reproductor">×</button>
+    </div>
+    <div class="radio-mini-body">
+      <div class="radio-mini-meta">
+        <strong id="radioMiniName">Emisora</strong>
+        <span id="radioMiniTagline">Sin reproducción activa</span>
+      </div>
+      <div class="radio-mini-controls">
+        <button id="radioMiniPlayPause" type="button" class="btn secondary small">Pausar</button>
+        <input id="radioMiniVolume" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Volumen radio">
+      </div>
+    </div>
+    <audio id="radioMiniAudio" preload="none"></audio>
+  </section>
 
   <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
 
@@ -206,6 +240,8 @@
   </section>
 
   <script src="/js/administrar_empresa.js"></script>
+  <script src="/js/radio_catalog.js"></script>
+  <script src="/js/radio_player.js"></script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
