@@ -951,6 +951,24 @@
         msg.indexOf('venta ya se encuentra activa') !== -1;
     }
 
+    function buildFriendlyStationActivationError(message, stationName) {
+      const raw = String(message || '').trim();
+      const msg = normalizeText(raw);
+      const label = stationName || 'la estación';
+      if (!raw) return 'No se pudo activar ' + label + ' por un problema temporal del servidor.';
+      if (msg.indexOf('no se puede cancelar este carrito porque tiene productos') !== -1 ||
+          msg.indexOf('primero devuelve los productos o servicios agregados') !== -1) {
+        return label + ' ya tiene una cuenta en curso con productos o servicios. Cobra o limpia esa cuenta antes de iniciar una nueva sesión.';
+      }
+      if (msg.indexOf('venta pagada') !== -1 && msg.indexOf('reset_items=1') !== -1) {
+        return label + ' necesita iniciar una nueva sesión porque la venta anterior ya fue pagada.';
+      }
+      if (msg.indexOf('ya se encuentra activa y abierta') !== -1 || msg.indexOf('ya se encuentra activa') !== -1) {
+        return label + ' ya está activa y lista para usarse.';
+      }
+      return raw;
+    }
+
     async function activateStationWithoutOpening(stationID, stationName) {
       const id = Number(stationID || 0);
       if (!empresaId || id <= 0) return;
@@ -1007,7 +1025,7 @@
       activateStationWithoutOpening(stationID, stationName)
         .catch(function(err) {
           console.warn('No se pudo activar estacion sin abrir carrito', err);
-          setStatus('No se pudo activar la estacion: ' + (err && err.message ? err.message : 'error de servidor'));
+          setStatus('No se pudo activar la estacion: ' + buildFriendlyStationActivationError(err && err.message, stationName));
         })
         .finally(function() {
           card.removeAttribute('aria-busy');
@@ -1028,7 +1046,7 @@
           await clearDirtyState(stationID);
         } catch (err) {
           console.warn('No se pudo limpiar estacion sucia', err);
-          setStatus('No se pudo preparar la estacion: ' + (err && err.message ? err.message : 'error de servidor'));
+          setStatus('No se pudo preparar la estacion: ' + buildFriendlyStationActivationError(err && err.message, stationName));
           card.removeAttribute('aria-busy');
           return;
         }

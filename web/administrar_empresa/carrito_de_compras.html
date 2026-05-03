@@ -662,6 +662,21 @@
         };
       }
 
+      if (lower.includes('no se puede cancelar este carrito porque tiene productos') ||
+          lower.includes('primero devuelve los productos o servicios agregados')) {
+        return {
+          title: 'La estación ya tiene una venta en curso.',
+          message: 'Esta estación todavía conserva productos, servicios o valores cargados. Revisa la cuenta actual, cobra la venta o devuelve los items antes de iniciar una nueva sesión.'
+        };
+      }
+
+      if (lower.includes('venta pagada') && lower.includes('reset_items=1')) {
+        return {
+          title: 'La estación requiere reiniciar la sesión.',
+          message: 'La venta anterior ya fue pagada. Reabre la estación iniciando una nueva sesión para seguir vendiendo sobre ella.'
+        };
+      }
+
       return {
         title: state.stationMode ? 'No se pudo abrir esta estación.' : 'No se pudo cargar el carrito.',
         message: state.stationMode
@@ -2624,7 +2639,17 @@
         await loadCarritos();
         await loadItems();
       } catch (err) {
-        setStationPaymentMessage(err.message || 'No se pudo activar o recuperar el carrito de estación.', true);
+        const lower = normalize(err && err.message).toLowerCase();
+        let friendly = err && err.message ? err.message : 'No se pudo activar o recuperar el carrito de estación.';
+        if (lower.includes('no se puede cancelar este carrito porque tiene productos') ||
+            lower.includes('primero devuelve los productos o servicios agregados')) {
+          friendly = 'Esta estación todavía tiene productos, servicios o valores cargados. Cobra o limpia la cuenta actual antes de iniciar una nueva sesión.';
+        } else if (lower.includes('la venta ya se encuentra activa y abierta')) {
+          friendly = 'La estación ya tiene una sesión activa y abierta.';
+        } else if (lower.includes('venta pagada') && lower.includes('reset_items=1')) {
+          friendly = 'La venta anterior ya fue pagada. Usa la reapertura de estación para iniciar una nueva sesión.';
+        }
+        setStationPaymentMessage(friendly, true);
       }
     }
 
