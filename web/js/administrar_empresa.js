@@ -117,6 +117,7 @@ try {
     document.getElementById("linkCompras"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
+    document.getElementById("linkAlquileres"),
     document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkConfiguracionMain"),
@@ -203,6 +204,7 @@ try {
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
     linkGimnasio: { module: permModuleVentas, action: permActionCreate },
     linkTaxiSystem: { module: permModuleVentas, action: permActionCreate },
+    linkAlquileres: { module: permModuleVentas, action: permActionCreate },
     linkConsultorioOdontologico: { module: permModuleClientes, action: permActionCreate },
     linkTurnosAtencion: { module: permModuleVentas, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
@@ -1222,4 +1224,3 @@ try {
       }
     });
 })();
-

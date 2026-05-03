@@ -837,6 +837,7 @@ func main() {
 	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/gimnasio", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGimnasioHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/taxi_system", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTaxiSystemHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/alquileres", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaAlquileresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/odontologia", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaOdontologiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/turnos_atencion", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTurnosAtencionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido

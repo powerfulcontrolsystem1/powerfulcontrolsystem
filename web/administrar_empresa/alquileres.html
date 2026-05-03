@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Alquileres</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body class="admin-empresa-shell">
+  <div class="page-shell">
+    <section class="card">
+      <h1>Alquiler de equipos, herramientas y vehículos</h1>
+      <p class="form-help">Controla activos rentables, reservas, contratos, mantenimientos, depósitos y trazabilidad GPS desde un solo frente.</p>
+      <div class="form-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+        <button type="button" class="btn secondary" data-rental-tab="dashboard">Dashboard</button>
+        <button type="button" class="btn secondary" data-rental-tab="config">Configuración</button>
+        <button type="button" class="btn secondary" data-rental-tab="activos">Activos</button>
+        <button type="button" class="btn secondary" data-rental-tab="tarifas">Tarifas</button>
+        <button type="button" class="btn secondary" data-rental-tab="contratos">Contratos</button>
+        <button type="button" class="btn secondary" data-rental-tab="mantenimientos">Mantenimientos</button>
+        <button type="button" class="btn secondary" data-rental-tab="mapa">Mapa</button>
+      </div>
+      <div id="rentalMsg" class="form-help auth-message is-hidden"></div>
+    </section>
+
+    <section id="rentalTab-dashboard" class="card rental-tab">
+      <h2>Dashboard ejecutivo</h2>
+      <div id="rentalDashboardCards" class="kpi-grid"></div>
+      <div class="two-col-grid">
+        <article class="card">
+          <h3>Próximos vencimientos</h3>
+          <div id="rentalDueContracts"></div>
+        </article>
+        <article class="card">
+          <h3>Activos en riesgo</h3>
+          <div id="rentalRiskAssets"></div>
+        </article>
+      </div>
+      <div class="two-col-grid">
+        <article class="card">
+          <h3>Ingresos por línea</h3>
+          <div id="rentalByLine"></div>
+        </article>
+        <article class="card">
+          <h3>Ingresos por sede</h3>
+          <div id="rentalBySede"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="rentalTab-config" class="card rental-tab" hidden>
+      <h2>Configuración operativa</h2>
+      <form id="rentalConfigForm" class="form">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalSystemName">Nombre del sistema</label><input id="rentalSystemName" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalCurrency">Moneda</label><input id="rentalCurrency" class="form-input" value="COP"></div>
+          <div class="form-col"><label class="form-label" for="rentalAlertHours">Alerta vencimiento (horas)</label><input id="rentalAlertHours" type="number" class="form-input" value="12"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalDepositBase">Depósito base sugerido</label><input id="rentalDepositBase" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="remember-row" style="flex-wrap:wrap;gap:14px;">
+          <label class="remember-label"><input id="rentalAllowReservations" type="checkbox"><span>Permitir reservas</span></label>
+          <label class="remember-label"><input id="rentalAllowGPS" type="checkbox"><span>Permitir GPS</span></label>
+          <label class="remember-label"><input id="rentalRequireDeposit" type="checkbox"><span>Requerir depósito</span></label>
+          <label class="remember-label"><input id="rentalAllowMileage" type="checkbox"><span>Controlar kilometraje</span></label>
+          <label class="remember-label"><input id="rentalRequireChecklist" type="checkbox"><span>Checklist de entrega</span></label>
+          <label class="remember-label"><input id="rentalAllowDelivery" type="checkbox"><span>Entrega y recogida en campo</span></label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar configuración</button>
+          <button type="button" id="rentalSeedBtn" class="btn secondary">Cargar demo</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="rentalTab-activos" class="card rental-tab" hidden>
+      <h2>Activos y catálogo rentable</h2>
+      <form id="rentalCategoryForm" class="form">
+        <h3>Categorías</h3>
+        <input type="hidden" id="rentalCategoryId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalCategoryCode">Código</label><input id="rentalCategoryCode" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalCategoryName">Nombre</label><input id="rentalCategoryName" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalCategoryType">Tipo</label><select id="rentalCategoryType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="vehiculo">Vehículo</option><option value="maquinaria">Maquinaria</option></select></div>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn secondary">Guardar categoría</button></div>
+      </form>
+      <div id="rentalCategoriesTable"></div>
+      <hr>
+      <form id="rentalAssetForm" class="form">
+        <h3>Activo</h3>
+        <input type="hidden" id="rentalAssetId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalAssetCode">Código</label><input id="rentalAssetCode" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetName">Nombre</label><input id="rentalAssetName" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetCategory">Categoría</label><select id="rentalAssetCategory" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalAssetType">Tipo</label><select id="rentalAssetType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="vehiculo">Vehículo</option><option value="maquinaria">Maquinaria</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetBrand">Marca</label><input id="rentalAssetBrand" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetModel">Modelo</label><input id="rentalAssetModel" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalAssetSerie">Serie / VIN</label><input id="rentalAssetSerie" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetPlate">Placa</label><input id="rentalAssetPlate" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetSede">Sede</label><input id="rentalAssetSede" class="form-input" value="principal"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalAssetReplacement">Valor reposición</label><input id="rentalAssetReplacement" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetBaseCost">Costo base hora</label><input id="rentalAssetBaseCost" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetDeposit">Depósito sugerido</label><input id="rentalAssetDeposit" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalAssetStatus">Estado</label><select id="rentalAssetStatus" class="form-input"><option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="alquilado">Alquilado</option><option value="mantenimiento">Mantenimiento</option><option value="fuera_de_servicio">Fuera de servicio</option></select></div>
+        </div>
+        <div class="remember-row" style="flex-wrap:wrap;gap:14px;">
+          <label class="remember-label"><input id="rentalAssetGPS" type="checkbox"><span>Usa GPS</span></label>
+          <label class="remember-label"><input id="rentalAssetChecklist" type="checkbox"><span>Requiere checklist</span></label>
+          <label class="remember-label"><input id="rentalAssetLicense" type="checkbox"><span>Requiere licencia</span></label>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn">Guardar activo</button></div>
+      </form>
+      <div id="rentalAssetsTable"></div>
+    </section>
+
+    <section id="rentalTab-tarifas" class="card rental-tab" hidden>
+      <h2>Tarifas y condiciones</h2>
+      <form id="rentalRateForm" class="form">
+        <input type="hidden" id="rentalRateId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalRateCode">Código</label><input id="rentalRateCode" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateName">Nombre</label><input id="rentalRateName" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateCategory">Categoría</label><select id="rentalRateCategory" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalRateMode">Modalidad</label><select id="rentalRateMode" class="form-input"><option value="hora">Hora</option><option value="dia">Día</option><option value="semana">Semana</option><option value="mes">Mes</option><option value="kilometro">Kilómetro</option><option value="evento">Evento</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalRateBase">Precio base</label><input id="rentalRateBase" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateDeposit">Depósito mínimo</label><input id="rentalRateDeposit" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalRateHour">Precio hora</label><input id="rentalRateHour" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateDay">Precio día</label><input id="rentalRateDay" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateWeek">Precio semana</label><input id="rentalRateWeek" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalRateMonth">Precio mes</label><input id="rentalRateMonth" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateKm">Kilómetros incluidos</label><input id="rentalRateKm" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalRateStatus">Estado</label><select id="rentalRateStatus" class="form-input"><option value="activa">Activa</option><option value="inactiva">Inactiva</option></select></div>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn">Guardar tarifa</button></div>
+      </form>
+      <div id="rentalRatesTable"></div>
+    </section>
+
+    <section id="rentalTab-contratos" class="card rental-tab" hidden>
+      <h2>Reservas, entregas y devoluciones</h2>
+      <form id="rentalContractForm" class="form">
+        <input type="hidden" id="rentalContractId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractCode">Código</label><input id="rentalContractCode" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractType">Tipo</label><select id="rentalContractType" class="form-input"><option value="reserva">Reserva</option><option value="alquiler">Alquiler</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalContractAsset">Activo</label><select id="rentalContractAsset" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractClient">Cliente</label><input id="rentalContractClient" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractDocument">Documento</label><input id="rentalContractDocument" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractPhone">Teléfono</label><input id="rentalContractPhone" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractEmail">Correo</label><input id="rentalContractEmail" type="email" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractTariff">Tarifa</label><select id="rentalContractTariff" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="rentalContractMode">Modalidad</label><select id="rentalContractMode" class="form-input"><option value="hora">Hora</option><option value="dia">Día</option><option value="semana">Semana</option><option value="mes">Mes</option><option value="kilometro">Kilómetro</option><option value="evento">Evento</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractStart">Inicio</label><input id="rentalContractStart" type="datetime-local" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractEnd">Fin previsto</label><input id="rentalContractEnd" type="datetime-local" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractStatus">Estado</label><select id="rentalContractStatus" class="form-input"><option value="reservado">Reservado</option><option value="en_curso">En curso</option><option value="vencido">Vencido</option><option value="devuelto">Devuelto</option><option value="cancelado">Cancelado</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractDays">Días planeados</label><input id="rentalContractDays" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractHours">Horas planeadas</label><input id="rentalContractHours" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractKm">Kilómetros incluidos</label><input id="rentalContractKm" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractBase">Valor base</label><input id="rentalContractBase" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractDeposit">Depósito</label><input id="rentalContractDeposit" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractTaxes">Impuestos</label><input id="rentalContractTaxes" type="number" step="0.01" class="form-input" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalContractDiscount">Descuento</label><input id="rentalContractDiscount" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractOrigin">Origen entrega</label><input id="rentalContractOrigin" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalContractReturn">Destino devolución</label><input id="rentalContractReturn" class="form-input"></div>
+        </div>
+        <div class="remember-row" style="flex-wrap:wrap;gap:14px;">
+          <label class="remember-label"><input id="rentalContractGuarantee" type="checkbox"><span>Requiere garantía</span></label>
+          <label class="remember-label"><input id="rentalContractGPS" type="checkbox"><span>GPS activo</span></label>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn">Guardar contrato</button></div>
+      </form>
+      <div id="rentalContractsTable"></div>
+    </section>
+
+    <section id="rentalTab-mantenimientos" class="card rental-tab" hidden>
+      <h2>Mantenimientos y talleres</h2>
+      <form id="rentalMaintenanceForm" class="form">
+        <input type="hidden" id="rentalMaintenanceId">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceAsset">Activo</label><select id="rentalMaintenanceAsset" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceType">Tipo</label><select id="rentalMaintenanceType" class="form-input"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="inspeccion">Inspección</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenancePriority">Prioridad</label><select id="rentalMaintenancePriority" class="form-input"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceStatus">Estado</label><select id="rentalMaintenanceStatus" class="form-input"><option value="abierto">Abierto</option><option value="en_proceso">En proceso</option><option value="cerrado">Cerrado</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceDate">Fecha programada</label><input id="rentalMaintenanceDate" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceProvider">Proveedor / taller</label><input id="rentalMaintenanceProvider" class="form-input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceEstimated">Costo estimado</label><input id="rentalMaintenanceEstimated" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceReal">Costo real</label><input id="rentalMaintenanceReal" type="number" step="0.01" class="form-input" value="0"></div>
+          <div class="form-col"><label class="form-label" for="rentalMaintenanceDescription">Descripción</label><input id="rentalMaintenanceDescription" class="form-input"></div>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn">Guardar mantenimiento</button></div>
+      </form>
+      <div id="rentalMaintenanceTable"></div>
+    </section>
+
+    <section id="rentalTab-mapa" class="card rental-tab" hidden>
+      <h2>Mapa operativo y GPS</h2>
+      <form id="rentalLocationForm" class="form">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalLocationAsset">Activo</label><select id="rentalLocationAsset" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="rentalLocationContract">Contrato</label><select id="rentalLocationContract" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="rentalLocationSource">Fuente</label><select id="rentalLocationSource" class="form-input"><option value="manual">Manual</option><option value="movil">Móvil</option><option value="gps">GPS</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="rentalLocationLat">Latitud</label><input id="rentalLocationLat" type="number" step="0.00000001" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalLocationLng">Longitud</label><input id="rentalLocationLng" type="number" step="0.00000001" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="rentalLocationRef">Referencia</label><input id="rentalLocationRef" class="form-input"></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Registrar ubicación</button>
+          <button type="button" id="rentalUseMyLocation" class="btn secondary">Usar mi GPS</button>
+        </div>
+      </form>
+      <div id="rentalMap" style="height:420px;border-radius:18px;"></div>
+      <div id="rentalLocationsTable"></div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/alquileres.js"></script>
+</body>
+</html>
