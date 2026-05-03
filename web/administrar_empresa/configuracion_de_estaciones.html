@@ -109,6 +109,7 @@
               <option value="small">Pequeño</option>
               <option value="medium" selected>Medio</option>
               <option value="large">Grande</option>
+              <option value="auto_text">Se adapta al texto</option>
             </select>
           </div>
         </div>
@@ -818,7 +819,7 @@
         });
       }
 
-      var validSizes = ['small', 'medium', 'large'];
+      var validSizes = ['small', 'medium', 'large', 'auto_text'];
       var requested = String((cfg && (cfg.card_size || cfg.cardSize)) || '').trim().toLowerCase();
       var cardSize = validSizes.indexOf(requested) !== -1 ? requested : 'medium';
       var cajaEnabledRaw = (cfg && (cfg.caja_enabled !== undefined ? cfg.caja_enabled : cfg.cajaEnabled)) || false;

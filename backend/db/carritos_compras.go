@@ -672,6 +672,9 @@ func resolveCarritoEstadoVenta(estadoCarrito, estadoRegistro, pagadoEn string) s
 	if estadoReg == "" {
 		estadoReg = "activo"
 	}
+	if estadoOp == "anulado" || estadoOp == "anulada" {
+		return "venta_anulada"
+	}
 	if estadoOp == "cerrado" && strings.TrimSpace(pagadoEn) != "" {
 		return "venta_pagada"
 	}
@@ -693,7 +696,7 @@ func normalizeCarritoStationMetricEvent(v string) string {
 	switch event {
 	case "", "venta_pagada":
 		return "venta_pagada"
-	case "cierre_parcial_anulado", "sesion_recuperada":
+	case "cierre_parcial_anulado", "sesion_recuperada", "venta_anulada":
 		return event
 	default:
 		return "operacion"
@@ -1527,6 +1530,81 @@ func CancelCarritoPartialClosure(dbConn *sql.DB, empresaID, carritoID int64, mon
 	return totalPagadoNuevo, devolucionTotalNueva, nil
 }
 
+// CancelCarritoSale anula completamente una venta pagada y libera inventario asociado.
+func CancelCarritoSale(dbConn *sql.DB, empresaID, carritoID int64, motivo, usuario string) (*CarritoCompra, float64, float64, error) {
+	motivo = strings.TrimSpace(motivo)
+	if motivo == "" {
+		return nil, 0, 0, fmt.Errorf("motivo es obligatorio para anular una venta")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+
+	var totalPagadoAnterior float64
+	var devolucionTotalNueva float64
+	err := withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		var pagadoEn string
+		var estadoCarrito string
+		var devolucionActual float64
+		var observacionesActual string
+		if err := tx.QueryRow(`SELECT
+			COALESCE(pagado_en, ''),
+			COALESCE(estado_carrito, 'abierto'),
+			COALESCE(total_pagado, 0),
+			COALESCE(devolucion_total, 0),
+			COALESCE(observaciones, '')
+		FROM carritos_compras
+		WHERE empresa_id = ? AND id = ?
+		LIMIT 1`, empresaID, carritoID).Scan(&pagadoEn, &estadoCarrito, &totalPagadoAnterior, &devolucionActual, &observacionesActual); err != nil {
+			return err
+		}
+
+		estadoCarrito = strings.TrimSpace(strings.ToLower(estadoCarrito))
+		if estadoCarrito == "anulado" || estadoCarrito == "anulada" {
+			return fmt.Errorf("la venta ya esta anulada")
+		}
+		if strings.TrimSpace(pagadoEn) == "" {
+			return fmt.Errorf("solo se puede anular una venta pagada")
+		}
+
+		if err := restoreCarritoItemsStockTx(tx, empresaID, carritoID, "anulacion_venta"); err != nil {
+			return err
+		}
+		if err := revertCodigoDescuentoUsoPorCarritoTx(tx, empresaID, carritoID, "anulada", motivo, usuario); err != nil {
+			return err
+		}
+
+		totalPagadoAnterior = round2(totalPagadoAnterior)
+		devolucionTotalNueva = round2(devolucionActual + totalPagadoAnterior)
+		nota := strings.TrimSpace(observacionesActual)
+		anulacionNota := fmt.Sprintf("[%s] Venta anulada por %s. Motivo: %s", time.Now().Format("2006-01-02 15:04:05"), usuario, motivo)
+		if nota != "" {
+			nota += "\n"
+		}
+		nota += anulacionNota
+
+		_, err := tx.Exec(`UPDATE carritos_compras SET
+			estado = 'inactivo',
+			estado_carrito = 'anulado',
+			total_pagado = 0,
+			devolucion_total = ?,
+			fecha_actualizacion = datetime('now','localtime'),
+			observaciones = ?
+		WHERE empresa_id = ? AND id = ?`, devolucionTotalNueva, nota, empresaID, carritoID)
+		return err
+	})
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	carrito, err := GetCarritoCompraByID(dbConn, empresaID, carritoID)
+	if err != nil {
+		return nil, totalPagadoAnterior, devolucionTotalNueva, err
+	}
+	return carrito, totalPagadoAnterior, devolucionTotalNueva, nil
+}
+
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
 func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, usuarioCreador string) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
@@ -2236,7 +2314,8 @@ func getCarritoItemSnapshotTx(tx *sql.Tx, empresaID, carritoID, itemID int64) (*
 }
 
 func isCarritoCerrado(estadoCarrito string) bool {
-	return strings.EqualFold(strings.TrimSpace(estadoCarrito), "cerrado")
+	estado := strings.TrimSpace(strings.ToLower(estadoCarrito))
+	return estado == "cerrado" || estado == "anulado" || estado == "anulada"
 }
 
 func isItemActivo(estado string) bool {

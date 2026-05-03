@@ -1183,3 +1183,7 @@ Ejecucion de validacion actual (2026-04-05):
 1. Incorporar pruebas UAT de regresion para endpoints sin wrapper de modulo (`usuarios/login`, `establecer_password`, chat IA por cuenta Google).
 2. Definir politica de aprobacion para rutas de lectura sensible en seguridad (`auditoria/eventos`) segun perfil `auditor` vs `admin_empresa`.
 3. Evaluar prueba automatizada E2E del menu dinamico para evitar regresiones de visibilidad por rol.
+
+## Actualizacion 2026-05-03 - Criterio operativo por rol
+
+Para declarar un modulo listo en produccion se debe validar por rol: acceso a la empresa correcta, visibilidad de menu, permiso de lectura, permiso de escritura, accion principal, reporte asociado y auditoria. Los modulos con hardware o proveedor externo requieren prueba adicional con el dispositivo o servicio real: impresoras, cajon monedero, RFID/NFC, GPS, pasarela de pago, facturacion electronica, SMTP, Nextcloud, OnlyOffice e IA.

@@ -3974,6 +3974,7 @@ body.has-floating-menu .header .form-actions{
 #estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 11.4em; --station-card-height: 7.56em; }
 #estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 12.6em; --station-card-height: 8.82em; }
 #estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 15em; --station-card-height: 10.5em; }
+#estacionesGrid.station-size-auto_text{ --station-card-scale: 1; --station-card-min: 14em; --station-card-height: var(--station-card-auto-height, auto); }
 
 #estacionesGrid .portal-card{
   background: var(--station-state-bg, #fff9ef);
@@ -4062,6 +4063,27 @@ body.has-floating-menu .header .form-actions{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+#estacionesGrid.station-size-auto_text{
+  grid-auto-rows: var(--station-card-auto-height, auto);
+}
+
+#estacionesGrid.station-size-auto_text .portal-card,
+#estacionesGrid.station-size-auto_text .portal-card.station-launch-card,
+#estacionesGrid.station-size-auto_text .youtube-station-card,
+#estacionesGrid.station-size-auto_text .notas-station-card,
+#estacionesGrid.station-size-auto_text .ia-pedidos-station-card{
+  height: var(--station-card-auto-height, auto);
+  min-height: var(--station-card-auto-height, 9.5em);
+  overflow: visible;
+}
+
+#estacionesGrid.station-size-auto_text .station-data-value{
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
 }
 
 #estacionesGrid .portal-card p{

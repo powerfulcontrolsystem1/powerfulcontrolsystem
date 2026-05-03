@@ -34,12 +34,16 @@
     <div id="feFirmaCard" class="card is-hidden">
       <h2>Cargar firma electrónica (Colombia / DIAN)</h2>
       <p class="form-help">
-        Sube el archivo de firma privada en formato <code>.pem</code>. Se guarda en la carpeta aislada de esta empresa y se registra como referencia segura.
+        Sube la firma/certificado de la empresa en <code>.pem</code>, <code>.key</code>, <code>.p12</code> o <code>.pfx</code>. Se guarda en la carpeta aislada de esta empresa y se registra como referencia segura.
       </p>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label" for="feFirmaFile">Archivo de firma (.pem)</label>
-          <input id="feFirmaFile" class="form-input" type="file" accept=".pem,text/plain,application/x-pem-file">
+          <label class="form-label" for="feFirmaFile">Archivo de firma/certificado</label>
+          <input id="feFirmaFile" class="form-input" type="file" accept=".pem,.key,.crt,.cer,.p12,.pfx,text/plain,application/x-pem-file,application/x-pkcs12">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="feFirmaPassword">Clave del P12/PFX o llave cifrada</label>
+          <input id="feFirmaPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Opcional">
         </div>
         <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px;">
           <button id="feFirmaUploadBtn" class="btn" type="button">Cargar firma</button>
@@ -48,20 +52,94 @@
       <div id="feFirmaMsg" class="form-help"></div>
     </div>
 
+    <div id="feDianConfigCard" class="card is-hidden">
+      <h2>Configuración DIAN Colombia</h2>
+      <p class="form-help">
+        Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolución, rangos, token y certificado X.509.
+      </p>
+      <form id="feDianConfigForm" class="form">
+        <input type="hidden" id="dian_id">
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">NIT</label><input id="dian_nit" class="form-input" placeholder="900123456"></div>
+          <div class="form-col"><label class="form-label">DV</label><input id="dian_dv" class="form-input" placeholder="0"></div>
+          <div class="form-col"><label class="form-label">Razón social</label><input id="dian_razon_social" class="form-input" placeholder="Empresa S.A.S."></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Ambiente DIAN</label><select id="dian_tipo_ambiente" class="form-input"><option value="habilitacion">Habilitación</option><option value="produccion">Producción</option></select></div>
+          <div class="form-col"><label class="form-label">URL DIAN / proveedor</label><input id="dian_url" class="form-input" placeholder="https://vpfe-hab.dian.gov.co"></div>
+          <div class="form-col"><label class="form-label">TestSetId</label><input id="dian_test_set_id" class="form-input" placeholder="Obligatorio en habilitación"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Software ID</label><input id="dian_software_id" class="form-input" placeholder="ID entregado por DIAN"></div>
+          <div class="form-col"><label class="form-label">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="PIN entregado por DIAN"></div>
+          <div class="form-col"><div class="form-help" style="margin-top:28px;"><label><input id="dian_usar_software_compartido" type="checkbox"> Usar software compartido SaaS</label></div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Prefijo</label><input id="dian_prefijo" class="form-input" placeholder="FE"></div>
+          <div class="form-col"><label class="form-label">Resolución</label><input id="dian_resolucion_numero" class="form-input" placeholder="18760000000000"></div>
+          <div class="form-col"><label class="form-label">Consecutivo actual</label><input id="dian_consecutivo_actual" type="number" min="1" class="form-input" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Resolución desde</label><input id="dian_resolucion_fecha_desde" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label">Resolución hasta</label><input id="dian_resolucion_fecha_hasta" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label">Rango autorizado</label><div style="display:flex; gap:8px;"><input id="dian_rango_desde" type="number" min="1" class="form-input" placeholder="Desde"><input id="dian_rango_hasta" type="number" min="1" class="form-input" placeholder="Hasta"></div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Token emisor (referencia segura)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="env:DIAN_TOKEN_EMPRESA_1 / file:/ruta/token"></div>
+          <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
+          <div class="form-col"><label class="form-label">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" placeholder="Se completa al cargar firma"></div>
+        </div>
+        <div class="form-row"><div class="form-col"><label class="form-label">Observaciones DIAN</label><textarea id="dian_observaciones" class="form-textarea" placeholder="Notas internas de habilitación, producción o soporte"></textarea></div></div>
+        <div class="form-actions">
+          <button id="btnDianConfigGuardar" type="submit" class="btn">Guardar DIAN Colombia</button>
+          <button id="btnDianConfigValidar" type="button" class="btn secondary">Validar checklist</button>
+          <button id="btnDianConfigRecargar" type="button" class="btn secondary">Recargar</button>
+        </div>
+        <div id="feDianConfigMsg" class="form-help"></div>
+        <pre id="feDianConfigResultado" class="form-help pre-output"></pre>
+      </form>
+    </div>
+
     <div id="feDianPruebasCard" class="card is-hidden">
       <h2>Pruebas Dian</h2>
       <p class="form-help">
-        Ejecuta el set de habilitación con 8 facturas electrónicas, 1 nota débito y 1 nota crédito. Antes de enviar valida firma, credenciales, TestSetId, ambiente y transporte configurado.
+        Ejecuta el set de habilitación asignado por DIAN para esta empresa. Antes de enviar valida firma, credenciales, TestSetId, ambiente y transporte configurado.
       </p>
       <div class="form-row">
         <div class="form-col">
           <div class="form-help"><label><input id="feDianPruebasSimular" type="checkbox"> Simular sin enviar a DIAN</label></div>
-          <div class="form-help">El envío real requiere ambiente de habilitación, firma registrada y endpoint compatible.</div>
+          <div class="form-help">El envío real requiere ambiente de habilitación, firma registrada y endpoint compatible. Ajusta las cantidades según el set que DIAN muestre en el portal.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Facturas electrónicas</label>
+          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="8">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas débito</label>
+          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas crédito</label>
+          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Máximo de envíos en esta ejecución</label>
+          <input id="feDianSetMaxEnvios" class="form-input" type="number" min="1" placeholder="Vacío = todo el set">
+        </div>
+        <div class="form-col">
+          <label class="form-label">URL producción DIAN/proveedor</label>
+          <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar producción local">
+        </div>
+        <div class="form-col">
+          <div class="form-help" style="margin-top:28px;"><label><input id="feDianConfirmarHabilitado" type="checkbox"> Confirmo que DIAN ya dejó la empresa habilitada</label></div>
         </div>
       </div>
       <div class="form-actions">
         <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnóstico DIAN</button>
         <button id="btnDianPruebas" type="button" class="btn">Pruebas Dian</button>
+        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar producción local</button>
       </div>
       <div id="feDianPruebasMsg" class="form-help"></div>
       <pre id="feDianPruebasResultado" class="form-help pre-output"></pre>
@@ -538,7 +616,8 @@
       empresaID: 0,
       paisSeleccionado: "",
       paises: [],
-      catalog: []
+      catalog: [],
+      dianConfig: null
     };
 
     const advancedConfigState = {
@@ -592,6 +671,29 @@
       } catch (_) {
         box.textContent = String(data);
       }
+    }
+
+    function numberInputValue(id, fallback) {
+      var el = document.getElementById(id);
+      var value = el ? Number(el.value || 0) : 0;
+      if (!Number.isFinite(value) || value < 0) return fallback;
+      return Math.trunc(value);
+    }
+
+    function collectDianSetPayloadBase() {
+      var facturas = numberInputValue("feDianSetFacturas", 8);
+      var notasDebito = numberInputValue("feDianSetNotasDebito", 1);
+      var notasCredito = numberInputValue("feDianSetNotasCredito", 1);
+      var maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
+      var payload = {
+        empresa_id: Number(state.empresaID),
+        facturas_electronicas: facturas,
+        notas_debito: notasDebito,
+        notas_credito: notasCredito,
+        total_documentos: facturas + notasDebito + notasCredito
+      };
+      if (maxEnvios > 0) payload.max_envios = maxEnvios;
+      return payload;
     }
 
     function setOperationResult(data) {
@@ -830,6 +932,10 @@
         if (firmaCard) {
           firmaCard.classList.toggle("is-hidden", codeU !== "CO");
         }
+        var dianConfigCard = document.getElementById("feDianConfigCard");
+        if (dianConfigCard) {
+          dianConfigCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
         var pruebasCard = document.getElementById("feDianPruebasCard");
         if (pruebasCard) {
           pruebasCard.classList.toggle("is-hidden", codeU !== "CO");
@@ -898,9 +1004,140 @@
       }
     }
 
+    function setDianConfigMessage(text, isError) {
+      var el = document.getElementById("feDianConfigMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function setDianConfigResult(data) {
+      var box = document.getElementById("feDianConfigResultado");
+      if (!box) return;
+      if (!data) {
+        box.textContent = "";
+        return;
+      }
+      try {
+        box.textContent = JSON.stringify(data, null, 2);
+      } catch (_) {
+        box.textContent = String(data || "");
+      }
+    }
+
+    function asBool(v) {
+      if (v === true || v === 1) return true;
+      var s = txt(v).toLowerCase();
+      return s === "1" || s === "true" || s === "si" || s === "yes" || s === "activo";
+    }
+
+    function setDianConfigFormData(cfg) {
+      cfg = cfg || {};
+      state.dianConfig = cfg && cfg.id ? cfg : null;
+      var set = function(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.value = txt(value);
+      };
+      set("dian_id", cfg.id || "");
+      set("dian_nit", cfg.nit || document.getElementById("adv_nit") && document.getElementById("adv_nit").value || document.getElementById("identificador_fiscal") && document.getElementById("identificador_fiscal").value);
+      set("dian_dv", cfg.digito_verificacion || document.getElementById("adv_digito_verificacion") && document.getElementById("adv_digito_verificacion").value);
+      set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
+      set("dian_tipo_ambiente", cfg.tipo_ambiente || document.getElementById("adv_ambiente_fe") && document.getElementById("adv_ambiente_fe").value || "habilitacion");
+      set("dian_url", cfg.url_dian || "https://vpfe-hab.dian.gov.co");
+      set("dian_test_set_id", cfg.test_set_id);
+      set("dian_software_id", cfg.software_id);
+      set("dian_software_pin", cfg.software_pin);
+      set("dian_prefijo", cfg.prefijo || document.getElementById("adv_prefijo_factura") && document.getElementById("adv_prefijo_factura").value || document.getElementById("prefijo_factura") && document.getElementById("prefijo_factura").value);
+      set("dian_resolucion_numero", cfg.resolucion_numero || document.getElementById("adv_resolucion_numero") && document.getElementById("adv_resolucion_numero").value || document.getElementById("resolucion_numero") && document.getElementById("resolucion_numero").value);
+      set("dian_resolucion_fecha_desde", asDateValue(cfg.resolucion_fecha_desde || document.getElementById("adv_resolucion_fecha_desde") && document.getElementById("adv_resolucion_fecha_desde").value));
+      set("dian_resolucion_fecha_hasta", asDateValue(cfg.resolucion_fecha_hasta || document.getElementById("adv_resolucion_fecha_hasta") && document.getElementById("adv_resolucion_fecha_hasta").value));
+      set("dian_rango_desde", cfg.rango_desde || document.getElementById("adv_consecutivo_desde") && document.getElementById("adv_consecutivo_desde").value);
+      set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
+      set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
+      set("dian_token_emisor_ref", cfg.token_emisor_ref);
+      set("dian_certificado_url", cfg.certificado_url);
+      set("dian_certificado_clave_ref", cfg.certificado_clave_ref);
+      set("dian_observaciones", cfg.observaciones);
+      var shared = document.getElementById("dian_usar_software_compartido");
+      if (shared) shared.checked = asBool(cfg.usar_software_compartido);
+    }
+
+    function collectDianConfigPayload() {
+      var id = Number(document.getElementById("dian_id").value || 0);
+      var payload = {
+        empresa_id: Number(state.empresaID),
+        nit: txt(document.getElementById("dian_nit").value),
+        digito_verificacion: txt(document.getElementById("dian_dv").value),
+        razon_social: txt(document.getElementById("dian_razon_social").value),
+        tipo_ambiente: txt(document.getElementById("dian_tipo_ambiente").value) || "habilitacion",
+        software_id: txt(document.getElementById("dian_software_id").value),
+        software_pin: txt(document.getElementById("dian_software_pin").value),
+        usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
+        test_set_id: txt(document.getElementById("dian_test_set_id").value),
+        prefijo: txt(document.getElementById("dian_prefijo").value),
+        resolucion_numero: txt(document.getElementById("dian_resolucion_numero").value),
+        resolucion_fecha_desde: txt(document.getElementById("dian_resolucion_fecha_desde").value),
+        resolucion_fecha_hasta: txt(document.getElementById("dian_resolucion_fecha_hasta").value),
+        rango_desde: Number(document.getElementById("dian_rango_desde").value || 0),
+        rango_hasta: Number(document.getElementById("dian_rango_hasta").value || 0),
+        consecutivo_actual: Number(document.getElementById("dian_consecutivo_actual").value || 0),
+        url_dian: txt(document.getElementById("dian_url").value),
+        token_emisor_ref: txt(document.getElementById("dian_token_emisor_ref").value),
+        certificado_url: txt(document.getElementById("dian_certificado_url").value),
+        certificado_clave_ref: txt(document.getElementById("dian_certificado_clave_ref").value),
+        observaciones: txt(document.getElementById("dian_observaciones").value),
+        estado: "activo"
+      };
+      if (id > 0) payload.id = id;
+      return payload;
+    }
+
+    async function loadDianConfig() {
+      if (!state.empresaID) return null;
+      var res = await fetch("/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&include_inactive=1&limit=1", { credentials: "same-origin" });
+      await ensureOk(res);
+      var data = await readJSONResponse(res);
+      var item = Array.isArray(data) && data.length ? data[0] : null;
+      setDianConfigFormData(item || {});
+      return item;
+    }
+
+    async function saveDianConfig() {
+      var payload = collectDianConfigPayload();
+      if (!payload.empresa_id || !payload.nit || !payload.razon_social || !payload.tipo_ambiente) {
+        throw new Error("NIT, razon social y ambiente DIAN son obligatorios");
+      }
+      var isUpdate = Number(payload.id || 0) > 0;
+      var url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID);
+      if (isUpdate) url += "&id=" + encodeURIComponent(payload.id);
+      var res = await fetch(url, {
+        method: isUpdate ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      if (data && data.item) setDianConfigFormData(data.item);
+      return data;
+    }
+
+    async function validarDianConfig() {
+      var res = await fetch("/api/empresa/facturacion_electronica/dian?action=validar_credenciales&empresa_id=" + encodeURIComponent(state.empresaID), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(collectDianConfigPayload())
+      });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      return data;
+    }
+
     (function initFirmaUpload() {
       var btn = document.getElementById("feFirmaUploadBtn");
       var input = document.getElementById("feFirmaFile");
+      var passwordInput = document.getElementById("feFirmaPassword");
       var msg = document.getElementById("feFirmaMsg");
       if (!btn || !input) return;
 
@@ -919,7 +1156,7 @@
           }
           var file = input.files && input.files[0];
           if (!file) {
-            setMsg("Selecciona un archivo .pem.", true);
+            setMsg("Selecciona un archivo de firma .pem, .key, .p12 o .pfx.", true);
             return;
           }
           btn.disabled = true;
@@ -928,6 +1165,9 @@
           var fd = new FormData();
           fd.append("empresa_id", String(state.empresaID));
           fd.append("archivo_firma", file, file.name);
+          if (passwordInput && txt(passwordInput.value)) {
+            fd.append("password_firma", txt(passwordInput.value));
+          }
 
           var res = await fetch("/api/empresa/facturacion_electronica/dian?action=subir_firma&empresa_id=" + encodeURIComponent(state.empresaID), {
             method: "POST",
@@ -941,6 +1181,9 @@
             throw new Error(err);
           }
           setMsg("Firma cargada y guardada correctamente.", false);
+          if (typeof loadDianConfig === "function") {
+            loadDianConfig().catch(function() {});
+          }
         } catch (e) {
           setMsg(e && e.message ? e.message : "No se pudo cargar la firma.", true);
         } finally {
@@ -1374,14 +1617,18 @@
         return;
       }
       const simular = !!document.getElementById("feDianPruebasSimular").checked;
-      if (!simular && !window.confirm("Esto ejecutará Pruebas Dian reales en ambiente de habilitación. ¿Continuar?")) {
+      const basePayload = collectDianSetPayloadBase();
+      if (basePayload.total_documentos <= 0) {
+        setDianPruebasMessage("Define al menos un documento para el set DIAN.", true);
         return;
       }
-      const payload = {
-        empresa_id: Number(state.empresaID),
+      if (!simular && !window.confirm("Esto ejecutará Pruebas Dian reales en ambiente de habilitación. Verifica que el set coincida con lo que DIAN asignó a esta empresa. ¿Continuar?")) {
+        return;
+      }
+      const payload = Object.assign(basePayload, {
         simular: simular,
         detener_en_error: true
-      };
+      });
       setDianPruebasMessage(simular ? "Simulando set DIAN..." : "Ejecutando Pruebas Dian...", false);
       setDianPruebasResult(null);
       try {
@@ -1407,12 +1654,53 @@
       }
     }
 
+    async function activarProduccionDianLocal() {
+      if (!state.empresaID) {
+        setDianPruebasMessage("empresa_id es obligatorio", true);
+        return;
+      }
+      var confirmado = !!document.getElementById("feDianConfirmarHabilitado").checked;
+      if (!confirmado && !window.confirm("Este paso NO cambia la plataforma DIAN; solo cambia la configuración local a producción. Debes verificar antes que DIAN ya dejó la empresa habilitada. ¿Continuar?")) {
+        return;
+      }
+      var payload = {
+        empresa_id: Number(state.empresaID),
+        confirmar_habilitacion_dian: confirmado,
+        url_dian_produccion: txt(document.getElementById("feDianProduccionURL").value)
+      };
+      setDianPruebasMessage("Activando producción local DIAN...", false);
+      setDianPruebasResult(null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=activar_produccion_local&empresa_id=" + encodeURIComponent(state.empresaID);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        });
+        const data = await readJSONResponse(res);
+        setDianPruebasResult(data);
+        setDianPruebasMessage(data && data.ok ? "Producción local DIAN activada. Verifica resolución y rangos reales antes de emitir." : "No se pudo activar producción local.", !(data && data.ok));
+        if (data && data.ok) {
+          loadDianConfig().catch(function() {});
+        }
+      } catch (err) {
+        setDianPruebasResult(err && err.data ? err.data : null);
+        setDianPruebasMessage(err && err.message ? err.message : "No se pudo activar producción local DIAN", true);
+      }
+    }
+
       document.getElementById("pais_codigo").addEventListener("change", function() {
       const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
       if (code) {
         loadCountryConfig(code).catch(function(err) {
           setMessage(err.message || "No se pudo cargar configuración de país", true);
         });
+        if (code === "CO") {
+          loadDianConfig().catch(function(err) {
+            setDianConfigMessage(err && err.message ? err.message : "No se pudo cargar DIAN Colombia", true);
+          });
+        }
       } else {
         applyVistaForPais("", null);
       }
@@ -1421,7 +1709,12 @@
     document.getElementById("detectBtn").addEventListener("click", function() {
       detectCountry().then(function(info) {
         if (info && info.pais_codigo) {
-          return loadCountryConfig(info.pais_codigo);
+          return loadCountryConfig(info.pais_codigo).then(function() {
+            if (String(info.pais_codigo).toUpperCase() === "CO") {
+              return loadDianConfig();
+            }
+            return null;
+          });
         }
       }).catch(function(err) {
         setMessage(err.message || "No se pudo detectar el país", true);
@@ -1456,6 +1749,13 @@
       ejecutarDianPruebas();
     });
 
+    var btnDianActivarProduccion = document.getElementById("btnDianActivarProduccion");
+    if (btnDianActivarProduccion) {
+      btnDianActivarProduccion.addEventListener("click", function() {
+        activarProduccionDianLocal();
+      });
+    }
+
     var btnDianCheckConexion = document.getElementById("btnDianCheckConexion");
     if (btnDianCheckConexion) {
       btnDianCheckConexion.addEventListener("click", function() {
@@ -1472,6 +1772,49 @@
         setDianOfflineMessage("Validando conexión y procesando cola...", false);
         checkDianConnection(true).catch(function(err) {
           setDianOfflineMessage(err && err.message ? err.message : "No se pudo procesar la cola DIAN.", true);
+        });
+      });
+    }
+
+    var dianConfigForm = document.getElementById("feDianConfigForm");
+    if (dianConfigForm) {
+      dianConfigForm.addEventListener("submit", function(ev) {
+        ev.preventDefault();
+        setDianConfigMessage("Guardando configuración DIAN Colombia...", false);
+        setDianConfigResult(null);
+        saveDianConfig().then(function(data) {
+          setDianConfigResult(data);
+          setDianConfigMessage("Configuración DIAN guardada. Ejecuta validar checklist para revisar faltantes.", false);
+        }).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnDianConfigValidar = document.getElementById("btnDianConfigValidar");
+    if (btnDianConfigValidar) {
+      btnDianConfigValidar.addEventListener("click", function() {
+        setDianConfigMessage("Validando credenciales y checklist DIAN...", false);
+        setDianConfigResult(null);
+        validarDianConfig().then(function(data) {
+          setDianConfigResult(data);
+          setDianConfigMessage(data && data.ok ? "Checklist DIAN sin faltantes críticos." : "Checklist DIAN cargado; revisa faltantes e issues.", !(data && data.ok));
+        }).catch(function(err) {
+          setDianConfigResult(err && err.data ? err.data : null);
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo validar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnDianConfigRecargar = document.getElementById("btnDianConfigRecargar");
+    if (btnDianConfigRecargar) {
+      btnDianConfigRecargar.addEventListener("click", function() {
+        setDianConfigMessage("Recargando configuración DIAN...", false);
+        loadDianConfig().then(function(data) {
+          setDianConfigResult(data || {});
+          setDianConfigMessage(data ? "Configuración DIAN recargada." : "No hay configuración DIAN todavía; completa el formulario y guarda.", false);
+        }).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo recargar DIAN Colombia", true);
         });
       });
     }
@@ -1584,6 +1927,9 @@
         await loadCountries();
         const info = await detectCountry();
         await loadCountryConfig((info && info.pais_codigo) || document.getElementById("pais_codigo").value || "CO");
+        if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
+          await loadDianConfig();
+        }
         await loadList();
       } catch (err) {
         setMessage(err.message || "No se pudo inicializar el módulo", true);

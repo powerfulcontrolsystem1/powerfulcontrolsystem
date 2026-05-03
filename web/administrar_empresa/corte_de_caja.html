@@ -1,45 +1,139 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Corte de caja</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:18px; align-items:stretch; }
+    .cash-close-panel { border:1px solid rgba(15,23,42,.1); border-radius:22px; padding:18px; background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(240,247,255,.9)); box-shadow:0 18px 50px rgba(15,23,42,.08); }
+    .cash-close-panel.dark { background:linear-gradient(135deg,#101828,#172033); color:#f8fafc; }
+    .cash-close-report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:10px; }
+    .cash-report-check { display:flex; gap:10px; align-items:flex-start; border:1px solid rgba(15,23,42,.1); border-radius:16px; padding:10px; background:rgba(255,255,255,.82); }
+    .cash-report-check input { margin-top:3px; }
+    .cash-report-check strong { display:block; font-size:.92rem; }
+    .cash-report-check span { display:block; font-size:.78rem; color:#64748b; }
+    .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .cash-kpi { border-radius:18px; padding:13px; background:#0f172a; color:white; min-height:92px; }
+    .cash-kpi:nth-child(2) { background:#064e3b; }
+    .cash-kpi:nth-child(3) { background:#7c2d12; }
+    .cash-kpi:nth-child(4) { background:#1e3a8a; }
+    .cash-kpi span { display:block; font-size:.75rem; opacity:.8; }
+    .cash-kpi strong { display:block; font-size:1.2rem; margin-top:8px; }
+    .cash-kpi small { display:block; opacity:.75; margin-top:4px; }
+    .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
+    .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
+    .cash-close-stamp { border:1px dashed rgba(15,23,42,.28); border-radius:16px; padding:10px 12px; font-size:.85rem; color:#334155; background:rgba(248,250,252,.8); }
+    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis { grid-template-columns:1fr; } }
+    @media print {
+      .no-print { display:none !important; }
+      body.corte-caja-page { background:white !important; }
+      .corte-caja-report { box-shadow:none !important; border:0 !important; }
+      .cash-close-stamp { break-inside:avoid; }
+    }
+  </style>
 </head>
-<body class="empresa-subpage corte-caja-page">
+<body class="empresa-subpage corte-caja-page report-print-carta">
   <div class="container">
     <section class="card empresa-section no-print">
       <div class="empresa-section-header">
         <div>
-          <h1 class="empresa-section-title">Corte de caja</h1>
-          <p class="form-help">Reporte del turno del cajero con ventas, movimientos, métodos de pago y alertas de sensores.</p>
+          <h1 class="empresa-section-title">Corte de caja profesional</h1>
+          <p class="form-help">Cierra turno, concilia efectivo, revisa ventas/anulaciones y elige exactamente que reportes se imprimen.</p>
         </div>
-        <div class="empresa-inline-actions">
+        <div class="cash-close-actions">
           <button id="btnGenerar" class="btn" type="button">Generar corte</button>
-          <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir reporte</button>
+          <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
+          <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
         </div>
       </div>
 
-      <div class="form">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="desde">Desde</label>
-            <input id="desde" type="datetime-local" class="form-input">
+      <div class="cash-close-hero">
+        <div class="cash-close-panel">
+          <div class="form">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="desde">Desde</label>
+                <input id="desde" type="datetime-local" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="hasta">Hasta</label>
+                <input id="hasta" type="datetime-local" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="usuario">Cajero / usuario</label>
+                <input id="usuario" class="form-input" placeholder="Vacio: todos los usuarios">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cajaCodigo">Caja</label>
+                <input id="cajaCodigo" class="form-input" value="CAJA-PRINCIPAL">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="turno">Turno</label>
+                <select id="turno" class="form-input">
+                  <option value="general">General</option>
+                  <option value="manana">Manana</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="noche">Noche</option>
+                  <option value="madrugada">Madrugada</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="apertura">Efectivo inicial</label>
+                <input id="apertura" type="number" step="0.01" min="0" class="form-input" value="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cajaFisica">Caja fisica contada</label>
+                <input id="cajaFisica" type="number" step="0.01" min="0" class="form-input" value="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="modoVista">Modo de visualizacion</label>
+                <select id="modoVista" class="form-input">
+                  <option value="carta">Carta completo</option>
+                  <option value="ejecutivo">Ejecutivo compacto</option>
+                  <option value="pos">Ticket POS 80mm</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="umbralIncidencia">Umbral incidencia caja</label>
+                <input id="umbralIncidencia" type="number" step="0.01" min="0" class="form-input" value="1000">
+              </div>
+              <div class="form-col form-col-wide">
+                <label class="form-label" for="observaciones">Observaciones de cierre</label>
+                <input id="observaciones" class="form-input" placeholder="Ej: sobrante autorizado, cambio de turno, novedad de caja">
+              </div>
+            </div>
           </div>
-          <div class="form-col">
-            <label class="form-label" for="hasta">Hasta</label>
-            <input id="hasta" type="datetime-local" class="form-input">
+
+          <h3 class="section-heading">Reportes a imprimir al cerrar</h3>
+          <div id="reportSelector" class="cash-close-report-grid">
+            <label class="cash-report-check"><input type="checkbox" value="resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="ventas" checked><span><strong>Ventas del turno</strong><span>Comprobantes, metodo y cajero.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas y devoluciones.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="movimientos" checked><span><strong>Movimientos</strong><span>Ingresos, egresos y metodo de pago.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="sensores" checked><span><strong>Control motel</strong><span>Habitaciones ocupadas sin factura.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
           </div>
-          <div class="form-col">
-            <label class="form-label" for="usuario">Cajero / usuario</label>
-            <input id="usuario" class="form-input" placeholder="Vacío: todos los usuarios">
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="apertura">Efectivo inicial</label>
-            <input id="apertura" type="number" step="0.01" min="0" class="form-input" value="0">
-          </div>
+          <div id="msg" class="form-help" style="margin-top:12px"></div>
         </div>
-        <div id="msg" class="form-help"></div>
+
+        <aside class="cash-close-panel dark">
+          <h2 class="empresa-section-title">Lectura rapida</h2>
+          <p class="form-help" style="color:#cbd5e1">Cuando generes el corte, estos indicadores se actualizan para validar caja antes de guardar.</p>
+          <div id="quickKpis" class="cash-close-kpis">
+            <div class="cash-kpi"><span>Ventas</span><strong>COP 0</strong><small>0 operaciones</small></div>
+            <div class="cash-kpi"><span>Efectivo esperado</span><strong>COP 0</strong><small>Incluye apertura</small></div>
+            <div class="cash-kpi"><span>Anulaciones</span><strong>COP 0</strong><small>0 reversos</small></div>
+            <div class="cash-kpi"><span>Diferencia</span><strong>COP 0</strong><small>Fisica vs teorica</small></div>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -54,24 +148,40 @@
 
       <div id="summaryGrid" class="corte-summary-grid"></div>
 
-      <div class="corte-report-section">
+      <div class="corte-report-section" data-section="movimientos">
         <h3 class="section-heading">Movimientos agrupados</h3>
         <div id="movimientosBox" class="table-wrap form-help">Sin datos generados.</div>
       </div>
 
-      <div class="corte-report-section">
+      <div class="corte-report-section" data-section="ventas">
         <h3 class="section-heading">Ventas del turno</h3>
         <div id="ventasBox" class="table-wrap form-help">Sin datos generados.</div>
       </div>
 
-      <div class="corte-report-section">
+      <div class="corte-report-section" data-section="anulaciones">
+        <h3 class="section-heading">Anulaciones del turno</h3>
+        <div id="anulacionesBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="items">
         <h3 class="section-heading">Productos y servicios</h3>
         <div id="itemsBox" class="table-wrap form-help">Sin datos generados.</div>
       </div>
 
-      <div class="corte-report-section">
+      <div class="corte-report-section" data-section="sensores">
         <h3 class="section-heading">Habitaciones ocupadas sin factura</h3>
-        <div id="sensoresBox" class="table-wrap form-help">Solo se evalúa para empresas tipo motel con sensores configurados.</div>
+        <div id="sensoresBox" class="table-wrap form-help">Solo se evalua para empresas tipo motel con sensores configurados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="auditoria">
+        <h3 class="section-heading">Auditoria de cierre</h3>
+        <div class="cash-close-stamp">
+          <div><strong>Caja:</strong> <span id="auditCaja">CAJA-PRINCIPAL</span></div>
+          <div><strong>Turno:</strong> <span id="auditTurno">general</span></div>
+          <div><strong>Responsable:</strong> <span id="auditUsuario">Sistema</span></div>
+          <div><strong>Observaciones:</strong> <span id="auditObs">Sin observaciones.</span></div>
+          <div style="margin-top:18px"><strong>Firma responsable:</strong> ________________________________</div>
+        </div>
       </div>
 
       <div class="corte-final-note">
@@ -102,12 +212,7 @@
       }
     } catch (_) {}
     try {
-      var candidates = [
-        sessionStorage.getItem('active_empresa_id'),
-        sessionStorage.getItem('empresa_id'),
-        localStorage.getItem('active_empresa_id'),
-        localStorage.getItem('empresa_id')
-      ];
+      var candidates = [sessionStorage.getItem('active_empresa_id'), sessionStorage.getItem('empresa_id'), localStorage.getItem('active_empresa_id'), localStorage.getItem('empresa_id')];
       for (var i = 0; i < candidates.length; i += 1) {
         var parsed = parsePositiveInt(candidates[i]);
         if (parsed > 0) return parsed;
@@ -121,21 +226,13 @@
   var printFormat = 'carta';
 
   function escapeHtml(v) {
-    return String(v == null ? '' : v)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function money(value, currency) {
     var cur = String(currency || 'COP').trim() || 'COP';
-    try {
-      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: cur, minimumFractionDigits: 2 }).format(Number(value || 0));
-    } catch (_) {
-      return cur + ' ' + Number(value || 0).toFixed(2);
-    }
+    try { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: cur, minimumFractionDigits: 2 }).format(Number(value || 0)); }
+    catch (_) { return cur + ' ' + Number(value || 0).toFixed(2); }
   }
 
   function formatDateTime(raw) {
@@ -143,23 +240,28 @@
     if (!r) return '';
     var d = new Date(r.indexOf('T') >= 0 ? r : r.replace(' ', 'T'));
     if (Number.isNaN(d.getTime())) return r;
-    return d.toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString('es-CO', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
   }
 
-  async function requestJSON(url) {
-    var res = await fetch(url, { credentials: 'same-origin' });
+  async function requestJSON(url, options) {
+    var res = await fetch(url, Object.assign({ credentials:'same-origin' }, options || {}));
     var text = await res.text();
     var data = null;
     try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
-    if (!res.ok) {
-      throw new Error((data && data.error) || (typeof data === 'string' ? data : '') || ('HTTP ' + res.status));
-    }
+    if (!res.ok) throw new Error((data && data.error) || (typeof data === 'string' ? data : '') || ('HTTP ' + res.status));
     return data;
+  }
+
+  function selectedReports() {
+    var boxes = document.querySelectorAll('#reportSelector input[type="checkbox"]:checked');
+    var out = Array.prototype.map.call(boxes, function(box) { return box.value; });
+    return out.length ? out : ['resumen'];
   }
 
   function normalizePrintFormat(value) {
     var v = String(value || '').trim().toLowerCase();
-    if (v === 'pos' || v === 'ticket' || v === 'pequena' || v === 'pequeña') return 'pos';
+    if (v === 'pos' || v === 'ticket') return 'pos';
+    if (v === 'ejecutivo' || v === 'compacto') return 'ejecutivo';
     return 'carta';
   }
 
@@ -167,28 +269,15 @@
     printFormat = normalizePrintFormat(format);
     document.body.classList.toggle('report-print-pos', printFormat === 'pos');
     document.body.classList.toggle('report-print-carta', printFormat !== 'pos');
-
+    document.body.classList.toggle('report-print-ejecutivo', printFormat === 'ejecutivo');
     var style = document.getElementById('dynamicPrintPageSize');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'dynamicPrintPageSize';
-      document.head.appendChild(style);
-    }
-    style.textContent = printFormat === 'pos'
-      ? '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}}'
-      : '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto}}';
-  }
-
-  async function loadPrintFormatConfig() {
-    if (!empresaId) {
-      applyPrintFormat('carta');
-      return;
-    }
-    try {
-      var cfg = await requestJSON('/api/empresa/finanzas/configuracion?empresa_id=' + encodeURIComponent(empresaId));
-      applyPrintFormat(cfg && cfg.formato_impresion);
-    } catch (_) {
-      applyPrintFormat('carta');
+    if (!style) { style = document.createElement('style'); style.id = 'dynamicPrintPageSize'; document.head.appendChild(style); }
+    if (printFormat === 'pos') {
+      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}}';
+    } else if (printFormat === 'ejecutivo') {
+      style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
+    } else {
+      style.textContent = '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto}}';
     }
   }
 
@@ -204,22 +293,39 @@
     return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
   }
 
+  function updateQuickKpis(resumen) {
+    var cur = resumen.moneda || 'COP';
+    var teorica = Number(resumen.efectivo_esperado_caja || 0);
+    var fisica = Number(document.getElementById('cajaFisica').value || 0);
+    var diff = teorica - fisica;
+    var cards = [
+      ['Ventas', money(resumen.ventas_total || 0, cur), String(resumen.ventas_cantidad || 0) + ' operaciones'],
+      ['Efectivo esperado', money(teorica, cur), 'Incluye apertura y movimientos'],
+      ['Anulaciones', money(resumen.ventas_anuladas_total || 0, cur), String(resumen.ventas_anuladas_cantidad || 0) + ' reversos'],
+      ['Diferencia', money(diff, cur), 'Teorica menos fisica']
+    ];
+    document.getElementById('quickKpis').innerHTML = cards.map(function(card) {
+      return '<div class="cash-kpi"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></div>';
+    }).join('');
+  }
+
   function renderSummary(resumen) {
     var cur = resumen.moneda || 'COP';
     var cards = [
       ['Ventas', String(resumen.ventas_cantidad || 0), money(resumen.ventas_total || 0, cur)],
+      ['Anulaciones', String(resumen.ventas_anuladas_cantidad || 0), money(resumen.ventas_anuladas_total || 0, cur)],
       ['Efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo'],
-      ['Tarjetas', money(resumen.tarjetas_ventas || 0, cur), 'Crédito y débito'],
+      ['Tarjetas', money(resumen.tarjetas_ventas || 0, cur), 'Credito y debito'],
       ['Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios'],
-      ['Productos', money(resumen.total_productos || 0, cur), 'Total vendido'],
-      ['Servicios', money(resumen.total_servicios || 0, cur), 'Total vendido'],
       ['Mov. efectivo', money((resumen.ingresos_efectivo || 0) - (resumen.egresos_efectivo || 0), cur), 'Ingresos menos egresos'],
+      ['Productos', money(resumen.total_productos || 0, cur), 'Total vendido'],
       ['Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado']
     ];
     document.getElementById('summaryGrid').innerHTML = cards.map(function(card) {
       return '<article class="corte-summary-card"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></article>';
     }).join('');
     document.getElementById('efectivoFinal').textContent = money(resumen.efectivo_esperado_caja || 0, cur);
+    updateQuickKpis(resumen);
   }
 
   function renderTable(boxId, columns, rows, emptyText) {
@@ -230,9 +336,7 @@
       return;
     }
     box.className = 'table-wrap';
-    var html = '<table class="table table-full"><thead><tr>' + columns.map(function(c) {
-      return '<th>' + escapeHtml(c.label) + '</th>';
-    }).join('') + '</tr></thead><tbody>';
+    var html = '<table class="table table-full"><thead><tr>' + columns.map(function(c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>';
     rows.forEach(function(row) {
       html += '<tr>' + columns.map(function(c) {
         var value = typeof c.value === 'function' ? c.value(row) : row[c.key];
@@ -243,72 +347,111 @@
     box.innerHTML = html;
   }
 
+  function applySectionVisibility(payload) {
+    var enabled = payload && payload.secciones ? payload.secciones : {};
+    var reports = selectedReports();
+    reports.forEach(function(r) { enabled[r] = true; });
+    document.getElementById('summaryGrid').hidden = enabled.resumen === false;
+    document.querySelectorAll('.corte-report-section[data-section]').forEach(function(section) {
+      var key = section.getAttribute('data-section');
+      section.hidden = !enabled[key];
+    });
+  }
+
   function renderReport(payload) {
     var resumen = payload.resumen || {};
     var cur = resumen.moneda || 'COP';
     document.getElementById('reportTitle').textContent = 'Corte de caja - ' + (resumen.empresa_nombre || 'Empresa');
-    document.getElementById('reportMeta').textContent =
-      'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) +
-      ' | Usuario: ' + (resumen.usuario_filtro || 'Todos') +
-      ' | Generado: ' + formatDateTime(payload.generado_en) +
-      ' | Hoja: ' + (printFormat === 'pos' ? 'pequeña/POS' : 'grande/carta');
+    document.getElementById('reportMeta').textContent = 'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) + ' | Usuario: ' + (resumen.usuario_filtro || 'Todos') + ' | Generado: ' + formatDateTime(payload.generado_en) + ' | Vista: ' + printFormat;
     renderSummary(resumen);
 
     renderTable('movimientosBox', [
-      { label: 'Tipo', key: 'tipo' },
-      { label: 'Método', key: 'metodo' },
-      { label: 'Categoría', key: 'categoria' },
-      { label: 'Usuario', key: 'usuario' },
-      { label: 'Cantidad', key: 'cantidad' },
-      { label: 'Total', value: function(r) { return money(r.total || 0, cur); } }
+      { label:'Tipo', key:'tipo' }, { label:'Metodo', key:'metodo' }, { label:'Categoria', key:'categoria' }, { label:'Usuario', key:'usuario' }, { label:'Cantidad', key:'cantidad' }, { label:'Total', value:function(r){ return money(r.total || 0, cur); } }
     ], payload.movimientos || [], 'No hay movimientos financieros agrupados en este rango.');
 
     renderTable('ventasBox', [
-      { label: 'Fecha', value: function(r) { return formatDateTime(r.fecha_pago); } },
-      { label: 'Código', key: 'codigo' },
-      { label: 'Estación', value: function(r) { return r.estacion_nombre || r.nombre || ''; } },
-      { label: 'Cajero', key: 'cajero' },
-      { label: 'Método', key: 'metodo_pago' },
-      { label: 'Total', value: function(r) { return money((r.total_pagado || r.total || 0), r.moneda || cur); } }
+      { label:'Fecha', value:function(r){ return formatDateTime(r.fecha_pago); } }, { label:'Codigo', key:'codigo' }, { label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } }, { label:'Cajero', key:'cajero' }, { label:'Metodo', key:'metodo_pago' }, { label:'Total', value:function(r){ return money((r.total_pagado || r.total || 0), r.moneda || cur); } }
     ], payload.ventas || [], 'No hay ventas facturadas en este rango.');
 
+    renderTable('anulacionesBox', [
+      { label:'Fecha', value:function(r){ return formatDateTime(r.fecha_pago); } }, { label:'Codigo', key:'codigo' }, { label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } }, { label:'Responsable', key:'cajero' }, { label:'Metodo', key:'metodo_pago' }, { label:'Anulado', value:function(r){ return money((r.devolucion || r.total_pagado || r.total || 0), r.moneda || cur); } }
+    ], payload.anulaciones || [], 'No hay anulaciones en este rango.');
+
     renderTable('itemsBox', [
-      { label: 'Tipo', key: 'tipo' },
-      { label: 'Cantidad', value: function(r) { return Number(r.cantidad || 0).toFixed(2); } },
-      { label: 'Total', value: function(r) { return money(r.total || 0, cur); } }
+      { label:'Tipo', key:'tipo' }, { label:'Cantidad', value:function(r){ return Number(r.cantidad || 0).toFixed(2); } }, { label:'Total', value:function(r){ return money(r.total || 0, cur); } }
     ], payload.items_por_tipo || [], 'No hay items vendidos en este rango.');
 
     renderTable('sensoresBox', [
-      { label: 'Habitación', value: function(r) { return r.estacion_nombre || ('Habitación ' + r.estacion_id); } },
-      { label: 'Sensor', key: 'device_id' },
-      { label: 'Estado', key: 'estado_sensor' },
-      { label: 'Última lectura', value: function(r) { return formatDateTime(r.ultima_lectura); } },
-      { label: 'Observación', key: 'motivo' }
+      { label:'Habitacion', value:function(r){ return r.estacion_nombre || ('Habitacion ' + r.estacion_id); } }, { label:'Sensor', key:'device_id' }, { label:'Estado', key:'estado_sensor' }, { label:'Ultima lectura', value:function(r){ return formatDateTime(r.ultima_lectura); } }, { label:'Observacion', key:'motivo' }
     ], payload.sensores_sin_factura || [], 'No hay habitaciones ocupadas por sensor sin factura en este corte.');
+
+    document.getElementById('auditCaja').textContent = document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL';
+    document.getElementById('auditTurno').textContent = document.getElementById('turno').value || 'general';
+    document.getElementById('auditUsuario').textContent = document.getElementById('usuario').value || 'Todos';
+    document.getElementById('auditObs').textContent = document.getElementById('observaciones').value || 'Sin observaciones.';
+    applySectionVisibility(payload);
   }
 
-  async function generar() {
-    var msg = document.getElementById('msg');
-    msg.textContent = '';
-    if (!empresaId) {
-      msg.textContent = 'No se encontró la empresa activa.';
-      return;
-    }
+  function buildParams() {
     var params = new URLSearchParams();
     params.set('empresa_id', String(empresaId));
     params.set('desde', document.getElementById('desde').value || '');
     params.set('hasta', document.getElementById('hasta').value || '');
     params.set('usuario', document.getElementById('usuario').value || '');
     params.set('apertura_efectivo', document.getElementById('apertura').value || '0');
+    params.set('reportes', selectedReports().join(','));
+    return params;
+  }
+
+  async function generar() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
     try {
+      applyPrintFormat(document.getElementById('modoVista').value);
       msg.textContent = 'Generando corte...';
-      lastReport = await requestJSON('/api/empresa/corte_caja?' + params.toString());
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildParams().toString());
       renderReport(lastReport);
       document.getElementById('btnImprimir').disabled = false;
-      msg.textContent = 'Corte generado correctamente.';
+      document.getElementById('btnCerrar').disabled = false;
+      msg.textContent = 'Corte generado correctamente. Revisa caja fisica antes de guardar cierre.';
     } catch (err) {
       msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte.';
       document.getElementById('btnImprimir').disabled = true;
+      document.getElementById('btnCerrar').disabled = true;
+    }
+  }
+
+  async function cerrarCorte() {
+    var msg = document.getElementById('msg');
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    if (!lastReport) { await generar(); if (!lastReport) return; }
+    var ok = window.confirm('Guardar cierre de caja con los reportes seleccionados?');
+    if (!ok) return;
+    var payload = {
+      desde: document.getElementById('desde').value || '',
+      hasta: document.getElementById('hasta').value || '',
+      usuario: document.getElementById('usuario').value || '',
+      apertura_efectivo: Number(document.getElementById('apertura').value || 0),
+      caja_fisica: Number(document.getElementById('cajaFisica').value || 0),
+      caja_codigo: document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL',
+      turno: document.getElementById('turno').value || 'general',
+      reportes: selectedReports(),
+      imprimir_auto: true,
+      observaciones: document.getElementById('observaciones').value || '',
+      umbral_incidencia: Number(document.getElementById('umbralIncidencia').value || 0)
+    };
+    try {
+      msg.textContent = 'Guardando cierre...';
+      var res = await requestJSON('/api/empresa/corte_caja?empresa_id=' + encodeURIComponent(empresaId), {
+        method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload)
+      });
+      lastReport = res && res.reporte ? res.reporte : lastReport;
+      renderReport(lastReport);
+      msg.textContent = 'Cierre guardado correctamente. ID: ' + (res && res.cierre_id ? res.cierre_id : 'registrado');
+      if (res && res.imprimir_auto) window.print();
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo guardar el cierre.';
     }
   }
 
@@ -316,23 +459,20 @@
     try {
       var account = await requestJSON('/api/account');
       var email = (account && (account.email || account.user_email || account.admin_email)) || '';
-      if (email && !document.getElementById('usuario').value) {
-        document.getElementById('usuario').value = email;
-      }
+      if (email && !document.getElementById('usuario').value) document.getElementById('usuario').value = email;
     } catch (_) {}
   }
 
   document.addEventListener('DOMContentLoaded', function() {
     setDefaultDates();
     preloadAccount();
-    loadPrintFormatConfig();
+    applyPrintFormat(document.getElementById('modoVista').value);
     document.getElementById('btnGenerar').addEventListener('click', generar);
-    document.getElementById('btnImprimir').addEventListener('click', function() {
-      if (lastReport) {
-        applyPrintFormat(printFormat);
-        window.print();
-      }
-    });
+    document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
+    document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
+    document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); if (lastReport) renderReport(lastReport); });
+    document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });
+    document.querySelectorAll('#reportSelector input[type="checkbox"]').forEach(function(box) { box.addEventListener('change', function() { if (lastReport) { applySectionVisibility(lastReport); } }); });
   });
 </script>
 </body>

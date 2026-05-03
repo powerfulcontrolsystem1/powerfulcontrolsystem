@@ -155,6 +155,7 @@
         <a href="#publico">Venta publica y red social <span>web</span></a>
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
         <a href="#integraciones">Integraciones <span>servicios</span></a>
+        <a href="#estado-operativo">Estado operativo <span>calidad</span></a>
         <a href="#faq">Solucion de problemas <span>FAQ</span></a>
       </nav>
 
@@ -361,6 +362,41 @@
           </div>
         </section>
 
+
+        <section id="estado-operativo" class="card empresa-section help-section" data-help="estado operativo modulos terminados errores estaciones carrito tarjetas dolar cop vps calidad">
+          <h2>Estado operativo de modulos</h2>
+          <p class="form-help">Actualizacion 2026-05-03: la plataforma tiene los modulos principales implementados u operativos, con reparaciones recientes en estaciones, carrito, pago y panel empresarial. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Estaciones y carrito</h3>
+              <p>Al abrir una estacion, el carrito asociado debe cargar su tarifa o productos. Al pagar, el carrito se cierra y regresa automaticamente al mapa de estaciones.</p>
+              <span class="help-route">Rutas: /administrar_empresa/estaciones.html y /administrar_empresa/carrito_de_compras.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Tarjetas adaptables</h3>
+              <p>En Configuracion &gt; Configuracion de estaciones &gt; Apariencia de tarjetas, el tamano <strong>Se adapta al texto</strong> ajusta todas las tarjetas al mismo alto para que el contenido no se corte.</p>
+              <span class="help-route">Valor tecnico: auto_text</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Indicadores del panel</h3>
+              <p>El panel de Administrar empresa debe mostrar siempre <strong>USD / COP</strong> como primer indicador, antes de otros mercados o monedas detectadas.</p>
+              <span class="help-route">Ruta: /administrar_empresa/panel.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Modulos sujetos a validacion</h3>
+              <p>Facturacion electronica multipais, impresoras, cajon monedero, RFID/NFC, GPS, mapas, SMTP, Epayco, Nextcloud, OnlyOffice e IA dependen de credenciales, dispositivos o ambientes externos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Reporte documental</h3>
+              <p>El estado compacto por modulo esta en la documentacion tecnica del proyecto y debe revisarse antes de declarar una version estable para cliente.</p>
+              <span class="help-route">documentos/reporte_estado_modulos_2026-05-03.md</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Criterio de terminado</h3>
+              <p>Un modulo se considera listo para produccion cuando pasa pruebas de login, permisos, datos reales, flujo principal, reporte, auditoria y dependencias externas aplicables.</p>
+            </article>
+          </div>
+        </section>
         <section id="faq" class="card empresa-section help-section" data-help="errores problemas frecuentes solucionar carrito licencia epayco recaptcha clima voz inventario">
           <h2>Solución de problemas frecuentes</h2>
           <div class="help-grid">

@@ -1788,14 +1788,25 @@
           .then(function (fx) {
             var rates = fx && fx.rates ? fx.rates : {};
             var localRate = Number(rates[currency]);
+            var copRate = Number(rates.COP);
             var eurRate = Number(rates.EUR);
-            if (currency !== "USD" && Number.isFinite(localRate)) {
+            if (Number.isFinite(copRate)) {
               cards.push({
-                name: "USD / " + currency,
-                value: "1 USD = " + formatNumber(localRate, 2),
-                meta: "Tipo de cambio para " + (loc.country || "pais detectado"),
+                name: "USD / COP",
+                value: "1 USD = " + formatNumber(copRate, 2),
+                meta: "Tipo de cambio para Colombia",
                 local: true
               });
+            }
+            if (currency !== "USD" && Number.isFinite(localRate)) {
+              if (currency !== "COP") {
+                cards.push({
+                  name: "USD / " + currency,
+                  value: "1 USD = " + formatNumber(localRate, 2),
+                  meta: "Tipo de cambio para " + (loc.country || "pais detectado"),
+                  local: true
+                });
+              }
             }
             if (Number.isFinite(localRate) && Number.isFinite(eurRate) && eurRate > 0) {
               cards.push({

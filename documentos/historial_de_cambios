@@ -18223,3 +18223,10 @@ Archivos modificados:
 - documentos/reporte_estado_modulos_2026-05-02.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/estaciones.html
+
+2026-05-03: Actualizacion documental integral y ayuda del sistema
+
+- Se crea `documentos/reporte_estado_modulos_2026-05-03.md` con estado compacto por modulo.
+- Se actualiza la ayuda web con estado operativo, estaciones, carrito, panel, configuraciones y advertencias de validacion.
+- Se documenta que el sistema tiene modulos implementados y operativos, pero no se afirma cero errores absoluto sin pruebas integrales por rol, hardware y proveedor.
+- Se registran cambios recientes: retorno a estaciones al pagar carrito, `USD / COP` como primer indicador y tarjetas de estaciones adaptables al texto.

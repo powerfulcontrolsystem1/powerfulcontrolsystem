@@ -898,6 +898,135 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			if action == "anular_venta" || action == "anular_venta_total" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for anular_venta empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if strings.EqualFold(strings.TrimSpace(carrito.EstadoCarrito), "anulado") {
+					http.Error(w, "la venta ya esta anulada", http.StatusConflict)
+					return
+				}
+				if !isCarritoVentaPagada(carrito) {
+					http.Error(w, "solo se puede anular una venta pagada", http.StatusConflict)
+					return
+				}
+
+				var payload struct {
+					Motivo       string `json:"motivo"`
+					Confirmar    bool   `json:"confirmar"`
+					Confirmacion bool   `json:"confirmacion"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				motivo := strings.TrimSpace(payload.Motivo)
+				if len(motivo) < 5 {
+					http.Error(w, "motivo es obligatorio para anular una venta (minimo 5 caracteres)", http.StatusBadRequest)
+					return
+				}
+				if !payload.Confirmar && !payload.Confirmacion {
+					http.Error(w, "confirmar=true es obligatorio para anular completamente la venta", http.StatusBadRequest)
+					return
+				}
+
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				carritoActualizado, totalPagadoAnterior, devolucionTotalNueva, errCancel := dbpkg.CancelCarritoSale(dbEmp, empresaID, id, motivo, usuarioOperacion)
+				if errCancel != nil {
+					http.Error(w, errCancel.Error(), http.StatusBadRequest)
+					return
+				}
+				if carritoActualizado == nil {
+					carritoActualizado = carrito
+					carritoActualizado.Estado = "inactivo"
+					carritoActualizado.EstadoCarrito = "anulado"
+					carritoActualizado.EstadoVenta = "venta_anulada"
+					carritoActualizado.TotalPagado = 0
+					carritoActualizado.DevolucionTotal = devolucionTotalNueva
+				}
+				documentosAnulados := anularDocumentosVentaDesdeCarrito(dbEmp, carrito, motivo, usuarioOperacion)
+
+				registrarEventoContableVentaCarrito(dbEmp, r, carritoActualizado, "venta_anulada", totalPagadoAnterior, map[string]interface{}{
+					"action":                    action,
+					"motivo":                    motivo,
+					"total_pagado_anterior":     totalPagadoAnterior,
+					"devolucion_total_anterior": carrito.DevolucionTotal,
+					"devolucion_total_nueva":    devolucionTotalNueva,
+					"metodo_pago":               strings.TrimSpace(carrito.MetodoPago),
+					"estado_venta_anterior":     carrito.EstadoVenta,
+					"estado_venta_nuevo":        "venta_anulada",
+					"inventario_liberado":       true,
+					"documentos_anulados":       documentosAnulados,
+				}, "anulacion total de venta pagada")
+
+				registrarAuditoriaCarritoOperacionNoBloqueante(dbEmp, r, empresaID, id, "anular_venta", http.StatusOK, map[string]interface{}{
+					"motivo":                    motivo,
+					"total_pagado_anterior":     totalPagadoAnterior,
+					"devolucion_total_anterior": carrito.DevolucionTotal,
+					"devolucion_total_nueva":    devolucionTotalNueva,
+					"estado_venta":              carritoActualizado.EstadoVenta,
+					"inventario_liberado":       true,
+					"documentos_anulados":       documentosAnulados,
+				}, "anulacion total de carrito pagado")
+
+				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carritoActualizado)
+				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+					EmpresaID:           empresaID,
+					CarritoID:           id,
+					EstacionID:          estacionID,
+					EstacionCodigo:      estacionCodigo,
+					EstacionNombre:      estacionNombre,
+					EventoOperacion:     "venta_anulada",
+					MetodoPago:          carrito.MetodoPago,
+					Moneda:              carritoActualizado.Moneda,
+					MontoTotal:          carritoActualizado.Total,
+					MontoPagado:         0,
+					MontoAnulado:        totalPagadoAnterior,
+					DevolucionTotal:     devolucionTotalNueva,
+					ActivadoEn:          carritoActualizado.ActivadoEn,
+					PagadoEn:            carritoActualizado.PagadoEn,
+					ReferenciaOperacion: motivo,
+					UsuarioCreador:      usuarioOperacion,
+					Observaciones:       "anulacion total de venta pagada",
+				}); errMetric != nil {
+					log.Printf("[carritos] metrica venta_anulada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                    true,
+					"estado":                normalizeCarritoRegistroEstado(carritoActualizado.Estado),
+					"estado_carrito":        normalizeCarritoOperativoEstado(carritoActualizado.EstadoCarrito),
+					"estado_venta":          carritoActualizado.EstadoVenta,
+					"motivo":                motivo,
+					"total_pagado_anterior": totalPagadoAnterior,
+					"total_pagado_nuevo":    0,
+					"devolucion_total":      devolucionTotalNueva,
+					"inventario_liberado":   true,
+					"documentos_anulados":   documentosAnulados,
+				})
+				return
+			}
+
 			if action == "anular_cierre_parcial" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -1391,6 +1520,10 @@ func normalizeCarritoOperativoEstado(v string) string {
 
 func isCarritoVentaPagada(carrito *dbpkg.CarritoCompra) bool {
 	if carrito == nil {
+		return false
+	}
+	estadoCarrito := strings.TrimSpace(strings.ToLower(carrito.EstadoCarrito))
+	if estadoCarrito == "anulado" || estadoCarrito == "anulada" {
 		return false
 	}
 	return strings.TrimSpace(carrito.PagadoEn) != ""
@@ -1949,6 +2082,55 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		"envio_correo_venta":            envioCorreoVenta,
 		"factura_electronica":           facturaElectronica,
 	}, nil
+}
+
+func anularDocumentosVentaDesdeCarrito(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, motivo, usuario string) []map[string]interface{} {
+	out := []map[string]interface{}{}
+	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 {
+		return out
+	}
+	base := extractVentaDocumentoBase(strings.TrimSpace(carrito.Codigo))
+	if base == "" && carrito.ID > 0 {
+		base = fmt.Sprintf("CRT-%d", carrito.ID)
+	}
+	if base == "" {
+		return out
+	}
+	for _, tipo := range []string{"comprobante_pago", "factura_electronica"} {
+		codigo := buildVentaDocumentoCodigoFromBase(base, tipo)
+		doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, carrito.EmpresaID, tipo, codigo)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Printf("[carritos] anular documento venta empresa_id=%d carrito_id=%d tipo=%s codigo=%s error=%v", carrito.EmpresaID, carrito.ID, tipo, codigo, err)
+			}
+			continue
+		}
+		if doc == nil {
+			continue
+		}
+		payload := *doc
+		payload.EstadoAnterior = strings.TrimSpace(doc.EstadoDocumento)
+		payload.EstadoDocumento = "anulada"
+		payload.EventoUltimo = "venta_anulada"
+		payload.UsuarioCreador = strings.TrimSpace(usuario)
+		payload.Observaciones = strings.TrimSpace(doc.Observaciones)
+		nota := fmt.Sprintf("Venta anulada desde carrito %s. Motivo: %s", strings.TrimSpace(carrito.Codigo), strings.TrimSpace(motivo))
+		if payload.Observaciones != "" {
+			payload.Observaciones += "\n"
+		}
+		payload.Observaciones += nota
+		if _, upErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, payload); upErr != nil {
+			log.Printf("[carritos] update documento anulada empresa_id=%d carrito_id=%d tipo=%s codigo=%s error=%v", carrito.EmpresaID, carrito.ID, tipo, codigo, upErr)
+			continue
+		}
+		out = append(out, map[string]interface{}{
+			"tipo_documento":   tipo,
+			"documento_codigo": codigo,
+			"estado_anterior":  doc.EstadoDocumento,
+			"estado_nuevo":     "anulada",
+		})
+	}
+	return out
 }
 
 func writeCarritoBusinessPrerequisite(w http.ResponseWriter, status int, prerequisite carritoBusinessPrerequisite) {

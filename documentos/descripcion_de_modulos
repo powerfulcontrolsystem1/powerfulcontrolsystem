@@ -1400,3 +1400,9 @@ Criterio de esta guia:
 - Modulos afectados: `super`, `portal_publico`, `pagina_principal`
 - Cambio funcional: `web/super/pagina_principal.html` agrega por tarjeta el campo `tipo_tarjeta` con dos opciones: `info_foto` para la tarjeta actual de informacion mas foto, y `banner` para mostrar solo la imagen principal a todo el tamano de la tarjeta en `web/index.html`. El mismo editor puede subir imagenes nuevas a `web/img` mediante `/super/api/pagina_principal?action=upload_image`.
 - Impacto operativo: las configuraciones antiguas quedan en `info_foto` por defecto. El modo banner recomienda imagen 4:3 (640x480, 800x600 o 1000x750 segun tamano) y no requiere titulo, descripcion, enlace ni contenido ampliado para el index.
+
+## Estado actualizado de modulos 2026-05-03
+
+Referencia compacta: `documentos/reporte_estado_modulos_2026-05-03.md`.
+
+Cambios documentados: estaciones operativas con tarjetas adaptables al texto, carrito reparado desde estacion, pago con retorno automatico a estaciones, panel empresarial con `USD / COP` primero, configuracion de estaciones ampliada y despliegue VPS validado. Los modulos principales se clasifican como operativos, implementados o integrados segun su madurez real. Los modulos que usan hardware o servicios externos quedan sujetos a validacion en sitio y credenciales productivas.

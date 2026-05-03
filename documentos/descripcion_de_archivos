@@ -8694,3 +8694,12 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- `web/super/preconfiguracion_tipos_empresa.html` : consola super para activar y editar estaciones/productos por tipo de empresa.
 	- `web/js/seleccionar_empresa.js` : pregunta al crear empresa si se conserva o elimina la preconfiguracion aplicada.
 	- `web/pagar_licencia.html` y `web/estilos.css` : tarjetas de checkout mas comerciales y campo de asesor comercial ubicado debajo del codigo de descuento.
+
+## Actualizacion 2026-05-03 - Archivos documentales y ayuda
+
+- `documentos/reporte_estado_modulos_2026-05-03.md`: reporte compacto de estado por modulo, cambios recientes, dependencias pendientes de validacion y criterio de calidad.
+- `web/ayuda/ayuda.html`: centro de ayuda actualizado con seccion `Estado operativo`, instrucciones de estaciones/carrito, tarjetas adaptables, indicador `USD / COP` y advertencia sobre pruebas integrales.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: agrega opcion `Se adapta al texto` para apariencia de tarjetas.
+- `web/administrar_empresa/estaciones.html`: normaliza `auto_text`, calcula altura uniforme y recalcula al redimensionar pantalla.
+- `web/administrar_empresa/carrito_de_compras.html`: al pagar un carrito operativo redirige a estaciones.
+- `web/administrar_empresa/panel.html`: prioriza `USD / COP` como primer indicador.

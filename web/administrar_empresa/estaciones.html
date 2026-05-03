@@ -195,7 +195,7 @@
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
         });
       }
-      const validSizes = ['small', 'medium', 'large'];
+      const validSizes = ['small', 'medium', 'large', 'auto_text'];
       const requested = String(cfg.card_size || cfg.cardSize || '').trim().toLowerCase();
       const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
       const cajaEnabledRaw = (cfg && (cfg.caja_enabled !== undefined ? cfg.caja_enabled : cfg.cajaEnabled)) || false;
@@ -540,15 +540,40 @@
       return res;
     }
 
+    function getStationCardSize(cfg) {
+      const validSizes = ['small', 'medium', 'large', 'auto_text'];
+      const requested = String((cfg && cfg.card_size) || '').trim().toLowerCase();
+      return validSizes.indexOf(requested) !== -1 ? requested : 'medium';
+    }
+
     function applyCardSize(cfg) {
       try {
         const grid = document.getElementById('estacionesGrid');
         if (!grid) return;
-        grid.classList.remove('station-size-small', 'station-size-medium', 'station-size-large');
-        const size = (cfg && cfg.card_size) || 'medium';
+        grid.classList.remove('station-size-small', 'station-size-medium', 'station-size-large', 'station-size-auto_text');
+        grid.style.removeProperty('--station-card-auto-height');
+        const size = getStationCardSize(cfg);
         grid.classList.add('station-size-' + size);
       } catch (err) {
         console.warn('applyCardSize error', err);
+      }
+    }
+
+    function syncAutoTextCardHeight() {
+      const grid = document.getElementById('estacionesGrid');
+      if (!grid || !grid.classList.contains('station-size-auto_text')) return;
+      const cards = Array.from(grid.querySelectorAll(
+        '.portal-card, .youtube-station-card, .notas-station-card, .ia-pedidos-station-card'
+      )).filter(function(card) {
+        return card && card.offsetParent !== null;
+      });
+      if (!cards.length) return;
+      grid.style.removeProperty('--station-card-auto-height');
+      const maxHeight = cards.reduce(function(max, card) {
+        return Math.max(max, Math.ceil(card.scrollHeight || card.getBoundingClientRect().height || 0));
+      }, 0);
+      if (maxHeight > 0) {
+        grid.style.setProperty('--station-card-auto-height', Math.max(maxHeight, 150) + 'px');
       }
     }
 
@@ -1705,6 +1730,7 @@
         html += afterSpecial.join('');
         grid.innerHTML = html;
         wireSpecialStationCards(cfg);
+        syncAutoTextCardHeight();
         return;
       }
       html += cfg.estaciones.map(est => {
@@ -1778,6 +1804,7 @@
 
       wireSpecialStationCards(cfg);
       refreshStationCardSummaries();
+      syncAutoTextCardHeight();
 
       // Si Caja está habilitada, adjuntar manejadores y cargar totales
       if (cfg && cfg.caja_enabled) {
@@ -2117,6 +2144,10 @@
         }
         stationConfig = cfg;
         applyCardSize(stationConfig);
+        window.addEventListener('resize', function() {
+          window.clearTimeout(window.__pcsStationAutoTextResizeTimer);
+          window.__pcsStationAutoTextResizeTimer = window.setTimeout(syncAutoTextCardHeight, 120);
+        });
         await Promise.all([
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),

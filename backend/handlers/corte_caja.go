@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,6 +76,8 @@ type corteCajaResumen struct {
 	AperturaEfectivo       float64 `json:"apertura_efectivo"`
 	VentasCantidad         int64   `json:"ventas_cantidad"`
 	VentasTotal            float64 `json:"ventas_total"`
+	VentasAnuladasCantidad int64   `json:"ventas_anuladas_cantidad"`
+	VentasAnuladasTotal    float64 `json:"ventas_anuladas_total"`
 	DevolucionesTotal      float64 `json:"devoluciones_total"`
 	EfectivoVentas         float64 `json:"efectivo_ventas"`
 	TarjetasVentas         float64 `json:"tarjetas_ventas"`
@@ -95,16 +98,35 @@ type corteCajaResponse struct {
 	OK                 bool                       `json:"ok"`
 	Resumen            corteCajaResumen           `json:"resumen"`
 	Ventas             []corteCajaVenta           `json:"ventas"`
+	Anulaciones        []corteCajaVenta           `json:"anulaciones"`
 	Movimientos        []corteCajaMovimientoGrupo `json:"movimientos"`
 	ItemsPorTipo       []corteCajaTipoItem        `json:"items_por_tipo"`
 	SensoresSinFactura []corteCajaSensorAlerta    `json:"sensores_sin_factura"`
+	Reportes           []string                   `json:"reportes"`
+	Secciones          map[string]bool            `json:"secciones"`
 	GeneradoEn         string                     `json:"generado_en"`
 	Advertencias       []string                   `json:"advertencias,omitempty"`
 }
 
+type corteCajaCerrarPayload struct {
+	Desde            string   `json:"desde"`
+	Hasta            string   `json:"hasta"`
+	Usuario          string   `json:"usuario"`
+	AperturaEfectivo float64  `json:"apertura_efectivo"`
+	CajaFisica       float64  `json:"caja_fisica"`
+	CajaCodigo       string   `json:"caja_codigo"`
+	Turno            string   `json:"turno"`
+	Reportes         []string `json:"reportes"`
+	ImprimirAuto     bool     `json:"imprimir_auto"`
+	Observaciones    string   `json:"observaciones"`
+	UmbralIncidencia float64  `json:"umbral_incidencia"`
+	UsuarioOperacion string   `json:"usuario_operacion"`
+	FechaOperacion   string   `json:"fecha_operacion"`
+}
+
 func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
@@ -119,6 +141,45 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		hasta := normalizeCorteCajaDateTime(r.URL.Query().Get("hasta"), now)
 		usuario := strings.TrimSpace(r.URL.Query().Get("usuario"))
 		apertura := parseCorteCajaFloat(r.URL.Query().Get("apertura_efectivo"))
+		reportes := parseCorteCajaReportes(r.URL.Query().Get("reportes"))
+
+		if r.Method == http.MethodPost {
+			var payload corteCajaCerrarPayload
+			if r.Body != nil {
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+			}
+			if strings.TrimSpace(payload.Desde) != "" {
+				desde = normalizeCorteCajaDateTime(payload.Desde, now)
+			}
+			if strings.TrimSpace(payload.Hasta) != "" {
+				hasta = normalizeCorteCajaDateTime(payload.Hasta, now)
+			}
+			if strings.TrimSpace(payload.Usuario) != "" {
+				usuario = strings.TrimSpace(payload.Usuario)
+			}
+			if payload.AperturaEfectivo >= 0 {
+				apertura = payload.AperturaEfectivo
+			}
+			if len(payload.Reportes) > 0 {
+				reportes = normalizeCorteCajaReportes(payload.Reportes)
+			}
+			resp, cierreID, err := cerrarCorteCaja(dbEmp, empresaID, desde, hasta, usuario, apertura, payload, reportes, r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"cierre_id":     cierreID,
+				"reporte":       resp,
+				"imprimir_auto": payload.ImprimirAuto,
+				"reportes":      reportes,
+			})
+			return
+		}
 
 		cacheKey := buildCorteCajaCacheKeyFromRequest(r, empresaID, desde, hasta, usuario, apertura)
 		if cached := getCorteCajaCache(cacheKey); cached != nil {
@@ -131,6 +192,7 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo generar el corte de caja", http.StatusInternalServerError)
 			return
 		}
+		applyCorteCajaReportSelection(resp, reportes)
 		storeCorteCajaCache(cacheKey, resp)
 		writeJSON(w, http.StatusOK, resp)
 	}
@@ -157,6 +219,7 @@ func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, 
 		keyHasta,
 		strings.ToLower(strings.TrimSpace(usuario)),
 		strconv.FormatFloat(apertura, 'f', 2, 64),
+		strings.Join(parseCorteCajaReportes(r.URL.Query().Get("reportes")), ","),
 	}, "|")
 }
 
@@ -189,6 +252,59 @@ func storeCorteCajaCache(key string, resp *corteCajaResponse) {
 	corteCajaCacheMu.Unlock()
 }
 
+func parseCorteCajaReportes(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return defaultCorteCajaReportes()
+	}
+	return normalizeCorteCajaReportes(strings.Split(raw, ","))
+}
+
+func normalizeCorteCajaReportes(items []string) []string {
+	allowed := map[string]string{
+		"resumen":       "resumen",
+		"ejecutivo":     "resumen",
+		"movimientos":   "movimientos",
+		"ventas":        "ventas",
+		"anulaciones":   "anulaciones",
+		"items":         "items",
+		"productos":     "items",
+		"servicios":     "items",
+		"sensores":      "sensores",
+		"habitaciones":  "sensores",
+		"auditoria":     "auditoria",
+		"observaciones": "auditoria",
+	}
+	seen := map[string]bool{}
+	out := []string{}
+	for _, item := range items {
+		key := strings.ToLower(strings.TrimSpace(item))
+		if normalized, ok := allowed[key]; ok && !seen[normalized] {
+			seen[normalized] = true
+			out = append(out, normalized)
+		}
+	}
+	if len(out) == 0 {
+		return defaultCorteCajaReportes()
+	}
+	return out
+}
+
+func defaultCorteCajaReportes() []string {
+	return []string{"resumen", "movimientos", "ventas", "anulaciones", "items", "sensores", "auditoria"}
+}
+
+func applyCorteCajaReportSelection(resp *corteCajaResponse, reportes []string) {
+	if resp == nil {
+		return
+	}
+	reportes = normalizeCorteCajaReportes(reportes)
+	resp.Reportes = reportes
+	resp.Secciones = map[string]bool{}
+	for _, reporte := range reportes {
+		resp.Secciones[reporte] = true
+	}
+}
+
 func normalizeCorteCajaDateTime(raw string, fallback time.Time) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -216,6 +332,84 @@ func parseCorteCajaFloat(raw string) float64 {
 	return out
 }
 
+func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64, payload corteCajaCerrarPayload, reportes []string, r *http.Request) (*corteCajaResponse, int64, error) {
+	if dbEmp == nil {
+		return nil, 0, sql.ErrConnDone
+	}
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		return nil, 0, err
+	}
+	reportes = normalizeCorteCajaReportes(reportes)
+	resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura)
+	if err != nil {
+		return nil, 0, err
+	}
+	applyCorteCajaReportSelection(resp, reportes)
+
+	cajaCodigo := strings.TrimSpace(payload.CajaCodigo)
+	if cajaCodigo == "" {
+		cajaCodigo = "CAJA-PRINCIPAL"
+	}
+	turno := strings.TrimSpace(payload.Turno)
+	if turno == "" {
+		turno = "general"
+	}
+	usuarioOperacion := strings.TrimSpace(payload.UsuarioOperacion)
+	if usuarioOperacion == "" && r != nil {
+		usuarioOperacion = strings.TrimSpace(adminEmailFromRequest(r))
+	}
+	if usuarioOperacion == "" {
+		usuarioOperacion = "sistema"
+	}
+	fechaOperacion := strings.TrimSpace(payload.FechaOperacion)
+	if fechaOperacion == "" {
+		fechaOperacion = strings.TrimSpace(desde)
+		if len(fechaOperacion) >= 10 {
+			fechaOperacion = fechaOperacion[:10]
+		}
+	}
+	if fechaOperacion == "" {
+		fechaOperacion = time.Now().Format("2006-01-02")
+	}
+
+	meta, _ := json.Marshal(map[string]interface{}{
+		"origen":                 "corte_de_caja",
+		"reportes":               reportes,
+		"ventas_cantidad":        resp.Resumen.VentasCantidad,
+		"ventas_total":           resp.Resumen.VentasTotal,
+		"anulaciones_cantidad":   resp.Resumen.VentasAnuladasCantidad,
+		"anulaciones_total":      resp.Resumen.VentasAnuladasTotal,
+		"habitaciones_alertadas": resp.Resumen.HabitacionesSinFactura,
+		"observaciones":          strings.TrimSpace(payload.Observaciones),
+	})
+	ingresosEfectivo := resp.Resumen.EfectivoVentas + resp.Resumen.IngresosEfectivo
+	egresosEfectivo := resp.Resumen.EgresosEfectivo
+	cierreID, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, dbpkg.EmpresaCierreCaja{
+		EmpresaID:        empresaID,
+		CajaCodigo:       cajaCodigo,
+		Turno:            turno,
+		FechaOperacion:   fechaOperacion,
+		FechaApertura:    desde,
+		FechaCierre:      hasta,
+		EstadoCierre:     "cerrado",
+		AperturaMonto:    apertura,
+		IngresosEfectivo: ingresosEfectivo,
+		EgresosEfectivo:  egresosEfectivo,
+		RetirosEfectivo:  0,
+		CajaFisica:       payload.CajaFisica,
+		Moneda:           resp.Resumen.Moneda,
+		CerradoPor:       usuarioOperacion,
+		UsuarioCreador:   usuarioOperacion,
+		Estado:           "activo",
+		Observaciones:    string(meta),
+		UmbralIncidencia: payload.UmbralIncidencia,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	return resp, cierreID, nil
+}
+
 func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64) (*corteCajaResponse, error) {
 	startedAt := time.Now()
 	defer func() {
@@ -233,6 +427,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	resp := &corteCajaResponse{
 		OK:                 true,
 		Ventas:             []corteCajaVenta{},
+		Anulaciones:        []corteCajaVenta{},
 		Movimientos:        []corteCajaMovimientoGrupo{},
 		ItemsPorTipo:       []corteCajaTipoItem{},
 		SensoresSinFactura: []corteCajaSensorAlerta{},
@@ -287,6 +482,24 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		default:
 			resp.Resumen.OtrosMediosVentas += amount
 		}
+	}
+
+	anulaciones, err := listCorteCajaVentasAnuladas(dbEmp, empresaID, desde, hasta, usuario)
+	if err != nil {
+		return nil, err
+	}
+	dbpkg.PerfLogf("[perf][corte] step anulaciones empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	resp.Anulaciones = anulaciones
+	for _, anulacion := range anulaciones {
+		resp.Resumen.VentasAnuladasCantidad++
+		amount := anulacion.Devolucion
+		if amount <= 0 {
+			amount = anulacion.TotalPagado
+		}
+		if amount <= 0 {
+			amount = anulacion.Total
+		}
+		resp.Resumen.VentasAnuladasTotal += amount
 	}
 
 	items, err := listCorteCajaItemsPorTipo(dbEmp, empresaID, desde, hasta, usuario)
@@ -384,6 +597,61 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario s
 	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
 	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
 	ORDER BY c.pagado_en ASC, c.id ASC`
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []corteCajaVenta{}
+	for rows.Next() {
+		var item corteCajaVenta
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaVenta, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentasAnuladas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
+	query := `SELECT
+		c.id,
+		COALESCE(c.codigo, ''),
+		COALESCE(c.nombre, ''),
+		COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, ''),
+		COALESCE(c.metodo_pago, 'efectivo'),
+		COALESCE(c.moneda, 'COP'),
+		COALESCE(c.total, 0),
+		COALESCE(m.monto_anulado, c.total_pagado, 0),
+		COALESCE(c.devolucion_total, 0),
+		COALESCE(m.usuario_creador, c.usuario_creador, ''),
+		COALESCE(m.estacion_id, 0),
+		COALESCE(m.estacion_codigo, ''),
+		COALESCE(m.estacion_nombre, '')
+	FROM carritos_compras c
+	LEFT JOIN (
+		SELECT carrito_id,
+		       MAX(COALESCE(fecha_evento, '')) AS fecha_evento,
+		       MAX(COALESCE(usuario_creador, '')) AS usuario_creador,
+		       MAX(COALESCE(estacion_id, 0)) AS estacion_id,
+		       MAX(COALESCE(estacion_codigo, '')) AS estacion_codigo,
+		       MAX(COALESCE(estacion_nombre, '')) AS estacion_nombre,
+		       MAX(COALESCE(monto_anulado, 0)) AS monto_anulado
+		  FROM empresa_ventas_estacion_metricas
+		 WHERE empresa_id = ?
+		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_anulada'
+		 GROUP BY carrito_id
+	) m ON m.carrito_id = c.id
+	WHERE c.empresa_id = ?
+	  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('anulado', 'anulada')
+	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') >= ?
+	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') <= ?
+	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
+	ORDER BY COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') ASC, c.id ASC`
 	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario)
 	if err != nil {
 		return nil, err

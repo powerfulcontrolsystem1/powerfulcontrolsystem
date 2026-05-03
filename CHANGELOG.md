@@ -3991,3 +3991,8 @@
 ## [2026-04-20] Limpieza Total Themes
 - [UI/Temas] Auditoría y barrido de más de 50 páginas y scripts en web/administrar_empresa, web/super y páginas públicas para limpiar colores fijos, migrando lógicas JS a .classList.add('text-danger') y respetando las 6 paletas dinámicas. Completado barrido masivo de vistas.
 - **Auditoria + IA contextual**: los wrappers empresariales auditan ahora acciones `R/C/U/D/A` de forma no bloqueante y la IA empresarial/global recibe una ventana reciente de `empresa_auditoria_eventos` como contexto operativo. La integracion vive en auditoria + constructor de prompt, sin insertar IA en cada modulo; si auditoria o IA fallan/deshabilitan, el servidor continua con estado controlado. Archivos: `backend/handlers/auditoria_empresa.go`, `backend/db/auditoria_empresa.go`, `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, documentacion relacionada.
+
+## [2026-05-03] Documentacion, ayuda y estado operativo de modulos
+- [Docs] Se crea `documentos/reporte_estado_modulos_2026-05-03.md` con estado compacto por modulo, observaciones de calidad y dependencias pendientes de certificacion.
+- [Ayuda] Se actualiza `web/ayuda/ayuda.html` con una seccion de estado operativo, estaciones/carrito, tarjetas adaptables, indicadores del panel y limites honestos de validacion.
+- [Operacion] Se documentan los cambios recientes: carrito desde estacion, pago con retorno a estaciones, `USD / COP` primero y despliegue VPS correcto.

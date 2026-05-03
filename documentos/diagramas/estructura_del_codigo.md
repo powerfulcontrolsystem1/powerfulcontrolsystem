@@ -5520,3 +5520,9 @@ flowchart TD
 
 - Frontend ayuda:
   - `web/ayuda/ayuda.html` agrega seccion completa `menu-dian` con guia de implementacion DIAN desde cero, pasos DIAN/plataforma, configuracion en sistema, endpoints de soporte y errores frecuentes.
+
+## Actualizacion 2026-05-03 - Flujo estaciones, carrito y ayuda
+
+Flujo operativo documentado: `configuracion_de_estaciones.html` guarda `card_size=auto_text`; `estaciones.html` aplica `station-size-auto_text`, calcula `--station-card-auto-height` con la tarjeta mas alta y mantiene todas las tarjetas con altura uniforme; `carrito_de_compras.html` ejecuta el pago y vuelve a `estaciones.html` mediante `buildStationsURL()`; `panel.html` renderiza `USD / COP` como primer indicador de mercado.
+
+La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto de modulos queda en `documentos/reporte_estado_modulos_2026-05-03.md`.

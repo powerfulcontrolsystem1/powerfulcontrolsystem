@@ -2817,8 +2817,7 @@
             });
           }
         } catch (_) {}
-        await loadCarritos();
-        await loadItems();
+        window.location.assign(buildStationsURL());
       } catch (err) {
         if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
           setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);

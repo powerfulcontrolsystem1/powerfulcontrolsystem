@@ -260,3 +260,9 @@ Regla general de tablas:
 - Regla de mantenimiento documental por modulo: cuando se crea o modifica un modulo, se deben actualizar en la misma iteracion `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`, junto con la documentacion tecnica relacionada.
 - Regla de higiene documental: los documentos obsoletos o duplicados en `documentos/` deben depurarse de forma controlada y con trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
    - Incorporacion de modulo de minijuegos Arcade (con niveles, puntajes y poderes) construidos en HTML5/JS nativo como experiencia interactiva de retencion comercial.
+
+## Actualizacion operativa 2026-05-03
+
+Se actualiza el alcance operativo del proyecto para reflejar la reparacion del flujo estaciones -> carrito -> pago -> estaciones. El carrito asociado a una estacion debe cargar su cargo automatico cuando exista tarifa activa, permitir el pago y cerrar la sesion operativa regresando al mapa de estaciones. El panel empresarial prioriza `USD / COP` como primer indicador de mercado. La configuracion de estaciones incorpora el tamano `Se adapta al texto`, que calcula la altura necesaria y aplica la misma medida a todas las tarjetas para evitar recortes visuales.
+
+Estado general: plataforma implementada con multiples modulos operativos. No se declara ausencia absoluta de errores en todos los modulos porque existen dependencias externas y fisicas: impresoras, RFID/NFC, cerraduras, pasarelas, facturacion oficial, GPS, SMTP, Nextcloud, OnlyOffice e IA.

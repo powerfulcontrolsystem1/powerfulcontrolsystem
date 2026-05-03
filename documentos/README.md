@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-04-30
-Estado: vigente
+Fecha: 2026-05-03
+Estado: vigente, actualizado con reporte operativo 2026-05-03
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -17,6 +17,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 8. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-03: estado de modulos actualizado en `documentos/reporte_estado_modulos_2026-05-03.md`; se documentan reparaciones de estaciones/carrito, retorno a estaciones al pagar, tarjetas adaptables al texto, `USD / COP` como primer indicador y despliegue VPS correcto.
+- 2026-05-03: ayuda del sistema actualizada con estado operativo, rutas criticas, configuracion de estaciones, flujo de pago del carrito y advertencia honesta sobre validacion integral por hardware/proveedores.
 
 - 2026-04-30: pagos Epayco documentados con Smart Checkout v2 y fallback clasico firmado por POST a `secure.payco.co`.
 - 2026-04-30: pagos Epayco actualizados para separar modo Smart Checkout y modo fallback clasico; el POST clasico usa `Customer ID` + `P_KEY` para decidir produccion/pruebas y evitar "El comercio no fue reconocido".
