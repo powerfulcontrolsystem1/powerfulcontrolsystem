@@ -512,10 +512,29 @@
     let scannerAutoTimer = null;
     let scannerProcessing = false;
     let scannerAutofocusPaused = false;
+    const REQUEST_TIMEOUT_MS = 15000;
 
     function getQueryParam(name) {
       const p = new URLSearchParams(window.location.search);
       return p.get(name);
+    }
+
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timer = window.setTimeout(function() {
+        controller.abort();
+      }, Number(timeoutMs || REQUEST_TIMEOUT_MS));
+      const finalOptions = Object.assign({}, options || {}, { signal: controller.signal });
+      try {
+        return await fetch(url, finalOptions);
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          throw new Error('Tiempo de espera agotado al cargar datos del carrito.');
+        }
+        throw err;
+      } finally {
+        window.clearTimeout(timer);
+      }
     }
 
     function setMessage(id, text, isError) {
@@ -619,6 +638,13 @@
         return {
           title: 'No se pudo identificar la empresa.',
           message: 'La vista del carrito se abrió sin el contexto completo de la empresa. Regresa al tablero de estaciones e inténtalo otra vez.'
+        };
+      }
+
+      if (lower.includes('tiempo de espera agotado')) {
+        return {
+          title: state.stationMode ? 'La estación tardó demasiado en responder.' : 'El carrito tardó demasiado en responder.',
+          message: 'La carga inicial superó el tiempo esperado. Reintenta la apertura; si el problema continúa, revisaremos la conexión o la consulta del backend asociada a carritos.'
         };
       }
 
@@ -855,7 +881,7 @@
         return state.empresaGeneralConfig;
       }
       try {
-        const res = await fetch('/api/empresa/configuracion_general?empresa_id=' + encodeURIComponent(state.empresaID), {
+        const res = await fetchWithTimeout('/api/empresa/configuracion_general?empresa_id=' + encodeURIComponent(state.empresaID), {
           credentials: 'same-origin'
         });
         if (!res.ok) throw new Error('No se pudo cargar la configuración general.');
@@ -873,7 +899,7 @@
         return state.stationConfig;
       }
       try {
-        const data = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+        const data = await fetchWithTimeout('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
           credentials: 'same-origin'
         });
         if (!data.ok) throw new Error('No se pudo cargar la configuración de estaciones.');
@@ -911,7 +937,7 @@
         return state.tarifaMinutosConfig;
       }
       try {
-        const res = await fetch('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=configuracion', {
+        const res = await fetchWithTimeout('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=configuracion', {
           credentials: 'same-origin'
         });
         if (!res.ok) throw new Error('No disponible');
@@ -3932,7 +3958,9 @@
 
     async function loadClientes() {
       try {
-        const res = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID));
+        const res = await fetchWithTimeout('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID), {
+          credentials: 'same-origin'
+        });
         if (!res.ok) {
           state.clientes = [];
           fillClientesSelect('');
@@ -3951,9 +3979,14 @@
       const url = new URL('/api/empresa/carritos_compra', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('include_inactive', '1');
+      if (state.stationMode && state.stationID > 0) {
+        url.searchParams.set('estacion_id', String(state.stationID));
+      }
       if (state.qCarrito) url.searchParams.set('q', state.qCarrito);
 
-      const res = await fetch(url.pathname + url.search);
+      const res = await fetchWithTimeout(url.pathname + url.search, {
+        credentials: 'same-origin'
+      });
       await ensureOk(res);
       state.carritos = await res.json();
 
@@ -4067,7 +4100,9 @@
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('carrito_id', String(state.selectedCarritoID));
       url.searchParams.set('include_inactive', '1');
-      const res = await fetch(url.pathname + url.search);
+      const res = await fetchWithTimeout(url.pathname + url.search, {
+        credentials: 'same-origin'
+      });
       await ensureOk(res);
       state.items = await res.json();
       renderResumen();

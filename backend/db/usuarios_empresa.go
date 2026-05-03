@@ -295,7 +295,7 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return nil, err
 	}
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		email,
@@ -384,7 +384,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 	}
 	query += " LIMIT 1"
 
-	row := dbConn.QueryRow(query, args...)
+	row := queryRowSQLCompat(dbConn, query, args...)
 
 	var item EmpresaUsuario
 	if err := row.Scan(
@@ -490,7 +490,7 @@ func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, max
 		lockDuration = 15 * time.Minute
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(login_failed_attempts, 0),
 		COALESCE(login_failed_last_at, ''),
 		COALESCE(login_locked_until, '')
@@ -712,7 +712,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return 0, err
 	}
-	row := dbConn.QueryRow(`SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1`, token)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1`, token)
 	var id int64
 	var empresaID int64
 	var expiraRaw string

@@ -235,7 +235,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
-	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkReportesIAChat", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Finanzas y reportes"},
@@ -1827,7 +1827,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	case path == "/api/empresa/venta_publica":
 		return "linkVentaPublica"
 	case path == "/api/empresa/carritos_compra":
-		if strings.Contains(action, "estacion") {
+		if strings.Contains(action, "estacion") || strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
 			return "linkEstaciones"
 		}
 		return "linkCarritoCompras"
