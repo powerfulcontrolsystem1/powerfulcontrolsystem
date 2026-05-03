@@ -3700,3 +3700,7 @@ Archivos modificados:
 - backend/db/impuestos.go
 - backend/handlers/impuestos.go
 - web/administrar_empresa/impuestos.html
+
+2026-05-02 19:43:23 - Mensaje: Corregir apertura de carrito al abrir estacion marcada como sucia; Commit: bed6e8d; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/estaciones.html

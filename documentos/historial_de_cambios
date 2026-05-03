@@ -18211,3 +18211,8 @@ Archivos modificados:
 - backend/db/impuestos.go
 - backend/handlers/impuestos.go
 - web/administrar_empresa/impuestos.html
+
+2026-05-02: Corregir apertura de carrito al abrir estacion marcada como sucia
+PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/estaciones.html
