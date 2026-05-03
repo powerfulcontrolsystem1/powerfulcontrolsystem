@@ -565,6 +565,14 @@
       return 'ESTACION_' + state.stationID;
     }
 
+    function findExistingCarritoByCode(code) {
+      const targetCode = normalizedCode(code);
+      if (!targetCode || !Array.isArray(state.carritos) || !state.carritos.length) return null;
+      return state.carritos.find(function(item) {
+        return normalizedCode(item && item.codigo) === targetCode;
+      }) || null;
+    }
+
     function findExistingStationCarrito() {
       if (!state.stationMode || !Array.isArray(state.carritos) || !state.carritos.length) return null;
 
@@ -573,9 +581,7 @@
       const targetName = normalize(state.stationName).toLowerCase();
 
       if (targetCode) {
-        const byCode = state.carritos.find(function(item) {
-          return normalizedCode(item && item.codigo) === targetCode;
-        });
+        const byCode = findExistingCarritoByCode(targetCode);
         if (byCode) return byCode;
       }
 
@@ -2859,6 +2865,15 @@
         return selected;
       }
 
+      if (state.selectedCarritoCode) {
+        const existingByCode = findExistingCarritoByCode(state.selectedCarritoCode);
+        if (existingByCode) {
+          state.selectedCarritoID = Number(existingByCode.id || 0);
+          state.selectedCarritoCode = '';
+          return existingByCode;
+        }
+      }
+
       const existingStationCarrito = findExistingStationCarrito();
       if (existingStationCarrito) {
         state.selectedCarritoID = Number(existingStationCarrito.id || 0);
@@ -2894,6 +2909,9 @@
       if (state.stationName) {
         params.set('estacion_nombre', state.stationName);
       }
+      if (state.directSaleMode) {
+        params.set('modo', 'venta_directa');
+      }
 
       const returnParams = new URLSearchParams();
       returnParams.set('empresa_id', String(state.empresaID));
@@ -2901,6 +2919,7 @@
       if (code) returnParams.set('carrito_codigo', code);
       if (state.stationID > 0) returnParams.set('estacion_id', String(state.stationID));
       if (state.stationName) returnParams.set('estacion_nombre', state.stationName);
+      if (state.directSaleMode) returnParams.set('modo', 'venta_directa');
       const returnRoute = '/administrar_empresa/carrito_de_compras.html?' + returnParams.toString();
       params.set('return_url', returnRoute);
       return '/administrar_empresa/buscar_producto_botones.html?' + params.toString();
@@ -4112,6 +4131,37 @@
       }
     }
 
+    async function ensureDirectSaleCarritoLifecycle() {
+      if (!state.directSaleMode || !state.selectedCarritoCode) return;
+
+      let selected = getSelectedCarrito() || findExistingCarritoByCode(state.selectedCarritoCode);
+      if (selected) {
+        state.selectedCarritoID = Number(selected.id || 0);
+        state.selectedCarritoCode = '';
+        return;
+      }
+
+      const createPayload = {
+        empresa_id: Number(state.empresaID),
+        codigo: state.selectedCarritoCode,
+        nombre: state.stationName || 'Caja',
+        canal_venta: 'mostrador',
+        moneda: 'COP',
+        referencia_externa: 'CAJA_DIRECTA',
+        observaciones: 'Carrito automatico de venta directa'
+      };
+      const createRes = await fetch('/api/empresa/carritos_compra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createPayload)
+      });
+      await ensureOk(createRes);
+      const body = await createRes.json();
+      state.selectedCarritoID = Number((body && body.id) || 0);
+      state.selectedCarritoCode = '';
+      await loadCarritos();
+    }
+
     async function loadItems() {
       const selected = getSelectedCarrito();
       if (!selected) {
@@ -4475,7 +4525,7 @@
 
       state.empresaID = empresaID;
       state.directSaleMode = directSaleMode;
-      state.stationMode = stationID > 0 || !!carritoCode;
+      state.stationMode = !directSaleMode && (stationID > 0 || !!carritoCode);
       state.stationID = stationID;
       state.stationName = stationName;
       if (carritoID > 0) {
@@ -4488,6 +4538,8 @@
         if (!state.stationName && state.stationID > 0) {
           state.stationName = 'Estación ' + state.stationID;
         }
+      } else if (state.directSaleMode && !state.stationName) {
+        state.stationName = 'Caja';
       }
 
       applyStationModeUI();
@@ -4517,6 +4569,10 @@
       await loadCommissionConfig();
       try {
         await loadCarritos();
+        if (state.directSaleMode) {
+          await ensureDirectSaleCarritoLifecycle();
+          await loadCarritos();
+        }
         if (state.stationMode) {
           await ensureStationCarritoLifecycle();
           await loadCarritos();

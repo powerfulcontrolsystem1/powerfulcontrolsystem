@@ -642,20 +642,23 @@
       return minutes + ' min';
     }
 
-    function getCarritoCodeForStation(stationID) {
+    function getCarritoCodeForStation(stationID, directSaleMode) {
+      if (directSaleMode) {
+        return 'CAJA-' + empresaId;
+      }
       return 'EST-' + empresaId + '-' + stationID;
     }
-
-    function openStationCarrito(stationID, stationName) {
+    function openStationCarrito(stationID, stationName, directSaleMode) {
       if (!empresaId || stationID == null) return;
-      const carritoCode = getCarritoCodeForStation(stationID);
+      const directMode = !!directSaleMode;
+      const carritoCode = getCarritoCodeForStation(stationID, directMode);
       const url = '/administrar_empresa/carrito_de_compras.html?empresa_id=' + encodeURIComponent(empresaId) +
         '&estacion_id=' + encodeURIComponent(stationID) +
-        '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
-          '&carrito_codigo=' + encodeURIComponent(carritoCode);
+        '&estacion_nombre=' + encodeURIComponent(stationName || 'Caja') +
+        '&carrito_codigo=' + encodeURIComponent(carritoCode) +
+        (directMode ? '&modo=venta_directa' : '');
       window.location.href = url;
     }
-
     function isCarritoOperativoActivo(carrito) {
       if (!carrito) return false;
       const estado = normalizeText(carrito.estado) || 'activo';
