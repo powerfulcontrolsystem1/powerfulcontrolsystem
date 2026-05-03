@@ -18204,3 +18204,10 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/db/venta_publica.go
+
+2026-05-02: Robustecer modulo impuestos con dashboard fiscal y reportes contables
+PushStatus: OK
+Archivos modificados:
+- backend/db/impuestos.go
+- backend/handlers/impuestos.go
+- web/administrar_empresa/impuestos.html
