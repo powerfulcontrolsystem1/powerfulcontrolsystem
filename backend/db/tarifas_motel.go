@@ -207,8 +207,16 @@ func normalizeEmpresaTarifaMotelPayload(payload *EmpresaTarifaMotel) error {
 	if payload.ToleranciaMinutos > 1440 {
 		payload.ToleranciaMinutos = 1440
 	}
-	payload.HoraInicio = normalizeEmpresaTarifaMotelHora(payload.HoraInicio, "00:00")
-	payload.HoraFin = normalizeEmpresaTarifaMotelHora(payload.HoraFin, "23:59")
+	horaInicio, err := normalizeTarifaPorDiaHora(payload.HoraInicio, "00:00")
+	if err != nil {
+		return fmt.Errorf("hora_inicio invalida")
+	}
+	horaFin, err := normalizeTarifaPorDiaHora(payload.HoraFin, "23:59")
+	if err != nil {
+		return fmt.Errorf("hora_fin invalida")
+	}
+	payload.HoraInicio = horaInicio
+	payload.HoraFin = horaFin
 	return nil
 }
 
@@ -224,17 +232,6 @@ func normalizeEmpresaTarifaMotelTipo(raw string) string {
 	default:
 		return "express"
 	}
-}
-
-func normalizeEmpresaTarifaMotelHora(raw, fallback string) string {
-	v := strings.TrimSpace(raw)
-	if v == "" {
-		return fallback
-	}
-	if len(v) >= 5 {
-		return v[:5]
-	}
-	return fallback
 }
 
 // CreateEmpresaTarifaMotel crea un plan motel.

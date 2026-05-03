@@ -236,6 +236,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de hotel", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTarifasMotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de motel", Grupo: "Operación y venta"},
 	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
@@ -1852,7 +1853,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	case path == "/api/empresa/tarifas_por_dia":
 		return "linkTarifasPorDia"
 	case path == "/api/empresa/tarifas_motel":
-		return "linkTarifasHotel"
+		return "linkTarifasMotel"
 	case path == "/api/empresa/nomina_sueldos":
 		return "linkNominaSueldos"
 	case path == "/api/empresa/horarios_trabajadores":
