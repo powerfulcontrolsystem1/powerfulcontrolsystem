@@ -198,12 +198,27 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
+			estacionID, err := parseOptionalInt64CarritoQuery(r, "estacion_id")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 
 			rows, err := dbpkg.GetCarritosCompraByEmpresa(dbEmp, empresaID, includeInactive, q)
 			if err != nil {
 				log.Printf("[carritos] list empresa_id=%d error: %v", empresaID, err)
 				http.Error(w, "No se pudieron listar los carritos", http.StatusInternalServerError)
 				return
+			}
+			if estacionID > 0 {
+				filtered := make([]dbpkg.CarritoCompra, 0, len(rows))
+				for _, row := range rows {
+					currentStationID, _, _ := dbpkg.ResolveCarritoStationIdentity(&row)
+					if currentStationID == estacionID {
+						filtered = append(filtered, row)
+					}
+				}
+				rows = filtered
 			}
 			attachCarritoStationRuntimeSummaries(dbEmp, rows)
 			writeJSON(w, http.StatusOK, rows)

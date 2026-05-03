@@ -734,7 +734,16 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
-		if pageKey := resolvePermissionPageKeyForRequest(r); pageKey != "" {
+		pageKey := resolvePermissionPageKeyForRequest(r)
+		// El flujo operativo de estaciones usa el mismo endpoint de carritos para
+		// listar/recuperar sesiones por estacion. En ese caso el control real ya
+		// queda cubierto por el modulo de ventas + el contexto estacion_id, asi
+		// que no debemos bloquearlo por la pagina generica de carritos.
+		if strings.EqualFold(strings.TrimSpace(requestPath), "/api/empresa/carritos_compra") &&
+			strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
+			pageKey = ""
+		}
+		if pageKey != "" {
 			if !snapshot.AllowedPages[pageKey] {
 				http.Error(w, "forbidden: rol sin acceso a la funcionalidad solicitada", http.StatusForbidden)
 				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
