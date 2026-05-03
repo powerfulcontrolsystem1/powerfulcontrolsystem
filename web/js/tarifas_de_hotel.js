@@ -266,7 +266,7 @@
       var toggle = status === "activo" ? "desactivar" : "activar";
       return "<tr>" +
         "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
-        "<td>" + money(item.valor_dia, item.moneda) + "<br><small>" + esc(item.servicio_nombre || "hospedaje") + "</small></td>" +
+        "<td>" + money(item.valor_dia, item.moneda) + "<br><small>" + esc(item.nombre_tarifa || item.servicio_nombre || "hospedaje") + "</small></td>" +
         "<td>" + esc(item.hora_check_in || "15:00") + " / " + esc(item.hora_check_out || "12:00") + "</td>" +
         "<td><span class=\"hotel-badge\">" + esc(status) + "</span><br><small>Prioridad " + esc(item.prioridad || 1) + "</small></td>" +
         "<td>" + (item.aplicar_automaticamente ? "Automatico" : "Manual") + "</td>" +
@@ -395,6 +395,7 @@
 
   function resetNight() {
     $("nightId").value = "";
+    $("nightName").value = "tarifa_hotel_cama_doble";
     $("nightStationSelect").value = "";
     $("nightStationId").value = "";
     $("nightStationCode").value = "";
@@ -436,6 +437,7 @@
     return {
       id: number($("nightId").value),
       empresa_id: state.empresaID,
+      nombre_tarifa: text($("nightName").value) || "tarifa_hotel_cama_doble",
       estacion_id: stationID,
       estacion_codigo: text($("nightStationCode").value) || defaultStationCode(state.empresaID, stationID),
       estacion_nombre: text($("nightStationName").value) || "Habitacion " + stationID,
@@ -547,6 +549,7 @@
     if (!item) return;
     showTab("nightSection");
     $("nightId").value = item.id || "";
+    $("nightName").value = item.nombre_tarifa || item.servicio_nombre || "tarifa_hotel_cama_doble";
     $("nightStationSelect").value = item.estacion_id || "";
     $("nightStationId").value = item.estacion_id || "";
     $("nightStationCode").value = item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id);

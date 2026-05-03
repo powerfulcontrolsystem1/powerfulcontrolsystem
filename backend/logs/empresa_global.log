@@ -8947,3 +8947,39 @@
 2026-05-03T10:59:52-05:00 [INFO] req_id=req-1777823992261079900-a922eb14fcc3 event=request_end method=GET path=/me status=200 dur_ms=355
 2026-05-03T10:59:55-05:00 [INFO] req_id=req-1777823995229561600-ecc6d16bc807 event=request_start method=GET path=/me ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36"
 2026-05-03T10:59:55-05:00 [INFO] req_id=req-1777823995229561600-ecc6d16bc807 event=request_end method=GET path=/me status=200 dur_ms=351
+2026-05-03T15:10:34-05:00 [INFO] req_id=req-1777839034500302400-d3a70e2a7098 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:10:36-05:00 [INFO] req_id=req-1777839034500302400-d3a70e2a7098 event=request_end method=GET path=/config.js status=200 dur_ms=1552
+2026-05-03T15:10:41-05:00 [INFO] req_id=req-1777839041051661200-243d93c45347 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:10:42-05:00 [INFO] req_id=req-1777839041051661200-243d93c45347 event=request_end method=GET path=/config.js status=200 dur_ms=1579
+2026-05-03T15:24:29-05:00 [INFO] req_id=req-1777839869182166500-d639388b0754 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:24:30-05:00 [INFO] req_id=req-1777839869182166500-d639388b0754 event=request_end method=GET path=/config.js status=200 dur_ms=1437
+2026-05-03T15:24:41-05:00 [INFO] req_id=req-1777839881377782000-97a770a478b5 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:24:42-05:00 [INFO] req_id=req-1777839881377782000-97a770a478b5 event=request_end method=GET path=/config.js status=200 dur_ms=1245
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616277589500-c95305dd234a event=request_start method=GET path=/login_usuario.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616277589500-c95305dd234a event=request_end method=GET path=/login_usuario.html status=200 dur_ms=181
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616587126500-222e7b10a1d5 event=request_start method=GET path=/administrar_empresa/gimnasio.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:36:56-05:00 [WARNING] req_id=req-1777840616587126500-222e7b10a1d5 event=request_end method=GET path=/administrar_empresa/gimnasio.html status=401 dur_ms=22
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616696260400-46dc5c126f58 event=request_start method=GET path=/administrar_empresa/consultorio_odontologico.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:36:56-05:00 [WARNING] req_id=req-1777840616696260400-46dc5c126f58 event=request_end method=GET path=/administrar_empresa/consultorio_odontologico.html status=401 dur_ms=1
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616719883100-5d40c0d90fb4 event=request_start method=GET path=/administrar_empresa/turnos_atencion.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:36:56-05:00 [WARNING] req_id=req-1777840616719883100-5d40c0d90fb4 event=request_end method=GET path=/administrar_empresa/turnos_atencion.html status=401 dur_ms=1
+2026-05-03T15:36:56-05:00 [INFO] req_id=req-1777840616747545400-07936756c9a0 event=request_start method=GET path=/administrar_empresa/creditos.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:36:56-05:00 [WARNING] req_id=req-1777840616747545400-07936756c9a0 event=request_end method=GET path=/administrar_empresa/creditos.html status=401 dur_ms=1
+2026-05-03T15:38:37-05:00 [INFO] req_id=req-1777840717048016000-f315ed08ff9d event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:38:38-05:00 [INFO] req_id=req-1777840717048016000-f315ed08ff9d event=request_end method=GET path=/config.js status=200 dur_ms=1517
+2026-05-03T15:38:50-05:00 [INFO] req_id=req-1777840730938188000-f19585332d42 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:38:52-05:00 [INFO] req_id=req-1777840730938188000-f19585332d42 event=request_end method=GET path=/config.js status=200 dur_ms=1178
+2026-05-03T15:44:55-05:00 [INFO] req_id=req-1777841095572352700-caa22d79e562 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:44:56-05:00 [INFO] req_id=req-1777841095572352700-caa22d79e562 event=request_end method=GET path=/config.js status=200 dur_ms=1385
+2026-05-03T15:45:08-05:00 [INFO] req_id=req-1777841108900431300-3e30a15e7c0f event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:45:10-05:00 [INFO] req_id=req-1777841108900431300-3e30a15e7c0f event=request_end method=GET path=/config.js status=200 dur_ms=1224
+2026-05-03T15:48:11-05:00 [INFO] req_id=req-1777841291373452500-af01526feaf1 event=request_start method=GET path=/config.js ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:48:12-05:00 [INFO] req_id=req-1777841291373452500-af01526feaf1 event=request_end method=GET path=/config.js status=200 dur_ms=1170
+2026-05-03T15:50:37-05:00 [INFO] req_id=req-1777841437105541300-fa49743cdfa5 event=request_start method=GET path=/config.js ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:50:37-05:00 [INFO] req_id=req-1777841437138333700-ffd825ee6f9a event=request_start method=GET path=/config.js ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T15:50:39-05:00 [INFO] req_id=req-1777841437105541300-fa49743cdfa5 event=request_end method=GET path=/config.js status=200 dur_ms=2424
+2026-05-03T15:50:39-05:00 [INFO] req_id=req-1777841437138333700-ffd825ee6f9a event=request_end method=GET path=/config.js status=200 dur_ms=2529
+2026-05-03T16:01:15-05:00 [INFO] req_id=req-1777842075374649100-561515a92dfe event=request_start method=GET path=/config.js ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T16:01:16-05:00 [INFO] req_id=req-1777842075374649100-561515a92dfe event=request_end method=GET path=/config.js status=200 dur_ms=1579
+2026-05-03T16:18:33-05:00 [INFO] req_id=req-1777843113799527400-d28f18455375 event=request_start method=GET path=/config.js ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-05-03T16:18:35-05:00 [INFO] req_id=req-1777843113799527400-d28f18455375 event=request_end method=GET path=/config.js status=200 dur_ms=1397

@@ -297,10 +297,11 @@ func main() {
 	log.Printf("OK conciliación bancaria QA revisados=%d conciliados=%d pendientes=%d", conciliacion.Revisados, conciliacion.Conciliados, conciliacion.Pendientes)
 
 	// 8) Cierres de caja: validar transiciones y bloqueo cuando aprobado
+	cajaCodigo := "CAJA_QA_" + time.Now().Format("150405")
 	cierreID, err := dbpkg.CreateEmpresaCierreCaja(db, dbpkg.EmpresaCierreCaja{
 		EmpresaID:        *empresaID,
 		SucursalID:       0,
-		CajaCodigo:       "CAJA_QA",
+		CajaCodigo:       cajaCodigo,
 		Turno:            "general",
 		FechaOperacion:   time.Now().Format("2006-01-02"),
 		Moneda:           "COP",
@@ -328,7 +329,7 @@ func main() {
 		ID:             cierreID,
 		EmpresaID:      *empresaID,
 		SucursalID:     0,
-		CajaCodigo:     "CAJA_QA",
+		CajaCodigo:     cajaCodigo,
 		Turno:          "general",
 		FechaOperacion: time.Now().Format("2006-01-02"),
 		Moneda:         "COP",

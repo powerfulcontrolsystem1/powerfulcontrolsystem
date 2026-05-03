@@ -1013,7 +1013,7 @@ func CreateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) (i
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_socios (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_socios (
 		empresa_id, codigo, nombre_completo, documento, telefono, email, fecha_nacimiento, genero, objetivo, estado,
 		plan_id, fecha_inicio_plan, fecha_fin_plan, saldo, contacto_emergencia_nombre, contacto_emergencia_telefono,
 		observaciones, usuario_creador, fecha_actualizacion
@@ -1022,10 +1022,6 @@ func CreateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) (i
 		item.PlanID, item.FechaInicioPlan, item.FechaFinPlan, item.Saldo, item.ContactoEmergenciaNombre, item.ContactoEmergenciaTelefono,
 		item.Observaciones, item.UsuarioCreador,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) error {
@@ -1103,17 +1099,13 @@ func CreateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) (int
 	if item.AccesoIlimitado {
 		accesoIlimitado = 1
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_planes (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_planes (
 		empresa_id, nombre, descripcion, precio, duracion_dias, clases_incluidas, acceso_ilimitado, sesiones_personalizadas,
 		estado, usuario_creador, fecha_actualizacion
 	) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
 		item.EmpresaID, item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas,
 		item.Estado, item.UsuarioCreador,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) error {
@@ -1187,17 +1179,13 @@ func CreateEmpresaGimnasioEntrenador(dbConn *sql.DB, payload EmpresaGimnasioEntr
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_entrenadores (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_entrenadores (
 		empresa_id, nombre_completo, especialidad, telefono, email, certificaciones, estado, disponibilidad, observaciones,
 		usuario_creador, fecha_actualizacion
 	) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
 		item.EmpresaID, item.NombreCompleto, item.Especialidad, item.Telefono, item.Email, item.Certificaciones, item.Estado, item.Disponibilidad, item.Observaciones,
 		item.UsuarioCreador,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioEntrenador(dbConn *sql.DB, payload EmpresaGimnasioEntrenador) error {
@@ -1270,17 +1258,13 @@ func CreateEmpresaGimnasioClase(dbConn *sql.DB, payload EmpresaGimnasioClase) (i
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_clases (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_clases (
 		empresa_id, nombre, categoria, entrenador_id, sede, canal, cupos, duracion_minutos, fecha_programada, estado, precio, descripcion,
 		usuario_creador, fecha_actualizacion
 	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
 		item.EmpresaID, item.Nombre, item.Categoria, item.EntrenadorID, item.Sede, item.Canal, item.Cupos, item.DuracionMinutos, item.FechaProgramada, item.Estado, item.Precio, item.Descripcion,
 		item.UsuarioCreador,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioClase(dbConn *sql.DB, payload EmpresaGimnasioClase) error {
@@ -1353,15 +1337,11 @@ func CreateEmpresaGimnasioInscripcion(dbConn *sql.DB, payload EmpresaGimnasioIns
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_inscripciones (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_inscripciones (
 		empresa_id, socio_id, clase_id, estado, asistencia_marcada, observaciones, usuario_creador
 	) VALUES (?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.SocioID, item.ClaseID, item.Estado, 0, item.Observaciones, item.UsuarioCreador,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioInscripcionEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
@@ -1415,7 +1395,7 @@ func CreateEmpresaGimnasioAsistencia(dbConn *sql.DB, payload EmpresaGimnasioAsis
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_asistencias (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_asistencias (
 		empresa_id, socio_id, clase_id, fecha_hora, tipo_acceso, canal, sede, observaciones, usuario_creador
 	) VALUES (?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.SocioID, item.ClaseID, item.FechaHora, item.TipoAcceso, item.Canal, item.Sede, item.Observaciones, item.UsuarioCreador,
@@ -1426,7 +1406,7 @@ func CreateEmpresaGimnasioAsistencia(dbConn *sql.DB, payload EmpresaGimnasioAsis
 	if item.ClaseID > 0 {
 		_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_inscripciones SET asistencia_marcada=1 WHERE empresa_id=? AND socio_id=? AND clase_id=?`, item.EmpresaID, item.SocioID, item.ClaseID)
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func ListEmpresaGimnasioPagos(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasioPago, error) {
@@ -1471,7 +1451,7 @@ func CreateEmpresaGimnasioPago(dbConn *sql.DB, payload EmpresaGimnasioPago) (int
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_pagos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_pagos (
 		empresa_id, socio_id, plan_id, concepto, monto, moneda, metodo_pago, canal, sede, estado, referencia, fecha_pago, observaciones, usuario_creador
 	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.SocioID, item.PlanID, item.Concepto, item.Monto, item.Moneda, item.MetodoPago, item.Canal, item.Sede, item.Estado, item.Referencia, item.FechaPago, item.Observaciones, item.UsuarioCreador,
@@ -1480,7 +1460,7 @@ func CreateEmpresaGimnasioPago(dbConn *sql.DB, payload EmpresaGimnasioPago) (int
 		return 0, err
 	}
 	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET saldo=COALESCE(saldo,0)-?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, item.Monto, item.EmpresaID, item.SocioID)
-	return res.LastInsertId()
+	return id, nil
 }
 
 func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioDashboard, error) {
@@ -1766,17 +1746,13 @@ func UpsertEmpresaGimnasioAccesoConfig(dbConn *sql.DB, payload EmpresaGimnasioAc
 	var existingID int64
 	err := dbConn.QueryRow(`SELECT id FROM empresa_gimnasio_acceso_config WHERE empresa_id=? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err == sql.ErrNoRows {
-		res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_acceso_config (
+		return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_acceso_config (
 			empresa_id, modo_validacion_principal, permitir_rfid, permitir_nfc, permitir_qr, permitir_pin, permitir_biometria, permitir_facial,
 			anti_passback_minutos, minutos_tolerancia_mora, estado, fecha_actualizacion, usuario_creador
 		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			cfg.EmpresaID, cfg.ModoValidacionPrincipal, toInt(cfg.PermitirRFID), toInt(cfg.PermitirNFC), toInt(cfg.PermitirQR), toInt(cfg.PermitirPIN), toInt(cfg.PermitirBiometria), toInt(cfg.PermitirFacial),
 			cfg.AntiPassbackMinutos, cfg.MinutosToleranciaMora, cfg.Estado, time.Now().Format("2006-01-02 15:04:05"), cfg.UsuarioCreador,
 		)
-		if err != nil {
-			return 0, err
-		}
-		return res.LastInsertId()
 	}
 	if err != nil {
 		return 0, err
@@ -1829,14 +1805,10 @@ func CreateEmpresaGimnasioCredencial(dbConn *sql.DB, payload EmpresaGimnasioCred
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_credenciales (
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_credenciales (
 		empresa_id, socio_id, tipo_credencial, codigo_credencial, alias_credencial, estado, fecha_expiracion, fecha_actualizacion, usuario_creador
 	) VALUES (?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.SocioID, item.TipoCredencial, item.CodigoCredencial, item.AliasCredencial, item.Estado, item.FechaExpiracion, time.Now().Format("2006-01-02 15:04:05"), item.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioCredencial(dbConn *sql.DB, payload EmpresaGimnasioCredencial) error {
@@ -1894,12 +1866,8 @@ func CreateEmpresaGimnasioDispositivoAcceso(dbConn *sql.DB, payload EmpresaGimna
 	if err != nil {
 		return 0, err
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_dispositivos_acceso (empresa_id, nombre, tipo_dispositivo, ubicacion, sede, canal, estado, identificador, observaciones, fecha_actualizacion, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_dispositivos_acceso (empresa_id, nombre, tipo_dispositivo, ubicacion, sede, canal, estado, identificador, observaciones, fecha_actualizacion, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.Nombre, item.TipoDispositivo, item.Ubicacion, item.Sede, item.Canal, item.Estado, item.Identificador, item.Observaciones, time.Now().Format("2006-01-02 15:04:05"), item.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaGimnasioDispositivoAcceso(dbConn *sql.DB, payload EmpresaGimnasioDispositivoAcceso) error {
@@ -1963,12 +1931,8 @@ func RegistrarEmpresaGimnasioEventoAcceso(dbConn *sql.DB, payload EmpresaGimnasi
 	if strings.TrimSpace(payload.FechaEvento) == "" {
 		payload.FechaEvento = time.Now().Format("2006-01-02 15:04:05")
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_gimnasio_eventos_acceso (empresa_id, socio_id, credencial_id, dispositivo_id, codigo_credencial, metodo_acceso, resultado, motivo, fecha_evento, canal, sede, observaciones, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_eventos_acceso (empresa_id, socio_id, credencial_id, dispositivo_id, codigo_credencial, metodo_acceso, resultado, motivo, fecha_evento, canal, sede, observaciones, usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		payload.EmpresaID, payload.SocioID, payload.CredencialID, payload.DispositivoID, strings.TrimSpace(payload.CodigoCredencial), strings.TrimSpace(payload.MetodoAcceso), normalizeGymState(payload.Resultado, "aprobado"), strings.TrimSpace(payload.Motivo), payload.FechaEvento, strings.TrimSpace(payload.Canal), strings.TrimSpace(payload.Sede), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ValidarEmpresaGimnasioAcceso(dbConn *sql.DB, empresaID int64, codigoCredencial, metodo string, dispositivoID int64, usuario string) (*EmpresaGimnasioEventoAcceso, error) {

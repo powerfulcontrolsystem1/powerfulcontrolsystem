@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tarjetas de acceso hotel</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.access-page { background:#f5f7fb; color:#172033; }
+    .access-shell { max-width:1380px; margin:0 auto; padding:24px; }
+    .access-header { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:18px; }
+    .access-header h1 { margin:0; font-size:2rem; letter-spacing:0; }
+    .access-header p { margin:8px 0 0; color:#607086; max-width:780px; line-height:1.5; }
+    .access-grid { display:grid; grid-template-columns:390px minmax(0,1fr); gap:16px; align-items:start; }
+    .access-panel { background:#fff; border:1px solid rgba(23,32,51,.1); border-radius:8px; padding:18px; box-shadow:0 14px 45px rgba(23,32,51,.08); }
+    .access-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .access-form .span-2 { grid-column:1 / -1; }
+    .access-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .access-table-wrap { overflow:auto; border:1px solid rgba(23,32,51,.1); border-radius:8px; }
+    .access-table { width:100%; min-width:900px; border-collapse:collapse; }
+    .access-table th, .access-table td { padding:11px 12px; border-bottom:1px solid rgba(23,32,51,.08); text-align:left; vertical-align:top; }
+    .access-table th { font-size:.78rem; text-transform:uppercase; color:#607086; }
+    .access-badge { display:inline-flex; border-radius:999px; padding:4px 9px; background:#e8f6f1; color:#047857; font-weight:800; font-size:.78rem; }
+    .access-badge.off { background:#fff1f2; color:#be123c; }
+    .access-message { margin-top:10px; color:#047857; font-weight:700; }
+    .access-message.is-error { color:#b42318; }
+    @media (max-width: 900px) { .access-grid { grid-template-columns:1fr; } .access-header { display:block; } }
+  </style>
+</head>
+<body class="access-page">
+  <main class="access-shell">
+    <header class="access-header">
+      <div>
+        <h1>Tarjetas programadas de habitación</h1>
+        <p>Programa tarjetas RFID, NFC o códigos temporales por habitación, huésped, reserva y ventana exacta de check-in/check-out. La validación pública responde con comando de apertura solo si la tarjeta está vigente.</p>
+      </div>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </header>
+
+    <section class="access-grid">
+      <form id="cardForm" class="access-panel">
+        <input id="cardId" type="hidden">
+        <h2>Programar tarjeta</h2>
+        <div class="access-form">
+          <div class="span-2"><label class="form-label">Habitación / estación</label><select id="stationSelect" class="form-input"></select></div>
+          <div><label class="form-label">ID estación</label><input id="stationId" class="form-input" type="number" min="1" required></div>
+          <div><label class="form-label">Código estación</label><input id="stationCode" class="form-input" placeholder="EST-7-101"></div>
+          <div class="span-2"><label class="form-label">Nombre habitación</label><input id="stationName" class="form-input" placeholder="Habitación 101"></div>
+          <div><label class="form-label">Código tarjeta</label><input id="cardCode" class="form-input" placeholder="CARD-101-A" required></div>
+          <div><label class="form-label">UID físico RFID/NFC</label><input id="cardUid" class="form-input" placeholder="04A1B2C3D4"></div>
+          <div class="span-2"><label class="form-label">Huésped</label><input id="guestName" class="form-input" placeholder="Nombre del huésped"></div>
+          <div><label class="form-label">Reserva ID</label><input id="reservationId" class="form-input" type="number" min="0"></div>
+          <div><label class="form-label">Máximo usos</label><input id="maxUses" class="form-input" type="number" min="0" value="0"></div>
+          <div><label class="form-label">Vigente desde</label><input id="validFrom" class="form-input" type="datetime-local" required></div>
+          <div><label class="form-label">Vigente hasta</label><input id="validTo" class="form-input" type="datetime-local" required></div>
+          <div class="span-2"><label class="form-label">Estado</label><select id="status" class="form-input"><option value="activo">Activa</option><option value="inactivo">Bloqueada</option></select></div>
+          <div class="span-2"><label class="form-label">Observaciones</label><textarea id="notes" class="form-textarea" placeholder="Entrega, responsable, segunda tarjeta, restricciones"></textarea></div>
+        </div>
+        <div class="access-actions">
+          <button class="btn" type="submit">Guardar y programar</button>
+          <button id="resetBtn" class="btn secondary" type="button">Limpiar</button>
+        </div>
+        <div id="msg" class="access-message"></div>
+      </form>
+
+      <section class="access-panel">
+        <h2>Tarjetas activas y programadas</h2>
+        <div class="access-actions">
+          <label class="hotel-check-row"><input id="includeInactive" type="checkbox"> Incluir bloqueadas/vencidas</label>
+        </div>
+        <div id="list" class="access-table-wrap"><div class="form-help" style="padding:16px">Cargando...</div></div>
+      </section>
+    </section>
+  </main>
+  <script src="/js/hotel_tarjetas_acceso.js"></script>
+</body>
+</html>

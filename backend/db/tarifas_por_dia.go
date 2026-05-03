@@ -13,6 +13,7 @@ import (
 type EmpresaTarifaPorDia struct {
 	ID                     int64   `json:"id"`
 	EmpresaID              int64   `json:"empresa_id"`
+	NombreTarifa           string  `json:"nombre_tarifa,omitempty"`
 	EstacionID             int64   `json:"estacion_id"`
 	EstacionCodigo         string  `json:"estacion_codigo,omitempty"`
 	EstacionNombre         string  `json:"estacion_nombre,omitempty"`
@@ -103,6 +104,7 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_dia (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			nombre_tarifa TEXT,
 			estacion_id INTEGER NOT NULL,
 			estacion_codigo TEXT,
 			estacion_nombre TEXT,
@@ -130,6 +132,9 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "estacion_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "nombre_tarifa", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "estacion_nombre", "TEXT"); err != nil {
@@ -279,7 +284,11 @@ func normalizeEmpresaTarifaPorDiaPayload(payload *EmpresaTarifaPorDia) error {
 
 	payload.EstacionCodigo = strings.TrimSpace(payload.EstacionCodigo)
 	payload.EstacionNombre = strings.TrimSpace(payload.EstacionNombre)
+	payload.NombreTarifa = strings.TrimSpace(payload.NombreTarifa)
 	payload.ServicioNombre = normalizeTarifaPorDiaServicio(payload.ServicioNombre)
+	if payload.NombreTarifa == "" {
+		payload.NombreTarifa = payload.ServicioNombre
+	}
 	payload.ValorDia = round2(payload.ValorDia)
 	payload.HoraCheckIn = horaCheckIn
 	payload.HoraCheckOut = horaCheckOut
@@ -299,6 +308,7 @@ func scanEmpresaTarifaPorDia(scanner interface {
 	if err := scanner.Scan(
 		&item.ID,
 		&item.EmpresaID,
+		&item.NombreTarifa,
 		&item.EstacionID,
 		&item.EstacionCodigo,
 		&item.EstacionNombre,
@@ -334,6 +344,7 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_tarifas_por_dia (
 		empresa_id,
+		nombre_tarifa,
 		estacion_id,
 		estacion_codigo,
 		estacion_nombre,
@@ -349,8 +360,9 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
+		payload.NombreTarifa,
 		payload.EstacionID,
 		payload.EstacionCodigo,
 		payload.EstacionNombre,
@@ -384,6 +396,7 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 	res, err := dbConn.Exec(`UPDATE empresa_tarifas_por_dia
 	SET
 		estacion_id = ?,
+		nombre_tarifa = ?,
 		estacion_codigo = ?,
 		estacion_nombre = ?,
 		servicio_nombre = ?,
@@ -399,6 +412,7 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`,
 		payload.EstacionID,
+		payload.NombreTarifa,
 		payload.EstacionCodigo,
 		payload.EstacionNombre,
 		payload.ServicioNombre,
@@ -467,6 +481,7 @@ func GetEmpresaTarifaPorDiaByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaTa
 	row := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
+		COALESCE(nombre_tarifa, ''),
 		estacion_id,
 		COALESCE(estacion_codigo, ''),
 		COALESCE(estacion_nombre, ''),
@@ -504,6 +519,7 @@ func ListEmpresaTarifasPorDia(dbConn *sql.DB, empresaID int64, filter EmpresaTar
 	query := `SELECT
 		id,
 		empresa_id,
+		COALESCE(nombre_tarifa, ''),
 		estacion_id,
 		COALESCE(estacion_codigo, ''),
 		COALESCE(estacion_nombre, ''),
@@ -562,6 +578,7 @@ func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int6
 	query := `SELECT
 		id,
 		empresa_id,
+		COALESCE(nombre_tarifa, ''),
 		estacion_id,
 		COALESCE(estacion_codigo, ''),
 		COALESCE(estacion_nombre, ''),
@@ -999,9 +1016,7 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 	}
 	if hasReservas {
 		rowsReservas, err := dbConn.Query(`SELECT DISTINCT
-			COALESCE(estacion_id, 0),
-			COALESCE(estacion_codigo, ''),
-			COALESCE(estacion_nombre, '')
+			COALESCE(estacion_id, 0)
 		FROM reservas_hotel
 		WHERE empresa_id = ?
 			AND COALESCE(estacion_id, 0) > 0`, empresaID)
@@ -1010,13 +1025,11 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 		}
 		for rowsReservas.Next() {
 			var estacionID int64
-			var estacionCodigo string
-			var estacionNombre string
-			if err := rowsReservas.Scan(&estacionID, &estacionCodigo, &estacionNombre); err != nil {
+			if err := rowsReservas.Scan(&estacionID); err != nil {
 				rowsReservas.Close()
 				return nil, err
 			}
-			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID, Codigo: estacionCodigo, Nombre: estacionNombre}, empresaID)
+			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID}, empresaID)
 		}
 		if err := rowsReservas.Err(); err != nil {
 			rowsReservas.Close()
@@ -1039,6 +1052,7 @@ func findEmpresaTarifaPorDiaByStation(dbConn *sql.DB, empresaID, estacionID int6
 	row := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
+		COALESCE(nombre_tarifa, ''),
 		estacion_id,
 		COALESCE(estacion_codigo, ''),
 		COALESCE(estacion_nombre, ''),

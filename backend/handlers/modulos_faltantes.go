@@ -25,11 +25,47 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"golang.org/x/crypto/pkcs12"
 )
+
+var empresaModulosFaltantesSchemaState = struct {
+	sync.Mutex
+	ready map[*sql.DB]bool
+}{
+	ready: make(map[*sql.DB]bool),
+}
+
+func ensureEmpresaModulosFaltantesSchemaReady(dbEmp *sql.DB) error {
+	if dbEmp == nil {
+		return errors.New("db connection is nil")
+	}
+
+	empresaModulosFaltantesSchemaState.Lock()
+	defer empresaModulosFaltantesSchemaState.Unlock()
+
+	if empresaModulosFaltantesSchemaState.ready[dbEmp] {
+		return nil
+	}
+	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+		return err
+	}
+	empresaModulosFaltantesSchemaState.ready[dbEmp] = true
+	return nil
+}
+
+func withEmpresaModulosFaltantesSchema(dbEmp *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := ensureEmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
+			http.Error(w, "No se pudo preparar el esquema de modulos ERP faltantes", http.StatusInternalServerError)
+			return
+		}
+		next(w, r)
+	}
+}
 
 type empresaModuloGenericConfig struct {
 	Table            string
@@ -570,37 +606,37 @@ var (
 
 // RegisterEmpresaModulosFaltantesRoutes registra endpoints para modulos faltantes ERP/POS.
 func RegisterEmpresaModulosFaltantesRoutes(dbEmp, dbSuper *sql.DB) {
-	http.HandleFunc("/api/empresa/ventas/cotizaciones", WithEmpresaVentasPermissions(dbEmp, dbSuper, EmpresaVentasCotizacionesHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/ventas/pedidos", WithEmpresaVentasPermissions(dbEmp, dbSuper, EmpresaVentasPedidosHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/ventas/devoluciones", WithEmpresaVentasPermissions(dbEmp, dbSuper, EmpresaVentasDevolucionesHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/ventas/cotizaciones", WithEmpresaVentasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaVentasCotizacionesHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/ventas/pedidos", WithEmpresaVentasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaVentasPedidosHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/ventas/devoluciones", WithEmpresaVentasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaVentasDevolucionesHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/finanzas/plan_cuentas", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, EmpresaFinanzasPlanCuentasHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/finanzas/cuentas_cobrar", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, EmpresaFinanzasCuentasCobrarHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/finanzas/cuentas_pagar", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, EmpresaFinanzasCuentasPagarHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/finanzas/plan_cuentas", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaFinanzasPlanCuentasHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/finanzas/cuentas_cobrar", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaFinanzasCuentasCobrarHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/finanzas/cuentas_pagar", WithEmpresaFinanzasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaFinanzasCuentasPagarHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/inventario/lotes_series", WithEmpresaInventarioPermissions(dbEmp, dbSuper, EmpresaInventarioLotesSeriesHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/compras/devoluciones_proveedor", WithEmpresaComprasPermissions(dbEmp, dbSuper, EmpresaComprasDevolucionesProveedorHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/rrhh/vacaciones_licencias", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaRRHHVacacionesLicenciasHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/inventario/lotes_series", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaInventarioLotesSeriesHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/compras/devoluciones_proveedor", WithEmpresaComprasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaComprasDevolucionesProveedorHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/rrhh/vacaciones_licencias", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaRRHHVacacionesLicenciasHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/crm/leads", WithEmpresaClientesPermissions(dbEmp, dbSuper, EmpresaCRMLeadsHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/crm/interacciones", WithEmpresaClientesPermissions(dbEmp, dbSuper, EmpresaCRMInteraccionesHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/crm/campanas", WithEmpresaClientesPermissions(dbEmp, dbSuper, EmpresaCRMCampanasHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/crm/leads", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMLeadsHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/crm/interacciones", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMInteraccionesHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/crm/campanas", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMCampanasHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/produccion/bom", WithEmpresaInventarioPermissions(dbEmp, dbSuper, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOM)))
-	http.HandleFunc("/api/empresa/produccion/bom_detalle", WithEmpresaInventarioPermissions(dbEmp, dbSuper, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOMDetalle)))
-	http.HandleFunc("/api/empresa/produccion/ordenes", WithEmpresaInventarioPermissions(dbEmp, dbSuper, EmpresaProduccionOrdenesHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/produccion/bom", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOM))))
+	http.HandleFunc("/api/empresa/produccion/bom_detalle", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOMDetalle))))
+	http.HandleFunc("/api/empresa/produccion/ordenes", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaProduccionOrdenesHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/logistica/transportistas", WithEmpresaInventarioPermissions(dbEmp, dbSuper, empresaModuloGenericCRUDHandler(dbEmp, cfgLogisticaTransportistas)))
-	http.HandleFunc("/api/empresa/logistica/rutas", WithEmpresaInventarioPermissions(dbEmp, dbSuper, empresaModuloGenericCRUDHandler(dbEmp, cfgLogisticaRutas)))
-	http.HandleFunc("/api/empresa/logistica/envios", WithEmpresaInventarioPermissions(dbEmp, dbSuper, EmpresaLogisticaEnviosHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/logistica/transportistas", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgLogisticaTransportistas))))
+	http.HandleFunc("/api/empresa/logistica/rutas", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgLogisticaRutas))))
+	http.HandleFunc("/api/empresa/logistica/envios", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaLogisticaEnviosHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/documentos/gestion", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaDocumentosGestionHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/documentos/firmas", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaDocumentosFirmasHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/documentos/gestion", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaDocumentosGestionHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/documentos/firmas", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaDocumentosFirmasHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/integraciones/apis", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaIntegracionesAPIsHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/integraciones/bancos", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaIntegracionesBancosHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/integraciones/apis", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaIntegracionesAPIsHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/integraciones/bancos", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaIntegracionesBancosHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/facturacion_electronica/dian", WithEmpresaFacturacionPermissions(dbEmp, dbSuper, EmpresaDIANColombiaHandler(dbEmp)))
+	http.HandleFunc("/api/empresa/facturacion_electronica/dian", WithEmpresaFacturacionPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaDIANColombiaHandler(dbEmp))))
 }
 
 func EmpresaVentasCotizacionesHandler(dbEmp *sql.DB) http.HandlerFunc {

@@ -696,6 +696,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
+	}
 	startupTrace("after_empresa_sensor_puertas_schema")
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
@@ -865,6 +868,8 @@ func main() {
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_motel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasMotelHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/hotel_tarjetas_acceso", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaHotelTarjetasAccesoHandler(dbEmpresas)))
+	http.HandleFunc("/api/public/hotel_tarjetas_acceso", handlers.PublicHotelTarjetasAccesoHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/codigos_de_descuento", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCodigosDescuentoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/propinas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPropinasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))

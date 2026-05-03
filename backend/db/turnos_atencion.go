@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -321,7 +322,7 @@ func CreateEmpresaTurnoAtencionPuesto(dbConn *sql.DB, item EmpresaTurnoAtencionP
 
 func nextNumeroTurnoDia(dbConn *sql.DB, empresaID, servicioID int64, fecha string) (int, error) {
 	var numero int
-	if err := QueryRowCompat(dbConn, `SELECT COALESCE(MAX(numero_dia), 0) + 1 FROM empresa_turnos_atencion_tickets WHERE empresa_id = ? AND servicio_id = ? AND fecha_operacion = ?`, empresaID, servicioID, fecha).Scan(&numero); err != nil {
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(MAX(numero_dia), 0) + 1 FROM empresa_turnos_atencion_tickets WHERE empresa_id = ? AND fecha_operacion = ?`, empresaID, fecha).Scan(&numero); err != nil {
 		return 0, err
 	}
 	if numero <= 0 {
@@ -507,14 +508,37 @@ func nextWaitingTicketForPuesto(dbConn *sql.DB, empresaID, puestoID int64) (Empr
 		WHERE t.empresa_id = ? AND t.fecha_operacion = ? AND t.estado = 'espera'`
 	args := []interface{}{empresaID, time.Now().Format("2006-01-02")}
 	if strings.TrimSpace(puesto.ServiciosPermitidos) != "" {
-		codes := splitCSV(puesto.ServiciosPermitidos)
-		if len(codes) > 0 {
-			placeholders := make([]string, 0, len(codes))
-			for _, code := range codes {
-				placeholders = append(placeholders, "?")
-				args = append(args, strings.ToUpper(code))
+		tokens := splitCSV(puesto.ServiciosPermitidos)
+		if len(tokens) > 0 {
+			codePlaceholders := make([]string, 0, len(tokens))
+			idPlaceholders := make([]string, 0, len(tokens))
+			idArgs := make([]interface{}, 0, len(tokens))
+			codeArgs := make([]interface{}, 0, len(tokens))
+			for _, token := range tokens {
+				token = strings.TrimSpace(token)
+				if token == "" {
+					continue
+				}
+				if id, err := strconv.ParseInt(token, 10, 64); err == nil && id > 0 {
+					idPlaceholders = append(idPlaceholders, "?")
+					idArgs = append(idArgs, id)
+					continue
+				}
+				codePlaceholders = append(codePlaceholders, "?")
+				codeArgs = append(codeArgs, strings.ToUpper(token))
 			}
-			query += ` AND UPPER(COALESCE(s.codigo,'')) IN (` + strings.Join(placeholders, ",") + `)`
+			clauses := make([]string, 0, 2)
+			if len(idPlaceholders) > 0 {
+				clauses = append(clauses, `t.servicio_id IN (`+strings.Join(idPlaceholders, ",")+`)`)
+			}
+			if len(codePlaceholders) > 0 {
+				clauses = append(clauses, `UPPER(COALESCE(s.codigo,'')) IN (`+strings.Join(codePlaceholders, ",")+`)`)
+			}
+			if len(clauses) > 0 {
+				query += ` AND (` + strings.Join(clauses, " OR ") + `)`
+				args = append(args, idArgs...)
+				args = append(args, codeArgs...)
+			}
 		}
 	}
 	query += ` ORDER BY COALESCE(s.prioridad,100) ASC, t.id ASC LIMIT 1`
