@@ -18278,3 +18278,29 @@ Archivos modificados:
 - web/administrar_empresa/tarifas_de_motel.html
 - web/js/administrar_empresa.js
 - web/js/tarifas_de_motel.js
+
+2026-05-03: Asesor comercial: configurar transferencias y pagos de comisiones
+PushStatus: OK
+Archivos modificados:
+- .gitignore
+- CHANGELOG.md
+- backend/db/asesor_comercial.go
+- backend/db/empresa_impresoras.go
+- backend/db/productos.go
+- backend/db/ubicacion_gps.go
+- backend/db/ubicacion_gps_test.go
+- backend/handlers/asesor_comercial.go
+- backend/handlers/empresa_impresoras.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/combos_productos.html
+- web/administrar_empresa/ubicacion_gps.html
+- web/estilos.css
+- web/js/ai_chat_drawer.js
+- web/super/asesor_comercial.html
