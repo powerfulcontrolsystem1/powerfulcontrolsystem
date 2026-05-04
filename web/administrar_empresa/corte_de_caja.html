@@ -14,6 +14,14 @@
     .cash-report-check input { margin-top:3px; }
     .cash-report-check strong { display:block; font-size:.92rem; }
     .cash-report-check span { display:block; font-size:.78rem; color:#64748b; }
+    .cash-config-toolbar { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin:16px 0 8px; }
+    .cash-config-toolbar h3 { margin:0; }
+    .cash-config-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .cash-config-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; }
+    .cash-config-check { display:flex; gap:10px; align-items:flex-start; border:1px solid rgba(15,23,42,.1); border-radius:12px; padding:10px; background:#fff; min-height:58px; }
+    .cash-config-check input { margin-top:3px; }
+    .cash-config-check strong { display:block; font-size:.9rem; color:#0f172a; }
+    .cash-config-check span span { display:block; margin-top:2px; font-size:.76rem; color:#64748b; }
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
     .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
     .cash-kpi { border-radius:18px; padding:13px; background:#0f172a; color:white; min-height:92px; }
@@ -111,15 +119,42 @@
             </div>
           </div>
 
+          <div id="configuracionReporteCorte" class="cash-config-module">
+            <div class="cash-config-toolbar">
+              <h3 class="section-heading">Configuracion del reporte de corte</h3>
+              <div class="cash-config-actions">
+                <button id="btnGuardarConfigReporte" class="btn secondary" type="button">Guardar configuracion</button>
+                <button id="btnRestaurarConfigReporte" class="btn secondary" type="button">Restaurar profesional</button>
+              </div>
+            </div>
+            <p class="form-help">Define que indicadores y bloques salen por defecto en pantalla, cierre e impresion.</p>
+            <div id="metricSelector" class="cash-config-grid">
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_numero_facturas" checked><span><strong>Numero de facturas</strong><span>Cantidad de comprobantes pagados.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_total_ventas" checked><span><strong>Total de ventas</strong><span>Suma general del turno.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_efectivo" checked><span><strong>Suma efectivo</strong><span>Ventas y caja esperada en efectivo.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_debito" checked><span><strong>Suma debito</strong><span>Pagos con tarjeta debito.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_credito" checked><span><strong>Suma credito</strong><span>Pagos con tarjeta credito.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_transferencias" checked><span><strong>Transferencias</strong><span>Pagos bancarios y digitales.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_ingresos" checked><span><strong>Ingresos</strong><span>Entradas adicionales registradas.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_egresos" checked><span><strong>Egresos</strong><span>Salidas de caja y gastos.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas del periodo.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_devoluciones" checked><span><strong>Devoluciones</strong><span>Valor devuelto a clientes.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_caja_esperada" checked><span><strong>Caja esperada</strong><span>Efectivo teorico al cierre.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_diferencia_caja" checked><span><strong>Diferencia de caja</strong><span>Comparacion fisica contra teorica.</span></span></label>
+              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_otros_medios" checked><span><strong>Otros medios</strong><span>Pagos no clasificados.</span></span></label>
+            </div>
+            <div id="configReporteMsg" class="form-help" style="margin-top:8px"></div>
+          </div>
+
           <h3 class="section-heading">Reportes a imprimir al cerrar</h3>
           <div id="reportSelector" class="cash-close-report-grid">
-            <label class="cash-report-check"><input type="checkbox" value="resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="ventas" checked><span><strong>Ventas del turno</strong><span>Comprobantes, metodo y cajero.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas y devoluciones.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="movimientos" checked><span><strong>Movimientos</strong><span>Ingresos, egresos y metodo de pago.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="sensores" checked><span><strong>Control motel</strong><span>Habitaciones ocupadas sin factura.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="resumen" data-config-key="mostrar_resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="ventas" data-config-key="mostrar_ventas_detalle" checked><span><strong>Ventas del turno</strong><span>Comprobantes, metodo y cajero.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="anulaciones" data-config-key="mostrar_anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas y devoluciones.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="movimientos" data-config-key="mostrar_movimientos" checked><span><strong>Movimientos</strong><span>Ingresos, egresos y metodo de pago.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="items" data-config-key="mostrar_items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="sensores" data-config-key="mostrar_sensores_puertas" checked><span><strong>Control motel</strong><span>Habitaciones ocupadas sin factura.</span></span></label>
+            <label class="cash-report-check"><input type="checkbox" value="auditoria" data-config-key="mostrar_auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
           </div>
           <div id="msg" class="form-help" style="margin-top:12px"></div>
         </div>
@@ -224,6 +259,28 @@
   var empresaId = resolveEmpresaId();
   var lastReport = null;
   var printFormat = 'carta';
+  var reporteConfig = {
+    mostrar_resumen: true,
+    mostrar_numero_facturas: true,
+    mostrar_total_ventas: true,
+    mostrar_efectivo: true,
+    mostrar_debito: true,
+    mostrar_credito: true,
+    mostrar_transferencias: true,
+    mostrar_otros_medios: true,
+    mostrar_ingresos: true,
+    mostrar_egresos: true,
+    mostrar_anulaciones: true,
+    mostrar_devoluciones: true,
+    mostrar_caja_esperada: true,
+    mostrar_diferencia_caja: true,
+    mostrar_ventas_detalle: true,
+    mostrar_movimientos: true,
+    mostrar_items: true,
+    mostrar_sensores_puertas: true,
+    mostrar_auditoria: true,
+    formato_impresion: 'carta'
+  };
 
   function escapeHtml(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -256,6 +313,71 @@
     var boxes = document.querySelectorAll('#reportSelector input[type="checkbox"]:checked');
     var out = Array.prototype.map.call(boxes, function(box) { return box.value; });
     return out.length ? out : ['resumen'];
+  }
+
+  function collectReporteConfig() {
+    var cfg = Object.assign({}, reporteConfig);
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      cfg[box.getAttribute('data-config-key')] = !!box.checked;
+    });
+    cfg.formato_impresion = normalizePrintFormat(document.getElementById('modoVista').value);
+    cfg.estado = 'activo';
+    return cfg;
+  }
+
+  function applyReporteConfig(cfg) {
+    reporteConfig = Object.assign({}, reporteConfig, cfg || {});
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      var key = box.getAttribute('data-config-key');
+      if (Object.prototype.hasOwnProperty.call(reporteConfig, key)) box.checked = !!reporteConfig[key];
+    });
+    if (reporteConfig.formato_impresion) {
+      document.getElementById('modoVista').value = normalizePrintFormat(reporteConfig.formato_impresion);
+      applyPrintFormat(reporteConfig.formato_impresion);
+    }
+    if (lastReport) renderReport(lastReport);
+  }
+
+  async function cargarConfigReporte() {
+    if (!empresaId) return;
+    try {
+      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId));
+      if (res && res.configuracion) applyReporteConfig(res.configuracion);
+    } catch (_) {}
+  }
+
+  async function guardarConfigReporte() {
+    var msg = document.getElementById('configReporteMsg');
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      msg.textContent = 'Guardando configuracion del reporte...';
+      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify(collectReporteConfig())
+      });
+      if (res && res.configuracion) applyReporteConfig(res.configuracion);
+      msg.textContent = 'Configuracion guardada. Los proximos cortes usaran estos checks.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo guardar la configuracion.';
+    }
+  }
+
+  async function restaurarConfigReporte() {
+    var msg = document.getElementById('configReporteMsg');
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      msg.textContent = 'Restaurando configuracion profesional...';
+      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId) + '&action=restaurar', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body:'{}'
+      });
+      if (res && res.configuracion) applyReporteConfig(res.configuracion);
+      msg.textContent = 'Configuracion profesional restaurada.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo restaurar la configuracion.';
+    }
   }
 
   function normalizePrintFormat(value) {
@@ -311,16 +433,28 @@
 
   function renderSummary(resumen) {
     var cur = resumen.moneda || 'COP';
-    var cards = [
-      ['Ventas', String(resumen.ventas_cantidad || 0), money(resumen.ventas_total || 0, cur)],
-      ['Anulaciones', String(resumen.ventas_anuladas_cantidad || 0), money(resumen.ventas_anuladas_total || 0, cur)],
-      ['Efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo'],
-      ['Tarjetas', money(resumen.tarjetas_ventas || 0, cur), 'Credito y debito'],
-      ['Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios'],
-      ['Mov. efectivo', money((resumen.ingresos_efectivo || 0) - (resumen.egresos_efectivo || 0), cur), 'Ingresos menos egresos'],
-      ['Productos', money(resumen.total_productos || 0, cur), 'Total vendido'],
-      ['Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado']
-    ];
+    var cfg = Object.assign({}, reporteConfig, (lastReport && lastReport.configuracion_reporte) || {});
+    var fisica = Number(document.getElementById('cajaFisica').value || 0);
+    var diferencia = Number(resumen.efectivo_esperado_caja || 0) - fisica;
+    var cards = [];
+    function add(enabled, title, value, note) {
+      if (enabled) cards.push([title, value, note]);
+    }
+    add(cfg.mostrar_numero_facturas, 'Facturas', String(resumen.numero_facturas || resumen.ventas_cantidad || 0), 'Comprobantes pagados');
+    add(cfg.mostrar_total_ventas, 'Ventas', money(resumen.ventas_total || 0, cur), 'Total del turno');
+    add(cfg.mostrar_efectivo, 'Efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo');
+    add(cfg.mostrar_debito, 'Debito', money(resumen.debito_ventas || 0, cur), 'Tarjeta debito');
+    add(cfg.mostrar_credito, 'Credito', money(resumen.credito_ventas || 0, cur), 'Tarjeta credito');
+    add(cfg.mostrar_transferencias, 'Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios');
+    add(cfg.mostrar_otros_medios, 'Otros medios', money(resumen.otros_medios_ventas || 0, cur), 'Pagos sin clasificar');
+    add(cfg.mostrar_ingresos, 'Ingresos', money(resumen.ingresos_financieros || 0, cur), String(resumen.ingresos_cantidad || 0) + ' movimientos');
+    add(cfg.mostrar_egresos, 'Egresos', money(resumen.egresos_financieros || 0, cur), String(resumen.egresos_cantidad || 0) + ' movimientos');
+    add(cfg.mostrar_anulaciones, 'Anulaciones', money(resumen.ventas_anuladas_total || 0, cur), String(resumen.ventas_anuladas_cantidad || 0) + ' reversos');
+    add(cfg.mostrar_devoluciones, 'Devoluciones', money(resumen.devoluciones_total || 0, cur), 'Valor devuelto');
+    add(cfg.mostrar_caja_esperada, 'Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado');
+    add(cfg.mostrar_diferencia_caja, 'Diferencia caja', money(diferencia, cur), 'Teorica menos fisica');
+    add(cfg.mostrar_items, 'Productos', money(resumen.total_productos || 0, cur), 'Total vendido');
+    if (!cards.length) cards.push(['Resumen', 'Sin metricas activas', 'Activa checks en configuracion']);
     document.getElementById('summaryGrid').innerHTML = cards.map(function(card) {
       return '<article class="corte-summary-card"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></article>';
     }).join('');
@@ -349,8 +483,16 @@
 
   function applySectionVisibility(payload) {
     var enabled = payload && payload.secciones ? payload.secciones : {};
+    var cfg = Object.assign({}, reporteConfig, (payload && payload.configuracion_reporte) || {});
     var reports = selectedReports();
     reports.forEach(function(r) { enabled[r] = true; });
+    if (!cfg.mostrar_resumen) enabled.resumen = false;
+    if (!cfg.mostrar_ventas_detalle) enabled.ventas = false;
+    if (!cfg.mostrar_anulaciones && !cfg.mostrar_devoluciones) enabled.anulaciones = false;
+    if (!cfg.mostrar_movimientos && !cfg.mostrar_ingresos && !cfg.mostrar_egresos) enabled.movimientos = false;
+    if (!cfg.mostrar_items) enabled.items = false;
+    if (!cfg.mostrar_sensores_puertas) enabled.sensores = false;
+    if (!cfg.mostrar_auditoria) enabled.auditoria = false;
     document.getElementById('summaryGrid').hidden = enabled.resumen === false;
     document.querySelectorAll('.corte-report-section[data-section]').forEach(function(section) {
       var key = section.getAttribute('data-section');
@@ -361,6 +503,7 @@
   function renderReport(payload) {
     var resumen = payload.resumen || {};
     var cur = resumen.moneda || 'COP';
+    if (payload.configuracion_reporte) reporteConfig = Object.assign({}, reporteConfig, payload.configuracion_reporte);
     document.getElementById('reportTitle').textContent = 'Corte de caja - ' + (resumen.empresa_nombre || 'Empresa');
     document.getElementById('reportMeta').textContent = 'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) + ' | Usuario: ' + (resumen.usuario_filtro || 'Todos') + ' | Generado: ' + formatDateTime(payload.generado_en) + ' | Vista: ' + printFormat;
     renderSummary(resumen);
@@ -409,8 +552,10 @@
     if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
     try {
       applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
       msg.textContent = 'Generando corte...';
       lastReport = await requestJSON('/api/empresa/corte_caja?' + buildParams().toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
       renderReport(lastReport);
       document.getElementById('btnImprimir').disabled = false;
       document.getElementById('btnCerrar').disabled = false;
@@ -467,12 +612,23 @@
     setDefaultDates();
     preloadAccount();
     applyPrintFormat(document.getElementById('modoVista').value);
+    cargarConfigReporte();
     document.getElementById('btnGenerar').addEventListener('click', generar);
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
-    document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); if (lastReport) renderReport(lastReport); });
+    document.getElementById('btnGuardarConfigReporte').addEventListener('click', guardarConfigReporte);
+    document.getElementById('btnRestaurarConfigReporte').addEventListener('click', restaurarConfigReporte);
+    document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); reporteConfig.formato_impresion = normalizePrintFormat(this.value); if (lastReport) renderReport(lastReport); });
     document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });
-    document.querySelectorAll('#reportSelector input[type="checkbox"]').forEach(function(box) { box.addEventListener('change', function() { if (lastReport) { applySectionVisibility(lastReport); } }); });
+    document.querySelectorAll('[data-config-key], #reportSelector input[type="checkbox"]').forEach(function(box) {
+      box.addEventListener('change', function() {
+        reporteConfig = collectReporteConfig();
+        if (lastReport) {
+          lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+          renderReport(lastReport);
+        }
+      });
+    });
   });
 </script>
 </body>

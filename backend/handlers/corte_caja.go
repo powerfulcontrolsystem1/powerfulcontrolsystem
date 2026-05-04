@@ -75,14 +75,19 @@ type corteCajaResumen struct {
 	Moneda                 string  `json:"moneda"`
 	AperturaEfectivo       float64 `json:"apertura_efectivo"`
 	VentasCantidad         int64   `json:"ventas_cantidad"`
+	NumeroFacturas         int64   `json:"numero_facturas"`
 	VentasTotal            float64 `json:"ventas_total"`
 	VentasAnuladasCantidad int64   `json:"ventas_anuladas_cantidad"`
 	VentasAnuladasTotal    float64 `json:"ventas_anuladas_total"`
 	DevolucionesTotal      float64 `json:"devoluciones_total"`
 	EfectivoVentas         float64 `json:"efectivo_ventas"`
+	DebitoVentas           float64 `json:"debito_ventas"`
+	CreditoVentas          float64 `json:"credito_ventas"`
 	TarjetasVentas         float64 `json:"tarjetas_ventas"`
 	TransferenciasVentas   float64 `json:"transferencias_ventas"`
 	OtrosMediosVentas      float64 `json:"otros_medios_ventas"`
+	IngresosCantidad       int64   `json:"ingresos_cantidad"`
+	EgresosCantidad        int64   `json:"egresos_cantidad"`
 	IngresosEfectivo       float64 `json:"ingresos_efectivo"`
 	EgresosEfectivo        float64 `json:"egresos_efectivo"`
 	IngresosFinancieros    float64 `json:"ingresos_financieros"`
@@ -95,17 +100,18 @@ type corteCajaResumen struct {
 }
 
 type corteCajaResponse struct {
-	OK                 bool                       `json:"ok"`
-	Resumen            corteCajaResumen           `json:"resumen"`
-	Ventas             []corteCajaVenta           `json:"ventas"`
-	Anulaciones        []corteCajaVenta           `json:"anulaciones"`
-	Movimientos        []corteCajaMovimientoGrupo `json:"movimientos"`
-	ItemsPorTipo       []corteCajaTipoItem        `json:"items_por_tipo"`
-	SensoresSinFactura []corteCajaSensorAlerta    `json:"sensores_sin_factura"`
-	Reportes           []string                   `json:"reportes"`
-	Secciones          map[string]bool            `json:"secciones"`
-	GeneradoEn         string                     `json:"generado_en"`
-	Advertencias       []string                   `json:"advertencias,omitempty"`
+	OK                 bool                                 `json:"ok"`
+	Resumen            corteCajaResumen                     `json:"resumen"`
+	Ventas             []corteCajaVenta                     `json:"ventas"`
+	Anulaciones        []corteCajaVenta                     `json:"anulaciones"`
+	Movimientos        []corteCajaMovimientoGrupo           `json:"movimientos"`
+	ItemsPorTipo       []corteCajaTipoItem                  `json:"items_por_tipo"`
+	SensoresSinFactura []corteCajaSensorAlerta              `json:"sensores_sin_factura"`
+	Reportes           []string                             `json:"reportes"`
+	Secciones          map[string]bool                      `json:"secciones"`
+	Configuracion      *dbpkg.EmpresaCorteCajaConfiguracion `json:"configuracion_reporte,omitempty"`
+	GeneradoEn         string                               `json:"generado_en"`
+	Advertencias       []string                             `json:"advertencias,omitempty"`
 }
 
 type corteCajaCerrarPayload struct {
@@ -141,7 +147,12 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		hasta := normalizeCorteCajaDateTime(r.URL.Query().Get("hasta"), now)
 		usuario := strings.TrimSpace(r.URL.Query().Get("usuario"))
 		apertura := parseCorteCajaFloat(r.URL.Query().Get("apertura_efectivo"))
-		reportes := parseCorteCajaReportes(r.URL.Query().Get("reportes"))
+		configuracion, configErr := dbpkg.GetEmpresaCorteCajaConfiguracion(dbEmp, empresaID)
+		if configErr != nil {
+			http.Error(w, "No se pudo cargar la configuracion del corte de caja", http.StatusInternalServerError)
+			return
+		}
+		reportes := parseCorteCajaReportesWithConfig(r.URL.Query().Get("reportes"), configuracion)
 
 		if r.Method == http.MethodPost {
 			var payload corteCajaCerrarPayload
@@ -171,6 +182,7 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			resp.Configuracion = configuracion
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":            true,
 				"cierre_id":     cierreID,
@@ -181,7 +193,7 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		cacheKey := buildCorteCajaCacheKeyFromRequest(r, empresaID, desde, hasta, usuario, apertura)
+		cacheKey := buildCorteCajaCacheKeyFromRequest(r, empresaID, desde, hasta, usuario, apertura, reportes, configuracion)
 		if cached := getCorteCajaCache(cacheKey); cached != nil {
 			writeJSON(w, http.StatusOK, cached)
 			return
@@ -192,13 +204,81 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo generar el corte de caja", http.StatusInternalServerError)
 			return
 		}
+		resp.Configuracion = configuracion
 		applyCorteCajaReportSelection(resp, reportes)
 		storeCorteCajaCache(cacheKey, resp)
 		writeJSON(w, http.StatusOK, resp)
 	}
 }
 
-func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, hasta, usuario string, apertura float64) string {
+func EmpresaCorteCajaConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := dbpkg.GetEmpresaCorteCajaConfiguracion(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudo cargar la configuracion del reporte", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"configuracion": cfg,
+				"reportes":      dbpkg.EmpresaCorteCajaReportesDesdeConfiguracion(cfg),
+			})
+			return
+
+		case http.MethodPost, http.MethodPut:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "restaurar") {
+				cfg := dbpkg.DefaultEmpresaCorteCajaConfiguracion(empresaID)
+				cfg.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				if _, err := dbpkg.UpsertEmpresaCorteCajaConfiguracion(dbEmp, cfg); err != nil {
+					http.Error(w, "No se pudo restaurar la configuracion del reporte", http.StatusInternalServerError)
+					return
+				}
+				saved, _ := dbpkg.GetEmpresaCorteCajaConfiguracion(dbEmp, empresaID)
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":            true,
+					"configuracion": saved,
+					"reportes":      dbpkg.EmpresaCorteCajaReportesDesdeConfiguracion(saved),
+				})
+				return
+			}
+
+			var payload dbpkg.EmpresaCorteCajaConfiguracion
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			payload.EmpresaID = empresaID
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			if payload.Estado == "" {
+				payload.Estado = "activo"
+			}
+			if _, err := dbpkg.UpsertEmpresaCorteCajaConfiguracion(dbEmp, payload); err != nil {
+				http.Error(w, "No se pudo guardar la configuracion del reporte", http.StatusInternalServerError)
+				return
+			}
+			saved, _ := dbpkg.GetEmpresaCorteCajaConfiguracion(dbEmp, empresaID)
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"configuracion": saved,
+				"reportes":      dbpkg.EmpresaCorteCajaReportesDesdeConfiguracion(saved),
+			})
+			return
+
+		default:
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, hasta, usuario string, apertura float64, reportes []string, cfg *dbpkg.EmpresaCorteCajaConfiguracion) string {
 	rawDesde := ""
 	rawHasta := ""
 	if r != nil && r.URL != nil {
@@ -219,8 +299,33 @@ func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, 
 		keyHasta,
 		strings.ToLower(strings.TrimSpace(usuario)),
 		strconv.FormatFloat(apertura, 'f', 2, 64),
-		strings.Join(parseCorteCajaReportes(r.URL.Query().Get("reportes")), ","),
+		strings.Join(normalizeCorteCajaReportes(reportes), ","),
+		corteCajaConfigCacheFingerprint(cfg),
 	}, "|")
+}
+
+func corteCajaConfigCacheFingerprint(cfg *dbpkg.EmpresaCorteCajaConfiguracion) string {
+	if cfg == nil {
+		return "default"
+	}
+	values := []bool{
+		cfg.MostrarResumen, cfg.MostrarNumeroFacturas, cfg.MostrarTotalVentas,
+		cfg.MostrarEfectivo, cfg.MostrarDebito, cfg.MostrarCredito, cfg.MostrarTransferencias, cfg.MostrarOtrosMedios,
+		cfg.MostrarIngresos, cfg.MostrarEgresos, cfg.MostrarAnulaciones, cfg.MostrarDevoluciones,
+		cfg.MostrarCajaEsperada, cfg.MostrarDiferenciaCaja, cfg.MostrarVentasDetalle, cfg.MostrarMovimientos,
+		cfg.MostrarItems, cfg.MostrarSensoresPuertas, cfg.MostrarAuditoria,
+	}
+	var b strings.Builder
+	for _, value := range values {
+		if value {
+			b.WriteByte('1')
+		} else {
+			b.WriteByte('0')
+		}
+	}
+	b.WriteByte(':')
+	b.WriteString(strings.ToLower(strings.TrimSpace(cfg.FormatoImpresion)))
+	return b.String()
 }
 
 func getCorteCajaCache(key string) *corteCajaResponse {
@@ -255,6 +360,13 @@ func storeCorteCajaCache(key string, resp *corteCajaResponse) {
 func parseCorteCajaReportes(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return defaultCorteCajaReportes()
+	}
+	return normalizeCorteCajaReportes(strings.Split(raw, ","))
+}
+
+func parseCorteCajaReportesWithConfig(raw string, cfg *dbpkg.EmpresaCorteCajaConfiguracion) []string {
+	if strings.TrimSpace(raw) == "" {
+		return normalizeCorteCajaReportes(dbpkg.EmpresaCorteCajaReportesDesdeConfiguracion(cfg))
 	}
 	return normalizeCorteCajaReportes(strings.Split(raw, ","))
 }
@@ -457,6 +569,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	soldStationIDs := make(map[int64]bool)
 	for _, venta := range ventas {
 		resp.Resumen.VentasCantidad++
+		resp.Resumen.NumeroFacturas++
 		resp.Resumen.VentasTotal += venta.TotalPagado
 		if venta.TotalPagado <= 0 {
 			resp.Resumen.VentasTotal += venta.Total
@@ -472,9 +585,15 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		if amount <= 0 {
 			amount = venta.Total
 		}
-		switch normalizeCorteCajaMetodo(venta.MetodoPago) {
+		switch normalizeCorteCajaMetodoDetalle(venta.MetodoPago) {
 		case "efectivo":
 			resp.Resumen.EfectivoVentas += amount
+		case "tarjeta_credito":
+			resp.Resumen.CreditoVentas += amount
+			resp.Resumen.TarjetasVentas += amount
+		case "tarjeta_debito":
+			resp.Resumen.DebitoVentas += amount
+			resp.Resumen.TarjetasVentas += amount
 		case "tarjeta":
 			resp.Resumen.TarjetasVentas += amount
 		case "transferencia":
@@ -529,12 +648,14 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		tipo := strings.ToLower(strings.TrimSpace(mov.Tipo))
 		metodo := normalizeCorteCajaMetodo(mov.Metodo)
 		if tipo == "ingreso" {
+			resp.Resumen.IngresosCantidad += mov.Cantidad
 			resp.Resumen.IngresosFinancieros += mov.Total
 			if metodo == "efectivo" {
 				resp.Resumen.IngresosEfectivo += mov.Total
 			}
 		}
 		if tipo == "egreso" {
+			resp.Resumen.EgresosCantidad += mov.Cantidad
 			resp.Resumen.EgresosFinancieros += mov.Total
 			if metodo == "efectivo" {
 				resp.Resumen.EgresosEfectivo += mov.Total
@@ -863,6 +984,26 @@ func normalizeCorteCajaMetodo(raw string) string {
 		return "transferencia"
 	default:
 		return v
+	}
+}
+
+func normalizeCorteCajaMetodoDetalle(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	v = strings.ReplaceAll(v, " ", "_")
+	v = strings.ReplaceAll(v, "-", "_")
+	switch v {
+	case "efectivo", "cash":
+		return "efectivo"
+	case "tarjeta_credito", "credito", "credit", "credit_card", "tc":
+		return "tarjeta_credito"
+	case "tarjeta_debito", "debito", "debit", "debit_card", "td":
+		return "tarjeta_debito"
+	case "tarjeta", "card":
+		return "tarjeta"
+	case "transferencia", "transferencia_bancaria", "banco":
+		return "transferencia"
+	default:
+		return normalizeCorteCajaMetodo(raw)
 	}
 }
 

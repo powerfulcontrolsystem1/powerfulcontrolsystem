@@ -74,6 +74,8 @@ type CarritoCompra struct {
 	EstadoVenta        string                          `json:"estado_venta,omitempty"`
 	Moneda             string                          `json:"moneda,omitempty"`
 	ReferenciaExterna  string                          `json:"referencia_externa,omitempty"`
+	TarifaTiempoTipo   string                          `json:"tarifa_tiempo_tipo,omitempty"`
+	TarifaTiempoID     int64                           `json:"tarifa_tiempo_id,omitempty"`
 	Subtotal           float64                         `json:"subtotal"`
 	DescuentoTotal     float64                         `json:"descuento_total"`
 	ImpuestoTotal      float64                         `json:"impuesto_total"`
@@ -209,6 +211,8 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			total_pagado REAL DEFAULT 0,
 			metodo_pago TEXT DEFAULT 'efectivo',
 			referencia_pago TEXT,
+			tarifa_tiempo_tipo TEXT DEFAULT 'auto',
+			tarifa_tiempo_id INTEGER DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -349,6 +353,12 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "referencia_pago", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "tarifa_tiempo_tipo", "TEXT DEFAULT 'auto'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "tarifa_tiempo_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "fecha_actualizacion", "TEXT"); err != nil {
@@ -541,6 +551,11 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 			return false, nil
 		}
 	}
+	rows, err := dbConn.Query(`SELECT tarifa_tiempo_tipo, tarifa_tiempo_id FROM carritos_compras LIMIT 0`)
+	if err != nil {
+		return false, nil
+	}
+	rows.Close()
 	return true, nil
 }
 
@@ -900,13 +915,15 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		total_pagado,
 		metodo_pago,
 		referencia_pago,
+		tarifa_tiempo_tipo,
+		tarifa_tiempo_id,
 		fecha_creacion,
 		fecha_actualizacion,
 		subtotal,
 		descuento_total,
 		impuesto_total,
 		total
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, NULL, NULL, '', '', 0, 0, 0, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, NULL, NULL, '', '', 0, 0, 0, ?, ?, 'auto', 0, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.Codigo),
 		strings.TrimSpace(payload.Nombre),
@@ -965,6 +982,8 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 			&item.TotalPagado,
 			&item.MetodoPago,
 			&item.ReferenciaPago,
+			&item.TarifaTiempoTipo,
+			&item.TarifaTiempoID,
 			&item.ItemCount,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
@@ -1026,6 +1045,8 @@ func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q 
 		COALESCE(c.total_pagado, 0),
 		COALESCE(c.metodo_pago, 'efectivo'),
 		COALESCE(c.referencia_pago, ''),
+		COALESCE(c.tarifa_tiempo_tipo, 'auto'),
+		COALESCE(c.tarifa_tiempo_id, 0),
 		COALESCE(ic.item_count, 0),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
@@ -1092,6 +1113,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1126,6 +1149,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		&item.TotalPagado,
 		&item.MetodoPago,
 		&item.ReferenciaPago,
+		&item.TarifaTiempoTipo,
+		&item.TarifaTiempoID,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -1167,6 +1192,8 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1201,6 +1228,8 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		&item.TotalPagado,
 		&item.MetodoPago,
 		&item.ReferenciaPago,
+		&item.TarifaTiempoTipo,
+		&item.TarifaTiempoID,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -1250,6 +1279,8 @@ func GetCarritoCompraByStation(dbConn *sql.DB, empresaID, estacionID int64) (*Ca
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1285,6 +1316,8 @@ func GetCarritoCompraByStation(dbConn *sql.DB, empresaID, estacionID int64) (*Ca
 		&byRef.TotalPagado,
 		&byRef.MetodoPago,
 		&byRef.ReferenciaPago,
+		&byRef.TarifaTiempoTipo,
+		&byRef.TarifaTiempoID,
 		&byRef.FechaCreacion,
 		&byRef.FechaActualizacion,
 		&byRef.UsuarioCreador,
@@ -1321,6 +1354,92 @@ func UpdateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) error {
 		payload.ID,
 		payload.EmpresaID,
 	)
+	return err
+}
+
+func normalizeCarritoTarifaTiempoTipo(raw string) string {
+	switch strings.TrimSpace(strings.ToLower(raw)) {
+	case "", "auto", "automatica", "automático":
+		return "auto"
+	case "minuto", "minutos", "motel", "tarifa_motel", "por_minutos":
+		return "minutos"
+	case "dia", "día", "hotel", "tarifa_hotel", "por_dia", "por_día":
+		return "dia"
+	default:
+		return strings.TrimSpace(strings.ToLower(raw))
+	}
+}
+
+// SetCarritoTarifaTiempoManual fija la tarifa temporal de un carrito de estacion.
+func SetCarritoTarifaTiempoManual(dbConn *sql.DB, empresaID, carritoID int64, tipo string, tarifaID int64) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return err
+	}
+	if empresaID <= 0 || carritoID <= 0 {
+		return fmt.Errorf("empresa_id y carrito_id son obligatorios")
+	}
+
+	tipo = normalizeCarritoTarifaTiempoTipo(tipo)
+	if tipo == "" {
+		tipo = "auto"
+	}
+	if tipo != "auto" && tipo != "minutos" && tipo != "dia" {
+		return fmt.Errorf("tipo_tarifa invalido: use auto, minutos o dia")
+	}
+	if tipo == "auto" {
+		tarifaID = 0
+	} else if tarifaID <= 0 {
+		return fmt.Errorf("tarifa_id es obligatorio para cambiar tarifa manualmente")
+	}
+
+	carrito, err := GetCarritoCompraByID(dbConn, empresaID, carritoID)
+	if err != nil {
+		return err
+	}
+	estacionID, _, _ := ResolveCarritoStationIdentity(carrito)
+	if estacionID <= 0 {
+		return fmt.Errorf("este carrito no esta asociado a una estacion")
+	}
+	if strings.TrimSpace(carrito.PagadoEn) != "" || strings.EqualFold(strings.TrimSpace(carrito.EstadoCarrito), "cerrado") {
+		return fmt.Errorf("no se puede cambiar la tarifa de una venta cerrada o pagada")
+	}
+
+	if tipo == "minutos" {
+		tarifa, err := GetEmpresaTarifaPorMinutosByID(dbConn, empresaID, tarifaID)
+		if err != nil {
+			return err
+		}
+		if tarifa.EstacionID != estacionID {
+			return fmt.Errorf("la tarifa de motel seleccionada no pertenece a esta estacion")
+		}
+		if !strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") {
+			return fmt.Errorf("la tarifa de motel seleccionada no esta activa")
+		}
+	}
+	if tipo == "dia" {
+		tarifa, err := GetEmpresaTarifaPorDiaByID(dbConn, empresaID, tarifaID)
+		if err != nil {
+			return err
+		}
+		if tarifa.EstacionID != estacionID {
+			return fmt.Errorf("la tarifa de hotel seleccionada no pertenece a esta estacion")
+		}
+		if !strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") {
+			return fmt.Errorf("la tarifa de hotel seleccionada no esta activa")
+		}
+	}
+
+	if _, err := dbConn.Exec(`UPDATE carritos_compras SET
+		tarifa_tiempo_tipo = ?,
+		tarifa_tiempo_id = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, tipo, tarifaID, empresaID, carritoID); err != nil {
+		return err
+	}
+	_, err = RefreshCarritoTotalConTarifasTiempo(dbConn, empresaID, carritoID, time.Now())
 	return err
 }
 

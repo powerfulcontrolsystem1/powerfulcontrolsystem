@@ -39,6 +39,8 @@ type carritoTarifaPorDiaSnapshot struct {
 	ReferenciaExterna string
 	Codigo            string
 	Moneda            string
+	TarifaTiempoTipo  string
+	TarifaTiempoID    int64
 }
 
 func empresaTarifaPorDiaTableExists(dbConn *sql.DB) (bool, error) {
@@ -98,6 +100,44 @@ func getEmpresaTarifaPorDiaAplicableTx(tx *sql.Tx, empresaID, estacionID int64) 
 	return item, nil
 }
 
+func getEmpresaTarifaPorDiaByIDTx(tx *sql.Tx, empresaID, id int64) (*EmpresaTarifaPorDia, error) {
+	if empresaID <= 0 || id <= 0 {
+		return nil, nil
+	}
+	row := tx.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(nombre_tarifa, ''),
+		estacion_id,
+		COALESCE(estacion_codigo, ''),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(servicio_nombre, 'hospedaje'),
+		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
+		COALESCE(hora_check_in, '15:00'),
+		COALESCE(hora_check_out, '12:00'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(prioridad, 1),
+		COALESCE(aplicar_automaticamente, 1),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_tarifas_por_dia
+	WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'
+	LIMIT 1`, empresaID, id)
+	item, err := scanEmpresaTarifaPorDia(row)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
 func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64, fechaCorte time.Time) (*CarritoTarifaPorDiaCalculo, error) {
 	if err := recalculateCarritoTotalsTx(tx, empresaID, carritoID); err != nil {
 		return nil, err
@@ -113,7 +153,9 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 		COALESCE(pagado_en, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(codigo, ''),
-		COALESCE(moneda, 'COP')
+		COALESCE(moneda, 'COP'),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0)
 	FROM carritos_compras
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`, empresaID, carritoID).Scan(
@@ -126,6 +168,8 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 		&snapshot.ReferenciaExterna,
 		&snapshot.Codigo,
 		&snapshot.Moneda,
+		&snapshot.TarifaTiempoTipo,
+		&snapshot.TarifaTiempoID,
 	)
 	if err != nil {
 		return nil, err
@@ -151,6 +195,9 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 		return nil, err
 	}
 	if !exists {
+		return calc, nil
+	}
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "minutos" {
 		return calc, nil
 	}
 
@@ -185,7 +232,15 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 		calc.FechaCorte = fechaCorte.Format("2006-01-02 15:04:05")
 	}
 
-	tarifa, err := getEmpresaTarifaPorDiaAplicableTx(tx, empresaID, estacionID)
+	var tarifa *EmpresaTarifaPorDia
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "dia" && snapshot.TarifaTiempoID > 0 {
+		tarifa, err = getEmpresaTarifaPorDiaByIDTx(tx, empresaID, snapshot.TarifaTiempoID)
+		if err == nil && tarifa != nil && tarifa.EstacionID != estacionID {
+			tarifa = nil
+		}
+	} else {
+		tarifa, err = getEmpresaTarifaPorDiaAplicableTx(tx, empresaID, estacionID)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +356,9 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 	if item.EmpresaID <= 0 || item.ID <= 0 {
 		return nil, nil
 	}
+	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "minutos" {
+		return nil, nil
+	}
 	estadoRegistro := strings.TrimSpace(strings.ToLower(item.Estado))
 	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
 	if estadoRegistro == "" {
@@ -325,7 +383,15 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 		return nil, nil
 	}
 
-	tarifa, err := GetEmpresaTarifaPorDiaAplicable(dbConn, item.EmpresaID, estacionID)
+	var tarifa *EmpresaTarifaPorDia
+	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "dia" && item.TarifaTiempoID > 0 {
+		tarifa, err = GetEmpresaTarifaPorDiaByID(dbConn, item.EmpresaID, item.TarifaTiempoID)
+		if err == nil && tarifa != nil && (!strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") || tarifa.EstacionID != estacionID) {
+			tarifa = nil
+		}
+	} else {
+		tarifa, err = GetEmpresaTarifaPorDiaAplicable(dbConn, item.EmpresaID, estacionID)
+	}
 	if err != nil || tarifa == nil {
 		return nil, err
 	}

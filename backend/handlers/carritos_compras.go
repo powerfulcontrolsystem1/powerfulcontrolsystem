@@ -247,6 +247,69 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "cambiar_tarifa" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				var payload struct {
+					TipoTarifa string `json:"tipo_tarifa"`
+					Tipo       string `json:"tipo"`
+					TarifaID   int64  `json:"tarifa_id"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "payload invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				tipoTarifa := strings.TrimSpace(payload.TipoTarifa)
+				if tipoTarifa == "" {
+					tipoTarifa = strings.TrimSpace(payload.Tipo)
+				}
+				if tipoTarifa == "" {
+					tipoTarifa = strings.TrimSpace(r.URL.Query().Get("tipo_tarifa"))
+				}
+				tarifaID := payload.TarifaID
+				if tarifaID <= 0 {
+					if raw := strings.TrimSpace(r.URL.Query().Get("tarifa_id")); raw != "" {
+						if parsed, perr := strconv.ParseInt(raw, 10, 64); perr == nil {
+							tarifaID = parsed
+						}
+					}
+				}
+				if err := dbpkg.SetCarritoTarifaTiempoManual(dbEmp, empresaID, id, tipoTarifa, tarifaID); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					http.Error(w, "No se pudo obtener carrito actualizado", http.StatusInternalServerError)
+					return
+				}
+				if resumen, err := dbpkg.ResolveCarritoTarifaPorMinutosResumen(dbEmp, *carrito, time.Now()); err == nil {
+					carrito.TarifaPorMinutos = resumen
+				}
+				if resumen, err := dbpkg.ResolveCarritoTarifaPorDiaResumen(dbEmp, *carrito, time.Now()); err == nil {
+					carrito.TarifaPorDia = resumen
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                 true,
+					"action":             "cambiar_tarifa",
+					"carrito":            carrito,
+					"tarifa_tiempo_tipo": carrito.TarifaTiempoTipo,
+					"tarifa_tiempo_id":   carrito.TarifaTiempoID,
+					"tarifa_por_minutos": carrito.TarifaPorMinutos,
+					"tarifa_por_dia":     carrito.TarifaPorDia,
+				})
+				return
+			}
 			if action == "generar_codigo_vip" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {

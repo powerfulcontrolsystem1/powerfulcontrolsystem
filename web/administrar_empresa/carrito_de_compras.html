@@ -151,6 +151,28 @@
           <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
           <button type="button" id="carritoBtnVehiculo" class="btn secondary">Vehículo</button>
         </div>
+        <div id="carritoTarifaPanel" class="empresa-section mt-10 is-hidden" hidden>
+          <div class="form-row">
+            <div class="form-col maxw-220">
+              <label class="form-label" for="carritoTarifaModo">Tipo de tarifa</label>
+              <select id="carritoTarifaModo" class="form-input">
+                <option value="auto">Automática</option>
+                <option value="minutos">Motel por tiempo</option>
+                <option value="dia">Hotel por día</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="carritoTarifaSelect">Tarifa disponible</label>
+              <select id="carritoTarifaSelect" class="form-input">
+                <option value="">Selecciona una tarifa</option>
+              </select>
+            </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="carritoTarifaAplicarBtn" class="btn primary">Aplicar tarifa</button>
+            </div>
+          </div>
+          <div id="carritoTarifaMsg" class="form-help mt-6"></div>
+        </div>
       </section>
 
       <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
@@ -3673,6 +3695,143 @@
       });
     }
 
+    function setCarritoTarifaMessage(message, isError) {
+      const box = document.getElementById('carritoTarifaMsg');
+      if (!box) return;
+      box.textContent = message || '';
+      box.className = 'form-help mt-6' + (isError ? ' error' : '');
+    }
+
+    function resolveCarritoEstacionID(carrito) {
+      if (!carrito) return Number(state.stationID || 0);
+      if (state.stationID > 0) return Number(state.stationID);
+      const ref = normalize(carrito.referencia_externa);
+      let match = ref.match(/ESTACION[_-](\d+)/i);
+      if (match) return Number(match[1] || 0);
+      const code = normalize(carrito.codigo);
+      match = code.match(/^EST-\d+-(\d+)$/i);
+      return match ? Number(match[1] || 0) : 0;
+    }
+
+    function tarifaTiempoLabel(tipo, item) {
+      if (!item) return '';
+      if (tipo === 'dia') {
+        const nombre = normalize(item.nombre_tarifa) || normalize(item.servicio_nombre) || 'Tarifa hotel';
+        const personas = Number(item.personas_desde || 0) > 0
+          ? ' | ' + Number(item.personas_desde || 0) + (Number(item.personas_hasta || 0) > 0 ? '-' + Number(item.personas_hasta || 0) : '+') + ' personas'
+          : '';
+        return nombre + ' | ' + formatAmount(Number(item.valor_dia || 0), item.moneda || 'COP') + personas;
+      }
+      const nombre = normalize(item.estacion_nombre) || 'Tarifa motel';
+      const base = Number(item.valor_base || 0);
+      const minutos = Number(item.minutos_base || 0);
+      return nombre + ' | ' + formatAmount(base, item.moneda || 'COP') + ' / ' + minutos + ' min';
+    }
+
+    async function loadTarifasTiempoForCarrito(tipo) {
+      const selected = getSelectedCarrito();
+      const stationID = resolveCarritoEstacionID(selected);
+      if (!state.empresaID || !stationID) return [];
+      const endpoint = tipo === 'dia' ? '/api/empresa/tarifas_por_dia' : '/api/empresa/tarifas_por_minutos';
+      const url = new URL(endpoint, window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estacion_id', String(stationID));
+      url.searchParams.set('include_inactive', '0');
+      url.searchParams.set('limit', '200');
+      const res = await fetchWithTimeout(url.pathname + url.search, { credentials: 'same-origin' });
+      await ensureOk(res);
+      const payload = await res.json();
+      return Array.isArray(payload) ? payload : [];
+    }
+
+    async function populateCarritoTarifaSelect() {
+      const mode = normalize(document.getElementById('carritoTarifaModo') && document.getElementById('carritoTarifaModo').value) || 'auto';
+      const select = document.getElementById('carritoTarifaSelect');
+      const selected = getSelectedCarrito();
+      if (!select || !selected) return;
+      select.innerHTML = '';
+      if (mode === 'auto') {
+        select.disabled = true;
+        select.appendChild(new Option('La tarifa se calculará automáticamente', '0'));
+        setCarritoTarifaMessage('Modo automático activo para esta estación.', false);
+        return;
+      }
+      select.disabled = false;
+      select.appendChild(new Option('Cargando tarifas...', ''));
+      try {
+        const rows = await loadTarifasTiempoForCarrito(mode);
+        select.innerHTML = '';
+        if (!rows.length) {
+          select.appendChild(new Option('No hay tarifas activas para esta estación', ''));
+          setCarritoTarifaMessage('Crea una tarifa activa para esta estación antes de aplicarla.', true);
+          return;
+        }
+        rows.forEach(function(item) {
+          const option = new Option(tarifaTiempoLabel(mode, item), String(item.id || 0));
+          select.appendChild(option);
+        });
+        const currentType = normalize(selected.tarifa_tiempo_tipo) || 'auto';
+        const currentID = Number(selected.tarifa_tiempo_id || 0);
+        if ((currentType === mode || (currentType === 'hotel' && mode === 'dia') || (currentType === 'motel' && mode === 'minutos')) && currentID > 0) {
+          select.value = String(currentID);
+        }
+        setCarritoTarifaMessage('Selecciona la tarifa que quedará fija para este carrito.', false);
+      } catch (err) {
+        select.innerHTML = '';
+        select.appendChild(new Option('No se pudieron cargar tarifas', ''));
+        setCarritoTarifaMessage(err.message || 'No se pudieron cargar tarifas.', true);
+      }
+    }
+
+    function openCarritoTarifaPanel() {
+      const selected = getSelectedCarrito();
+      const panel = document.getElementById('carritoTarifaPanel');
+      const modeEl = document.getElementById('carritoTarifaModo');
+      if (!selected || !panel || !modeEl) {
+        setMessage('itemMsg', 'Selecciona un carrito de estación para cambiar la tarifa.', true);
+        return;
+      }
+      const currentType = normalize(selected.tarifa_tiempo_tipo) || 'auto';
+      modeEl.value = currentType === 'dia' || currentType === 'hotel' ? 'dia' : (currentType === 'minutos' || currentType === 'motel' ? 'minutos' : 'auto');
+      panel.hidden = false;
+      panel.classList.remove('is-hidden');
+      panel.style.display = '';
+      populateCarritoTarifaSelect();
+    }
+
+    async function applyCarritoTarifaTiempo() {
+      const selected = getSelectedCarrito();
+      const modeEl = document.getElementById('carritoTarifaModo');
+      const select = document.getElementById('carritoTarifaSelect');
+      if (!selected || !modeEl || !select) {
+        setCarritoTarifaMessage('Selecciona un carrito activo.', true);
+        return;
+      }
+      const tipoTarifa = normalize(modeEl.value) || 'auto';
+      const tarifaID = tipoTarifa === 'auto' ? 0 : Number(select.value || 0);
+      if (tipoTarifa !== 'auto' && tarifaID <= 0) {
+        setCarritoTarifaMessage('Selecciona una tarifa válida.', true);
+        return;
+      }
+      try {
+        setCarritoTarifaMessage('Aplicando tarifa...', false);
+        const url = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) +
+          '&id=' + encodeURIComponent(selected.id) + '&action=cambiar_tarifa';
+        const res = await fetchWithTimeout(url, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo_tarifa: tipoTarifa, tarifa_id: tarifaID })
+        });
+        await ensureOk(res);
+        await Promise.all([loadCarritos(), loadItems()]);
+        setCarritoTarifaMessage(tipoTarifa === 'dia' ? 'Tarifa de hotel aplicada.' : (tipoTarifa === 'minutos' ? 'Tarifa de motel aplicada.' : 'Tarifa automática aplicada.'), false);
+        setStationPaymentMessage('Tarifa cambiada y total recalculado.', false);
+      } catch (err) {
+        setCarritoTarifaMessage(err.message || 'No se pudo cambiar la tarifa.', true);
+      }
+    }
+
     function showCarritoAlert(message) {
       const banner = document.getElementById('carritoAlertBanner');
       if (!banner) return;
@@ -4538,12 +4697,16 @@
       }
     });
     document.getElementById('carritoBtnCambiarTarifa').addEventListener('click', function() {
-      const precioEl = document.getElementById('itemPrecio');
-      if (precioEl) {
-        precioEl.focus();
-        setMessage('itemMsg', 'Edita el precio o la unidad del item para cambiar la tarifa.', false);
-      }
+      openCarritoTarifaPanel();
     });
+    const carritoTarifaModo = document.getElementById('carritoTarifaModo');
+    if (carritoTarifaModo) {
+      carritoTarifaModo.addEventListener('change', populateCarritoTarifaSelect);
+    }
+    const carritoTarifaAplicarBtn = document.getElementById('carritoTarifaAplicarBtn');
+    if (carritoTarifaAplicarBtn) {
+      carritoTarifaAplicarBtn.addEventListener('click', applyCarritoTarifaTiempo);
+    }
     document.getElementById('carritoBtnCancelarCarrito').addEventListener('click', async function() {
       const selected = getSelectedCarrito();
       if (cartHasItemsOrTotalsForCancel(selected)) {

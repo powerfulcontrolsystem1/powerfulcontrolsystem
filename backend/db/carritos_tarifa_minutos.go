@@ -141,6 +141,66 @@ func getEmpresaTarifaPorMinutosAplicableTx(tx *sql.Tx, empresaID, estacionID int
 	return &item, nil
 }
 
+func getEmpresaTarifaPorMinutosByIDTx(tx *sql.Tx, empresaID, id int64) (*EmpresaTarifaPorMinutos, error) {
+	if empresaID <= 0 || id <= 0 {
+		return nil, nil
+	}
+	row := queryRowTxSQLCompat(tx, `SELECT
+		id,
+		empresa_id,
+		estacion_id,
+		COALESCE(estacion_codigo, ''),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(dia_semana_desde, 1),
+		COALESCE(dia_semana_hasta, 7),
+		COALESCE(minutos_base, 120),
+		COALESCE(valor_base, 0),
+		COALESCE(minutos_extra, 60),
+		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(prioridad, 1),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_tarifas_por_minutos
+	WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'
+	LIMIT 1`, empresaID, id)
+
+	var item EmpresaTarifaPorMinutos
+	var cobrarPorFraccion int
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.EstacionID,
+		&item.EstacionCodigo,
+		&item.EstacionNombre,
+		&item.DiaSemanaDesde,
+		&item.DiaSemanaHasta,
+		&item.MinutosBase,
+		&item.ValorBase,
+		&item.MinutosExtra,
+		&item.ValorExtra,
+		&cobrarPorFraccion,
+		&item.Moneda,
+		&item.Prioridad,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	item.CobrarPorFraccion = cobrarPorFraccion > 0
+	return &item, nil
+}
+
 func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*EmpresaTarifaPorMinutosConfiguracion, error) {
 	row := queryRowTxSQLCompat(tx, `SELECT
 		id,
@@ -222,7 +282,9 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 		COALESCE(pagado_en, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(codigo, ''),
-		COALESCE(moneda, 'COP')
+		COALESCE(moneda, 'COP'),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0)
 	FROM carritos_compras
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`, empresaID, carritoID).Scan(
@@ -235,6 +297,8 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 		&snapshot.ReferenciaExterna,
 		&snapshot.Codigo,
 		&snapshot.Moneda,
+		&snapshot.TarifaTiempoTipo,
+		&snapshot.TarifaTiempoID,
 	)
 	if err != nil {
 		return nil, err
@@ -260,6 +324,9 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 		return nil, err
 	}
 	if !exists {
+		return calc, nil
+	}
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "dia" {
 		return calc, nil
 	}
 
@@ -295,7 +362,15 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 	}
 
 	diaSemana := DayOfWeekISO(fechaCorte)
-	tarifa, err := getEmpresaTarifaPorMinutosAplicableTx(tx, empresaID, estacionID, diaSemana)
+	var tarifa *EmpresaTarifaPorMinutos
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "minutos" && snapshot.TarifaTiempoID > 0 {
+		tarifa, err = getEmpresaTarifaPorMinutosByIDTx(tx, empresaID, snapshot.TarifaTiempoID)
+		if err == nil && tarifa != nil && tarifa.EstacionID != estacionID {
+			tarifa = nil
+		}
+	} else {
+		tarifa, err = getEmpresaTarifaPorMinutosAplicableTx(tx, empresaID, estacionID, diaSemana)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -372,6 +447,21 @@ func RefreshCarritoTotalConTarifaPorMinutos(dbConn *sql.DB, empresaID, carritoID
 // RefreshCarritoTotalConTarifasTiempo aplica tarifa por minutos si existe; si no, mantiene el flujo automático por día.
 func RefreshCarritoTotalConTarifasTiempo(dbConn *sql.DB, empresaID, carritoID int64, fechaCorte time.Time) (*CarritoTarifasTiempoCalculo, error) {
 	result := &CarritoTarifasTiempoCalculo{}
+	carrito, err := GetCarritoCompraByID(dbConn, empresaID, carritoID)
+	if err != nil {
+		return nil, err
+	}
+	tipo := normalizeCarritoTarifaTiempoTipo(carrito.TarifaTiempoTipo)
+	if tipo == "dia" {
+		dayCalc, err := RefreshCarritoTotalConTarifaPorDia(dbConn, empresaID, carritoID, fechaCorte)
+		if err != nil {
+			return nil, err
+		}
+		if dayCalc != nil && dayCalc.TarifaID > 0 {
+			result.TarifaPorDia = dayCalc
+		}
+		return result, nil
+	}
 	minuteCalc, err := RefreshCarritoTotalConTarifaPorMinutos(dbConn, empresaID, carritoID, fechaCorte)
 	if err != nil {
 		return nil, err
@@ -440,6 +530,9 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 	if item.EmpresaID <= 0 || item.ID <= 0 {
 		return nil, nil
 	}
+	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "dia" {
+		return nil, nil
+	}
 	estadoRegistro := strings.TrimSpace(strings.ToLower(item.Estado))
 	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
 	if estadoRegistro == "" {
@@ -463,7 +556,15 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 		return nil, nil
 	}
 	diaSemana := DayOfWeekISO(fechaCorte)
-	tarifa, err := GetEmpresaTarifaPorMinutosAplicable(dbConn, item.EmpresaID, estacionID, diaSemana)
+	var tarifa *EmpresaTarifaPorMinutos
+	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "minutos" && item.TarifaTiempoID > 0 {
+		tarifa, err = GetEmpresaTarifaPorMinutosByID(dbConn, item.EmpresaID, item.TarifaTiempoID)
+		if err == nil && tarifa != nil && (!strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") || tarifa.EstacionID != estacionID) {
+			tarifa = nil
+		}
+	} else {
+		tarifa, err = GetEmpresaTarifaPorMinutosAplicable(dbConn, item.EmpresaID, estacionID, diaSemana)
+	}
 	if err != nil || tarifa == nil {
 		return nil, err
 	}

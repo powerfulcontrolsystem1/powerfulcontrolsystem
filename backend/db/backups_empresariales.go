@@ -27,6 +27,7 @@ var empresaConfigBackupDefaultTables = []string{
 	"empresa_configuracion_operativa",
 	"empresa_configuracion_operativa_politicas",
 	"empresa_configuracion_operativa_roles",
+	"empresa_corte_caja_configuracion",
 	"empresa_dian_configuracion",
 	"empresa_estacion_prefs",
 	"empresa_finanzas_configuracion",

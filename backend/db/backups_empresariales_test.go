@@ -19,6 +19,7 @@ func TestEmpresaConfigBackupDefaultTablesCoverModernCompanyConfiguration(t *test
 		"empresa_permisos_paginas",
 		"empresa_ai_modelo_preferido",
 		"empresa_finanzas_configuracion",
+		"empresa_corte_caja_configuracion",
 		"empresa_inventario_configuracion",
 		"empresa_tarifas_por_minutos_configuracion",
 		"empresa_tarifas_por_minutos",
