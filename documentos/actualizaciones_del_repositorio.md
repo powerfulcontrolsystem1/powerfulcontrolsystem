@@ -3861,3 +3861,15 @@ Archivos modificados:
 2026-05-04 10:05:56 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 54f9610c; PushStatus: OK
 Archivos modificados:
 - web/super/licencias_resumen.html
+
+2026-05-04 14:03:49 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 74d208b0; PushStatus: OK
+Archivos modificados:
+- backend/contextual_help_test.go
+- backend/main.go
+- web/administrar_empresa/carrito_control_electrico.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/ayuda/ayuda_contextual.html
+- web/estilos.css
+- web/js/contextual_help.js
