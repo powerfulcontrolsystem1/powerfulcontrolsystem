@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestContextualHelpStaticHandlerInjectsHTML(t *testing.T) {
+func TestContextualHelpStaticHandlerDoesNotInjectHTML(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte("<!doctype html><html><body><h1>Modulo</h1></body></html>"))
@@ -21,11 +21,8 @@ func TestContextualHelpStaticHandlerInjectsHTML(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
-	if !strings.Contains(body, `/js/contextual_help.js`) {
-		t.Fatalf("expected contextual help script in body: %s", body)
-	}
-	if strings.Count(body, `/js/contextual_help.js`) != 1 {
-		t.Fatalf("expected one contextual help script, got body: %s", body)
+	if strings.Contains(body, `/js/contextual_help.js`) {
+		t.Fatalf("contextual help script should not be injected: %s", body)
 	}
 }
 

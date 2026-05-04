@@ -1,6 +1,6 @@
 {
   "empresa_id": 7,
-  "started_at": "2026-05-04T00:41:07-05:00",
+  "started_at": "2026-05-04T15:55:37-05:00",
   "steps": [
     {
       "module": "usuarios",
@@ -18,8 +18,8 @@
       "path": "/api/empresa/carritos_compra?empresa_id=7",
       "status": 201,
       "ok": true,
-      "id": 64,
-      "sample": "{\"id\":64,\"ok\":true}"
+      "id": 65,
+      "sample": "{\"id\":65,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -28,7 +28,7 @@
       "path": "/api/empresa/gimnasio?empresa_id=7\u0026action=dashboard",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"socios_activos\":10,\"planes_activos\":11,\"clases_hoy\":0,\"accesos_hoy\":0,\"ingresos_mes\":891000,\"renovaciones_proximas\":10,\"inscripciones_activas\":0,\"vencimientos_proximos\":[{\"id\":10,\"empresa_id\":7,\"codigo\":\"QA-GYM-20260503-180928\",\"nombre_completo\":\"QA Socio Calipso"
+      "sample": "{\"empresa_id\":7,\"socios_activos\":11,\"planes_activos\":12,\"clases_hoy\":1,\"accesos_hoy\":1,\"ingresos_mes\":990000,\"renovaciones_proximas\":11,\"inscripciones_activas\":0,\"vencimientos_proximos\":[{\"id\":11,\"empresa_id\":7,\"codigo\":\"QA-GYM-20260504-004107\",\"nombre_completo\":\"QA Socio Calipso"
     },
     {
       "module": "gimnasio",
@@ -37,8 +37,8 @@
       "path": "/api/empresa/gimnasio?action=planes",
       "status": 201,
       "ok": true,
-      "id": 12,
-      "sample": "{\"id\":12,\"ok\":true}"
+      "id": 13,
+      "sample": "{\"id\":13,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -47,8 +47,8 @@
       "path": "/api/empresa/gimnasio?action=socios",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -57,8 +57,8 @@
       "path": "/api/empresa/gimnasio?action=entrenadores",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -67,8 +67,8 @@
       "path": "/api/empresa/gimnasio?action=clases",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -77,8 +77,8 @@
       "path": "/api/empresa/gimnasio?action=inscripciones",
       "status": 201,
       "ok": true,
-      "id": 10,
-      "sample": "{\"id\":10,\"ok\":true}"
+      "id": 11,
+      "sample": "{\"id\":11,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -87,8 +87,8 @@
       "path": "/api/empresa/gimnasio?action=checkin",
       "status": 201,
       "ok": true,
-      "id": 10,
-      "sample": "{\"id\":10,\"ok\":true}"
+      "id": 11,
+      "sample": "{\"id\":11,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -97,8 +97,8 @@
       "path": "/api/empresa/gimnasio?action=pagos",
       "status": 201,
       "ok": true,
-      "id": 10,
-      "sample": "{\"id\":10,\"ok\":true}"
+      "id": 11,
+      "sample": "{\"id\":11,\"ok\":true}"
     },
     {
       "module": "gimnasio",
@@ -107,7 +107,7 @@
       "path": "/api/empresa/gimnasio?empresa_id=7\u0026action=socios",
       "status": 200,
       "ok": true,
-      "sample": "[{\"id\":11,\"empresa_id\":7,\"codigo\":\"QA-GYM-20260504-004107\",\"nombre_completo\":\"QA Socio Calipso 20260504-004107\",\"documento\":\"GYM20260504-004107\",\"telefono\":\"3000000000\",\"email\":\"qa.gym.20260504-004107@powerfulcontrolsystem.local\",\"objetivo\":\"Acondicionamiento\",\"estado\":\"activo\",\""
+      "sample": "[{\"id\":12,\"empresa_id\":7,\"codigo\":\"QA-GYM-20260504-155537\",\"nombre_completo\":\"QA Socio Calipso 20260504-155537\",\"documento\":\"GYM20260504-155537\",\"telefono\":\"3000000000\",\"email\":\"qa.gym.20260504-155537@powerfulcontrolsystem.local\",\"objetivo\":\"Acondicionamiento\",\"estado\":\"activo\",\""
     },
     {
       "module": "creditos",
@@ -116,7 +116,7 @@
       "path": "/api/empresa/creditos?empresa_id=7\u0026action=resumen",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"ok\":true,\"resumen\":{\"total_creditos\":16,\"creditos_activos\":16,\"creditos_vencidos\":0,\"creditos_mora\":0,\"creditos_cerrados\":0,\"monto_aprobado\":2020800,\"saldo_total\":1619800,\"cupo_disponible\":404300}}"
+      "sample": "{\"empresa_id\":7,\"ok\":true,\"resumen\":{\"total_creditos\":17,\"creditos_activos\":17,\"creditos_vencidos\":0,\"creditos_mora\":0,\"creditos_cerrados\":0,\"monto_aprobado\":2270800,\"saldo_total\":1819800,\"cupo_disponible\":454300}}"
     },
     {
       "module": "creditos",
@@ -125,8 +125,8 @@
       "path": "/api/empresa/creditos?empresa_id=7\u0026action=crear",
       "status": 201,
       "ok": true,
-      "id": 22,
-      "sample": "{\"credito\":{\"id\":22,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-004107\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-004107\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":250000,\"saldo_disponible\":0,\"tasa_interes\":0,\"ta"
+      "id": 23,
+      "sample": "{\"credito\":{\"id\":23,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-155537\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-155537\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":250000,\"saldo_disponible\":0,\"tasa_interes\":0,\"ta"
     },
     {
       "module": "creditos",
@@ -135,18 +135,18 @@
       "path": "/api/empresa/creditos?empresa_id=7\u0026action=abono",
       "status": 200,
       "ok": true,
-      "id": 22,
-      "sample": "{\"credito\":{\"id\":22,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-004107\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-004107\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":200000,\"saldo_disponible\":50000,\"tasa_interes\":0"
+      "id": 23,
+      "sample": "{\"credito\":{\"id\":23,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-155537\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-155537\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":200000,\"saldo_disponible\":50000,\"tasa_interes\":0"
     },
     {
       "module": "creditos",
       "action": "estado_cuenta",
       "method": "GET",
-      "path": "/api/empresa/creditos?empresa_id=7\u0026action=estado_cuenta\u0026id=22",
+      "path": "/api/empresa/creditos?empresa_id=7\u0026action=estado_cuenta\u0026id=23",
       "status": 200,
       "ok": true,
-      "id": 22,
-      "sample": "{\"credito\":{\"id\":22,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-004107\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-004107\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":200000,\"saldo_disponible\":50000,\"tasa_interes\":0"
+      "id": 23,
+      "sample": "{\"credito\":{\"id\":23,\"empresa_id\":7,\"codigo\":\"QA-CRED-20260504-155537\",\"cliente_id\":0,\"cliente_nombre\":\"QA Cliente Credito Calipso 20260504-155537\",\"tipo_credito\":\"cuotas\",\"monto_aprobado\":250000,\"cupo_credito\":250000,\"saldo_actual\":200000,\"saldo_disponible\":50000,\"tasa_interes\":0"
     },
     {
       "module": "tarifas_motel",
@@ -164,17 +164,17 @@
       "path": "/api/empresa/tarifas_motel?empresa_id=7",
       "status": 201,
       "ok": true,
-      "id": 17,
-      "sample": "{\"id\":17,\"empresa_id\":7,\"estacion_id\":1105000,\"estacion_codigo\":\"EST-7-1105000\",\"estacion_nombre\":\"QA Habitacion Reserva Calipso 20260504-004107\",\"nombre_plan\":\"QA Express Calipso 20260504-004107\",\"tipo_plan\":\"express\",\"categoria_habitacion\":\"suite\",\"dia_semana_desde\":1,\"dia_sema"
+      "id": 18,
+      "sample": "{\"id\":18,\"empresa_id\":7,\"estacion_id\":1843100,\"estacion_codigo\":\"EST-7-1843100\",\"estacion_nombre\":\"QA Habitacion Reserva Calipso 20260504-155537\",\"nombre_plan\":\"QA Express Calipso 20260504-155537\",\"tipo_plan\":\"express\",\"categoria_habitacion\":\"suite\",\"dia_semana_desde\":1,\"dia_sema"
     },
     {
       "module": "tarifas_motel",
       "action": "calcular",
       "method": "GET",
-      "path": "/api/empresa/tarifas_motel?empresa_id=7\u0026action=calcular\u0026id=17\u0026minutos_consumidos=245",
+      "path": "/api/empresa/tarifas_motel?empresa_id=7\u0026action=calcular\u0026id=18\u0026minutos_consumidos=245",
       "status": 200,
       "ok": true,
-      "sample": "{\"detalle\":{\"tarifa_id\":17,\"estacion_id\":1105000,\"nombre_plan\":\"QA Express Calipso 20260504-004107\",\"tipo_plan\":\"express\",\"minutos_consumidos\":245,\"minutos_incluidos\":180,\"minutos_tolerancia\":10,\"minutos_facturables\":235,\"minutos_extra_cobrados\":55,\"bloques_extra\":2,\"monto_base\":"
+      "sample": "{\"detalle\":{\"tarifa_id\":18,\"estacion_id\":1843100,\"nombre_plan\":\"QA Express Calipso 20260504-155537\",\"tipo_plan\":\"express\",\"minutos_consumidos\":245,\"minutos_incluidos\":180,\"minutos_tolerancia\":10,\"minutos_facturables\":235,\"minutos_extra_cobrados\":55,\"bloques_extra\":2,\"monto_base\":"
     },
     {
       "module": "tarifas_por_minutos",
@@ -193,25 +193,25 @@
       "path": "/api/empresa/tarifas_por_minutos?empresa_id=7\u0026action=aplicar_todas_estaciones",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"dia_semana_desde\":1,\"dia_semana_hasta\":7,\"estaciones_objetivo\":8,\"tarifas_creadas\":1,\"tarifas_actualizadas\":7,\"tarifa_ids\":[1,2,3,4,5,8,6,7]}"
+      "sample": "{\"empresa_id\":7,\"dia_semana_desde\":1,\"dia_semana_hasta\":7,\"estaciones_objetivo\":9,\"tarifas_creadas\":1,\"tarifas_actualizadas\":8,\"tarifa_ids\":[1,2,3,4,5,8,6,7,9]}"
     },
     {
       "module": "tarifas_por_minutos",
       "action": "resolver",
       "method": "GET",
-      "path": "/api/empresa/tarifas_por_minutos?empresa_id=7\u0026action=aplicable\u0026estacion_id=1105000\u0026dia_semana=1",
+      "path": "/api/empresa/tarifas_por_minutos?empresa_id=7\u0026action=aplicable\u0026estacion_id=1843100\u0026dia_semana=1",
       "status": 200,
       "ok": true,
-      "sample": "{\"dia_semana\":1,\"estacion_id\":1105000,\"ok\":true,\"tarifa\":{\"id\":8,\"empresa_id\":7,\"estacion_id\":1105000,\"estacion_codigo\":\"EST-7-1105000\",\"estacion_nombre\":\"QA Habitacion Reserva Calipso 20260504-004107\",\"dia_semana_desde\":1,\"dia_semana_hasta\":7,\"minutos_base\":180,\"valor_base\":8000"
+      "sample": "{\"dia_semana\":1,\"estacion_id\":1843100,\"ok\":true,\"tarifa\":{\"id\":9,\"empresa_id\":7,\"estacion_id\":1843100,\"estacion_codigo\":\"EST-7-1843100\",\"estacion_nombre\":\"QA Habitacion Reserva Calipso 20260504-155537\",\"dia_semana_desde\":1,\"dia_semana_hasta\":7,\"minutos_base\":180,\"valor_base\":8000"
     },
     {
       "module": "tarifas_por_minutos",
       "action": "calcular",
       "method": "GET",
-      "path": "/api/empresa/tarifas_por_minutos?empresa_id=7\u0026action=calcular\u0026estacion_id=1105000\u0026dia_semana=1\u0026minutos_consumidos=245",
+      "path": "/api/empresa/tarifas_por_minutos?empresa_id=7\u0026action=calcular\u0026estacion_id=1843100\u0026dia_semana=1\u0026minutos_consumidos=245",
       "status": 200,
       "ok": true,
-      "sample": "{\"ajuste_redondeo\":0,\"bloques_extra\":2,\"dia_semana\":1,\"documento_codigo\":\"TPM-7-1777873414883036900\",\"documento_tipo\":\"tarifa_por_minutos_calculo\",\"estacion_id\":1105000,\"minutos_consumidos\":245,\"minutos_facturables\":240,\"minutos_tolerancia\":5,\"moneda\":\"COP\",\"monto_base\":80000,\"mo"
+      "sample": "{\"ajuste_redondeo\":0,\"bloques_extra\":2,\"dia_semana\":1,\"documento_codigo\":\"TPM-7-1777928279869699500\",\"documento_tipo\":\"tarifa_por_minutos_calculo\",\"estacion_id\":1843100,\"minutos_consumidos\":245,\"minutos_facturables\":240,\"minutos_tolerancia\":5,\"moneda\":\"COP\",\"monto_base\":80000,\"mo"
     },
     {
       "module": "tarifas_por_dia",
@@ -220,22 +220,22 @@
       "path": "/api/empresa/tarifas_por_dia?empresa_id=7\u0026action=aplicar_todas_estaciones",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"valor_dia\":180000,\"personas_desde\":1,\"personas_hasta\":0,\"hora_check_in\":\"15:00\",\"hora_check_out\":\"12:00\",\"estaciones_objetivo\":8,\"tarifas_creadas\":1,\"tarifas_actualizadas\":7,\"tarifa_ids\":[1,2,3,4,5,15,6,7]}"
+      "sample": "{\"empresa_id\":7,\"valor_dia\":180000,\"personas_desde\":1,\"personas_hasta\":0,\"hora_check_in\":\"15:00\",\"hora_check_out\":\"12:00\",\"estaciones_objetivo\":9,\"tarifas_creadas\":1,\"tarifas_actualizadas\":8,\"tarifa_ids\":[1,2,3,4,5,15,6,7,16]}"
     },
     {
       "module": "tarifas_por_dia",
       "action": "calcular",
       "method": "GET",
-      "path": "/api/empresa/tarifas_por_dia?empresa_id=7\u0026action=calcular\u0026estacion_id=1105000\u0026activado_en=2026-05-04%2015:00:00\u0026fecha_corte=2026-05-05%2012:00:00",
+      "path": "/api/empresa/tarifas_por_dia?empresa_id=7\u0026action=calcular\u0026estacion_id=1843100\u0026activado_en=2026-05-04%2015:00:00\u0026fecha_corte=2026-05-05%2012:00:00",
       "status": 200,
       "ok": true,
-      "sample": "{\"activado_en\":\"2026-05-04 15:00:00\",\"aplicar_automaticamente\":true,\"dias_cobrados\":1,\"dias_completos\":1,\"dias_equivalentes\":1,\"estacion_id\":1105000,\"fecha_corte\":\"2026-05-05 12:00:00\",\"hora_check_in\":\"15:00\",\"hora_check_out\":\"12:00\",\"minutos_prorrateo_entrada\":0,\"minutos_prorrat"
+      "sample": "{\"activado_en\":\"2026-05-04 15:00:00\",\"aplicar_automaticamente\":true,\"dias_cobrados\":1,\"dias_completos\":1,\"dias_equivalentes\":1,\"estacion_id\":1843100,\"fecha_corte\":\"2026-05-05 12:00:00\",\"hora_check_in\":\"15:00\",\"hora_check_out\":\"12:00\",\"minutos_prorrateo_entrada\":0,\"minutos_prorrat"
     },
     {
       "module": "reservas_hotel",
       "action": "disponibilidad",
       "method": "GET",
-      "path": "/api/empresa/reservas_hotel?empresa_id=7\u0026action=disponibilidad\u0026fecha_entrada=2026-05-07%2000:44:36\u0026fecha_salida=2026-05-07%2002:44:36",
+      "path": "/api/empresa/reservas_hotel?empresa_id=7\u0026action=disponibilidad\u0026fecha_entrada=2026-05-07%2015:59:05\u0026fecha_salida=2026-05-07%2017:59:05",
       "status": 200,
       "ok": true,
       "id": 1,
@@ -248,18 +248,18 @@
       "path": "/api/empresa/reservas_hotel?empresa_id=7",
       "status": 201,
       "ok": true,
-      "id": 12,
-      "sample": "{\"id\":12,\"empresa_id\":7,\"carrito_id\":16,\"estacion_id\":1,\"estacion_codigo\":\"EST-7-1\",\"estacion_nombre\":\"Estación 1\",\"codigo_reserva\":\"QA-RES-20260504-004107\",\"cliente_nombre\":\"QA Huesped Calipso 20260504-004107\",\"cliente_documento\":\"RES20260504-004107\",\"cliente_email\":\"qa.reserva"
+      "id": 13,
+      "sample": "{\"id\":13,\"empresa_id\":7,\"carrito_id\":16,\"estacion_id\":1,\"estacion_codigo\":\"EST-7-1\",\"estacion_nombre\":\"Estación 1\",\"codigo_reserva\":\"QA-RES-20260504-155537\",\"cliente_nombre\":\"QA Huesped Calipso 20260504-155537\",\"cliente_documento\":\"RES20260504-155537\",\"cliente_email\":\"qa.reserva"
     },
     {
       "module": "reservas_hotel",
       "action": "detalle",
       "method": "GET",
-      "path": "/api/empresa/reservas_hotel?empresa_id=7\u0026action=detalle\u0026id=12",
+      "path": "/api/empresa/reservas_hotel?empresa_id=7\u0026action=detalle\u0026id=13",
       "status": 200,
       "ok": true,
-      "id": 12,
-      "sample": "{\"id\":12,\"empresa_id\":7,\"carrito_id\":16,\"estacion_id\":1,\"estacion_codigo\":\"EST-7-1\",\"estacion_nombre\":\"Estación 1\",\"codigo_reserva\":\"QA-RES-20260504-004107\",\"cliente_nombre\":\"QA Huesped Calipso 20260504-004107\",\"cliente_documento\":\"RES20260504-004107\",\"cliente_email\":\"qa.reserva"
+      "id": 13,
+      "sample": "{\"id\":13,\"empresa_id\":7,\"carrito_id\":16,\"estacion_id\":1,\"estacion_codigo\":\"EST-7-1\",\"estacion_nombre\":\"Estación 1\",\"codigo_reserva\":\"QA-RES-20260504-155537\",\"cliente_nombre\":\"QA Huesped Calipso 20260504-155537\",\"cliente_documento\":\"RES20260504-155537\",\"cliente_email\":\"qa.reserva"
     },
     {
       "module": "reservas_hotel",
@@ -277,7 +277,7 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=dashboard",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"activos_disponibles\":5,\"activos_alquilados\":0,\"reservas_pendientes\":0,\"contratos_vencidos\":0,\"devoluciones_hoy\":0,\"mantenimientos_abiertos\":5,\"ingresos_mes\":675000,\"depositos_retenidos\":0,\"utilizacion_promedio\":0,\"proximos_vencimientos\":[],\"activos_en_riesgo\":[],"
+      "sample": "{\"empresa_id\":7,\"activos_disponibles\":6,\"activos_alquilados\":0,\"reservas_pendientes\":0,\"contratos_vencidos\":0,\"devoluciones_hoy\":1,\"mantenimientos_abiertos\":6,\"ingresos_mes\":810000,\"depositos_retenidos\":0,\"utilizacion_promedio\":0,\"proximos_vencimientos\":[],\"activos_en_riesgo\":[],"
     },
     {
       "module": "alquileres",
@@ -295,8 +295,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=categorias",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -305,8 +305,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=activos",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -315,8 +315,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=tarifas",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -325,8 +325,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=contratos",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -335,8 +335,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=mantenimientos",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -345,8 +345,8 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=ubicaciones",
       "status": 201,
       "ok": true,
-      "id": 6,
-      "sample": "{\"id\":6,\"ok\":true}"
+      "id": 7,
+      "sample": "{\"id\":7,\"ok\":true}"
     },
     {
       "module": "alquileres",
@@ -364,7 +364,7 @@
       "path": "/api/empresa/alquileres?empresa_id=7\u0026action=contratos",
       "status": 200,
       "ok": true,
-      "sample": "[{\"id\":6,\"empresa_id\":7,\"codigo\":\"QA-CON-20260504-004107\",\"tipo_registro\":\"alquiler\",\"activo_id\":6,\"activo_nombre\":\"QA Activo Calipso 20260504-004107\",\"categoria_nombre\":\"QA Categoria Calipso 20260504-004107\",\"cliente_nombre\":\"QA Cliente Alquiler Calipso 20260504-004107\",\"cliente"
+      "sample": "[{\"id\":7,\"empresa_id\":7,\"codigo\":\"QA-CON-20260504-155537\",\"tipo_registro\":\"alquiler\",\"activo_id\":7,\"activo_nombre\":\"QA Activo Calipso 20260504-155537\",\"categoria_nombre\":\"QA Categoria Calipso 20260504-155537\",\"cliente_nombre\":\"QA Cliente Alquiler Calipso 20260504-155537\",\"cliente"
     },
     {
       "module": "odontologia",
@@ -373,7 +373,7 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=dashboard",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"pacientes_activos\":10,\"profesionales_activos\":10,\"citas_hoy\":10,\"citas_pendientes\":10,\"tratamientos_activos\":0,\"presupuestos_vigentes\":10,\"recaudo_mes\":200000,\"saldo_pendiente\":800000,\"agenda_hoy\":[{\"id\":1,\"empresa_id\":7,\"paciente_id\":1,\"paciente_nombre\":\"QA Paci"
+      "sample": "{\"empresa_id\":7,\"pacientes_activos\":11,\"profesionales_activos\":11,\"citas_hoy\":10,\"citas_pendientes\":11,\"tratamientos_activos\":0,\"presupuestos_vigentes\":11,\"recaudo_mes\":220000,\"saldo_pendiente\":880000,\"agenda_hoy\":[{\"id\":1,\"empresa_id\":7,\"paciente_id\":1,\"paciente_nombre\":\"QA Paci"
     },
     {
       "module": "odontologia",
@@ -382,8 +382,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=pacientes",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -392,8 +392,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=profesionales",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -402,8 +402,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=consultorios",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -412,8 +412,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=citas",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -422,8 +422,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=tratamientos",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -432,8 +432,8 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=presupuestos",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
@@ -442,14 +442,14 @@
       "path": "/api/empresa/odontologia?empresa_id=7\u0026action=pagos",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "odontologia",
       "action": "confirmar_cita",
       "method": "PUT",
-      "path": "/api/empresa/odontologia?empresa_id=7\u0026action=estado_cita\u0026id=11\u0026estado=confirmada",
+      "path": "/api/empresa/odontologia?empresa_id=7\u0026action=estado_cita\u0026id=12\u0026estado=confirmada",
       "status": 200,
       "ok": true,
       "sample": "{\"ok\":true}"
@@ -470,7 +470,7 @@
       "path": "/api/empresa/turnos_atencion?empresa_id=7\u0026action=dashboard\u0026fecha=2026-05-04",
       "status": 200,
       "ok": true,
-      "sample": "{\"empresa_id\":7,\"fecha\":\"2026-05-04\",\"esperando\":0,\"llamando\":0,\"en_atencion\":0,\"completados\":0,\"cancelados\":0,\"tiempo_espera_prom_min\":0,\"tiempo_atencion_prom_min\":0,\"servicios\":[],\"puestos\":[],\"llamados_recientes\":[]}"
+      "sample": "{\"empresa_id\":7,\"fecha\":\"2026-05-04\",\"esperando\":0,\"llamando\":0,\"en_atencion\":0,\"completados\":1,\"cancelados\":0,\"tiempo_espera_prom_min\":0.07,\"tiempo_atencion_prom_min\":0.07,\"servicios\":[{\"clave\":\"qa servicio 20260504-004107\",\"etiqueta\":\"QA Servicio 20260504-004107\",\"cantidad\":1,\""
     },
     {
       "module": "turnos",
@@ -488,8 +488,8 @@
       "path": "/api/empresa/turnos_atencion?empresa_id=7\u0026action=servicios",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "turnos",
@@ -498,8 +498,8 @@
       "path": "/api/empresa/turnos_atencion?empresa_id=7\u0026action=puestos",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"ok\":true}"
+      "id": 12,
+      "sample": "{\"id\":12,\"ok\":true}"
     },
     {
       "module": "turnos",
@@ -508,8 +508,8 @@
       "path": "/api/empresa/turnos_atencion?empresa_id=7\u0026action=emitir_ticket",
       "status": 201,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"empresa_id\":7,\"servicio_id\":11,\"servicio_nombre\":\"QA Servicio 20260504-004107\",\"servicio_color\":\"#2563eb\",\"numero_dia\":1,\"codigo_turno\":\"Q-001\",\"documento_cliente\":\"QA20260504-004107\",\"nombre_cliente\":\"QA Cliente Turnos 20260504-004107\",\"canal_emision\":\"recepcion\",\"esta"
+      "id": 12,
+      "sample": "{\"id\":12,\"empresa_id\":7,\"servicio_id\":12,\"servicio_nombre\":\"QA Servicio 20260504-155537\",\"servicio_color\":\"#2563eb\",\"numero_dia\":2,\"codigo_turno\":\"Q-002\",\"documento_cliente\":\"QA20260504-155537\",\"nombre_cliente\":\"QA Cliente Turnos 20260504-155537\",\"canal_emision\":\"recepcion\",\"esta"
     },
     {
       "module": "turnos",
@@ -518,8 +518,8 @@
       "path": "/api/empresa/turnos_atencion?empresa_id=7\u0026action=llamar_siguiente",
       "status": 200,
       "ok": true,
-      "id": 11,
-      "sample": "{\"id\":11,\"empresa_id\":7,\"servicio_id\":11,\"servicio_nombre\":\"QA Servicio 20260504-004107\",\"servicio_color\":\"#2563eb\",\"puesto_id\":11,\"puesto_nombre\":\"QA Puesto 20260504-004107\",\"numero_dia\":1,\"codigo_turno\":\"Q-001\",\"documento_cliente\":\"QA20260504-004107\",\"nombre_cliente\":\"QA Client"
+      "id": 12,
+      "sample": "{\"id\":12,\"empresa_id\":7,\"servicio_id\":12,\"servicio_nombre\":\"QA Servicio 20260504-155537\",\"servicio_color\":\"#2563eb\",\"puesto_id\":12,\"puesto_nombre\":\"QA Puesto 20260504-155537\",\"numero_dia\":2,\"codigo_turno\":\"Q-002\",\"documento_cliente\":\"QA20260504-155537\",\"nombre_cliente\":\"QA Client"
     },
     {
       "module": "turnos",

@@ -6,6 +6,7 @@
   }
 
   var STORAGE_KEY = "pcs_radio_player_state";
+  var ENABLED_KEY = "pcs_radio_online_enabled";
   var stations = window.__pcsRadioStations.slice();
   var drawer = document.getElementById("radioDrawer");
   var openBtn = document.getElementById("openRadioDrawer");
@@ -22,7 +23,8 @@
   var state = {
     stationId: "",
     playing: false,
-    volume: 0.7
+    volume: 0.7,
+    enabled: true
   };
 
   function saveState() {
@@ -42,6 +44,11 @@
         state.volume = Number(parsed.volume || 0.7);
       }
     } catch (_) {}
+    try {
+      state.enabled = window.localStorage.getItem(ENABLED_KEY) !== "0";
+    } catch (_) {
+      state.enabled = true;
+    }
   }
 
   function stationById(id) {
@@ -80,6 +87,11 @@
   }
 
   function updateMiniPlayer() {
+    if (!state.enabled) {
+      mini.hidden = true;
+      renderGrid();
+      return;
+    }
     var station = stationById(state.stationId);
     if (!station) {
       mini.hidden = true;
@@ -94,6 +106,7 @@
   }
 
   function playStation(id, autoplay) {
+    if (!state.enabled) return;
     var station = stationById(id);
     if (!station) return;
     state.stationId = station.id;
@@ -130,8 +143,23 @@
     renderGrid();
   }
 
+  function setRadioEnabled(enabled) {
+    state.enabled = !!enabled;
+    try {
+      window.localStorage.setItem(ENABLED_KEY, state.enabled ? "1" : "0");
+    } catch (_) {}
+    if (!state.enabled) {
+      setDrawerOpen(false);
+      stopPlayback();
+    }
+    if (openBtn) openBtn.hidden = !state.enabled;
+    if (drawer) drawer.hidden = !state.enabled;
+    renderGrid();
+    updateMiniPlayer();
+  }
+
   function togglePlayback() {
-    if (!state.stationId) return;
+    if (!state.enabled || !state.stationId) return;
     if (miniAudio.paused) {
       miniAudio.play().then(function () {
         state.playing = true;
@@ -147,7 +175,10 @@
   }
 
   function wireEvents() {
-    if (openBtn) openBtn.addEventListener("click", function () { setDrawerOpen(!drawer.classList.contains("is-open")); });
+    if (openBtn) openBtn.addEventListener("click", function () {
+      if (!state.enabled) return;
+      setDrawerOpen(!drawer.classList.contains("is-open"));
+    });
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
     if (miniClose) miniClose.addEventListener("click", stopPlayback);
     if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
@@ -160,6 +191,7 @@
       grid.addEventListener("click", function (ev) {
         var button = ev.target.closest("[data-radio-play]");
         if (!button) return;
+        if (!state.enabled) return;
         playStation(button.getAttribute("data-radio-play"), true);
       });
     }
@@ -181,13 +213,20 @@
   }
 
   window.__pcsRadioPlayerOpenStation = function (id) {
+    if (!state.enabled) return;
     setDrawerOpen(true);
     playStation(id, true);
+  };
+
+  window.__pcsRadioPlayerSetEnabled = setRadioEnabled;
+  window.__pcsRadioPlayerIsEnabled = function () {
+    return !!state.enabled;
   };
 
   loadState();
   wireEvents();
   renderGrid();
+  setRadioEnabled(state.enabled);
   if (state.stationId) {
     playStation(state.stationId, false);
     updateMiniPlayer();

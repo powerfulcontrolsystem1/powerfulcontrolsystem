@@ -31,6 +31,8 @@ const (
 	onlyOfficeDefaultDataRoot = "/data/empresas"
 	onlyOfficeConfigKeyDSURL  = "onlyoffice.document_server_url" // ej: http://onlyoffice:80
 	onlyOfficeConfigKeyJWT    = "onlyoffice.jwt_secret"          // secreto HS256
+	onlyOfficeFileTokenTTL    = 4 * time.Hour
+	onlyOfficeCallbackTTL     = 24 * time.Hour
 )
 
 type onlyOfficeAccessTokenClaims struct {
@@ -49,12 +51,12 @@ type onlyOfficeDocListItem struct {
 }
 
 type onlyOfficeEditorConfigRequest struct {
-	EmpresaID   int64  `json:"empresa_id"`
-	FileName   string `json:"file_name"`
-	Mode       string `json:"mode"` // edit|view
-	UserID     string `json:"user_id,omitempty"`
-	UserName   string `json:"user_name,omitempty"`
-	Download   bool   `json:"download,omitempty"`
+	EmpresaID int64  `json:"empresa_id"`
+	FileName  string `json:"file_name"`
+	Mode      string `json:"mode"` // edit|view
+	UserID    string `json:"user_id,omitempty"`
+	UserName  string `json:"user_name,omitempty"`
+	Download  bool   `json:"download,omitempty"`
 }
 
 // OnlyOffice callback payload (subset usado).
@@ -660,18 +662,20 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			canEdit := mode == "edit"
 
 			// Token temporal para servir archivo y para callback.
-			exp := time.Now().Add(15 * time.Minute).Unix()
+			now := time.Now()
+			fileExp := now.Add(onlyOfficeFileTokenTTL).Unix()
+			callbackExp := now.Add(onlyOfficeCallbackTTL).Unix()
 			fileTok, _ := onlyOfficeSignToken(jwtSecret, onlyOfficeAccessTokenClaims{
 				EmpresaID: empresaID,
 				Path:      base,
 				Action:    "file",
-				ExpUnix:   exp,
+				ExpUnix:   fileExp,
 			})
 			cbTok, _ := onlyOfficeSignToken(jwtSecret, onlyOfficeAccessTokenClaims{
 				EmpresaID: empresaID,
 				Path:      base,
 				Action:    "callback",
-				ExpUnix:   exp,
+				ExpUnix:   callbackExp,
 			})
 
 			baseURL := resolveBaseURLForConfirmation(r, dbSuper)
@@ -700,7 +704,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 					},
 				},
 				"editorConfig": map[string]any{
-					"mode": mode,
+					"mode":        mode,
 					"callbackUrl": callbackURL,
 					"user": map[string]any{
 						"id":   strings.TrimSpace(adminEmailFromRequest(r)),
@@ -884,4 +888,3 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 		writeJSON(w, http.StatusOK, resp)
 	}
 }
-

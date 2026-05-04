@@ -71,8 +71,15 @@ func CreateRolDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, nombre, descripcion
 		return 0, err
 	}
 	nombre = strings.TrimSpace(nombre)
+	descripcion = strings.TrimSpace(descripcion)
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
 	if tipoEmpresaID <= 0 || nombre == "" {
 		return 0, errors.New("tipo_empresa_id y nombre son obligatorios")
+	}
+	if exists, err := roleNameExistsForTipo(dbConn, tipoEmpresaID, nombre, 0); err != nil {
+		return 0, err
+	} else if exists {
+		return 0, errors.New("ya existe un rol con ese nombre para el tipo de empresa")
 	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO roles_de_usuario (
 		tipo_empresa_id, nombre, descripcion, usuario_creador, estado, fecha_creacion, fecha_actualizacion
@@ -182,10 +189,38 @@ func UpdateRolDeUsuario(dbConn *sql.DB, id, tipoEmpresaID int64, nombre, descrip
 	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
 		return err
 	}
+	nombre = strings.TrimSpace(nombre)
+	descripcion = strings.TrimSpace(descripcion)
+	if id <= 0 || tipoEmpresaID <= 0 || nombre == "" {
+		return errors.New("id, tipo_empresa_id y nombre son obligatorios")
+	}
+	if exists, err := roleNameExistsForTipo(dbConn, tipoEmpresaID, nombre, id); err != nil {
+		return err
+	} else if exists {
+		return errors.New("ya existe un rol con ese nombre para el tipo de empresa")
+	}
 	_, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario
 		SET tipo_empresa_id = ?, nombre = ?, descripcion = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE id = ?`, tipoEmpresaID, nombre, descripcion, id)
 	return err
+}
+
+func roleNameExistsForTipo(dbConn *sql.DB, tipoEmpresaID int64, nombre string, excludeID int64) (bool, error) {
+	nombre = strings.TrimSpace(nombre)
+	if tipoEmpresaID <= 0 || nombre == "" {
+		return false, nil
+	}
+	query := `SELECT COUNT(1) FROM roles_de_usuario WHERE tipo_empresa_id = ? AND lower(trim(nombre)) = lower(trim(?))`
+	args := []interface{}{tipoEmpresaID, nombre}
+	if excludeID > 0 {
+		query += ` AND id <> ?`
+		args = append(args, excludeID)
+	}
+	var count int
+	if err := queryRowSQLCompat(dbConn, query, args...).Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // DeleteRolDeUsuario elimina un rol de usuario.

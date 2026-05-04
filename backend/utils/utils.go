@@ -1,4 +1,4 @@
-﻿package utils
+package utils
 
 import (
 	"bytes"
@@ -580,7 +580,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		publicExact := map[string]struct{}{
 			"/":                                                     {},
 			"/index.html":                                           {},
-			"/mantenimiento.html":                                    {},
+			"/mantenimiento.html":                                   {},
 			"/descripcion_de_los_sistemas.ht":                       {},
 			"/Informacion_de_contacto.html":                         {},
 			"/soporte_remoto_acceso.html":                           {},
@@ -588,7 +588,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/perfil_red_social.html":                               {},
 			"/venta_publica.html":                                   {},
 			"/pagar_productos_de_venta_publica.html":                {},
-			"/pagar_licencia.html":                               {},
+			"/pagar_licencia.html":                                  {},
 			"/venta_digital.html":                                   {},
 			"/elegir_licencia.html":                                 {},
 			"/login.html":                                           {},
@@ -625,6 +625,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
 			"/api/empresa/usuarios/restablecer_password":            {},
 			"/api/empresa/usuarios/cambiar_password":                {},
+			"/api/onlyoffice/file":                                  {},
+			"/api/onlyoffice/callback":                              {},
 			"/config.js":                                            {},
 			"/accept.html":                                          {},
 			"/accept/complete":                                      {},

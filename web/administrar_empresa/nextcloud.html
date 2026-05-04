@@ -605,8 +605,8 @@
           <iframe id="ncFrame" class="nc-embed" src="about:blank" title="Nextcloud"></iframe>
           <div class="nc-empty-frame">
             <div>
-              <strong>Nextcloud no esta listo para mostrarse aqui</strong>
-              <span>Verifica la configuracion o abre el servicio en una pestana nueva.</span>
+              <strong id="ncFrameEmptyTitle">Vista embebida no disponible</strong>
+              <span id="ncFrameEmptyText">Nextcloud puede bloquear iframes por seguridad. Usa Abrir en pestana.</span>
             </div>
           </div>
         </div>
@@ -670,11 +670,20 @@
         if(kind) pill.classList.add(kind);
       }
 
+      function setFrameEmpty(title, detail){
+        var titleEl = document.getElementById('ncFrameEmptyTitle');
+        var textEl = document.getElementById('ncFrameEmptyText');
+        if(titleEl) titleEl.textContent = title || 'Vista embebida no disponible';
+        if(textEl) textEl.textContent = detail || 'Usa Abrir en pestana para entrar al servicio.';
+      }
+
       function updateFrame(ctx, enabled){
         var frame = document.getElementById('ncFrame');
         var panel = document.getElementById('ncFramePanel');
         var hint = document.getElementById('ncFrameHint');
         var webURL = txt(ctx && ctx.web_url);
+        var configured = !!(ctx && ctx.configured !== false);
+        var hasCredentials = !!(ctx && (ctx.has_credentials === true || (ctx.has_credentials === undefined && ctx.ok === true && txt(ctx.nextcloud_user))));
         if(enabled && webURL && frame){
           var sameOrigin = false;
           try {
@@ -688,11 +697,23 @@
           }
           frame.src = 'about:blank';
           if(panel) panel.classList.add('nc-frame-empty');
-          if(hint) hint.textContent = 'Nextcloud protege la vista embebida; usa Abrir en pestana.';
+          setFrameEmpty(
+            configured ? 'Nextcloud listo para abrir' : 'Nextcloud pendiente de configuracion',
+            configured
+              ? 'Por seguridad, esta instalacion no se muestra dentro del sistema. Abre Nextcloud en una pestana nueva.'
+              : 'Completa la URL y credenciales del super administrador para habilitar el servicio.'
+          );
+          if(hint) hint.textContent = configured
+            ? (hasCredentials ? 'Usuario listo. Abre Nextcloud en pestana nueva.' : 'Servicio configurado. Aprovisiona el usuario o abre Nextcloud.')
+            : 'Servicio pendiente de configuracion.';
           return;
         }
         if(frame) frame.src = 'about:blank';
         if(panel) panel.classList.add('nc-frame-empty');
+        setFrameEmpty(
+          enabled ? 'Nextcloud pendiente de configuracion' : 'Nextcloud desactivado',
+          enabled ? 'Configura Nextcloud en super administrador para habilitar el acceso.' : 'Activa Nextcloud desde configuracion avanzada para usar archivos empresariales.'
+        );
         if(hint) hint.textContent = enabled ? 'Servicio pendiente de configuracion.' : 'Servicio desactivado.';
       }
 
