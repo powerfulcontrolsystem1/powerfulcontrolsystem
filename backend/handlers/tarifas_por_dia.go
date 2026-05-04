@@ -53,6 +53,14 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			return
 		}
 		filter.EstacionID = estacionID
+		if hasTarifaPorDiaPersonasQuery(r) {
+			personas, err := resolveTarifaPorDiaPersonasQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			filter.Personas = personas
+		}
 
 		limit, err := parseIntQueryOptional(r, "limit")
 		if err != nil || limit < 0 {
@@ -89,7 +97,12 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			http.Error(w, "estacion_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		item, err := dbpkg.GetEmpresaTarifaPorDiaAplicable(dbEmp, empresaID, estacionID)
+		personas, err := resolveTarifaPorDiaPersonasQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		item, err := dbpkg.GetEmpresaTarifaPorDiaAplicablePorPersonas(dbEmp, empresaID, estacionID, personas)
 		if err != nil {
 			writeTarifasPorDiaError(w, err)
 			return
@@ -99,6 +112,7 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 				"ok":          false,
 				"tarifa":      nil,
 				"estacion_id": estacionID,
+				"personas":    personas,
 			})
 			return
 		}
@@ -106,6 +120,7 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			"ok":          true,
 			"tarifa":      item,
 			"estacion_id": estacionID,
+			"personas":    personas,
 		})
 		return
 
@@ -116,13 +131,18 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			return
 		}
 
-		tarifa, err := dbpkg.GetEmpresaTarifaPorDiaActiva(dbEmp, empresaID, estacionID)
+		personas, err := resolveTarifaPorDiaPersonasQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		tarifa, err := dbpkg.GetEmpresaTarifaPorDiaActivaPorPersonas(dbEmp, empresaID, estacionID, personas)
 		if err != nil {
 			writeTarifasPorDiaError(w, err)
 			return
 		}
 		if tarifa == nil {
-			http.Error(w, "no existe tarifa activa para la estacion indicada", http.StatusNotFound)
+			http.Error(w, "no existe tarifa activa para la estacion y numero de personas indicado", http.StatusNotFound)
 			return
 		}
 
@@ -141,7 +161,7 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			return
 		}
 
-		detalle := dbpkg.CalcularDetalleTarifaPorDia(*tarifa, fechaInicio, fechaCorte)
+		detalle := dbpkg.CalcularDetalleTarifaPorDiaConPersonas(*tarifa, fechaInicio, fechaCorte, personas)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":                              true,
 			"tarifa":                          tarifa,
@@ -153,6 +173,9 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 			"dias_completos":                  detalle.DiasCompletos,
 			"dias_equivalentes":               detalle.DiasEquivalentes,
 			"valor_dia":                       detalle.ValorDia,
+			"personas":                        detalle.Personas,
+			"personas_desde":                  detalle.PersonasDesde,
+			"personas_hasta":                  detalle.PersonasHasta,
 			"monto_dias_completos":            detalle.MontoDiasCompletos,
 			"monto_prorrateo_entrada":         detalle.MontoProrrateoEntrada,
 			"monto_prorrateo_intermedio":      detalle.MontoProrrateoIntermedio,
@@ -406,6 +429,35 @@ func resolveTarifaPorDiaDateTimeQuery(r *http.Request, key string, fallback time
 		return fallback, nil
 	}
 	return parseTarifaPorDiaHandlerDateTime(raw)
+}
+
+func resolveTarifaPorDiaPersonasQuery(r *http.Request) (int, error) {
+	for _, key := range []string{"cantidad_personas", "personas", "huespedes", "cantidad_huespedes"} {
+		value, err := parseIntQueryOptional(r, key)
+		if err != nil {
+			return 0, errors.New(key + " invalido")
+		}
+		if value > 0 {
+			if value > 999 {
+				return 0, errors.New(key + " invalido")
+			}
+			return value, nil
+		}
+	}
+	return 1, nil
+}
+
+func hasTarifaPorDiaPersonasQuery(r *http.Request) bool {
+	if r == nil || r.URL == nil {
+		return false
+	}
+	values := r.URL.Query()
+	for _, key := range []string{"cantidad_personas", "personas", "huespedes", "cantidad_huespedes"} {
+		if _, ok := values[key]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func writeTarifasPorDiaError(w http.ResponseWriter, err error) {

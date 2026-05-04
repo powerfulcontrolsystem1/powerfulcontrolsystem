@@ -361,7 +361,7 @@
       <form id="nightForm" class="hotel-card">
         <input type="hidden" id="nightId">
         <h2>Tarifa por noche</h2>
-        <p>Define el valor base por habitacion, horarios de check-in/check-out, prioridad y si se aplica automaticamente al carrito de la estacion.</p>
+        <p>Define el valor base por habitacion, ocupacion, horarios de check-in/check-out, prioridad y si se aplica automaticamente al carrito de la estacion.</p>
         <div class="hotel-form-grid">
           <div class="span-2">
             <label class="form-label" for="nightName">Nombre tarifa</label>
@@ -390,6 +390,14 @@
           <div>
             <label class="form-label" for="nightValue">Valor por noche</label>
             <input id="nightValue" class="form-input" type="number" min="0" step="0.01" required>
+          </div>
+          <div>
+            <label class="form-label" for="nightPeopleFrom">Personas desde</label>
+            <input id="nightPeopleFrom" class="form-input" type="number" min="1" max="999" value="1" required>
+          </div>
+          <div>
+            <label class="form-label" for="nightPeopleTo">Personas hasta</label>
+            <input id="nightPeopleTo" class="form-input" type="number" min="0" max="999" value="0" placeholder="0 = sin limite">
           </div>
           <div>
             <label class="form-label" for="nightCurrency">Moneda</label>
@@ -672,9 +680,10 @@
       <div class="hotel-sim-grid">
         <form id="nightSimForm" class="hotel-card">
           <h2>Simulador por noche</h2>
-          <p>Calcula el valor esperado segun check-in, check-out y la tarifa activa de la habitacion.</p>
+          <p>Calcula el valor esperado segun check-in, check-out, personas y la tarifa activa de la habitacion.</p>
           <div class="hotel-form-grid">
             <div class="span-2"><label class="form-label" for="simNightStation">Habitacion</label><select id="simNightStation" class="form-input"></select></div>
+            <div><label class="form-label" for="simNightPeople">Personas</label><input id="simNightPeople" class="form-input" type="number" min="1" max="999" value="2"></div>
             <div><label class="form-label" for="simNightStart">Activado en</label><input id="simNightStart" class="form-input" type="datetime-local"></div>
             <div><label class="form-label" for="simNightEnd">Fecha corte</label><input id="simNightEnd" class="form-input" type="datetime-local"></div>
           </div>

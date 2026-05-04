@@ -1,11 +1,13 @@
 {
-  "status": "running",
+  "status": "stopped",
   "hostname": "NITRO",
   "process_id": 11512,
   "listen_addr": ":8080",
   "last_start_at": "2026-05-03 16:18:06",
   "last_start_reason": "reinicio_inesperado_detectado",
   "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=12572 previo_inicio=2026-05-03 16:01:02 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: inicio_script_iniciar_servidor. Ultimo indicio en server.err: 2026/05/03 16:17:42 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
+  "last_stop_at": "2026-05-03 20:18:44",
+  "last_stop_reason": "signal_terminated",
   "last_unexpected_restart": true,
   "last_known_server_err": "2026/05/03 16:17:42 INFO: preconfiguraciones por tipo verificadas: tipos=12 creadas=0 omitidas=12 errores=0",
   "last_event_id": 9439

@@ -134,6 +134,15 @@
     return a + " - " + b;
   }
 
+  function peopleRange(from, to) {
+    var a = number(from, 1);
+    var b = number(to);
+    if (a <= 0) a = 1;
+    if (b <= 0) return a + "+ personas";
+    if (a === b) return a + " persona" + (a === 1 ? "" : "s");
+    return a + " - " + b + " personas";
+  }
+
   function fillDaySelect(id, includeAll) {
     var select = $(id);
     if (!select) return;
@@ -267,6 +276,7 @@
       return "<tr>" +
         "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
         "<td>" + money(item.valor_dia, item.moneda) + "<br><small>" + esc(item.nombre_tarifa || item.servicio_nombre || "hospedaje") + "</small></td>" +
+        "<td>" + esc(peopleRange(item.personas_desde, item.personas_hasta)) + "</td>" +
         "<td>" + esc(item.hora_check_in || "15:00") + " / " + esc(item.hora_check_out || "12:00") + "</td>" +
         "<td><span class=\"hotel-badge\">" + esc(status) + "</span><br><small>Prioridad " + esc(item.prioridad || 1) + "</small></td>" +
         "<td>" + (item.aplicar_automaticamente ? "Automatico" : "Manual") + "</td>" +
@@ -275,7 +285,7 @@
         "<button class=\"btn danger\" type=\"button\" data-delete-night=\"" + esc(item.id) + "\">Eliminar</button></td>" +
       "</tr>";
     }).join("");
-    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Habitacion</th><th>Valor</th><th>Horario</th><th>Estado</th><th>Aplicacion</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Habitacion</th><th>Valor</th><th>Ocupacion</th><th>Horario</th><th>Estado</th><th>Aplicacion</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
     bindTableActions(root);
     updateKpis();
   }
@@ -402,6 +412,8 @@
     $("nightStationName").value = "";
     $("nightService").value = "hospedaje";
     $("nightValue").value = "";
+    $("nightPeopleFrom").value = "1";
+    $("nightPeopleTo").value = "0";
     $("nightCurrency").value = "COP";
     $("nightCheckIn").value = "15:00";
     $("nightCheckOut").value = "12:00";
@@ -443,6 +455,8 @@
       estacion_nombre: text($("nightStationName").value) || "Habitacion " + stationID,
       servicio_nombre: text($("nightService").value) || "hospedaje",
       valor_dia: number($("nightValue").value),
+      personas_desde: number($("nightPeopleFrom").value, 1),
+      personas_hasta: number($("nightPeopleTo").value),
       hora_check_in: text($("nightCheckIn").value) || "15:00",
       hora_check_out: text($("nightCheckOut").value) || "12:00",
       moneda: text($("nightCurrency").value) || "COP",
@@ -491,6 +505,8 @@
     event.preventDefault();
     var payload = buildNightPayload();
     if (!validateStationPayload(payload, "nightMsg")) return;
+    if (payload.personas_desde <= 0) return setMessage("nightMsg", "Personas desde debe ser mayor a cero.", true);
+    if (payload.personas_hasta > 0 && payload.personas_hasta < payload.personas_desde) return setMessage("nightMsg", "Personas hasta no puede ser menor que personas desde.", true);
     setMessage("nightMsg", "Guardando tarifa por noche...", false);
     try {
       await fetchJSON("/api/empresa/tarifas_por_dia", {
@@ -530,6 +546,7 @@
     var payload = isNight ? buildNightPayload() : buildDayUsePayload();
     var msgID = isNight ? "nightMsg" : "dayUseMsg";
     if (state.empresaID <= 0) return setMessage(msgID, "No se encontro empresa_id para guardar.", true);
+    if (isNight && payload.personas_hasta > 0 && payload.personas_hasta < payload.personas_desde) return setMessage(msgID, "Personas hasta no puede ser menor que personas desde.", true);
     setMessage(msgID, "Aplicando regla a todas las estaciones...", false);
     try {
       await fetchJSON(endpoint(isNight ? "/api/empresa/tarifas_por_dia" : "/api/empresa/tarifas_por_minutos", { action: "aplicar_todas_estaciones" }), {
@@ -556,6 +573,8 @@
     $("nightStationName").value = item.estacion_nombre || "";
     $("nightService").value = item.servicio_nombre || "hospedaje";
     $("nightValue").value = item.valor_dia || 0;
+    $("nightPeopleFrom").value = item.personas_desde || 1;
+    $("nightPeopleTo").value = item.personas_hasta || 0;
     $("nightCurrency").value = item.moneda || "COP";
     $("nightCheckIn").value = (item.hora_check_in || "15:00").slice(0, 5);
     $("nightCheckOut").value = (item.hora_check_out || "12:00").slice(0, 5);
@@ -803,6 +822,7 @@
   async function simulateNight(event) {
     event.preventDefault();
     var stationID = number($("simNightStation").value);
+    var people = number($("simNightPeople").value, 1);
     var start = text($("simNightStart").value);
     var end = text($("simNightEnd").value);
     if (stationID <= 0 || !start || !end) {
@@ -810,10 +830,10 @@
       return;
     }
     try {
-      var data = await fetchJSON(endpoint("/api/empresa/tarifas_por_dia", { action: "calcular", estacion_id: stationID, activado_en: start, fecha_corte: end }));
+      var data = await fetchJSON(endpoint("/api/empresa/tarifas_por_dia", { action: "calcular", estacion_id: stationID, personas: people, activado_en: start, fecha_corte: end }));
       $("nightSimResult").innerHTML = "<strong>Total estimado: " + esc(money(data.monto_total, data.moneda || (data.tarifa && data.tarifa.moneda))) + "</strong><br>" +
         "Dias cobrados: " + esc(data.dias_cobrados || 0) + " | Dias equivalentes: " + esc(data.dias_equivalentes || 0) + "<br>" +
-        "Tarifa base: " + esc(money(data.valor_dia, data.moneda || "COP"));
+        "Tarifa base: " + esc(money(data.valor_dia, data.moneda || "COP")) + " | Ocupacion: " + esc(peopleRange(data.personas_desde, data.personas_hasta));
     } catch (e) {
       $("nightSimResult").textContent = e.message || "No se pudo simular.";
     }

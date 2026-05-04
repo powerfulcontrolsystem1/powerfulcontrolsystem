@@ -19,6 +19,8 @@ type EmpresaTarifaPorDia struct {
 	EstacionNombre         string  `json:"estacion_nombre,omitempty"`
 	ServicioNombre         string  `json:"servicio_nombre,omitempty"`
 	ValorDia               float64 `json:"valor_dia"`
+	PersonasDesde          int     `json:"personas_desde"`
+	PersonasHasta          int     `json:"personas_hasta"`
 	HoraCheckIn            string  `json:"hora_check_in"`
 	HoraCheckOut           string  `json:"hora_check_out"`
 	Moneda                 string  `json:"moneda,omitempty"`
@@ -34,6 +36,7 @@ type EmpresaTarifaPorDia struct {
 // EmpresaTarifaPorDiaFilter define filtros para listar tarifas diarias.
 type EmpresaTarifaPorDiaFilter struct {
 	EstacionID      int64
+	Personas        int
 	IncludeInactive bool
 	Limit           int
 }
@@ -46,6 +49,9 @@ type EmpresaTarifaPorDiaCalculo struct {
 	DiasCompletos               int     `json:"dias_completos"`
 	DiasEquivalentes            float64 `json:"dias_equivalentes"`
 	ValorDia                    float64 `json:"valor_dia"`
+	Personas                    int     `json:"personas"`
+	PersonasDesde               int     `json:"personas_desde"`
+	PersonasHasta               int     `json:"personas_hasta"`
 	MontoDiasCompletos          float64 `json:"monto_dias_completos"`
 	MontoProrrateoEntrada       float64 `json:"monto_prorrateo_entrada"`
 	MontoProrrateoIntermedio    float64 `json:"monto_prorrateo_intermedio"`
@@ -68,6 +74,8 @@ type EmpresaTarifaPorDiaCalculo struct {
 type EmpresaTarifaPorDiaAplicacionMasivaResultado struct {
 	EmpresaID           int64   `json:"empresa_id"`
 	ValorDia            float64 `json:"valor_dia"`
+	PersonasDesde       int     `json:"personas_desde"`
+	PersonasHasta       int     `json:"personas_hasta"`
 	HoraCheckIn         string  `json:"hora_check_in"`
 	HoraCheckOut        string  `json:"hora_check_out"`
 	EstacionesObjetivo  int     `json:"estaciones_objetivo"`
@@ -110,6 +118,8 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 			estacion_nombre TEXT,
 			servicio_nombre TEXT DEFAULT 'hospedaje',
 			valor_dia REAL NOT NULL DEFAULT 0,
+			personas_desde INTEGER NOT NULL DEFAULT 1,
+			personas_hasta INTEGER NOT NULL DEFAULT 0,
 			hora_check_in TEXT DEFAULT '15:00',
 			hora_check_out TEXT DEFAULT '12:00',
 			moneda TEXT DEFAULT 'COP',
@@ -121,7 +131,6 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_tarifas_por_dia_estacion ON empresa_tarifas_por_dia(empresa_id, estacion_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_empresa_estado ON empresa_tarifas_por_dia(empresa_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_empresa_estacion ON empresa_tarifas_por_dia(empresa_id, estacion_id);`,
 	}
@@ -129,6 +138,12 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
 		}
+	}
+	if _, err := dbConn.Exec(`DROP INDEX IF EXISTS ux_empresa_tarifas_por_dia_estacion`); err != nil {
+		return err
+	}
+	if err := dropLegacyEmpresaTarifasPorDiaUniqueIndexes(dbConn); err != nil {
+		return err
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "estacion_codigo", "TEXT"); err != nil {
@@ -144,6 +159,12 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "valor_dia", "REAL NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "personas_desde", "INTEGER NOT NULL DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "personas_hasta", "INTEGER NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "hora_check_in", "TEXT DEFAULT '15:00'"); err != nil {
@@ -173,8 +194,45 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_personas ON empresa_tarifas_por_dia(empresa_id, estacion_id, personas_desde, personas_hasta, estado);`); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func dropLegacyEmpresaTarifasPorDiaUniqueIndexes(dbConn *sql.DB) error {
+	rows, err := dbConn.Query(`SELECT indexname, indexdef
+		FROM pg_indexes
+		WHERE schemaname = current_schema()
+			AND tablename = 'empresa_tarifas_por_dia'`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var indexName string
+		var indexDef string
+		if err := rows.Scan(&indexName, &indexDef); err != nil {
+			return err
+		}
+		lowerDef := strings.ToLower(indexDef)
+		if !strings.Contains(lowerDef, "unique index") {
+			continue
+		}
+		compactDef := strings.ReplaceAll(lowerDef, " ", "")
+		if !strings.Contains(compactDef, "(empresa_id,estacion_id)") {
+			continue
+		}
+		if strings.Contains(compactDef, "personas_desde") || strings.Contains(compactDef, "personas_hasta") {
+			continue
+		}
+		if _, err := dbConn.Exec(fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(indexName))); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
 }
 
 func normalizeTarifaPorDiaEstado(estado string) string {
@@ -208,6 +266,29 @@ func normalizeTarifaPorDiaPrioridad(v int) int {
 		return 999
 	}
 	return v
+}
+
+func normalizeTarifaPorDiaPersonasDesde(v int) int {
+	if v <= 0 {
+		return 1
+	}
+	if v > 999 {
+		return 999
+	}
+	return v
+}
+
+func normalizeTarifaPorDiaPersonasHasta(desde, hasta int) int {
+	if hasta <= 0 {
+		return 0
+	}
+	if hasta < desde {
+		return desde
+	}
+	if hasta > 999 {
+		return 999
+	}
+	return hasta
 }
 
 func parseTarifaPorDiaHora(raw string) (int, int, error) {
@@ -292,6 +373,8 @@ func normalizeEmpresaTarifaPorDiaPayload(payload *EmpresaTarifaPorDia) error {
 	payload.ValorDia = round2(payload.ValorDia)
 	payload.HoraCheckIn = horaCheckIn
 	payload.HoraCheckOut = horaCheckOut
+	payload.PersonasDesde = normalizeTarifaPorDiaPersonasDesde(payload.PersonasDesde)
+	payload.PersonasHasta = normalizeTarifaPorDiaPersonasHasta(payload.PersonasDesde, payload.PersonasHasta)
 	payload.Moneda = normalizeTarifaPorDiaMoneda(payload.Moneda)
 	payload.Prioridad = normalizeTarifaPorDiaPrioridad(payload.Prioridad)
 	payload.Estado = normalizeTarifaPorDiaEstado(payload.Estado)
@@ -314,6 +397,8 @@ func scanEmpresaTarifaPorDia(scanner interface {
 		&item.EstacionNombre,
 		&item.ServicioNombre,
 		&item.ValorDia,
+		&item.PersonasDesde,
+		&item.PersonasHasta,
 		&item.HoraCheckIn,
 		&item.HoraCheckOut,
 		&item.Moneda,
@@ -333,6 +418,9 @@ func scanEmpresaTarifaPorDia(scanner interface {
 
 // CreateEmpresaTarifaPorDia crea una tarifa diaria por estacion.
 func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int64, error) {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return 0, err
+	}
 	if err := normalizeEmpresaTarifaPorDiaPayload(&payload); err != nil {
 		return 0, err
 	}
@@ -350,6 +438,8 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		estacion_nombre,
 		servicio_nombre,
 		valor_dia,
+		personas_desde,
+		personas_hasta,
 		hora_check_in,
 		hora_check_out,
 		moneda,
@@ -360,7 +450,7 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		payload.NombreTarifa,
 		payload.EstacionID,
@@ -368,6 +458,8 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		payload.EstacionNombre,
 		payload.ServicioNombre,
 		payload.ValorDia,
+		payload.PersonasDesde,
+		payload.PersonasHasta,
 		payload.HoraCheckIn,
 		payload.HoraCheckOut,
 		payload.Moneda,
@@ -381,6 +473,9 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 
 // UpdateEmpresaTarifaPorDia actualiza una tarifa diaria existente.
 func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) error {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return err
+	}
 	if payload.ID <= 0 {
 		return fmt.Errorf("id es obligatorio")
 	}
@@ -401,6 +496,8 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 		estacion_nombre = ?,
 		servicio_nombre = ?,
 		valor_dia = ?,
+		personas_desde = ?,
+		personas_hasta = ?,
 		hora_check_in = ?,
 		hora_check_out = ?,
 		moneda = ?,
@@ -417,6 +514,8 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 		payload.EstacionNombre,
 		payload.ServicioNombre,
 		payload.ValorDia,
+		payload.PersonasDesde,
+		payload.PersonasHasta,
 		payload.HoraCheckIn,
 		payload.HoraCheckOut,
 		payload.Moneda,
@@ -440,6 +539,9 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 
 // SetEmpresaTarifaPorDiaEstado activa o desactiva una tarifa diaria.
 func SetEmpresaTarifaPorDiaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return err
+	}
 	if empresaID <= 0 || id <= 0 {
 		return fmt.Errorf("empresa_id e id son obligatorios")
 	}
@@ -459,6 +561,9 @@ func SetEmpresaTarifaPorDiaEstado(dbConn *sql.DB, empresaID, id int64, estado st
 
 // DeleteEmpresaTarifaPorDia elimina una tarifa diaria.
 func DeleteEmpresaTarifaPorDia(dbConn *sql.DB, empresaID, id int64) error {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return err
+	}
 	if empresaID <= 0 || id <= 0 {
 		return fmt.Errorf("empresa_id e id son obligatorios")
 	}
@@ -475,6 +580,9 @@ func DeleteEmpresaTarifaPorDia(dbConn *sql.DB, empresaID, id int64) error {
 
 // GetEmpresaTarifaPorDiaByID obtiene una tarifa diaria por id y empresa.
 func GetEmpresaTarifaPorDiaByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaTarifaPorDia, error) {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return nil, err
+	}
 	if empresaID <= 0 || id <= 0 {
 		return nil, fmt.Errorf("empresa_id e id son obligatorios")
 	}
@@ -487,6 +595,8 @@ func GetEmpresaTarifaPorDiaByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaTa
 		COALESCE(estacion_nombre, ''),
 		COALESCE(servicio_nombre, 'hospedaje'),
 		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
 		COALESCE(hora_check_in, '15:00'),
 		COALESCE(hora_check_out, '12:00'),
 		COALESCE(moneda, 'COP'),
@@ -506,6 +616,9 @@ func GetEmpresaTarifaPorDiaByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaTa
 
 // ListEmpresaTarifasPorDia lista tarifas diarias por empresa.
 func ListEmpresaTarifasPorDia(dbConn *sql.DB, empresaID int64, filter EmpresaTarifaPorDiaFilter) ([]EmpresaTarifaPorDia, error) {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return nil, err
+	}
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -525,6 +638,8 @@ func ListEmpresaTarifasPorDia(dbConn *sql.DB, empresaID int64, filter EmpresaTar
 		COALESCE(estacion_nombre, ''),
 		COALESCE(servicio_nombre, 'hospedaje'),
 		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
 		COALESCE(hora_check_in, '15:00'),
 		COALESCE(hora_check_out, '12:00'),
 		COALESCE(moneda, 'COP'),
@@ -546,8 +661,13 @@ func ListEmpresaTarifasPorDia(dbConn *sql.DB, empresaID int64, filter EmpresaTar
 		query += ` AND estacion_id = ?`
 		args = append(args, filter.EstacionID)
 	}
+	if filter.Personas > 0 {
+		personas := normalizeTarifaPorDiaPersonasDesde(filter.Personas)
+		query += ` AND COALESCE(personas_desde, 1) <= ? AND (COALESCE(personas_hasta, 0) = 0 OR COALESCE(personas_hasta, 0) >= ?)`
+		args = append(args, personas, personas)
+	}
 
-	query += ` ORDER BY estacion_id ASC, prioridad ASC, id ASC LIMIT ?`
+	query += ` ORDER BY estacion_id ASC, COALESCE(personas_desde, 1) ASC, COALESCE(personas_hasta, 0) ASC, prioridad ASC, id ASC LIMIT ?`
 	args = append(args, filter.Limit)
 
 	rows, err := dbConn.Query(query, args...)
@@ -570,10 +690,14 @@ func ListEmpresaTarifasPorDia(dbConn *sql.DB, empresaID int64, filter EmpresaTar
 	return out, nil
 }
 
-func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int64, requireAutomatic bool) (*EmpresaTarifaPorDia, error) {
+func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int64, personas int, requireAutomatic bool) (*EmpresaTarifaPorDia, error) {
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return nil, err
+	}
 	if empresaID <= 0 || estacionID <= 0 {
 		return nil, fmt.Errorf("empresa_id y estacion_id son obligatorios")
 	}
+	personas = normalizeTarifaPorDiaPersonasDesde(personas)
 
 	query := `SELECT
 		id,
@@ -584,6 +708,8 @@ func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int6
 		COALESCE(estacion_nombre, ''),
 		COALESCE(servicio_nombre, 'hospedaje'),
 		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
 		COALESCE(hora_check_in, '15:00'),
 		COALESCE(hora_check_out, '12:00'),
 		COALESCE(moneda, 'COP'),
@@ -597,12 +723,14 @@ func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int6
 	FROM empresa_tarifas_por_dia
 	WHERE empresa_id = ?
 		AND estacion_id = ?
+		AND COALESCE(personas_desde, 1) <= ?
+		AND (COALESCE(personas_hasta, 0) = 0 OR COALESCE(personas_hasta, 0) >= ?)
 		AND COALESCE(estado, 'activo') = 'activo'`
-	args := []interface{}{empresaID, estacionID}
+	args := []interface{}{empresaID, estacionID, personas, personas}
 	if requireAutomatic {
 		query += ` AND COALESCE(aplicar_automaticamente, 1) = 1`
 	}
-	query += ` ORDER BY prioridad ASC, id ASC LIMIT 1`
+	query += ` ORDER BY prioridad ASC, COALESCE(personas_desde, 1) DESC, COALESCE(personas_hasta, 0) ASC, id ASC LIMIT 1`
 
 	row := dbConn.QueryRow(query, args...)
 	item, err := scanEmpresaTarifaPorDia(row)
@@ -617,12 +745,22 @@ func queryEmpresaTarifaPorDiaEstacion(dbConn *sql.DB, empresaID, estacionID int6
 
 // GetEmpresaTarifaPorDiaActiva devuelve la tarifa activa de una estacion.
 func GetEmpresaTarifaPorDiaActiva(dbConn *sql.DB, empresaID, estacionID int64) (*EmpresaTarifaPorDia, error) {
-	return queryEmpresaTarifaPorDiaEstacion(dbConn, empresaID, estacionID, false)
+	return GetEmpresaTarifaPorDiaActivaPorPersonas(dbConn, empresaID, estacionID, 1)
+}
+
+// GetEmpresaTarifaPorDiaActivaPorPersonas devuelve la tarifa activa de una estacion para la ocupacion indicada.
+func GetEmpresaTarifaPorDiaActivaPorPersonas(dbConn *sql.DB, empresaID, estacionID int64, personas int) (*EmpresaTarifaPorDia, error) {
+	return queryEmpresaTarifaPorDiaEstacion(dbConn, empresaID, estacionID, personas, false)
 }
 
 // GetEmpresaTarifaPorDiaAplicable devuelve la tarifa activa y automatica de una estacion.
 func GetEmpresaTarifaPorDiaAplicable(dbConn *sql.DB, empresaID, estacionID int64) (*EmpresaTarifaPorDia, error) {
-	return queryEmpresaTarifaPorDiaEstacion(dbConn, empresaID, estacionID, true)
+	return GetEmpresaTarifaPorDiaAplicablePorPersonas(dbConn, empresaID, estacionID, 1)
+}
+
+// GetEmpresaTarifaPorDiaAplicablePorPersonas devuelve la tarifa automatica para la ocupacion indicada.
+func GetEmpresaTarifaPorDiaAplicablePorPersonas(dbConn *sql.DB, empresaID, estacionID int64, personas int) (*EmpresaTarifaPorDia, error) {
+	return queryEmpresaTarifaPorDiaEstacion(dbConn, empresaID, estacionID, personas, true)
 }
 
 func resolveTarifaPorDiaNextCheckoutBoundary(fechaInicio time.Time, horaCheckIn, horaCheckOut string) time.Time {
@@ -910,10 +1048,16 @@ func CalcularMontoTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCor
 
 // CalcularDetalleTarifaPorDia construye el detalle completo del calculo diario.
 func CalcularDetalleTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time) EmpresaTarifaPorDiaCalculo {
+	return CalcularDetalleTarifaPorDiaConPersonas(tarifa, fechaInicio, fechaCorte, 1)
+}
+
+// CalcularDetalleTarifaPorDiaConPersonas construye el detalle incluyendo la ocupacion usada para seleccionar la tarifa.
+func CalcularDetalleTarifaPorDiaConPersonas(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time, personas int) EmpresaTarifaPorDiaCalculo {
 	calculo := calcularInternoTarifaPorDia(tarifa, fechaInicio, fechaCorte)
 	if fechaCorte.IsZero() {
 		fechaCorte = fechaInicio
 	}
+	personas = normalizeTarifaPorDiaPersonasDesde(personas)
 	return EmpresaTarifaPorDiaCalculo{
 		TarifaID:                    tarifa.ID,
 		EstacionID:                  tarifa.EstacionID,
@@ -921,6 +1065,9 @@ func CalcularDetalleTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaC
 		DiasCompletos:               calculo.diasCompletos,
 		DiasEquivalentes:            calculo.diasEquivalentes,
 		ValorDia:                    round2(tarifa.ValorDia),
+		Personas:                    personas,
+		PersonasDesde:               normalizeTarifaPorDiaPersonasDesde(tarifa.PersonasDesde),
+		PersonasHasta:               normalizeTarifaPorDiaPersonasHasta(normalizeTarifaPorDiaPersonasDesde(tarifa.PersonasDesde), tarifa.PersonasHasta),
 		MontoDiasCompletos:          calculo.montoDiasCompletos,
 		MontoProrrateoEntrada:       calculo.montoProrrateoEntrada,
 		MontoProrrateoIntermedio:    calculo.montoProrrateoIntermedio,
@@ -1048,7 +1195,9 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 	return out, nil
 }
 
-func findEmpresaTarifaPorDiaByStation(dbConn *sql.DB, empresaID, estacionID int64) (*EmpresaTarifaPorDia, error) {
+func findEmpresaTarifaPorDiaByStationPersonas(dbConn *sql.DB, empresaID, estacionID int64, personasDesde, personasHasta int) (*EmpresaTarifaPorDia, error) {
+	personasDesde = normalizeTarifaPorDiaPersonasDesde(personasDesde)
+	personasHasta = normalizeTarifaPorDiaPersonasHasta(personasDesde, personasHasta)
 	row := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -1058,6 +1207,8 @@ func findEmpresaTarifaPorDiaByStation(dbConn *sql.DB, empresaID, estacionID int6
 		COALESCE(estacion_nombre, ''),
 		COALESCE(servicio_nombre, 'hospedaje'),
 		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
 		COALESCE(hora_check_in, '15:00'),
 		COALESCE(hora_check_out, '12:00'),
 		COALESCE(moneda, 'COP'),
@@ -1071,8 +1222,10 @@ func findEmpresaTarifaPorDiaByStation(dbConn *sql.DB, empresaID, estacionID int6
 	FROM empresa_tarifas_por_dia
 	WHERE empresa_id = ?
 		AND estacion_id = ?
+		AND COALESCE(personas_desde, 1) = ?
+		AND COALESCE(personas_hasta, 0) = ?
 	ORDER BY prioridad ASC, id ASC
-	LIMIT 1`, empresaID, estacionID)
+	LIMIT 1`, empresaID, estacionID, personasDesde, personasHasta)
 
 	item, err := scanEmpresaTarifaPorDia(row)
 	if err != nil {
@@ -1126,6 +1279,8 @@ func ApplyEmpresaTarifaPorDiaToAllStations(dbConn *sql.DB, template EmpresaTarif
 	result := &EmpresaTarifaPorDiaAplicacionMasivaResultado{
 		EmpresaID:          template.EmpresaID,
 		ValorDia:           normalized.ValorDia,
+		PersonasDesde:      normalized.PersonasDesde,
+		PersonasHasta:      normalized.PersonasHasta,
 		HoraCheckIn:        normalized.HoraCheckIn,
 		HoraCheckOut:       normalized.HoraCheckOut,
 		EstacionesObjetivo: len(refs),
@@ -1148,7 +1303,7 @@ func ApplyEmpresaTarifaPorDiaToAllStations(dbConn *sql.DB, template EmpresaTarif
 			payload.EstacionNombre = fmt.Sprintf("Estacion %d", ref.ID)
 		}
 
-		existing, err := findEmpresaTarifaPorDiaByStation(dbConn, template.EmpresaID, ref.ID)
+		existing, err := findEmpresaTarifaPorDiaByStationPersonas(dbConn, template.EmpresaID, ref.ID, payload.PersonasDesde, payload.PersonasHasta)
 		if err != nil {
 			return nil, err
 		}
