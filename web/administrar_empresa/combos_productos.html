@@ -138,6 +138,14 @@
 
             <div class="form-row">
               <div class="form-col">
+                <label class="form-label" for="comboImpresoraPedido">Impresora para pedidos del combo</label>
+                <select id="comboImpresoraPedido" class="form-input"></select>
+                <div class="form-help">Si queda en configuracion general, el pedido usara la impresora de orden de servicio o la predeterminada.</div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
                 <label class="form-label" for="comboObservaciones">Observaciones</label>
                 <textarea id="comboObservaciones" class="form-textarea" placeholder="Notas internas de cocina, producción, costos o empaque"></textarea>
               </div>
@@ -250,6 +258,9 @@
       q: '',
       combos: [],
       productos: [],
+      impresoras: [],
+      impresorasCombos: [],
+      impresorasLoaded: false,
       draftIngredientes: []
     };
 
@@ -422,6 +433,89 @@
       updateIngredienteContext();
     }
 
+    function printerDisplayName(printer) {
+      if (!printer) return 'Configuracion general';
+      const name = normalize(printer.nombre) || normalize(printer.impresora_nombre);
+      const code = normalize(printer.codigo) || normalize(printer.impresora_codigo);
+      if (name && code) return name + ' (' + code + ')';
+      return name || code || 'Impresora #' + Number(printer.id || printer.impresora_id || 0);
+    }
+
+    function getComboPrinterAssignment(comboID) {
+      const id = Number(comboID || 0);
+      if (id <= 0) return null;
+      return state.impresorasCombos.find(function(item) {
+        return Number(item.combo_id || 0) === id && normalize(item.estado || 'activo') === 'activo';
+      }) || null;
+    }
+
+    function refreshComboPrinterSelector(comboID) {
+      const sel = document.getElementById('comboImpresoraPedido');
+      if (!sel) return;
+      sel.innerHTML = '';
+      const general = document.createElement('option');
+      general.value = '';
+      general.textContent = 'Configuracion general';
+      sel.appendChild(general);
+      state.impresoras
+        .filter(function(p) { return normalize(p.estado || 'activo') === 'activo'; })
+        .forEach(function(p) {
+          const opt = document.createElement('option');
+          opt.value = String(p.id || 0);
+          opt.textContent = printerDisplayName(p);
+          sel.appendChild(opt);
+        });
+      const assignment = getComboPrinterAssignment(comboID);
+      sel.value = assignment ? String(assignment.impresora_id || '') : '';
+    }
+
+    async function loadComboPrinterConfig(force) {
+      if (state.impresorasLoaded && !force) {
+        refreshComboPrinterSelector(Number(document.getElementById('comboId').value || 0));
+        return;
+      }
+      if (!state.empresaID) return;
+      const url = new URL('/api/empresa/impresoras', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('action', 'resumen');
+      const res = await fetch(url.pathname + url.search, { credentials: 'same-origin' });
+      await ensureOk(res);
+      const resumen = await res.json();
+      state.impresoras = Array.isArray(resumen.impresoras) ? resumen.impresoras : [];
+      state.impresorasCombos = Array.isArray(resumen.combos) ? resumen.combos : [];
+      state.impresorasLoaded = true;
+      refreshComboPrinterSelector(Number(document.getElementById('comboId').value || 0));
+    }
+
+    async function saveComboPrinterAssignment(comboID) {
+      const id = Number(comboID || 0);
+      if (id <= 0) return;
+      const printerID = Number(document.getElementById('comboImpresoraPedido').value || 0);
+      const base = '/api/empresa/impresoras?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=combo';
+      if (printerID <= 0) {
+        const res = await fetch(base + '&combo_id=' + encodeURIComponent(id), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+      } else {
+        const res = await fetch(base, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            combo_id: id,
+            impresora_id: printerID,
+            estado: 'activo'
+          })
+        });
+        await ensureOk(res);
+      }
+      state.impresorasLoaded = false;
+      await loadComboPrinterConfig(true);
+    }
+
     function getProductoByID(productoID) {
       return state.productos.find(function(p) { return Number(p.id) === Number(productoID); }) || null;
     }
@@ -571,6 +665,7 @@
       document.getElementById('comboUnidad').value = 'combo';
       document.getElementById('comboDescripcion').value = '';
       document.getElementById('comboObservaciones').value = '';
+      refreshComboPrinterSelector(0);
       document.getElementById('guardarComboBtn').textContent = 'Guardar combo';
       state.draftIngredientes = [];
       renderIngredientesDraft();
@@ -646,6 +741,8 @@
         const risk = comboRiskFlag(c);
         const riskText = risk === 'alto' ? 'En riesgo' : (risk === 'medio' ? 'Vigilado' : 'Sano');
         const riskClass = risk === 'alto' ? 'combo-metric-negative' : 'combo-metric-positive';
+        const printerAssignment = getComboPrinterAssignment(c.id);
+        const printerText = printerAssignment ? printerDisplayName(printerAssignment) : 'Configuracion general';
         return '<article class="combo-item">' +
           '<div class="combo-item-head">' +
             '<div class="combo-item-title">' +
@@ -661,6 +758,7 @@
           '<div class="combo-pills">' +
             '<span class="combo-pill ' + (estado === 'activo' ? 'combo-status-active' : 'combo-status-inactive') + '">Estado: ' + escapeHtml(estado) + '</span>' +
             '<span class="combo-pill">Ingredientes: ' + Number(c.ingredientes_count || 0) + '</span>' +
+            '<span class="combo-pill">Impresora: ' + escapeHtml(printerText) + '</span>' +
             '<span class="combo-pill ' + riskClass + '">Riesgo: ' + riskText + '</span>' +
           '</div>' +
           '<div class="combo-item-stats">' +
@@ -692,6 +790,7 @@
             document.getElementById('comboUnidad').value = normalize(combo.unidad_medida) || 'combo';
             document.getElementById('comboDescripcion').value = normalize(combo.descripcion);
             document.getElementById('comboObservaciones').value = normalize(combo.observaciones);
+            refreshComboPrinterSelector(combo.id || comboID);
             document.getElementById('guardarComboBtn').textContent = 'Actualizar combo';
             state.draftIngredientes = (combo.ingredientes || []).map(function(it) {
               return {
@@ -753,6 +852,7 @@
       await ensureOk(res);
       const rows = await res.json();
       state.combos = Array.isArray(rows) ? rows : [];
+      await loadComboPrinterConfig(false);
       renderCombos();
     }
 
@@ -799,6 +899,17 @@
           body: JSON.stringify(payload)
         });
         await ensureOk(res);
+        const out = await res.json().catch(function() { return {}; });
+        const savedID = payload.id > 0 ? payload.id : Number(out && out.id || 0);
+        if (savedID > 0) {
+          try {
+            await saveComboPrinterAssignment(savedID);
+          } catch (printerErr) {
+            setMessage('comboMsg', 'Combo guardado, pero no se pudo guardar la impresora del pedido: ' + (printerErr.message || printerErr), true);
+            await loadCombos();
+            return;
+          }
+        }
         resetComboForm(true);
         await loadCombos();
         setMessage('comboMsg', payload.id > 0 ? 'Combo actualizado.' : 'Combo creado.', false);

@@ -74,6 +74,16 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, rows)
 				return
 
+			case "combos":
+				rows, err := dbpkg.ListEmpresaImpresoraCombosByEmpresa(dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[empresa_impresoras] list combos empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar las asignaciones por combo", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
 			case "catalogo_productos":
 				limit, err := parseIntQueryOptional(r, "limit")
 				if err != nil {
@@ -110,6 +120,41 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				})
 				return
 
+			case "catalogo_combos":
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				if limit <= 0 {
+					limit = 500
+				}
+				if limit > 1500 {
+					limit = 1500
+				}
+				filtro := strings.TrimSpace(r.URL.Query().Get("filtro"))
+				combos, err := dbpkg.GetCombosProductosByEmpresa(dbEmp, empresaID, filtro, "activo", true, limit, 0)
+				if err != nil {
+					log.Printf("[empresa_impresoras] catalogo combos empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar combos", http.StatusInternalServerError)
+					return
+				}
+				items := make([]map[string]interface{}, 0, len(combos))
+				for _, c := range combos {
+					items = append(items, map[string]interface{}{
+						"id":         c.ID,
+						"empresa_id": c.EmpresaID,
+						"nombre":     c.Nombre,
+						"codigo":     c.Codigo,
+						"estado":     c.Estado,
+					})
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"combos": items,
+					"total":  len(items),
+				})
+				return
+
 			case "resolver":
 				funcionalidad := strings.TrimSpace(r.URL.Query().Get("funcionalidad"))
 				productoID, err := parseInt64QueryOptional(r, "producto_id")
@@ -117,9 +162,22 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "producto_id invalido", http.StatusBadRequest)
 					return
 				}
-				resolved, err := dbpkg.ResolveEmpresaImpresora(dbEmp, empresaID, funcionalidad, productoID)
+				comboID, err := parseInt64QueryOptional(r, "combo_id")
 				if err != nil {
-					log.Printf("[empresa_impresoras] resolver empresa_id=%d funcionalidad=%q producto_id=%d error: %v", empresaID, funcionalidad, productoID, err)
+					http.Error(w, "combo_id invalido", http.StatusBadRequest)
+					return
+				}
+				tipoItem := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("tipo_item")))
+				referenciaID := productoID
+				if tipoItem == "combo" || comboID > 0 {
+					tipoItem = "combo"
+					referenciaID = comboID
+				} else if productoID > 0 {
+					tipoItem = "producto"
+				}
+				resolved, err := dbpkg.ResolveEmpresaImpresoraOperacion(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID)
+				if err != nil {
+					log.Printf("[empresa_impresoras] resolver empresa_id=%d funcionalidad=%q tipo_item=%q referencia_id=%d error: %v", empresaID, funcionalidad, tipoItem, referenciaID, err)
 					http.Error(w, "No se pudo resolver impresora", http.StatusInternalServerError)
 					return
 				}
@@ -129,6 +187,8 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 						"empresa_id":    empresaID,
 						"funcionalidad": funcionalidad,
 						"producto_id":   productoID,
+						"combo_id":      comboID,
+						"tipo_item":     tipoItem,
 						"message":       "No hay impresora configurada para el contexto solicitado",
 					})
 					return
@@ -161,10 +221,17 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					productos = []dbpkg.EmpresaImpresoraProducto{}
 					warnings = append(warnings, "No se pudieron cargar asignaciones por producto")
 				}
+				combos, err := dbpkg.ListEmpresaImpresoraCombosByEmpresa(dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[empresa_impresoras] resumen combos empresa_id=%d error: %v", empresaID, err)
+					combos = []dbpkg.EmpresaImpresoraCombo{}
+					warnings = append(warnings, "No se pudieron cargar asignaciones por combo")
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"impresoras":      impresoras,
 					"funcionalidades": funcionalidades,
 					"productos":       productos,
+					"combos":          combos,
 					"warnings":        warnings,
 				})
 				return
@@ -274,6 +341,23 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
+			case "combo":
+				var payload dbpkg.EmpresaImpresoraCombo
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaImpresoraCombo(dbEmp, payload)
+				if err != nil {
+					log.Printf("[empresa_impresoras] upsert combo empresa_id=%d combo_id=%d error: %v", empresaID, payload.ComboID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+				return
+
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -328,6 +412,19 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "producto_id": productoID})
 				return
+			case "combo":
+				comboID, err := parseInt64QueryOptional(r, "combo_id")
+				if err != nil || comboID <= 0 {
+					http.Error(w, "combo_id requerido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.DeleteEmpresaImpresoraCombo(dbEmp, empresaID, comboID); err != nil {
+					log.Printf("[empresa_impresoras] delete combo empresa_id=%d combo_id=%d error: %v", empresaID, comboID, err)
+					http.Error(w, "No se pudo eliminar la asignaciÃ³n", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "combo_id": comboID})
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -345,6 +442,11 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
+		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras] ensure resolver schema error: %v", err)
+			http.Error(w, "No se pudo preparar configuracion de impresoras", http.StatusInternalServerError)
+			return
+		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -356,9 +458,22 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "producto_id invalido", http.StatusBadRequest)
 			return
 		}
-		resolved, err := dbpkg.ResolveEmpresaImpresora(dbEmp, empresaID, funcionalidad, productoID)
+		comboID, err := parseInt64QueryOptional(r, "combo_id")
 		if err != nil {
-			log.Printf("[empresa_impresoras] resolver publico empresa_id=%d funcionalidad=%q producto_id=%d error: %v", empresaID, funcionalidad, productoID, err)
+			http.Error(w, "combo_id invalido", http.StatusBadRequest)
+			return
+		}
+		tipoItem := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("tipo_item")))
+		referenciaID := productoID
+		if tipoItem == "combo" || comboID > 0 {
+			tipoItem = "combo"
+			referenciaID = comboID
+		} else if productoID > 0 {
+			tipoItem = "producto"
+		}
+		resolved, err := dbpkg.ResolveEmpresaImpresoraOperacion(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID)
+		if err != nil {
+			log.Printf("[empresa_impresoras] resolver publico empresa_id=%d funcionalidad=%q tipo_item=%q referencia_id=%d error: %v", empresaID, funcionalidad, tipoItem, referenciaID, err)
 			http.Error(w, "No se pudo resolver impresora", http.StatusInternalServerError)
 			return
 		}
@@ -368,6 +483,8 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"empresa_id":    empresaID,
 				"funcionalidad": funcionalidad,
 				"producto_id":   productoID,
+				"combo_id":      comboID,
+				"tipo_item":     tipoItem,
 				"message":       "No hay impresora configurada",
 			})
 			return

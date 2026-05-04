@@ -1,7 +1,7 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-04-30
+Actualizacion: 2026-05-04
 
 Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
 
@@ -84,6 +84,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Las tarjetas del selector conservan el mismo orden visual del texto (nombre, descripcion y estado), pero adoptan una capa visual mas clara y comercial; ahora quedan mas compactas y la botonera inferior permanece centrada al pie de cada tarjeta, manteniendo la descarga dentro del mismo bloque.
 - Configuracion de pasarelas de pago (Wompi/Epayco) y correo, incluyendo edicion directa de Gmail SMTP para confirmacion de usuarios desde el panel super.
 - Configuracion avanzada super con guardado unificado: la vista `configuracion_avanzada.html` usa el mismo boton `Guardar cambios` arriba y abajo para persistir en un solo ciclo Wompi, Epayco, Gmail e IA.
+- Asesor comercial para licencias: el super administrador invita administradores registrados como asesores, define porcentaje y meses de asociacion, y ahora tambien configura la liquidacion de comisiones por transferencia o medio alternativo (entidad, cuenta, titular, contacto, periodicidad, dia, minimo y soporte requerido). Cada comision generada por venta/renovacion de licencia conserva estado de pago, referencia, fecha programada y soporte de liquidacion.
 - Gestion central de formatos de email desde super mediante `/super/formato_para_emviar_email.html`, con persistencia real en `/super/api/config/email_templates` para correos de confirmacion administrativa, confirmacion de usuarios empresa, activacion por pago de licencia, recuperacion de contrasena y alertas operativas de reinicio.
 - La configuracion avanzada super de Gmail SMTP permite disparar un correo de prueba real desde el boton `Probar Gmail`, enviandolo al buzon operativo `powerfulcontrolsystem@gmail.com` con las credenciales guardadas en PostgreSQL.
 - Configuracion avanzada de licencias con activacion independiente de Epayco y Wompi; el checkout publico consulta `GET /api/public/licencias/payment_methods` sin requerir sesion para mostrar solo pasarelas activas y configuradas.

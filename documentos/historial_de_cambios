@@ -1,3 +1,8 @@
+- 2026-05-04: asesor comercial - transferencias y pagos de comisiones.
+    - Archivos: `backend/db/asesor_comercial.go`, `backend/handlers/asesor_comercial.go`, `web/super/asesor_comercial.html`, `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/estructura_bd.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `CHANGELOG.md`.
+    - Descripcion: el panel super de asesor comercial permite configurar datos de transferencia y reglas de pago por asesor (metodo, banco, cuenta, titular, contacto, periodicidad, dia, minimo y soporte requerido). Las comisiones de licencias ahora registran estado de pago, metodo, referencia, fecha programada, soporte y observaciones de liquidacion.
+    - Verificacion: `go test ./...` en `backend/`, validacion JS de `web/super/asesor_comercial.html` y `git diff --check`.
+
 - 2026-04-30: documentacion y ayuda actualizadas tras ajuste de Epayco.
     - Archivos: `CHANGELOG.md`, `documentos/README.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/estructura_bd.md`, `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`, `documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md`, `RESUMEN_DEL_PROYECTO.md`, `web/ayuda/ayuda.html`, `web/ayuda/chat_ia.html`.
     - Descripcion: se documenta que el fallback clasico de Epayco usa `Customer ID` + `P_KEY` para resolver modo produccion/pruebas de forma independiente de Smart Checkout, evitando `p_test_request=true` con comercios reales y el error "El comercio no fue reconocido". La ayuda del proyecto agrega guia de pagos de licencias, documentos IA y uso de voz/robot/secretaria.

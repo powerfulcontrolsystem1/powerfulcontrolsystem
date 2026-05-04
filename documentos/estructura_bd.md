@@ -990,6 +990,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - asesores_comerciales:
   - id, admin_email, admin_nombre, codigo (UNIQUE)
   - porcentaje_comision, meses_asociacion
+  - metodo_pago_comision, entidad_financiera, tipo_cuenta, numero_cuenta
+  - titular_cuenta, documento_titular, email_pagos, telefono_pagos
+  - periodicidad_pago, dia_pago, pago_minimo, requiere_soporte_pago
   - estado_invitacion (`pendiente`, `aceptada`, `expirada`), invitacion_token_hash, invitacion_expira_en, invitado_por_email, aceptado_en
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
   - Descripción: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitación reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
@@ -1001,6 +1004,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - valor_pagado, porcentaje_comision, monto_comision, fecha_pago
   - asociado_desde, asociado_hasta
   - pagado, fecha_pago_comision, pagado_por
+  - estado_pago_comision, metodo_pago_comision, referencia_pago_comision
+  - fecha_programada_pago, soporte_pago_url
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
   - Descripción: historial de ventas/renovaciones de licencia asociadas a asesores comerciales. Si una empresa pagó con codigo de asesor, las renovaciones dentro de `meses_asociacion` siguen generando comisión hasta `asociado_hasta`; vencido ese plazo ya no se muestra en `mis_clientes`.
 

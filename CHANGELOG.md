@@ -59,6 +59,12 @@
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
+## 2026-05-04
+- Asesor comercial: configuracion profesional de transferencias y pagos de comisiones por venta de licencias.
+	- Archivos: `backend/db/asesor_comercial.go`, `backend/handlers/asesor_comercial.go`, `web/super/asesor_comercial.html`, documentacion relacionada.
+	- Descripcion: el modulo de asesor comercial ahora guarda metodo de pago, entidad financiera, tipo/numero de cuenta, titular, documento, contacto de pagos, periodicidad, dia de pago, minimo a transferir y exigencia de soporte. Las comisiones de licencias incorporan estado de pago (`pendiente`, `programada`, `en_transferencia`, `pagada`, `rechazada`), metodo, referencia, fecha programada y soporte.
+	- Verificacion: `go test ./...` en `backend/`, validacion de scripts embebidos de `web/super/asesor_comercial.html` y `git diff --check`.
+
 ## 2026-04-30
 - Raspberry Pi y sensores: provisionamiento seguro por empresa.
 	- Archivos: `backend/db/sensor_puertas.go`, `backend/handlers/sensor_puertas.go`, `web/administrar_empresa/configuracion_sensores_raspberry.html`, pruebas y documentacion relacionada.

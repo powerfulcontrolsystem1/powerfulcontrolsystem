@@ -1,3 +1,9 @@
+2026-05-04: Asesor comercial - transferencias y pagos de comisiones
+- Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`
+- Cambio funcional: `web/super/asesor_comercial.html` agrega una configuracion completa de transferencias por asesor: metodo de pago, entidad financiera, tipo y numero de cuenta, titular, documento, contacto de pagos, periodicidad, dia de pago, minimo a transferir y requisito de soporte. La edicion de asesores queda en formulario directo y ya no depende solo de prompts para cambiar reglas.
+- Liquidacion: `asesor_comercial_comisiones` conserva estado de pago de comision (`pendiente`, `programada`, `en_transferencia`, `pagada`, `rechazada`), metodo, referencia, fecha programada y soporte. Super puede gestionar la liquidacion de cada comision de licencia con trazabilidad de actor y observaciones.
+- Impacto operativo: no ejecuta transferencias bancarias externas; registra configuracion y evidencia interna para que el equipo financiero liquide comisiones con control profesional.
+
 2026-04-30: Checkout Epayco, secretaria IA, empresas compartidas y documentos dinamicos
 - Modulos afectados: `licencias`, `pagos`, `chat IA`, `administrar empresa`, `documentos`, `empresas compartidas`
 - Checkout Epayco: `backend/handlers/payments_handlers.go` conserva Smart Checkout v2 como ruta principal y agrega fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`. `web/pagar_licencia.html` envia el formulario `checkout_form` y bloquea URLs de checkout invalidas que antes podian mostrar XML `AccessDenied`. El modo del fallback clasico se calcula con las credenciales clasicas (`epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`) y no con las llaves Smart, evitando que una cuenta real llegue a Epayco marcada como prueba.

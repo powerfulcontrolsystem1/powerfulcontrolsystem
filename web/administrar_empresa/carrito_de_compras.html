@@ -2035,9 +2035,14 @@
       params.set('empresa_id', String(state.empresaID));
       params.set('funcionalidad', 'orden_servicio');
       const tipoItem = normalize(itemPayload && itemPayload.tipo_item).toLowerCase();
-      const productoID = Number((itemPayload && itemPayload.referencia_id) || 0);
-      if (tipoItem === 'producto' && Number.isFinite(productoID) && productoID > 0) {
-        params.set('producto_id', String(Math.trunc(productoID)));
+      const referenciaID = Number((itemPayload && itemPayload.referencia_id) || 0);
+      if (tipoItem === 'producto' && Number.isFinite(referenciaID) && referenciaID > 0) {
+        params.set('tipo_item', 'producto');
+        params.set('producto_id', String(Math.trunc(referenciaID)));
+      }
+      if (tipoItem === 'combo' && Number.isFinite(referenciaID) && referenciaID > 0) {
+        params.set('tipo_item', 'combo');
+        params.set('combo_id', String(Math.trunc(referenciaID)));
       }
 
       try {

@@ -1756,6 +1756,12 @@ func DeleteProducto(dbConn *sql.DB, empresaID, productoID int64) error {
 	if _, err := execTxSQLCompat(tx, "DELETE FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
 		return err
 	}
+	if _, err := execTxSQLCompat(tx, "DELETE FROM empresa_impresoras_productos WHERE empresa_id = ? AND producto_id = ?", empresaID, productoID); err != nil {
+		errMsg := strings.ToLower(err.Error())
+		if !strings.Contains(errMsg, "no such table") && !strings.Contains(errMsg, "does not exist") {
+			return err
+		}
+	}
 	res, err := execTxSQLCompat(tx, "DELETE FROM productos WHERE empresa_id = ? AND id = ?", empresaID, productoID)
 	if err != nil {
 		return err
@@ -4452,6 +4458,12 @@ func DeleteComboProducto(dbConn *sql.DB, empresaID, comboID int64) error {
 
 	if _, err := execTxSQLCompat(tx, `DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
 		return err
+	}
+	if _, err := execTxSQLCompat(tx, `DELETE FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+		errMsg := strings.ToLower(err.Error())
+		if !strings.Contains(errMsg, "no such table") && !strings.Contains(errMsg, "does not exist") {
+			return err
+		}
 	}
 	res, err := execTxSQLCompat(tx, `DELETE FROM combos_productos WHERE empresa_id = ? AND id = ?`, empresaID, comboID)
 	if err != nil {

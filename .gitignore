@@ -20,6 +20,8 @@ backend/.env.local
 .env.local
 .gocache/
 .gotmp/
+.codex-gocache/
+.codex-tmp-go/
 juegos/roms/*
 !juegos/roms/README.md
 juegos/empresas/*

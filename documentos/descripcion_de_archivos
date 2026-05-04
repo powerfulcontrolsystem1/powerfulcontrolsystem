@@ -8703,3 +8703,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/estaciones.html`: normaliza `auto_text`, calcula altura uniforme y recalcula al redimensionar pantalla.
 - `web/administrar_empresa/carrito_de_compras.html`: al pagar un carrito operativo redirige a estaciones.
 - `web/administrar_empresa/panel.html`: prioriza `USD / COP` como primer indicador.
+- Actualizacion 2026-05-04: asesor comercial - pagos y transferencias de comisiones
+	- `backend/db/asesor_comercial.go` : amplia `asesores_comerciales` con datos de transferencia/pago y `asesor_comercial_comisiones` con estado, referencia, fecha programada y soporte de liquidacion.
+	- `backend/handlers/asesor_comercial.go` : acepta la nueva configuracion en altas/ediciones de asesores y registra detalles de liquidacion al gestionar comisiones.
+	- `web/super/asesor_comercial.html` : agrega formulario profesional de datos bancarios/contacto/politica de pago, resumen de comisiones y tabla con gestion de estado de pago.

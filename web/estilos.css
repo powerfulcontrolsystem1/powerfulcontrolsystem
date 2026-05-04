@@ -1130,8 +1130,8 @@ p{color:var(--muted);line-height:1.5}
   .ai-chat-toggle-button:not(.is-drawer-open):hover,
   .ai-chat-toggle-button:not(.is-drawer-open):focus-visible{opacity:1}
 }
-.radio-toggle-button{right:180px;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 100%)}
-.radio-drawer{position:fixed;right:24px;bottom:94px;width:min(440px,calc(100vw - 32px));max-height:70vh;padding:18px;border-radius:22px;background:linear-gradient(180deg,rgba(15,23,42,.98) 0%,rgba(30,41,59,.98) 100%);color:#e2e8f0;box-shadow:0 24px 60px rgba(15,23,42,.35);opacity:0;pointer-events:none;transform:translateY(16px);transition:opacity .2s ease,transform .2s ease;z-index:1659;overflow:auto}
+.radio-toggle-button{right:24px;bottom:176px;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 100%)}
+.radio-drawer{position:fixed;right:24px;bottom:240px;width:min(440px,calc(100vw - 32px));max-height:70vh;padding:18px;border-radius:22px;background:linear-gradient(180deg,rgba(15,23,42,.98) 0%,rgba(30,41,59,.98) 100%);color:#e2e8f0;box-shadow:0 24px 60px rgba(15,23,42,.35);opacity:0;pointer-events:none;transform:translateY(16px);transition:opacity .2s ease,transform .2s ease;z-index:1659;overflow:auto}
 .radio-drawer.is-open{opacity:1;pointer-events:auto;transform:translateY(0)}
 .radio-drawer-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:14px}
 .radio-drawer-header h2{margin:0 0 4px;font-size:1.1rem;color:#f8fafc}
@@ -1144,7 +1144,7 @@ p{color:var(--muted);line-height:1.5}
 .radio-station-badge{justify-self:start;padding:6px 10px;border-radius:999px;background:rgba(59,130,246,.16);color:#bfdbfe;font-size:.75rem;font-weight:700}
 .radio-station-meta{display:flex;flex-wrap:wrap;gap:8px;color:#94a3b8;font-size:.8rem}
 .radio-station-actions{display:flex;flex-wrap:wrap;gap:8px}
-.radio-mini-player{position:fixed;right:24px;bottom:24px;width:min(360px,calc(100vw - 24px));padding:12px 14px;border-radius:18px;background:rgba(15,23,42,.96);color:#f8fafc;box-shadow:0 24px 50px rgba(15,23,42,.3);z-index:1661}
+.radio-mini-player{position:fixed;right:24px;bottom:176px;width:min(360px,calc(100vw - 24px));padding:12px 14px;border-radius:18px;background:rgba(15,23,42,.96);color:#f8fafc;box-shadow:0 24px 50px rgba(15,23,42,.3);z-index:1661}
 .radio-mini-topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
 .radio-mini-kicker{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd}
 .radio-mini-close{border:0;background:transparent;color:#cbd5e1;font-size:1.2rem;cursor:pointer}
@@ -1155,9 +1155,9 @@ p{color:var(--muted);line-height:1.5}
 .radio-mini-controls{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
 .radio-mini-controls input[type="range"]{width:100%}
 @media (max-width: 860px){
-  .radio-toggle-button{right:20px;bottom:84px}
-  .radio-drawer{right:16px;left:16px;width:auto;bottom:146px}
-  .radio-mini-player{right:12px;left:12px;width:auto;bottom:16px}
+  .radio-toggle-button{right:16px;bottom:172px}
+  .radio-drawer{right:16px;left:16px;width:auto;bottom:234px}
+  .radio-mini-player{right:12px;left:12px;width:auto;bottom:172px}
 }
 .ai-chat-drawer{position:fixed;z-index:1650;display:flex;flex-direction:column;overflow:visible;pointer-events:none;opacity:0;transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1)}
 .ai-chat-drawer.open{pointer-events:auto;opacity:1}
@@ -10730,6 +10730,12 @@ html.theme-light .ai-gemini-inline-alert{
   gap:8px;
 }
 
+.gps-form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
 .gps-filter-row{
   display:flex;
   gap:8px;
@@ -10768,6 +10774,25 @@ html.theme-light .ai-gemini-inline-alert{
   margin-top:4px;
   color:var(--muted);
   font-size:.84rem;
+}
+
+.gps-device-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:6px;
+}
+
+.gps-device-metrics span{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:2px 8px;
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:8px;
+  background:rgba(255,255,255,0.04);
+  color:var(--text);
+  font-size:.78rem;
 }
 
 .gps-device-actions{
@@ -10849,8 +10874,10 @@ html.theme-light .ai-gemini-inline-alert{
 
 @media (max-width:760px){
   .gps-filter-row,
+  .gps-form-grid,
   .gps-toolbar,
   .gps-toolbar-actions{
+    display:flex;
     flex-direction:column;
     align-items:stretch;
   }
@@ -11536,7 +11563,7 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   width: 116px !important;
   height: 136px !important;
   right: 24px !important;
-  bottom: 20px !important;
+  bottom: 24px !important;
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -11544,6 +11571,10 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   padding: 0 !important;
   overflow: visible !important;
   z-index: 1670 !important;
+}
+
+.ai-chat-toggle-button.is-robot-avatar.is-drawer-open {
+  display: none !important;
 }
 
 .ai-chat-toggle-button.is-robot-avatar:hover {
@@ -12719,10 +12750,10 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
 
 .robot-inline-chat-panel {
   position: fixed;
-  right: 132px;
+  right: 164px;
   bottom: 34px;
   z-index: 1665;
-  width: min(360px, calc(100vw - 176px));
+  width: min(380px, calc(100vw - 228px));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -13186,7 +13217,7 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
 
 #robotHideBtn {
   right: 34px;
-  bottom: 154px;
+  bottom: 168px;
   padding: 5px 12px;
   background: color-mix(in srgb, var(--surface, #fff) 92%, #edf5f7);
   color: var(--text-muted, #52637a);
@@ -13195,11 +13226,46 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
 
 #robotShowBtn {
   right: 24px;
-  bottom: 22px;
+  bottom: 24px;
   padding: 8px 16px;
   background: #0f766e;
   color: #fff;
   font-size: 0.88rem;
+}
+
+@media (max-width: 900px) and (min-width: 641px) {
+  .robot-inline-chat-panel {
+    right: 18px;
+    left: 18px;
+    bottom: 176px;
+    width: auto;
+    align-items: stretch;
+  }
+
+  .robot-inline-status,
+  .robot-cloud-assistant,
+  .robot-cloud-input,
+  .robot-assistant-actions {
+    width: min(100%, 520px);
+    align-self: flex-end;
+  }
+
+  #robotHideBtn {
+    right: 24px;
+    bottom: 168px;
+  }
+}
+
+@media (max-width: 640px) {
+  #robotHideBtn {
+    right: 14px;
+    bottom: 204px;
+  }
+
+  #robotShowBtn {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @keyframes robotFloat {

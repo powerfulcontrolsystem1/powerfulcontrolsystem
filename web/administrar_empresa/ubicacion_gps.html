@@ -18,23 +18,99 @@
       <section class="card gps-panel">
         <div class="gps-panel-header">
           <h2>Dispositivos GPS</h2>
-          <p class="form-help">Registra varios dispositivos por empresa y activa el tracking cada 10 segundos.</p>
+          <p class="form-help">Registra varios dispositivos por empresa con marca, protocolo, SIM, activo e intervalo propio.</p>
         </div>
 
         <form id="deviceForm" class="gps-mini-form">
-          <label class="form-label" for="deviceCodigo">Codigo</label>
-          <input id="deviceCodigo" class="form-input" placeholder="Ej: CAMION-01">
+          <input id="editingDeviceID" type="hidden" value="">
 
-          <label class="form-label" for="deviceNombre">Nombre</label>
-          <input id="deviceNombre" class="form-input" required placeholder="Ej: Camion zona norte">
+          <div class="gps-form-grid">
+            <div>
+              <label class="form-label" for="deviceCodigo">Codigo</label>
+              <input id="deviceCodigo" class="form-input" placeholder="Ej: CAMION-01">
+            </div>
+            <div>
+              <label class="form-label" for="deviceNombre">Nombre</label>
+              <input id="deviceNombre" class="form-input" required placeholder="Ej: Camion zona norte">
+            </div>
+            <div>
+              <label class="form-label" for="deviceMarca">Marca</label>
+              <input id="deviceMarca" class="form-input" list="gpsBrandList" placeholder="Teltonika, Queclink...">
+            </div>
+            <div>
+              <label class="form-label" for="deviceModelo">Modelo</label>
+              <input id="deviceModelo" class="form-input" placeholder="FMB920, GV300...">
+            </div>
+            <div>
+              <label class="form-label" for="deviceTipo">Tipo</label>
+              <select id="deviceTipo" class="form-input">
+                <option value="gps_tracker">Rastreador GPS</option>
+                <option value="telefono">Telefono movil</option>
+                <option value="obd">OBD vehicular</option>
+                <option value="iot">IoT / sensor</option>
+                <option value="tablet">Tablet</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="deviceProveedor">Proveedor</label>
+              <input id="deviceProveedor" class="form-input" placeholder="Traccar, Flespi, SIM local...">
+            </div>
+            <div>
+              <label class="form-label" for="deviceHardware">IMEI / serial</label>
+              <input id="deviceHardware" class="form-input" placeholder="Identificador unico">
+            </div>
+            <div>
+              <label class="form-label" for="deviceSIM">SIM / telefono</label>
+              <input id="deviceSIM" class="form-input" placeholder="+57...">
+            </div>
+            <div>
+              <label class="form-label" for="devicePlaca">Placa / activo</label>
+              <input id="devicePlaca" class="form-input" placeholder="ABC123">
+            </div>
+            <div>
+              <label class="form-label" for="deviceReferencia">Asignado a</label>
+              <input id="deviceReferencia" class="form-input" placeholder="Vehiculo, persona, equipo">
+            </div>
+            <div>
+              <label class="form-label" for="deviceIntervalo">Intervalo (seg)</label>
+              <input id="deviceIntervalo" class="form-input" type="number" min="5" max="86400" step="1" value="10">
+            </div>
+            <div>
+              <label class="form-label" for="deviceProtocolo">Protocolo</label>
+              <select id="deviceProtocolo" class="form-input">
+                <option value="manual">Manual / navegador</option>
+                <option value="http">HTTP</option>
+                <option value="webhook">Webhook</option>
+                <option value="mqtt">MQTT</option>
+                <option value="tcp">TCP</option>
+                <option value="traccar">Traccar</option>
+                <option value="flespi">Flespi</option>
+              </select>
+            </div>
+          </div>
 
           <label class="form-label" for="deviceDescripcion">Descripcion</label>
           <textarea id="deviceDescripcion" class="form-textarea" placeholder="Area o detalle del dispositivo"></textarea>
 
           <div class="form-actions">
-            <button id="createDeviceBtn" class="btn" type="submit">Crear dispositivo</button>
+            <button id="saveDeviceBtn" class="btn" type="submit">Crear dispositivo</button>
+            <button id="cancelEditDeviceBtn" class="btn secondary" type="button" hidden>Cancelar edicion</button>
           </div>
         </form>
+
+        <datalist id="gpsBrandList">
+          <option value="Teltonika"></option>
+          <option value="Queclink"></option>
+          <option value="Coban"></option>
+          <option value="Concox"></option>
+          <option value="Jimi IoT"></option>
+          <option value="SinoTrack"></option>
+          <option value="Ruptela"></option>
+          <option value="CalAmp"></option>
+          <option value="TKStar"></option>
+          <option value="Generico"></option>
+        </datalist>
 
         <div class="gps-filter-row">
           <input id="deviceSearch" class="form-input" placeholder="Buscar por codigo o nombre">
@@ -57,7 +133,7 @@
             <select id="activeDeviceSelect" class="form-input"></select>
           </div>
           <div class="gps-toolbar-actions">
-            <button id="toggleSelectedTrackingBtn" class="btn" type="button">Iniciar tracking 10s</button>
+            <button id="toggleSelectedTrackingBtn" class="btn" type="button">Iniciar tracking</button>
             <button id="registerPointBtn" class="btn secondary" type="button">Registrar punto ahora</button>
           </div>
         </div>
@@ -82,7 +158,8 @@
       markersByDevice: new Map(),
       linesByDevice: new Map(),
       pointsByDevice: new Map(),
-      trackingTimers: new Map()
+      trackingTimers: new Map(),
+      trackingIntervals: new Map()
     };
 
     function getQueryParam(name) {
@@ -151,7 +228,24 @@
         el.textContent = "Tracking inactivo.";
         return;
       }
-      el.textContent = "Tracking activo en " + active + " dispositivo(s), envio cada 10 segundos.";
+      el.textContent = "Tracking activo en " + active + " dispositivo(s), con intervalo configurable.";
+    }
+
+    function deviceIntervalSeconds(device) {
+      const seconds = Number(device && device.intervalo_reporte_segundos);
+      if (!Number.isFinite(seconds) || seconds <= 0) return 10;
+      return Math.min(86400, Math.max(5, Math.round(seconds)));
+    }
+
+    function prettyCatalog(value) {
+      return normalize(value).replace(/_/g, " ") || "-";
+    }
+
+    function deviceDisplayLabel(device) {
+      const id = Number(device && device.id || 0);
+      const name = normalize(device && device.nombre) || ("Dispositivo " + id);
+      const brand = [normalize(device && device.marca), normalize(device && device.modelo)].filter(Boolean).join(" ");
+      return brand ? (name + " - " + brand) : name;
     }
 
     async function loadEmpresa() {
@@ -232,7 +326,7 @@
           const id = Number(device.id || 0);
           const selected = id === Number(state.selectedDeviceID) ? " selected" : "";
           const estado = normalize(device.estado || "activo").toLowerCase();
-          const name = normalize(device.nombre || ("Dispositivo " + id));
+          const name = deviceDisplayLabel(device);
           html += '<option value="' + id + '"' + selected + '>' + escapeHtml(name) + ' [' + escapeHtml(estado) + ']</option>';
         });
       }
@@ -256,19 +350,42 @@
         const badgeClass = estado === "activo" ? "active" : "inactive";
         const pointCount = (state.pointsByDevice.get(id) || []).length;
         const ultimo = normalize(device.ultimo_reporte_en);
+        const marcaModelo = [normalize(device.marca), normalize(device.modelo)].filter(Boolean).join(" ");
+        const hardware = normalize(device.identificador_hardware);
+        const sim = normalize(device.telefono_sim);
+        const placa = normalize(device.placa_activo);
+        const referencia = normalize(device.activo_referencia);
+        const intervalo = deviceIntervalSeconds(device);
+        const bateria = Number(device.ultima_bateria_porcentaje || 0);
+        const senal = Number(device.ultima_senal_porcentaje || 0);
 
         html += '<article class="gps-device-item' + (isSelected ? ' selected' : '') + '">';
         html += '<div class="gps-device-top">';
         html += '<strong>' + escapeHtml(device.nombre || ("Dispositivo " + id)) + '</strong>';
         html += '<span class="gps-state-badge ' + badgeClass + '">' + escapeHtml(estado.toUpperCase()) + '</span>';
         html += '</div>';
-        html += '<div class="gps-device-meta">Codigo: ' + escapeHtml(device.codigo || "-") + '</div>';
+        html += '<div class="gps-device-meta">Codigo: ' + escapeHtml(device.codigo || "-") + ' | Tipo: ' + escapeHtml(prettyCatalog(device.tipo_dispositivo)) + '</div>';
+        if (marcaModelo || normalize(device.proveedor)) {
+          html += '<div class="gps-device-meta">Equipo: ' + escapeHtml(marcaModelo || "-") + ' | Proveedor: ' + escapeHtml(device.proveedor || "-") + '</div>';
+        }
+        if (hardware || sim) {
+          html += '<div class="gps-device-meta">ID: ' + escapeHtml(hardware || "-") + ' | SIM: ' + escapeHtml(sim || "-") + '</div>';
+        }
+        if (placa || referencia) {
+          html += '<div class="gps-device-meta">Activo: ' + escapeHtml(placa || "-") + ' | Asignado: ' + escapeHtml(referencia || "-") + '</div>';
+        }
         html += '<div class="gps-device-meta">Ultimo reporte: ' + escapeHtml(parseDateLabel(ultimo)) + '</div>';
-        html += '<div class="gps-device-meta">Puntos: ' + pointCount + (tracking ? ' | Tracking 10s activo' : '') + '</div>';
+        html += '<div class="gps-device-meta">Puntos: ' + pointCount + ' | Intervalo: ' + intervalo + 's' + (tracking ? ' | Tracking activo' : '') + '</div>';
+        if (bateria || senal) {
+          html += '<div class="gps-device-metrics">';
+          html += '<span>Bateria ' + Math.round(bateria) + '%</span>';
+          html += '<span>Senal ' + Math.round(senal) + '%</span>';
+          html += '</div>';
+        }
 
         html += '<div class="gps-device-actions">';
         html += '<button class="btn secondary" type="button" data-action="select" data-id="' + id + '">Seleccionar</button>';
-        html += '<button class="btn" type="button" data-action="toggle-tracking" data-id="' + id + '">' + (tracking ? 'Detener 10s' : 'Iniciar 10s') + '</button>';
+        html += '<button class="btn" type="button" data-action="toggle-tracking" data-id="' + id + '">' + (tracking ? ('Detener ' + intervalo + 's') : ('Iniciar ' + intervalo + 's')) + '</button>';
         html += '<button class="btn secondary" type="button" data-action="edit" data-id="' + id + '">Editar</button>';
         html += '<button class="btn secondary" type="button" data-action="toggle-state" data-id="' + id + '" data-next="' + (estado === 'activo' ? 'desactivar' : 'activar') + '">' + (estado === 'activo' ? 'Desactivar' : 'Activar') + '</button>';
         html += '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>';
@@ -374,6 +491,9 @@
         marker.bindPopup(
           '<strong>' + escapeHtml(device.nombre || ('Dispositivo ' + deviceID)) + '</strong><br>' +
           'Codigo: ' + escapeHtml(device.codigo || '-') + '<br>' +
+          'Equipo: ' + escapeHtml([normalize(device.marca), normalize(device.modelo)].filter(Boolean).join(' ') || '-') + '<br>' +
+          'Activo: ' + escapeHtml(device.placa_activo || device.activo_referencia || '-') + '<br>' +
+          'Bateria: ' + escapeHtml(Math.round(Number(ultimo.bateria_porcentaje || device.ultima_bateria_porcentaje || 0)) + '%') + ' | Senal: ' + escapeHtml(Math.round(Number(ultimo.senal_porcentaje || device.ultima_senal_porcentaje || 0)) + '%') + '<br>' +
           'Ultimo punto: ' + escapeHtml(parseDateLabel(ultimo.capturado_en || device.ultimo_reporte_en || ''))
         );
 
@@ -406,12 +526,14 @@
       if (!btn) return;
       const id = Number(state.selectedDeviceID || 0);
       if (!id) {
-        btn.textContent = "Iniciar tracking 10s";
+        btn.textContent = "Iniciar tracking";
         btn.disabled = true;
         return;
       }
       btn.disabled = false;
-      btn.textContent = isTracking(id) ? "Detener tracking 10s" : "Iniciar tracking 10s";
+      const device = getDeviceByID(id);
+      const seconds = deviceIntervalSeconds(device);
+      btn.textContent = isTracking(id) ? ("Detener tracking " + seconds + "s") : ("Iniciar tracking " + seconds + "s");
     }
 
     function stopTrackingForInactiveDevices() {
@@ -435,12 +557,15 @@
       const id = Number(deviceID || 0);
       if (!id) return;
       if (isTracking(id)) return;
+      const device = getDeviceByID(id);
+      const seconds = deviceIntervalSeconds(device);
 
       const timer = setInterval(function () {
         sendSimulatedPoint(id);
-      }, 10000);
+      }, seconds * 1000);
 
       state.trackingTimers.set(id, timer);
+      state.trackingIntervals.set(id, seconds);
       sendSimulatedPoint(id);
       updateTrackingSummary();
       updateSelectedTrackingButton();
@@ -454,6 +579,7 @@
         clearInterval(timer);
       }
       state.trackingTimers.delete(id);
+      state.trackingIntervals.delete(id);
       updateTrackingSummary();
       updateSelectedTrackingButton();
       renderDeviceList();
@@ -486,6 +612,8 @@
         longitud: lng,
         precision_metros: Number(device.ultima_precision_metros || 0),
         velocidad_kmh: Number(device.ultima_velocidad_kmh || 0),
+        bateria_porcentaje: Number(device.ultima_bateria_porcentaje || 0),
+        senal_porcentaje: Number(device.ultima_senal_porcentaje || 0),
         capturado_en: device.ultimo_reporte_en || ""
       };
     }
@@ -507,7 +635,10 @@
         velocidad_kmh: Number((8 + Math.random() * 45).toFixed(2)),
         rumbo_grados: Number((Math.random() * 359).toFixed(2)),
         altitud_metros: Number((10 + Math.random() * 120).toFixed(2)),
-        fuente: "simulado_10s"
+        bateria_porcentaje: Number(Math.max(5, (last ? Number(last.bateria_porcentaje || 100) : 100) - Math.random() * 0.4).toFixed(2)),
+        senal_porcentaje: Number((55 + Math.random() * 43).toFixed(2)),
+        evento: "posicion",
+        fuente: "simulado_intervalo"
       }, true);
     }
 
@@ -521,6 +652,9 @@
         velocidad_kmh: Number(data.velocidad_kmh || 0),
         rumbo_grados: Number(data.rumbo_grados || 0),
         altitud_metros: Number(data.altitud_metros || 0),
+        bateria_porcentaje: Number(data.bateria_porcentaje || 0),
+        senal_porcentaje: Number(data.senal_porcentaje || 0),
+        evento: normalize(data.evento || "posicion") || "posicion",
         fuente: normalize(data.fuente || "manual") || "manual"
       };
 
@@ -545,6 +679,9 @@
           velocidad_kmh: payload.velocidad_kmh,
           rumbo_grados: payload.rumbo_grados,
           altitud_metros: payload.altitud_metros,
+          bateria_porcentaje: payload.bateria_porcentaje,
+          senal_porcentaje: payload.senal_porcentaje,
+          evento: payload.evento,
           fuente: payload.fuente,
           capturado_en: capturadoEn,
           estado: "activo"
@@ -579,6 +716,8 @@
         device.ultima_longitud = point.longitud;
         device.ultima_precision_metros = point.precision_metros;
         device.ultima_velocidad_kmh = point.velocidad_kmh;
+        device.ultima_bateria_porcentaje = point.bateria_porcentaje;
+        device.ultima_senal_porcentaje = point.senal_porcentaje;
         device.ultimo_reporte_en = point.capturado_en;
       }
 
@@ -586,72 +725,100 @@
       renderDeviceList();
     }
 
-    async function createDevice() {
-      const codigo = normalize(document.getElementById("deviceCodigo").value);
-      const nombre = normalize(document.getElementById("deviceNombre").value);
-      const descripcion = normalize(document.getElementById("deviceDescripcion").value);
-      if (!nombre) {
+    function readDeviceFormPayload() {
+      const interval = Number(document.getElementById("deviceIntervalo").value || 10);
+      return {
+        empresa_id: state.empresaID,
+        codigo: normalize(document.getElementById("deviceCodigo").value),
+        nombre: normalize(document.getElementById("deviceNombre").value),
+        descripcion: normalize(document.getElementById("deviceDescripcion").value),
+        marca: normalize(document.getElementById("deviceMarca").value),
+        modelo: normalize(document.getElementById("deviceModelo").value),
+        tipo_dispositivo: normalize(document.getElementById("deviceTipo").value) || "gps_tracker",
+        proveedor: normalize(document.getElementById("deviceProveedor").value),
+        identificador_hardware: normalize(document.getElementById("deviceHardware").value),
+        telefono_sim: normalize(document.getElementById("deviceSIM").value),
+        placa_activo: normalize(document.getElementById("devicePlaca").value).toUpperCase(),
+        activo_referencia: normalize(document.getElementById("deviceReferencia").value),
+        intervalo_reporte_segundos: Math.min(86400, Math.max(5, Number.isFinite(interval) ? Math.round(interval) : 10)),
+        protocolo: normalize(document.getElementById("deviceProtocolo").value) || "manual"
+      };
+    }
+
+    function setSelectValue(id, value, fallback) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const normalized = normalize(value || fallback);
+      const hasOption = Array.from(el.options || []).some(function (option) {
+        return option.value === normalized;
+      });
+      el.value = hasOption ? normalized : fallback;
+    }
+
+    function resetDeviceForm() {
+      document.getElementById("deviceForm").reset();
+      document.getElementById("editingDeviceID").value = "";
+      document.getElementById("deviceIntervalo").value = "10";
+      setSelectValue("deviceTipo", "gps_tracker", "gps_tracker");
+      setSelectValue("deviceProtocolo", "manual", "manual");
+      document.getElementById("saveDeviceBtn").textContent = "Crear dispositivo";
+      document.getElementById("cancelEditDeviceBtn").hidden = true;
+    }
+
+    function fillDeviceForm(device) {
+      document.getElementById("editingDeviceID").value = String(device.id || "");
+      document.getElementById("deviceCodigo").value = normalize(device.codigo);
+      document.getElementById("deviceNombre").value = normalize(device.nombre);
+      document.getElementById("deviceDescripcion").value = normalize(device.descripcion);
+      document.getElementById("deviceMarca").value = normalize(device.marca);
+      document.getElementById("deviceModelo").value = normalize(device.modelo);
+      setSelectValue("deviceTipo", device.tipo_dispositivo, "gps_tracker");
+      document.getElementById("deviceProveedor").value = normalize(device.proveedor);
+      document.getElementById("deviceHardware").value = normalize(device.identificador_hardware);
+      document.getElementById("deviceSIM").value = normalize(device.telefono_sim);
+      document.getElementById("devicePlaca").value = normalize(device.placa_activo);
+      document.getElementById("deviceReferencia").value = normalize(device.activo_referencia);
+      document.getElementById("deviceIntervalo").value = String(deviceIntervalSeconds(device));
+      setSelectValue("deviceProtocolo", device.protocolo, "manual");
+      document.getElementById("saveDeviceBtn").textContent = "Actualizar dispositivo";
+      document.getElementById("cancelEditDeviceBtn").hidden = false;
+      document.getElementById("deviceNombre").focus();
+    }
+
+    async function saveDevice() {
+      const editingID = Number(document.getElementById("editingDeviceID").value || 0);
+      const payload = readDeviceFormPayload();
+      if (!payload.nombre) {
         setHelp("deviceMsg", "nombre es obligatorio", true);
         return;
       }
-
-      const payload = {
-        empresa_id: state.empresaID,
-        codigo: codigo,
-        nombre: nombre,
-        descripcion: descripcion
-      };
+      if (editingID > 0) {
+        payload.id = editingID;
+      }
 
       try {
         const resp = await fetch("/api/empresa/ubicacion_gps/dispositivos", {
-          method: "POST",
+          method: editingID > 0 ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(payload)
         });
         await ensureOk(resp);
 
-        document.getElementById("deviceForm").reset();
-        setHelp("deviceMsg", "Dispositivo GPS creado.", false);
+        resetDeviceForm();
+        setHelp("deviceMsg", editingID > 0 ? "Dispositivo actualizado." : "Dispositivo GPS creado.", false);
         await loadDevices();
         await loadRecorridos();
       } catch (err) {
-        setHelp("deviceMsg", "No se pudo crear el dispositivo: " + err.message, true);
+        setHelp("deviceMsg", "No se pudo guardar el dispositivo: " + err.message, true);
       }
     }
 
-    async function updateDevice(deviceID) {
+    function updateDevice(deviceID) {
       const device = getDeviceByID(deviceID);
       if (!device) return;
-
-      const nombre = window.prompt("Nombre del dispositivo", normalize(device.nombre || ""));
-      if (nombre == null) return;
-      const codigo = window.prompt("Codigo del dispositivo", normalize(device.codigo || ""));
-      if (codigo == null) return;
-      const descripcion = window.prompt("Descripcion", normalize(device.descripcion || ""));
-      if (descripcion == null) return;
-
-      const payload = {
-        id: Number(device.id),
-        empresa_id: state.empresaID,
-        codigo: normalize(codigo),
-        nombre: normalize(nombre),
-        descripcion: normalize(descripcion)
-      };
-
-      try {
-        const resp = await fetch("/api/empresa/ubicacion_gps/dispositivos", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify(payload)
-        });
-        await ensureOk(resp);
-        setHelp("deviceMsg", "Dispositivo actualizado.", false);
-        await loadDevices();
-      } catch (err) {
-        setHelp("deviceMsg", "No se pudo actualizar el dispositivo: " + err.message, true);
-      }
+      fillDeviceForm(device);
+      setHelp("deviceMsg", "Editando " + (device.nombre || "dispositivo") + ".", false);
     }
 
     async function toggleDeviceState(deviceID, nextAction) {
@@ -781,7 +948,12 @@
 
       document.getElementById("deviceForm").addEventListener("submit", function (ev) {
         ev.preventDefault();
-        createDevice();
+        saveDevice();
+      });
+
+      document.getElementById("cancelEditDeviceBtn").addEventListener("click", function () {
+        resetDeviceForm();
+        setHelp("deviceMsg", "", false);
       });
 
       document.getElementById("deviceSearchBtn").addEventListener("click", function () {
@@ -807,7 +979,7 @@
             return;
           }
           startTracking(id);
-          setHelp("mapMsg", "Tracking iniciado (cada 10 segundos).", false);
+          setHelp("mapMsg", "Tracking iniciado cada " + deviceIntervalSeconds(device) + " segundos.", false);
         }
       });
 

@@ -28,6 +28,11 @@
 - `administrador` invitado solo obtiene la vista `Mis clientes` tras aceptar la invitacion por correo; no recibe permisos super ni acceso a empresas ajenas. La vista consume `/api/asesor_comercial/mis_clientes` y filtra por el email de la sesion.
 - El checkout publico de licencias acepta `asesor_id` como codigo de asesor comercial. La asociacion comercial no cambia permisos de empresa: solo registra comisiones sobre pagos aprobados y renovaciones dentro del plazo configurado.
 
+2026-05-04: Nota operativa para `asesor comercial`, `licencias`, `pagos` y `super`
+- `super_administrador` mantiene control exclusivo sobre `/super/api/asesor_comercial` y ahora configura informacion de transferencia/comision por asesor: metodo, entidad, cuenta, titular, contacto, periodicidad, minimo y soporte requerido.
+- La gestion de comisiones permite registrar estado de liquidacion, referencia de transferencia, fecha programada, soporte y observaciones. Esto no ejecuta pagos bancarios externos ni abre permisos a asesores; solo deja trazabilidad interna de liquidacion.
+- El asesor comercial sigue viendo solo sus clientes/comisiones mediante `/api/asesor_comercial/mis_clientes`; no puede editar datos bancarios globales ni marcar pagos.
+
 2026-04-20.3: Nota operativa para `soporte remoto` y `super` sobre activacion por defecto de RustDesk
 - `super_administrador` sigue siendo el unico rol que configura y opera RustDesk desde la vista super; el cambio solo fija que la primera lectura de configuracion llegue activa por defecto con portal publico habilitado y modo local preseleccionado.
 - No se crean permisos nuevos ni se amplian privilegios de `administrador`; se corrige un default funcional de la vista para que coincida con la operacion simplificada del modulo.

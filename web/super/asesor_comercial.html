@@ -22,12 +22,17 @@
     .ac-metric{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:10px}
     .ac-metric span{display:block;color:var(--muted);font-size:.78rem}
     .ac-metric strong{display:block;margin-top:4px}
+    .ac-section-title{margin:12px 0 4px;color:var(--text);font-size:.96rem}
+    .ac-pay-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .ac-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .ac-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 12px}
+    .ac-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:5px 9px;background:var(--surface);font-size:.78rem;color:var(--muted)}
     .ac-table-wrap{overflow:auto}
     .ac-table{width:100%;border-collapse:collapse;font-size:.88rem}
     .ac-table th,.ac-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
     .ac-table th{color:var(--muted);font-size:.78rem;text-transform:uppercase}
     .ac-paid{color:var(--success);font-weight:800}.ac-pending{color:var(--accent-yellow);font-weight:800}
-    @media(max-width:900px){body{padding:10px}.ac-grid,.ac-row{grid-template-columns:1fr}.ac-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:900px){body{padding:10px}.ac-grid,.ac-row,.ac-pay-grid{grid-template-columns:1fr}.ac-metrics,.ac-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -42,8 +47,9 @@
 
     <section class="ac-grid">
       <article class="ac-card">
-        <h2>Agregar asesor</h2>
+        <h2 id="formTitle">Agregar asesor</h2>
         <form id="advisorForm" class="ac-form">
+          <input id="advisorId" type="hidden">
           <label class="form-label" for="email">Correo del administrador</label>
           <input id="email" class="form-input" type="email" required placeholder="administrador@empresa.com">
           <div class="ac-row">
@@ -56,9 +62,83 @@
               <input id="meses" class="form-input" type="number" min="1" step="1" value="6">
             </div>
           </div>
+          <h3 class="ac-section-title">Transferencias y pagos de comisiones</h3>
+          <div class="ac-pay-grid">
+            <div>
+              <label class="form-label" for="metodoPago">Metodo</label>
+              <select id="metodoPago" class="form-input">
+                <option value="transferencia_bancaria">Transferencia bancaria</option>
+                <option value="nequi">Nequi</option>
+                <option value="daviplata">Daviplata</option>
+                <option value="billetera_digital">Billetera digital</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="entidadFinanciera">Entidad</label>
+              <input id="entidadFinanciera" class="form-input" placeholder="Banco, Nequi, Daviplata">
+            </div>
+            <div>
+              <label class="form-label" for="tipoCuenta">Tipo de cuenta</label>
+              <select id="tipoCuenta" class="form-input">
+                <option value="">Sin definir</option>
+                <option value="ahorros">Ahorros</option>
+                <option value="corriente">Corriente</option>
+                <option value="nequi">Nequi</option>
+                <option value="daviplata">Daviplata</option>
+                <option value="billetera_digital">Billetera digital</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="numeroCuenta">Numero / cuenta</label>
+              <input id="numeroCuenta" class="form-input" autocomplete="off" placeholder="Numero de cuenta o celular">
+            </div>
+            <div>
+              <label class="form-label" for="titularCuenta">Titular</label>
+              <input id="titularCuenta" class="form-input" placeholder="Nombre del titular">
+            </div>
+            <div>
+              <label class="form-label" for="documentoTitular">Documento titular</label>
+              <input id="documentoTitular" class="form-input" placeholder="CC/NIT/ID">
+            </div>
+            <div>
+              <label class="form-label" for="emailPagos">Email de pagos</label>
+              <input id="emailPagos" class="form-input" type="email" placeholder="pagos@asesor.com">
+            </div>
+            <div>
+              <label class="form-label" for="telefonoPagos">Telefono de pagos</label>
+              <input id="telefonoPagos" class="form-input" placeholder="+57...">
+            </div>
+            <div>
+              <label class="form-label" for="periodicidadPago">Periodicidad</label>
+              <select id="periodicidadPago" class="form-input">
+                <option value="mensual">Mensual</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="semanal">Semanal</option>
+                <option value="bajo_solicitud">Bajo solicitud</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="diaPago">Dia de pago</label>
+              <input id="diaPago" class="form-input" type="number" min="1" max="31" step="1" value="30">
+            </div>
+            <div>
+              <label class="form-label" for="pagoMinimo">Minimo a transferir</label>
+              <input id="pagoMinimo" class="form-input" type="number" min="0" step="1000" value="0">
+            </div>
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;margin-top:26px;">
+              <input id="requiereSoportePago" type="checkbox" checked>
+              Exigir soporte de pago
+            </label>
+          </div>
           <label class="form-label" for="obs">Observaciones</label>
           <textarea id="obs" class="form-textarea" placeholder="Notas internas"></textarea>
-          <button class="btn" type="submit">Enviar invitación</button>
+          <div class="form-actions">
+            <button id="saveBtn" class="btn" type="submit">Enviar invitacion</button>
+            <button id="cancelEditBtn" class="btn secondary" type="button" style="display:none;">Cancelar edicion</button>
+          </div>
           <div id="msg" class="form-help"></div>
         </form>
       </article>
@@ -70,8 +150,14 @@
     </section>
 
     <section class="ac-card">
-      <h2>Comisiones y pagos</h2>
-      <p class="muted">Marca como pagadas las comisiones cuando se realice el pago al asesor. El estado se refleja en la página Mis clientes del asesor comercial.</p>
+      <div class="ac-toolbar">
+        <div>
+          <h2>Comisiones y pagos</h2>
+          <p class="muted">Programa transferencias, registra referencia/soporte y marca como pagadas las comisiones liquidadas por venta de licencias.</p>
+        </div>
+        <button id="reloadCommissionsBtn" class="btn secondary" type="button">Refrescar pagos</button>
+      </div>
+      <div id="commissionSummary" class="ac-summary"></div>
       <div id="commissionsBox" class="ac-table-wrap">Cargando...</div>
     </section>
   </main>
@@ -176,6 +262,217 @@
     });
     document.getElementById("reloadBtn").addEventListener("click", loadAll);
     loadAll().catch(err => setMsg(err.message, true));
+  </script>
+  <script>
+    (function(){
+      const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+      const dataState = { advisors: [], commissions: [] };
+      const form = document.getElementById("advisorForm");
+      if (form) {
+        const cleanForm = form.cloneNode(true);
+        form.parentNode.replaceChild(cleanForm, form);
+      }
+      function safe(v){return String(v == null ? "" : v).replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s]));}
+      function field(id){const el=document.getElementById(id); return el ? String(el.value || "").trim() : "";}
+      function writeField(id, value){const el=document.getElementById(id); if (el) el.value = value == null ? "" : String(value);}
+      function message(text, isError){
+        const el = document.getElementById("msg");
+        if (!el) return;
+        el.textContent = text || "";
+        el.style.color = isError ? "var(--danger)" : "var(--success)";
+      }
+      async function requestJSON(url, options){
+        const res = await fetch(url, Object.assign({ credentials:"same-origin" }, options || {}));
+        const text = await res.text();
+        let parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch (_) {}
+        if (!res.ok) throw new Error((parsed && (parsed.error || parsed.message)) || text || "Solicitud fallida");
+        return parsed;
+      }
+      function resetAdvisorEditor(){
+        const f = document.getElementById("advisorForm");
+        if (f) f.reset();
+        writeField("advisorId", "");
+        writeField("pct", "10");
+        writeField("meses", "6");
+        writeField("metodoPago", "transferencia_bancaria");
+        writeField("periodicidadPago", "mensual");
+        writeField("diaPago", "30");
+        writeField("pagoMinimo", "0");
+        const support = document.getElementById("requiereSoportePago");
+        if (support) support.checked = true;
+        const emailInput = document.getElementById("email");
+        if (emailInput) emailInput.disabled = false;
+        document.getElementById("formTitle").textContent = "Agregar asesor";
+        document.getElementById("saveBtn").textContent = "Enviar invitacion";
+        document.getElementById("cancelEditBtn").style.display = "none";
+      }
+      function buildPayload(){
+        return {
+          email: field("email"),
+          porcentaje_comision: Number(field("pct") || 0),
+          meses_asociacion: Number(field("meses") || 6),
+          metodo_pago_comision: field("metodoPago"),
+          entidad_financiera: field("entidadFinanciera"),
+          tipo_cuenta: field("tipoCuenta"),
+          numero_cuenta: field("numeroCuenta"),
+          titular_cuenta: field("titularCuenta"),
+          documento_titular: field("documentoTitular"),
+          email_pagos: field("emailPagos"),
+          telefono_pagos: field("telefonoPagos"),
+          periodicidad_pago: field("periodicidadPago"),
+          dia_pago: Number(field("diaPago") || 30),
+          pago_minimo: Number(field("pagoMinimo") || 0),
+          requiere_soporte_pago: Boolean(document.getElementById("requiereSoportePago").checked),
+          observaciones: field("obs")
+        };
+      }
+      window.editAdvisor = function(id){
+        const a = dataState.advisors.find(item => Number(item.id) === Number(id));
+        if (!a) return;
+        writeField("advisorId", a.id);
+        writeField("email", a.admin_email || "");
+        document.getElementById("email").disabled = true;
+        writeField("pct", Number(a.porcentaje_comision || 0).toFixed(2));
+        writeField("meses", a.meses_asociacion || 6);
+        writeField("metodoPago", a.metodo_pago_comision || "transferencia_bancaria");
+        writeField("entidadFinanciera", a.entidad_financiera || "");
+        writeField("tipoCuenta", a.tipo_cuenta || "");
+        writeField("numeroCuenta", a.numero_cuenta || "");
+        writeField("titularCuenta", a.titular_cuenta || "");
+        writeField("documentoTitular", a.documento_titular || "");
+        writeField("emailPagos", a.email_pagos || "");
+        writeField("telefonoPagos", a.telefono_pagos || "");
+        writeField("periodicidadPago", a.periodicidad_pago || "mensual");
+        writeField("diaPago", a.dia_pago || 30);
+        writeField("pagoMinimo", a.pago_minimo || 0);
+        document.getElementById("requiereSoportePago").checked = Boolean(a.requiere_soporte_pago);
+        writeField("obs", a.observaciones || "");
+        document.getElementById("formTitle").textContent = "Editar asesor";
+        document.getElementById("saveBtn").textContent = "Guardar cambios";
+        document.getElementById("cancelEditBtn").style.display = "";
+        document.getElementById("advisorForm").scrollIntoView({ behavior:"smooth", block:"start" });
+      };
+      window.renderAdvisors = function(items){
+        dataState.advisors = Array.isArray(items) ? items : [];
+        const box = document.getElementById("advisorsList");
+        if (!dataState.advisors.length) {
+          box.innerHTML = '<div class="inline-panel-empty"><p class="text-empty">Aun no hay asesores comerciales.</p></div>';
+          return;
+        }
+        box.innerHTML = dataState.advisors.map(a => `
+          <article class="ac-item">
+            <div class="ac-item-head">
+              <div><strong>${safe(a.admin_nombre || a.admin_email)}</strong><div class="muted">${safe(a.admin_email)}</div></div>
+              <div class="ac-code">${safe(a.codigo)}</div>
+            </div>
+            <div class="ac-metrics">
+              <div class="ac-metric"><span>Comision</span><strong>${Number(a.porcentaje_comision || 0).toFixed(2)}%</strong></div>
+              <div class="ac-metric"><span>Asociacion</span><strong>${safe(a.meses_asociacion || 0)} meses</strong></div>
+              <div class="ac-metric"><span>Pago</span><strong>${safe(a.metodo_pago_comision || "-")}</strong></div>
+              <div class="ac-metric"><span>Minimo</span><strong>${money.format(Number(a.pago_minimo || 0))}</strong></div>
+            </div>
+            <div>
+              <span class="ac-chip">Entidad: ${safe(a.entidad_financiera || "-")}</span>
+              <span class="ac-chip">Cuenta: ${safe(a.tipo_cuenta || "-")} ${safe(a.numero_cuenta || "")}</span>
+              <span class="ac-chip">Periodicidad: ${safe(a.periodicidad_pago || "mensual")} dia ${safe(a.dia_pago || 30)}</span>
+            </div>
+            <div class="form-actions">
+              <button class="btn secondary" type="button" onclick="editAdvisor(${Number(a.id)})">Editar configuracion</button>
+              <button class="btn danger" type="button" onclick="deleteAdvisor(${Number(a.id)})">Desactivar</button>
+            </div>
+          </article>`).join("");
+      };
+      function renderSummary(items){
+        const total = items.reduce((acc, c) => acc + Number(c.monto_comision || 0), 0);
+        const pending = items.filter(c => Number(c.pagado || 0) !== 1).reduce((acc, c) => acc + Number(c.monto_comision || 0), 0);
+        const paid = total - pending;
+        const countPending = items.filter(c => Number(c.pagado || 0) !== 1).length;
+        document.getElementById("commissionSummary").innerHTML = `
+          <div class="ac-metric"><span>Total comisiones</span><strong>${money.format(total)}</strong></div>
+          <div class="ac-metric"><span>Pendiente pago</span><strong>${money.format(pending)}</strong></div>
+          <div class="ac-metric"><span>Pagado</span><strong>${money.format(paid)}</strong></div>
+          <div class="ac-metric"><span>Items pendientes</span><strong>${countPending}</strong></div>`;
+      }
+      window.renderCommissions = function(items){
+        dataState.commissions = Array.isArray(items) ? items : [];
+        const box = document.getElementById("commissionsBox");
+        renderSummary(dataState.commissions);
+        if (!dataState.commissions.length) {
+          box.innerHTML = '<p class="text-empty">No hay comisiones registradas.</p>';
+          return;
+        }
+        box.innerHTML = `<table class="ac-table"><thead><tr><th>Fecha</th><th>Asesor</th><th>Empresa</th><th>Valor pagado</th><th>Comision</th><th>Pago comision</th><th>Referencia</th><th>Accion</th></tr></thead><tbody>${dataState.commissions.map(c => {
+          const status = c.estado_pago_comision || (Number(c.pagado || 0) === 1 ? "pagada" : "pendiente");
+          const statusHtml = Number(c.pagado || 0) === 1 ? '<span class="ac-paid">Pagada</span>' : '<span class="ac-pending">' + safe(status) + '</span>';
+          return `<tr>
+            <td>${safe((c.fecha_pago || c.fecha_creacion || "").slice(0,10))}</td>
+            <td><strong>${safe(c.asesor_codigo)}</strong><br><span class="muted">${safe(c.asesor_email)}</span></td>
+            <td>${safe(c.empresa_nombre || ("Empresa #" + c.empresa_id))}</td>
+            <td>${money.format(Number(c.valor_pagado || 0))}</td>
+            <td>${Number(c.porcentaje_comision || 0).toFixed(2)}%<br><strong>${money.format(Number(c.monto_comision || 0))}</strong></td>
+            <td>${statusHtml}<br><span class="muted">${safe(c.metodo_pago_comision || "-")} ${safe(c.fecha_programada_pago || "")}</span></td>
+            <td>${safe(c.referencia_pago_comision || "-")}<br><span class="muted">${safe(c.soporte_pago_url || "")}</span></td>
+            <td><button class="btn btn-sm" type="button" onclick="managePayment(${Number(c.id)})">Gestionar pago</button></td>
+          </tr>`;
+        }).join("")}</tbody></table>`;
+      };
+      window.loadAll = async function(){
+        const advisors = await requestJSON("/super/api/asesor_comercial");
+        window.renderAdvisors((advisors && advisors.items) || []);
+        const commissions = await requestJSON("/super/api/asesor_comercial?action=comisiones");
+        window.renderCommissions((commissions && commissions.items) || []);
+      };
+      window.managePayment = async function(id){
+        const c = dataState.commissions.find(item => Number(item.id) === Number(id)) || {};
+        const estado = prompt("Estado del pago (programada, en_transferencia, pagada, rechazada):", c.estado_pago_comision || "pagada");
+        if (estado == null) return;
+        const metodo = prompt("Metodo de pago:", c.metodo_pago_comision || "transferencia_bancaria");
+        if (metodo == null) return;
+        const ref = prompt("Referencia/numero de transferencia:", c.referencia_pago_comision || "");
+        if (ref == null) return;
+        const fecha = prompt("Fecha programada o fecha del pago (YYYY-MM-DD):", c.fecha_programada_pago || new Date().toISOString().slice(0,10));
+        if (fecha == null) return;
+        const soporte = prompt("URL o ruta del soporte (opcional):", c.soporte_pago_url || "");
+        if (soporte == null) return;
+        const obsPago = prompt("Observaciones del pago (opcional):", c.observaciones || "") || "";
+        await requestJSON("/super/api/asesor_comercial?action=marcar_pago&id=" + encodeURIComponent(id), {
+          method:"PUT",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ estado_pago_comision:estado, metodo_pago_comision:metodo, referencia_pago_comision:ref, fecha_programada_pago:fecha, soporte_pago_url:soporte, observaciones:obsPago })
+        });
+        await window.loadAll();
+      };
+      window.deleteAdvisor = async function(id){
+        if (!confirm("Desactivar este asesor comercial? No se eliminara el historial de comisiones.")) return;
+        await requestJSON("/super/api/asesor_comercial?id=" + encodeURIComponent(id), { method:"DELETE" });
+        await window.loadAll();
+      };
+      document.getElementById("advisorForm").addEventListener("submit", async function(ev){
+        ev.preventDefault();
+        const id = Number(field("advisorId") || 0);
+        const payload = buildPayload();
+        message(id > 0 ? "Guardando configuracion..." : "Enviando invitacion...", false);
+        try {
+          if (id > 0) {
+            await requestJSON("/super/api/asesor_comercial?id=" + encodeURIComponent(id), { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+            message("Configuracion del asesor actualizada.", false);
+          } else {
+            const created = await requestJSON("/super/api/asesor_comercial", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+            message((created.email_sent ? "Invitacion enviada. " : "Invitacion creada. ") + "Codigo: " + created.codigo, !created.email_sent);
+          }
+          resetAdvisorEditor();
+          await window.loadAll();
+        } catch (err) {
+          message(err.message, true);
+        }
+      });
+      document.getElementById("cancelEditBtn").addEventListener("click", resetAdvisorEditor);
+      document.getElementById("reloadBtn").addEventListener("click", window.loadAll);
+      document.getElementById("reloadCommissionsBtn").addEventListener("click", window.loadAll);
+      resetAdvisorEditor();
+      setTimeout(() => window.loadAll().catch(err => message(err.message, true)), 100);
+    })();
   </script>
 </body>
 </html>

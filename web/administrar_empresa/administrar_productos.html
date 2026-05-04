@@ -420,6 +420,10 @@
             <input id="productoImagenURL" class="form-input" placeholder="/uploads/productos/...">
           </div>
           <div class="form-col">
+            <label class="form-label" for="productoImpresoraPedido">Impresora de pedido</label>
+            <select id="productoImpresoraPedido" class="form-input"></select>
+          </div>
+          <div class="form-col">
             <label class="form-label" for="productoMotivoPrecio">Motivo de cambio de precio (edición)</label>
             <input id="productoMotivoPrecio" class="form-input" placeholder="Actualización por proveedor / inflación / promoción">
           </div>
@@ -454,6 +458,7 @@
               <th>SKU</th>
               <th>Nombre</th>
               <th>Categoría</th>
+              <th>Impresora pedido</th>
               <th>Precio</th>
               <th>Stock total</th>
               <th>Estado</th>
@@ -1102,6 +1107,9 @@
     const state = {
       bodegas: [],
       productos: [],
+      impresoras: [],
+      impresorasProductos: [],
+      impresorasLoaded: false,
       proveedores: [],
       proveedoresLoaded: false,
       categoriasProductos: [],
@@ -1163,6 +1171,81 @@
 
     function getActivos(rows) {
       return rows.filter(r => (r.estado || 'activo') === 'activo');
+    }
+
+    function getProductoPrinterAssignment(productoID) {
+      return (state.impresorasProductos || []).find(item => Number(item.producto_id || 0) === Number(productoID || 0)) || null;
+    }
+
+    function getImpresoraByID(impresoraID) {
+      return (state.impresoras || []).find(item => Number(item.id || 0) === Number(impresoraID || 0)) || null;
+    }
+
+    function printerDisplayName(impresora) {
+      if (!impresora) return '';
+      const name = String(impresora.nombre || impresora.impresora_nombre || '').trim();
+      const code = String(impresora.codigo || impresora.impresora_codigo || '').trim();
+      if (name && code) return name + ' (' + code + ')';
+      return name || code || ('Impresora #' + Number(impresora.id || impresora.impresora_id || 0));
+    }
+
+    function refreshProductoPrinterSelector(selectedImpresoraID) {
+      const select = document.getElementById('productoImpresoraPedido');
+      if (!select) return;
+      const activePrinters = getActivos(state.impresoras || []);
+      let html = '<option value="">Usar impresora general del pedido</option>';
+      activePrinters.forEach(item => {
+        const id = Number(item.id || 0);
+        const selected = Number(selectedImpresoraID || 0) === id ? ' selected' : '';
+        html += '<option value="' + id + '"' + selected + '>' + sanitize(printerDisplayName(item)) + '</option>';
+      });
+      select.innerHTML = html;
+      if (Number(selectedImpresoraID || 0) > 0) {
+        select.value = String(Number(selectedImpresoraID));
+      }
+    }
+
+    async function loadProductPrinterConfig(force) {
+      if (!empresaId) return;
+      if (state.impresorasLoaded && !force) return;
+      try {
+        const resumen = await requestJSON('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=resumen');
+        state.impresoras = Array.isArray(resumen && resumen.impresoras) ? resumen.impresoras : [];
+        state.impresorasProductos = Array.isArray(resumen && resumen.productos) ? resumen.productos : [];
+        state.impresorasLoaded = true;
+        refreshProductoPrinterSelector(Number(document.getElementById('productoImpresoraPedido')?.value || 0));
+      } catch (err) {
+        state.impresoras = [];
+        state.impresorasProductos = [];
+        state.impresorasLoaded = true;
+        refreshProductoPrinterSelector(0);
+        console.warn('No se pudo cargar configuracion de impresoras para productos:', err);
+      }
+    }
+
+    async function saveProductoPrinterAssignment(productoID) {
+      const select = document.getElementById('productoImpresoraPedido');
+      if (!select || !productoID) return;
+      const impresoraID = Number(select.value || 0);
+      const existing = getProductoPrinterAssignment(productoID);
+      if (impresoraID > 0) {
+        await requestJSON('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=producto', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_id: Number(empresaId),
+            producto_id: Number(productoID),
+            impresora_id: impresoraID,
+            estado: 'activo'
+          })
+        });
+      } else if (existing) {
+        await requestJSON('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=producto&producto_id=' + encodeURIComponent(productoID), {
+          method: 'DELETE'
+        });
+      }
+      state.impresorasLoaded = false;
+      await loadProductPrinterConfig(true);
     }
 
     function getScopedElementById(id) {
@@ -1756,6 +1839,7 @@
     }
 
     async function loadProductos() {
+      await loadProductPrinterConfig(false);
       const q = document.getElementById('filtroProductos').value.trim();
       const categoriaID = Number(document.getElementById('filtroCategoriaProducto').value || 0);
       let url = '/api/empresa/productos?empresa_id=' + empresaId;
@@ -1785,12 +1869,13 @@
         html += '<option value="' + Number(p.id) + '">' + sanitize(p.nombre || ('ID ' + p.id)) + '</option>';
       });
       historialSelect.innerHTML = html;
+      refreshProductoPrinterSelector(Number(document.getElementById('productoImpresoraPedido')?.value || 0));
     }
 
     function renderProductos() {
       const tbody = document.querySelector('#productosTable tbody');
       if (!state.productos.length) {
-        tbody.innerHTML = '<tr><td colspan="9">No hay productos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10">No hay productos registrados.</td></tr>';
         return;
       }
       tbody.innerHTML = state.productos.map(p => {
@@ -1798,12 +1883,15 @@
         const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
         const activo = estado === 'activo' ? '0' : '1';
         const img = p.imagen_url ? '<img class="producto-thumb" src="' + sanitize(p.imagen_url) + '" alt="logo producto">' : '<span class="thumb-placeholder">Sin imagen</span>';
+        const printerAssignment = getProductoPrinterAssignment(Number(p.id || 0));
+        const printerLabel = printerAssignment ? printerDisplayName(printerAssignment) : 'General';
         return '<tr>' +
           '<td>' + Number(p.id) + '</td>' +
           '<td>' + img + '</td>' +
           '<td>' + sanitize(p.sku || '') + '</td>' +
           '<td>' + sanitize(p.nombre || '') + '</td>' +
           '<td>' + sanitize(p.categoria || '') + '</td>' +
+          '<td>' + sanitize(printerLabel) + '</td>' +
           '<td data-field="precio" data-producto-id="' + Number(p.id) + '">' + Number(p.precio || 0).toFixed(2) + '</td>' +
           '<td>' + Number(p.stock_total || 0).toFixed(2) + '</td>' +
           '<td>' + estado + '</td>' +
@@ -1896,6 +1984,8 @@
         }
       }
       document.getElementById('productoProveedorPrincipal').value = p ? String(p.proveedor_principal_id || '') : '';
+      const printerAssignment = p ? getProductoPrinterAssignment(Number(p.id || 0)) : null;
+      refreshProductoPrinterSelector(printerAssignment ? Number(printerAssignment.impresora_id || 0) : 0);
       document.getElementById('productoImagenURL').value = p ? (p.imagen_url || '') : '';
       document.getElementById('productoDescripcion').value = p ? (p.descripcion || '') : '';
       document.getElementById('productoObservaciones').value = p ? (p.observaciones || '') : '';
@@ -1987,6 +2077,15 @@
         document.getElementById('productoImagenURL').value = savedImage.image_url || '';
       }
 
+      let printerWarning = '';
+      if (productoID > 0) {
+        try {
+          await saveProductoPrinterAssignment(productoID);
+        } catch (err) {
+          printerWarning = err && err.message ? err.message : String(err || '');
+        }
+      }
+
       fillProductoForm(null);
       setCRUDFormVisible('productoForm', false);
       if (id > 0) {
@@ -1997,6 +2096,9 @@
       await loadExistencias();
       await loadMovimientos();
       await loadPreciosHistorial();
+      if (printerWarning) {
+        showMessage('Producto guardado, pero no se pudo guardar la impresora de pedido: ' + printerWarning, 'error');
+      }
     }
 
     async function accionProducto(action, id, activo) {

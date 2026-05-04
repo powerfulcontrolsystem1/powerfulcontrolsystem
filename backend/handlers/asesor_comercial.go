@@ -206,10 +206,22 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
 		case http.MethodPost:
 			var payload struct {
-				Email              string  `json:"email"`
-				PorcentajeComision float64 `json:"porcentaje_comision"`
-				MesesAsociacion    int     `json:"meses_asociacion"`
-				Observaciones      string  `json:"observaciones"`
+				Email               string  `json:"email"`
+				PorcentajeComision  float64 `json:"porcentaje_comision"`
+				MesesAsociacion     int     `json:"meses_asociacion"`
+				MetodoPagoComision  string  `json:"metodo_pago_comision"`
+				EntidadFinanciera   string  `json:"entidad_financiera"`
+				TipoCuenta          string  `json:"tipo_cuenta"`
+				NumeroCuenta        string  `json:"numero_cuenta"`
+				TitularCuenta       string  `json:"titular_cuenta"`
+				DocumentoTitular    string  `json:"documento_titular"`
+				EmailPagos          string  `json:"email_pagos"`
+				TelefonoPagos       string  `json:"telefono_pagos"`
+				PeriodicidadPago    string  `json:"periodicidad_pago"`
+				DiaPago             int     `json:"dia_pago"`
+				PagoMinimo          float64 `json:"pago_minimo"`
+				RequiereSoportePago bool    `json:"requiere_soporte_pago"`
+				Observaciones       string  `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
@@ -254,14 +266,26 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			item := dbpkg.AsesorComercial{
-				AdminEmail:         email,
-				AdminNombre:        target.Name,
-				Codigo:             code,
-				PorcentajeComision: roundMoney(payload.PorcentajeComision),
-				MesesAsociacion:    payload.MesesAsociacion,
-				InvitacionExpiraEn: expira,
-				InvitadoPorEmail:   admin.Email,
-				Observaciones:      payload.Observaciones,
+				AdminEmail:          email,
+				AdminNombre:         target.Name,
+				Codigo:              code,
+				PorcentajeComision:  roundMoney(payload.PorcentajeComision),
+				MesesAsociacion:     payload.MesesAsociacion,
+				MetodoPagoComision:  payload.MetodoPagoComision,
+				EntidadFinanciera:   payload.EntidadFinanciera,
+				TipoCuenta:          payload.TipoCuenta,
+				NumeroCuenta:        payload.NumeroCuenta,
+				TitularCuenta:       payload.TitularCuenta,
+				DocumentoTitular:    payload.DocumentoTitular,
+				EmailPagos:          payload.EmailPagos,
+				TelefonoPagos:       payload.TelefonoPagos,
+				PeriodicidadPago:    payload.PeriodicidadPago,
+				DiaPago:             payload.DiaPago,
+				PagoMinimo:          roundMoney(payload.PagoMinimo),
+				RequiereSoportePago: payload.RequiereSoportePago,
+				InvitacionExpiraEn:  expira,
+				InvitadoPorEmail:    admin.Email,
+				Observaciones:       payload.Observaciones,
 			}
 			id, err := dbpkg.CreateAsesorComercial(dbSuper, item, tokenHash)
 			if err != nil {
@@ -287,10 +311,23 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if strings.EqualFold(r.URL.Query().Get("action"), "marcar_pago") {
 				var payload struct {
-					Observaciones string `json:"observaciones"`
+					EstadoPagoComision     string `json:"estado_pago_comision"`
+					MetodoPagoComision     string `json:"metodo_pago_comision"`
+					ReferenciaPagoComision string `json:"referencia_pago_comision"`
+					FechaProgramadaPago    string `json:"fecha_programada_pago"`
+					SoportePagoURL         string `json:"soporte_pago_url"`
+					Observaciones          string `json:"observaciones"`
 				}
 				_ = json.NewDecoder(r.Body).Decode(&payload)
-				if err := dbpkg.MarkAsesorComercialComisionPagada(dbSuper, id, admin.Email, payload.Observaciones); err != nil {
+				if err := dbpkg.MarkAsesorComercialComisionPagada(dbSuper, dbpkg.AsesorComercialComision{
+					ID:                     id,
+					EstadoPagoComision:     payload.EstadoPagoComision,
+					MetodoPagoComision:     payload.MetodoPagoComision,
+					ReferenciaPagoComision: payload.ReferenciaPagoComision,
+					FechaProgramadaPago:    payload.FechaProgramadaPago,
+					SoportePagoURL:         payload.SoportePagoURL,
+					Observaciones:          payload.Observaciones,
+				}, admin.Email); err != nil {
 					http.Error(w, "no se pudo marcar pago: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -298,9 +335,21 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			var payload struct {
-				PorcentajeComision float64 `json:"porcentaje_comision"`
-				MesesAsociacion    int     `json:"meses_asociacion"`
-				Observaciones      string  `json:"observaciones"`
+				PorcentajeComision  float64 `json:"porcentaje_comision"`
+				MesesAsociacion     int     `json:"meses_asociacion"`
+				MetodoPagoComision  string  `json:"metodo_pago_comision"`
+				EntidadFinanciera   string  `json:"entidad_financiera"`
+				TipoCuenta          string  `json:"tipo_cuenta"`
+				NumeroCuenta        string  `json:"numero_cuenta"`
+				TitularCuenta       string  `json:"titular_cuenta"`
+				DocumentoTitular    string  `json:"documento_titular"`
+				EmailPagos          string  `json:"email_pagos"`
+				TelefonoPagos       string  `json:"telefono_pagos"`
+				PeriodicidadPago    string  `json:"periodicidad_pago"`
+				DiaPago             int     `json:"dia_pago"`
+				PagoMinimo          float64 `json:"pago_minimo"`
+				RequiereSoportePago bool    `json:"requiere_soporte_pago"`
+				Observaciones       string  `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
@@ -313,7 +362,24 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if payload.MesesAsociacion <= 0 {
 				payload.MesesAsociacion = 6
 			}
-			if err := dbpkg.UpdateAsesorComercial(dbSuper, id, payload.PorcentajeComision, payload.MesesAsociacion, payload.Observaciones, admin.Email); err != nil {
+			if err := dbpkg.UpdateAsesorComercial(dbSuper, dbpkg.AsesorComercial{
+				ID:                  id,
+				PorcentajeComision:  roundMoney(payload.PorcentajeComision),
+				MesesAsociacion:     payload.MesesAsociacion,
+				MetodoPagoComision:  payload.MetodoPagoComision,
+				EntidadFinanciera:   payload.EntidadFinanciera,
+				TipoCuenta:          payload.TipoCuenta,
+				NumeroCuenta:        payload.NumeroCuenta,
+				TitularCuenta:       payload.TitularCuenta,
+				DocumentoTitular:    payload.DocumentoTitular,
+				EmailPagos:          payload.EmailPagos,
+				TelefonoPagos:       payload.TelefonoPagos,
+				PeriodicidadPago:    payload.PeriodicidadPago,
+				DiaPago:             payload.DiaPago,
+				PagoMinimo:          roundMoney(payload.PagoMinimo),
+				RequiereSoportePago: payload.RequiereSoportePago,
+				Observaciones:       payload.Observaciones,
+			}, admin.Email); err != nil {
 				http.Error(w, "no se pudo actualizar asesor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}

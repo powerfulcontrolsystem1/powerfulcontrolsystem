@@ -61,11 +61,29 @@ type EmpresaImpresoraProducto struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 }
 
+// EmpresaImpresoraCombo define la impresora asignada por combo.
+type EmpresaImpresoraCombo struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	ComboID            int64  `json:"combo_id"`
+	ComboNombre        string `json:"combo_nombre,omitempty"`
+	ImpresoraID        int64  `json:"impresora_id"`
+	ImpresoraNombre    string `json:"impresora_nombre,omitempty"`
+	ImpresoraCodigo    string `json:"impresora_codigo,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
 // EmpresaImpresoraResolucion representa la impresora seleccionada para una ejecución operativa.
 type EmpresaImpresoraResolucion struct {
 	EmpresaID     int64            `json:"empresa_id"`
 	Funcionalidad string           `json:"funcionalidad,omitempty"`
 	ProductoID    int64            `json:"producto_id,omitempty"`
+	ComboID       int64            `json:"combo_id,omitempty"`
+	TipoItem      string           `json:"tipo_item,omitempty"`
 	Fuente        string           `json:"fuente"`
 	Impresora     EmpresaImpresora `json:"impresora"`
 }
@@ -119,6 +137,19 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_producto ON empresa_impresoras_productos(empresa_id, producto_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_productos_printer ON empresa_impresoras_productos(empresa_id, impresora_id);`,
+		`CREATE TABLE IF NOT EXISTS empresa_impresoras_combos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			combo_id INTEGER NOT NULL,
+			impresora_id INTEGER NOT NULL,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_combo ON empresa_impresoras_combos(empresa_id, combo_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_combos_printer ON empresa_impresoras_combos(empresa_id, impresora_id);`,
 	}
 
 	for _, stmt := range stmts {
@@ -220,6 +251,32 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	// Tabla por combo
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "combo_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "impresora_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
 
@@ -892,6 +949,140 @@ func DeleteEmpresaImpresoraProducto(dbConn *sql.DB, empresaID, productoID int64)
 	return err
 }
 
+// ListEmpresaImpresoraCombosByEmpresa lista asignaciones por combo.
+func ListEmpresaImpresoraCombosByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaImpresoraCombo, error) {
+	rows, err := querySQLCompat(dbConn, `SELECT
+		a.id,
+		a.empresa_id,
+		a.combo_id,
+		COALESCE(c.nombre, ''),
+		a.impresora_id,
+		COALESCE(i.nombre, ''),
+		COALESCE(i.codigo, ''),
+		COALESCE(a.fecha_creacion, ''),
+		COALESCE(a.fecha_actualizacion, ''),
+		COALESCE(a.usuario_creador, ''),
+		COALESCE(a.estado, 'activo'),
+		COALESCE(a.observaciones, '')
+	FROM empresa_impresoras_combos a
+	LEFT JOIN combos_productos c ON c.id = a.combo_id AND c.empresa_id = a.empresa_id
+	LEFT JOIN empresa_impresoras i ON i.id = a.impresora_id AND i.empresa_id = a.empresa_id
+	WHERE a.empresa_id = ?
+	ORDER BY c.nombre ASC, a.combo_id ASC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaImpresoraCombo, 0)
+	for rows.Next() {
+		item := EmpresaImpresoraCombo{}
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.ComboID,
+			&item.ComboNombre,
+			&item.ImpresoraID,
+			&item.ImpresoraNombre,
+			&item.ImpresoraCodigo,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		item.Estado = normalizeEmpresaImpresoraEstado(item.Estado)
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func ensureEmpresaComboExists(dbConn *sql.DB, empresaID, comboID int64) error {
+	var id int64
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM combos_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, comboID).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("combo no encontrado")
+		}
+		return err
+	}
+	return nil
+}
+
+// UpsertEmpresaImpresoraCombo crea/actualiza asignacion combo -> impresora.
+func UpsertEmpresaImpresoraCombo(dbConn *sql.DB, payload EmpresaImpresoraCombo) (int64, error) {
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id requerido")
+	}
+	if payload.ComboID <= 0 {
+		return 0, fmt.Errorf("combo_id requerido")
+	}
+	if payload.ImpresoraID <= 0 {
+		return 0, fmt.Errorf("impresora_id requerido")
+	}
+	if err := ensureEmpresaComboExists(dbConn, payload.EmpresaID, payload.ComboID); err != nil {
+		return 0, err
+	}
+	if err := ensureEmpresaImpresoraExistsAndActive(dbConn, payload.EmpresaID, payload.ImpresoraID); err != nil {
+		return 0, err
+	}
+
+	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
+	if payload.UsuarioCreador == "" {
+		payload.UsuarioCreador = "sistema"
+	}
+	payload.Estado = normalizeEmpresaImpresoraEstado(payload.Estado)
+	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
+
+	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_impresoras_combos (
+		empresa_id,
+		combo_id,
+		impresora_id,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	ON CONFLICT(empresa_id, combo_id) DO UPDATE SET
+		impresora_id = excluded.impresora_id,
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = excluded.usuario_creador,
+		estado = excluded.estado,
+		observaciones = excluded.observaciones`,
+		payload.EmpresaID,
+		payload.ComboID,
+		payload.ImpresoraID,
+		payload.UsuarioCreador,
+		payload.Estado,
+		payload.Observaciones,
+	); err != nil {
+		return 0, err
+	}
+
+	var id int64
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ? LIMIT 1`, payload.EmpresaID, payload.ComboID).Scan(&id); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// DeleteEmpresaImpresoraCombo elimina asignacion por combo.
+func DeleteEmpresaImpresoraCombo(dbConn *sql.DB, empresaID, comboID int64) error {
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id requerido")
+	}
+	if comboID <= 0 {
+		return fmt.Errorf("combo_id requerido")
+	}
+	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID)
+	return err
+}
+
 func resolveEmpresaImpresoraByProducto(dbConn *sql.DB, empresaID, productoID int64) (*EmpresaImpresora, error) {
 	row := queryRowSQLCompat(dbConn, `SELECT
 		i.id,
@@ -915,6 +1106,36 @@ func resolveEmpresaImpresoraByProducto(dbConn *sql.DB, empresaID, productoID int
 		AND COALESCE(NULLIF(TRIM(p.estado), ''), 'activo') = 'activo'
 		AND COALESCE(NULLIF(TRIM(i.estado), ''), 'activo') = 'activo'
 	LIMIT 1`, empresaID, productoID)
+	item, err := scanEmpresaImpresora(row)
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func resolveEmpresaImpresoraByCombo(dbConn *sql.DB, empresaID, comboID int64) (*EmpresaImpresora, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT
+		i.id,
+		i.empresa_id,
+		COALESCE(i.codigo, ''),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.tipo_conexion, 'red'),
+		COALESCE(i.direccion, ''),
+		COALESCE(i.area_operativa, ''),
+		COALESCE(i.formato_impresion, 'pos'),
+		`+empresaImpresoraDefaultSelectExpr("i")+`,
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'activo'),
+		COALESCE(i.observaciones, '')
+	FROM empresa_impresoras_combos c
+	INNER JOIN empresa_impresoras i ON i.id = c.impresora_id AND i.empresa_id = c.empresa_id
+	WHERE c.empresa_id = ?
+		AND c.combo_id = ?
+		AND COALESCE(NULLIF(TRIM(c.estado), ''), 'activo') = 'activo'
+		AND COALESCE(NULLIF(TRIM(i.estado), ''), 'activo') = 'activo'
+	LIMIT 1`, empresaID, comboID)
 	item, err := scanEmpresaImpresora(row)
 	if err != nil {
 		return nil, err
@@ -981,20 +1202,42 @@ func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*Em
 	return item, nil
 }
 
-// ResolveEmpresaImpresora selecciona impresora por producto -> funcionalidad -> predeterminada.
-func ResolveEmpresaImpresora(dbConn *sql.DB, empresaID int64, funcionalidad string, productoID int64) (*EmpresaImpresoraResolucion, error) {
+// ResolveEmpresaImpresoraOperacion selecciona impresora por item -> funcionalidad -> predeterminada.
+func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcionalidad string, tipoItem string, referenciaID int64) (*EmpresaImpresoraResolucion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id requerido")
 	}
 	funcionalidad = normalizeEmpresaImpresoraFuncionalidad(funcionalidad)
+	tipoItem = strings.ToLower(strings.TrimSpace(tipoItem))
+	if tipoItem == "" && referenciaID > 0 {
+		tipoItem = "producto"
+	}
 
-	if productoID > 0 {
-		impresora, err := resolveEmpresaImpresoraByProducto(dbConn, empresaID, productoID)
+	if tipoItem == "combo" && referenciaID > 0 {
+		impresora, err := resolveEmpresaImpresoraByCombo(dbConn, empresaID, referenciaID)
 		if err == nil {
 			return &EmpresaImpresoraResolucion{
 				EmpresaID:     empresaID,
 				Funcionalidad: funcionalidad,
-				ProductoID:    productoID,
+				ComboID:       referenciaID,
+				TipoItem:      "combo",
+				Fuente:        "combo",
+				Impresora:     *impresora,
+			}, nil
+		}
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
+	}
+
+	if tipoItem == "producto" && referenciaID > 0 {
+		impresora, err := resolveEmpresaImpresoraByProducto(dbConn, empresaID, referenciaID)
+		if err == nil {
+			return &EmpresaImpresoraResolucion{
+				EmpresaID:     empresaID,
+				Funcionalidad: funcionalidad,
+				ProductoID:    referenciaID,
+				TipoItem:      "producto",
 				Fuente:        "producto",
 				Impresora:     *impresora,
 			}, nil
@@ -1010,7 +1253,9 @@ func ResolveEmpresaImpresora(dbConn *sql.DB, empresaID int64, funcionalidad stri
 			return &EmpresaImpresoraResolucion{
 				EmpresaID:     empresaID,
 				Funcionalidad: funcionalidad,
-				ProductoID:    productoID,
+				ProductoID:    mapEmpresaImpresoraProductoID(tipoItem, referenciaID),
+				ComboID:       mapEmpresaImpresoraComboID(tipoItem, referenciaID),
+				TipoItem:      tipoItem,
 				Fuente:        "funcionalidad",
 				Impresora:     *impresora,
 			}, nil
@@ -1030,8 +1275,29 @@ func ResolveEmpresaImpresora(dbConn *sql.DB, empresaID int64, funcionalidad stri
 	return &EmpresaImpresoraResolucion{
 		EmpresaID:     empresaID,
 		Funcionalidad: funcionalidad,
-		ProductoID:    productoID,
+		ProductoID:    mapEmpresaImpresoraProductoID(tipoItem, referenciaID),
+		ComboID:       mapEmpresaImpresoraComboID(tipoItem, referenciaID),
+		TipoItem:      tipoItem,
 		Fuente:        "predeterminada",
 		Impresora:     *impresora,
 	}, nil
+}
+
+func mapEmpresaImpresoraProductoID(tipoItem string, referenciaID int64) int64 {
+	if tipoItem == "producto" {
+		return referenciaID
+	}
+	return 0
+}
+
+func mapEmpresaImpresoraComboID(tipoItem string, referenciaID int64) int64 {
+	if tipoItem == "combo" {
+		return referenciaID
+	}
+	return 0
+}
+
+// ResolveEmpresaImpresora mantiene compatibilidad con la resolucion historica por producto.
+func ResolveEmpresaImpresora(dbConn *sql.DB, empresaID int64, funcionalidad string, productoID int64) (*EmpresaImpresoraResolucion, error) {
+	return ResolveEmpresaImpresoraOperacion(dbConn, empresaID, funcionalidad, "producto", productoID)
 }

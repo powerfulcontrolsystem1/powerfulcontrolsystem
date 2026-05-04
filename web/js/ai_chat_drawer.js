@@ -1161,6 +1161,8 @@
       hideBtn = document.createElement('button');
       hideBtn.id = ROBOT_HIDE_ID;
       hideBtn.type = 'button';
+      hideBtn.setAttribute('aria-label', 'Ocultar robot IA');
+      hideBtn.title = 'Ocultar robot IA';
       hideBtn.addEventListener('click', function (event) {
         event.stopPropagation();
         hideRobotAssistant(toggleBtn || document.getElementById(TOGGLE_ID));
@@ -1173,6 +1175,8 @@
       showBtn = document.createElement('button');
       showBtn.id = ROBOT_SHOW_ID;
       showBtn.type = 'button';
+      showBtn.setAttribute('aria-label', 'Mostrar robot IA');
+      showBtn.title = 'Mostrar robot IA';
       showBtn.style.display = 'none';
       showBtn.addEventListener('click', function (event) {
         event.stopPropagation();
