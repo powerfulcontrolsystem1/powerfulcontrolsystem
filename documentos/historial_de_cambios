@@ -18446,3 +18446,32 @@ Archivos modificados:
 - web/menu.js
 - web/perfil_red_social.html
 - web/red_social_comercial.html
+
+2026-05-04: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/contextual_help_test.go
+- backend/db/roles_tipos_usuario.go
+- backend/handlers/onlyoffice.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/tmp_tools/qa_calipso_modulos/reporte_modulos_calipso.json
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- web/Juegos/menu_juegos.html
+- web/administrar_empresa/nextcloud.html
+- web/administrar_empresa/radio_online.html
+- web/ayuda/ayuda.html
+- web/ayuda/ayuda_contextual.html
+- web/ayuda/chat_ia.html
+- web/ayuda/login_administradores.html
+- web/estilos.css
+- web/js/contextual_help.js
+- web/js/help_navigation.js
+- web/js/radio_online.js
+- web/js/radio_player.js
+- web/login.html
+- web/login_usuario.html
+- web/super/roles_de_usuario.html
