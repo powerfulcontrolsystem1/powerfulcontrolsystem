@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ayuda contextual</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .context-help-page {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    .context-help-hero {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: linear-gradient(180deg, var(--surface-soft), var(--surface));
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .context-help-hero h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 3vw, 2.25rem);
+      letter-spacing: 0;
+    }
+    .context-help-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .context-help-chip {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: .88rem;
+      font-weight: 800;
+      padding: 7px 10px;
+    }
+    .context-help-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 12px;
+    }
+    .context-help-card h2,
+    .context-help-card h3 {
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+    .context-help-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 20px;
+    }
+    .context-help-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body class="empresa-subpage" data-context-help="off">
+  <div class="container empresa-module">
+    <main class="context-help-page">
+      <section class="context-help-hero">
+        <div>
+          <p class="form-help m-0">Ayuda contextual</p>
+          <h1 id="helpTitle">Ayuda de la seccion</h1>
+          <p id="helpIntro" class="form-help mt-8">Esta guia explica para que sirve la seccion seleccionada y que revisar antes de operar.</p>
+        </div>
+        <div class="context-help-meta">
+          <span id="helpPageChip" class="context-help-chip">Pagina</span>
+          <span id="helpSectionChip" class="context-help-chip">Seccion</span>
+          <span id="helpTypeChip" class="context-help-chip">Tipo</span>
+        </div>
+        <div class="context-help-actions">
+          <a id="backToOrigin" class="btn secondary" href="/index.html">Volver a la pantalla anterior</a>
+          <a id="openFullHelp" class="btn" href="/ayuda/ayuda.html">Abrir centro de ayuda</a>
+        </div>
+      </section>
+
+      <section class="card empresa-section context-help-card">
+        <h2>Que hace esta seccion</h2>
+        <p id="helpPurpose" class="form-help">Centraliza opciones y datos operativos de la pantalla actual. Usa los filtros, botones y formularios de la seccion para registrar cambios con trazabilidad.</p>
+      </section>
+
+      <section class="context-help-grid">
+        <article class="card empresa-section context-help-card">
+          <h3>Antes de usarla</h3>
+          <ul id="helpBefore" class="context-help-list form-help"></ul>
+        </article>
+        <article class="card empresa-section context-help-card">
+          <h3>Uso recomendado</h3>
+          <ol id="helpSteps" class="context-help-list form-help"></ol>
+        </article>
+        <article class="card empresa-section context-help-card">
+          <h3>Si algo falla</h3>
+          <ul id="helpTroubleshooting" class="context-help-list form-help"></ul>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function normalize(value) {
+      return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+    }
+
+    function escapeHtml(value) {
+      return normalize(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseParams() {
+      var params = new URLSearchParams(window.location.search || '');
+      return {
+        pagina: normalize(params.get('pagina')) || 'Pagina',
+        seccion: normalize(params.get('seccion')) || 'Seccion',
+        tipo: normalize(params.get('tipo')) || 'seccion',
+        origen: normalize(params.get('origen')),
+        clave: normalize(params.get('clave'))
+      };
+    }
+
+    function lowerText(ctx) {
+      return (ctx.pagina + ' ' + ctx.seccion + ' ' + ctx.origen + ' ' + ctx.clave).toLowerCase();
+    }
+
+    function moduleHelp(ctx) {
+      var text = lowerText(ctx);
+      var base = {
+        purpose: 'Centraliza opciones y datos operativos de la pantalla actual. Usa los filtros, botones y formularios de la seccion para registrar cambios con trazabilidad.',
+        before: [
+          'Confirma que estas trabajando en la empresa correcta.',
+          'Verifica que tu usuario tenga permisos para crear, editar o consultar esta informacion.',
+          'Revisa los campos obligatorios antes de guardar.'
+        ],
+        steps: [
+          'Lee el encabezado de la tarjeta para identificar el alcance de la seccion.',
+          'Completa o filtra la informacion necesaria.',
+          'Guarda los cambios y revisa el mensaje de confirmacion.'
+        ],
+        troubleshooting: [
+          'Si no carga informacion, actualiza la pagina y vuelve a iniciar sesion si es necesario.',
+          'Si un boton no aparece, revisa la configuracion y los permisos del rol.',
+          'Si el guardado falla, copia el mensaje visible y revisa auditoria o consola del servidor.'
+        ]
+      };
+
+      var catalog = [
+        {
+          match: ['carrito', 'control electrico', 'gpio', 'raspberry'],
+          purpose: 'Permite operar aparatos electricos vinculados a una estacion o habitacion, como luces, jacuzzi, ventilacion o puertas, usando los reles configurados en Raspberry Pi.',
+          before: ['La empresa debe tener Control electrico habilitado.', 'La estacion debe tener aparatos/reles activos.', 'La Raspberry Pi debe estar encendida, con IP correcta y API disponible.'],
+          steps: ['Abre la tarjeta del aparato que quieres controlar.', 'Verifica el estado actual, GPIO y Raspberry asignada.', 'Usa Encender o Apagar y espera el mensaje de confirmacion.'],
+          troubleshooting: ['Si el comando se omite, revisa que el modulo este habilitado.', 'Si hay error de conexion, valida IP, puerto, token y red de la Raspberry.', 'Si el boton no aparece en carrito, activa el check Control electrico en la configuracion del carrito.']
+        },
+        {
+          match: ['producto', 'inventario', 'bodega', 'combo'],
+          purpose: 'Administra productos, existencias, vencimientos, combos, bodegas e informacion de venta para mantener inventario confiable.',
+          before: ['Define bodega y categoria cuando aplique.', 'Revisa codigo, precio, impuestos y vencimiento.', 'Confirma impresora de pedido si el producto o combo requiere comanda.'],
+          steps: ['Crea o selecciona el producto.', 'Completa datos comerciales y operativos.', 'Guarda y prueba agregandolo al carrito.'],
+          troubleshooting: ['Si no aparece en venta, valida estado activo y stock.', 'Si imprime mal, revisa la impresora asignada al producto o combo.', 'Si el vencimiento alerta, revisa lote y fecha registrada.']
+        },
+        {
+          match: ['tarifa', 'motel', 'hotel', 'minutos', 'habitacion'],
+          purpose: 'Configura tarifas por tiempo, dia, personas o estacion para calcular cobros de hotel/motel de forma consistente.',
+          before: ['Confirma estacion/habitacion asociada.', 'Define valores, personas incluidas y vigencia.', 'Revisa tolerancias para horas extra o minutos adicionales.'],
+          steps: ['Selecciona o crea la tarifa.', 'Configura tipo, valor y condiciones.', 'Prueba cambiar tarifa desde el carrito de una estacion activa.'],
+          troubleshooting: ['Si no calcula, revisa que la tarifa este activa.', 'Si el valor no coincide, valida personas, minutos base y tolerancia.', 'Si no aparece para la estacion, confirma la asignacion de tarifa.']
+        },
+        {
+          match: ['corte', 'caja', 'ingreso', 'egreso', 'efectivo', 'debito', 'credito'],
+          purpose: 'Controla el cierre de caja y permite configurar que datos aparecen en el reporte, como ingresos, egresos, facturas y medios de pago.',
+          before: ['Verifica periodo, caja y usuario responsable.', 'Confirma que los movimientos del dia esten registrados.', 'Revisa los checks visibles del reporte.'],
+          steps: ['Selecciona el rango o turno.', 'Consulta el resumen por medio de pago.', 'Genera o imprime el corte con los campos requeridos.'],
+          troubleshooting: ['Si falta un pago, revisa el carrito/factura original.', 'Si no suma egresos, valida que esten aprobados.', 'Si el reporte oculta datos, revisa la configuracion del corte.']
+        },
+        {
+          match: ['gimnasio', 'membresia', 'cliente'],
+          purpose: 'Gestiona clientes, membresias, asistencias y estado operativo del gimnasio.',
+          before: ['Crea el cliente.', 'Define plan o membresia vigente.', 'Revisa restricciones del rol.'],
+          steps: ['Busca el cliente.', 'Registra membresia, pago o asistencia.', 'Consulta vencimientos y estado.'],
+          troubleshooting: ['Si no deja ingresar, revisa vencimiento o deuda.', 'Si no aparece el cliente, confirma empresa y documento.', 'Si el pago no cruza, revisa el carrito o movimiento financiero.']
+        },
+        {
+          match: ['odontologia', 'odontologico', 'turno', 'cita'],
+          purpose: 'Administra pacientes, citas, turnos y datos clinicos/operativos del consultorio.',
+          before: ['Confirma paciente y profesional.', 'Define fecha, hora y servicio.', 'Revisa permisos del rol para datos sensibles.'],
+          steps: ['Crea o selecciona paciente.', 'Agenda turno/cita.', 'Registra atencion, pago o seguimiento.'],
+          troubleshooting: ['Si no aparece disponibilidad, revisa horarios configurados.', 'Si el turno no se guarda, valida campos obligatorios.', 'Si hay restricciones, revisa permisos del usuario.']
+        },
+        {
+          match: ['gps', 'ubicacion', 'dispositivo', 'recorrido'],
+          purpose: 'Controla dispositivos GPS de diferentes marcas, ubicaciones, recorridos y estado de conectividad.',
+          before: ['Registra marca, identificador y protocolo.', 'Confirma que el dispositivo envie datos.', 'Verifica permisos de ubicacion y empresa.'],
+          steps: ['Agrega el dispositivo.', 'Valida ultima ubicacion recibida.', 'Consulta recorridos y alertas.'],
+          troubleshooting: ['Si no actualiza, revisa token, marca y frecuencia.', 'Si la ubicacion es incorrecta, valida zona horaria y formato.', 'Si no aparece en mapa, confirma que tenga coordenadas validas.']
+        },
+        {
+          match: ['onlyoffice', 'nextcloud', 'documento'],
+          purpose: 'Permite configurar y usar documentos colaborativos con Nextcloud y OnlyOffice.',
+          before: ['Verifica URLs, secretos y estado de servicio.', 'Confirma que los secretos fueron registrados.', 'Valida permisos del usuario.'],
+          steps: ['Revisa la configuracion del servicio.', 'Prueba crear o abrir un documento.', 'Confirma edicion y guardado.'],
+          troubleshooting: ['Si no abre editor, valida URL publica y certificados.', 'Si falla guardado, revisa callback y secreto.', 'Si no lista archivos, revisa credenciales de Nextcloud.']
+        }
+      ];
+
+      for (var i = 0; i < catalog.length; i += 1) {
+        var item = catalog[i];
+        if (item.match.some(function(term) { return text.indexOf(term) !== -1; })) {
+          return item;
+        }
+      }
+      return base;
+    }
+
+    function fillList(id, rows) {
+      var el = document.getElementById(id);
+      el.innerHTML = rows.map(function(row) { return '<li>' + escapeHtml(row) + '</li>'; }).join('');
+    }
+
+    function bootstrap() {
+      var ctx = parseParams();
+      var info = moduleHelp(ctx);
+      document.getElementById('helpTitle').textContent = ctx.seccion;
+      document.getElementById('helpIntro').textContent = 'Ayuda para "' + ctx.seccion + '" dentro de "' + ctx.pagina + '".';
+      document.getElementById('helpPageChip').textContent = ctx.pagina;
+      document.getElementById('helpSectionChip').textContent = ctx.seccion;
+      document.getElementById('helpTypeChip').textContent = ctx.tipo === 'page' ? 'Pagina completa' : 'Seccion o tarjeta';
+      document.getElementById('helpPurpose').textContent = info.purpose;
+      fillList('helpBefore', info.before);
+      fillList('helpSteps', info.steps);
+      fillList('helpTroubleshooting', info.troubleshooting);
+      if (ctx.origen && ctx.origen.charAt(0) === '/') {
+        document.getElementById('backToOrigin').href = ctx.origen;
+      }
+      document.getElementById('openFullHelp').href = '/ayuda/ayuda.html?buscar=' + encodeURIComponent(ctx.seccion);
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

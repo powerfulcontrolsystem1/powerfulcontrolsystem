@@ -150,6 +150,12 @@
               Activar tarjeta de acceso cliente VIP
             </label>
           </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgControlElectrico" type="checkbox" checked>
+              Mostrar boton Control electrico
+            </label>
+          </div>
         </div>
 
         <div class="form-row">
@@ -262,6 +268,7 @@
         mostrar_tarjeta_totales_detalles: true,
         mostrar_tarjeta_cobro_estados: true,
         mostrar_tarjeta_acciones_carrito: true,
+        mostrar_control_electrico_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: true,
         mostrar_tarjeta_vip_cliente: true
@@ -293,6 +300,7 @@
         mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : !!src.mostrar_tarjeta_totales_detalles,
         mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : !!src.mostrar_tarjeta_cobro_estados,
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : !!src.mostrar_tarjeta_acciones_carrito,
+        mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : !!src.mostrar_control_electrico_carrito,
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente
@@ -424,6 +432,7 @@
       document.getElementById('carritoCfgTarjetaValoresPago').checked = !!normalized.mostrar_tarjeta_valores_pago;
       document.getElementById('carritoCfgTarjetaComision').checked = !!normalized.mostrar_tarjeta_comision;
       document.getElementById('carritoCfgTarjetaVip').checked = !!normalized.mostrar_tarjeta_vip_cliente;
+      document.getElementById('carritoCfgControlElectrico').checked = !!normalized.mostrar_control_electrico_carrito;
       document.getElementById('carritoCfgDescuentos').checked = !!normalized.mostrar_descuentos;
       document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
       document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;
@@ -457,6 +466,7 @@
           'carritoCfgTarjetaValoresPago',
           'carritoCfgTarjetaComision',
           'carritoCfgTarjetaVip',
+          'carritoCfgControlElectrico',
           'carritoCfgDescuentos',
           'carritoCfgPropina',
           'carritoCfgComision',
@@ -499,6 +509,7 @@
           mostrar_tarjeta_valores_pago: document.getElementById('carritoCfgTarjetaValoresPago').checked,
           mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,
           mostrar_tarjeta_vip_cliente: document.getElementById('carritoCfgTarjetaVip').checked,
+          mostrar_control_electrico_carrito: document.getElementById('carritoCfgControlElectrico').checked,
           mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
           mostrar_propina: document.getElementById('carritoCfgPropina').checked,
           mostrar_comision: document.getElementById('carritoCfgComision').checked,

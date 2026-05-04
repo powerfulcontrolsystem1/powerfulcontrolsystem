@@ -523,6 +523,71 @@ func noCacheAdminStaticHandler(next http.Handler) http.Handler {
 	})
 }
 
+type contextualHelpCaptureWriter struct {
+	header http.Header
+	body   []byte
+	status int
+}
+
+func (w *contextualHelpCaptureWriter) Header() http.Header {
+	return w.header
+}
+
+func (w *contextualHelpCaptureWriter) WriteHeader(status int) {
+	if w.status == 0 {
+		w.status = status
+	}
+}
+
+func (w *contextualHelpCaptureWriter) Write(data []byte) (int, error) {
+	if w.status == 0 {
+		w.status = http.StatusOK
+	}
+	w.body = append(w.body, data...)
+	return len(data), nil
+}
+
+func contextualHelpStaticHandler(next http.Handler) http.Handler {
+	const scriptTag = `<script src="/js/contextual_help.js?v=20260504"></script>`
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+		shouldInspect := r.Method == http.MethodGet && (path == "/" || strings.HasSuffix(path, "/") || strings.HasSuffix(path, ".html"))
+		if !shouldInspect {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		rec := &contextualHelpCaptureWriter{header: make(http.Header)}
+		next.ServeHTTP(rec, r)
+		status := rec.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+
+		body := string(rec.body)
+		lowerBody := strings.ToLower(body)
+		if status == http.StatusOK && strings.Contains(lowerBody, "</body>") && !strings.Contains(lowerBody, "contextual_help.js") {
+			idx := strings.LastIndex(lowerBody, "</body>")
+			body = body[:idx] + "  " + scriptTag + "\n" + body[idx:]
+			rec.body = []byte(body)
+			rec.header.Del("Content-Length")
+			if strings.TrimSpace(rec.header.Get("Content-Type")) == "" {
+				rec.header.Set("Content-Type", "text/html; charset=utf-8")
+			}
+		}
+
+		for key, values := range rec.header {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+		w.WriteHeader(status)
+		if len(rec.body) > 0 {
+			_, _ = w.Write(rec.body)
+		}
+	})
+}
+
 func resolveDownloadsDir() string {
 	candidates := []string{
 		"descargas",
@@ -1105,7 +1170,7 @@ func main() {
 	}
 	faviconPath := filepath.Join(webDir, "favicon.ico")
 	fallbackFaviconPath := filepath.Join(webDir, "img", "punto_venta.png")
-	staticFS := noCacheAdminStaticHandler(http.FileServer(http.Dir(webDir)))
+	staticFS := noCacheAdminStaticHandler(contextualHelpStaticHandler(http.FileServer(http.Dir(webDir))))
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		if info, err := os.Stat(faviconPath); err == nil && !info.IsDir() {
 			http.ServeFile(w, r, faviconPath)

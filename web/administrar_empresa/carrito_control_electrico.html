@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Control electrico del carrito</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --cart-electric-panel: var(--card);
+      --cart-electric-soft: var(--surface-soft);
+      --cart-electric-text: var(--text);
+      --cart-electric-muted: var(--muted);
+      --cart-electric-line: var(--border);
+      --cart-electric-success: var(--success);
+      --cart-electric-danger: var(--danger);
+      --cart-electric-shadow: color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    body.cart-electric-page {
+      margin: 0;
+      background: linear-gradient(180deg, var(--bg-alt), var(--bg));
+      color: var(--cart-electric-text);
+    }
+
+    .cart-electric-shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .cart-electric-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--cart-electric-line);
+    }
+
+    .cart-electric-header h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 3vw, 2.35rem);
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .cart-electric-meta {
+      margin: 7px 0 0;
+      color: var(--cart-electric-muted);
+      line-height: 1.45;
+    }
+
+    .cart-electric-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .cart-electric-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .cart-electric-kpi,
+    .device-card {
+      border: 1px solid var(--cart-electric-line);
+      border-radius: 8px;
+      background: var(--cart-electric-panel);
+      box-shadow: 0 10px 22px var(--cart-electric-shadow);
+    }
+
+    .cart-electric-kpi {
+      padding: 13px;
+      min-height: 74px;
+    }
+
+    .cart-electric-kpi small {
+      display: block;
+      color: var(--cart-electric-muted);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .cart-electric-kpi strong {
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1.1;
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+      gap: 12px;
+    }
+
+    .device-card {
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .device-photo {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--cart-electric-panel)), var(--cart-electric-soft));
+      border-bottom: 1px solid var(--cart-electric-line);
+    }
+
+    .device-photo-empty {
+      display: grid;
+      place-items: center;
+      color: var(--cart-electric-muted);
+      font-size: .82rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .device-body {
+      padding: 13px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .device-title-row {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: flex-start;
+      min-width: 0;
+    }
+
+    .device-title {
+      min-width: 0;
+    }
+
+    .device-title strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 1rem;
+    }
+
+    .device-title small,
+    .device-details {
+      color: var(--cart-electric-muted);
+      line-height: 1.45;
+    }
+
+    .device-details {
+      display: grid;
+      gap: 4px;
+      font-size: .9rem;
+    }
+
+    .device-footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 13px 13px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--cart-electric-line);
+      background: var(--cart-electric-soft);
+      color: var(--cart-electric-text);
+      font-size: .78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-pill.is-on {
+      color: var(--cart-electric-success);
+      border-color: color-mix(in srgb, var(--cart-electric-success) 38%, var(--cart-electric-line));
+      background: color-mix(in srgb, var(--cart-electric-success) 13%, var(--cart-electric-soft));
+    }
+
+    .status-pill.is-off {
+      color: var(--cart-electric-muted);
+    }
+
+    .status-pill.is-error {
+      color: var(--cart-electric-danger);
+      border-color: color-mix(in srgb, var(--cart-electric-danger) 34%, var(--cart-electric-line));
+      background: color-mix(in srgb, var(--cart-electric-danger) 12%, var(--cart-electric-soft));
+    }
+
+    .cart-electric-message {
+      margin: 0 0 12px;
+    }
+
+    @media (max-width: 760px) {
+      .cart-electric-shell {
+        padding: 14px;
+      }
+
+      .cart-electric-header {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-electric-actions {
+        justify-content: flex-start;
+      }
+
+      .cart-electric-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="empresa-subpage cart-electric-page">
+  <main class="cart-electric-shell">
+    <header class="cart-electric-header">
+      <div>
+        <h1>Control electrico</h1>
+        <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
+      </div>
+      <div class="cart-electric-actions">
+        <button id="cartElectricRefreshBtn" class="btn secondary" type="button">Actualizar</button>
+        <button id="cartElectricBackBtn" class="btn secondary" type="button">Volver al carrito</button>
+      </div>
+    </header>
+
+    <section class="cart-electric-summary" aria-label="Resumen">
+      <div class="cart-electric-kpi">
+        <small>Aparatos</small>
+        <strong id="cartElectricTotalDevices">0</strong>
+      </div>
+      <div class="cart-electric-kpi">
+        <small>Encendidos</small>
+        <strong id="cartElectricOnDevices">0</strong>
+      </div>
+      <div class="cart-electric-kpi">
+        <small>Programados</small>
+        <strong id="cartElectricScheduledDevices">0</strong>
+      </div>
+    </section>
+
+    <div id="cartElectricMessage" class="form-help cart-electric-message"></div>
+    <section id="cartElectricGrid" class="device-grid" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      estacionID: 0,
+      estacionNombre: '',
+      carritoID: 0,
+      carritoCodigo: '',
+      config: null,
+      reles: [],
+      sendingID: 0
+    };
+
+    function parsePositiveInt(raw) {
+      const n = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(n)) return 0;
+      const out = Math.trunc(n);
+      return out > 0 ? out : 0;
+    }
+
+    function normalize(raw) {
+      return String(raw == null ? '' : raw).trim();
+    }
+
+    function escapeHtml(raw) {
+      return normalize(raw)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, type) {
+      const box = document.getElementById('cartElectricMessage');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = 'form-help cart-electric-message' + (type === 'error' ? ' error' : (type === 'success' ? ' success' : ''));
+    }
+
+    function buildCarritoURL() {
+      const params = new URLSearchParams();
+      if (state.empresaID) params.set('empresa_id', String(state.empresaID));
+      if (state.estacionID) params.set('estacion_id', String(state.estacionID));
+      if (state.estacionNombre) params.set('estacion_nombre', state.estacionNombre);
+      if (state.carritoID) params.set('carrito_id', String(state.carritoID));
+      if (state.carritoCodigo) params.set('carrito_codigo', state.carritoCodigo);
+      return '/administrar_empresa/carrito_de_compras.html?' + params.toString();
+    }
+
+    function setMeta() {
+      const parts = [];
+      if (state.estacionNombre) parts.push(state.estacionNombre);
+      if (state.estacionID) parts.push('Estacion #' + state.estacionID);
+      if (state.carritoCodigo) parts.push('Carrito ' + state.carritoCodigo);
+      document.getElementById('cartElectricMeta').textContent = parts.join(' | ') || 'Estacion no detectada';
+    }
+
+    function estadoInfo(rele) {
+      const raw = normalize(rele && rele.ultimo_estado).toLowerCase();
+      if (raw === 'on' || raw === 'encendido') return { label: 'Encendido', cls: 'is-on' };
+      if (raw === 'off' || raw === 'apagado') return { label: 'Apagado', cls: 'is-off' };
+      if (normalize(rele && rele.ultimo_error)) return { label: 'Error', cls: 'is-error' };
+      return { label: 'Sin estado', cls: 'is-off' };
+    }
+
+    function scheduleLabel(rele) {
+      if (!rele || !rele.programacion_habilitada) return 'Sin programacion';
+      const on = normalize(rele.hora_encendido) || '--:--';
+      const off = normalize(rele.hora_apagado) || '--:--';
+      const days = normalize(rele.programacion_dias) || 'todos';
+      return 'ON ' + on + ' | OFF ' + off + ' | ' + days;
+    }
+
+    function photoHTML(rele) {
+      const url = normalize(rele && rele.imagen_url);
+      if (!url) {
+        return '<div class="device-photo device-photo-empty">Sin foto</div>';
+      }
+      return '<img class="device-photo" src="' + escapeHtml(url) + '" alt="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">';
+    }
+
+    function render() {
+      const grid = document.getElementById('cartElectricGrid');
+      const cfg = state.config || {};
+      const reles = Array.isArray(state.reles) ? state.reles : [];
+      const total = reles.length;
+      const onCount = reles.filter(function(rele) {
+        const raw = normalize(rele.ultimo_estado).toLowerCase();
+        return raw === 'on' || raw === 'encendido';
+      }).length;
+      const scheduled = reles.filter(function(rele) { return !!rele.programacion_habilitada; }).length;
+
+      document.getElementById('cartElectricTotalDevices').textContent = String(total);
+      document.getElementById('cartElectricOnDevices').textContent = String(onCount);
+      document.getElementById('cartElectricScheduledDevices').textContent = String(scheduled);
+
+      if (!cfg.habilitado) {
+        grid.innerHTML = '<div class="alert">El modulo de control electrico no esta activo para esta empresa.</div>';
+        return;
+      }
+      if (!reles.length) {
+        grid.innerHTML = '<div class="alert">Esta estacion no tiene aparatos configurados en Control electrico.</div>';
+        return;
+      }
+
+      grid.innerHTML = reles.map(function(rele) {
+        const info = estadoInfo(rele);
+        const disabled = state.sendingID > 0 || !cfg.habilitado;
+        return '<article class="device-card">' +
+          photoHTML(rele) +
+          '<div class="device-body">' +
+            '<div class="device-title-row">' +
+              '<div class="device-title">' +
+                '<strong title="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '</strong>' +
+                '<small>' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</small>' +
+              '</div>' +
+              '<span class="status-pill ' + info.cls + '">' + escapeHtml(info.label) + '</span>' +
+            '</div>' +
+            '<div class="device-details">' +
+              '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
+              '<span>Modo: ' + escapeHtml(rele.modo || 'manual') + '</span>' +
+              '<span>' + escapeHtml(scheduleLabel(rele)) + '</span>' +
+              (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="device-footer">' +
+            '<button class="btn secondary" type="button" data-control-state="off" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Apagar</button>' +
+            '<button class="btn add" type="button" data-control-state="on" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Encender</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+    }
+
+    async function ensureOk(res) {
+      if (res && res.ok) return;
+      let text = '';
+      try {
+        text = await res.text();
+      } catch (_) {}
+      throw new Error(text || 'No se pudo completar la solicitud.');
+    }
+
+    async function fetchControls() {
+      if (!state.empresaID || !state.estacionID) {
+        setMessage('No se pudo identificar la empresa o la estacion.', 'error');
+        render();
+        return;
+      }
+      setMessage('Cargando aparatos...', '');
+      const url = new URL('/api/empresa/control_electrico', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('action', 'estacion_controls');
+      url.searchParams.set('estacion_id', String(state.estacionID));
+      const res = await fetch(url.pathname + url.search, { credentials: 'same-origin' });
+      await ensureOk(res);
+      const payload = await res.json();
+      state.config = payload.config || {};
+      state.reles = Array.isArray(payload.reles) ? payload.reles : [];
+      setMessage('', '');
+      render();
+    }
+
+    async function sendCommand(releID, estado) {
+      const id = parsePositiveInt(releID);
+      if (!id) {
+        setMessage('Selecciona un aparato valido.', 'error');
+        return;
+      }
+      try {
+        state.sendingID = id;
+        setMessage(estado === 'on' ? 'Encendiendo aparato...' : 'Apagando aparato...', '');
+        render();
+        const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=probar_rele';
+        const res = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estacion_id: state.estacionID, rele_id: id, estado: estado })
+        });
+        await ensureOk(res);
+        const result = await res.json();
+        await fetchControls();
+        setMessage(result && result.skipped ? (result.message || 'Comando omitido.') : (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.'), result && result.skipped ? 'error' : 'success');
+      } catch (err) {
+        setMessage(err.message || 'No se pudo enviar el comando electrico.', 'error');
+      } finally {
+        state.sendingID = 0;
+        render();
+      }
+    }
+
+    function bootstrap() {
+      const params = new URLSearchParams(window.location.search || '');
+      state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      state.estacionID = parsePositiveInt(params.get('estacion_id'));
+      state.estacionNombre = normalize(params.get('estacion_nombre'));
+      state.carritoID = parsePositiveInt(params.get('carrito_id'));
+      state.carritoCodigo = normalize(params.get('carrito_codigo'));
+      setMeta();
+      render();
+
+      document.getElementById('cartElectricBackBtn').addEventListener('click', function() {
+        window.location.href = buildCarritoURL();
+      });
+      document.getElementById('cartElectricRefreshBtn').addEventListener('click', function() {
+        fetchControls().catch(function(err) {
+          setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
+        });
+      });
+      document.getElementById('cartElectricGrid').addEventListener('click', function(ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-control-state]') : null;
+        if (!btn) return;
+        sendCommand(btn.getAttribute('data-rele-id'), btn.getAttribute('data-control-state'));
+      });
+
+      fetchControls().catch(function(err) {
+        setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
+      });
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>
