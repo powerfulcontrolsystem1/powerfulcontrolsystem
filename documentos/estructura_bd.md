@@ -1076,6 +1076,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_creditos.id -> empresa_creditos_cuotas.credito_id, empresa_creditos_movimientos.credito_id
 - empresa_creditos_cuotas.id -> empresa_creditos_movimientos.cuota_id (opcional)
 - empresa_backups.id -> empresa_backups_restauraciones.backup_id [relacion logica de restauracion]
+- empresa_control_electrico_config.empresa_id -> empresas.id
+- empresa_control_electrico_reles.empresa_id -> empresas.id; estacion_id referencia logica a estaciones/carritos `ESTACION_<id>`
+- empresa_control_electrico_eventos.empresa_id -> empresas.id; rele_id -> empresa_control_electrico_reles.id; estacion_id referencia logica a estaciones/carritos `ESTACION_<id>`
 - carrito_compra_items.id -> empresa_comisiones_servicio_movimientos.carrito_item_id
 - servicios.id -> empresa_comisiones_servicio_movimientos.servicio_id
 - empresa_comisiones_servicio_escalas.id -> empresa_comisiones_servicio_movimientos.escala_id
@@ -1092,6 +1095,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relés GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relés asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
 - 2026-04-08: se agrega `super_servidor_eventos` en `superadministrador.db` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
 - 2026-04-08: se amplía `licencias` en `superadministrador.db` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `superadministrador.db` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.

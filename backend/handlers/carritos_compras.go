@@ -425,6 +425,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_abierta",
 				}, "activacion de sesion de venta en estacion")
+				dispatchControlElectricoEstacionAsync(dbEmp, carrito, true, strings.TrimSpace(adminEmailFromRequest(r)), "activar_estacion")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "activo", "estado_carrito": "abierto", "estado_venta": "venta_abierta"})
 				return
 			}
@@ -826,6 +827,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
+				dispatchControlElectricoEstacionAsync(dbEmp, carritoPagado, false, usuarioOperacion, "pagar_estacion")
 
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                         true,
@@ -950,6 +952,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}); errMetric != nil {
 					log.Printf("[carritos] metrica sesion_recuperada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
 				}
+				dispatchControlElectricoEstacionAsync(dbEmp, carritoActualizado, true, strings.TrimSpace(adminEmailFromRequest(r)), "recuperar_interrumpido")
 
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":             true,
@@ -1259,6 +1262,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    estadoVenta,
 				}, "actualizacion de estado de venta")
+				dispatchControlElectricoEstacionAsync(dbEmp, carrito, action == "activar", strings.TrimSpace(adminEmailFromRequest(r)), action)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado, "estado_venta": estadoVenta})
 				return
 			}
@@ -1309,6 +1313,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"estado_venta_anterior":  carrito.EstadoVenta,
 					"estado_venta_nuevo":     estadoVenta,
 				}, "actualizacion de estado operativo de venta")
+				dispatchControlElectricoEstacionAsync(dbEmp, carrito, action == "reabrir", strings.TrimSpace(adminEmailFromRequest(r)), action)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_carrito": estadoCarrito, "estado_venta": estadoVenta})
 				return
 			}

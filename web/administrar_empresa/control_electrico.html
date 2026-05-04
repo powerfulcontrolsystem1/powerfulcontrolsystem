@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Control electrico</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --electric-bg: var(--bg);
+      --electric-panel: var(--card);
+      --electric-panel-soft: var(--surface-soft);
+      --electric-ink: var(--text);
+      --electric-muted: var(--muted);
+      --electric-line: var(--border);
+      --electric-accent: var(--accent-2);
+      --electric-accent-2: var(--accent);
+      --electric-warning: var(--accent-yellow);
+      --electric-danger: var(--danger);
+      --electric-success: var(--success);
+      --electric-shadow: color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    body.electric-page {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--electric-accent) 14%, transparent), transparent 34%),
+        linear-gradient(180deg, var(--bg-alt), var(--electric-bg));
+      color: var(--electric-ink);
+    }
+
+    .electric-shell {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .electric-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--electric-line);
+      margin-bottom: 16px;
+    }
+
+    .electric-kicker {
+      margin: 0 0 6px;
+      color: var(--electric-accent);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .electric-header h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.7rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .electric-subtitle {
+      margin: 8px 0 0;
+      color: var(--electric-muted);
+      line-height: 1.5;
+      max-width: 820px;
+    }
+
+    .electric-actions,
+    .electric-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .electric-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 410px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .electric-panel,
+    .electric-kpi {
+      background: var(--electric-panel);
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      box-shadow: 0 10px 22px var(--electric-shadow);
+    }
+
+    .electric-panel {
+      padding: 16px;
+    }
+
+    .electric-panel h2 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      letter-spacing: 0;
+    }
+
+    .electric-panel p {
+      margin: 0 0 12px;
+      color: var(--electric-muted);
+      line-height: 1.45;
+    }
+
+    .electric-kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .electric-kpi {
+      min-height: 82px;
+      padding: 14px;
+    }
+
+    .electric-kpi small {
+      display: block;
+      color: var(--electric-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .electric-kpi strong {
+      display: block;
+      font-size: 1.45rem;
+      line-height: 1.1;
+    }
+
+    .electric-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .electric-form-grid .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .electric-switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--electric-line);
+      color: var(--electric-ink);
+      font-weight: 700;
+    }
+
+    .electric-switch:last-child {
+      border-bottom: 0;
+    }
+
+    .electric-switch input {
+      width: 20px;
+      height: 20px;
+    }
+
+    .electric-subsection {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--electric-line);
+    }
+
+    .raspberry-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .raspberry-item {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: var(--electric-panel-soft);
+      padding: 10px;
+    }
+
+    .raspberry-item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .raspberry-item-title {
+      min-width: 0;
+    }
+
+    .raspberry-item-title strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .raspberry-item-title small {
+      color: var(--electric-muted);
+    }
+
+    .raspberry-item-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .relay-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+      gap: 10px;
+    }
+
+    .relay-card {
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: var(--electric-panel-soft);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .relay-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .relay-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .relay-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--electric-line);
+      padding: 4px 8px;
+      font-size: .78rem;
+      font-weight: 800;
+      color: var(--electric-muted);
+      background: color-mix(in srgb, var(--electric-panel-soft) 88%, var(--electric-panel));
+      white-space: nowrap;
+    }
+
+    .status-chip.on {
+      color: var(--electric-success);
+      border-color: color-mix(in srgb, var(--electric-success) 34%, var(--electric-line));
+      background: color-mix(in srgb, var(--electric-success) 14%, var(--electric-panel));
+    }
+
+    .status-chip.off {
+      color: var(--electric-muted);
+      background: color-mix(in srgb, var(--electric-muted) 10%, var(--electric-panel));
+    }
+
+    .status-chip.warn {
+      color: var(--electric-warning);
+      border-color: color-mix(in srgb, var(--electric-warning) 36%, var(--electric-line));
+      background: color-mix(in srgb, var(--electric-warning) 14%, var(--electric-panel));
+    }
+
+    .relay-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .relay-fields .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .electric-events {
+      display: grid;
+      gap: 8px;
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .event-row {
+      display: grid;
+      grid-template-columns: 135px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      padding: 9px;
+      background: var(--electric-panel-soft);
+    }
+
+    .event-row small {
+      color: var(--electric-muted);
+    }
+
+    .event-main {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1000px) {
+      .electric-header,
+      .electric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .electric-actions {
+        justify-content: flex-start;
+      }
+
+      .electric-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .electric-shell {
+        padding: 14px;
+      }
+
+      .electric-form-grid,
+      .relay-fields,
+      .electric-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .event-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="empresa-subpage electric-page">
+  <main class="electric-shell">
+    <header class="electric-header">
+      <div>
+        <p class="electric-kicker">Automatizacion Raspberry Pi</p>
+        <h1>Control electrico</h1>
+        <p id="empresaInfo" class="electric-subtitle">Empresa: cargando...</p>
+      </div>
+      <div class="electric-actions">
+        <button id="syncBtn" class="btn secondary" type="button">Sincronizar</button>
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+      </div>
+    </header>
+
+    <div id="message" class="form-message" role="status" aria-live="polite"></div>
+
+    <section class="electric-kpis" aria-label="Indicadores de control electrico">
+      <article class="electric-kpi"><small>Modulo</small><strong id="kpiModulo">--</strong></article>
+      <article class="electric-kpi"><small>Raspberry Pi</small><strong id="kpiRaspberry">0</strong></article>
+      <article class="electric-kpi"><small>Estaciones activas</small><strong id="kpiActivas">0</strong></article>
+      <article class="electric-kpi"><small>Reles configurados</small><strong id="kpiReles">0</strong></article>
+      <article class="electric-kpi"><small>Ultimo evento</small><strong id="kpiEvento">--</strong></article>
+    </section>
+
+    <section class="electric-grid">
+      <aside class="electric-panel">
+        <h2>Control global y Raspberry Pi</h2>
+        <p>Servidor GPIO principal y nodos adicionales para ampliar salidas por estacion.</p>
+        <div class="electric-form-grid">
+          <label class="electric-switch span-2" for="habilitado">
+            <span>Control activo</span>
+            <input id="habilitado" type="checkbox">
+          </label>
+          <div class="form-col">
+            <label class="form-label" for="raspberryIp">IP o host</label>
+            <input id="raspberryIp" class="form-input" placeholder="192.168.1.50">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="raspberryPort">Puerto</label>
+            <input id="raspberryPort" class="form-input" type="number" min="1" max="65535" step="1" value="8081">
+          </div>
+          <div class="form-col span-2">
+            <label class="form-label" for="apiPath">Ruta API</label>
+            <input id="apiPath" class="form-input" value="/api/gpio/relay">
+          </div>
+          <div class="form-col span-2">
+            <label class="form-label" for="apiToken">Token</label>
+            <input id="apiToken" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar">
+            <p id="tokenState" class="form-help">Token: sin validar</p>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="timeoutMs">Timeout ms</label>
+            <input id="timeoutMs" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
+          </div>
+          <label class="electric-switch" for="autoSync">
+            <span>Auto sync</span>
+            <input id="autoSync" type="checkbox" checked>
+          </label>
+          <label class="electric-switch span-2" for="failSafe">
+            <span>Fail-safe ante error</span>
+            <input id="failSafe" type="checkbox">
+          </label>
+          <div class="form-col span-2">
+            <label class="form-label" for="observaciones">Observaciones</label>
+            <textarea id="observaciones" class="form-input" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="saveConfigBtn" class="btn add" type="button">Guardar conexion</button>
+        </div>
+
+        <div class="electric-subsection">
+          <h2>Controladores Raspberry Pi</h2>
+          <p>Agrega controladores GPIO para repartir luces, jacuzzi, puertas o equipos entre varias placas.</p>
+          <input id="raspberryId" type="hidden" value="0">
+          <div class="electric-form-grid">
+            <div class="form-col">
+              <label class="form-label" for="raspberryCodigo">Codigo</label>
+              <input id="raspberryCodigo" class="form-input" placeholder="piso_1">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="raspberryNombre">Nombre</label>
+              <input id="raspberryNombre" class="form-input" placeholder="Raspberry piso 1">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="raspberryNodeIp">IP o host</label>
+              <input id="raspberryNodeIp" class="form-input" placeholder="192.168.1.51">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="raspberryNodePort">Puerto</label>
+              <input id="raspberryNodePort" class="form-input" type="number" min="1" max="65535" step="1" value="8081">
+            </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="raspberryNodeApiPath">Ruta API</label>
+              <input id="raspberryNodeApiPath" class="form-input" value="/api/gpio/relay">
+            </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="raspberryNodeApiToken">Token</label>
+              <input id="raspberryNodeApiToken" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="raspberryNodeTimeout">Timeout ms</label>
+              <input id="raspberryNodeTimeout" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
+            </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="raspberryNodeObservaciones">Observaciones</label>
+              <textarea id="raspberryNodeObservaciones" class="form-input" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="newRaspberryBtn" class="btn secondary" type="button">Nueva Raspberry</button>
+            <button id="saveRaspberryBtn" class="btn add" type="button">Guardar Raspberry</button>
+          </div>
+          <div id="raspberryList" class="raspberry-list"></div>
+        </div>
+      </aside>
+
+      <section class="electric-panel">
+        <div class="empresa-section-header compact">
+          <div>
+            <h2>Estaciones y relés GPIO</h2>
+            <p>Cada tarjeta representa una habitación o estación conectada a un relé.</p>
+          </div>
+        </div>
+        <div id="relayGrid" class="relay-grid"></div>
+      </section>
+    </section>
+
+    <section class="electric-panel" style="margin-top:14px;">
+      <div class="empresa-section-header compact">
+        <div>
+          <h2>Bitacora electrica</h2>
+          <p>Registro de comandos enviados hacia la Raspberry Pi.</p>
+        </div>
+      </div>
+      <div id="eventsBox" class="electric-events"></div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var params = new URLSearchParams(window.location.search || '');
+      var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
+      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [] };
+
+      function $(id) { return document.getElementById(id); }
+
+      function sanitize(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function showMessage(text, type) {
+        var box = $('message');
+        if (!box) return;
+        box.textContent = text || '';
+        box.className = 'form-message' + (type ? ' ' + type : '');
+      }
+
+      async function requestJSON(url, options) {
+        var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var contentType = response.headers.get('content-type') || '';
+        var data = contentType.indexOf('application/json') !== -1 ? await response.json() : await response.text();
+        if (!response.ok) {
+          var msg = typeof data === 'string' ? data : (data && (data.message || data.error));
+          throw new Error(msg || ('HTTP ' + response.status));
+        }
+        return data;
+      }
+
+      function api(action) {
+        return '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(empresaId) + (action ? '&action=' + encodeURIComponent(action) : '');
+      }
+
+      async function cargarEmpresa() {
+        if (!empresaId) {
+          $('empresaInfo').textContent = 'Empresa: no detectada';
+          return;
+        }
+        try {
+          var resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+          if (!resp.ok) throw new Error('No encontrada');
+          var data = await resp.json();
+          $('empresaInfo').textContent = 'Empresa: ' + (data.nombre || ('ID ' + empresaId));
+        } catch (err) {
+          $('empresaInfo').textContent = 'Empresa: ID ' + empresaId;
+        }
+      }
+
+      function applyConfig(cfg) {
+        cfg = cfg || {};
+        $('habilitado').checked = Boolean(cfg.habilitado);
+        $('raspberryIp').value = cfg.raspberry_ip || '';
+        $('raspberryPort').value = cfg.raspberry_port || 8081;
+        $('apiPath').value = cfg.api_path || '/api/gpio/relay';
+        $('timeoutMs').value = cfg.timeout_ms || 2500;
+        $('autoSync').checked = cfg.auto_sync_estaciones !== false;
+        $('failSafe').checked = Boolean(cfg.fail_safe_on_error);
+        $('observaciones').value = cfg.observaciones || '';
+        $('apiToken').value = '';
+        $('tokenState').textContent = cfg.api_token_configured ? 'Token: configurado' : 'Token: no configurado';
+      }
+
+      function readConfigPayload() {
+        return {
+          habilitado: $('habilitado').checked,
+          raspberry_ip: $('raspberryIp').value.trim(),
+          raspberry_port: Math.max(1, Math.min(65535, Number($('raspberryPort').value || 8081))),
+          api_path: $('apiPath').value.trim() || '/api/gpio/relay',
+          api_token: $('apiToken').value.trim(),
+          timeout_ms: Math.max(500, Math.min(15000, Number($('timeoutMs').value || 2500))),
+          auto_sync_estaciones: $('autoSync').checked,
+          fail_safe_on_error: $('failSafe').checked,
+          estado: 'activo',
+          observaciones: $('observaciones').value.trim()
+        };
+      }
+
+      function raspberryLabel(pi) {
+        if (!pi) return 'Raspberry principal/global';
+        var name = pi.nombre || pi.codigo || ('Raspberry #' + pi.id);
+        var ip = pi.raspberry_ip ? ' - ' + pi.raspberry_ip : '';
+        return name + ip;
+      }
+
+      function raspberryOptions(selectedID) {
+        var selected = Number(selectedID || 0);
+        var html = '<option value="">Raspberry principal/global</option>';
+        state.raspberryPis
+          .filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo'; })
+          .forEach(function (pi) {
+            html += '<option value="' + sanitize(pi.id) + '"' + (Number(pi.id) === selected ? ' selected' : '') + '>' + sanitize(raspberryLabel(pi)) + '</option>';
+          });
+        return html;
+      }
+
+      function clearRaspberryForm() {
+        $('raspberryId').value = '0';
+        $('raspberryCodigo').value = '';
+        $('raspberryNombre').value = '';
+        $('raspberryNodeIp').value = '';
+        $('raspberryNodePort').value = 8081;
+        $('raspberryNodeApiPath').value = '/api/gpio/relay';
+        $('raspberryNodeApiToken').value = '';
+        $('raspberryNodeTimeout').value = 2500;
+        $('raspberryNodeObservaciones').value = '';
+      }
+
+      function fillRaspberryForm(pi) {
+        pi = pi || {};
+        $('raspberryId').value = pi.id || 0;
+        $('raspberryCodigo').value = pi.codigo || '';
+        $('raspberryNombre').value = pi.nombre || '';
+        $('raspberryNodeIp').value = pi.raspberry_ip || '';
+        $('raspberryNodePort').value = pi.raspberry_port || 8081;
+        $('raspberryNodeApiPath').value = pi.api_path || '/api/gpio/relay';
+        $('raspberryNodeApiToken').value = '';
+        $('raspberryNodeTimeout').value = pi.timeout_ms || 2500;
+        $('raspberryNodeObservaciones').value = pi.observaciones || '';
+      }
+
+      function readRaspberryPayload() {
+        return {
+          id: Number($('raspberryId').value || 0),
+          codigo: $('raspberryCodigo').value.trim(),
+          nombre: $('raspberryNombre').value.trim(),
+          raspberry_ip: $('raspberryNodeIp').value.trim(),
+          raspberry_port: Math.max(1, Math.min(65535, Number($('raspberryNodePort').value || 8081))),
+          api_path: $('raspberryNodeApiPath').value.trim() || '/api/gpio/relay',
+          api_token: $('raspberryNodeApiToken').value.trim(),
+          timeout_ms: Math.max(500, Math.min(15000, Number($('raspberryNodeTimeout').value || 2500))),
+          estado: 'activo',
+          observaciones: $('raspberryNodeObservaciones').value.trim()
+        };
+      }
+
+      function relayDefaults(estacion, index, rele) {
+        rele = rele || estacion.rele || {};
+        var gpioDefault = rele.gpio_pin || (index < 26 ? index + 2 : 0);
+        return {
+          id: rele.id || 0,
+          estacion_id: estacion.estacion_id,
+          estacion_codigo: estacion.estacion_codigo || ('EST-' + estacion.estacion_id),
+          estacion_nombre: estacion.estacion_nombre || ('Estacion ' + estacion.estacion_id),
+          salida_codigo: rele.salida_codigo || 'luces',
+          tipo_carga: rele.tipo_carga || 'luces',
+          gpio_pin: gpioDefault,
+          relay_name: rele.relay_name || ('Luz estacion ' + estacion.estacion_id),
+          active_high: rele.active_high !== false,
+          raspberry_id: Number(rele.raspberry_id || 0),
+          raspberry_codigo: rele.raspberry_codigo || '',
+          raspberry_nombre: rele.raspberry_nombre || '',
+          raspberry_ip: rele.raspberry_ip || '',
+          pulso_ms: rele.pulso_ms || 0,
+          modo: rele.modo || 'seguimiento_estacion',
+          estado: rele.estado || 'activo',
+          observaciones: rele.observaciones || '',
+          ultimo_estado: rele.ultimo_estado || 'desconocido',
+          ultima_sincronizacion: rele.ultima_sincronizacion || ''
+        };
+      }
+
+      function renderRelays() {
+        var grid = $('relayGrid');
+        if (!state.estaciones.length) {
+          grid.innerHTML = '<p class="form-help">No hay estaciones sincronizadas.</p>';
+          return;
+        }
+        var cards = [];
+        state.estaciones.forEach(function (estacion, index) {
+          var stationReles = state.reles.filter(function (rele) { return Number(rele.estacion_id) === Number(estacion.estacion_id); });
+          if (!stationReles.length) stationReles = [null];
+          stationReles.forEach(function (rele, relayIndex) {
+          var data = relayDefaults(estacion, index + relayIndex, rele);
+          var activeClass = estacion.activa ? 'on' : 'off';
+          var relayClass = data.ultimo_estado === 'on' ? 'on' : (data.ultimo_estado === 'off' ? 'off' : 'warn');
+          cards.push('<article class="relay-card" data-rele-id="' + sanitize(data.id || 0) + '" data-estacion-id="' + sanitize(estacion.estacion_id) + '">' +
+            '<div class="relay-head">' +
+              '<div><h3>' + sanitize(data.estacion_nombre) + '</h3><div class="relay-meta">' +
+                '<span class="status-chip ' + activeClass + '">' + (estacion.activa ? 'Estacion activa' : 'Estacion inactiva') + '</span>' +
+                '<span class="status-chip ' + relayClass + '">Rele ' + sanitize(data.ultimo_estado || 'desconocido') + '</span>' +
+                '<span class="status-chip">' + sanitize(data.tipo_carga || data.salida_codigo) + '</span>' +
+                '<span class="status-chip">' + sanitize(data.raspberry_nombre || data.raspberry_codigo || 'Raspberry global') + '</span>' +
+              '</div></div>' +
+              '<span class="status-chip">GPIO ' + sanitize(data.gpio_pin) + '</span>' +
+            '</div>' +
+            '<div class="relay-fields">' +
+              '<div class="form-col"><label class="form-label">GPIO</label><input class="form-input relay-gpio" type="number" min="0" max="27" step="1" value="' + sanitize(data.gpio_pin) + '"></div>' +
+              '<div class="form-col"><label class="form-label">Pulso ms</label><input class="form-input relay-pulse" type="number" min="0" max="60000" step="100" value="' + sanitize(data.pulso_ms) + '"></div>' +
+              '<div class="form-col"><label class="form-label">Salida</label><input class="form-input relay-output" value="' + sanitize(data.salida_codigo) + '" placeholder="luces"></div>' +
+              '<div class="form-col"><label class="form-label">Tipo</label><select class="form-input relay-type"><option value="luces"' + (data.tipo_carga === 'luces' ? ' selected' : '') + '>Luces</option><option value="jacuzzi"' + (data.tipo_carga === 'jacuzzi' ? ' selected' : '') + '>Jacuzzi</option><option value="aire"' + (data.tipo_carga === 'aire' ? ' selected' : '') + '>Aire</option><option value="puerta"' + (data.tipo_carga === 'puerta' ? ' selected' : '') + '>Puerta</option><option value="otro"' + (data.tipo_carga === 'otro' ? ' selected' : '') + '>Otro</option></select></div>' +
+              '<div class="form-col span-2"><label class="form-label">Raspberry Pi</label><select class="form-input relay-raspberry">' + raspberryOptions(data.raspberry_id) + '</select></div>' +
+              '<div class="form-col span-2"><label class="form-label">Nombre relé</label><input class="form-input relay-name" value="' + sanitize(data.relay_name) + '"></div>' +
+              '<label class="electric-switch span-2"><span>Activo alto</span><input class="relay-active-high" type="checkbox" ' + (data.active_high ? 'checked' : '') + '></label>' +
+            '</div>' +
+            '<div class="electric-row-actions">' +
+              '<button class="btn secondary small relay-off" type="button">Apagar</button>' +
+              '<button class="btn secondary small relay-on" type="button">Encender</button>' +
+              '<button class="btn add small relay-save" type="button">Guardar</button>' +
+            '</div>' +
+          '</article>');
+          });
+        });
+        grid.innerHTML = cards.join('');
+      }
+
+      function renderKpis() {
+        var cfg = state.config || {};
+        var relays = state.reles.filter(function (x) { return String(x.estado || 'activo').toLowerCase() === 'activo'; }).length;
+        var activas = state.estaciones.filter(function (x) { return x.activa; }).length;
+        var raspberries = state.raspberryPis.filter(function (x) { return String(x.estado || 'activo').toLowerCase() === 'activo'; }).length;
+        $('kpiModulo').textContent = cfg.habilitado ? 'Activo' : 'Pausado';
+        $('kpiRaspberry').textContent = String(raspberries);
+        $('kpiActivas').textContent = String(activas);
+        $('kpiReles').textContent = String(relays);
+        $('kpiEvento').textContent = state.eventos.length ? (state.eventos[0].resultado || '--') : '--';
+      }
+
+      function renderRaspberryList() {
+        var box = $('raspberryList');
+        if (!box) return;
+        if (!state.raspberryPis.length) {
+          box.innerHTML = '<p class="form-help">Sin Raspberry Pi adicionales registradas.</p>';
+          return;
+        }
+        box.innerHTML = state.raspberryPis.map(function (pi) {
+          var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
+          var primary = String(pi.codigo || '').toLowerCase() === 'principal';
+          return '<article class="raspberry-item" data-raspberry-id="' + sanitize(pi.id || 0) + '">' +
+            '<div class="raspberry-item-head">' +
+              '<div class="raspberry-item-title">' +
+                '<strong>' + sanitize(pi.nombre || pi.codigo || ('Raspberry #' + pi.id)) + '</strong>' +
+                '<small>' + sanitize((pi.codigo || 'sin_codigo') + ' - ' + (pi.raspberry_ip || 'sin IP') + ':' + (pi.raspberry_port || 8081)) + '</small>' +
+              '</div>' +
+              '<span class="status-chip ' + (inactive ? 'off' : 'on') + '">' + sanitize(inactive ? 'Inactiva' : 'Activa') + '</span>' +
+            '</div>' +
+            '<div class="relay-meta">' +
+              '<span class="status-chip">' + sanitize(pi.api_path || '/api/gpio/relay') + '</span>' +
+              '<span class="status-chip">' + sanitize((pi.timeout_ms || 2500) + ' ms') + '</span>' +
+              '<span class="status-chip">' + sanitize(pi.api_token_configured ? 'Token configurado' : 'Sin token') + '</span>' +
+            '</div>' +
+            '<div class="raspberry-item-actions">' +
+              '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
+              (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function renderEvents() {
+        var box = $('eventsBox');
+        if (!state.eventos.length) {
+          box.innerHTML = '<p class="form-help">Sin eventos registrados.</p>';
+          return;
+        }
+        box.innerHTML = state.eventos.map(function (ev) {
+          var cls = ev.resultado === 'ok' ? 'on' : 'warn';
+          return '<div class="event-row">' +
+            '<small>' + sanitize(ev.fecha_evento || '') + '</small>' +
+            '<div class="event-main"><strong>Est. ' + sanitize(ev.estacion_id || '-') + '</strong> GPIO ' + sanitize(ev.gpio_pin || '-') + ' -> ' + sanitize(ev.estado_objetivo || '') + (ev.error ? ' · ' + sanitize(ev.error) : '') + '</div>' +
+            '<span class="status-chip ' + cls + '">' + sanitize(ev.resultado || '-') + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function loadAll() {
+        if (!empresaId) {
+          showMessage('Falta empresa_id en la URL.', 'error');
+          return;
+        }
+        showMessage('Cargando control electrico...', '');
+        try {
+          var data = await requestJSON(api('resumen'));
+          state.config = data.config || {};
+          state.raspberryPis = Array.isArray(data.raspberry_pis) ? data.raspberry_pis : [];
+          state.estaciones = Array.isArray(data.estaciones) ? data.estaciones : [];
+          state.reles = Array.isArray(data.reles) ? data.reles : [];
+          state.eventos = Array.isArray(data.eventos) ? data.eventos : [];
+          applyConfig(state.config);
+          renderRaspberryList();
+          renderKpis();
+          renderRelays();
+          renderEvents();
+          showMessage('', '');
+        } catch (err) {
+          showMessage(err.message || 'No se pudo cargar control electrico.', 'error');
+        }
+      }
+
+      async function saveConfig() {
+        try {
+          var data = await requestJSON(api('config'), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(readConfigPayload())
+          });
+          state.config = data.config || state.config;
+          applyConfig(state.config);
+          renderKpis();
+          showMessage('Conexion electrica guardada.', 'success');
+        } catch (err) {
+          showMessage(err.message || 'No se pudo guardar la conexion.', 'error');
+        }
+      }
+
+      async function saveRaspberry() {
+        var payload = readRaspberryPayload();
+        if (!payload.raspberry_ip) {
+          throw new Error('La IP o host de la Raspberry Pi es obligatoria.');
+        }
+        var data = await requestJSON(api('raspberry_pi'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        state.raspberryPis = Array.isArray(data.raspberry_pis) ? data.raspberry_pis : state.raspberryPis;
+        clearRaspberryForm();
+        renderRaspberryList();
+        renderRelays();
+        renderKpis();
+      }
+
+      async function deleteRaspberry(id) {
+        await requestJSON(api('raspberry_pi') + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
+        await loadAll();
+      }
+
+      function readRelayCard(card) {
+        var estacionID = Number(card.getAttribute('data-estacion-id') || 0);
+        var estacion = state.estaciones.find(function (x) { return Number(x.estacion_id) === estacionID; }) || {};
+        return {
+          id: Number(card.getAttribute('data-rele-id') || 0),
+          estacion_id: estacionID,
+          estacion_codigo: estacion.estacion_codigo || ('EST-' + estacionID),
+          estacion_nombre: estacion.estacion_nombre || ('Estacion ' + estacionID),
+          salida_codigo: card.querySelector('.relay-output').value.trim(),
+          tipo_carga: card.querySelector('.relay-type').value,
+          raspberry_id: Number(card.querySelector('.relay-raspberry').value || 0),
+          gpio_pin: Number(card.querySelector('.relay-gpio').value || 0),
+          relay_name: card.querySelector('.relay-name').value.trim(),
+          active_high: card.querySelector('.relay-active-high').checked,
+          pulso_ms: Number(card.querySelector('.relay-pulse').value || 0),
+          modo: 'seguimiento_estacion',
+          estado: 'activo'
+        };
+      }
+
+      async function saveRelay(card) {
+        var payload = readRelayCard(card);
+        var data = await requestJSON(api('rele'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (data && data.id) {
+          card.setAttribute('data-rele-id', data.id);
+          payload.id = Number(data.id || payload.id);
+        }
+        return payload;
+      }
+
+      async function testRelay(card, target) {
+        var payload = await saveRelay(card);
+        var result = await requestJSON(api('probar_rele'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estacion_id: payload.estacion_id, rele_id: payload.id, estado: target })
+        });
+        if (!result.ok && !result.skipped) throw new Error(result.error || 'No se pudo enviar comando');
+      }
+
+      async function syncAll() {
+        try {
+          showMessage('Sincronizando estaciones con Raspberry Pi...', '');
+          await requestJSON(api('sincronizar'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          showMessage('Sincronizacion enviada.', 'success');
+          await loadAll();
+        } catch (err) {
+          showMessage(err.message || 'No se pudo sincronizar.', 'error');
+        }
+      }
+
+      document.addEventListener('click', async function (ev) {
+        var card = ev.target.closest('.relay-card');
+        var raspberryCard = ev.target.closest('.raspberry-item');
+        try {
+          if (ev.target.id === 'saveConfigBtn') {
+            await saveConfig();
+          } else if (ev.target.id === 'saveRaspberryBtn') {
+            await saveRaspberry();
+            showMessage('Raspberry Pi guardada.', 'success');
+          } else if (ev.target.id === 'newRaspberryBtn') {
+            clearRaspberryForm();
+            showMessage('', '');
+          } else if (ev.target.id === 'reloadBtn') {
+            await loadAll();
+          } else if (ev.target.id === 'syncBtn') {
+            await syncAll();
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-edit')) {
+            var editID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            var pi = state.raspberryPis.find(function (item) { return Number(item.id) === editID; });
+            fillRaspberryForm(pi);
+            showMessage('Editando Raspberry Pi.', '');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-delete')) {
+            var deleteID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            await deleteRaspberry(deleteID);
+            showMessage('Raspberry Pi desactivada.', 'success');
+          } else if (card && ev.target.classList.contains('relay-save')) {
+            await saveRelay(card);
+            showMessage('Relé guardado.', 'success');
+            await loadAll();
+          } else if (card && ev.target.classList.contains('relay-on')) {
+            await testRelay(card, 'on');
+            showMessage('Comando de encendido enviado.', 'success');
+            await loadAll();
+          } else if (card && ev.target.classList.contains('relay-off')) {
+            await testRelay(card, 'off');
+            showMessage('Comando de apagado enviado.', 'success');
+            await loadAll();
+          }
+        } catch (err) {
+          showMessage(err.message || 'Operacion no completada.', 'error');
+        }
+      });
+
+      cargarEmpresa();
+      loadAll();
+    }());
+  </script>
+</body>
+</html>

@@ -34,6 +34,30 @@
       margin:3px 0 0;
       color:var(--muted);
     }
+    .producto-expiry-badge{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      padding:3px 8px;
+      border-radius:6px;
+      border:1px solid var(--border);
+      background:color-mix(in srgb, var(--surface-soft) 78%, var(--card));
+      color:var(--text);
+      font-size:.82rem;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .producto-expiry-badge.vencido{border-color:color-mix(in srgb, var(--danger) 42%, var(--border));background:color-mix(in srgb, var(--danger) 14%, var(--card));color:var(--danger)}
+    .producto-expiry-badge.vence_hoy{border-color:color-mix(in srgb, var(--accent-yellow) 42%, var(--border));background:color-mix(in srgb, var(--accent-yellow) 16%, var(--card));color:var(--accent-yellow)}
+    .producto-expiry-badge.proximo_vencer{border-color:color-mix(in srgb, var(--accent-yellow) 36%, var(--border));background:color-mix(in srgb, var(--accent-yellow) 12%, var(--card));color:var(--accent-yellow)}
+    .producto-expiry-badge.vigente{border-color:color-mix(in srgb, var(--success) 36%, var(--border));background:color-mix(in srgb, var(--success) 14%, var(--card));color:var(--success)}
+    .producto-expiry-meta{
+      display:block;
+      margin-top:4px;
+      color:var(--muted);
+      font-size:.78rem;
+      white-space:nowrap;
+    }
     @media (max-width:720px){
       .producto-inline-form-header{align-items:stretch;flex-direction:column}
       .producto-inline-form-header .btn{width:100%}
@@ -75,6 +99,10 @@
         <div class="kpi-box">
           <span class="kpi-label">Productos</span>
           <strong id="kpiProductos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Por vencer</span>
+          <strong id="kpiProductosVencimiento">0</strong>
         </div>
         <div class="kpi-box">
           <span class="kpi-label">Bodegas</span>
@@ -416,6 +444,28 @@
 
         <div class="form-row">
           <div class="form-col">
+            <label class="form-label" for="productoManejaVencimiento">Control de vencimiento</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;min-height:40px;">
+              <input id="productoManejaVencimiento" type="checkbox">
+              Producto perecedero o con lote controlado
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoFechaVencimiento">Fecha vencimiento</label>
+            <input id="productoFechaVencimiento" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoDiasAlertaVencimiento">Alerta previa (dias)</label>
+            <input id="productoDiasAlertaVencimiento" class="form-input" type="number" min="1" max="3650" step="1" value="30">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoLoteCodigo">Lote</label>
+            <input id="productoLoteCodigo" class="form-input" placeholder="LOTE-2026-001">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label" for="productoImagenURL">URL imagen (opcional)</label>
             <input id="productoImagenURL" class="form-input" placeholder="/uploads/productos/...">
           </div>
@@ -461,6 +511,7 @@
               <th>Impresora pedido</th>
               <th>Precio</th>
               <th>Stock total</th>
+              <th>Vencimiento</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -1851,8 +1902,20 @@
       }
       state.productos = await requestJSON(url);
       document.getElementById('kpiProductos').textContent = String(state.productos.length);
+      await loadProductosVencimiento();
       renderProductos();
       refreshProductoSelectors();
+    }
+
+    async function loadProductosVencimiento() {
+      const kpi = document.getElementById('kpiProductosVencimiento');
+      if (!kpi || !empresaId) return;
+      try {
+        const rows = await requestJSON('/api/empresa/productos?empresa_id=' + encodeURIComponent(empresaId) + '&action=vencimientos&dias=30&limit=200');
+        kpi.textContent = String(Array.isArray(rows) ? rows.length : 0);
+      } catch (err) {
+        kpi.textContent = '0';
+      }
     }
 
     function refreshProductoSelectors() {
@@ -1875,7 +1938,7 @@
     function renderProductos() {
       const tbody = document.querySelector('#productosTable tbody');
       if (!state.productos.length) {
-        tbody.innerHTML = '<tr><td colspan="10">No hay productos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11">No hay productos registrados.</td></tr>';
         return;
       }
       tbody.innerHTML = state.productos.map(p => {
@@ -1894,6 +1957,7 @@
           '<td>' + sanitize(printerLabel) + '</td>' +
           '<td data-field="precio" data-producto-id="' + Number(p.id) + '">' + Number(p.precio || 0).toFixed(2) + '</td>' +
           '<td>' + Number(p.stock_total || 0).toFixed(2) + '</td>' +
+          '<td>' + productoVencimientoLabel(p) + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
             '<button type="button" class="btn secondary" data-action="edit-producto" data-id="' + Number(p.id) + '">Editar</button>' +
@@ -1902,6 +1966,34 @@
           '</td>' +
         '</tr>';
       }).join('');
+    }
+
+    function productoVencimientoLabel(p) {
+      if (!p || !p.maneja_vencimiento) {
+        return '<span class="producto-expiry-badge">No aplica</span>';
+      }
+      const estado = String(p.estado_vencimiento || 'sin_fecha');
+      const labels = {
+        vencido: 'Vencido',
+        vence_hoy: 'Vence hoy',
+        proximo_vencer: 'Por vencer',
+        vigente: 'Vigente',
+        sin_fecha: 'Sin fecha',
+        fecha_invalida: 'Fecha invalida'
+      };
+      let meta = '';
+      if (p.fecha_vencimiento) {
+        meta = sanitize(p.fecha_vencimiento);
+        if (Number.isFinite(Number(p.dias_para_vencer))) {
+          const dias = Number(p.dias_para_vencer);
+          meta += dias === 0 ? ' - hoy' : ' - ' + dias + ' dias';
+        }
+      }
+      if (p.lote_codigo) {
+        meta += (meta ? ' - ' : '') + 'Lote ' + sanitize(p.lote_codigo);
+      }
+      return '<span class="producto-expiry-badge ' + sanitize(estado) + '">' + sanitize(labels[estado] || estado) + '</span>' +
+        (meta ? '<span class="producto-expiry-meta">' + meta + '</span>' : '');
     }
 
     (function bindAIRealtimeUpdates(){
@@ -1975,6 +2067,10 @@
       document.getElementById('productoStockMin').value = p ? num(p.stock_minimo) : 0;
       document.getElementById('productoStockMax').value = p ? num(p.stock_maximo) : 0;
       document.getElementById('productoStockInicial').value = 0;
+      document.getElementById('productoManejaVencimiento').checked = p ? Boolean(p.maneja_vencimiento) : false;
+      document.getElementById('productoFechaVencimiento').value = p ? String(p.fecha_vencimiento || '').slice(0, 10) : '';
+      document.getElementById('productoDiasAlertaVencimiento').value = p ? Math.max(1, Math.min(3650, Math.round(num(p.dias_alerta_vencimiento) || 30))) : 30;
+      document.getElementById('productoLoteCodigo').value = p ? (p.lote_codigo || '') : '';
       const bodegaPrincipalSelect = document.getElementById('productoBodegaPrincipal');
       bodegaPrincipalSelect.value = p ? String(p.bodega_principal_id || '') : '';
       if (!p && !bodegaPrincipalSelect.value) {
@@ -2023,11 +2119,23 @@
         stock_maximo: num(document.getElementById('productoStockMax').value),
         stock_inicial: num(document.getElementById('productoStockInicial').value),
         imagen_url: document.getElementById('productoImagenURL').value.trim(),
+        maneja_vencimiento: Boolean(document.getElementById('productoManejaVencimiento').checked),
+        fecha_vencimiento: document.getElementById('productoFechaVencimiento').value.trim(),
+        dias_alerta_vencimiento: Math.max(1, Math.min(3650, Math.round(num(document.getElementById('productoDiasAlertaVencimiento').value) || 30))),
+        lote_codigo: document.getElementById('productoLoteCodigo').value.trim(),
         observaciones: document.getElementById('productoObservaciones').value.trim(),
         referencia_inicial: 'CREACION_PRODUCTO_UI'
       };
       if (!payload.nombre) {
         showMessage('El nombre del producto es obligatorio.', 'error');
+        return;
+      }
+      if (payload.fecha_vencimiento) {
+        payload.maneja_vencimiento = true;
+      }
+      if (payload.maneja_vencimiento && !payload.fecha_vencimiento) {
+        showMessage('Selecciona la fecha de vencimiento o desactiva el control de vencimiento.', 'error');
+        document.getElementById('productoFechaVencimiento').focus();
         return;
       }
       if (!id && payload.stock_inicial > 0 && payload.bodega_principal_id <= 0) {

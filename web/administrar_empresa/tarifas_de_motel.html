@@ -7,21 +7,24 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
-      --motel-bg: #f5f7fb;
-      --motel-panel: #ffffff;
-      --motel-ink: #172033;
-      --motel-muted: #647084;
-      --motel-line: #dbe2ea;
-      --motel-soft: #eef3f7;
-      --motel-accent: #0f766e;
-      --motel-accent-2: #7c3aed;
-      --motel-danger: #b42318;
-      --motel-warning: #a15c07;
+      --motel-bg: var(--bg);
+      --motel-panel: var(--card);
+      --motel-ink: var(--text);
+      --motel-muted: var(--muted);
+      --motel-line: var(--border);
+      --motel-soft: var(--surface-soft);
+      --motel-accent: var(--accent-2);
+      --motel-accent-2: var(--accent);
+      --motel-danger: var(--danger);
+      --motel-warning: var(--accent-yellow);
+      --motel-shadow: color-mix(in srgb, #020617 18%, transparent);
     }
 
     body.motel-rates-page {
       margin: 0;
-      background: var(--motel-bg);
+      background:
+        radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--motel-accent) 14%, transparent), transparent 34%),
+        linear-gradient(180deg, var(--bg-alt), var(--motel-bg));
       color: var(--motel-ink);
     }
 
@@ -84,7 +87,7 @@
       border: 1px solid var(--motel-line);
       border-radius: 8px;
       background: var(--motel-panel);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 10px 24px var(--motel-shadow);
     }
 
     .motel-kpi {
@@ -163,7 +166,7 @@
       overflow: auto;
       border: 1px solid var(--motel-line);
       border-radius: 8px;
-      background: #fff;
+      background: var(--motel-panel);
     }
 
     .motel-table {
@@ -181,7 +184,7 @@
     }
 
     .motel-table th {
-      background: #f8fafc;
+      background: var(--motel-soft);
       color: var(--motel-muted);
       font-size: 0.78rem;
       text-transform: uppercase;
@@ -194,19 +197,19 @@
       gap: 5px;
       padding: 4px 8px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.1);
+      background: color-mix(in srgb, var(--motel-accent) 12%, var(--motel-panel));
       color: var(--motel-accent);
       font-size: 0.78rem;
       font-weight: 800;
     }
 
     .motel-badge.warn {
-      background: rgba(161, 92, 7, 0.12);
+      background: color-mix(in srgb, var(--motel-warning) 14%, var(--motel-panel));
       color: var(--motel-warning);
     }
 
     .motel-badge.off {
-      background: #eef0f3;
+      background: color-mix(in srgb, var(--motel-muted) 12%, var(--motel-panel));
       color: var(--motel-muted);
     }
 
@@ -237,8 +240,8 @@
 
     .motel-message.is-error {
       color: var(--motel-danger);
-      background: #fff1f1;
-      border-color: #fac8c8;
+      background: color-mix(in srgb, var(--motel-danger) 12%, var(--motel-panel));
+      border-color: color-mix(in srgb, var(--motel-danger) 34%, var(--motel-line));
     }
 
     .motel-result {

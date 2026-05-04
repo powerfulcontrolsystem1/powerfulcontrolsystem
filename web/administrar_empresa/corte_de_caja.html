@@ -7,33 +7,33 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:18px; align-items:stretch; }
-    .cash-close-panel { border:1px solid rgba(15,23,42,.1); border-radius:22px; padding:18px; background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(240,247,255,.9)); box-shadow:0 18px 50px rgba(15,23,42,.08); }
-    .cash-close-panel.dark { background:linear-gradient(135deg,#101828,#172033); color:#f8fafc; }
+    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:18px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:0 18px 50px color-mix(in srgb, #020617 14%, transparent); color:var(--text); }
+    .cash-close-panel.dark { background:linear-gradient(135deg,color-mix(in srgb, var(--surface) 76%, #020617),var(--surface-soft)); color:var(--text); }
     .cash-close-report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:10px; }
-    .cash-report-check { display:flex; gap:10px; align-items:flex-start; border:1px solid rgba(15,23,42,.1); border-radius:16px; padding:10px; background:rgba(255,255,255,.82); }
+    .cash-report-check { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; background:color-mix(in srgb, var(--card) 86%, var(--surface-soft)); color:var(--text); }
     .cash-report-check input { margin-top:3px; }
     .cash-report-check strong { display:block; font-size:.92rem; }
-    .cash-report-check span { display:block; font-size:.78rem; color:#64748b; }
+    .cash-report-check span { display:block; font-size:.78rem; color:var(--muted); }
     .cash-config-toolbar { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin:16px 0 8px; }
     .cash-config-toolbar h3 { margin:0; }
     .cash-config-actions { display:flex; flex-wrap:wrap; gap:8px; }
     .cash-config-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; }
-    .cash-config-check { display:flex; gap:10px; align-items:flex-start; border:1px solid rgba(15,23,42,.1); border-radius:12px; padding:10px; background:#fff; min-height:58px; }
+    .cash-config-check { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; background:var(--card); min-height:58px; color:var(--text); }
     .cash-config-check input { margin-top:3px; }
-    .cash-config-check strong { display:block; font-size:.9rem; color:#0f172a; }
-    .cash-config-check span span { display:block; margin-top:2px; font-size:.76rem; color:#64748b; }
+    .cash-config-check strong { display:block; font-size:.9rem; color:var(--text); }
+    .cash-config-check span span { display:block; margin-top:2px; font-size:.76rem; color:var(--muted); }
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
     .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
-    .cash-kpi { border-radius:18px; padding:13px; background:#0f172a; color:white; min-height:92px; }
-    .cash-kpi:nth-child(2) { background:#064e3b; }
-    .cash-kpi:nth-child(3) { background:#7c2d12; }
-    .cash-kpi:nth-child(4) { background:#1e3a8a; }
+    .cash-kpi { border-radius:8px; padding:13px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:92px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
+    .cash-kpi:nth-child(2) { background:color-mix(in srgb, var(--success) 26%, var(--surface)); border-color:color-mix(in srgb, var(--success) 30%, var(--border)); }
+    .cash-kpi:nth-child(3) { background:color-mix(in srgb, var(--accent-yellow) 20%, var(--surface)); border-color:color-mix(in srgb, var(--accent-yellow) 28%, var(--border)); }
+    .cash-kpi:nth-child(4) { background:color-mix(in srgb, var(--accent-2) 24%, var(--surface)); border-color:color-mix(in srgb, var(--accent-2) 30%, var(--border)); }
     .cash-kpi span { display:block; font-size:.75rem; opacity:.8; }
     .cash-kpi strong { display:block; font-size:1.2rem; margin-top:8px; }
     .cash-kpi small { display:block; opacity:.75; margin-top:4px; }
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
     .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
-    .cash-close-stamp { border:1px dashed rgba(15,23,42,.28); border-radius:16px; padding:10px 12px; font-size:.85rem; color:#334155; background:rgba(248,250,252,.8); }
+    .cash-close-stamp { border:1px dashed color-mix(in srgb, var(--border) 80%, var(--muted)); border-radius:8px; padding:10px 12px; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--surface-soft) 80%, var(--card)); }
     @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis { grid-template-columns:1fr; } }
     @media print {
       .no-print { display:none !important; }
@@ -161,7 +161,7 @@
 
         <aside class="cash-close-panel dark">
           <h2 class="empresa-section-title">Lectura rapida</h2>
-          <p class="form-help" style="color:#cbd5e1">Cuando generes el corte, estos indicadores se actualizan para validar caja antes de guardar.</p>
+          <p class="form-help">Cuando generes el corte, estos indicadores se actualizan para validar caja antes de guardar.</p>
           <div id="quickKpis" class="cash-close-kpis">
             <div class="cash-kpi"><span>Ventas</span><strong>COP 0</strong><small>0 operaciones</small></div>
             <div class="cash-kpi"><span>Efectivo esperado</span><strong>COP 0</strong><small>Incluye apertura</small></div>

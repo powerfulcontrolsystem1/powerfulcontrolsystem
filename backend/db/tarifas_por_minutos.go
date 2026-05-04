@@ -978,7 +978,7 @@ func CalcularDetalleTarifaPorMinutos(tarifa EmpresaTarifaPorMinutos, minutosCons
 		}
 	}
 	bloquesExtra := 0
-	if minutosFacturables > float64(tarifa.MinutosBase) {
+	if minutosFacturables > float64(tarifa.MinutosBase) && tarifa.MinutosExtra > 0 {
 		extraMinutos := minutosFacturables - float64(tarifa.MinutosBase)
 		bloquesExtra = int(math.Ceil(extraMinutos / float64(tarifa.MinutosExtra)))
 		if bloquesExtra < 0 {

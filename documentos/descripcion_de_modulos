@@ -1,3 +1,13 @@
+2026-05-04: Control electrico - Raspberry Pi GPIO por estacion
+- Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`, `habitaciones`
+- Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion/habitacion contra un pin GPIO.
+- Operacion automatica: cuando una estacion se activa, recupera o reabre, el backend envia `on` al rele configurado; cuando se paga, cierra o desactiva, envia `off`. El envio ocurre en segundo plano para no bloquear la venta si la Raspberry no responde.
+- Control manual: la pantalla permite guardar relés por estacion, seleccionar GPIO, nombre del rele, logica `activo alto`, pulso opcional y probar encendido/apagado manual.
+- Control desde carrito: en el carrito de estación se agrega el botón `Control eléctrico`, con panel manual para encender/apagar salidas de la habitación como luces, jacuzzi, aire, puerta u otros circuitos configurados.
+- Varias salidas por estación: una misma estación puede tener múltiples relés mediante `salida_codigo` y `tipo_carga`, manteniendo una bitácora individual por GPIO.
+- Trazabilidad: cada comando queda registrado en bitacora electrica con estacion, rele, GPIO, resultado, HTTP status, respuesta/error, actor, origen y fecha.
+- Endpoint Raspberry esperado: `POST http://<raspberry_ip>:<puerto>/api/gpio/relay` con JSON de empresa, estacion, relay, `gpio_pin`, `estado` (`on`/`off`), `active_high`, `pulso_ms`, actor y origen.
+
 2026-05-04: Asesor comercial - transferencias y pagos de comisiones
 - Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`
 - Cambio funcional: `web/super/asesor_comercial.html` agrega una configuracion completa de transferencias por asesor: metodo de pago, entidad financiera, tipo y numero de cuenta, titular, documento, contacto de pagos, periodicidad, dia de pago, minimo a transferir y requisito de soporte. La edicion de asesores queda en formulario directo y ya no depende solo de prompts para cambiar reglas.

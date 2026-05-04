@@ -1,3 +1,13 @@
+- Actualizacion 2026-05-04: control electrico Raspberry Pi
+	- `backend/db/control_electrico.go` : esquema, CRUD y consultas del modulo de control electrico por empresa: configuracion Raspberry Pi, multiples relés por estacion/salida y bitacora de eventos.
+	- `backend/handlers/control_electrico.go` : endpoint protegido `/api/empresa/control_electrico`, pruebas manuales ON/OFF, sincronizacion y despacho HTTP hacia la Raspberry Pi.
+	- `backend/handlers/control_electrico_test.go` : cubre construccion de endpoint y contrato JSON/headers del comando enviado hacia la Raspberry Pi.
+	- `backend/handlers/carritos_compras.go` : integra el despacho automatico al activar, recuperar, reabrir, cerrar, desactivar o pagar estaciones.
+	- `backend/handlers/sensor_puertas.go` : cuando un sensor autoactiva una estacion, tambien sincroniza el rele configurado.
+	- `web/administrar_empresa/control_electrico.html` : consola profesional para conexion Raspberry, mapeo estacion/GPIO por luces, jacuzzi, aire, puerta u otro circuito, pruebas y bitacora.
+	- `web/administrar_empresa/carrito_de_compras.html` : boton y panel `Control electrico` dentro del carrito de estacion para encender/apagar salidas de la habitacion.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` : agregan el modulo al menu y a la matriz de visibilidad por permisos.
+
 - Actualizacion 2026-04-30: pagos, chat IA, empresas compartidas y documentos dinamicos
 	- `backend/handlers/payments_handlers.go` : Smart Checkout v2 conserva fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`; si falta `epayco.customer_id`, devuelve error controlado en vez de redireccionar a un checkout legacy por GET.
 	- `web/pagar_licencia.html` : recibe `checkout_form`, valida la accion segura de Epayco y envia el formulario temporal por POST para evitar XML `AccessDenied`.

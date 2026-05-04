@@ -700,8 +700,14 @@ func main() {
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure control electrico schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure empresa productos schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_sensor_puertas_schema")
 	if runtimePostgres {
@@ -931,6 +937,7 @@ func main() {
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_empresa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosFinosHandler(dbSuper)))

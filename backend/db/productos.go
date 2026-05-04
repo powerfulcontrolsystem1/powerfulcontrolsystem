@@ -55,30 +55,36 @@ type CategoriaProducto struct {
 
 // Producto representa un producto asociado a una empresa.
 type Producto struct {
-	ID                   int64   `json:"id"`
-	EmpresaID            int64   `json:"empresa_id"`
-	BodegaPrincipalID    int64   `json:"bodega_principal_id,omitempty"`
-	ProveedorPrincipalID int64   `json:"proveedor_principal_id,omitempty"`
-	CategoriaID          int64   `json:"categoria_id,omitempty"`
-	SKU                  string  `json:"sku,omitempty"`
-	CodigoBarras         string  `json:"codigo_barras,omitempty"`
-	Nombre               string  `json:"nombre"`
-	Descripcion          string  `json:"descripcion,omitempty"`
-	Categoria            string  `json:"categoria,omitempty"`
-	Marca                string  `json:"marca,omitempty"`
-	UnidadMedida         string  `json:"unidad_medida,omitempty"`
-	Costo                float64 `json:"costo"`
-	Precio               float64 `json:"precio"`
-	ImpuestoPorcentaje   float64 `json:"impuesto_porcentaje"`
-	StockMinimo          float64 `json:"stock_minimo"`
-	StockMaximo          float64 `json:"stock_maximo"`
-	StockTotal           float64 `json:"stock_total"`
-	ImagenURL            string  `json:"imagen_url,omitempty"`
-	FechaCreacion        string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion   string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador       string  `json:"usuario_creador,omitempty"`
-	Estado               string  `json:"estado,omitempty"`
-	Observaciones        string  `json:"observaciones,omitempty"`
+	ID                    int64   `json:"id"`
+	EmpresaID             int64   `json:"empresa_id"`
+	BodegaPrincipalID     int64   `json:"bodega_principal_id,omitempty"`
+	ProveedorPrincipalID  int64   `json:"proveedor_principal_id,omitempty"`
+	CategoriaID           int64   `json:"categoria_id,omitempty"`
+	SKU                   string  `json:"sku,omitempty"`
+	CodigoBarras          string  `json:"codigo_barras,omitempty"`
+	Nombre                string  `json:"nombre"`
+	Descripcion           string  `json:"descripcion,omitempty"`
+	Categoria             string  `json:"categoria,omitempty"`
+	Marca                 string  `json:"marca,omitempty"`
+	UnidadMedida          string  `json:"unidad_medida,omitempty"`
+	Costo                 float64 `json:"costo"`
+	Precio                float64 `json:"precio"`
+	ImpuestoPorcentaje    float64 `json:"impuesto_porcentaje"`
+	StockMinimo           float64 `json:"stock_minimo"`
+	StockMaximo           float64 `json:"stock_maximo"`
+	StockTotal            float64 `json:"stock_total"`
+	ImagenURL             string  `json:"imagen_url,omitempty"`
+	ManejaVencimiento     bool    `json:"maneja_vencimiento"`
+	FechaVencimiento      string  `json:"fecha_vencimiento,omitempty"`
+	DiasAlertaVencimiento int     `json:"dias_alerta_vencimiento"`
+	LoteCodigo            string  `json:"lote_codigo,omitempty"`
+	EstadoVencimiento     string  `json:"estado_vencimiento,omitempty"`
+	DiasParaVencer        int     `json:"dias_para_vencer,omitempty"`
+	FechaCreacion         string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion    string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador        string  `json:"usuario_creador,omitempty"`
+	Estado                string  `json:"estado,omitempty"`
+	Observaciones         string  `json:"observaciones,omitempty"`
 }
 
 // ComboProducto representa un producto compuesto (combo) que se vende a precio unico.
@@ -509,6 +515,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			stock_minimo REAL DEFAULT 0,
 			stock_maximo REAL DEFAULT 0,
 			imagen_url TEXT,
+			maneja_vencimiento INTEGER DEFAULT 0,
+			fecha_vencimiento TEXT,
+			dias_alerta_vencimiento INTEGER DEFAULT 30,
+			lote_codigo TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -820,6 +830,18 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "productos", "imagen_url", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "productos", "maneja_vencimiento", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "productos", "fecha_vencimiento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "productos", "dias_alerta_vencimiento", "INTEGER DEFAULT 30"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "productos", "lote_codigo", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "productos", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -833,6 +855,9 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_productos_empresa_categoria_id ON productos(empresa_id, categoria_id);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_productos_empresa_vencimiento ON productos(empresa_id, maneja_vencimiento, fecha_vencimiento);`); err != nil {
 		return err
 	}
 
@@ -1387,9 +1412,102 @@ func validateProductoStockThresholds(stockMinimo, stockMaximo float64) error {
 	return nil
 }
 
+func productoBoolToInt(v bool) int {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func normalizeProductoFechaVencimiento(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	layouts := []string{"2006-01-02", "2006-01-02 15:04:05", time.RFC3339}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed.Format("2006-01-02"), nil
+		}
+	}
+	return "", fmt.Errorf("fecha_vencimiento debe tener formato YYYY-MM-DD")
+}
+
+func normalizeProductoDiasAlertaVencimiento(value int) int {
+	if value <= 0 {
+		return 30
+	}
+	if value > 3650 {
+		return 3650
+	}
+	return value
+}
+
+func normalizeProductoVencimiento(p *Producto) error {
+	if p == nil {
+		return nil
+	}
+	p.LoteCodigo = strings.TrimSpace(p.LoteCodigo)
+	p.DiasAlertaVencimiento = normalizeProductoDiasAlertaVencimiento(p.DiasAlertaVencimiento)
+	fecha, err := normalizeProductoFechaVencimiento(p.FechaVencimiento)
+	if err != nil {
+		return err
+	}
+	p.FechaVencimiento = fecha
+	if p.FechaVencimiento != "" {
+		p.ManejaVencimiento = true
+	}
+	if !p.ManejaVencimiento {
+		p.FechaVencimiento = ""
+		p.LoteCodigo = ""
+	}
+	applyProductoVencimientoRuntime(p, time.Now())
+	return nil
+}
+
+func productoVencimientoStatus(fecha string, diasAlerta int, now time.Time) (string, int) {
+	fecha = strings.TrimSpace(fecha)
+	if fecha == "" {
+		return "sin_fecha", 0
+	}
+	parsed, err := time.Parse("2006-01-02", fecha)
+	if err != nil {
+		return "fecha_invalida", 0
+	}
+	base := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	vencimiento := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.Local)
+	dias := int(vencimiento.Sub(base).Hours() / 24)
+	if dias < 0 {
+		return "vencido", dias
+	}
+	if dias == 0 {
+		return "vence_hoy", dias
+	}
+	if dias <= normalizeProductoDiasAlertaVencimiento(diasAlerta) {
+		return "proximo_vencer", dias
+	}
+	return "vigente", dias
+}
+
+func applyProductoVencimientoRuntime(p *Producto, now time.Time) {
+	if p == nil {
+		return
+	}
+	p.DiasAlertaVencimiento = normalizeProductoDiasAlertaVencimiento(p.DiasAlertaVencimiento)
+	if !p.ManejaVencimiento {
+		p.EstadoVencimiento = "no_aplica"
+		p.DiasParaVencer = 0
+		return
+	}
+	p.EstadoVencimiento, p.DiasParaVencer = productoVencimientoStatus(p.FechaVencimiento, p.DiasAlertaVencimiento, now)
+}
+
 // CreateProducto crea un producto y opcionalmente su stock inicial.
 func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referenciaInicial string) (int64, error) {
 	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+		return 0, err
+	}
+	if err := normalizeProductoVencimiento(&p); err != nil {
 		return 0, err
 	}
 	if stockInicial > 0 && p.BodegaPrincipalID <= 0 {
@@ -1422,11 +1540,11 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 
 	productoID, err := insertTxSQLCompat(tx, `INSERT INTO productos (
 		empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
-		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url,
+		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url, maneja_vencimiento, fecha_vencimiento, dias_alerta_vencimiento, lote_codigo,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		p.EmpresaID, nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
-		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL),
+		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), productoBoolToInt(p.ManejaVencimiento), strings.TrimSpace(p.FechaVencimiento), p.DiasAlertaVencimiento, strings.TrimSpace(p.LoteCodigo),
 		strings.TrimSpace(p.UsuarioCreador), strings.TrimSpace(p.Estado), strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, err
@@ -1488,6 +1606,7 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	query := `SELECT
 		p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.categoria_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, COALESCE(NULLIF(cp.nombre, ''), p.categoria), p.marca, p.unidad_medida,
 		p.costo, p.precio, p.impuesto_porcentaje, p.stock_minimo, p.stock_maximo, p.imagen_url,
+		COALESCE(p.maneja_vencimiento, 0), COALESCE(p.fecha_vencimiento, ''), COALESCE(p.dias_alerta_vencimiento, 30), COALESCE(p.lote_codigo, ''),
 		p.fecha_creacion, p.fecha_actualizacion, p.usuario_creador, p.estado, p.observaciones,
 		COALESCE(inv.stock_total, 0) AS stock_total
 	FROM productos p
@@ -1536,10 +1655,14 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		var bodegaPrincipalID sql.NullInt64
 		var proveedorPrincipalID sql.NullInt64
 		var categoriaIDVal sql.NullInt64
+		var manejaVencimiento int
+		var diasAlertaVencimiento sql.NullInt64
 		var sku, codigoBarras, desc, categoria, marca, unidad, imagenURL, fechaCre, fechaAct, usuario, estadoVal, obs sql.NullString
+		var fechaVencimiento, loteCodigo sql.NullString
 		if err := rows.Scan(
 			&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &categoriaIDVal, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
 			&p.Costo, &p.Precio, &p.ImpuestoPorcentaje, &p.StockMinimo, &p.StockMaximo, &imagenURL,
+			&manejaVencimiento, &fechaVencimiento, &diasAlertaVencimiento, &loteCodigo,
 			&fechaCre, &fechaAct, &usuario, &estadoVal, &obs,
 			&p.StockTotal,
 		); err != nil {
@@ -1575,6 +1698,16 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		if imagenURL.Valid {
 			p.ImagenURL = imagenURL.String
 		}
+		p.ManejaVencimiento = manejaVencimiento != 0
+		if fechaVencimiento.Valid {
+			p.FechaVencimiento = fechaVencimiento.String
+		}
+		if diasAlertaVencimiento.Valid {
+			p.DiasAlertaVencimiento = int(diasAlertaVencimiento.Int64)
+		}
+		if loteCodigo.Valid {
+			p.LoteCodigo = loteCodigo.String
+		}
 		if fechaCre.Valid {
 			p.FechaCreacion = fechaCre.String
 		}
@@ -1590,6 +1723,7 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		if obs.Valid {
 			p.Observaciones = obs.String
 		}
+		applyProductoVencimientoRuntime(&p, time.Now())
 		out = append(out, p)
 	}
 
@@ -1600,6 +1734,7 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, error) {
 	query := `SELECT p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.categoria_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, COALESCE(NULLIF(cp.nombre, ''), p.categoria), p.marca, p.unidad_medida,
 		p.costo, p.precio, p.impuesto_porcentaje, p.stock_minimo, p.stock_maximo, p.imagen_url,
+		COALESCE(p.maneja_vencimiento, 0), COALESCE(p.fecha_vencimiento, ''), COALESCE(p.dias_alerta_vencimiento, 30), COALESCE(p.lote_codigo, ''),
 		p.fecha_creacion, p.fecha_actualizacion, p.usuario_creador, p.estado, p.observaciones
 	FROM productos p
 	LEFT JOIN categorias_productos cp ON cp.empresa_id = p.empresa_id AND cp.id = p.categoria_id
@@ -1610,10 +1745,14 @@ func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, er
 	var bodegaPrincipalID sql.NullInt64
 	var proveedorPrincipalID sql.NullInt64
 	var categoriaID sql.NullInt64
+	var manejaVencimiento int
+	var diasAlertaVencimiento sql.NullInt64
 	var sku, codigoBarras, desc, categoria, marca, unidad, imagenURL, fechaCre, fechaAct, usuario, estadoVal, obs sql.NullString
+	var fechaVencimiento, loteCodigo sql.NullString
 	if err := row.Scan(
 		&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &categoriaID, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
 		&p.Costo, &p.Precio, &p.ImpuestoPorcentaje, &p.StockMinimo, &p.StockMaximo, &imagenURL,
+		&manejaVencimiento, &fechaVencimiento, &diasAlertaVencimiento, &loteCodigo,
 		&fechaCre, &fechaAct, &usuario, &estadoVal, &obs,
 	); err != nil {
 		return nil, err
@@ -1648,6 +1787,16 @@ func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, er
 	if imagenURL.Valid {
 		p.ImagenURL = imagenURL.String
 	}
+	p.ManejaVencimiento = manejaVencimiento != 0
+	if fechaVencimiento.Valid {
+		p.FechaVencimiento = fechaVencimiento.String
+	}
+	if diasAlertaVencimiento.Valid {
+		p.DiasAlertaVencimiento = int(diasAlertaVencimiento.Int64)
+	}
+	if loteCodigo.Valid {
+		p.LoteCodigo = loteCodigo.String
+	}
 	if fechaCre.Valid {
 		p.FechaCreacion = fechaCre.String
 	}
@@ -1663,12 +1812,75 @@ func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, er
 	if obs.Valid {
 		p.Observaciones = obs.String
 	}
+	applyProductoVencimientoRuntime(&p, time.Now())
 	return &p, nil
+}
+
+// GetProductosVencimientoByEmpresa devuelve productos vencidos o proximos a vencer.
+func GetProductosVencimientoByEmpresa(dbConn *sql.DB, empresaID int64, estadoVencimiento string, diasVentana, limit, offset int) ([]Producto, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if diasVentana <= 0 {
+		diasVentana = 30
+	}
+	if diasVentana > 3650 {
+		diasVentana = 3650
+	}
+
+	estadoVencimiento = strings.ToLower(strings.TrimSpace(estadoVencimiento))
+	now := time.Now()
+	filtered := make([]Producto, 0)
+	for pageOffset := 0; ; pageOffset += 500 {
+		rows, err := GetProductosByEmpresa(dbConn, empresaID, "", "activo", 0, 0, 500, pageOffset)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range rows {
+			applyProductoVencimientoRuntime(&p, now)
+			if !p.ManejaVencimiento {
+				continue
+			}
+			if estadoVencimiento != "" && estadoVencimiento != "todos" {
+				if p.EstadoVencimiento != estadoVencimiento {
+					continue
+				}
+			} else if p.EstadoVencimiento != "vencido" && p.EstadoVencimiento != "vence_hoy" && !(p.EstadoVencimiento == "proximo_vencer" && p.DiasParaVencer <= diasVentana) {
+				continue
+			}
+			filtered = append(filtered, p)
+		}
+		if len(rows) < 500 {
+			break
+		}
+	}
+
+	sort.SliceStable(filtered, func(i, j int) bool {
+		if filtered[i].DiasParaVencer == filtered[j].DiasParaVencer {
+			return strings.ToLower(filtered[i].Nombre) < strings.ToLower(filtered[j].Nombre)
+		}
+		return filtered[i].DiasParaVencer < filtered[j].DiasParaVencer
+	})
+
+	if offset >= len(filtered) {
+		return []Producto{}, nil
+	}
+	end := offset + limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	return filtered[offset:end], nil
 }
 
 // UpdateProducto actualiza un producto de la empresa.
 func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio string) error {
 	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+		return err
+	}
+	if err := normalizeProductoVencimiento(&p); err != nil {
 		return err
 	}
 
@@ -1704,10 +1916,14 @@ func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio s
 	nowExpr := sqlNowExpr()
 	res, err := execTxSQLCompat(tx, `UPDATE productos
 		SET bodega_principal_id = ?, proveedor_principal_id = ?, categoria_id = ?, sku = NULLIF(?, ''), codigo_barras = NULLIF(?, ''), nombre = ?, descripcion = ?, categoria = ?, marca = ?, unidad_medida = ?,
-			costo = ?, precio = ?, impuesto_porcentaje = ?, stock_minimo = ?, stock_maximo = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
+			costo = ?, precio = ?, impuesto_porcentaje = ?, stock_minimo = ?, stock_maximo = ?, imagen_url = ?,
+			maneja_vencimiento = ?, fecha_vencimiento = NULLIF(?, ''), dias_alerta_vencimiento = ?, lote_codigo = NULLIF(?, ''),
+			observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
-		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
+		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL),
+		productoBoolToInt(p.ManejaVencimiento), strings.TrimSpace(p.FechaVencimiento), p.DiasAlertaVencimiento, strings.TrimSpace(p.LoteCodigo),
+		strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
 	if err != nil {
 		return err
 	}

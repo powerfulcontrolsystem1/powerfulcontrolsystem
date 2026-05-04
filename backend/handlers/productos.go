@@ -263,6 +263,21 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			qParams := r.URL.Query()
+			action := strings.ToLower(strings.TrimSpace(qParams.Get("action")))
+			if action == "vencimientos" || action == "alertas_vencimiento" || action == "por_vencer" {
+				diasVentana, _ := parseIntQueryOptional(r, "dias")
+				limit, _ := parseIntQueryOptional(r, "limit")
+				offset, _ := parseIntQueryOptional(r, "offset")
+				rows, err := dbpkg.GetProductosVencimientoByEmpresa(dbEmp, empresaID, qParams.Get("estado_vencimiento"), diasVentana, limit, offset)
+				if err != nil {
+					http.Error(w, "failed to list productos por vencimiento: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(rows)
+				return
+			}
 			if id, _ := parseInt64QueryOptional(r, "id"); id > 0 {
 				p, err := dbpkg.GetProductoByID(dbEmp, empresaID, id)
 				if err != nil {

@@ -18224,6 +18224,30 @@ Archivos modificados:
 
 2026-05-02: fix: reparar carrito de caja y reporte de modulos
 PushStatus: OK
+2026-05-04: Control electrico con Raspberry Pi por estacion
+PushStatus: Pendiente
+Archivos modificados:
+- backend/db/control_electrico.go
+- backend/handlers/control_electrico.go
+- backend/handlers/control_electrico_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/sensor_puertas.go
+- backend/main.go
+- web/administrar_empresa/control_electrico.html
+- web/administrar_empresa.html
+- web/js/administrar_empresa.js
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+
+- Se crea el modulo `Control electrico` para mapear estaciones/habitaciones con relés GPIO controlados por Raspberry Pi.
+- Se registra configuracion por empresa: modulo activo, IP/host, puerto, ruta API, token opcional, timeout, sincronizacion automatica y fail-safe.
+- Se crean multiples salidas por estacion con `salida_codigo`, tipo de carga, GPIO, nombre, logica activo alto, pulso opcional, estado runtime y bitacora de eventos.
+- Se agrega al carrito de estacion el boton `Control electrico` para encender/apagar manualmente luces, jacuzzi, aire, puerta u otros circuitos configurados de la habitacion.
+- Se integra el envio automatico en activacion, recuperacion, reapertura, cierre, desactivacion y pago de estaciones; tambien en autoactivacion por sensor de puertas.
+- Validacion tecnica: `go test ./...` en backend OK; `go test ./handlers` OK despues de formatear prueba dedicada. Validacion JS con Node no ejecutada porque `node.exe` del entorno devolvio Acceso denegado.
+
 Archivos modificados:
 - documentos/reporte_estado_modulos_2026-05-02.md
 - web/administrar_empresa/carrito_de_compras.html

@@ -116,7 +116,7 @@ func main() {
 		"email":           strings.TrimSpace(*email),
 		"password":        *password,
 		"accept_contract": true,
-		"recaptcha_token": "qa-local",
+		"recaptcha_token": "dev-bypass",
 	}
 	_, loginStep := do("usuarios", "login_usuario", http.MethodPost, "/api/empresa/usuarios/login", loginBody)
 	if !loginStep.OK {

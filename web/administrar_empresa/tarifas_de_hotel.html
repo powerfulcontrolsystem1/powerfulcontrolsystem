@@ -7,22 +7,22 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
-      --hotel-ink: #122033;
-      --hotel-muted: #5b6b82;
-      --hotel-line: rgba(18, 32, 51, 0.12);
-      --hotel-card: rgba(255, 255, 255, 0.94);
-      --hotel-soft: #f4f8fb;
-      --hotel-accent: #0f766e;
-      --hotel-accent-2: #d97706;
-      --hotel-danger: #b42318;
-      --hotel-shadow: 0 22px 70px rgba(15, 23, 42, 0.14);
+      --hotel-ink: var(--text);
+      --hotel-muted: var(--muted);
+      --hotel-line: var(--border);
+      --hotel-card: var(--card);
+      --hotel-soft: var(--surface-soft);
+      --hotel-accent: var(--accent-2);
+      --hotel-accent-2: var(--accent-yellow);
+      --hotel-danger: var(--danger);
+      --hotel-shadow: 0 22px 70px color-mix(in srgb, #020617 18%, transparent);
     }
 
     body.hotel-rates-page {
       background:
-        radial-gradient(circle at 8% 12%, rgba(15, 118, 110, 0.18), transparent 30%),
-        radial-gradient(circle at 92% 4%, rgba(217, 119, 6, 0.16), transparent 28%),
-        linear-gradient(135deg, #eef7f5 0%, #f8fafc 42%, #fff7ed 100%);
+        radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--hotel-accent) 16%, transparent), transparent 30%),
+        radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--hotel-accent-2) 14%, transparent), transparent 28%),
+        linear-gradient(135deg, var(--bg-alt) 0%, var(--bg) 100%);
       color: var(--hotel-ink);
     }
 
@@ -46,7 +46,7 @@
       border: 1px solid var(--hotel-line);
       background: var(--hotel-card);
       box-shadow: var(--hotel-shadow);
-      border-radius: 28px;
+      border-radius: 8px;
       overflow: hidden;
     }
 
@@ -62,7 +62,7 @@
       width: 240px;
       height: 240px;
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(15, 118, 110, 0.2), rgba(217, 119, 6, 0.2));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--hotel-accent) 20%, transparent), color-mix(in srgb, var(--hotel-accent-2) 18%, transparent));
       pointer-events: none;
     }
 
@@ -73,8 +73,8 @@
       margin-bottom: 14px;
       padding: 7px 12px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.1);
-      color: #0f766e;
+      background: color-mix(in srgb, var(--hotel-accent) 12%, var(--hotel-card));
+      color: var(--hotel-accent);
       font-weight: 800;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -85,7 +85,7 @@
       margin: 0;
       font-size: clamp(2.1rem, 5vw, 4.4rem);
       line-height: 0.93;
-      letter-spacing: -0.06em;
+      letter-spacing: 0;
       max-width: 780px;
     }
 
@@ -102,17 +102,17 @@
       display: grid;
       gap: 12px;
       align-content: center;
-      background: linear-gradient(145deg, rgba(18, 32, 51, 0.96), rgba(15, 118, 110, 0.9));
-      color: #fff;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 72%, #020617), color-mix(in srgb, var(--hotel-accent) 44%, var(--surface)));
+      color: var(--text);
     }
 
     .hotel-hero-side strong {
       font-size: 1.6rem;
-      letter-spacing: -0.04em;
+      letter-spacing: 0;
     }
 
     .hotel-hero-side span {
-      color: rgba(255, 255, 255, 0.78);
+      color: color-mix(in srgb, var(--text) 76%, var(--muted));
       line-height: 1.5;
     }
 
@@ -134,9 +134,9 @@
 
     .hotel-kpi {
       padding: 18px;
-      border-radius: 22px;
+      border-radius: 8px;
       border: 1px solid var(--hotel-line);
-      background: rgba(255, 255, 255, 0.78);
+      background: color-mix(in srgb, var(--hotel-card) 88%, var(--hotel-soft));
       backdrop-filter: blur(10px);
     }
 
@@ -151,7 +151,7 @@
       display: block;
       font-size: 1.9rem;
       line-height: 1;
-      letter-spacing: -0.04em;
+      letter-spacing: 0;
     }
 
     .hotel-tabs {
@@ -163,7 +163,7 @@
 
     .hotel-tab {
       border: 1px solid var(--hotel-line);
-      background: rgba(255, 255, 255, 0.8);
+      background: color-mix(in srgb, var(--hotel-card) 86%, var(--hotel-soft));
       color: var(--hotel-ink);
       border-radius: 999px;
       padding: 10px 15px;
@@ -172,8 +172,8 @@
     }
 
     .hotel-tab.is-active {
-      background: var(--hotel-ink);
-      color: #fff;
+      background: var(--accent);
+      color: var(--btn-primary-text);
     }
 
     .hotel-section {
@@ -197,7 +197,7 @@
     .hotel-card h2,
     .hotel-panel h2 {
       margin: 0 0 8px;
-      letter-spacing: -0.04em;
+      letter-spacing: 0;
     }
 
     .hotel-card p,
@@ -229,8 +229,8 @@
     .hotel-table-wrap {
       overflow: auto;
       border: 1px solid var(--hotel-line);
-      border-radius: 20px;
-      background: #fff;
+      border-radius: 8px;
+      background: var(--hotel-card);
     }
 
     .hotel-table {
@@ -242,7 +242,7 @@
     .hotel-table th,
     .hotel-table td {
       padding: 12px 14px;
-      border-bottom: 1px solid rgba(18, 32, 51, 0.08);
+      border-bottom: 1px solid var(--hotel-line);
       text-align: left;
       vertical-align: top;
     }
@@ -252,27 +252,27 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--hotel-muted);
-      background: #f8fafc;
+      background: var(--hotel-soft);
     }
 
     .hotel-badge {
       display: inline-flex;
       padding: 5px 9px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.1);
-      color: #0f766e;
+      background: color-mix(in srgb, var(--hotel-accent) 12%, var(--hotel-card));
+      color: var(--hotel-accent);
       font-weight: 800;
       font-size: 0.78rem;
     }
 
     .hotel-badge.warn {
-      background: rgba(217, 119, 6, 0.12);
-      color: #b45309;
+      background: color-mix(in srgb, var(--hotel-accent-2) 14%, var(--hotel-card));
+      color: var(--hotel-accent-2);
     }
 
     .hotel-empty {
       padding: 20px;
-      border-radius: 18px;
+      border-radius: 8px;
       background: var(--hotel-soft);
       color: var(--hotel-muted);
       line-height: 1.55;
@@ -298,8 +298,8 @@
     .hotel-result {
       margin-top: 14px;
       padding: 14px;
-      border-radius: 18px;
-      background: #f8fafc;
+      border-radius: 8px;
+      background: var(--hotel-soft);
       border: 1px solid var(--hotel-line);
       color: var(--hotel-muted);
       line-height: 1.55;

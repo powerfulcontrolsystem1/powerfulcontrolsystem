@@ -141,6 +141,7 @@
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
+          <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Control eléctrico</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label class="form-help inline-check carrito-alert10-check">
             <input type="checkbox" id="carritoAlerta10Enable" checked>
@@ -172,6 +173,16 @@
             </div>
           </div>
           <div id="carritoTarifaMsg" class="form-help mt-6"></div>
+        </div>
+        <div id="carritoControlElectricoPanel" class="empresa-section mt-10 is-hidden" hidden>
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Automatización de habitación</h3>
+              <p class="form-help mt-0">Control manual de salidas eléctricas configuradas para esta estación.</p>
+            </div>
+          </div>
+          <div id="carritoControlElectricoContent" class="form-help">Cargando controles...</div>
+          <div id="carritoControlElectricoMsg" class="form-help mt-6"></div>
         </div>
       </section>
 
@@ -487,6 +498,11 @@
       stationCartUI: null,
       stationUpdateInterval: null,
       stationAlert10Interval: null,
+      controlElectrico: {
+        loaded: false,
+        config: null,
+        reles: []
+      },
       qCarrito: '',
       carritos: [],
       clientes: [],
@@ -3707,6 +3723,13 @@
       box.className = 'form-help mt-6' + (isError ? ' error' : '');
     }
 
+    function setCarritoControlElectricoMessage(message, isError) {
+      const box = document.getElementById('carritoControlElectricoMsg');
+      if (!box) return;
+      box.textContent = message || '';
+      box.className = 'form-help mt-6' + (isError ? ' error' : '');
+    }
+
     function resolveCarritoEstacionID(carrito) {
       if (!carrito) return Number(state.stationID || 0);
       if (state.stationID > 0) return Number(state.stationID);
@@ -3802,6 +3825,111 @@
       panel.classList.remove('is-hidden');
       panel.style.display = '';
       populateCarritoTarifaSelect();
+    }
+
+    function controlElectricoIcon(tipo) {
+      const value = normalize(tipo).toLowerCase();
+      if (value.indexOf('jacuzzi') !== -1) return '♨';
+      if (value.indexOf('luz') !== -1 || value.indexOf('luces') !== -1) return '☼';
+      if (value.indexOf('puerta') !== -1) return '▣';
+      if (value.indexOf('ventil') !== -1 || value.indexOf('aire') !== -1) return '≋';
+      return '⚡';
+    }
+
+    function renderCarritoControlElectricoPanel() {
+      const box = document.getElementById('carritoControlElectricoContent');
+      if (!box) return;
+      const cfg = state.controlElectrico.config || {};
+      const reles = Array.isArray(state.controlElectrico.reles) ? state.controlElectrico.reles : [];
+      if (!cfg.habilitado) {
+        box.innerHTML = '<div class="alert">El módulo de control eléctrico no está activo para esta empresa.</div>';
+        return;
+      }
+      if (!reles.length) {
+        box.innerHTML = '<div class="alert">Esta estación no tiene salidas eléctricas configuradas. Configúralas en Administrar empresa &gt; Control eléctrico.</div>';
+        return;
+      }
+      box.innerHTML = '<div class="control-electrico-cart-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">' +
+        reles.map(function(rele) {
+          const estado = normalize(rele.ultimo_estado || 'desconocido').toLowerCase();
+          const isOn = estado === 'on' || estado === 'encendido';
+          return '<div class="card" style="padding:12px;border-radius:8px;">' +
+            '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">' +
+              '<div><strong>' + escapeHtml(controlElectricoIcon(rele.tipo_carga) + ' ' + (rele.relay_name || rele.tipo_carga || 'Salida eléctrica')) + '</strong>' +
+              '<div class="form-help">GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' · ' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</div></div>' +
+              '<span class="status-pill ' + (isOn ? 'success' : 'muted') + '">' + escapeHtml(isOn ? 'Encendido' : (estado === 'off' ? 'Apagado' : 'Sin estado')) + '</span>' +
+            '</div>' +
+            '<div class="form-actions mt-10">' +
+              '<button type="button" class="btn secondary control-electrico-off" data-rele-id="' + escapeHtml(rele.id || 0) + '">Apagar</button>' +
+              '<button type="button" class="btn add control-electrico-on" data-rele-id="' + escapeHtml(rele.id || 0) + '">Encender</button>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+
+    async function loadCarritoControlElectricoPanel() {
+      const selected = getSelectedCarrito();
+      const stationID = resolveCarritoEstacionID(selected);
+      const box = document.getElementById('carritoControlElectricoContent');
+      if (!state.empresaID || !stationID) {
+        if (box) box.innerHTML = '<div class="alert">No se pudo identificar la estación del carrito.</div>';
+        return;
+      }
+      if (box) box.textContent = 'Cargando controles eléctricos...';
+      try {
+        const url = new URL('/api/empresa/control_electrico', window.location.origin);
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('action', 'estacion_controls');
+        url.searchParams.set('estacion_id', String(stationID));
+        const res = await fetchWithTimeout(url.pathname + url.search, { credentials: 'same-origin' });
+        await ensureOk(res);
+        const payload = await res.json();
+        state.controlElectrico.loaded = true;
+        state.controlElectrico.config = payload.config || {};
+        state.controlElectrico.reles = Array.isArray(payload.reles) ? payload.reles : [];
+        renderCarritoControlElectricoPanel();
+        setCarritoControlElectricoMessage('', false);
+      } catch (err) {
+        if (box) box.innerHTML = '<div class="alert">' + escapeHtml(err.message || 'No se pudieron cargar controles eléctricos.') + '</div>';
+        setCarritoControlElectricoMessage(err.message || 'No se pudieron cargar controles eléctricos.', true);
+      }
+    }
+
+    function openCarritoControlElectricoPanel() {
+      const panel = document.getElementById('carritoControlElectricoPanel');
+      if (!getSelectedCarrito() || !panel) {
+        setMessage('itemMsg', 'Selecciona un carrito de estación para abrir control eléctrico.', true);
+        return;
+      }
+      panel.hidden = false;
+      panel.classList.remove('is-hidden');
+      panel.style.display = '';
+      loadCarritoControlElectricoPanel();
+    }
+
+    async function sendCarritoControlElectricoCommand(releID, estado) {
+      const selected = getSelectedCarrito();
+      const stationID = resolveCarritoEstacionID(selected);
+      if (!stationID || !releID) {
+        setCarritoControlElectricoMessage('Selecciona una salida eléctrica válida.', true);
+        return;
+      }
+      try {
+        setCarritoControlElectricoMessage('Enviando comando...', false);
+        const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=probar_rele';
+        const res = await fetchWithTimeout(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estacion_id: stationID, rele_id: Number(releID), estado: estado })
+        });
+        await ensureOk(res);
+        setCarritoControlElectricoMessage(estado === 'on' ? 'Salida encendida.' : 'Salida apagada.', false);
+        await loadCarritoControlElectricoPanel();
+      } catch (err) {
+        setCarritoControlElectricoMessage(err.message || 'No se pudo enviar el comando eléctrico.', true);
+      }
     }
 
     async function applyCarritoTarifaTiempo() {
@@ -4704,6 +4832,20 @@
     document.getElementById('carritoBtnCambiarTarifa').addEventListener('click', function() {
       openCarritoTarifaPanel();
     });
+    const carritoBtnControlElectrico = document.getElementById('carritoBtnControlElectrico');
+    if (carritoBtnControlElectrico) {
+      carritoBtnControlElectrico.addEventListener('click', openCarritoControlElectricoPanel);
+    }
+    const carritoControlElectricoContent = document.getElementById('carritoControlElectricoContent');
+    if (carritoControlElectricoContent) {
+      carritoControlElectricoContent.addEventListener('click', function(ev) {
+        const onBtn = ev.target.closest('.control-electrico-on');
+        const offBtn = ev.target.closest('.control-electrico-off');
+        const btn = onBtn || offBtn;
+        if (!btn) return;
+        sendCarritoControlElectricoCommand(btn.getAttribute('data-rele-id'), onBtn ? 'on' : 'off');
+      });
+    }
     const carritoTarifaModo = document.getElementById('carritoTarifaModo');
     if (carritoTarifaModo) {
       carritoTarifaModo.addEventListener('change', populateCarritoTarifaSelect);

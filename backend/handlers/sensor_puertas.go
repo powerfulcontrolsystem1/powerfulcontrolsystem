@@ -192,6 +192,7 @@ func maybeAutoActivateStationFromSensor(dbEmp *sql.DB, empresaID, estacionID int
 		log.Printf("[sensor_puertas] auto activate empresa_id=%d estacion_id=%d carrito_id=%d error: %v", empresaID, estacionID, carrito.ID, err)
 		return false, "no se pudo autoactivar la estacion"
 	}
+	dispatchControlElectricoEstacionAsync(dbEmp, carrito, true, "sensor_puertas", "sensor_puertas_autoactivacion")
 	return true, ""
 }
 
