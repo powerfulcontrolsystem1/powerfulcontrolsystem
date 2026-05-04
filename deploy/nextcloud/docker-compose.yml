@@ -26,7 +26,7 @@ services:
     container_name: pcs-nextcloud
     restart: unless-stopped
     ports:
-      - "8090:80"
+      - "127.0.0.1:8090:80"
     depends_on:
       - pcs-nextcloud-db
       - pcs-nextcloud-redis
@@ -40,6 +40,8 @@ services:
       - REDIS_HOST=pcs-nextcloud-redis
       - TRUSTED_PROXIES=127.0.0.1
       - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=nextcloud.powerfulcontrolsystem.com
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.powerfulcontrolsystem.com
     volumes:
       - pcs_nextcloud_html:/var/www/html
       - pcs_nextcloud_data:/var/www/html/data
@@ -49,4 +51,3 @@ volumes:
   pcs_nextcloud_redis:
   pcs_nextcloud_html:
   pcs_nextcloud_data:
-
