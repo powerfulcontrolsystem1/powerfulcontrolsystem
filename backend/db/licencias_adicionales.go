@@ -180,12 +180,17 @@ func UpsertEmpresaLicenciaAdicional(dbConn *sql.DB, empresaID, licenciaID int64,
 		if err != nil {
 			return 0, err
 		}
+		InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
 		return existing.ID, nil
 	}
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
-	return insertSQLCompat(dbConn, "INSERT INTO empresa_licencias_adicionales (empresa_id, licencia_id, fecha_inicio, fecha_fin, activo, auto_renovar, estado, usuario_creador, observaciones, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, 1, ?, 'activa', ?, ?, "+nowExpr+", "+nowExpr+")", empresaID, licenciaID, fechaInicio, fechaFin, autoRenovarInt, strings.TrimSpace(usuarioCreador), strings.TrimSpace(observaciones))
+	id, err := insertSQLCompat(dbConn, "INSERT INTO empresa_licencias_adicionales (empresa_id, licencia_id, fecha_inicio, fecha_fin, activo, auto_renovar, estado, usuario_creador, observaciones, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, 1, ?, 'activa', ?, ?, "+nowExpr+", "+nowExpr+")", empresaID, licenciaID, fechaInicio, fechaFin, autoRenovarInt, strings.TrimSpace(usuarioCreador), strings.TrimSpace(observaciones))
+	if err == nil {
+		InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	}
+	return id, err
 }
 
 func SetEmpresaLicenciaAdicionalEstado(dbConn *sql.DB, empresaID, licenciaID int64, activo bool, autoRenovar *bool, observaciones string) error {
@@ -212,14 +217,20 @@ func SetEmpresaLicenciaAdicionalEstado(dbConn *sql.DB, empresaID, licenciaID int
 	query := "UPDATE empresa_licencias_adicionales SET activo = ?, auto_renovar = " + autoExpr + ", estado = ?, observaciones = COALESCE(NULLIF(?, ''), observaciones), fecha_actualizacion = " + nowExpr + " WHERE empresa_id = ? AND licencia_id = ?"
 	args = append([]interface{}{activoInt}, args...)
 	args = append(args, estado, strings.TrimSpace(observaciones), empresaID, licenciaID)
-	_, err := execSQLCompat(dbConn, query, args...)
-	return err
+	if _, err := execSQLCompat(dbConn, query, args...); err != nil {
+		return err
+	}
+	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	return nil
 }
 
 func SetLicenciaFechas(dbConn *sql.DB, licenciaID int64, fechaInicio, fechaFin string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE licencias SET fecha_inicio = ?, fecha_fin = ?, activo = 1, estado = 'activo', fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(fechaInicio), strings.TrimSpace(fechaFin), licenciaID)
-	return err
+	if _, err := execSQLCompat(dbConn, "UPDATE licencias SET fecha_inicio = ?, fecha_fin = ?, activo = 1, estado = 'activo', fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(fechaInicio), strings.TrimSpace(fechaFin), licenciaID); err != nil {
+		return err
+	}
+	invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, licenciaID)
+	return nil
 }
 
 func roundAddonAmount(value float64) float64 {

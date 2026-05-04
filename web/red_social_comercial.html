@@ -7,50 +7,54 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
-    body{margin:0;color:var(--text);min-height:100vh;background:radial-gradient(circle at 30% 0%,color-mix(in srgb,var(--accent) 18%,transparent 82%),transparent 32%),linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif}
-    .social-shell{max-width:980px;margin:0 auto;padding:22px 14px 64px}
+    body{margin:0;color:var(--text);min-height:100vh;background:linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif}
+    .social-shell{width:100%;max-width:1180px;margin:0 auto;padding:18px 14px 64px;box-sizing:border-box}
     .social-topbar{
       position:sticky;top:0;z-index:20;
-      padding:12px 12px;
+      width:min(100%,720px);
+      box-sizing:border-box;
+      padding:12px 14px;
       border:1px solid var(--border);
-      border-radius:18px;
-      background:linear-gradient(135deg, rgba(31,142,241,0.12), rgba(255,255,255,0.02)), var(--surface);
-      box-shadow:0 18px 44px rgba(0,0,0,0.14);
-      margin: 8px auto 14px;
+      border-radius:8px;
+      background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%);
+      box-shadow:0 12px 28px color-mix(in srgb,#020617 16%,transparent);
+      margin: 8px auto 16px;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
     }
-    .social-topbar h1{font-size:clamp(1.2rem,2.4vw,1.75rem);margin:0;font-weight:900;letter-spacing:-.03em}
+    .social-topbar h1{font-size:clamp(1.14rem,2.1vw,1.45rem);margin:0;font-weight:900;letter-spacing:0;color:var(--text)}
     .social-topbar p{margin:0;color:var(--muted);max-width:48rem;line-height:1.35;font-size:0.92rem}
-    .feed{display:flex;flex-direction:column;gap:10px;align-items:stretch}
-    .post-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 92%,var(--surface) 8%),var(--surface));border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 26px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column}
-    .post-cover{height:140px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent 82%),color-mix(in srgb,var(--accent-2) 16%,transparent 84%));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
-    .post-media{width:100%;border:0;display:block}
-    .post-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .feed{display:flex;flex-direction:column;gap:14px;align-items:center;width:100%}
+    .post-card{width:min(100%,560px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 24px color-mix(in srgb,#020617 14%,transparent);overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+    .post-cover{height:220px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--surface-soft)),color-mix(in srgb,var(--accent-2) 12%,var(--surface)));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
+    .post-media{width:100%;height:auto;aspect-ratio:16/9;border:0;display:block;background:var(--surface-soft)}
+    .post-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
     .post-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.86rem}
-    .post-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;font-weight:900}
-    .post-title{font-size:1.02rem;line-height:1.25;margin:0;font-weight:900}
-    .post-desc{color:var(--text);line-height:1.42;margin:0;white-space:pre-wrap;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .post-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);font-weight:900;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .post-title{font-size:1rem;line-height:1.25;margin:0;font-weight:900;color:var(--text)}
+    .post-desc{color:var(--text);line-height:1.45;margin:0;white-space:pre-wrap;font-size:0.94rem;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
     .post-actions{margin-top:auto;display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap}
     .post-chip{font-size:.82rem;color:var(--muted)}
-    .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:800;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 24%,transparent)}
-    .btn-private{background:transparent;color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:800}
-    .empty-state{grid-column:1/-1;text-align:center;color:var(--muted);padding:42px;border:1px dashed var(--border);border-radius:22px;background:var(--surface)}
-    .load-more{color:var(--muted);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:14px;background:var(--surface)}
-    .react-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .react-btn{border:1px solid var(--border);background:transparent;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:900;cursor:pointer}
-    .react-btn.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
+    .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);border:none;padding:9px 14px;border-radius:8px;text-decoration:none;font-weight:800;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .btn-private{background:var(--surface-soft);color:var(--text);border:1px solid var(--border);padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:800;cursor:pointer}
+    .empty-state{width:min(100%,560px);box-sizing:border-box;text-align:center;color:var(--muted);padding:32px;border:1px dashed var(--border);border-radius:8px;background:var(--surface)}
+    .load-more{width:min(100%,560px);box-sizing:border-box;color:var(--muted);text-align:center;padding:12px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);margin:14px auto 0}
+    .react-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:7px 0}
+    .react-btn{border:0;background:transparent;color:var(--muted);padding:8px 8px;border-radius:8px;font-weight:850;cursor:pointer;font-size:.88rem}
+    .react-btn:hover{background:var(--surface-soft);color:var(--text)}
+    .react-btn.active{background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent);border-color:transparent}
     .react-mini{color:var(--muted);font-size:.85rem}
-    .comments{border-top:1px solid var(--border);padding-top:10px;margin-top:8px;display:none}
+    .react-row .react-mini{grid-column:1/-1;text-align:left;padding:0 4px}
+    .comments{padding-top:6px;margin-top:0;display:none}
     .comments.open{display:block}
-    .comment{padding:8px 10px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent 18%);margin-top:8px}
+    .comment{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);margin-top:8px}
     .comment .meta{color:var(--muted);font-size:.84rem}
     .comment .txt{white-space:pre-wrap;margin-top:2px;line-height:1.35}
     .comment-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:flex-start}
-    .comment-form input,.comment-form textarea{background:var(--input-bg-soft);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px}
+    .comment-form input,.comment-form textarea{background:var(--input-bg);border:1px solid var(--form-border);color:var(--text);border-radius:8px;padding:10px 12px;box-sizing:border-box}
     .comment-form input{flex:1;min-width:180px}
     .comment-form textarea{flex:1;min-width:240px;min-height:42px;resize:vertical}
-    .comment-form .btn-send{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:10px 14px;border-radius:14px;font-weight:950;cursor:pointer}
-    @media(max-width:640px){.social-shell{padding:14px 12px 44px}.post-cover{height:130px}}
+    .comment-form .btn-send{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);border:none;padding:10px 14px;border-radius:8px;font-weight:950;cursor:pointer}
+    @media(max-width:640px){.social-shell{padding:12px 10px 44px}.social-topbar{width:100%;position:static}.post-card,.empty-state,.load-more{width:100%}.post-cover{height:180px}.react-row{grid-template-columns:1fr}.comment-form textarea,.comment-form input{min-width:100%}}
   </style>
 </head>
 <body>
@@ -141,7 +145,7 @@
       const y = youtubeEmbedURL(p.youtube_url || "");
       const cover = img ? `style="background-image:url('${escapeHtml(img)}')"` : '';
       const mediaHtml = y
-        ? `<iframe class="post-media" height="360" src="${escapeHtml(y)}" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`
+        ? `<iframe class="post-media" src="${escapeHtml(y)}" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`
         : '';
       const userReaction = String(p.user_reaction || '').trim();
       const reaccionesResumen = p.reacciones_resumen || null;

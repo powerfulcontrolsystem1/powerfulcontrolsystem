@@ -409,7 +409,7 @@
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú"><span class="fm-toggle-icon">☰</span></button>' +
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
-        '<a class="fm-item" href="/red_social_comercial.html">Red social comercial</a>' +
+        '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +

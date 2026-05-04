@@ -249,7 +249,11 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 		}
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	return nil
 }
 
 func isLicenciaGratisUniqueConstraintErr(err error) bool {

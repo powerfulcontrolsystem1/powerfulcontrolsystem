@@ -27,6 +27,51 @@ type cachedLicenciaPermisoPolicy struct {
 	LoadedAt time.Time
 }
 
+// InvalidateLicenciaPermisoPolicyCacheForEmpresa descarta el permiso efectivo
+// calculado desde licencias para que activaciones/desactivaciones se reflejen
+// inmediatamente en menus, roles y protecciones de API.
+func InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID int64) {
+	if empresaID <= 0 {
+		return
+	}
+	licenciaPermisoPolicyCacheMu.Lock()
+	delete(licenciaPermisoPolicyCache, empresaID)
+	licenciaPermisoPolicyCacheMu.Unlock()
+}
+
+func invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn *sql.DB, licenciaID int64) {
+	if dbConn == nil || licenciaID <= 0 {
+		return
+	}
+	empresaIDs := map[int64]struct{}{}
+
+	rows, err := querySQLCompat(dbConn, `SELECT empresa_id FROM licencias WHERE id = ? AND COALESCE(empresa_id, 0) > 0`, licenciaID)
+	if err == nil {
+		for rows.Next() {
+			var empresaID sql.NullInt64
+			if scanErr := rows.Scan(&empresaID); scanErr == nil && empresaID.Valid && empresaID.Int64 > 0 {
+				empresaIDs[empresaID.Int64] = struct{}{}
+			}
+		}
+		_ = rows.Close()
+	}
+
+	addonRows, addonErr := querySQLCompat(dbConn, `SELECT empresa_id FROM empresa_licencias_adicionales WHERE licencia_id = ? AND COALESCE(empresa_id, 0) > 0`, licenciaID)
+	if addonErr == nil {
+		for addonRows.Next() {
+			var empresaID sql.NullInt64
+			if scanErr := addonRows.Scan(&empresaID); scanErr == nil && empresaID.Valid && empresaID.Int64 > 0 {
+				empresaIDs[empresaID.Int64] = struct{}{}
+			}
+		}
+		_ = addonRows.Close()
+	}
+
+	for empresaID := range empresaIDs {
+		InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	}
+}
+
 type cachedAdminByEmail struct {
 	Admin    *Admin
 	LoadedAt time.Time
@@ -673,6 +718,7 @@ func UpdateLicenciaAdvanced(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre
 
 	_, err := execSQLCompat(dbConn, query, args...)
 	if err == nil {
+		invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 		return nil
 	}
 	if !isMissingTableError(err) && !isMissingColumnError(err) {
@@ -681,6 +727,7 @@ func UpdateLicenciaAdvanced(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre
 	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
 		_, retryErr := execSQLCompat(dbConn, query, args...)
 		if retryErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 			return nil
 		}
 		err = retryErr
@@ -688,6 +735,7 @@ func UpdateLicenciaAdvanced(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre
 	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
 		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, args...)
 		if fallbackErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 			return nil
 		}
 		err = fallbackErr
@@ -821,6 +869,7 @@ func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
 	query := "UPDATE licencias SET activo = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
 	_, err := execSQLCompat(dbConn, query, activo, id)
 	if err == nil {
+		invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 		return nil
 	}
 	if !isMissingTableError(err) && !isMissingColumnError(err) {
@@ -829,6 +878,7 @@ func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
 	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
 		_, retryErr := execSQLCompat(dbConn, query, activo, id)
 		if retryErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 			return nil
 		}
 		err = retryErr
@@ -836,6 +886,7 @@ func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
 	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
 		_, fallbackErr := execSQLCompat(dbConn, "UPDATE licencias SET activo = ? WHERE id = ?", activo, id)
 		if fallbackErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
 			return nil
 		}
 		err = fallbackErr
@@ -2135,7 +2186,11 @@ func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fec
 	if _, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	return nil
 }
 
 // SetConfigValue inserta o actualiza una configuración en la tabla configuraciones

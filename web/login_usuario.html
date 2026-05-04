@@ -8,20 +8,21 @@
   <script src="/menu.js"></script>
 </head>
 <body>
-  <div class="login-page">
+  <div class="login-page login-usuario-page">
     <div class="login-header">
       <h1 class="login-title">Acceso de usuarios operativos</h1>
-      <div><a class="btn secondary login-help-btn" href="/ayuda/ayuda.html">Saber más</a></div>
+      <div class="login-header-actions">
+        <a class="login-help-icon" href="/ayuda/ayuda.html" aria-label="Ayuda de acceso de usuarios operativos" title="Ayuda">?</a>
+        <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
+      </div>
     </div>
     <div class="container">
       <div class="form-actions auth-alt-actions auth-actions-top" style="margin-bottom: 20px; justify-content: center;">
-        <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
         <a class="btn secondary admin-link-btn" href="/login.html">Acceso de administradores</a>
       </div>
 
       <div class="card">
         <h2>Iniciar sesión</h2>
-        <p class="form-help">Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa.</p>
 
         <form id="loginUsuarioForm" class="form email-login" autocomplete="on" novalidate>
           <h3 class="text-center-lowercase">continúa con tu correo operativo</h3>
@@ -30,7 +31,6 @@
             <div class="form-col">
               <label class="form-label" for="empresaID">Empresa ID</label>
               <input id="empresaID" type="number" class="form-input" min="1" step="1" inputmode="numeric" placeholder="Ejemplo: 7">
-              <p class="form-help">Si el enlace no trae la empresa, ingrésala aquí.</p>
               <p id="empresaContextHint" class="login-card-note"></p>
             </div>
           </div>
@@ -56,25 +56,24 @@
             </div>
           </div>
 
-          <section id="contractPanel" class="card" style="margin:14px 0;padding:14px 16px;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <section id="contractPanel" class="login-usuario-contract">
+            <div class="login-usuario-contract-head">
               <div>
-                <p class="form-help" style="margin:0 0 4px;">Contrato vigente</p>
                 <h3 id="contractTitle" style="margin:0 0 6px;font-size:1rem;">Cargando contrato...</h3>
-                <p id="contractSummary" class="form-help" style="margin:0;">Estamos consultando la versión activa del contrato antes del acceso.</p>
+                <p id="contractSummary" class="form-help is-hidden" style="margin:0;"></p>
               </div>
-              <span id="contractVersion" class="badge">Versión --</span>
+              <span id="contractVersion" class="login-usuario-contract-version">Versión --</span>
             </div>
-            <p id="contractNote" class="form-help" style="margin-top:10px;"></p>
-            <div class="remember-row" style="margin-top:10px;">
+            <p id="contractNote" class="form-help is-hidden" style="margin-top:10px;"></p>
+            <div class="remember-row login-usuario-contract-acceptance">
               <label class="remember-label" for="contractAcceptCheckbox">
                 <input id="contractAcceptCheckbox" type="checkbox">
                 <span>Acepto el contrato vigente para continuar.</span>
               </label>
             </div>
-            <div class="login-inline-links" style="margin-top:10px;">
+            <div class="login-inline-links login-usuario-contract-links">
               <a id="contractLink" href="#">Leer contrato completo</a>
-              <span id="contractStatus" class="login-card-note">La aceptación se registrará cuando completes el acceso.</span>
+              <span id="contractStatus" class="login-card-note"></span>
             </div>
           </section>
 
@@ -97,7 +96,6 @@
 
         <form id="setupPasswordForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
           <h3>Crear contraseña inicial</h3>
-          <p class="form-help">Hazlo después de confirmar el correo enviado por tu administrador.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="setupEmail">Correo</label>
@@ -132,7 +130,6 @@
 
         <form id="recoveryRequestForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
           <h3>Solicitar recuperación</h3>
-          <p class="form-help">Si el usuario existe y está confirmado, enviaremos instrucciones al correo registrado.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="recoveryEmail">Correo</label>
@@ -150,7 +147,6 @@
 
         <form id="resetPasswordForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
           <h3>Restablecer contraseña</h3>
-          <p class="form-help">Usa el token enviado por correo y define una nueva contraseña.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="resetEmail">Correo</label>
@@ -185,7 +181,6 @@
 
         <form id="changePasswordForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
           <h3>Cambiar contraseña</h3>
-          <p class="form-help">Usa tu contraseña actual para renovarla cuando tu operación lo requiera.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="changeEmail">Correo</label>
@@ -217,12 +212,11 @@
           <div id="changePasswordMsg" class="form-help auth-message is-hidden"></div>
         </form>
 
-        <p class="footer login-card-note">Si tienes problemas con el acceso, contacta al administrador de tu empresa.</p>
       </div>
     </div>
   </div>
 
-  <div id="contractDialog" class="modal" hidden aria-hidden="true">
+  <div id="contractDialog" class="modal login-usuario-modal" hidden aria-hidden="true">
     <div class="modal__backdrop" data-close-contract></div>
     <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="contractDialogTitle" style="max-width:900px;">
       <div class="modal__header">
