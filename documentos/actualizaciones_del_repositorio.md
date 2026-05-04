@@ -3873,3 +3873,18 @@ Archivos modificados:
 - web/ayuda/ayuda_contextual.html
 - web/estilos.css
 - web/js/contextual_help.js
+
+2026-05-04 15:18:03 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 10dc06a5; PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/db/licencias_adicionales.go
+- backend/db/licencias_gratis.go
+- backend/db/licencias_permiso_cache_test.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- web/administrar_empresa/hotel_tarjetas_acceso.html
+- web/estilos.css
+- web/login.html
+- web/login_usuario.html
+- web/menu.js
+- web/perfil_red_social.html
+- web/red_social_comercial.html
