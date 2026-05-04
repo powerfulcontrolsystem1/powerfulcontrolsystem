@@ -676,9 +676,19 @@
         var hint = document.getElementById('ncFrameHint');
         var webURL = txt(ctx && ctx.web_url);
         if(enabled && webURL && frame){
-          frame.src = webURL;
-          if(panel) panel.classList.remove('nc-frame-empty');
-          if(hint) hint.textContent = webURL;
+          var sameOrigin = false;
+          try {
+            sameOrigin = new URL(webURL, window.location.origin).origin === window.location.origin;
+          } catch (_) {}
+          if (sameOrigin) {
+            frame.src = webURL;
+            if(panel) panel.classList.remove('nc-frame-empty');
+            if(hint) hint.textContent = webURL;
+            return;
+          }
+          frame.src = 'about:blank';
+          if(panel) panel.classList.add('nc-frame-empty');
+          if(hint) hint.textContent = 'Nextcloud protege la vista embebida; usa Abrir en pestana.';
           return;
         }
         if(frame) frame.src = 'about:blank';

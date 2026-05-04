@@ -1,0 +1,73 @@
+{
+  "at": "2026-05-04T13:18:32.505Z",
+  "loginUrl": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+  "users": [
+    {
+      "role": "admin_empresa",
+      "email": "qa.admin.calipso@powerfulcontrolsystem.local",
+      "ok": false,
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "bodyStart": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac",
+      "logs": [],
+      "screenshot": "tmp\\qa_manual_calipso\\login_admin_empresa.png"
+    },
+    {
+      "role": "cajero",
+      "email": "qa.cajero.calipso@powerfulcontrolsystem.local",
+      "ok": false,
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "bodyStart": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac",
+      "logs": [],
+      "screenshot": "tmp\\qa_manual_calipso\\login_cajero.png"
+    },
+    {
+      "role": "contabilidad",
+      "email": "qa.contabilidad.calipso@powerfulcontrolsystem.local",
+      "ok": false,
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "bodyStart": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac",
+      "logs": [],
+      "screenshot": "tmp\\qa_manual_calipso\\login_contabilidad.png"
+    },
+    {
+      "role": "auditor",
+      "email": "qa.auditor.calipso@powerfulcontrolsystem.local",
+      "ok": false,
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "bodyStart": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac",
+      "logs": [],
+      "screenshot": "tmp\\qa_manual_calipso\\login_auditor.png"
+    }
+  ],
+  "modules": [],
+  "findings": [
+    {
+      "severity": "high",
+      "area": "login_usuario",
+      "message": "No logro login usuario admin_empresa",
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "sample": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac"
+    },
+    {
+      "severity": "high",
+      "area": "login_usuario",
+      "message": "No logro login usuario cajero",
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "sample": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac"
+    },
+    {
+      "severity": "high",
+      "area": "login_usuario",
+      "message": "No logro login usuario contabilidad",
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "sample": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac"
+    },
+    {
+      "severity": "high",
+      "area": "login_usuario",
+      "message": "No logro login usuario auditor",
+      "url": "https://motel-calipso.powerfulcontrolsystem.com/login_usuario.html?empresa_id=7",
+      "sample": "Acceso de usuarios operativos Saber más Ir al inicio Acceso de administradores Iniciar sesión Acceso para cajeros, recepción, operación y demás usuarios internos creados por cada empresa. continúa con tu correo operativo Empresa ID Si el enlace no trae la empresa, ingrésala aquí. Empresa activa: 7. Este dato se enviará en todos los formularios del portal. Correo Contraseña Contrato vigente Contrato de uso de Powerful Control System Contrato marco de uso, licenciamiento, seguridad y tratamiento operativo de datos para la plataforma POS multiempresa Powerful Control System. Versión 1 Al marcar la casilla y continuar, declaras que leiste y aceptas la version vigente de este contrato con facultad suficiente para actuar en nombre propio o de la empresa que administras. Acepto el contrato vigente para continuar. Leer contrato completo La aceptación se registrará cuando completes el flujo de ac"
+    }
+  ]
+}

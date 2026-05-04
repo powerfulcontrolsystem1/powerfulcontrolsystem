@@ -293,7 +293,7 @@ func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64
 // GetEmpresaGPSDispositivos lista dispositivos GPS por empresa.
 func GetEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]EmpresaGPSDispositivo, error) {
 	query := `SELECT
-		id, empresa_id, codigo, nombre, COALESCE(descripcion, ''),
+		id, empresa_id, COALESCE(codigo, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
 		COALESCE(marca, ''), COALESCE(modelo, ''), COALESCE(tipo_dispositivo, 'gps_tracker'),
 		COALESCE(proveedor, ''), COALESCE(identificador_hardware, ''), COALESCE(telefono_sim, ''),
 		COALESCE(placa_activo, ''), COALESCE(activo_referencia, ''),
