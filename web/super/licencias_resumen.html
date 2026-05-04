@@ -312,7 +312,7 @@
         const data = await res.json().catch(()=>null);
         if(!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP '+res.status));
 
-        document.getElementById('errTotal').textContent = String(data.errores_total ? '-');
+        document.getElementById('errTotal').textContent = data.errores_total != null ? String(data.errores_total) : '-';
 
         const oa = data.openai || {};
         const oaSuper = oa.super || {};
