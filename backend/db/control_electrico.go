@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -18,6 +19,8 @@ var (
 	empresaControlElectricoSchemaMu    sync.Mutex
 	empresaControlElectricoSchemaReady bool
 )
+
+const empresaControlElectricoReleSelectColumns = `r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.programacion_habilitada,0), COALESCE(r.hora_encendido,''), COALESCE(r.hora_apagado,''), COALESCE(r.programacion_dias,'todos'), COALESCE(r.programacion_timezone,'America/Bogota'), COALESCE(r.ultima_programacion_on,''), COALESCE(r.ultima_programacion_off,''), COALESCE(r.imagen_url,''), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'')`
 
 // EmpresaControlElectricoConfig guarda la conexion principal contra la Raspberry Pi.
 type EmpresaControlElectricoConfig struct {
@@ -60,31 +63,39 @@ type EmpresaControlElectricoRaspberry struct {
 
 // EmpresaControlElectricoRele representa la salida fisica asociada a una estacion.
 type EmpresaControlElectricoRele struct {
-	ID                   int64  `json:"id"`
-	EmpresaID            int64  `json:"empresa_id"`
-	RaspberryID          int64  `json:"raspberry_id,omitempty"`
-	RaspberryCodigo      string `json:"raspberry_codigo,omitempty"`
-	RaspberryNombre      string `json:"raspberry_nombre,omitempty"`
-	RaspberryIP          string `json:"raspberry_ip,omitempty"`
-	EstacionID           int64  `json:"estacion_id"`
-	EstacionCodigo       string `json:"estacion_codigo,omitempty"`
-	EstacionNombre       string `json:"estacion_nombre,omitempty"`
-	SalidaCodigo         string `json:"salida_codigo"`
-	TipoCarga            string `json:"tipo_carga,omitempty"`
-	GPIOPin              int    `json:"gpio_pin"`
-	RelayName            string `json:"relay_name"`
-	ActiveHigh           bool   `json:"active_high"`
-	PulsoMS              int    `json:"pulso_ms"`
-	Modo                 string `json:"modo"`
-	UltimoEstado         string `json:"ultimo_estado,omitempty"`
-	UltimoComando        string `json:"ultimo_comando,omitempty"`
-	UltimoError          string `json:"ultimo_error,omitempty"`
-	UltimaSincronizacion string `json:"ultima_sincronizacion,omitempty"`
-	FechaCreacion        string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion   string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador       string `json:"usuario_creador,omitempty"`
-	Estado               string `json:"estado,omitempty"`
-	Observaciones        string `json:"observaciones,omitempty"`
+	ID                     int64  `json:"id"`
+	EmpresaID              int64  `json:"empresa_id"`
+	RaspberryID            int64  `json:"raspberry_id,omitempty"`
+	RaspberryCodigo        string `json:"raspberry_codigo,omitempty"`
+	RaspberryNombre        string `json:"raspberry_nombre,omitempty"`
+	RaspberryIP            string `json:"raspberry_ip,omitempty"`
+	EstacionID             int64  `json:"estacion_id"`
+	EstacionCodigo         string `json:"estacion_codigo,omitempty"`
+	EstacionNombre         string `json:"estacion_nombre,omitempty"`
+	SalidaCodigo           string `json:"salida_codigo"`
+	TipoCarga              string `json:"tipo_carga,omitempty"`
+	GPIOPin                int    `json:"gpio_pin"`
+	RelayName              string `json:"relay_name"`
+	ActiveHigh             bool   `json:"active_high"`
+	PulsoMS                int    `json:"pulso_ms"`
+	Modo                   string `json:"modo"`
+	ProgramacionHabilitada bool   `json:"programacion_habilitada"`
+	HoraEncendido          string `json:"hora_encendido,omitempty"`
+	HoraApagado            string `json:"hora_apagado,omitempty"`
+	ProgramacionDias       string `json:"programacion_dias,omitempty"`
+	ProgramacionTimezone   string `json:"programacion_timezone,omitempty"`
+	UltimaProgramacionOn   string `json:"ultima_programacion_on,omitempty"`
+	UltimaProgramacionOff  string `json:"ultima_programacion_off,omitempty"`
+	ImagenURL              string `json:"imagen_url,omitempty"`
+	UltimoEstado           string `json:"ultimo_estado,omitempty"`
+	UltimoComando          string `json:"ultimo_comando,omitempty"`
+	UltimoError            string `json:"ultimo_error,omitempty"`
+	UltimaSincronizacion   string `json:"ultima_sincronizacion,omitempty"`
+	FechaCreacion          string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion     string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador         string `json:"usuario_creador,omitempty"`
+	Estado                 string `json:"estado,omitempty"`
+	Observaciones          string `json:"observaciones,omitempty"`
 }
 
 // EmpresaControlElectricoEvento deja trazabilidad de cada comando enviado.
@@ -187,6 +198,14 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			active_high INTEGER DEFAULT 1,
 			pulso_ms INTEGER DEFAULT 0,
 			modo TEXT DEFAULT 'seguimiento_estacion',
+			programacion_habilitada INTEGER DEFAULT 0,
+			hora_encendido TEXT,
+			hora_apagado TEXT,
+			programacion_dias TEXT DEFAULT 'todos',
+			programacion_timezone TEXT DEFAULT 'America/Bogota',
+			ultima_programacion_on TEXT,
+			ultima_programacion_off TEXT,
+			imagen_url TEXT,
 			ultimo_estado TEXT DEFAULT 'desconocido',
 			ultimo_comando TEXT,
 			ultimo_error TEXT,
@@ -259,7 +278,10 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"empresa_id": "INTEGER NOT NULL", "raspberry_id": "INTEGER", "estacion_id": "INTEGER NOT NULL", "estacion_codigo": "TEXT",
 		"estacion_nombre": "TEXT", "salida_codigo": "TEXT DEFAULT 'principal'", "tipo_carga": "TEXT DEFAULT 'luces'",
 		"gpio_pin": "INTEGER NOT NULL", "relay_name": "TEXT", "active_high": "INTEGER DEFAULT 1",
-		"pulso_ms": "INTEGER DEFAULT 0", "modo": "TEXT DEFAULT 'seguimiento_estacion'", "ultimo_estado": "TEXT DEFAULT 'desconocido'",
+		"pulso_ms": "INTEGER DEFAULT 0", "modo": "TEXT DEFAULT 'seguimiento_estacion'", "programacion_habilitada": "INTEGER DEFAULT 0",
+		"hora_encendido": "TEXT", "hora_apagado": "TEXT", "programacion_dias": "TEXT DEFAULT 'todos'",
+		"programacion_timezone": "TEXT DEFAULT 'America/Bogota'", "ultima_programacion_on": "TEXT", "ultima_programacion_off": "TEXT",
+		"imagen_url": "TEXT", "ultimo_estado": "TEXT DEFAULT 'desconocido'",
 		"ultimo_comando": "TEXT", "ultimo_error": "TEXT", "ultima_sincronizacion": "TEXT",
 		"fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
@@ -467,12 +489,24 @@ func UpsertEmpresaControlElectricoConfig(dbConn *sql.DB, cfg *EmpresaControlElec
 		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
 }
 
+func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, activeHigh, programacionHabilitada *int) []interface{} {
+	return []interface{}{
+		&item.ID, &item.EmpresaID, &item.RaspberryID, &item.RaspberryCodigo, &item.RaspberryNombre, &item.RaspberryIP,
+		&item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.SalidaCodigo, &item.TipoCarga,
+		&item.GPIOPin, &item.RelayName, activeHigh, &item.PulsoMS, &item.Modo, programacionHabilitada,
+		&item.HoraEncendido, &item.HoraApagado, &item.ProgramacionDias, &item.ProgramacionTimezone,
+		&item.UltimaProgramacionOn, &item.UltimaProgramacionOff, &item.ImagenURL,
+		&item.UltimoEstado, &item.UltimoComando, &item.UltimoError, &item.UltimaSincronizacion,
+		&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones,
+	}
+}
+
 // ListEmpresaControlElectricoReles lista relays configurados.
 func ListEmpresaControlElectricoReles(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRele, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	q := `SELECT r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'') FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ?`
+	q := `SELECT ` + empresaControlElectricoReleSelectColumns + ` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ?`
 	if !includeInactive {
 		q += " AND LOWER(COALESCE(r.estado,'activo')) = 'activo'"
 	}
@@ -486,10 +520,12 @@ func ListEmpresaControlElectricoReles(dbConn *sql.DB, empresaID int64, includeIn
 	for rows.Next() {
 		var item EmpresaControlElectricoRele
 		var activeHigh int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.RaspberryID, &item.RaspberryCodigo, &item.RaspberryNombre, &item.RaspberryIP, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.SalidaCodigo, &item.TipoCarga, &item.GPIOPin, &item.RelayName, &activeHigh, &item.PulsoMS, &item.Modo, &item.UltimoEstado, &item.UltimoComando, &item.UltimoError, &item.UltimaSincronizacion, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+		var programacionHabilitada int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
 			return nil, err
 		}
 		item.ActiveHigh = activeHigh == 1
+		item.ProgramacionHabilitada = programacionHabilitada == 1
 		normalizeEmpresaControlElectricoRele(&item)
 		out = append(out, item)
 	}
@@ -513,13 +549,15 @@ func GetEmpresaControlElectricoReleByID(dbConn *sql.DB, empresaID, releID int64)
 	if empresaID <= 0 || releID <= 0 {
 		return nil, errors.New("empresa_id y rele_id son obligatorios")
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'') FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.id = ? AND LOWER(COALESCE(r.estado,'activo')) = 'activo' LIMIT 1`, empresaID, releID)
+	row := queryRowSQLCompat(dbConn, `SELECT `+empresaControlElectricoReleSelectColumns+` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.id = ? AND LOWER(COALESCE(r.estado,'activo')) = 'activo' LIMIT 1`, empresaID, releID)
 	var item EmpresaControlElectricoRele
 	var activeHigh int
-	if err := row.Scan(&item.ID, &item.EmpresaID, &item.RaspberryID, &item.RaspberryCodigo, &item.RaspberryNombre, &item.RaspberryIP, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.SalidaCodigo, &item.TipoCarga, &item.GPIOPin, &item.RelayName, &activeHigh, &item.PulsoMS, &item.Modo, &item.UltimoEstado, &item.UltimoComando, &item.UltimoError, &item.UltimaSincronizacion, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+	var programacionHabilitada int
+	if err := row.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
 		return nil, err
 	}
 	item.ActiveHigh = activeHigh == 1
+	item.ProgramacionHabilitada = programacionHabilitada == 1
 	normalizeEmpresaControlElectricoRele(&item)
 	return &item, nil
 }
@@ -529,7 +567,7 @@ func ListEmpresaControlElectricoRelesByEstacion(dbConn *sql.DB, empresaID, estac
 	if empresaID <= 0 || estacionID <= 0 {
 		return nil, errors.New("empresa_id y estacion_id son obligatorios")
 	}
-	q := `SELECT r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'') FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.estacion_id = ?`
+	q := `SELECT ` + empresaControlElectricoReleSelectColumns + ` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.estacion_id = ?`
 	if !includeInactive {
 		q += " AND LOWER(COALESCE(r.estado,'activo')) = 'activo'"
 	}
@@ -543,10 +581,12 @@ func ListEmpresaControlElectricoRelesByEstacion(dbConn *sql.DB, empresaID, estac
 	for rows.Next() {
 		var item EmpresaControlElectricoRele
 		var activeHigh int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.RaspberryID, &item.RaspberryCodigo, &item.RaspberryNombre, &item.RaspberryIP, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.SalidaCodigo, &item.TipoCarga, &item.GPIOPin, &item.RelayName, &activeHigh, &item.PulsoMS, &item.Modo, &item.UltimoEstado, &item.UltimoComando, &item.UltimoError, &item.UltimaSincronizacion, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+		var programacionHabilitada int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
 			return nil, err
 		}
 		item.ActiveHigh = activeHigh == 1
+		item.ProgramacionHabilitada = programacionHabilitada == 1
 		normalizeEmpresaControlElectricoRele(&item)
 		out = append(out, item)
 	}
@@ -561,6 +601,14 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 	normalizeEmpresaControlElectricoRele(item)
 	if item.GPIOPin < 0 || item.GPIOPin > 27 {
 		return 0, fmt.Errorf("gpio_pin debe estar entre 0 y 27")
+	}
+	if item.ProgramacionHabilitada {
+		if item.HoraEncendido == "" || item.HoraApagado == "" {
+			return 0, fmt.Errorf("hora_encendido y hora_apagado son obligatorias cuando la programacion esta activa")
+		}
+		if item.HoraEncendido == item.HoraApagado {
+			return 0, fmt.Errorf("hora_encendido y hora_apagado deben ser diferentes")
+		}
 	}
 	if item.RaspberryID > 0 {
 		if _, err := GetEmpresaControlElectricoRaspberryByID(dbConn, item.EmpresaID, item.RaspberryID, false); err != nil {
@@ -581,12 +629,12 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		return 0, err
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
-			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, gpio_pin, relay_name, active_high, pulso_ms, modo, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
-		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, gpio_pin, relay_name, active_high, pulso_ms, modo, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
 // SetEmpresaControlElectricoReleEstado cambia estado logico del mapeo.
@@ -595,6 +643,56 @@ func SetEmpresaControlElectricoReleEstado(dbConn *sql.DB, empresaID, releID int6
 		return errors.New("empresa_id y rele_id son obligatorios")
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
+	return err
+}
+
+// ListEmpresaControlElectricoRelesProgramados lista salidas con agenda horaria activa.
+func ListEmpresaControlElectricoRelesProgramados(dbConn *sql.DB) ([]EmpresaControlElectricoRele, error) {
+	q := `SELECT ` + empresaControlElectricoReleSelectColumns + ` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE LOWER(COALESCE(r.estado,'activo')) = 'activo' AND COALESCE(r.programacion_habilitada,0) = 1 ORDER BY r.empresa_id, r.estacion_id, r.salida_codigo`
+	rows, err := querySQLCompat(dbConn, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaControlElectricoRele{}
+	for rows.Next() {
+		var item EmpresaControlElectricoRele
+		var activeHigh int
+		var programacionHabilitada int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
+			return nil, err
+		}
+		item.ActiveHigh = activeHigh == 1
+		item.ProgramacionHabilitada = programacionHabilitada == 1
+		normalizeEmpresaControlElectricoRele(&item)
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+// MarkEmpresaControlElectricoReleProgramacion evita repetir una agenda en el mismo dia local.
+func MarkEmpresaControlElectricoReleProgramacion(dbConn *sql.DB, empresaID, releID int64, estadoObjetivo, ejecutadoEn string) error {
+	if empresaID <= 0 || releID <= 0 {
+		return errors.New("empresa_id y rele_id son obligatorios")
+	}
+	column := "ultima_programacion_off"
+	if strings.EqualFold(strings.TrimSpace(estadoObjetivo), "on") {
+		column = "ultima_programacion_on"
+	}
+	ejecutadoEn = strings.TrimSpace(ejecutadoEn)
+	if ejecutadoEn == "" {
+		ejecutadoEn = time.Now().Format("2006-01-02 15:04:05")
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET `+column+`=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, ejecutadoEn, empresaID, releID)
+	return err
+}
+
+// UpdateEmpresaControlElectricoReleImagen actualiza la foto del dispositivo controlado.
+func UpdateEmpresaControlElectricoReleImagen(dbConn *sql.DB, empresaID, releID int64, imagenURL string) error {
+	if empresaID <= 0 || releID <= 0 {
+		return errors.New("empresa_id y rele_id son obligatorios")
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET imagen_url=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, truncateControlElectricoText(imagenURL, 2000), empresaID, releID)
 	return err
 }
 
@@ -789,6 +887,13 @@ func normalizeEmpresaControlElectricoRele(item *EmpresaControlElectricoRele) {
 	if item.Modo == "" {
 		item.Modo = "seguimiento_estacion"
 	}
+	item.HoraEncendido = normalizeControlElectricoHora(item.HoraEncendido)
+	item.HoraApagado = normalizeControlElectricoHora(item.HoraApagado)
+	item.ProgramacionDias = normalizeControlElectricoProgramacionDias(item.ProgramacionDias)
+	item.ProgramacionTimezone = normalizeControlElectricoTimezone(item.ProgramacionTimezone)
+	item.UltimaProgramacionOn = strings.TrimSpace(item.UltimaProgramacionOn)
+	item.UltimaProgramacionOff = strings.TrimSpace(item.UltimaProgramacionOff)
+	item.ImagenURL = truncateControlElectricoText(item.ImagenURL, 2000)
 	if item.PulsoMS < 0 {
 		item.PulsoMS = 0
 	}
@@ -831,6 +936,68 @@ func normalizeControlElectricoSalidaCodigo(raw, tipoCarga, relayName string) str
 	}
 	if value == "" {
 		return "principal"
+	}
+	return value
+}
+
+func normalizeControlElectricoHora(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	parts := strings.Split(value, ":")
+	if len(parts) < 2 {
+		return ""
+	}
+	hour := strings.TrimSpace(parts[0])
+	minute := strings.TrimSpace(parts[1])
+	if len(hour) == 1 {
+		hour = "0" + hour
+	}
+	if len(minute) == 1 {
+		minute = "0" + minute
+	}
+	parsed, err := time.Parse("15:04", hour+":"+minute)
+	if err != nil {
+		return ""
+	}
+	return parsed.Format("15:04")
+}
+
+func normalizeControlElectricoProgramacionDias(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "", "todos", "diario", "daily":
+		return "todos"
+	case "lunes_viernes", "laborales", "weekdays":
+		return "lunes_viernes"
+	case "sabado_domingo", "fines_semana", "weekend":
+		return "sabado_domingo"
+	}
+	parts := strings.Split(value, ",")
+	clean := make([]string, 0, len(parts))
+	seen := map[string]bool{}
+	for _, part := range parts {
+		p := strings.TrimSpace(part)
+		if p < "0" || p > "6" || seen[p] {
+			continue
+		}
+		seen[p] = true
+		clean = append(clean, p)
+	}
+	if len(clean) == 0 {
+		return "todos"
+	}
+	return strings.Join(clean, ",")
+}
+
+func normalizeControlElectricoTimezone(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "America/Bogota"
+	}
+	if _, err := time.LoadLocation(value); err != nil {
+		return "America/Bogota"
 	}
 	return value
 }

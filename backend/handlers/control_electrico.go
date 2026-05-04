@@ -11,6 +11,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -228,6 +230,16 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
+			case "rele_foto":
+				releID, imageURL, err := handleControlElectricoReleFotoUpload(r, dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[control_electrico] upload foto empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "rele_id": releID, "image_url": imageURL})
+				return
+
 			case "probar_rele":
 				var payload struct {
 					EstacionID int64  `json:"estacion_id"`
@@ -270,6 +282,15 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "results": results})
 				return
+			case "ejecutar_programacion":
+				executed, err := ejecutarControlElectricoProgramacionPendiente(dbEmp, time.Now(), empresaID)
+				if err != nil {
+					log.Printf("[control_electrico] ejecutar programacion empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo evaluar la programacion electrica", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "comandos_ejecutados": executed})
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -305,6 +326,179 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp *sql.DB, empresaID int64) (int64, string, error) {
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
+		return 0, "", fmt.Errorf("payload multipart invalido")
+	}
+	releID, err := parseInt64Form(r, "rele_id")
+	if err != nil || releID <= 0 {
+		return 0, "", fmt.Errorf("rele_id requerido")
+	}
+	if _, err := dbpkg.GetEmpresaControlElectricoReleByID(dbEmp, empresaID, releID); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, "", fmt.Errorf("rele no encontrado")
+		}
+		return 0, "", err
+	}
+	file, header, err := r.FormFile("foto")
+	if err != nil {
+		return 0, "", fmt.Errorf("foto requerida")
+	}
+	defer file.Close()
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(header.Filename)))
+	allowed := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
+	if !allowed[ext] {
+		return 0, "", fmt.Errorf("extension de imagen no permitida")
+	}
+	webRoot := resolveWebRootDir()
+	dir := filepath.Join(webRoot, "uploads", "control_electrico", fmt.Sprintf("empresa_%d", empresaID))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return 0, "", fmt.Errorf("no se pudo preparar carpeta de imagenes")
+	}
+	fileName := fmt.Sprintf("rele_%d_%d%s", releID, time.Now().UnixNano(), ext)
+	absPath := filepath.Join(dir, fileName)
+	out, err := os.Create(absPath)
+	if err != nil {
+		return 0, "", fmt.Errorf("no se pudo crear imagen")
+	}
+	defer out.Close()
+	if _, err := io.Copy(out, file); err != nil {
+		return 0, "", fmt.Errorf("no se pudo guardar imagen")
+	}
+	imageURL := "/uploads/control_electrico/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
+	if err := dbpkg.UpdateEmpresaControlElectricoReleImagen(dbEmp, empresaID, releID, imageURL); err != nil {
+		return 0, "", err
+	}
+	return releID, imageURL, nil
+}
+
+// StartControlElectricoProgramacionWorker ejecuta horarios ON/OFF de relays programados.
+func StartControlElectricoProgramacionWorker(dbEmp *sql.DB, interval time.Duration, stop <-chan struct{}) {
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	run := func(origin string) {
+		count, err := EjecutarControlElectricoProgramacionPendiente(dbEmp, time.Now())
+		if err != nil {
+			log.Printf("[control_electrico] programacion %s error: %v", origin, err)
+			return
+		}
+		if count > 0 {
+			log.Printf("[control_electrico] programacion %s comandos_ejecutados=%d", origin, count)
+		}
+	}
+	run("startup")
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			run("ticker")
+		case <-stop:
+			return
+		}
+	}
+}
+
+// EjecutarControlElectricoProgramacionPendiente evalua horarios activos y dispara comandos vencidos.
+func EjecutarControlElectricoProgramacionPendiente(dbEmp *sql.DB, now time.Time) (int, error) {
+	return ejecutarControlElectricoProgramacionPendiente(dbEmp, now, 0)
+}
+
+func ejecutarControlElectricoProgramacionPendiente(dbEmp *sql.DB, now time.Time, empresaIDFilter int64) (int, error) {
+	if dbEmp == nil {
+		return 0, fmt.Errorf("dbEmp nil")
+	}
+	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
+		return 0, err
+	}
+	reles, err := dbpkg.ListEmpresaControlElectricoRelesProgramados(dbEmp)
+	if err != nil {
+		return 0, err
+	}
+	executed := 0
+	for i := range reles {
+		rele := reles[i]
+		if empresaIDFilter > 0 && rele.EmpresaID != empresaIDFilter {
+			continue
+		}
+		for _, due := range controlElectricoProgramacionDue(rele, now) {
+			cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, rele.EmpresaID, true)
+			if err != nil {
+				log.Printf("[control_electrico] config programacion empresa_id=%d rele_id=%d error: %v", rele.EmpresaID, rele.ID, err)
+				continue
+			}
+			if cfg == nil || !cfg.Habilitado {
+				continue
+			}
+			result := dispatchControlElectricoRele(dbEmp, cfg, &rele, due.EstadoObjetivo, "sistema.control_electrico", "programacion_horaria")
+			if result.OK {
+				if err := dbpkg.MarkEmpresaControlElectricoReleProgramacion(dbEmp, rele.EmpresaID, rele.ID, due.EstadoObjetivo, due.EjecutadoEn); err != nil {
+					log.Printf("[control_electrico] marcar programacion empresa_id=%d rele_id=%d error: %v", rele.EmpresaID, rele.ID, err)
+				}
+				executed++
+			}
+		}
+	}
+	return executed, nil
+}
+
+type controlElectricoProgramacionDueItem struct {
+	EstadoObjetivo string
+	EjecutadoEn    string
+}
+
+func controlElectricoProgramacionDue(rele dbpkg.EmpresaControlElectricoRele, now time.Time) []controlElectricoProgramacionDueItem {
+	if !rele.ProgramacionHabilitada {
+		return nil
+	}
+	loc, err := time.LoadLocation(strings.TrimSpace(rele.ProgramacionTimezone))
+	if err != nil {
+		loc, _ = time.LoadLocation("America/Bogota")
+	}
+	local := now.In(loc)
+	if !controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, local.Weekday()) {
+		return nil
+	}
+	currentMinute := local.Format("15:04")
+	currentStamp := local.Format("2006-01-02 15:04:05")
+	out := []controlElectricoProgramacionDueItem{}
+	if currentMinute == strings.TrimSpace(rele.HoraEncendido) && !controlElectricoProgramacionEjecutadaHoy(rele.UltimaProgramacionOn, local) {
+		out = append(out, controlElectricoProgramacionDueItem{EstadoObjetivo: "on", EjecutadoEn: currentStamp})
+	}
+	if currentMinute == strings.TrimSpace(rele.HoraApagado) && !controlElectricoProgramacionEjecutadaHoy(rele.UltimaProgramacionOff, local) {
+		out = append(out, controlElectricoProgramacionDueItem{EstadoObjetivo: "off", EjecutadoEn: currentStamp})
+	}
+	return out
+}
+
+func controlElectricoProgramacionDiaActivo(raw string, weekday time.Weekday) bool {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "", "todos", "diario", "daily":
+		return true
+	case "lunes_viernes", "laborales", "weekdays":
+		return weekday >= time.Monday && weekday <= time.Friday
+	case "sabado_domingo", "fines_semana", "weekend":
+		return weekday == time.Saturday || weekday == time.Sunday
+	}
+	target := strconv.Itoa(int(weekday))
+	for _, part := range strings.Split(value, ",") {
+		if strings.TrimSpace(part) == target {
+			return true
+		}
+	}
+	return false
+}
+
+func controlElectricoProgramacionEjecutadaHoy(raw string, local time.Time) bool {
+	value := strings.TrimSpace(raw)
+	if len(value) >= 10 {
+		return value[:10] == local.Format("2006-01-02")
+	}
+	return false
 }
 
 // DispatchEmpresaControlElectricoEstacion envia ON/OFF a la Raspberry Pi para una estacion.

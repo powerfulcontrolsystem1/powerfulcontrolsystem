@@ -764,6 +764,11 @@ func main() {
 	go utils.RunProtectedProcess("finanzas.asientos_worker", map[string]interface{}{"interval": asientosInterval.String(), "batch_size": asientosBatchSize, "max_retries": asientosMaxRetries}, func() {
 		dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
 	})
+
+	stopControlElectricoWorker := make(chan struct{})
+	go utils.RunProtectedProcess("control_electrico.programacion_worker", map[string]interface{}{"interval_minutes": 1}, func() {
+		handlers.StartControlElectricoProgramacionWorker(dbEmpresas, time.Minute, stopControlElectricoWorker)
+	})
 	startupTrace("after_workers")
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.

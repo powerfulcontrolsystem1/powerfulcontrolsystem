@@ -228,6 +228,42 @@
       min-width: 0;
     }
 
+    .relay-device {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      padding: 8px;
+      background: color-mix(in srgb, var(--electric-panel) 70%, transparent);
+    }
+
+    .relay-device-photo {
+      width: 82px;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1px solid var(--electric-line);
+      object-fit: cover;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--electric-accent) 18%, var(--electric-panel)), var(--electric-panel-soft));
+    }
+
+    .relay-device-photo.empty {
+      display: grid;
+      place-items: center;
+      color: var(--electric-muted);
+      font-size: .72rem;
+      font-weight: 800;
+      text-align: center;
+      object-fit: initial;
+    }
+
+    .relay-device-tools {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
     .relay-head {
       display: flex;
       align-items: flex-start;
@@ -342,6 +378,14 @@
         grid-template-columns: 1fr;
       }
 
+      .relay-device {
+        grid-template-columns: 64px minmax(0, 1fr);
+      }
+
+      .relay-device-photo {
+        width: 64px;
+      }
+
       .event-row {
         grid-template-columns: 1fr;
       }
@@ -357,6 +401,7 @@
         <p id="empresaInfo" class="electric-subtitle">Empresa: cargando...</p>
       </div>
       <div class="electric-actions">
+        <button id="scheduleBtn" class="btn secondary" type="button">Ejecutar agenda</button>
         <button id="syncBtn" class="btn secondary" type="button">Sincronizar</button>
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
       </div>
@@ -649,11 +694,38 @@
           raspberry_ip: rele.raspberry_ip || '',
           pulso_ms: rele.pulso_ms || 0,
           modo: rele.modo || 'seguimiento_estacion',
+          programacion_habilitada: Boolean(rele.programacion_habilitada),
+          hora_encendido: rele.hora_encendido || '',
+          hora_apagado: rele.hora_apagado || '',
+          programacion_dias: rele.programacion_dias || 'todos',
+          programacion_timezone: rele.programacion_timezone || 'America/Bogota',
+          ultima_programacion_on: rele.ultima_programacion_on || '',
+          ultima_programacion_off: rele.ultima_programacion_off || '',
+          imagen_url: rele.imagen_url || '',
           estado: rele.estado || 'activo',
           observaciones: rele.observaciones || '',
           ultimo_estado: rele.ultimo_estado || 'desconocido',
           ultima_sincronizacion: rele.ultima_sincronizacion || ''
         };
+      }
+
+      function relayPhotoMarkup(data) {
+        if (data.imagen_url) {
+          return '<img class="relay-device-photo relay-photo-preview" src="' + sanitize(data.imagen_url) + '" alt="Foto dispositivo">';
+        }
+        return '<div class="relay-device-photo relay-photo-preview empty">Sin foto</div>';
+      }
+
+      function relayDaysOptions(selected) {
+        var value = selected || 'todos';
+        var options = [
+          ['todos', 'Todos los dias'],
+          ['lunes_viernes', 'Lunes a viernes'],
+          ['sabado_domingo', 'Sabado y domingo']
+        ];
+        return options.map(function (opt) {
+          return '<option value="' + opt[0] + '"' + (value === opt[0] ? ' selected' : '') + '>' + opt[1] + '</option>';
+        }).join('');
       }
 
       function renderRelays() {
@@ -677,8 +749,18 @@
                 '<span class="status-chip ' + relayClass + '">Rele ' + sanitize(data.ultimo_estado || 'desconocido') + '</span>' +
                 '<span class="status-chip">' + sanitize(data.tipo_carga || data.salida_codigo) + '</span>' +
                 '<span class="status-chip">' + sanitize(data.raspberry_nombre || data.raspberry_codigo || 'Raspberry global') + '</span>' +
+                (data.programacion_habilitada ? '<span class="status-chip on">Agenda ' + sanitize(data.hora_encendido || '--:--') + ' / ' + sanitize(data.hora_apagado || '--:--') + '</span>' : '<span class="status-chip">Sin agenda</span>') +
               '</div></div>' +
               '<span class="status-chip">GPIO ' + sanitize(data.gpio_pin) + '</span>' +
+            '</div>' +
+            '<div class="relay-device">' +
+              relayPhotoMarkup(data) +
+              '<div class="relay-device-tools">' +
+                '<label class="form-label">Foto del dispositivo</label>' +
+                '<input class="form-input relay-image-url" value="' + sanitize(data.imagen_url) + '" placeholder="/uploads/control_electrico/... o https://">' +
+                '<input class="form-input relay-photo-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp">' +
+                '<button class="btn secondary small relay-upload-photo" type="button">Subir foto</button>' +
+              '</div>' +
             '</div>' +
             '<div class="relay-fields">' +
               '<div class="form-col"><label class="form-label">GPIO</label><input class="form-input relay-gpio" type="number" min="0" max="27" step="1" value="' + sanitize(data.gpio_pin) + '"></div>' +
@@ -687,6 +769,12 @@
               '<div class="form-col"><label class="form-label">Tipo</label><select class="form-input relay-type"><option value="luces"' + (data.tipo_carga === 'luces' ? ' selected' : '') + '>Luces</option><option value="jacuzzi"' + (data.tipo_carga === 'jacuzzi' ? ' selected' : '') + '>Jacuzzi</option><option value="aire"' + (data.tipo_carga === 'aire' ? ' selected' : '') + '>Aire</option><option value="puerta"' + (data.tipo_carga === 'puerta' ? ' selected' : '') + '>Puerta</option><option value="otro"' + (data.tipo_carga === 'otro' ? ' selected' : '') + '>Otro</option></select></div>' +
               '<div class="form-col span-2"><label class="form-label">Raspberry Pi</label><select class="form-input relay-raspberry">' + raspberryOptions(data.raspberry_id) + '</select></div>' +
               '<div class="form-col span-2"><label class="form-label">Nombre relé</label><input class="form-input relay-name" value="' + sanitize(data.relay_name) + '"></div>' +
+              '<label class="electric-switch span-2"><span>Programacion horaria</span><input class="relay-schedule-enabled" type="checkbox" ' + (data.programacion_habilitada ? 'checked' : '') + '></label>' +
+              '<div class="form-col"><label class="form-label">Hora encendido</label><input class="form-input relay-schedule-on" type="time" value="' + sanitize(data.hora_encendido) + '"></div>' +
+              '<div class="form-col"><label class="form-label">Hora apagado</label><input class="form-input relay-schedule-off" type="time" value="' + sanitize(data.hora_apagado) + '"></div>' +
+              '<div class="form-col"><label class="form-label">Dias</label><select class="form-input relay-schedule-days">' + relayDaysOptions(data.programacion_dias) + '</select></div>' +
+              '<div class="form-col"><label class="form-label">Zona horaria</label><input class="form-input relay-schedule-timezone" value="' + sanitize(data.programacion_timezone || 'America/Bogota') + '"></div>' +
+              '<div class="form-col span-2"><label class="form-label">Ultima agenda</label><input class="form-input" readonly value="ON ' + sanitize(data.ultima_programacion_on || '--') + ' / OFF ' + sanitize(data.ultima_programacion_off || '--') + '"></div>' +
               '<label class="electric-switch span-2"><span>Activo alto</span><input class="relay-active-high" type="checkbox" ' + (data.active_high ? 'checked' : '') + '></label>' +
             '</div>' +
             '<div class="electric-row-actions">' +
@@ -836,6 +924,12 @@
           relay_name: card.querySelector('.relay-name').value.trim(),
           active_high: card.querySelector('.relay-active-high').checked,
           pulso_ms: Number(card.querySelector('.relay-pulse').value || 0),
+          programacion_habilitada: card.querySelector('.relay-schedule-enabled').checked,
+          hora_encendido: card.querySelector('.relay-schedule-on').value,
+          hora_apagado: card.querySelector('.relay-schedule-off').value,
+          programacion_dias: card.querySelector('.relay-schedule-days').value || 'todos',
+          programacion_timezone: card.querySelector('.relay-schedule-timezone').value.trim() || 'America/Bogota',
+          imagen_url: card.querySelector('.relay-image-url').value.trim(),
           modo: 'seguimiento_estacion',
           estado: 'activo'
         };
@@ -843,6 +937,12 @@
 
       async function saveRelay(card) {
         var payload = readRelayCard(card);
+        if (payload.programacion_habilitada && (!payload.hora_encendido || !payload.hora_apagado)) {
+          throw new Error('Configura hora de encendido y apagado para activar la programacion.');
+        }
+        if (payload.programacion_habilitada && payload.hora_encendido === payload.hora_apagado) {
+          throw new Error('La hora de encendido y apagado deben ser diferentes.');
+        }
         var data = await requestJSON(api('rele'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -853,6 +953,31 @@
           payload.id = Number(data.id || payload.id);
         }
         return payload;
+      }
+
+      async function uploadRelayPhoto(card) {
+        var fileInput = card.querySelector('.relay-photo-file');
+        if (!fileInput || !fileInput.files || !fileInput.files.length) {
+          throw new Error('Selecciona una foto del dispositivo.');
+        }
+        var payload = await saveRelay(card);
+        var form = new FormData();
+        form.append('empresa_id', empresaId);
+        form.append('rele_id', String(payload.id));
+        form.append('foto', fileInput.files[0]);
+        var data = await requestJSON(api('rele_foto'), { method: 'POST', body: form });
+        if (data && data.image_url) {
+          card.querySelector('.relay-image-url').value = data.image_url;
+          var preview = card.querySelector('.relay-photo-preview');
+          if (preview) {
+            var img = document.createElement('img');
+            img.className = 'relay-device-photo relay-photo-preview';
+            img.src = data.image_url;
+            img.alt = 'Foto dispositivo';
+            preview.replaceWith(img);
+          }
+        }
+        return data;
       }
 
       async function testRelay(card, target) {
@@ -876,6 +1001,34 @@
         }
       }
 
+      async function runScheduleNow() {
+        try {
+          showMessage('Evaluando agenda electrica...', '');
+          var data = await requestJSON(api('ejecutar_programacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          showMessage('Agenda evaluada. Comandos ejecutados: ' + sanitize(data.comandos_ejecutados || 0), 'success');
+          await loadAll();
+        } catch (err) {
+          showMessage(err.message || 'No se pudo ejecutar la agenda.', 'error');
+        }
+      }
+
+      document.addEventListener('change', function (ev) {
+        if (!ev.target.classList || !ev.target.classList.contains('relay-photo-file')) return;
+        var card = ev.target.closest('.relay-card');
+        if (!card || !ev.target.files || !ev.target.files.length) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var preview = card.querySelector('.relay-photo-preview');
+          if (!preview) return;
+          var img = document.createElement('img');
+          img.className = 'relay-device-photo relay-photo-preview';
+          img.src = String(reader.result || '');
+          img.alt = 'Foto dispositivo';
+          preview.replaceWith(img);
+        };
+        reader.readAsDataURL(ev.target.files[0]);
+      });
+
       document.addEventListener('click', async function (ev) {
         var card = ev.target.closest('.relay-card');
         var raspberryCard = ev.target.closest('.raspberry-item');
@@ -892,6 +1045,8 @@
             await loadAll();
           } else if (ev.target.id === 'syncBtn') {
             await syncAll();
+          } else if (ev.target.id === 'scheduleBtn') {
+            await runScheduleNow();
           } else if (raspberryCard && ev.target.classList.contains('raspberry-edit')) {
             var editID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             var pi = state.raspberryPis.find(function (item) { return Number(item.id) === editID; });
@@ -904,6 +1059,10 @@
           } else if (card && ev.target.classList.contains('relay-save')) {
             await saveRelay(card);
             showMessage('Relé guardado.', 'success');
+            await loadAll();
+          } else if (card && ev.target.classList.contains('relay-upload-photo')) {
+            await uploadRelayPhoto(card);
+            showMessage('Foto del dispositivo guardada.', 'success');
             await loadAll();
           } else if (card && ev.target.classList.contains('relay-on')) {
             await testRelay(card, 'on');
