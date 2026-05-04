@@ -3857,3 +3857,7 @@ Archivos modificados:
 - backend/handlers/control_electrico_test.go
 - backend/main.go
 - web/administrar_empresa/control_electrico.html
+
+2026-05-04 10:05:56 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 54f9610c; PushStatus: OK
+Archivos modificados:
+- web/super/licencias_resumen.html
