@@ -205,42 +205,42 @@ const (
 
 // EmpresaVentaPublicaConfig define la configuracion de catalogo/pagos publicos por empresa.
 type EmpresaVentaPublicaConfig struct {
-	ID                  int64  `json:"id"`
-	EmpresaID           int64  `json:"empresa_id"`
-	EmpresaSlug         string `json:"empresa_slug"`
-	NombreTienda        string `json:"nombre_tienda"`
-	DescripcionTienda   string `json:"descripcion_tienda,omitempty"`
-	LogoURL             string `json:"logo_url,omitempty"`
-	BannerURL           string `json:"banner_url,omitempty"`
-	ColorPrimario       string `json:"color_primario,omitempty"`
-	TemaVisual          string `json:"tema_visual,omitempty"`
-	Moneda              string `json:"moneda"`
-	DominioPublico      string `json:"dominio_publico,omitempty"`
-	MostrarStock        bool   `json:"mostrar_stock"`
-	PedidosRestauranteActivo          bool   `json:"pedidos_restaurante_activo"`
-	PedidosRegistroOpcionalCliente    bool   `json:"pedidos_registro_opcional_cliente"`
-	PedidosPermitirRecogerEnTienda    bool   `json:"pedidos_permitir_recoger_en_tienda"`
-	PedidosPermitirDomicilio          bool   `json:"pedidos_permitir_domicilio"`
-	PedidosTrackingDomiciliario       bool   `json:"pedidos_tracking_domiciliario"`
-	PedidosDespachoAutomatico         bool   `json:"pedidos_despacho_automatico"`
-	PedidosNombreSistema              string `json:"pedidos_nombre_sistema,omitempty"`
-	PedidosTiempoPreparacionMinutos   int    `json:"pedidos_tiempo_preparacion_minutos,omitempty"`
-	WompiActivo         bool   `json:"wompi_activo"`
-	WompiMode           string `json:"wompi_mode"`
-	WompiPublicKey      string `json:"wompi_public_key,omitempty"`
-	WompiPrivateKeyRef  string `json:"wompi_private_key_ref,omitempty"`
-	WompiIntegrityRef   string `json:"wompi_integrity_key_ref,omitempty"`
-	WompiEventKeyRef    string `json:"wompi_event_key_ref,omitempty"`
-	EpaycoActivo        bool   `json:"epayco_activo"`
-	EpaycoMode          string `json:"epayco_mode"`
-	EpaycoPublicKey     string `json:"epayco_public_key,omitempty"`
-	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref,omitempty"`
-	EpaycoCustomerID    string `json:"epayco_customer_id,omitempty"`
-	FechaCreacion       string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion  string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador      string `json:"usuario_creador,omitempty"`
-	Estado              string `json:"estado,omitempty"`
-	Observaciones       string `json:"observaciones,omitempty"`
+	ID                              int64  `json:"id"`
+	EmpresaID                       int64  `json:"empresa_id"`
+	EmpresaSlug                     string `json:"empresa_slug"`
+	NombreTienda                    string `json:"nombre_tienda"`
+	DescripcionTienda               string `json:"descripcion_tienda,omitempty"`
+	LogoURL                         string `json:"logo_url,omitempty"`
+	BannerURL                       string `json:"banner_url,omitempty"`
+	ColorPrimario                   string `json:"color_primario,omitempty"`
+	TemaVisual                      string `json:"tema_visual,omitempty"`
+	Moneda                          string `json:"moneda"`
+	DominioPublico                  string `json:"dominio_publico,omitempty"`
+	MostrarStock                    bool   `json:"mostrar_stock"`
+	PedidosRestauranteActivo        bool   `json:"pedidos_restaurante_activo"`
+	PedidosRegistroOpcionalCliente  bool   `json:"pedidos_registro_opcional_cliente"`
+	PedidosPermitirRecogerEnTienda  bool   `json:"pedidos_permitir_recoger_en_tienda"`
+	PedidosPermitirDomicilio        bool   `json:"pedidos_permitir_domicilio"`
+	PedidosTrackingDomiciliario     bool   `json:"pedidos_tracking_domiciliario"`
+	PedidosDespachoAutomatico       bool   `json:"pedidos_despacho_automatico"`
+	PedidosNombreSistema            string `json:"pedidos_nombre_sistema,omitempty"`
+	PedidosTiempoPreparacionMinutos int    `json:"pedidos_tiempo_preparacion_minutos,omitempty"`
+	WompiActivo                     bool   `json:"wompi_activo"`
+	WompiMode                       string `json:"wompi_mode"`
+	WompiPublicKey                  string `json:"wompi_public_key,omitempty"`
+	WompiPrivateKeyRef              string `json:"wompi_private_key_ref,omitempty"`
+	WompiIntegrityRef               string `json:"wompi_integrity_key_ref,omitempty"`
+	WompiEventKeyRef                string `json:"wompi_event_key_ref,omitempty"`
+	EpaycoActivo                    bool   `json:"epayco_activo"`
+	EpaycoMode                      string `json:"epayco_mode"`
+	EpaycoPublicKey                 string `json:"epayco_public_key,omitempty"`
+	EpaycoPrivateKeyRef             string `json:"epayco_private_key_ref,omitempty"`
+	EpaycoCustomerID                string `json:"epayco_customer_id,omitempty"`
+	FechaCreacion                   string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion              string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                  string `json:"usuario_creador,omitempty"`
+	Estado                          string `json:"estado,omitempty"`
+	Observaciones                   string `json:"observaciones,omitempty"`
 }
 
 // EmpresaVentaPublicaPagina representa una pagina publica creada por una empresa bajo su dominio/slug.
@@ -296,39 +296,39 @@ type EmpresaVentaPublicaItemsFilter struct {
 
 // EmpresaVentaPublicaOrder representa una orden creada desde la pagina publica.
 type EmpresaVentaPublicaOrder struct {
-	ID                  int64   `json:"id"`
-	EmpresaID           int64   `json:"empresa_id"`
-	CodigoOrden         string  `json:"codigo_orden"`
-	TipoOrden           string  `json:"tipo_orden,omitempty"`
-	CompradorNombre     string  `json:"comprador_nombre,omitempty"`
-	CompradorEmail      string  `json:"comprador_email,omitempty"`
-	CompradorTelefono   string  `json:"comprador_telefono,omitempty"`
-	Moneda              string  `json:"moneda"`
-	Subtotal            float64 `json:"subtotal"`
-	DescuentoTotal      float64 `json:"descuento_total"`
-	ImpuestoTotal       float64 `json:"impuesto_total"`
-	Total               float64 `json:"total"`
-	MetodoPago          string  `json:"metodo_pago"`
-	EstadoPago          string  `json:"estado_pago"`
-	EstadoPedido        string  `json:"estado_pedido,omitempty"`
-	CanalEntrega        string  `json:"canal_entrega,omitempty"`
-	DireccionEntrega    string  `json:"direccion_entrega,omitempty"`
-	NotasEntrega        string  `json:"notas_entrega,omitempty"`
-	ClienteComparteUbicacion bool `json:"cliente_comparte_ubicacion"`
-	EntregaLatitud      float64 `json:"entrega_latitud,omitempty"`
-	EntregaLongitud     float64 `json:"entrega_longitud,omitempty"`
-	TaxiRequestID       int64   `json:"taxi_request_id,omitempty"`
-	TrackingToken       string  `json:"tracking_token,omitempty"`
-	ReferenciaExterna   string  `json:"referencia_externa,omitempty"`
-	TransactionID       string  `json:"transaction_id,omitempty"`
-	ItemsJSON           string  `json:"items_json,omitempty"`
-	PasarelaPayloadJSON string  `json:"pasarela_payload_json,omitempty"`
-	PagadoEn            string  `json:"pagado_en,omitempty"`
-	FechaCreacion       string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion  string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador      string  `json:"usuario_creador,omitempty"`
-	Estado              string  `json:"estado,omitempty"`
-	Observaciones       string  `json:"observaciones,omitempty"`
+	ID                       int64   `json:"id"`
+	EmpresaID                int64   `json:"empresa_id"`
+	CodigoOrden              string  `json:"codigo_orden"`
+	TipoOrden                string  `json:"tipo_orden,omitempty"`
+	CompradorNombre          string  `json:"comprador_nombre,omitempty"`
+	CompradorEmail           string  `json:"comprador_email,omitempty"`
+	CompradorTelefono        string  `json:"comprador_telefono,omitempty"`
+	Moneda                   string  `json:"moneda"`
+	Subtotal                 float64 `json:"subtotal"`
+	DescuentoTotal           float64 `json:"descuento_total"`
+	ImpuestoTotal            float64 `json:"impuesto_total"`
+	Total                    float64 `json:"total"`
+	MetodoPago               string  `json:"metodo_pago"`
+	EstadoPago               string  `json:"estado_pago"`
+	EstadoPedido             string  `json:"estado_pedido,omitempty"`
+	CanalEntrega             string  `json:"canal_entrega,omitempty"`
+	DireccionEntrega         string  `json:"direccion_entrega,omitempty"`
+	NotasEntrega             string  `json:"notas_entrega,omitempty"`
+	ClienteComparteUbicacion bool    `json:"cliente_comparte_ubicacion"`
+	EntregaLatitud           float64 `json:"entrega_latitud,omitempty"`
+	EntregaLongitud          float64 `json:"entrega_longitud,omitempty"`
+	TaxiRequestID            int64   `json:"taxi_request_id,omitempty"`
+	TrackingToken            string  `json:"tracking_token,omitempty"`
+	ReferenciaExterna        string  `json:"referencia_externa,omitempty"`
+	TransactionID            string  `json:"transaction_id,omitempty"`
+	ItemsJSON                string  `json:"items_json,omitempty"`
+	PasarelaPayloadJSON      string  `json:"pasarela_payload_json,omitempty"`
+	PagadoEn                 string  `json:"pagado_en,omitempty"`
+	FechaCreacion            string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion       string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador           string  `json:"usuario_creador,omitempty"`
+	Estado                   string  `json:"estado,omitempty"`
+	Observaciones            string  `json:"observaciones,omitempty"`
 }
 
 // EmpresaVentaPublicaOrdersFilter aplica filtros de listado para ordenes publicas.
@@ -442,6 +442,8 @@ func ventaPublicaNormalizeSort(raw string) string {
 		return "precio_asc"
 	case "precio_desc":
 		return "precio_desc"
+	case "nombre_asc":
+		return "nombre_asc"
 	case "nuevos", "recientes":
 		return "nuevos"
 	default:
@@ -1230,13 +1232,13 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			nombre = fmt.Sprintf("Empresa %d", empresaID)
 		}
 		out = EmpresaVentaPublicaConfig{
-			EmpresaID:     empresaID,
-			EmpresaSlug:   NormalizeEmpresaPublicSlug(nombre),
-			NombreTienda:  nombre,
-			ColorPrimario: "#0f4c81",
-			TemaVisual:    "default",
-			Moneda:        "COP",
-			MostrarStock:  true,
+			EmpresaID:                       empresaID,
+			EmpresaSlug:                     NormalizeEmpresaPublicSlug(nombre),
+			NombreTienda:                    nombre,
+			ColorPrimario:                   "#0f4c81",
+			TemaVisual:                      "default",
+			Moneda:                          "COP",
+			MostrarStock:                    true,
 			PedidosRegistroOpcionalCliente:  true,
 			PedidosPermitirRecogerEnTienda:  true,
 			PedidosPermitirDomicilio:        true,
@@ -1244,11 +1246,11 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			PedidosDespachoAutomatico:       true,
 			PedidosNombreSistema:            "Pedidos restaurante",
 			PedidosTiempoPreparacionMinutos: 25,
-			WompiActivo:   false,
-			WompiMode:     ventaPublicaWompiModeSandbox,
-			EpaycoActivo:  false,
-			EpaycoMode:    ventaPublicaEpaycoModeSandbox,
-			Estado:        "activo",
+			WompiActivo:                     false,
+			WompiMode:                       ventaPublicaWompiModeSandbox,
+			EpaycoActivo:                    false,
+			EpaycoMode:                      ventaPublicaEpaycoModeSandbox,
+			Estado:                          "activo",
 		}
 		return out, nil
 	}
@@ -1896,6 +1898,8 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		orderBy = `ORDER BY COALESCE(i.precio, 0) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
 	case "precio_desc":
 		orderBy = `ORDER BY COALESCE(i.precio, 0) DESC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
+	case "nombre_asc":
+		orderBy = `ORDER BY LOWER(COALESCE(i.nombre, '')) ASC, COALESCE(i.orden_visual, 0) ASC, i.id DESC`
 	case "nuevos":
 		orderBy = `ORDER BY i.id DESC`
 	}

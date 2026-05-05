@@ -1,3 +1,8 @@
+2026-05-05: Nota operativa para `carta publica de productos`
+- El acceso `linkCartaProductosPublica` queda registrado bajo modulo `ventas` con accion `C`, porque publica productos hacia la vitrina externa reutilizando `/api/empresa/venta_publica`.
+- La pantalla administrativa tambien consulta `/api/empresa/productos` para leer inventario activo; por tanto los roles operativos deben combinar permiso de ventas para publicar y permiso de inventario para consultar productos.
+- La pagina publica `visualizar_productos_y_precios_publico.html` usa `/api/public/venta_publica?action=catalogo` y solo expone catalogo de lectura: no crea pedidos, pagos ni carrito.
+
 2026-04-30: Nota operativa para `chat IA`, `documentos dinamicos`, `empresas compartidas` y `pagos`
 - La configuracion del chat flotante, robot y secretaria queda en Administrar empresa > Configuracion > Configurar chat/robot; es una configuracion empresarial y no una concesion de permisos super.
 - `/generate` y `/download` para documentos dinamicos requieren sesion y deben asociarse al contexto empresarial cuando se usen desde empresa; no entregan credenciales ni SQL libre a la IA.

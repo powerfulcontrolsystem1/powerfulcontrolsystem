@@ -72,6 +72,8 @@ func main() {
 		checkOut          = flag.String("check_out", "12:00", "hora_check_out")
 		usuarioCreador    = flag.String("usuario", "seed", "usuario_creador")
 		overwriteExisting = flag.Bool("overwrite", false, "si true, actualiza tarifas existentes; si false solo crea si no existe")
+		seedControl       = flag.Bool("seed_control_electrico", true, "si true, crea aparatos guia de control electrico para Motel Calipso")
+		controlIP         = flag.String("control_ip", "192.168.1.50", "IP guia de la Raspberry/control electrico")
 	)
 	flag.Parse()
 
@@ -108,6 +110,11 @@ func main() {
 	if err := dbpkg.EnsureEmpresaTarifasMotelSchema(db); err != nil {
 		log.Fatalf("EnsureEmpresaTarifasMotelSchema: %v", err)
 	}
+	if *seedControl {
+		if err := dbpkg.EnsureEmpresaControlElectricoSchema(db); err != nil {
+			log.Fatalf("EnsureEmpresaControlElectricoSchema: %v", err)
+		}
+	}
 
 	pref, err := dbpkg.GetEmpresaEstacionPref(db, *empresaID, 0, "estaciones_config")
 	if err != nil {
@@ -136,6 +143,44 @@ func main() {
 	updatedDia := 0
 	createdMotel := 0
 	updatedMotel := 0
+	upsertControl := 0
+
+	var controlRaspberryID int64
+	if *seedControl {
+		if _, err := dbpkg.UpsertEmpresaControlElectricoConfig(db, &dbpkg.EmpresaControlElectricoConfig{
+			EmpresaID:          *empresaID,
+			Habilitado:         false,
+			RaspberryIP:        strings.TrimSpace(*controlIP),
+			RaspberryPort:      dbpkg.DefaultControlElectricoPort,
+			APIPath:            dbpkg.DefaultControlElectricoAPIPath,
+			TimeoutMS:          dbpkg.DefaultControlElectricoTimeoutMS,
+			AutoSyncEstaciones: true,
+			FailSafeOnError:    false,
+			UsuarioCreador:     strings.TrimSpace(*usuarioCreador),
+			Estado:             "activo",
+			Observaciones:      "seed motel calipso control electrico",
+		}); err != nil {
+			log.Fatalf("UpsertEmpresaControlElectricoConfig: %v", err)
+		}
+		upsertControl++
+		id, err := dbpkg.UpsertEmpresaControlElectricoRaspberry(db, &dbpkg.EmpresaControlElectricoRaspberry{
+			EmpresaID:      *empresaID,
+			Codigo:         "principal",
+			Nombre:         "Control electrico Motel Calipso",
+			RaspberryIP:    strings.TrimSpace(*controlIP),
+			RaspberryPort:  dbpkg.DefaultControlElectricoPort,
+			APIPath:        dbpkg.DefaultControlElectricoAPIPath,
+			TimeoutMS:      dbpkg.DefaultControlElectricoTimeoutMS,
+			UsuarioCreador: strings.TrimSpace(*usuarioCreador),
+			Estado:         "activo",
+			Observaciones:  "seed motel calipso control electrico",
+		})
+		if err != nil {
+			log.Fatalf("UpsertEmpresaControlElectricoRaspberry: %v", err)
+		}
+		controlRaspberryID = id
+		upsertControl++
+	}
 
 	for stationID := int64(1); stationID <= int64(cfg.Cantidad); stationID++ {
 		stationName := strings.TrimSpace(nombres[stationID])
@@ -315,9 +360,62 @@ func main() {
 				updatedMotel++
 			}
 		}
+
+		if *seedControl {
+			controlReles := []dbpkg.EmpresaControlElectricoRele{
+				{
+					SalidaCodigo: "luces",
+					TipoCarga:    "luces",
+					GPIOPin:      controlGPIOPin(stationID, 0),
+					RelayName:    "Luces " + stationName,
+					Modo:         "seguimiento_estacion",
+					ActiveHigh:   true,
+				},
+				{
+					SalidaCodigo: "jacuzzi",
+					TipoCarga:    "jacuzzi",
+					GPIOPin:      controlGPIOPin(stationID, 1),
+					RelayName:    "Jacuzzi " + stationName,
+					Modo:         "manual",
+					ActiveHigh:   true,
+				},
+				{
+					SalidaCodigo: "aire",
+					TipoCarga:    "aire_acondicionado",
+					GPIOPin:      controlGPIOPin(stationID, 2),
+					RelayName:    "Aire acondicionado " + stationName,
+					Modo:         "seguimiento_estacion",
+					ActiveHigh:   true,
+				},
+			}
+			for _, rele := range controlReles {
+				rele.EmpresaID = *empresaID
+				rele.RaspberryID = controlRaspberryID
+				rele.EstacionID = stationID
+				rele.EstacionCodigo = stationCode
+				rele.EstacionNombre = stationName
+				rele.ProgramacionDias = "todos"
+				rele.ProgramacionTimezone = "America/Bogota"
+				rele.UsuarioCreador = strings.TrimSpace(*usuarioCreador)
+				rele.Estado = "activo"
+				rele.Observaciones = "seed motel calipso control electrico"
+				if _, err := dbpkg.UpsertEmpresaControlElectricoRele(db, &rele); err != nil {
+					log.Fatalf("UpsertEmpresaControlElectricoRele station=%d salida=%s: %v", stationID, rele.SalidaCodigo, err)
+				}
+				upsertControl++
+			}
+		}
 	}
 
-	log.Printf("OK seed empresa_id=%d estaciones=%d | minutos: creadas=%d actualizadas=%d | dia: creadas=%d actualizadas=%d | motel: creadas=%d actualizadas=%d",
-		*empresaID, cfg.Cantidad, createdMin, updatedMin, createdDia, updatedDia, createdMotel, updatedMotel,
+	log.Printf("OK seed empresa_id=%d estaciones=%d | minutos: creadas=%d actualizadas=%d | dia: creadas=%d actualizadas=%d | motel: creadas=%d actualizadas=%d | control_electrico_upserts=%d",
+		*empresaID, cfg.Cantidad, createdMin, updatedMin, createdDia, updatedDia, createdMotel, updatedMotel, upsertControl,
 	)
+}
+
+func controlGPIOPin(stationID int64, offset int) int {
+	pin := 2 + ((int(stationID)-1)*3+offset)%26
+	if pin > 27 {
+		return 27
+	}
+	return pin
 }

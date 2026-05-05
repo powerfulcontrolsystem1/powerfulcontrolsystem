@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-03
-Estado: vigente, actualizado con reporte operativo 2026-05-03
+Fecha: 2026-05-05
+Estado: vigente, actualizado con carta publica de productos 2026-05-05
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -17,6 +17,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 8. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-05: documentada la carta publica de productos en `documentos/carta_publica_productos.md`, con modulo administrativo, pagina publica `visualizar_productos_y_precios_publico.html`, rutas por slug/subdominio, permisos y pruebas.
 - 2026-05-03: estado de modulos actualizado en `documentos/reporte_estado_modulos_2026-05-03.md`; se documentan reparaciones de estaciones/carrito, retorno a estaciones al pagar, tarjetas adaptables al texto, `USD / COP` como primer indicador y despliegue VPS correcto.
 - 2026-05-03: ayuda del sistema actualizada con estado operativo, rutas criticas, configuracion de estaciones, flujo de pago del carrito y advertencia honesta sobre validacion integral por hardware/proveedores.
 
@@ -35,6 +36,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
+- Carta publica de productos y precios: `documentos/carta_publica_productos.md`
 - Inventario documental y de archivos: `documentos/descripcion_de_archivos`
 - Historial detallado de trabajo: `documentos/historial_de_cambios`
 - Resumen ejecutivo de cambios: `CHANGELOG.md`

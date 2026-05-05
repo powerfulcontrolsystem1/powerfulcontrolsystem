@@ -184,6 +184,7 @@ try {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
+    linkCartaProductosPublica: { module: permModuleVentas, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },

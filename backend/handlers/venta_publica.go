@@ -192,17 +192,17 @@ func PublicListPaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
 }
 
 type empresaVentaPublicaConfigPayload struct {
-	EmpresaID           int64  `json:"empresa_id"`
-	EmpresaSlug         string `json:"empresa_slug"`
-	NombreTienda        string `json:"nombre_tienda"`
-	DescripcionTienda   string `json:"descripcion_tienda"`
-	LogoURL             string `json:"logo_url"`
-	BannerURL           string `json:"banner_url"`
-	ColorPrimario       string `json:"color_primario"`
-	TemaVisual          string `json:"tema_visual"`
-	Moneda              string `json:"moneda"`
-	DominioPublico      string `json:"dominio_publico"`
-	MostrarStock        *bool  `json:"mostrar_stock"`
+	EmpresaID                       int64  `json:"empresa_id"`
+	EmpresaSlug                     string `json:"empresa_slug"`
+	NombreTienda                    string `json:"nombre_tienda"`
+	DescripcionTienda               string `json:"descripcion_tienda"`
+	LogoURL                         string `json:"logo_url"`
+	BannerURL                       string `json:"banner_url"`
+	ColorPrimario                   string `json:"color_primario"`
+	TemaVisual                      string `json:"tema_visual"`
+	Moneda                          string `json:"moneda"`
+	DominioPublico                  string `json:"dominio_publico"`
+	MostrarStock                    *bool  `json:"mostrar_stock"`
 	PedidosRestauranteActivo        *bool  `json:"pedidos_restaurante_activo"`
 	PedidosRegistroOpcionalCliente  *bool  `json:"pedidos_registro_opcional_cliente"`
 	PedidosPermitirRecogerEnTienda  *bool  `json:"pedidos_permitir_recoger_en_tienda"`
@@ -211,18 +211,18 @@ type empresaVentaPublicaConfigPayload struct {
 	PedidosDespachoAutomatico       *bool  `json:"pedidos_despacho_automatico"`
 	PedidosNombreSistema            string `json:"pedidos_nombre_sistema"`
 	PedidosTiempoPreparacionMinutos int    `json:"pedidos_tiempo_preparacion_minutos"`
-	WompiActivo         *bool  `json:"wompi_activo"`
-	WompiMode           string `json:"wompi_mode"`
-	WompiPublicKey      string `json:"wompi_public_key"`
-	WompiPrivateKeyRef  string `json:"wompi_private_key_ref"`
-	WompiIntegrityRef   string `json:"wompi_integrity_key_ref"`
-	WompiEventKeyRef    string `json:"wompi_event_key_ref"`
-	EpaycoActivo        *bool  `json:"epayco_activo"`
-	EpaycoMode          string `json:"epayco_mode"`
-	EpaycoPublicKey     string `json:"epayco_public_key"`
-	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref"`
-	EpaycoCustomerID    string `json:"epayco_customer_id"`
-	Observaciones       string `json:"observaciones"`
+	WompiActivo                     *bool  `json:"wompi_activo"`
+	WompiMode                       string `json:"wompi_mode"`
+	WompiPublicKey                  string `json:"wompi_public_key"`
+	WompiPrivateKeyRef              string `json:"wompi_private_key_ref"`
+	WompiIntegrityRef               string `json:"wompi_integrity_key_ref"`
+	WompiEventKeyRef                string `json:"wompi_event_key_ref"`
+	EpaycoActivo                    *bool  `json:"epayco_activo"`
+	EpaycoMode                      string `json:"epayco_mode"`
+	EpaycoPublicKey                 string `json:"epayco_public_key"`
+	EpaycoPrivateKeyRef             string `json:"epayco_private_key_ref"`
+	EpaycoCustomerID                string `json:"epayco_customer_id"`
+	Observaciones                   string `json:"observaciones"`
 }
 
 type empresaVentaPublicaItemPayload struct {
@@ -275,18 +275,18 @@ type ventaPublicaCrearPagoPayload struct {
 }
 
 type ventaPublicaCrearPedidoPayload struct {
-	EmpresaID                    int64                         `json:"empresa_id"`
-	EmpresaSlug                  string                        `json:"empresa_slug"`
-	CompradorNombre              string                        `json:"comprador_nombre"`
-	CompradorTelefono            string                        `json:"comprador_telefono"`
-	CompradorEmail               string                        `json:"comprador_email"`
-	CanalEntrega                 string                        `json:"canal_entrega"`
-	DireccionEntrega             string                        `json:"direccion_entrega"`
-	NotasEntrega                 string                        `json:"notas_entrega"`
-	ClienteComparteUbicacion     bool                          `json:"cliente_comparte_ubicacion"`
-	EntregaLatitud               float64                       `json:"entrega_latitud"`
-	EntregaLongitud              float64                       `json:"entrega_longitud"`
-	Items                        []ventaPublicaPagoItemPayload `json:"items"`
+	EmpresaID                int64                         `json:"empresa_id"`
+	EmpresaSlug              string                        `json:"empresa_slug"`
+	CompradorNombre          string                        `json:"comprador_nombre"`
+	CompradorTelefono        string                        `json:"comprador_telefono"`
+	CompradorEmail           string                        `json:"comprador_email"`
+	CanalEntrega             string                        `json:"canal_entrega"`
+	DireccionEntrega         string                        `json:"direccion_entrega"`
+	NotasEntrega             string                        `json:"notas_entrega"`
+	ClienteComparteUbicacion bool                          `json:"cliente_comparte_ubicacion"`
+	EntregaLatitud           float64                       `json:"entrega_latitud"`
+	EntregaLongitud          float64                       `json:"entrega_longitud"`
+	Items                    []ventaPublicaPagoItemPayload `json:"items"`
 }
 
 func empresaVentaPublicaNormalizeAction(raw string) string {
@@ -485,7 +485,8 @@ func ventaPublicaSlugFromRequest(r *http.Request) string {
 	}
 	path := strings.TrimSpace(r.URL.Path)
 	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) >= 2 && strings.EqualFold(parts[len(parts)-1], "venta_publica.html") {
+	if len(parts) >= 2 && (strings.EqualFold(parts[len(parts)-1], "venta_publica.html") ||
+		strings.EqualFold(parts[len(parts)-1], "visualizar_productos_y_precios_publico.html")) {
 		candidate := strings.TrimSpace(parts[len(parts)-2])
 		if candidate != "" {
 			return dbpkg.NormalizeEmpresaPublicSlug(candidate)
@@ -594,30 +595,30 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		paymentMethods = append(paymentMethods, "epayco")
 	}
 	return map[string]interface{}{
-		"empresa_id":         cfg.EmpresaID,
-		"empresa_slug":       cfg.EmpresaSlug,
-		"nombre_tienda":      cfg.NombreTienda,
-		"descripcion_tienda": cfg.DescripcionTienda,
-		"logo_url":           cfg.LogoURL,
-		"banner_url":         cfg.BannerURL,
-		"color_primario":     cfg.ColorPrimario,
-		"tema_visual":        cfg.TemaVisual,
-		"moneda":             cfg.Moneda,
-		"dominio_publico":    cfg.DominioPublico,
-		"mostrar_stock":      cfg.MostrarStock,
-		"pedidos_restaurante_activo": cfg.PedidosRestauranteActivo,
-		"pedidos_registro_opcional_cliente": cfg.PedidosRegistroOpcionalCliente,
+		"empresa_id":                         cfg.EmpresaID,
+		"empresa_slug":                       cfg.EmpresaSlug,
+		"nombre_tienda":                      cfg.NombreTienda,
+		"descripcion_tienda":                 cfg.DescripcionTienda,
+		"logo_url":                           cfg.LogoURL,
+		"banner_url":                         cfg.BannerURL,
+		"color_primario":                     cfg.ColorPrimario,
+		"tema_visual":                        cfg.TemaVisual,
+		"moneda":                             cfg.Moneda,
+		"dominio_publico":                    cfg.DominioPublico,
+		"mostrar_stock":                      cfg.MostrarStock,
+		"pedidos_restaurante_activo":         cfg.PedidosRestauranteActivo,
+		"pedidos_registro_opcional_cliente":  cfg.PedidosRegistroOpcionalCliente,
 		"pedidos_permitir_recoger_en_tienda": cfg.PedidosPermitirRecogerEnTienda,
-		"pedidos_permitir_domicilio": cfg.PedidosPermitirDomicilio,
-		"pedidos_tracking_domiciliario": cfg.PedidosTrackingDomiciliario,
-		"pedidos_despacho_automatico": cfg.PedidosDespachoAutomatico,
-		"pedidos_nombre_sistema": cfg.PedidosNombreSistema,
+		"pedidos_permitir_domicilio":         cfg.PedidosPermitirDomicilio,
+		"pedidos_tracking_domiciliario":      cfg.PedidosTrackingDomiciliario,
+		"pedidos_despacho_automatico":        cfg.PedidosDespachoAutomatico,
+		"pedidos_nombre_sistema":             cfg.PedidosNombreSistema,
 		"pedidos_tiempo_preparacion_minutos": cfg.PedidosTiempoPreparacionMinutos,
-		"wompi_activo":       cfg.WompiActivo,
-		"wompi_mode":         cfg.WompiMode,
-		"epayco_activo":      cfg.EpaycoActivo,
-		"epayco_mode":        cfg.EpaycoMode,
-		"payment_methods":    paymentMethods,
+		"wompi_activo":                       cfg.WompiActivo,
+		"wompi_mode":                         cfg.WompiMode,
+		"epayco_activo":                      cfg.EpaycoActivo,
+		"epayco_mode":                        cfg.EpaycoMode,
+		"payment_methods":                    paymentMethods,
 	}
 }
 
@@ -1013,10 +1014,11 @@ func handleEmpresaVentaPublicaConfigGet(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":          true,
-		"empresa_id":  empresaID,
-		"config":      cfg,
-		"public_path": "/" + cfg.EmpresaSlug + "/venta_publica.html",
+		"ok":                  true,
+		"empresa_id":          empresaID,
+		"config":              cfg,
+		"public_path":         "/" + cfg.EmpresaSlug + "/venta_publica.html",
+		"catalog_public_path": "/" + cfg.EmpresaSlug + "/visualizar_productos_y_precios_publico.html",
 	})
 }
 
@@ -1110,17 +1112,17 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	}
 
 	_, err = dbpkg.UpsertEmpresaVentaPublicaConfig(dbEmp, dbpkg.EmpresaVentaPublicaConfig{
-		EmpresaID:           empresaID,
-		EmpresaSlug:         payload.EmpresaSlug,
-		NombreTienda:        payload.NombreTienda,
-		DescripcionTienda:   payload.DescripcionTienda,
-		LogoURL:             payload.LogoURL,
-		BannerURL:           payload.BannerURL,
-		ColorPrimario:       payload.ColorPrimario,
-		TemaVisual:          payload.TemaVisual,
-		Moneda:              payload.Moneda,
-		DominioPublico:      payload.DominioPublico,
-		MostrarStock:        mostrarStock,
+		EmpresaID:                       empresaID,
+		EmpresaSlug:                     payload.EmpresaSlug,
+		NombreTienda:                    payload.NombreTienda,
+		DescripcionTienda:               payload.DescripcionTienda,
+		LogoURL:                         payload.LogoURL,
+		BannerURL:                       payload.BannerURL,
+		ColorPrimario:                   payload.ColorPrimario,
+		TemaVisual:                      payload.TemaVisual,
+		Moneda:                          payload.Moneda,
+		DominioPublico:                  payload.DominioPublico,
+		MostrarStock:                    mostrarStock,
 		PedidosRestauranteActivo:        pedidosRestauranteActivo,
 		PedidosRegistroOpcionalCliente:  pedidosRegistroOpcional,
 		PedidosPermitirRecogerEnTienda:  pedidosPermitirRecoger,
@@ -1129,20 +1131,20 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		PedidosDespachoAutomatico:       pedidosDespacho,
 		PedidosNombreSistema:            payload.PedidosNombreSistema,
 		PedidosTiempoPreparacionMinutos: payload.PedidosTiempoPreparacionMinutos,
-		WompiActivo:         wompiActivo,
-		WompiMode:           payload.WompiMode,
-		WompiPublicKey:      payload.WompiPublicKey,
-		WompiPrivateKeyRef:  payload.WompiPrivateKeyRef,
-		WompiIntegrityRef:   payload.WompiIntegrityRef,
-		WompiEventKeyRef:    payload.WompiEventKeyRef,
-		EpaycoActivo:        epaycoActivo,
-		EpaycoMode:          payload.EpaycoMode,
-		EpaycoPublicKey:     payload.EpaycoPublicKey,
-		EpaycoPrivateKeyRef: payload.EpaycoPrivateKeyRef,
-		EpaycoCustomerID:    payload.EpaycoCustomerID,
-		UsuarioCreador:      adminEmailFromRequest(r),
-		Estado:              "activo",
-		Observaciones:       payload.Observaciones,
+		WompiActivo:                     wompiActivo,
+		WompiMode:                       payload.WompiMode,
+		WompiPublicKey:                  payload.WompiPublicKey,
+		WompiPrivateKeyRef:              payload.WompiPrivateKeyRef,
+		WompiIntegrityRef:               payload.WompiIntegrityRef,
+		WompiEventKeyRef:                payload.WompiEventKeyRef,
+		EpaycoActivo:                    epaycoActivo,
+		EpaycoMode:                      payload.EpaycoMode,
+		EpaycoPublicKey:                 payload.EpaycoPublicKey,
+		EpaycoPrivateKeyRef:             payload.EpaycoPrivateKeyRef,
+		EpaycoCustomerID:                payload.EpaycoCustomerID,
+		UsuarioCreador:                  adminEmailFromRequest(r),
+		Estado:                          "activo",
+		Observaciones:                   payload.Observaciones,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusBadRequest)
@@ -1155,10 +1157,11 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":          true,
-		"empresa_id":  empresaID,
-		"config":      cfg,
-		"public_path": "/" + cfg.EmpresaSlug + "/venta_publica.html",
+		"ok":                  true,
+		"empresa_id":          empresaID,
+		"config":              cfg,
+		"public_path":         "/" + cfg.EmpresaSlug + "/venta_publica.html",
+		"catalog_public_path": "/" + cfg.EmpresaSlug + "/visualizar_productos_y_precios_publico.html",
 	})
 }
 
@@ -1519,8 +1522,10 @@ func handleVentaPublicaCatalogoPublico(w http.ResponseWriter, r *http.Request, d
 		"page":         currentPage,
 		"items":        items,
 		"paths": map[string]string{
-			"local":      "/venta_publica.html?empresa_slug=" + cfg.EmpresaSlug,
-			"produccion": "/" + cfg.EmpresaSlug + "/venta_publica.html",
+			"local":               "/venta_publica.html?empresa_slug=" + cfg.EmpresaSlug,
+			"produccion":          "/" + cfg.EmpresaSlug + "/venta_publica.html",
+			"catalogo_local":      "/visualizar_productos_y_precios_publico.html?empresa_slug=" + cfg.EmpresaSlug,
+			"catalogo_produccion": "/" + cfg.EmpresaSlug + "/visualizar_productos_y_precios_publico.html",
 		},
 	})
 }
@@ -2069,10 +2074,10 @@ func handleVentaPublicaCrearPedidoPublico(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
-		"ok":            true,
-		"empresa_id":    resolvedEmpresaID,
-		"empresa_slug":  cfg.EmpresaSlug,
-		"order":         order,
+		"ok":             true,
+		"empresa_id":     resolvedEmpresaID,
+		"empresa_slug":   cfg.EmpresaSlug,
+		"order":          order,
 		"tracking_token": trackingToken,
 	})
 }
@@ -2098,8 +2103,8 @@ func handleVentaPublicaEstadoPedidoPublico(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	resp := map[string]interface{}{
-		"ok":      true,
-		"order":   order,
+		"ok":       true,
+		"order":    order,
 		"tracking": map[string]interface{}{"enabled": false},
 	}
 	if order.TaxiRequestID > 0 {

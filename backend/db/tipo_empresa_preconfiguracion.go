@@ -28,6 +28,8 @@ type TipoEmpresaPreconfigTemplate struct {
 	Operacion  TipoEmpresaPreconfigOperacion   `json:"operacion,omitempty"`
 	Productos  []TipoEmpresaPreconfigProducto  `json:"productos"`
 	Usuarios   []TipoEmpresaPreconfigUsuario   `json:"usuarios,omitempty"`
+	Tarifas    TipoEmpresaPreconfigTarifas     `json:"tarifas,omitempty"`
+	Modulos    TipoEmpresaPreconfigModulos     `json:"modulos,omitempty"`
 	Asistente  TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia,omitempty"`
 	TareasGuia []TipoEmpresaPreconfigTareaGuia `json:"tareas_guia,omitempty"`
 }
@@ -85,6 +87,294 @@ type TipoEmpresaPreconfigTareaGuia struct {
 	Modulo      string `json:"modulo"`
 	Titulo      string `json:"titulo"`
 	Descripcion string `json:"descripcion,omitempty"`
+}
+
+type TipoEmpresaPreconfigTarifas struct {
+	PorMinutos []TipoEmpresaPreconfigTarifaPorMinutos `json:"por_minutos,omitempty"`
+	PorDia     []TipoEmpresaPreconfigTarifaPorDia     `json:"por_dia,omitempty"`
+	Motel      []TipoEmpresaPreconfigTarifaMotel      `json:"motel,omitempty"`
+}
+
+type TipoEmpresaPreconfigTarifaPorMinutos struct {
+	EstacionNumero    int     `json:"estacion_numero,omitempty"`
+	DiaSemanaDesde    int     `json:"dia_semana_desde"`
+	DiaSemanaHasta    int     `json:"dia_semana_hasta"`
+	MinutosBase       int     `json:"minutos_base"`
+	ValorBase         float64 `json:"valor_base"`
+	MinutosExtra      int     `json:"minutos_extra"`
+	ValorExtra        float64 `json:"valor_extra"`
+	CobrarPorFraccion bool    `json:"cobrar_por_fraccion"`
+	Moneda            string  `json:"moneda,omitempty"`
+	Prioridad         int     `json:"prioridad,omitempty"`
+	Observaciones     string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigTarifaPorDia struct {
+	EstacionNumero         int     `json:"estacion_numero,omitempty"`
+	NombreTarifa           string  `json:"nombre_tarifa,omitempty"`
+	ServicioNombre         string  `json:"servicio_nombre,omitempty"`
+	ValorDia               float64 `json:"valor_dia"`
+	PersonasDesde          int     `json:"personas_desde"`
+	PersonasHasta          int     `json:"personas_hasta"`
+	HoraCheckIn            string  `json:"hora_check_in,omitempty"`
+	HoraCheckOut           string  `json:"hora_check_out,omitempty"`
+	Moneda                 string  `json:"moneda,omitempty"`
+	Prioridad              int     `json:"prioridad,omitempty"`
+	AplicarAutomaticamente bool    `json:"aplicar_automaticamente"`
+	Observaciones          string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigTarifaMotel struct {
+	EstacionNumero      int     `json:"estacion_numero,omitempty"`
+	NombrePlan          string  `json:"nombre_plan"`
+	TipoPlan            string  `json:"tipo_plan"`
+	CategoriaHabitacion string  `json:"categoria_habitacion,omitempty"`
+	DiaSemanaDesde      int     `json:"dia_semana_desde"`
+	DiaSemanaHasta      int     `json:"dia_semana_hasta"`
+	HoraInicio          string  `json:"hora_inicio,omitempty"`
+	HoraFin             string  `json:"hora_fin,omitempty"`
+	MinutosIncluidos    int     `json:"minutos_incluidos"`
+	ValorBase           float64 `json:"valor_base"`
+	MinutosExtra        int     `json:"minutos_extra"`
+	ValorExtra          float64 `json:"valor_extra"`
+	CobrarPorFraccion   bool    `json:"cobrar_por_fraccion"`
+	ToleranciaMinutos   int     `json:"tolerancia_minutos"`
+	Moneda              string  `json:"moneda,omitempty"`
+	Prioridad           int     `json:"prioridad,omitempty"`
+	AplicarAutomatico   bool    `json:"aplicar_automaticamente"`
+	Observaciones       string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigModulos struct {
+	TurnosAtencion   *TipoEmpresaPreconfigTurnosAtencion   `json:"turnos_atencion,omitempty"`
+	Gimnasio         *TipoEmpresaPreconfigGimnasio         `json:"gimnasio,omitempty"`
+	Odontologia      *TipoEmpresaPreconfigOdontologia      `json:"odontologia,omitempty"`
+	Vehiculos        *TipoEmpresaPreconfigVehiculos        `json:"vehiculos,omitempty"`
+	ControlElectrico *TipoEmpresaPreconfigControlElectrico `json:"control_electrico,omitempty"`
+	HojaVida         []TipoEmpresaPreconfigHojaVida        `json:"hoja_vida,omitempty"`
+}
+
+type TipoEmpresaPreconfigTurnosAtencion struct {
+	NombreSistema             string                                      `json:"nombre_sistema,omitempty"`
+	NombrePantalla            string                                      `json:"nombre_pantalla,omitempty"`
+	PrefijoGeneral            string                                      `json:"prefijo_general,omitempty"`
+	TiempoLlamadoSegundos     int                                         `json:"tiempo_llamado_segundos,omitempty"`
+	PermitirEmisionPublica    bool                                        `json:"permitir_emision_publica"`
+	MostrarTicketsCompletados bool                                        `json:"mostrar_tickets_completados"`
+	Servicios                 []TipoEmpresaPreconfigTurnoAtencionServicio `json:"servicios,omitempty"`
+	Puestos                   []TipoEmpresaPreconfigTurnoAtencionPuesto   `json:"puestos,omitempty"`
+}
+
+type TipoEmpresaPreconfigTurnoAtencionServicio struct {
+	Codigo      string `json:"codigo"`
+	Nombre      string `json:"nombre"`
+	Descripcion string `json:"descripcion,omitempty"`
+	Prefijo     string `json:"prefijo"`
+	Prioridad   int    `json:"prioridad,omitempty"`
+	Color       string `json:"color,omitempty"`
+}
+
+type TipoEmpresaPreconfigTurnoAtencionPuesto struct {
+	Codigo              string `json:"codigo"`
+	Nombre              string `json:"nombre"`
+	Area                string `json:"area,omitempty"`
+	Ubicacion           string `json:"ubicacion,omitempty"`
+	ServiciosPermitidos string `json:"servicios_permitidos,omitempty"`
+}
+
+type TipoEmpresaPreconfigGimnasio struct {
+	Planes       []TipoEmpresaPreconfigGimnasioPlan       `json:"planes,omitempty"`
+	Entrenadores []TipoEmpresaPreconfigGimnasioEntrenador `json:"entrenadores,omitempty"`
+	Clases       []TipoEmpresaPreconfigGimnasioClase      `json:"clases,omitempty"`
+	Socios       []TipoEmpresaPreconfigGimnasioSocio      `json:"socios,omitempty"`
+}
+
+type TipoEmpresaPreconfigGimnasioPlan struct {
+	Nombre                 string  `json:"nombre"`
+	Descripcion            string  `json:"descripcion,omitempty"`
+	Precio                 float64 `json:"precio"`
+	DuracionDias           int     `json:"duracion_dias"`
+	ClasesIncluidas        int     `json:"clases_incluidas"`
+	AccesoIlimitado        bool    `json:"acceso_ilimitado"`
+	SesionesPersonalizadas int     `json:"sesiones_personalizadas"`
+}
+
+type TipoEmpresaPreconfigGimnasioEntrenador struct {
+	NombreCompleto  string `json:"nombre_completo"`
+	Especialidad    string `json:"especialidad,omitempty"`
+	Telefono        string `json:"telefono,omitempty"`
+	Email           string `json:"email,omitempty"`
+	Certificaciones string `json:"certificaciones,omitempty"`
+	Disponibilidad  string `json:"disponibilidad,omitempty"`
+	Observaciones   string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigGimnasioClase struct {
+	Nombre          string  `json:"nombre"`
+	Categoria       string  `json:"categoria,omitempty"`
+	EntrenadorIndex int     `json:"entrenador_index,omitempty"`
+	Sede            string  `json:"sede,omitempty"`
+	Canal           string  `json:"canal,omitempty"`
+	Cupos           int     `json:"cupos"`
+	DuracionMinutos int     `json:"duracion_minutos"`
+	Precio          float64 `json:"precio"`
+	Descripcion     string  `json:"descripcion,omitempty"`
+}
+
+type TipoEmpresaPreconfigGimnasioSocio struct {
+	Codigo         string `json:"codigo,omitempty"`
+	NombreCompleto string `json:"nombre_completo"`
+	Documento      string `json:"documento,omitempty"`
+	Telefono       string `json:"telefono,omitempty"`
+	Email          string `json:"email,omitempty"`
+	Objetivo       string `json:"objetivo,omitempty"`
+	PlanIndex      int    `json:"plan_index,omitempty"`
+	Observaciones  string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigOdontologia struct {
+	Pacientes     []TipoEmpresaPreconfigOdontoPaciente    `json:"pacientes,omitempty"`
+	Profesionales []TipoEmpresaPreconfigOdontoProfesional `json:"profesionales,omitempty"`
+	Consultorios  []TipoEmpresaPreconfigOdontoConsultorio `json:"consultorios,omitempty"`
+	Tratamientos  []TipoEmpresaPreconfigOdontoTratamiento `json:"tratamientos,omitempty"`
+}
+
+type TipoEmpresaPreconfigOdontoPaciente struct {
+	Codigo         string  `json:"codigo,omitempty"`
+	NombreCompleto string  `json:"nombre_completo"`
+	Documento      string  `json:"documento,omitempty"`
+	Telefono       string  `json:"telefono,omitempty"`
+	Email          string  `json:"email,omitempty"`
+	Aseguradora    string  `json:"aseguradora,omitempty"`
+	Alergias       string  `json:"alergias,omitempty"`
+	RiesgoMedico   string  `json:"riesgo_medico,omitempty"`
+	Saldo          float64 `json:"saldo,omitempty"`
+	Observaciones  string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigOdontoProfesional struct {
+	NombreCompleto      string `json:"nombre_completo"`
+	Especialidad        string `json:"especialidad,omitempty"`
+	RegistroProfesional string `json:"registro_profesional,omitempty"`
+	Telefono            string `json:"telefono,omitempty"`
+	Email               string `json:"email,omitempty"`
+	ColorAgenda         string `json:"color_agenda,omitempty"`
+	Observaciones       string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigOdontoConsultorio struct {
+	Nombre        string `json:"nombre"`
+	Sede          string `json:"sede,omitempty"`
+	Sillon        string `json:"sillon,omitempty"`
+	Observaciones string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigOdontoTratamiento struct {
+	PacienteIndex    int     `json:"paciente_index,omitempty"`
+	ProfesionalIndex int     `json:"profesional_index,omitempty"`
+	Nombre           string  `json:"nombre"`
+	Categoria        string  `json:"categoria,omitempty"`
+	Piezas           string  `json:"piezas,omitempty"`
+	SesionesTotal    int     `json:"sesiones_total"`
+	CostoEstimado    float64 `json:"costo_estimado"`
+	Observaciones    string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigVehiculos struct {
+	PaisCodigo            string                                 `json:"pais_codigo,omitempty"`
+	EvitarDuplicadoActivo bool                                   `json:"evitar_duplicado_activo"`
+	Registros             []TipoEmpresaPreconfigVehiculoRegistro `json:"registros,omitempty"`
+}
+
+type TipoEmpresaPreconfigVehiculoRegistro struct {
+	Patente              string `json:"patente"`
+	TipoVehiculo         string `json:"tipo_vehiculo,omitempty"`
+	Marca                string `json:"marca,omitempty"`
+	Modelo               string `json:"modelo,omitempty"`
+	Color                string `json:"color,omitempty"`
+	PropietarioNombre    string `json:"propietario_nombre,omitempty"`
+	PropietarioDocumento string `json:"propietario_documento,omitempty"`
+	ConductorNombre      string `json:"conductor_nombre,omitempty"`
+	MotivoIngreso        string `json:"motivo_ingreso,omitempty"`
+	Observaciones        string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigControlElectrico struct {
+	Habilitado         bool                                       `json:"habilitado"`
+	RaspberryIP        string                                     `json:"raspberry_ip,omitempty"`
+	RaspberryPort      int                                        `json:"raspberry_port,omitempty"`
+	APIPath            string                                     `json:"api_path,omitempty"`
+	TimeoutMS          int                                        `json:"timeout_ms,omitempty"`
+	AutoSyncEstaciones bool                                       `json:"auto_sync_estaciones"`
+	FailSafeOnError    bool                                       `json:"fail_safe_on_error"`
+	Raspberries        []TipoEmpresaPreconfigControlRaspberry     `json:"raspberries,omitempty"`
+	Reles              []TipoEmpresaPreconfigControlElectricoRele `json:"reles,omitempty"`
+}
+
+type TipoEmpresaPreconfigControlRaspberry struct {
+	Codigo        string `json:"codigo"`
+	Nombre        string `json:"nombre"`
+	RaspberryIP   string `json:"raspberry_ip"`
+	RaspberryPort int    `json:"raspberry_port,omitempty"`
+	APIPath       string `json:"api_path,omitempty"`
+	TimeoutMS     int    `json:"timeout_ms,omitempty"`
+	Observaciones string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigControlElectricoRele struct {
+	RaspberryCodigo        string `json:"raspberry_codigo,omitempty"`
+	EstacionNumero         int    `json:"estacion_numero,omitempty"`
+	SalidaCodigo           string `json:"salida_codigo"`
+	TipoCarga              string `json:"tipo_carga,omitempty"`
+	GPIOPin                int    `json:"gpio_pin"`
+	RelayName              string `json:"relay_name"`
+	ActiveHigh             bool   `json:"active_high"`
+	PulsoMS                int    `json:"pulso_ms,omitempty"`
+	Modo                   string `json:"modo,omitempty"`
+	ProgramacionHabilitada bool   `json:"programacion_habilitada"`
+	HoraEncendido          string `json:"hora_encendido,omitempty"`
+	HoraApagado            string `json:"hora_apagado,omitempty"`
+	ProgramacionDias       string `json:"programacion_dias,omitempty"`
+	ProgramacionTimezone   string `json:"programacion_timezone,omitempty"`
+	ImagenURL              string `json:"imagen_url,omitempty"`
+	Observaciones          string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigHojaVida struct {
+	TipoEntidad     string                               `json:"tipo_entidad"`
+	Codigo          string                               `json:"codigo"`
+	Nombre          string                               `json:"nombre"`
+	ClienteNombre   string                               `json:"cliente_nombre,omitempty"`
+	Identificacion  string                               `json:"identificacion,omitempty"`
+	Marca           string                               `json:"marca,omitempty"`
+	Modelo          string                               `json:"modelo,omitempty"`
+	Serie           string                               `json:"serie,omitempty"`
+	Color           string                               `json:"color,omitempty"`
+	EstadoOperativo string                               `json:"estado_operativo,omitempty"`
+	Metadata        map[string]any                       `json:"metadata,omitempty"`
+	Observaciones   string                               `json:"observaciones,omitempty"`
+	Eventos         []TipoEmpresaPreconfigHojaVidaEvento `json:"eventos,omitempty"`
+	Alertas         []TipoEmpresaPreconfigHojaVidaAlerta `json:"alertas,omitempty"`
+}
+
+type TipoEmpresaPreconfigHojaVidaEvento struct {
+	TipoEvento          string  `json:"tipo_evento,omitempty"`
+	Titulo              string  `json:"titulo"`
+	Descripcion         string  `json:"descripcion,omitempty"`
+	Costo               float64 `json:"costo,omitempty"`
+	Responsable         string  `json:"responsable,omitempty"`
+	DocumentoReferencia string  `json:"documento_referencia,omitempty"`
+	Recurrente          bool    `json:"recurrente"`
+	RecurrenciaDias     int64   `json:"recurrencia_dias,omitempty"`
+	Observaciones       string  `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigHojaVidaAlerta struct {
+	Titulo        string `json:"titulo"`
+	Descripcion   string `json:"descripcion,omitempty"`
+	Prioridad     string `json:"prioridad,omitempty"`
+	Responsable   string `json:"responsable,omitempty"`
+	Observaciones string `json:"observaciones,omitempty"`
 }
 
 type TipoEmpresaPreconfigSeedItem struct {
@@ -435,6 +725,10 @@ func EnsureCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 		{"Pymes", "Empresa general con venta directa, productos, servicios y caja.", isTipoEmpresaPyme},
 		{"Punto de venta", "Una estacion principal y venta directa por mostrador.", isTipoEmpresaPuntoVenta},
 		{"Taller mecanico", "Bahias, tecnicos, ordenes de servicio y comisiones.", isTipoEmpresaTaller},
+		{"Gimnasio", "Planes, socios, entrenadores, clases, accesos y pagos.", isTipoEmpresaGimnasio},
+		{"Odontologia", "Pacientes, profesionales, consultorios, agenda, tratamientos y presupuestos.", isTipoEmpresaOdontologia},
+		{"Manejo de turnos", "Servicios, puestos, emision publica y pantalla de llamados.", isTipoEmpresaTurnos},
+		{"Vehiculos y flotas", "Registro, permanencia, hoja de vida, mantenimientos y alertas de vehiculos.", isTipoEmpresaVehiculos},
 		{"Tecnico independiente", "Sin estaciones; venta directa, agenda y servicios.", isTipoEmpresaIndependiente},
 		{"Redes sociales", "Clientes, paquetes, tareas, contenidos y reportes.", isTipoEmpresaRedesSociales},
 		{"Sensores y monitoreo", "Accesos, sensores, instalaciones y monitoreo.", isTipoEmpresaSensores},
@@ -611,6 +905,56 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Caja taller", "caja", "Cobra ordenes y repuestos."),
 		}, "Asistente para ordenes de servicio, repuestos, tiempos, diagnosticos y cobros."), operacionPreconfig("taller", "Bahia", "Bahias", true, true, true, "tecnico", "servicio", 25, []string{"recepcion", "tecnico", "caja"}))
 	}
+	if isTipoEmpresaGimnasio(tipoNombre) {
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GYM", "Zona", 4, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-GYM-001", "Mensualidad general", "Planes", "Plan mensual de acceso general", 0, 95000, 0),
+			productoPreconfig("DEMO-GYM-002", "Clase personalizada", "Entrenamiento", "Sesion individual con entrenador", 0, 45000, 0),
+			productoPreconfig("DEMO-GYM-003", "Dia de entrenamiento", "Planes", "Ingreso por dia", 0, 15000, 0),
+			productoPreconfig("DEMO-GYM-004", "Bebida hidratante", "Tienda", "Bebida de tienda fitness", 2500, 6000, 10),
+			productoPreconfig("DEMO-GYM-005", "Proteina porcion", "Tienda", "Porcion individual de proteina", 4500, 12000, 6),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion gimnasio", "recepcion", "Gestiona socios, accesos, pagos y renovaciones."),
+			usuarioPreconfig("Entrenador principal", "entrenador", "Programa clases, valoraciones y sesiones personalizadas."),
+			usuarioPreconfig("Caja gimnasio", "caja", "Registra pagos, ventas de tienda y cierres."),
+		}, "Asistente para planes, socios, clases, accesos, renovaciones, pagos y alertas de vencimiento."), operacionPreconfig("gimnasio", "Zona", "Zonas", true, true, true, "entrenador", "entrenamiento", 25, []string{"recepcion", "entrenador", "caja"}))
+	}
+	if isTipoEmpresaOdontologia(tipoNombre) {
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("ODONTO", "Consultorio", 3, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-ODONTO-001", "Consulta odontologica", "Consulta", "Valoracion inicial del paciente", 0, 60000, 0),
+			productoPreconfig("DEMO-ODONTO-002", "Limpieza dental", "Higiene oral", "Profilaxis y control", 12000, 90000, 0),
+			productoPreconfig("DEMO-ODONTO-003", "Resina simple", "Operatoria", "Restauracion de una superficie", 18000, 120000, 0),
+			productoPreconfig("DEMO-ODONTO-004", "Radiografia periapical", "Imagenologia", "Radiografia de apoyo diagnostico", 8000, 35000, 0),
+			productoPreconfig("DEMO-ODONTO-005", "Kit higiene oral", "Productos", "Cepillo, seda y crema dental", 12000, 28000, 8),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion odontologia", "recepcion", "Agenda pacientes, confirma citas y recauda anticipos."),
+			usuarioPreconfig("Odontologo general", "odontologo", "Atiende historias, odontogramas, tratamientos y presupuestos."),
+			usuarioPreconfig("Auxiliar consultorio", "operacion", "Prepara consultorio, apoya procedimientos e inventario."),
+			usuarioPreconfig("Caja odontologia", "caja", "Registra pagos, abonos y cartera de pacientes."),
+		}, "Asistente clinico-administrativo para agenda, pacientes, historias, tratamientos, presupuestos y cartera."), operacionPreconfig("odontologia", "Consultorio", "Consultorios", true, true, true, "odontologo", "tratamiento", 30, []string{"recepcion", "odontologo", "operacion", "caja"}))
+	}
+	if isTipoEmpresaTurnos(tipoNombre) {
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("TURNOS", "Puesto", 4, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-TURNOS-001", "Atencion general", "Servicios", "Servicio guia de atencion al cliente", 0, 0, 0),
+			productoPreconfig("DEMO-TURNOS-002", "Tramite prioritario", "Servicios", "Servicio guia para filas preferenciales", 0, 0, 0),
+			productoPreconfig("DEMO-TURNOS-003", "Certificado o documento", "Servicios", "Documento de tramite con cobro opcional", 0, 12000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Coordinador turnos", "supervisor", "Configura servicios, puestos y pantalla publica."),
+			usuarioPreconfig("Asesor modulo", "operacion", "Llama turnos y registra atenciones."),
+			usuarioPreconfig("Caja tramites", "caja", "Cobra tramites o documentos cuando aplique."),
+		}, "Asistente para configurar filas, servicios, puestos, tiempos de espera y pantalla publica."), operacionPreconfig("turnos_atencion", "Puesto", "Puestos", true, true, false, "", "", 0, []string{"supervisor", "operacion", "caja"}))
+	}
+	if isTipoEmpresaVehiculos(tipoNombre) {
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("VEH", "Bahia", 4, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-VEH-001", "Revision de ingreso", "Control vehicular", "Inspeccion de ingreso o recepcion", 0, 25000, 0),
+			productoPreconfig("DEMO-VEH-002", "Mantenimiento preventivo", "Mantenimiento", "Servicio preventivo de vehiculo", 18000, 85000, 0),
+			productoPreconfig("DEMO-VEH-003", "Lavado operativo", "Servicios", "Lavado o alistamiento de vehiculo", 12000, 30000, 0),
+			productoPreconfig("DEMO-VEH-004", "Cambio aceite guia", "Mantenimiento", "Cambio de aceite con insumo de ejemplo", 45000, 95000, 4),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Recepcion vehicular", "recepcion", "Registra ingresos, placas, propietarios y permanencia."),
+			usuarioPreconfig("Tecnico flota", "tecnico", "Actualiza hoja de vida, mantenimientos y alertas."),
+			usuarioPreconfig("Caja vehiculos", "caja", "Cobra servicios y reportes de permanencia."),
+		}, "Asistente para registro vehicular, hoja de vida, mantenimientos, alertas y cobros."), operacionPreconfig("vehiculos", "Bahia", "Bahias", true, true, true, "tecnico", "mantenimiento", 20, []string{"recepcion", "tecnico", "caja"}))
+	}
 	if isTipoEmpresaIndependiente(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("IND", "Venta directa", 0, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-IND-001", "Consulta inicial", "Servicios", "Servicio profesional inicial", 0, 50000, 0),
@@ -691,7 +1035,231 @@ func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, statio
 
 func withPreconfigOperacion(template TipoEmpresaPreconfigTemplate, operacion TipoEmpresaPreconfigOperacion) TipoEmpresaPreconfigTemplate {
 	template.Operacion = operacion
+	return enrichTipoEmpresaPreconfigTemplate(NormalizeTipoEmpresaPreconfigTemplate(template))
+}
+
+func enrichTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) TipoEmpresaPreconfigTemplate {
+	switch template.Operacion.TipoNegocio {
+	case "motel":
+		if len(template.Tarifas.Motel) == 0 {
+			template.Tarifas.Motel = defaultMotelTarifasPreconfig()
+		}
+		if template.Modulos.ControlElectrico == nil {
+			template.Modulos.ControlElectrico = defaultControlElectricoPreconfig("motel")
+		}
+	case "hotel":
+		if len(template.Tarifas.PorDia) == 0 {
+			template.Tarifas.PorDia = defaultHotelTarifasPorDiaPreconfig()
+		}
+		if template.Modulos.ControlElectrico == nil {
+			template.Modulos.ControlElectrico = defaultControlElectricoPreconfig("hotel")
+		}
+	case "lavadero_autos":
+		if len(template.Tarifas.PorMinutos) == 0 {
+			template.Tarifas.PorMinutos = defaultLavaderoTarifasPorMinutosPreconfig()
+		}
+		if template.Modulos.Vehiculos == nil {
+			template.Modulos.Vehiculos = defaultVehiculosPreconfig("lavadero")
+		}
+		if len(template.Modulos.HojaVida) == 0 {
+			template.Modulos.HojaVida = defaultHojaVidaVehiculosPreconfig("lavadero")
+		}
+	case "taller":
+		if template.Modulos.Vehiculos == nil {
+			template.Modulos.Vehiculos = defaultVehiculosPreconfig("taller")
+		}
+		if len(template.Modulos.HojaVida) == 0 {
+			template.Modulos.HojaVida = defaultHojaVidaVehiculosPreconfig("taller")
+		}
+	case "gimnasio":
+		if template.Modulos.Gimnasio == nil {
+			template.Modulos.Gimnasio = defaultGimnasioPreconfig()
+		}
+	case "odontologia":
+		if template.Modulos.Odontologia == nil {
+			template.Modulos.Odontologia = defaultOdontologiaPreconfig()
+		}
+	case "turnos_atencion":
+		if template.Modulos.TurnosAtencion == nil {
+			template.Modulos.TurnosAtencion = defaultTurnosAtencionPreconfig()
+		}
+	case "vehiculos":
+		if template.Modulos.Vehiculos == nil {
+			template.Modulos.Vehiculos = defaultVehiculosPreconfig("flota")
+		}
+		if len(template.Modulos.HojaVida) == 0 {
+			template.Modulos.HojaVida = defaultHojaVidaVehiculosPreconfig("flota")
+		}
+	}
 	return NormalizeTipoEmpresaPreconfigTemplate(template)
+}
+
+func defaultMotelTarifasPreconfig() []TipoEmpresaPreconfigTarifaMotel {
+	return []TipoEmpresaPreconfigTarifaMotel{
+		{EstacionNumero: 1, NombrePlan: "Express sencillo", TipoPlan: "express", CategoriaHabitacion: "Sencilla", DiaSemanaDesde: 1, DiaSemanaHasta: 5, HoraInicio: "00:00", HoraFin: "23:59", MinutosIncluidos: 180, ValorBase: 45000, MinutosExtra: 30, ValorExtra: 8000, CobrarPorFraccion: true, ToleranciaMinutos: 10, Moneda: "COP", Prioridad: 1, AplicarAutomatico: true, Observaciones: "Tarifa guia lunes a viernes."},
+		{EstacionNumero: 2, NombrePlan: "Suite jacuzzi", TipoPlan: "suite", CategoriaHabitacion: "Suite", DiaSemanaDesde: 1, DiaSemanaHasta: 7, HoraInicio: "00:00", HoraFin: "23:59", MinutosIncluidos: 240, ValorBase: 110000, MinutosExtra: 30, ValorExtra: 15000, CobrarPorFraccion: true, ToleranciaMinutos: 10, Moneda: "COP", Prioridad: 2, AplicarAutomatico: true, Observaciones: "Tarifa premium de ejemplo."},
+		{EstacionNumero: 1, NombrePlan: "Amanecida fin de semana", TipoPlan: "amanecida", CategoriaHabitacion: "Todas", DiaSemanaDesde: 6, DiaSemanaHasta: 7, HoraInicio: "20:00", HoraFin: "08:00", MinutosIncluidos: 720, ValorBase: 150000, MinutosExtra: 60, ValorExtra: 20000, CobrarPorFraccion: true, ToleranciaMinutos: 15, Moneda: "COP", Prioridad: 3, AplicarAutomatico: true, Observaciones: "Plan nocturno guia para fines de semana."},
+	}
+}
+
+func defaultHotelTarifasPorDiaPreconfig() []TipoEmpresaPreconfigTarifaPorDia {
+	return []TipoEmpresaPreconfigTarifaPorDia{
+		{EstacionNumero: 1, NombreTarifa: "Sencilla noche", ServicioNombre: "hospedaje", ValorDia: 95000, PersonasDesde: 1, PersonasHasta: 1, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 1, AplicarAutomaticamente: true, Observaciones: "Tarifa guia habitacion sencilla."},
+		{EstacionNumero: 2, NombreTarifa: "Doble noche", ServicioNombre: "hospedaje", ValorDia: 145000, PersonasDesde: 1, PersonasHasta: 2, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 2, AplicarAutomaticamente: true, Observaciones: "Tarifa guia habitacion doble."},
+		{EstacionNumero: 3, NombreTarifa: "Familiar noche", ServicioNombre: "hospedaje", ValorDia: 220000, PersonasDesde: 3, PersonasHasta: 5, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 3, AplicarAutomaticamente: true, Observaciones: "Tarifa guia familiar."},
+	}
+}
+
+func defaultControlElectricoPreconfig(contexto string) *TipoEmpresaPreconfigControlElectrico {
+	cfg := &TipoEmpresaPreconfigControlElectrico{
+		Habilitado:         false,
+		RaspberryIP:        "192.168.1.50",
+		RaspberryPort:      8081,
+		APIPath:            "/api/gpio/relay",
+		TimeoutMS:          2500,
+		AutoSyncEstaciones: true,
+		FailSafeOnError:    false,
+		Raspberries: []TipoEmpresaPreconfigControlRaspberry{
+			{Codigo: "principal", Nombre: "Control electrico principal", RaspberryIP: "192.168.1.50", RaspberryPort: 8081, APIPath: "/api/gpio/relay", TimeoutMS: 2500, Observaciones: "Raspberry Pi guia para pruebas de control electrico."},
+		},
+	}
+	if contexto == "hotel" {
+		cfg.Reles = []TipoEmpresaPreconfigControlElectricoRele{
+			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces habitacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para encendido de luces por ocupacion."},
+			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 3, RelayName: "Aire habitacion 1", ActiveHigh: true, Modo: "manual", ProgramacionHabilitada: true, HoraEncendido: "15:00", HoraApagado: "12:00", ProgramacionDias: "todos", ProgramacionTimezone: "America/Bogota", Observaciones: "Aparato guia para aire acondicionado con horario hotelero."},
+			{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "tomacorrientes", TipoCarga: "energia", GPIOPin: 4, RelayName: "Energia habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para energia de habitacion."},
+		}
+		return cfg
+	}
+	cfg.Reles = []TipoEmpresaPreconfigControlElectricoRele{
+		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces habitacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces por ingreso y salida."},
+		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "jacuzzi", TipoCarga: "jacuzzi", GPIOPin: 3, RelayName: "Jacuzzi habitacion 1", ActiveHigh: true, Modo: "manual", PulsoMS: 0, Observaciones: "Aparato guia para jacuzzi o hidromasaje."},
+		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "ambiente", TipoCarga: "luces_ambiente", GPIOPin: 4, RelayName: "Luces ambiente habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces decorativas."},
+		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 5, RelayName: "Aire habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para aire acondicionado."},
+	}
+	return cfg
+}
+
+func defaultLavaderoTarifasPorMinutosPreconfig() []TipoEmpresaPreconfigTarifaPorMinutos {
+	return []TipoEmpresaPreconfigTarifaPorMinutos{
+		{EstacionNumero: 1, DiaSemanaDesde: 1, DiaSemanaHasta: 5, MinutosBase: 45, ValorBase: 22000, MinutosExtra: 15, ValorExtra: 5000, CobrarPorFraccion: true, Moneda: "COP", Prioridad: 1, Observaciones: "Lavado basico por bahia entre semana."},
+		{EstacionNumero: 2, DiaSemanaDesde: 1, DiaSemanaHasta: 7, MinutosBase: 75, ValorBase: 38000, MinutosExtra: 15, ValorExtra: 7000, CobrarPorFraccion: true, Moneda: "COP", Prioridad: 2, Observaciones: "Lavado premium por bahia."},
+	}
+}
+
+func defaultTurnosAtencionPreconfig() *TipoEmpresaPreconfigTurnosAtencion {
+	return &TipoEmpresaPreconfigTurnosAtencion{
+		NombreSistema:             "Turnos de atencion",
+		NombrePantalla:            "Pantalla de llamados",
+		PrefijoGeneral:            "T",
+		TiempoLlamadoSegundos:     20,
+		PermitirEmisionPublica:    true,
+		MostrarTicketsCompletados: true,
+		Servicios: []TipoEmpresaPreconfigTurnoAtencionServicio{
+			{Codigo: "GEN", Nombre: "Atencion general", Descripcion: "Fila general de servicio.", Prefijo: "G", Prioridad: 10, Color: "#2563eb"},
+			{Codigo: "PRI", Nombre: "Prioritario", Descripcion: "Adultos mayores, discapacidad o casos preferenciales.", Prefijo: "P", Prioridad: 1, Color: "#dc2626"},
+			{Codigo: "CAJ", Nombre: "Caja y pagos", Descripcion: "Pagos, recaudos y facturacion.", Prefijo: "C", Prioridad: 20, Color: "#16a34a"},
+		},
+		Puestos: []TipoEmpresaPreconfigTurnoAtencionPuesto{
+			{Codigo: "P1", Nombre: "Puesto 1", Area: "Atencion", Ubicacion: "Modulo principal", ServiciosPermitidos: "GEN,PRI"},
+			{Codigo: "P2", Nombre: "Puesto 2", Area: "Atencion", Ubicacion: "Modulo secundario", ServiciosPermitidos: "GEN"},
+			{Codigo: "CJ1", Nombre: "Caja 1", Area: "Caja", Ubicacion: "Caja principal", ServiciosPermitidos: "CAJ"},
+		},
+	}
+}
+
+func defaultGimnasioPreconfig() *TipoEmpresaPreconfigGimnasio {
+	return &TipoEmpresaPreconfigGimnasio{
+		Planes: []TipoEmpresaPreconfigGimnasioPlan{
+			{Nombre: "Plan mensual basico", Descripcion: "Acceso general en horario regular.", Precio: 95000, DuracionDias: 30, ClasesIncluidas: 4, AccesoIlimitado: false},
+			{Nombre: "Plan ilimitado", Descripcion: "Acceso ilimitado y clases grupales.", Precio: 145000, DuracionDias: 30, ClasesIncluidas: 999, AccesoIlimitado: true},
+			{Nombre: "Plan personalizado", Descripcion: "Entrenamiento con sesiones personalizadas.", Precio: 260000, DuracionDias: 30, ClasesIncluidas: 8, AccesoIlimitado: true, SesionesPersonalizadas: 4},
+		},
+		Entrenadores: []TipoEmpresaPreconfigGimnasioEntrenador{
+			{NombreCompleto: "Entrenador guia funcional", Especialidad: "Funcional y fuerza", Email: "entrenador.funcional@preconfig.local", Disponibilidad: "Lunes a sabado 06:00-14:00", Certificaciones: "Entrenamiento funcional"},
+			{NombreCompleto: "Entrenadora guia bienestar", Especialidad: "Yoga y movilidad", Email: "entrenadora.bienestar@preconfig.local", Disponibilidad: "Lunes a viernes 16:00-21:00", Certificaciones: "Yoga, movilidad"},
+		},
+		Clases: []TipoEmpresaPreconfigGimnasioClase{
+			{Nombre: "Funcional manana", Categoria: "Funcional", EntrenadorIndex: 1, Sede: "principal", Canal: "presencial", Cupos: 20, DuracionMinutos: 60, Precio: 0, Descripcion: "Clase guia incluida en planes."},
+			{Nombre: "Yoga movilidad", Categoria: "Bienestar", EntrenadorIndex: 2, Sede: "principal", Canal: "presencial", Cupos: 15, DuracionMinutos: 50, Precio: 25000, Descripcion: "Clase abierta con cobro individual opcional."},
+		},
+		Socios: []TipoEmpresaPreconfigGimnasioSocio{
+			{Codigo: "GYM-DEMO-001", NombreCompleto: "Socio Demo Activo", Documento: "100000001", Telefono: "3000000001", Email: "socio.activo@preconfig.local", Objetivo: "Bajar grasa y mejorar condicion", PlanIndex: 1, Observaciones: "Socio guia para validar accesos y renovaciones."},
+			{Codigo: "GYM-DEMO-002", NombreCompleto: "Socia Demo Personalizado", Documento: "100000002", Telefono: "3000000002", Email: "socia.personal@preconfig.local", Objetivo: "Ganar fuerza", PlanIndex: 3, Observaciones: "Socio guia con plan personalizado."},
+		},
+	}
+}
+
+func defaultOdontologiaPreconfig() *TipoEmpresaPreconfigOdontologia {
+	return &TipoEmpresaPreconfigOdontologia{
+		Pacientes: []TipoEmpresaPreconfigOdontoPaciente{
+			{Codigo: "PAC-DEMO-001", NombreCompleto: "Paciente Demo Control", Documento: "100000101", Telefono: "3000000101", Email: "paciente.control@preconfig.local", Aseguradora: "Particular", Alergias: "Sin alergias reportadas", RiesgoMedico: "Bajo", Observaciones: "Paciente guia para historia clinica y odontograma."},
+			{Codigo: "PAC-DEMO-002", NombreCompleto: "Paciente Demo Tratamiento", Documento: "100000102", Telefono: "3000000102", Email: "paciente.tratamiento@preconfig.local", Aseguradora: "EPS guia", RiesgoMedico: "Medio", Saldo: 180000, Observaciones: "Paciente guia con presupuesto y saldo."},
+		},
+		Profesionales: []TipoEmpresaPreconfigOdontoProfesional{
+			{NombreCompleto: "Odontologo General Demo", Especialidad: "Odontologia general", RegistroProfesional: "OD-DEMO-001", Email: "odontologo.general@preconfig.local", ColorAgenda: "#0ea5e9"},
+			{NombreCompleto: "Ortodoncista Demo", Especialidad: "Ortodoncia", RegistroProfesional: "OD-DEMO-002", Email: "ortodoncia@preconfig.local", ColorAgenda: "#7c3aed"},
+		},
+		Consultorios: []TipoEmpresaPreconfigOdontoConsultorio{
+			{Nombre: "Consultorio 1", Sede: "principal", Sillon: "Sillon A", Observaciones: "Consultorio guia principal."},
+			{Nombre: "Consultorio 2", Sede: "principal", Sillon: "Sillon B", Observaciones: "Consultorio guia de apoyo."},
+		},
+		Tratamientos: []TipoEmpresaPreconfigOdontoTratamiento{
+			{PacienteIndex: 2, ProfesionalIndex: 1, Nombre: "Plan limpieza y resina", Categoria: "Operatoria", Piezas: "16, 26", SesionesTotal: 2, CostoEstimado: 210000, Observaciones: "Tratamiento guia para presupuestos y seguimiento."},
+			{PacienteIndex: 1, ProfesionalIndex: 2, Nombre: "Valoracion ortodoncia", Categoria: "Ortodoncia", SesionesTotal: 1, CostoEstimado: 80000, Observaciones: "Tratamiento guia de valoracion."},
+		},
+	}
+}
+
+func defaultVehiculosPreconfig(contexto string) *TipoEmpresaPreconfigVehiculos {
+	motivo := "Ingreso operativo"
+	if contexto == "taller" {
+		motivo = "Orden de servicio"
+	}
+	if contexto == "lavadero" {
+		motivo = "Lavado y alistamiento"
+	}
+	return &TipoEmpresaPreconfigVehiculos{
+		PaisCodigo:            "CO",
+		EvitarDuplicadoActivo: true,
+		Registros: []TipoEmpresaPreconfigVehiculoRegistro{
+			{Patente: "ABC123", TipoVehiculo: "automovil", Marca: "Renault", Modelo: "Logan", Color: "Blanco", PropietarioNombre: "Cliente Vehiculo Demo", PropietarioDocumento: "900000001", ConductorNombre: "Conductor Demo", MotivoIngreso: motivo, Observaciones: "Registro vehicular guia."},
+			{Patente: "XYZ987", TipoVehiculo: "camioneta", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", PropietarioNombre: "Empresa Flota Demo", PropietarioDocumento: "900000002", ConductorNombre: "Operador Demo", MotivoIngreso: motivo, Observaciones: "Registro guia para permanencia y reportes."},
+		},
+	}
+}
+
+func defaultHojaVidaVehiculosPreconfig(contexto string) []TipoEmpresaPreconfigHojaVida {
+	tipoEvento := "mantenimiento"
+	eventoTitulo := "Revision preventiva inicial"
+	if contexto == "lavadero" {
+		tipoEvento = "servicio"
+		eventoTitulo = "Lavado premium inicial"
+	}
+	return []TipoEmpresaPreconfigHojaVida{
+		{
+			TipoEntidad: "vehiculo", Codigo: "HV-VEH-001", Nombre: "Renault Logan ABC123", ClienteNombre: "Cliente Vehiculo Demo", Identificacion: "ABC123", Marca: "Renault", Modelo: "Logan", Color: "Blanco", EstadoOperativo: "activo",
+			Metadata:      map[string]any{"placa": "ABC123", "kilometraje": 45600, "tipo_combustible": "gasolina"},
+			Observaciones: "Hoja de vida vehicular guia para mantenimientos, servicios y alertas.",
+			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
+				{TipoEvento: tipoEvento, Titulo: eventoTitulo, Descripcion: "Evento guia creado por la preconfiguracion.", Costo: 85000, Responsable: "Tecnico flota", Recurrente: true, RecurrenciaDias: 90},
+			},
+			Alertas: []TipoEmpresaPreconfigHojaVidaAlerta{
+				{Titulo: "Proximo mantenimiento", Descripcion: "Validar aceite, frenos, llantas y documentos.", Prioridad: "media", Responsable: "Tecnico flota"},
+			},
+		},
+		{
+			TipoEntidad: "vehiculo", Codigo: "HV-VEH-002", Nombre: "Toyota Hilux XYZ987", ClienteNombre: "Empresa Flota Demo", Identificacion: "XYZ987", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", EstadoOperativo: "activo",
+			Metadata:      map[string]any{"placa": "XYZ987", "kilometraje": 78200, "tipo_combustible": "diesel"},
+			Observaciones: "Hoja de vida guia para flota o vehiculo de cliente.",
+			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
+				{TipoEvento: "documento", Titulo: "Revision SOAT y tecnomecanica", Descripcion: "Control documental guia.", Responsable: "Recepcion vehicular", Recurrente: true, RecurrenciaDias: 365},
+			},
+			Alertas: []TipoEmpresaPreconfigHojaVidaAlerta{
+				{Titulo: "Renovar documentos", Descripcion: "Revisar vencimientos de SOAT, tecnomecanica y polizas.", Prioridad: "alta", Responsable: "Recepcion vehicular"},
+			},
+		},
+	}
 }
 
 func operacionPreconfig(tipoNegocio, singular, plural string, usaEstaciones, ventaDirecta, comisiones bool, comisionRol, comisionFiltro string, comisionPorcentaje float64, roles []string) TipoEmpresaPreconfigOperacion {
@@ -831,7 +1399,7 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		add("finanzas", readCreate)
 		add("facturacion", readCreate)
 		add("inventario", readOnly)
-	case "mesero", "barra", "vendedor", "operacion", "tecnico", "estilista":
+	case "mesero", "barra", "vendedor", "operacion", "tecnico", "estilista", "entrenador", "odontologo":
 		add("ventas", readCreateUpdate)
 		add("clientes", readCreate)
 		add("inventario", readOnly)
@@ -877,6 +1445,10 @@ func descripcionRolPreconfig(rolNombre, tipoEmpresaNombre string) string {
 		return "Rol tecnico para diagnosticos, servicios, instalaciones y avances operativos."
 	case "estilista":
 		return "Rol de estilista para servicios de belleza, agenda y comisiones."
+	case "entrenador":
+		return "Rol de entrenador para socios, clases, asistencias, planes y seguimiento fisico."
+	case "odontologo":
+		return "Rol de odontologo para pacientes, agenda clinica, historias, tratamientos y presupuestos."
 	case "compras":
 		return "Rol de compras para proveedores, ordenes e inventario."
 	case "auditor":
@@ -1099,7 +1671,326 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		tareas = append(tareas, task)
 	}
 	template.TareasGuia = tareas
+	template.Tarifas = normalizeTipoEmpresaPreconfigTarifas(template.Tarifas, template.Estaciones.Cantidad)
+	template.Modulos = normalizeTipoEmpresaPreconfigModulos(template.Modulos)
 	return template
+}
+
+func normalizeTipoEmpresaPreconfigTarifas(tarifas TipoEmpresaPreconfigTarifas, estaciones int) TipoEmpresaPreconfigTarifas {
+	clampStation := func(v int) int {
+		if v <= 0 {
+			return 1
+		}
+		if estaciones > 0 && v > estaciones {
+			return estaciones
+		}
+		return v
+	}
+	porMinutos := make([]TipoEmpresaPreconfigTarifaPorMinutos, 0, len(tarifas.PorMinutos))
+	for _, item := range tarifas.PorMinutos {
+		if item.ValorBase < 0 || item.ValorExtra < 0 {
+			continue
+		}
+		item.EstacionNumero = clampStation(item.EstacionNumero)
+		if item.DiaSemanaDesde <= 0 {
+			item.DiaSemanaDesde = 1
+		}
+		if item.DiaSemanaHasta <= 0 {
+			item.DiaSemanaHasta = 7
+		}
+		if item.MinutosBase <= 0 {
+			item.MinutosBase = 60
+		}
+		if item.MinutosExtra <= 0 {
+			item.MinutosExtra = 30
+		}
+		item.Moneda = strings.ToUpper(strings.TrimSpace(item.Moneda))
+		if item.Moneda == "" {
+			item.Moneda = "COP"
+		}
+		if item.Prioridad <= 0 {
+			item.Prioridad = len(porMinutos) + 1
+		}
+		item.Observaciones = strings.TrimSpace(item.Observaciones)
+		porMinutos = append(porMinutos, item)
+	}
+	tarifas.PorMinutos = porMinutos
+
+	porDia := make([]TipoEmpresaPreconfigTarifaPorDia, 0, len(tarifas.PorDia))
+	for _, item := range tarifas.PorDia {
+		if item.ValorDia <= 0 {
+			continue
+		}
+		item.EstacionNumero = clampStation(item.EstacionNumero)
+		item.NombreTarifa = strings.TrimSpace(item.NombreTarifa)
+		item.ServicioNombre = strings.TrimSpace(item.ServicioNombre)
+		if item.ServicioNombre == "" {
+			item.ServicioNombre = "hospedaje"
+		}
+		if item.PersonasDesde <= 0 {
+			item.PersonasDesde = 1
+		}
+		if item.PersonasHasta > 0 && item.PersonasHasta < item.PersonasDesde {
+			item.PersonasHasta = item.PersonasDesde
+		}
+		item.HoraCheckIn = strings.TrimSpace(item.HoraCheckIn)
+		if item.HoraCheckIn == "" {
+			item.HoraCheckIn = "15:00"
+		}
+		item.HoraCheckOut = strings.TrimSpace(item.HoraCheckOut)
+		if item.HoraCheckOut == "" {
+			item.HoraCheckOut = "12:00"
+		}
+		item.Moneda = strings.ToUpper(strings.TrimSpace(item.Moneda))
+		if item.Moneda == "" {
+			item.Moneda = "COP"
+		}
+		if item.Prioridad <= 0 {
+			item.Prioridad = len(porDia) + 1
+		}
+		item.Observaciones = strings.TrimSpace(item.Observaciones)
+		porDia = append(porDia, item)
+	}
+	tarifas.PorDia = porDia
+
+	motel := make([]TipoEmpresaPreconfigTarifaMotel, 0, len(tarifas.Motel))
+	for _, item := range tarifas.Motel {
+		item.NombrePlan = strings.TrimSpace(item.NombrePlan)
+		if item.NombrePlan == "" || item.ValorBase < 0 || item.ValorExtra < 0 {
+			continue
+		}
+		item.EstacionNumero = clampStation(item.EstacionNumero)
+		item.TipoPlan = strings.ToLower(strings.TrimSpace(item.TipoPlan))
+		if item.TipoPlan == "" {
+			item.TipoPlan = "express"
+		}
+		item.CategoriaHabitacion = strings.TrimSpace(item.CategoriaHabitacion)
+		if item.DiaSemanaDesde <= 0 {
+			item.DiaSemanaDesde = 1
+		}
+		if item.DiaSemanaHasta <= 0 {
+			item.DiaSemanaHasta = 7
+		}
+		if item.MinutosIncluidos <= 0 {
+			item.MinutosIncluidos = 180
+		}
+		if item.MinutosExtra <= 0 {
+			item.MinutosExtra = 30
+		}
+		item.HoraInicio = strings.TrimSpace(item.HoraInicio)
+		if item.HoraInicio == "" {
+			item.HoraInicio = "00:00"
+		}
+		item.HoraFin = strings.TrimSpace(item.HoraFin)
+		if item.HoraFin == "" {
+			item.HoraFin = "23:59"
+		}
+		item.Moneda = strings.ToUpper(strings.TrimSpace(item.Moneda))
+		if item.Moneda == "" {
+			item.Moneda = "COP"
+		}
+		if item.Prioridad <= 0 {
+			item.Prioridad = len(motel) + 1
+		}
+		item.Observaciones = strings.TrimSpace(item.Observaciones)
+		motel = append(motel, item)
+	}
+	tarifas.Motel = motel
+	return tarifas
+}
+
+func normalizeTipoEmpresaPreconfigModulos(modulos TipoEmpresaPreconfigModulos) TipoEmpresaPreconfigModulos {
+	if modulos.TurnosAtencion != nil {
+		cfg := *modulos.TurnosAtencion
+		cfg.NombreSistema = strings.TrimSpace(cfg.NombreSistema)
+		if cfg.NombreSistema == "" {
+			cfg.NombreSistema = "Turnos de atencion"
+		}
+		cfg.NombrePantalla = strings.TrimSpace(cfg.NombrePantalla)
+		if cfg.NombrePantalla == "" {
+			cfg.NombrePantalla = "Pantalla de llamados"
+		}
+		cfg.PrefijoGeneral = strings.ToUpper(strings.TrimSpace(cfg.PrefijoGeneral))
+		if cfg.PrefijoGeneral == "" {
+			cfg.PrefijoGeneral = "T"
+		}
+		if cfg.TiempoLlamadoSegundos <= 0 {
+			cfg.TiempoLlamadoSegundos = 20
+		}
+		servicios := make([]TipoEmpresaPreconfigTurnoAtencionServicio, 0, len(cfg.Servicios))
+		for _, svc := range cfg.Servicios {
+			svc.Codigo = strings.ToUpper(strings.TrimSpace(svc.Codigo))
+			svc.Nombre = strings.TrimSpace(svc.Nombre)
+			if svc.Codigo == "" || svc.Nombre == "" {
+				continue
+			}
+			svc.Prefijo = strings.ToUpper(strings.TrimSpace(svc.Prefijo))
+			if svc.Prefijo == "" {
+				svc.Prefijo = svc.Codigo
+			}
+			svc.Descripcion = strings.TrimSpace(svc.Descripcion)
+			svc.Color = strings.TrimSpace(svc.Color)
+			if svc.Color == "" {
+				svc.Color = "#2563eb"
+			}
+			if svc.Prioridad <= 0 {
+				svc.Prioridad = len(servicios) + 1
+			}
+			servicios = append(servicios, svc)
+		}
+		cfg.Servicios = servicios
+		puestos := make([]TipoEmpresaPreconfigTurnoAtencionPuesto, 0, len(cfg.Puestos))
+		for _, puesto := range cfg.Puestos {
+			puesto.Codigo = strings.ToUpper(strings.TrimSpace(puesto.Codigo))
+			puesto.Nombre = strings.TrimSpace(puesto.Nombre)
+			if puesto.Codigo == "" || puesto.Nombre == "" {
+				continue
+			}
+			puesto.Area = strings.TrimSpace(puesto.Area)
+			puesto.Ubicacion = strings.TrimSpace(puesto.Ubicacion)
+			puesto.ServiciosPermitidos = strings.ToUpper(strings.TrimSpace(puesto.ServiciosPermitidos))
+			puestos = append(puestos, puesto)
+		}
+		cfg.Puestos = puestos
+		modulos.TurnosAtencion = &cfg
+	}
+	if modulos.Vehiculos != nil {
+		cfg := *modulos.Vehiculos
+		cfg.PaisCodigo = strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo))
+		if cfg.PaisCodigo == "" {
+			cfg.PaisCodigo = "CO"
+		}
+		registros := make([]TipoEmpresaPreconfigVehiculoRegistro, 0, len(cfg.Registros))
+		for _, item := range cfg.Registros {
+			item.Patente = strings.ToUpper(strings.TrimSpace(item.Patente))
+			if item.Patente == "" {
+				continue
+			}
+			item.TipoVehiculo = strings.TrimSpace(item.TipoVehiculo)
+			item.Marca = strings.TrimSpace(item.Marca)
+			item.Modelo = strings.TrimSpace(item.Modelo)
+			item.Color = strings.TrimSpace(item.Color)
+			item.PropietarioNombre = strings.TrimSpace(item.PropietarioNombre)
+			item.PropietarioDocumento = strings.TrimSpace(item.PropietarioDocumento)
+			item.ConductorNombre = strings.TrimSpace(item.ConductorNombre)
+			item.MotivoIngreso = strings.TrimSpace(item.MotivoIngreso)
+			item.Observaciones = strings.TrimSpace(item.Observaciones)
+			registros = append(registros, item)
+		}
+		cfg.Registros = registros
+		modulos.Vehiculos = &cfg
+	}
+	if modulos.ControlElectrico != nil {
+		cfg := *modulos.ControlElectrico
+		cfg.RaspberryIP = strings.TrimSpace(cfg.RaspberryIP)
+		if cfg.RaspberryIP == "" {
+			cfg.RaspberryIP = "192.168.1.50"
+		}
+		if cfg.RaspberryPort <= 0 {
+			cfg.RaspberryPort = 8081
+		}
+		cfg.APIPath = strings.TrimSpace(cfg.APIPath)
+		if cfg.APIPath == "" {
+			cfg.APIPath = "/api/gpio/relay"
+		}
+		if cfg.TimeoutMS <= 0 {
+			cfg.TimeoutMS = 2500
+		}
+		raspberries := make([]TipoEmpresaPreconfigControlRaspberry, 0, len(cfg.Raspberries))
+		for _, item := range cfg.Raspberries {
+			item.Codigo = strings.ToLower(strings.TrimSpace(item.Codigo))
+			if item.Codigo == "" {
+				item.Codigo = "principal"
+			}
+			item.Nombre = strings.TrimSpace(item.Nombre)
+			if item.Nombre == "" {
+				item.Nombre = "Control electrico " + item.Codigo
+			}
+			item.RaspberryIP = strings.TrimSpace(item.RaspberryIP)
+			if item.RaspberryIP == "" {
+				item.RaspberryIP = cfg.RaspberryIP
+			}
+			if item.RaspberryPort <= 0 {
+				item.RaspberryPort = cfg.RaspberryPort
+			}
+			item.APIPath = strings.TrimSpace(item.APIPath)
+			if item.APIPath == "" {
+				item.APIPath = cfg.APIPath
+			}
+			if item.TimeoutMS <= 0 {
+				item.TimeoutMS = cfg.TimeoutMS
+			}
+			item.Observaciones = strings.TrimSpace(item.Observaciones)
+			raspberries = append(raspberries, item)
+		}
+		if len(raspberries) == 0 {
+			raspberries = append(raspberries, TipoEmpresaPreconfigControlRaspberry{Codigo: "principal", Nombre: "Control electrico principal", RaspberryIP: cfg.RaspberryIP, RaspberryPort: cfg.RaspberryPort, APIPath: cfg.APIPath, TimeoutMS: cfg.TimeoutMS})
+		}
+		cfg.Raspberries = raspberries
+		reles := make([]TipoEmpresaPreconfigControlElectricoRele, 0, len(cfg.Reles))
+		for _, item := range cfg.Reles {
+			item.RaspberryCodigo = strings.ToLower(strings.TrimSpace(item.RaspberryCodigo))
+			if item.RaspberryCodigo == "" {
+				item.RaspberryCodigo = "principal"
+			}
+			if item.EstacionNumero <= 0 {
+				item.EstacionNumero = 1
+			}
+			item.SalidaCodigo = strings.ToLower(strings.TrimSpace(item.SalidaCodigo))
+			item.TipoCarga = strings.ToLower(strings.TrimSpace(item.TipoCarga))
+			item.RelayName = strings.TrimSpace(item.RelayName)
+			if item.SalidaCodigo == "" && item.TipoCarga == "" && item.RelayName == "" {
+				continue
+			}
+			if item.GPIOPin < 0 {
+				item.GPIOPin = 0
+			}
+			if item.GPIOPin > 27 {
+				item.GPIOPin = 27
+			}
+			if item.Modo == "" {
+				item.Modo = "seguimiento_estacion"
+			}
+			item.ProgramacionDias = strings.TrimSpace(item.ProgramacionDias)
+			if item.ProgramacionDias == "" {
+				item.ProgramacionDias = "todos"
+			}
+			item.ProgramacionTimezone = strings.TrimSpace(item.ProgramacionTimezone)
+			if item.ProgramacionTimezone == "" {
+				item.ProgramacionTimezone = "America/Bogota"
+			}
+			item.Observaciones = strings.TrimSpace(item.Observaciones)
+			reles = append(reles, item)
+		}
+		cfg.Reles = reles
+		modulos.ControlElectrico = &cfg
+	}
+	hojas := make([]TipoEmpresaPreconfigHojaVida, 0, len(modulos.HojaVida))
+	for _, item := range modulos.HojaVida {
+		item.TipoEntidad = strings.TrimSpace(item.TipoEntidad)
+		if item.TipoEntidad == "" {
+			item.TipoEntidad = "activo"
+		}
+		item.Codigo = strings.TrimSpace(item.Codigo)
+		item.Nombre = strings.TrimSpace(item.Nombre)
+		if item.Nombre == "" {
+			continue
+		}
+		item.ClienteNombre = strings.TrimSpace(item.ClienteNombre)
+		item.Identificacion = strings.TrimSpace(item.Identificacion)
+		item.Marca = strings.TrimSpace(item.Marca)
+		item.Modelo = strings.TrimSpace(item.Modelo)
+		item.Serie = strings.TrimSpace(item.Serie)
+		item.Color = strings.TrimSpace(item.Color)
+		item.EstadoOperativo = strings.TrimSpace(item.EstadoOperativo)
+		if item.EstadoOperativo == "" {
+			item.EstadoOperativo = "activo"
+		}
+		item.Observaciones = strings.TrimSpace(item.Observaciones)
+		hojas = append(hojas, item)
+	}
+	modulos.HojaVida = hojas
+	return modulos
 }
 
 func isTipoEmpresaRestaurante(tipoNombre string) bool {
@@ -1138,6 +2029,22 @@ func isTipoEmpresaTaller(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "taller", "mecanica", "mecanica", "serviteca")
 }
 
+func isTipoEmpresaGimnasio(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "gimnasio", "gym", "fitness", "centro deportivo", "entrenamiento")
+}
+
+func isTipoEmpresaOdontologia(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "odontologia", "odontologico", "odontologica", "dentista", "dental", "consultorio dental")
+}
+
+func isTipoEmpresaTurnos(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "turnos", "manejo de turnos", "filas", "atencion al cliente", "pantalla de llamados")
+}
+
+func isTipoEmpresaVehiculos(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "vehiculo", "vehiculos", "flota", "flotas", "parqueadero", "estacionamiento", "logistica vehicular")
+}
+
 func isTipoEmpresaIndependiente(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "independiente", "profesional", "consultor", "freelance")
 }
@@ -1170,6 +2077,14 @@ func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
 		return "Punto de venta guia"
 	case isTipoEmpresaTaller(tipoNombre):
 		return "Taller con bahias guia"
+	case isTipoEmpresaGimnasio(tipoNombre):
+		return "Gimnasio con socios, planes y clases guia"
+	case isTipoEmpresaOdontologia(tipoNombre):
+		return "Odontologia con pacientes y agenda guia"
+	case isTipoEmpresaTurnos(tipoNombre):
+		return "Manejo de turnos con servicios guia"
+	case isTipoEmpresaVehiculos(tipoNombre):
+		return "Vehiculos y flotas con hoja de vida guia"
 	case isTipoEmpresaIndependiente(tipoNombre):
 		return "Independiente con venta directa guia"
 	case isTipoEmpresaRedesSociales(tipoNombre):

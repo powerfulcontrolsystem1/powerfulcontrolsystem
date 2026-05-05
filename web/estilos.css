@@ -1190,6 +1190,7 @@ p{color:var(--muted);line-height:1.5}
 .radio-config-toggle small{color:var(--muted);font-weight:700;line-height:1.35}
 .radio-station-grid.is-disabled{opacity:.58}
 .radio-station-grid.is-disabled .radio-station-card{filter:saturate(.65)}
+.electric-on-bolt{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 55%,var(--border));background:color-mix(in srgb,var(--warning,#f59e0b) 18%,var(--surface));color:#f59e0b;font-size:1rem;font-weight:900;line-height:1;box-shadow:0 0 0 4px color-mix(in srgb,var(--warning,#f59e0b) 12%,transparent)}
 .radio-mini-player{position:fixed;right:24px;bottom:176px;width:min(360px,calc(100vw - 24px));padding:12px 14px;border-radius:18px;background:rgba(15,23,42,.96);color:#f8fafc;box-shadow:0 24px 50px rgba(15,23,42,.3);z-index:1661}
 .radio-mini-topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
 .radio-mini-kicker{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd}

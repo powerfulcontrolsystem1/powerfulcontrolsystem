@@ -21,6 +21,10 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 		{nombre: "Pymes", prefijo: "Punto de venta", estaciones: 2, ventaDirecta: true, nombreSingular: "Punto de venta"},
 		{nombre: "Tienda punto de venta", prefijo: "Punto de venta", estaciones: 1, ventaDirecta: true, nombreSingular: "Punto de venta"},
 		{nombre: "Taller mecanico", prefijo: "Bahia", estaciones: 5, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
+		{nombre: "Gimnasio", prefijo: "Zona", estaciones: 4, ventaDirecta: true, comisiones: true, nombreSingular: "Zona"},
+		{nombre: "Odontologia", prefijo: "Consultorio", estaciones: 3, ventaDirecta: true, comisiones: true, nombreSingular: "Consultorio"},
+		{nombre: "Manejo de turnos", prefijo: "Puesto", estaciones: 4, ventaDirecta: true, nombreSingular: "Puesto"},
+		{nombre: "Vehiculos y flotas", prefijo: "Bahia", estaciones: 4, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
 		{nombre: "Profesional independiente", prefijo: "Venta directa", estaciones: 0, ventaDirecta: true, nombreSingular: "Venta directa", permiteSinEstacion: true},
 		{nombre: "Agencia de redes sociales", prefijo: "Cliente", estaciones: 4, ventaDirecta: true, nombreSingular: "Cliente"},
 		{nombre: "Sensores y monitoreo", prefijo: "Acceso", estaciones: 4, ventaDirecta: true, nombreSingular: "Acceso"},
@@ -69,6 +73,38 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 			}
 			if len(template.TareasGuia) == 0 {
 				t.Fatalf("sin tareas guia")
+			}
+			switch tc.nombre {
+			case "Motel":
+				if len(template.Tarifas.Motel) == 0 {
+					t.Fatalf("motel debe incluir tarifas guia")
+				}
+				if template.Modulos.ControlElectrico == nil || len(template.Modulos.ControlElectrico.Reles) == 0 {
+					t.Fatalf("motel debe incluir aparatos guia de control electrico")
+				}
+			case "Hotel":
+				if len(template.Tarifas.PorDia) == 0 {
+					t.Fatalf("hotel debe incluir tarifas por dia guia")
+				}
+				if template.Modulos.ControlElectrico == nil || len(template.Modulos.ControlElectrico.Reles) == 0 {
+					t.Fatalf("hotel debe incluir aparatos guia de control electrico")
+				}
+			case "Gimnasio":
+				if template.Modulos.Gimnasio == nil || len(template.Modulos.Gimnasio.Planes) == 0 || len(template.Modulos.Gimnasio.Socios) == 0 {
+					t.Fatalf("gimnasio debe incluir planes y socios guia")
+				}
+			case "Odontologia":
+				if template.Modulos.Odontologia == nil || len(template.Modulos.Odontologia.Pacientes) == 0 || len(template.Modulos.Odontologia.Tratamientos) == 0 {
+					t.Fatalf("odontologia debe incluir pacientes y tratamientos guia")
+				}
+			case "Manejo de turnos":
+				if template.Modulos.TurnosAtencion == nil || len(template.Modulos.TurnosAtencion.Servicios) == 0 || len(template.Modulos.TurnosAtencion.Puestos) == 0 {
+					t.Fatalf("turnos debe incluir servicios y puestos guia")
+				}
+			case "Vehiculos y flotas", "Taller mecanico", "Lavadero de autos":
+				if template.Modulos.Vehiculos == nil || len(template.Modulos.Vehiculos.Registros) == 0 || len(template.Modulos.HojaVida) == 0 {
+					t.Fatalf("%s debe incluir vehiculos y hoja de vida guia", tc.nombre)
+				}
 			}
 			raw, err := MarshalTipoEmpresaPreconfigTemplate(template)
 			if err != nil {

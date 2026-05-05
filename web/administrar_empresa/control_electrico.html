@@ -716,6 +716,11 @@
         return '<div class="relay-device-photo relay-photo-preview empty">Sin foto</div>';
       }
 
+      function relayIsOn(rele) {
+        var raw = String((rele && rele.ultimo_estado) || '').trim().toLowerCase();
+        return raw === 'on' || raw === 'encendido';
+      }
+
       function relayDaysOptions(selected) {
         var value = selected || 'todos';
         var options = [
@@ -741,12 +746,14 @@
           stationReles.forEach(function (rele, relayIndex) {
           var data = relayDefaults(estacion, index + relayIndex, rele);
           var activeClass = estacion.activa ? 'on' : 'off';
-          var relayClass = data.ultimo_estado === 'on' ? 'on' : (data.ultimo_estado === 'off' ? 'off' : 'warn');
+          var isOn = relayIsOn(data);
+          var relayClass = isOn ? 'on' : (data.ultimo_estado === 'off' ? 'off' : 'warn');
           cards.push('<article class="relay-card" data-rele-id="' + sanitize(data.id || 0) + '" data-estacion-id="' + sanitize(estacion.estacion_id) + '">' +
             '<div class="relay-head">' +
               '<div><h3>' + sanitize(data.estacion_nombre) + '</h3><div class="relay-meta">' +
                 '<span class="status-chip ' + activeClass + '">' + (estacion.activa ? 'Estacion activa' : 'Estacion inactiva') + '</span>' +
                 '<span class="status-chip ' + relayClass + '">Rele ' + sanitize(data.ultimo_estado || 'desconocido') + '</span>' +
+                (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
                 '<span class="status-chip">' + sanitize(data.tipo_carga || data.salida_codigo) + '</span>' +
                 '<span class="status-chip">' + sanitize(data.raspberry_nombre || data.raspberry_codigo || 'Raspberry global') + '</span>' +
                 (data.programacion_habilitada ? '<span class="status-chip on">Agenda ' + sanitize(data.hora_encendido || '--:--') + ' / ' + sanitize(data.hora_apagado || '--:--') + '</span>' : '<span class="status-chip">Sin agenda</span>') +

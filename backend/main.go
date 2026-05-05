@@ -1169,6 +1169,12 @@ func main() {
 			staticFS.ServeHTTP(w, r2)
 			return
 		}
+		if len(parts) == 2 && strings.EqualFold(parts[1], "visualizar_productos_y_precios_publico.html") && strings.TrimSpace(parts[0]) != "" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/visualizar_productos_y_precios_publico.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
 		if len(parts) == 2 && strings.EqualFold(parts[1], "pagar_productos_de_venta_publica.html") && strings.TrimSpace(parts[0]) != "" {
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/pagar_productos_de_venta_publica.html"

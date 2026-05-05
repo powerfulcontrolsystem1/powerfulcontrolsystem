@@ -3874,7 +3874,10 @@
             '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">' +
               '<div><strong>' + escapeHtml(controlElectricoIcon(rele.tipo_carga) + ' ' + (rele.relay_name || rele.tipo_carga || 'Salida eléctrica')) + '</strong>' +
               '<div class="form-help">GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' · ' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</div></div>' +
-              '<span class="status-pill ' + (isOn ? 'success' : 'muted') + '">' + escapeHtml(isOn ? 'Encendido' : (estado === 'off' ? 'Apagado' : 'Sin estado')) + '</span>' +
+              '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
+                (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
+                '<span class="status-pill ' + (isOn ? 'success' : 'muted') + '">' + escapeHtml(isOn ? 'Encendido' : (estado === 'off' ? 'Apagado' : 'Sin estado')) + '</span>' +
+              '</div>' +
             '</div>' +
             '<div class="form-actions mt-10">' +
               '<button type="button" class="btn secondary control-electrico-off" data-rele-id="' + escapeHtml(rele.id || 0) + '">Apagar</button>' +

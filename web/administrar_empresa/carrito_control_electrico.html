@@ -361,6 +361,7 @@
 
       grid.innerHTML = reles.map(function(rele) {
         const info = estadoInfo(rele);
+        const isOn = info.cls === 'is-on';
         const disabled = state.sendingID > 0 || !cfg.habilitado;
         return '<article class="device-card">' +
           photoHTML(rele) +
@@ -370,6 +371,7 @@
                 '<strong title="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '</strong>' +
                 '<small>' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</small>' +
               '</div>' +
+              (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
               '<span class="status-pill ' + info.cls + '">' + escapeHtml(info.label) + '</span>' +
             '</div>' +
             '<div class="device-details">' +

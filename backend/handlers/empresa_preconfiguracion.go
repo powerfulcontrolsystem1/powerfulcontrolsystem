@@ -21,10 +21,14 @@ type empresaPreconfigApplyResult struct {
 	EstacionesCreadas int      `json:"estaciones_creadas"`
 	ProductosCreados  int      `json:"productos_creados"`
 	UsuariosCreados   int      `json:"usuarios_creados"`
+	TarifasCreadas    int      `json:"tarifas_creadas"`
+	ModulosCreados    int      `json:"modulos_creados"`
 	VentaDirecta      bool     `json:"venta_directa"`
 	Comisiones        bool     `json:"comisiones"`
 	ProductosError    []string `json:"productos_error,omitempty"`
 	UsuariosError     []string `json:"usuarios_error,omitempty"`
+	TarifasError      []string `json:"tarifas_error,omitempty"`
+	ModulosError      []string `json:"modulos_error,omitempty"`
 	CarritosSync      any      `json:"carritos_sync,omitempty"`
 	Mensaje           string   `json:"mensaje,omitempty"`
 }
@@ -49,7 +53,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	if err != nil {
 		return result, fmt.Errorf("plantilla de preconfiguracion invalida: %w", err)
 	}
-	if template.Estaciones.Cantidad == 0 && len(template.Productos) == 0 && len(template.Usuarios) == 0 && !template.Asistente.Enabled && len(template.TareasGuia) == 0 {
+	if template.Estaciones.Cantidad == 0 && len(template.Productos) == 0 && len(template.Usuarios) == 0 && !template.Asistente.Enabled && len(template.TareasGuia) == 0 && tipoEmpresaPreconfigTarifasEmpty(template.Tarifas) && tipoEmpresaPreconfigModulosEmpty(template.Modulos) {
 		return result, nil
 	}
 
@@ -162,6 +166,14 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		result.UsuariosCreados++
 	}
 
+	tarifasCreadas, tarifasErr := applyEmpresaPreconfigTarifas(dbEmp, empresaID, template.Estaciones, template.Tarifas, usuario)
+	result.TarifasCreadas = tarifasCreadas
+	result.TarifasError = append(result.TarifasError, tarifasErr...)
+
+	modulosCreados, modulosErr := applyEmpresaPreconfigModulos(dbEmp, empresaID, template.Estaciones, template.Modulos, usuario)
+	result.ModulosCreados = modulosCreados
+	result.ModulosError = append(result.ModulosError, modulosErr...)
+
 	assistantRaw, _ := json.Marshal(map[string]any{
 		"tipo_empresa_id":     tipoEmpresaID,
 		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
@@ -171,6 +183,8 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"tareas_guia":         template.TareasGuia,
 		"usuarios_guia":       template.Usuarios,
 		"estaciones":          template.Estaciones,
+		"tarifas":             template.Tarifas,
+		"modulos":             template.Modulos,
 		"producto_skus":       productSKUs,
 		"actualizado_en":      time.Now().Format(time.RFC3339),
 	})
@@ -194,12 +208,16 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"estaciones_creadas":  result.EstacionesCreadas,
 		"productos_creados":   result.ProductosCreados,
 		"usuarios_creados":    result.UsuariosCreados,
+		"tarifas_creadas":     result.TarifasCreadas,
+		"modulos_creados":     result.ModulosCreados,
 		"producto_ids":        productIDs,
 		"producto_skus":       productSKUs,
 		"usuario_ids":         userIDs,
 		"usuario_emails":      userEmails,
 		"asistente_ia":        template.Asistente,
 		"tareas_guia":         template.TareasGuia,
+		"tarifas":             template.Tarifas,
+		"modulos":             template.Modulos,
 	})
 	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 		EmpresaID:      empresaID,
@@ -486,6 +504,462 @@ func buildPreconfigUsuarioEmail(u dbpkg.TipoEmpresaPreconfigUsuario, empresaID i
 		local = fmt.Sprintf("usuario%d", idx+1)
 	}
 	return fmt.Sprintf("%s.%d.%d@preconfig.local", local, empresaID, idx+1)
+}
+
+func tipoEmpresaPreconfigTarifasEmpty(t dbpkg.TipoEmpresaPreconfigTarifas) bool {
+	return len(t.PorMinutos) == 0 && len(t.PorDia) == 0 && len(t.Motel) == 0
+}
+
+func tipoEmpresaPreconfigModulosEmpty(m dbpkg.TipoEmpresaPreconfigModulos) bool {
+	return m.TurnosAtencion == nil && m.Gimnasio == nil && m.Odontologia == nil && m.Vehiculos == nil && m.ControlElectrico == nil && len(m.HojaVida) == 0
+}
+
+func preconfigStationRef(estaciones dbpkg.TipoEmpresaPreconfigEstaciones, numero int) (int64, string, string) {
+	if numero <= 0 {
+		numero = 1
+	}
+	if estaciones.Cantidad > 0 && numero > estaciones.Cantidad {
+		numero = estaciones.Cantidad
+	}
+	prefix := strings.TrimSpace(estaciones.Prefijo)
+	if prefix == "" {
+		prefix = "Estacion"
+	}
+	name := fmt.Sprintf("%s %d", prefix, numero)
+	return int64(numero), fmt.Sprintf("%s-%03d", strings.ToUpper(strings.ReplaceAll(prefix, " ", "-")), numero), name
+}
+
+func applyEmpresaPreconfigTarifas(dbEmp *sql.DB, empresaID int64, estaciones dbpkg.TipoEmpresaPreconfigEstaciones, tarifas dbpkg.TipoEmpresaPreconfigTarifas, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if len(tarifas.PorMinutos) > 0 {
+		if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmp); err != nil {
+			errs = append(errs, "tarifas por minutos: "+err.Error())
+		} else {
+			for _, item := range tarifas.PorMinutos {
+				stationID, code, name := preconfigStationRef(estaciones, item.EstacionNumero)
+				_, err := dbpkg.CreateEmpresaTarifaPorMinutos(dbEmp, dbpkg.EmpresaTarifaPorMinutos{
+					EmpresaID:         empresaID,
+					EstacionID:        stationID,
+					EstacionCodigo:    code,
+					EstacionNombre:    name,
+					DiaSemanaDesde:    item.DiaSemanaDesde,
+					DiaSemanaHasta:    item.DiaSemanaHasta,
+					MinutosBase:       item.MinutosBase,
+					ValorBase:         item.ValorBase,
+					MinutosExtra:      item.MinutosExtra,
+					ValorExtra:        item.ValorExtra,
+					CobrarPorFraccion: item.CobrarPorFraccion,
+					Moneda:            item.Moneda,
+					Prioridad:         item.Prioridad,
+					UsuarioCreador:    usuario,
+					Estado:            "activo",
+					Observaciones:     empresaPreconfigMarker + " " + strings.TrimSpace(item.Observaciones),
+				})
+				if err != nil {
+					errs = append(errs, fmt.Sprintf("tarifa minutos %s: %v", name, err))
+					continue
+				}
+				created++
+			}
+		}
+	}
+	if len(tarifas.PorDia) > 0 {
+		if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmp); err != nil {
+			errs = append(errs, "tarifas por dia: "+err.Error())
+		} else {
+			for _, item := range tarifas.PorDia {
+				stationID, code, name := preconfigStationRef(estaciones, item.EstacionNumero)
+				_, err := dbpkg.CreateEmpresaTarifaPorDia(dbEmp, dbpkg.EmpresaTarifaPorDia{
+					EmpresaID:              empresaID,
+					NombreTarifa:           item.NombreTarifa,
+					EstacionID:             stationID,
+					EstacionCodigo:         code,
+					EstacionNombre:         name,
+					ServicioNombre:         item.ServicioNombre,
+					ValorDia:               item.ValorDia,
+					PersonasDesde:          item.PersonasDesde,
+					PersonasHasta:          item.PersonasHasta,
+					HoraCheckIn:            item.HoraCheckIn,
+					HoraCheckOut:           item.HoraCheckOut,
+					Moneda:                 item.Moneda,
+					Prioridad:              item.Prioridad,
+					AplicarAutomaticamente: item.AplicarAutomaticamente,
+					UsuarioCreador:         usuario,
+					Estado:                 "activo",
+					Observaciones:          empresaPreconfigMarker + " " + strings.TrimSpace(item.Observaciones),
+				})
+				if err != nil {
+					errs = append(errs, fmt.Sprintf("tarifa dia %s: %v", name, err))
+					continue
+				}
+				created++
+			}
+		}
+	}
+	if len(tarifas.Motel) > 0 {
+		if err := dbpkg.EnsureEmpresaTarifasMotelSchema(dbEmp); err != nil {
+			errs = append(errs, "tarifas motel: "+err.Error())
+		} else {
+			for _, item := range tarifas.Motel {
+				stationID, code, name := preconfigStationRef(estaciones, item.EstacionNumero)
+				_, err := dbpkg.CreateEmpresaTarifaMotel(dbEmp, dbpkg.EmpresaTarifaMotel{
+					EmpresaID:           empresaID,
+					EstacionID:          stationID,
+					EstacionCodigo:      code,
+					EstacionNombre:      name,
+					NombrePlan:          item.NombrePlan,
+					TipoPlan:            item.TipoPlan,
+					CategoriaHabitacion: item.CategoriaHabitacion,
+					DiaSemanaDesde:      item.DiaSemanaDesde,
+					DiaSemanaHasta:      item.DiaSemanaHasta,
+					HoraInicio:          item.HoraInicio,
+					HoraFin:             item.HoraFin,
+					MinutosIncluidos:    item.MinutosIncluidos,
+					ValorBase:           item.ValorBase,
+					MinutosExtra:        item.MinutosExtra,
+					ValorExtra:          item.ValorExtra,
+					CobrarPorFraccion:   item.CobrarPorFraccion,
+					ToleranciaMinutos:   item.ToleranciaMinutos,
+					Moneda:              item.Moneda,
+					Prioridad:           item.Prioridad,
+					AplicarAutomatico:   item.AplicarAutomatico,
+					UsuarioCreador:      usuario,
+					Estado:              "activo",
+					Observaciones:       empresaPreconfigMarker + " " + strings.TrimSpace(item.Observaciones),
+				})
+				if err != nil {
+					errs = append(errs, fmt.Sprintf("tarifa motel %s: %v", item.NombrePlan, err))
+					continue
+				}
+				created++
+			}
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigModulos(dbEmp *sql.DB, empresaID int64, estaciones dbpkg.TipoEmpresaPreconfigEstaciones, modulos dbpkg.TipoEmpresaPreconfigModulos, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if modulos.TurnosAtencion != nil {
+		n, e := applyEmpresaPreconfigTurnos(dbEmp, empresaID, *modulos.TurnosAtencion, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	if modulos.Gimnasio != nil {
+		n, e := applyEmpresaPreconfigGimnasio(dbEmp, empresaID, *modulos.Gimnasio, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	if modulos.Odontologia != nil {
+		n, e := applyEmpresaPreconfigOdontologia(dbEmp, empresaID, *modulos.Odontologia, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	if modulos.Vehiculos != nil {
+		n, e := applyEmpresaPreconfigVehiculos(dbEmp, empresaID, *modulos.Vehiculos, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	if modulos.ControlElectrico != nil {
+		n, e := applyEmpresaPreconfigControlElectrico(dbEmp, empresaID, estaciones, *modulos.ControlElectrico, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	if len(modulos.HojaVida) > 0 {
+		n, e := applyEmpresaPreconfigHojaVida(dbEmp, empresaID, modulos.HojaVida, usuario)
+		created += n
+		errs = append(errs, e...)
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigTurnos(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigTurnosAtencion, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if err := dbpkg.UpsertEmpresaTurnoAtencionConfig(dbEmp, dbpkg.EmpresaTurnoAtencionConfig{
+		EmpresaID:                 empresaID,
+		NombreSistema:             cfg.NombreSistema,
+		NombrePantalla:            cfg.NombrePantalla,
+		PrefijoGeneral:            cfg.PrefijoGeneral,
+		TiempoLlamadoSegundos:     cfg.TiempoLlamadoSegundos,
+		PermitirEmisionPublica:    cfg.PermitirEmisionPublica,
+		MostrarTicketsCompletados: cfg.MostrarTicketsCompletados,
+		UsuarioCreador:            usuario,
+	}); err != nil {
+		errs = append(errs, "turnos config: "+err.Error())
+	} else {
+		created++
+	}
+	for _, svc := range cfg.Servicios {
+		if _, err := dbpkg.CreateEmpresaTurnoAtencionServicio(dbEmp, dbpkg.EmpresaTurnoAtencionServicio{
+			EmpresaID:      empresaID,
+			Codigo:         svc.Codigo,
+			Nombre:         svc.Nombre,
+			Descripcion:    empresaPreconfigMarker + " " + svc.Descripcion,
+			Prefijo:        svc.Prefijo,
+			Prioridad:      svc.Prioridad,
+			Color:          svc.Color,
+			Estado:         "activo",
+			UsuarioCreador: usuario,
+		}); err != nil {
+			errs = append(errs, fmt.Sprintf("turnos servicio %s: %v", svc.Codigo, err))
+		} else {
+			created++
+		}
+	}
+	for _, puesto := range cfg.Puestos {
+		if _, err := dbpkg.CreateEmpresaTurnoAtencionPuesto(dbEmp, dbpkg.EmpresaTurnoAtencionPuesto{
+			EmpresaID:           empresaID,
+			Codigo:              puesto.Codigo,
+			Nombre:              puesto.Nombre,
+			Area:                puesto.Area,
+			Ubicacion:           puesto.Ubicacion,
+			ServiciosPermitidos: puesto.ServiciosPermitidos,
+			Estado:              "activo",
+			UsuarioCreador:      usuario,
+		}); err != nil {
+			errs = append(errs, fmt.Sprintf("turnos puesto %s: %v", puesto.Codigo, err))
+		} else {
+			created++
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigGimnasio(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigGimnasio, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	planIDs := make([]int64, 0, len(cfg.Planes))
+	entrenadorIDs := make([]int64, 0, len(cfg.Entrenadores))
+	for _, plan := range cfg.Planes {
+		id, err := dbpkg.CreateEmpresaGimnasioPlan(dbEmp, dbpkg.EmpresaGimnasioPlan{EmpresaID: empresaID, Nombre: plan.Nombre, Descripcion: empresaPreconfigMarker + " " + plan.Descripcion, Precio: plan.Precio, DuracionDias: plan.DuracionDias, ClasesIncluidas: plan.ClasesIncluidas, AccesoIlimitado: plan.AccesoIlimitado, SesionesPersonalizadas: plan.SesionesPersonalizadas, Estado: "activo", UsuarioCreador: usuario})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("gimnasio plan %s: %v", plan.Nombre, err))
+			continue
+		}
+		planIDs = append(planIDs, id)
+		created++
+	}
+	for _, entrenador := range cfg.Entrenadores {
+		id, err := dbpkg.CreateEmpresaGimnasioEntrenador(dbEmp, dbpkg.EmpresaGimnasioEntrenador{EmpresaID: empresaID, NombreCompleto: entrenador.NombreCompleto, Especialidad: entrenador.Especialidad, Telefono: entrenador.Telefono, Email: entrenador.Email, Certificaciones: entrenador.Certificaciones, Estado: "activo", Disponibilidad: entrenador.Disponibilidad, Observaciones: empresaPreconfigMarker + " " + entrenador.Observaciones, UsuarioCreador: usuario})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("gimnasio entrenador %s: %v", entrenador.NombreCompleto, err))
+			continue
+		}
+		entrenadorIDs = append(entrenadorIDs, id)
+		created++
+	}
+	for _, clase := range cfg.Clases {
+		var entrenadorID int64
+		if clase.EntrenadorIndex > 0 && clase.EntrenadorIndex <= len(entrenadorIDs) {
+			entrenadorID = entrenadorIDs[clase.EntrenadorIndex-1]
+		}
+		if _, err := dbpkg.CreateEmpresaGimnasioClase(dbEmp, dbpkg.EmpresaGimnasioClase{EmpresaID: empresaID, Nombre: clase.Nombre, Categoria: clase.Categoria, EntrenadorID: entrenadorID, Sede: clase.Sede, Canal: clase.Canal, Cupos: clase.Cupos, DuracionMinutos: clase.DuracionMinutos, Estado: "programada", Precio: clase.Precio, Descripcion: empresaPreconfigMarker + " " + clase.Descripcion, UsuarioCreador: usuario}); err != nil {
+			errs = append(errs, fmt.Sprintf("gimnasio clase %s: %v", clase.Nombre, err))
+		} else {
+			created++
+		}
+	}
+	for _, socio := range cfg.Socios {
+		var planID int64
+		if socio.PlanIndex > 0 && socio.PlanIndex <= len(planIDs) {
+			planID = planIDs[socio.PlanIndex-1]
+		}
+		if _, err := dbpkg.CreateEmpresaGimnasioSocio(dbEmp, dbpkg.EmpresaGimnasioSocio{EmpresaID: empresaID, Codigo: socio.Codigo, NombreCompleto: socio.NombreCompleto, Documento: socio.Documento, Telefono: socio.Telefono, Email: socio.Email, Objetivo: socio.Objetivo, Estado: "activo", PlanID: planID, Observaciones: empresaPreconfigMarker + " " + socio.Observaciones, UsuarioCreador: usuario}); err != nil {
+			errs = append(errs, fmt.Sprintf("gimnasio socio %s: %v", socio.NombreCompleto, err))
+		} else {
+			created++
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigOdontologia(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigOdontologia, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	pacienteIDs := make([]int64, 0, len(cfg.Pacientes))
+	profesionalIDs := make([]int64, 0, len(cfg.Profesionales))
+	for _, paciente := range cfg.Pacientes {
+		id, err := dbpkg.CreateEmpresaOdontologiaPaciente(dbEmp, dbpkg.EmpresaOdontologiaPaciente{EmpresaID: empresaID, Codigo: paciente.Codigo, NombreCompleto: paciente.NombreCompleto, Documento: paciente.Documento, Telefono: paciente.Telefono, Email: paciente.Email, Aseguradora: paciente.Aseguradora, Alergias: paciente.Alergias, RiesgoMedico: paciente.RiesgoMedico, Saldo: paciente.Saldo, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + paciente.Observaciones, UsuarioCreador: usuario})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("odontologia paciente %s: %v", paciente.NombreCompleto, err))
+			continue
+		}
+		pacienteIDs = append(pacienteIDs, id)
+		created++
+	}
+	for _, profesional := range cfg.Profesionales {
+		id, err := dbpkg.CreateEmpresaOdontologiaProfesional(dbEmp, dbpkg.EmpresaOdontologiaProfesional{EmpresaID: empresaID, NombreCompleto: profesional.NombreCompleto, Especialidad: profesional.Especialidad, RegistroProfesional: profesional.RegistroProfesional, Telefono: profesional.Telefono, Email: profesional.Email, ColorAgenda: profesional.ColorAgenda, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + profesional.Observaciones, UsuarioCreador: usuario})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("odontologia profesional %s: %v", profesional.NombreCompleto, err))
+			continue
+		}
+		profesionalIDs = append(profesionalIDs, id)
+		created++
+	}
+	for _, consultorio := range cfg.Consultorios {
+		if _, err := dbpkg.CreateEmpresaOdontologiaConsultorio(dbEmp, dbpkg.EmpresaOdontologiaConsultorio{EmpresaID: empresaID, Nombre: consultorio.Nombre, Sede: consultorio.Sede, Sillon: consultorio.Sillon, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + consultorio.Observaciones, UsuarioCreador: usuario}); err != nil {
+			errs = append(errs, fmt.Sprintf("odontologia consultorio %s: %v", consultorio.Nombre, err))
+		} else {
+			created++
+		}
+	}
+	for _, tratamiento := range cfg.Tratamientos {
+		if len(pacienteIDs) == 0 {
+			break
+		}
+		pacienteID := pacienteIDs[0]
+		if tratamiento.PacienteIndex > 0 && tratamiento.PacienteIndex <= len(pacienteIDs) {
+			pacienteID = pacienteIDs[tratamiento.PacienteIndex-1]
+		}
+		var profesionalID int64
+		if tratamiento.ProfesionalIndex > 0 && tratamiento.ProfesionalIndex <= len(profesionalIDs) {
+			profesionalID = profesionalIDs[tratamiento.ProfesionalIndex-1]
+		}
+		if _, err := dbpkg.CreateEmpresaOdontologiaTratamiento(dbEmp, dbpkg.EmpresaOdontologiaTratamiento{EmpresaID: empresaID, PacienteID: pacienteID, ProfesionalID: profesionalID, Nombre: tratamiento.Nombre, Categoria: tratamiento.Categoria, Piezas: tratamiento.Piezas, SesionesTotal: tratamiento.SesionesTotal, CostoEstimado: tratamiento.CostoEstimado, Estado: "planificado", Observaciones: empresaPreconfigMarker + " " + tratamiento.Observaciones, UsuarioCreador: usuario}); err != nil {
+			errs = append(errs, fmt.Sprintf("odontologia tratamiento %s: %v", tratamiento.Nombre, err))
+		} else {
+			created++
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigVehiculos(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigVehiculos, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if _, err := dbpkg.UpsertEmpresaVehiculosRegistroConfiguracion(dbEmp, dbpkg.EmpresaVehiculosRegistroConfiguracion{EmpresaID: empresaID, PaisCodigo: cfg.PaisCodigo, EvitarDuplicadoActivo: cfg.EvitarDuplicadoActivo, UsuarioCreador: usuario, Estado: "activo", Observaciones: empresaPreconfigMarker + " configuracion guia de vehiculos"}); err != nil {
+		errs = append(errs, "vehiculos configuracion: "+err.Error())
+	} else {
+		created++
+	}
+	for _, item := range cfg.Registros {
+		if _, err := dbpkg.CreateEmpresaVehiculoRegistro(dbEmp, dbpkg.EmpresaVehiculoRegistro{EmpresaID: empresaID, Patente: item.Patente, TipoVehiculo: item.TipoVehiculo, Marca: item.Marca, Modelo: item.Modelo, Color: item.Color, PropietarioNombre: item.PropietarioNombre, PropietarioDocumento: item.PropietarioDocumento, ConductorNombre: item.ConductorNombre, MotivoIngreso: item.MotivoIngreso, EstadoRegistro: "en_empresa", UsuarioCreador: usuario, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + item.Observaciones}); err != nil {
+			errs = append(errs, fmt.Sprintf("vehiculo %s: %v", item.Patente, err))
+		} else {
+			created++
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigControlElectrico(dbEmp *sql.DB, empresaID int64, estaciones dbpkg.TipoEmpresaPreconfigEstaciones, cfg dbpkg.TipoEmpresaPreconfigControlElectrico, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
+		return 0, []string{"control electrico: " + err.Error()}
+	}
+	if _, err := dbpkg.UpsertEmpresaControlElectricoConfig(dbEmp, &dbpkg.EmpresaControlElectricoConfig{
+		EmpresaID:          empresaID,
+		Habilitado:         cfg.Habilitado,
+		RaspberryIP:        cfg.RaspberryIP,
+		RaspberryPort:      cfg.RaspberryPort,
+		APIPath:            cfg.APIPath,
+		TimeoutMS:          cfg.TimeoutMS,
+		AutoSyncEstaciones: cfg.AutoSyncEstaciones,
+		FailSafeOnError:    cfg.FailSafeOnError,
+		UsuarioCreador:     usuario,
+		Estado:             "activo",
+		Observaciones:      empresaPreconfigMarker + " configuracion guia de control electrico",
+	}); err != nil {
+		errs = append(errs, "control electrico config: "+err.Error())
+	} else {
+		created++
+	}
+	raspberryIDs := map[string]int64{}
+	for _, item := range cfg.Raspberries {
+		id, err := dbpkg.UpsertEmpresaControlElectricoRaspberry(dbEmp, &dbpkg.EmpresaControlElectricoRaspberry{
+			EmpresaID:      empresaID,
+			Codigo:         item.Codigo,
+			Nombre:         item.Nombre,
+			RaspberryIP:    item.RaspberryIP,
+			RaspberryPort:  item.RaspberryPort,
+			APIPath:        item.APIPath,
+			TimeoutMS:      item.TimeoutMS,
+			UsuarioCreador: usuario,
+			Estado:         "activo",
+			Observaciones:  empresaPreconfigMarker + " " + item.Observaciones,
+		})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("control electrico raspberry %s: %v", item.Codigo, err))
+			continue
+		}
+		raspberryIDs[strings.ToLower(strings.TrimSpace(item.Codigo))] = id
+		created++
+	}
+	for _, item := range cfg.Reles {
+		stationID, code, name := preconfigStationRef(estaciones, item.EstacionNumero)
+		raspberryID := raspberryIDs[strings.ToLower(strings.TrimSpace(item.RaspberryCodigo))]
+		id, err := dbpkg.UpsertEmpresaControlElectricoRele(dbEmp, &dbpkg.EmpresaControlElectricoRele{
+			EmpresaID:              empresaID,
+			RaspberryID:            raspberryID,
+			EstacionID:             stationID,
+			EstacionCodigo:         code,
+			EstacionNombre:         name,
+			SalidaCodigo:           item.SalidaCodigo,
+			TipoCarga:              item.TipoCarga,
+			GPIOPin:                item.GPIOPin,
+			RelayName:              item.RelayName,
+			ActiveHigh:             item.ActiveHigh,
+			PulsoMS:                item.PulsoMS,
+			Modo:                   item.Modo,
+			ProgramacionHabilitada: item.ProgramacionHabilitada,
+			HoraEncendido:          item.HoraEncendido,
+			HoraApagado:            item.HoraApagado,
+			ProgramacionDias:       item.ProgramacionDias,
+			ProgramacionTimezone:   item.ProgramacionTimezone,
+			ImagenURL:              item.ImagenURL,
+			UsuarioCreador:         usuario,
+			Estado:                 "activo",
+			Observaciones:          empresaPreconfigMarker + " " + item.Observaciones,
+		})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("control electrico rele %s estacion %d: %v", item.SalidaCodigo, item.EstacionNumero, err))
+			continue
+		}
+		if id > 0 {
+			created++
+		}
+	}
+	return created, errs
+}
+
+func applyEmpresaPreconfigHojaVida(dbEmp *sql.DB, empresaID int64, hojas []dbpkg.TipoEmpresaPreconfigHojaVida, usuario string) (int, []string) {
+	created := 0
+	var errs []string
+	if err := dbpkg.EnsureEmpresaHojaVidaOperativaSchema(dbEmp); err != nil {
+		return 0, []string{"hoja de vida: " + err.Error()}
+	}
+	for _, item := range hojas {
+		metaRaw := ""
+		if len(item.Metadata) > 0 {
+			raw, _ := json.Marshal(item.Metadata)
+			metaRaw = string(raw)
+		}
+		entidadID, err := dbpkg.CreateEmpresaHojaVidaEntidad(dbEmp, dbpkg.EmpresaHojaVidaEntidad{EmpresaID: empresaID, TipoEntidad: item.TipoEntidad, Codigo: item.Codigo, Nombre: item.Nombre, ClienteNombre: item.ClienteNombre, Identificacion: item.Identificacion, Marca: item.Marca, Modelo: item.Modelo, Serie: item.Serie, Color: item.Color, EstadoOperativo: item.EstadoOperativo, MetadataJSON: metaRaw, UsuarioCreador: usuario, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + item.Observaciones})
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("hoja vida %s: %v", item.Nombre, err))
+			continue
+		}
+		created++
+		for _, evento := range item.Eventos {
+			if _, err := dbpkg.CreateEmpresaHojaVidaEvento(dbEmp, dbpkg.EmpresaHojaVidaEvento{EmpresaID: empresaID, EntidadID: entidadID, TipoEvento: evento.TipoEvento, Titulo: evento.Titulo, Descripcion: evento.Descripcion, Costo: evento.Costo, Responsable: evento.Responsable, DocumentoReferencia: evento.DocumentoReferencia, Recurrente: evento.Recurrente, RecurrenciaDias: evento.RecurrenciaDias, UsuarioCreador: usuario, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + evento.Observaciones}); err != nil {
+				errs = append(errs, fmt.Sprintf("evento hoja vida %s: %v", evento.Titulo, err))
+			} else {
+				created++
+			}
+		}
+		for _, alerta := range item.Alertas {
+			if _, err := dbpkg.CreateEmpresaHojaVidaAlerta(dbEmp, dbpkg.EmpresaHojaVidaAlerta{EmpresaID: empresaID, EntidadID: entidadID, Titulo: alerta.Titulo, Descripcion: alerta.Descripcion, Prioridad: alerta.Prioridad, EstadoAlerta: "pendiente", Responsable: alerta.Responsable, UsuarioCreador: usuario, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + alerta.Observaciones}); err != nil {
+				errs = append(errs, fmt.Sprintf("alerta hoja vida %s: %v", alerta.Titulo, err))
+			} else {
+				created++
+			}
+		}
+	}
+	return created, errs
 }
 
 func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[string]any, error) {
