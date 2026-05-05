@@ -3916,3 +3916,28 @@ Archivos modificados:
 - web/login.html
 - web/login_usuario.html
 - web/super/roles_de_usuario.html
+
+2026-05-05 14:04:23 - Mensaje: Agregar carta publica de productos y preconfiguraciones empresariales; Commit: b327829e; PushStatus: OK
+Archivos modificados:
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/tipo_empresa_preconfiguracion_test.go
+- backend/db/venta_publica.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/venta_publica.go
+- backend/handlers/venta_publica_catalogo_publico_test.go
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/tools/seed_motel_calipso_tarifas/main.go
+- documentos/README.md
+- documentos/carta_publica_productos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/carrito_control_electrico.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/carta_productos_publica.html
+- web/administrar_empresa/control_electrico.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/visualizar_productos_y_precios_publico.html
