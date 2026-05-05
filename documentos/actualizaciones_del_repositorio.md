@@ -4009,3 +4009,36 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/reportes_globales.html
 - web/visualizar_productos_y_precios_publico.html
+
+2026-05-05 18:45:02 - Mensaje: Suite contable Colombia avanzada; Commit: 95473292; PushStatus: OK
+Archivos modificados:
+- backend/db/apartamentos_turisticos.go
+- backend/db/contabilidad_colombia.go
+- backend/db/contabilidad_colombia_avanzada.go
+- backend/db/contabilidad_colombia_avanzada_test.go
+- backend/db/parqueadero.go
+- backend/handlers/apartamentos_turisticos.go
+- backend/handlers/contabilidad_colombia.go
+- backend/handlers/contabilidad_colombia_avanzada.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/parqueadero.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/apartamentos_turisticos.md
+- documentos/contabilidad_colombia.md
+- documentos/contabilidad_colombia_avanzada.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/parqueadero_tickets_qr.md
+- web/administrar_empresa.html
+- web/administrar_empresa/apartamentos_turisticos.html
+- web/administrar_empresa/contabilidad_colombia.html
+- web/administrar_empresa/contabilidad_colombia_avanzada.html
+- web/administrar_empresa/parqueadero.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/ai_chat_drawer.js
+- web/super/licencias.html
