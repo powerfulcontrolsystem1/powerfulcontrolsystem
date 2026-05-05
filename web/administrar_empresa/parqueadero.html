@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Parqueadero - Tickets QR</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <style>
+    .parking-page {
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg-alt), var(--bg));
+    }
+    .parking-shell {
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+    }
+    .parking-hero,
+    .parking-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(15,23,42,.08);
+      padding: 18px;
+    }
+    .parking-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .parking-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: .78rem;
+      letter-spacing: .06em;
+    }
+    .parking-hero h1 {
+      margin: 8px 0;
+      color: var(--text);
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+    .parking-hero p,
+    .parking-card p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .parking-grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+    .parking-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .parking-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .parking-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .parking-tab {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .parking-tab.is-active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-contrast);
+    }
+    .parking-panel[hidden] { display: none !important; }
+    .parking-kpi {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+    .parking-kpi span { color: var(--muted); font-size: .82rem; }
+    .parking-kpi strong { color: var(--text); font-size: 1.5rem; }
+    .parking-ticket-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+    .parking-ticket-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .parking-ticket-code {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .parking-plate {
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: .08em;
+    }
+    .parking-status {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface) 88%);
+      color: var(--text);
+      font-weight: 800;
+      font-size: .78rem;
+    }
+    .parking-receipt {
+      width: min(360px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+      border: 1px dashed var(--border);
+      background: white;
+      color: #111827;
+      font-family: Arial, sans-serif;
+    }
+    .parking-receipt h3 {
+      margin: 0 0 8px;
+      text-align: center;
+      color: #111827;
+    }
+    .parking-receipt-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+    }
+    .parking-receipt-total {
+      font-size: 20px;
+      font-weight: 900;
+      text-align: right;
+      margin-top: 10px;
+    }
+    .parking-qr {
+      display: grid;
+      place-items: center;
+      margin: 14px auto 4px;
+      min-height: 164px;
+    }
+    .parking-qr canvas {
+      width: 160px;
+      height: 160px;
+    }
+    @media (max-width: 980px) {
+      .parking-hero,
+      .parking-grid-2,
+      .parking-grid-3 { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body * { visibility: hidden !important; }
+      #parkingReceipt, #parkingReceipt * { visibility: visible !important; }
+      #parkingReceipt { position: absolute; left: 0; top: 0; width: 80mm; box-shadow: none; border: 0; }
+    }
+  </style>
+</head>
+<body class="empresa-subpage parking-page">
+  <main class="container parking-shell">
+    <section class="parking-hero">
+      <div>
+        <span class="parking-kicker">Parqueadero profesional</span>
+        <h1>Tickets de ingreso, cobro automatico y QR de salida</h1>
+        <p>Registra vehiculos, calcula el valor por tiempo, cierra la salida y entrega un recibo con codigo QR unico para validar la salida.</p>
+      </div>
+      <div class="parking-grid-3">
+        <div class="parking-kpi"><span>Dentro</span><strong id="kpiAbiertos">0</strong></div>
+        <div class="parking-kpi"><span>Salidas hoy</span><strong id="kpiSalidas">0</strong></div>
+        <div class="parking-kpi"><span>Ingresos hoy</span><strong id="kpiIngresos">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="parking-card">
+      <div class="parking-tabs" role="tablist">
+        <button class="parking-tab is-active" type="button" data-panel="operacion">Operacion</button>
+        <button class="parking-tab" type="button" data-panel="salida">Salida por QR</button>
+        <button class="parking-tab" type="button" data-panel="config">Tarifas</button>
+        <button class="parking-tab" type="button" data-panel="recibo">Recibo</button>
+      </div>
+    </section>
+
+    <section id="panel-operacion" class="parking-panel parking-grid-2">
+      <article class="parking-card">
+        <h2>Ingreso de vehiculo</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="placa">Placa</label><input id="placa" class="form-input" placeholder="ABC123" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="tipoVehiculo">Tipo</label><select id="tipoVehiculo" class="form-input"><option value="carro">Carro</option><option value="moto">Moto</option><option value="camioneta">Camioneta</option><option value="camion">Camion</option><option value="bicicleta">Bicicleta</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="clienteNombre">Cliente</label><input id="clienteNombre" class="form-input" placeholder="Opcional"></div>
+          <div class="form-col"><label class="form-label" for="clienteDocumento">Documento</label><input id="clienteDocumento" class="form-input" placeholder="Opcional"></div>
+        </div>
+        <label class="form-label" for="observaciones">Observaciones</label>
+        <textarea id="observaciones" class="form-input" rows="3" placeholder="Casco, llaves, bahia, novedades"></textarea>
+        <div class="parking-actions" style="margin-top:12px;">
+          <button id="btnEmitirTicket" class="btn" type="button">Emitir ticket</button>
+          <button id="btnRefrescar" class="btn secondary" type="button">Refrescar</button>
+        </div>
+        <div id="parkingMsg" class="form-message" style="margin-top:10px;"></div>
+      </article>
+
+      <article class="parking-card">
+        <h2>Vehiculos dentro</h2>
+        <div id="ticketsAbiertos" class="parking-list"></div>
+      </article>
+    </section>
+
+    <section id="panel-salida" class="parking-panel parking-grid-2" hidden>
+      <article class="parking-card">
+        <h2>Validar salida con QR o token</h2>
+        <p>Escanea el QR del recibo o pega el token para calcular y cerrar la salida.</p>
+        <label class="form-label" for="salidaToken">Token QR</label>
+        <input id="salidaToken" class="form-input" placeholder="Token del QR">
+        <div class="parking-actions" style="margin-top:12px;">
+          <button id="btnValidarQR" class="btn secondary" type="button">Calcular salida</button>
+          <button id="btnCobrarQR" class="btn" type="button">Cobrar y cerrar</button>
+        </div>
+      </article>
+      <article class="parking-card">
+        <h2>Cobro calculado</h2>
+        <div id="salidaResumen" class="form-help">Sin ticket seleccionado.</div>
+      </article>
+    </section>
+
+    <section id="panel-config" class="parking-panel parking-card" hidden>
+      <h2>Configuracion de tarifas</h2>
+      <div class="parking-grid-3">
+        <div><label class="form-label" for="cfgNombre">Nombre</label><input id="cfgNombre" class="form-input"></div>
+        <div><label class="form-label" for="cfgPrefijo">Prefijo</label><input id="cfgPrefijo" class="form-input" maxlength="6"></div>
+        <div><label class="form-label" for="cfgMoneda">Moneda</label><input id="cfgMoneda" class="form-input" maxlength="3"></div>
+        <div><label class="form-label" for="cfgTolerancia">Tolerancia min</label><input id="cfgTolerancia" class="form-input" type="number" min="0"></div>
+        <div><label class="form-label" for="cfgMinBase">Minutos base</label><input id="cfgMinBase" class="form-input" type="number" min="1"></div>
+        <div><label class="form-label" for="cfgTarifaBase">Tarifa base</label><input id="cfgTarifaBase" class="form-input" type="number" min="0" step="100"></div>
+        <div><label class="form-label" for="cfgMinFraccion">Min fraccion</label><input id="cfgMinFraccion" class="form-input" type="number" min="1"></div>
+        <div><label class="form-label" for="cfgTarifaFraccion">Valor fraccion</label><input id="cfgTarifaFraccion" class="form-input" type="number" min="0" step="100"></div>
+        <div><label class="form-label" for="cfgDiaMax">Tope dia</label><input id="cfgDiaMax" class="form-input" type="number" min="0" step="100"></div>
+        <div><label class="form-label" for="cfgIva">IVA %</label><input id="cfgIva" class="form-input" type="number" min="0" step="0.01"></div>
+      </div>
+      <div class="parking-actions" style="margin-top:12px;">
+        <label class="remember-label"><input id="cfgFraccionCompleta" type="checkbox"> Cobrar fraccion completa</label>
+        <label class="remember-label"><input id="cfgIvaIncluido" type="checkbox"> IVA incluido</label>
+        <label class="remember-label"><input id="cfgSalidaQR" type="checkbox"> Exigir QR de salida</label>
+        <label class="remember-label"><input id="cfgPrintEntrada" type="checkbox"> Imprimir ingreso</label>
+        <label class="remember-label"><input id="cfgPrintSalida" type="checkbox"> Imprimir salida</label>
+      </div>
+      <div class="parking-actions" style="margin-top:12px;">
+        <button id="btnGuardarConfig" class="btn" type="button">Guardar tarifas</button>
+      </div>
+    </section>
+
+    <section id="panel-recibo" class="parking-panel parking-card" hidden>
+      <h2>Recibo del cliente</h2>
+      <div id="parkingReceipt" class="parking-receipt">
+        <h3 id="receiptTitle">Parqueadero</h3>
+        <div class="parking-receipt-row"><span>Ticket</span><strong id="rTicket">-</strong></div>
+        <div class="parking-receipt-row"><span>Placa</span><strong id="rPlaca">-</strong></div>
+        <div class="parking-receipt-row"><span>Entrada</span><strong id="rEntrada">-</strong></div>
+        <div class="parking-receipt-row"><span>Salida</span><strong id="rSalida">-</strong></div>
+        <div class="parking-receipt-row"><span>Minutos</span><strong id="rMinutos">0</strong></div>
+        <div class="parking-receipt-row"><span>Subtotal</span><strong id="rSubtotal">$0</strong></div>
+        <div class="parking-receipt-row"><span>Impuestos</span><strong id="rImpuestos">$0</strong></div>
+        <div class="parking-receipt-total" id="rTotal">$0</div>
+        <div id="receiptQR" class="parking-qr"></div>
+        <p style="text-align:center;font-size:12px;margin:8px 0 0;">QR unico para validar salida</p>
+      </div>
+      <div class="parking-actions" style="justify-content:center;margin-top:14px;">
+        <button id="btnImprimirRecibo" class="btn" type="button">Imprimir recibo</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var state = { empresaID: getEmpresaID(), dashboard: null, selected: null, cobro: null };
+      var els = {};
+      ["kpiAbiertos","kpiSalidas","kpiIngresos","placa","tipoVehiculo","clienteNombre","clienteDocumento","observaciones","btnEmitirTicket","btnRefrescar","ticketsAbiertos","parkingMsg","salidaToken","btnValidarQR","btnCobrarQR","salidaResumen","cfgNombre","cfgPrefijo","cfgMoneda","cfgTolerancia","cfgMinBase","cfgTarifaBase","cfgMinFraccion","cfgTarifaFraccion","cfgDiaMax","cfgIva","cfgFraccionCompleta","cfgIvaIncluido","cfgSalidaQR","cfgPrintEntrada","cfgPrintSalida","btnGuardarConfig","receiptTitle","rTicket","rPlaca","rEntrada","rSalida","rMinutos","rSubtotal","rImpuestos","rTotal","receiptQR","btnImprimirRecibo"].forEach(function(id){ els[id]=document.getElementById(id); });
+
+      function getEmpresaID(){
+        try {
+          var p = new URLSearchParams(location.search || "");
+          var id = p.get("empresa_id") || p.get("id");
+          if (id) return id;
+        } catch(e) {}
+        try {
+          if (parent && parent.__resolveEmpresaIdContext) return String(parent.__resolveEmpresaIdContext() || "");
+        } catch(e) {}
+        return "";
+      }
+      function api(action){ return "/api/empresa/parqueadero?empresa_id=" + encodeURIComponent(state.empresaID) + (action ? "&action=" + encodeURIComponent(action) : ""); }
+      async function request(url, opts){
+        var res = await fetch(url, Object.assign({ credentials:"same-origin" }, opts || {}));
+        var text = await res.text();
+        var data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch(e) { data = { error:text }; }
+        if (!res.ok) throw new Error(data.error || data.message || text || ("HTTP " + res.status));
+        return data;
+      }
+      function money(v){
+        var cfg = state.dashboard && state.dashboard.config ? state.dashboard.config : {};
+        var moneda = cfg.moneda || "COP";
+        try { return new Intl.NumberFormat("es-CO", { style:"currency", currency:moneda, maximumFractionDigits:0 }).format(Number(v || 0)); }
+        catch(e) { return "$" + Number(v || 0).toFixed(0); }
+      }
+      function escapeHtml(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+      function setMsg(text, type){ els.parkingMsg.textContent = text || ""; els.parkingMsg.className = "form-message " + (type || ""); }
+      function showPanel(name){
+        document.querySelectorAll(".parking-tab").forEach(function(btn){ btn.classList.toggle("is-active", btn.dataset.panel === name); });
+        document.querySelectorAll(".parking-panel").forEach(function(panel){ panel.hidden = panel.id !== "panel-" + name; });
+      }
+      async function load(){
+        if (!state.empresaID) { setMsg("Falta empresa_id en la URL.", "error"); return; }
+        state.dashboard = await request(api("dashboard"));
+        renderDashboard();
+      }
+      function renderDashboard(){
+        var d = state.dashboard || {};
+        els.kpiAbiertos.textContent = d.abiertos || 0;
+        els.kpiSalidas.textContent = d.salidos_hoy || 0;
+        els.kpiIngresos.textContent = money(d.ingresos_hoy || 0);
+        fillConfig(d.config || {});
+        renderOpenTickets(d.tickets_abiertos || []);
+      }
+      function fillConfig(cfg){
+        els.cfgNombre.value = cfg.nombre || "Parqueadero";
+        els.cfgPrefijo.value = cfg.prefijo_ticket || "PK";
+        els.cfgMoneda.value = cfg.moneda || "COP";
+        els.cfgTolerancia.value = cfg.minutos_tolerancia || 0;
+        els.cfgMinBase.value = cfg.minutos_base || 60;
+        els.cfgTarifaBase.value = cfg.tarifa_base || 0;
+        els.cfgMinFraccion.value = cfg.minutos_fraccion || 15;
+        els.cfgTarifaFraccion.value = cfg.tarifa_fraccion || 0;
+        els.cfgDiaMax.value = cfg.tarifa_dia_max || 0;
+        els.cfgIva.value = cfg.iva_porcentaje || 0;
+        els.cfgFraccionCompleta.checked = cfg.cobrar_fraccion_completa !== false;
+        els.cfgIvaIncluido.checked = cfg.iva_incluido !== false;
+        els.cfgSalidaQR.checked = cfg.salida_requiere_qr !== false;
+        els.cfgPrintEntrada.checked = cfg.imprimir_ticket_entrada !== false;
+        els.cfgPrintSalida.checked = cfg.imprimir_recibo_salida !== false;
+      }
+      function renderOpenTickets(rows){
+        if (!rows.length) { els.ticketsAbiertos.innerHTML = '<p class="form-help">No hay vehiculos dentro.</p>'; return; }
+        els.ticketsAbiertos.innerHTML = rows.map(function(t){
+          return '<article class="parking-ticket-card">' +
+            '<div class="parking-ticket-head"><div><div class="parking-ticket-code">' + escapeHtml(t.codigo_ticket) + '</div><div class="parking-plate">' + escapeHtml(t.placa) + '</div></div><span class="parking-status">' + escapeHtml(t.estado) + '</span></div>' +
+            '<div class="form-help">Entrada: ' + escapeHtml(t.fecha_entrada) + ' · Tipo: ' + escapeHtml(t.tipo_vehiculo) + '</div>' +
+            '<div class="parking-actions"><button class="btn small secondary" type="button" data-calc="' + Number(t.id) + '">Calcular</button><button class="btn small" type="button" data-close="' + Number(t.id) + '">Cobrar salida</button><button class="btn small danger" type="button" data-void="' + Number(t.id) + '">Anular</button></div>' +
+          '</article>';
+        }).join("");
+        els.ticketsAbiertos.querySelectorAll("[data-calc]").forEach(function(btn){ btn.addEventListener("click", function(){ calcularTicket(Number(btn.dataset.calc)); }); });
+        els.ticketsAbiertos.querySelectorAll("[data-close]").forEach(function(btn){ btn.addEventListener("click", function(){ cobrarTicket(Number(btn.dataset.close)); }); });
+        els.ticketsAbiertos.querySelectorAll("[data-void]").forEach(function(btn){ btn.addEventListener("click", function(){ anularTicket(Number(btn.dataset.void)); }); });
+      }
+      async function emitirTicket(){
+        try {
+          var payload = {
+            placa: els.placa.value,
+            tipo_vehiculo: els.tipoVehiculo.value,
+            cliente_nombre: els.clienteNombre.value,
+            cliente_documento: els.clienteDocumento.value,
+            observaciones: els.observaciones.value
+          };
+          var ticket = await request(api("entrada"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+          state.selected = ticket;
+          state.cobro = null;
+          renderReceipt(ticket, null);
+          setMsg("Ticket emitido: " + ticket.codigo_ticket, "success");
+          ["placa","clienteNombre","clienteDocumento","observaciones"].forEach(function(id){ els[id].value = ""; });
+          await load();
+          showPanel("recibo");
+          if ((state.dashboard.config || {}).imprimir_ticket_entrada) setTimeout(function(){ window.print(); }, 250);
+        } catch(err) { setMsg(err.message || "No se pudo emitir el ticket.", "error"); }
+      }
+      async function calcularTicket(id){
+        try {
+          var data = await request(api("calcular"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ ticket_id:id }) });
+          state.selected = data.ticket; state.cobro = data.cobro;
+          renderSalida(data.ticket, data.cobro);
+          renderReceipt(data.ticket, data.cobro);
+          showPanel("salida");
+        } catch(err) { setMsg(err.message || "No se pudo calcular.", "error"); }
+      }
+      async function validarQR(){
+        try {
+          var token = (els.salidaToken.value || "").trim();
+          if (!token) throw new Error("Ingresa o escanea el token QR.");
+          var data = await request(api("validar_salida") + "&token=" + encodeURIComponent(token));
+          state.selected = data.ticket; state.cobro = data.cobro;
+          renderSalida(data.ticket, data.cobro);
+          renderReceipt(data.ticket, data.cobro);
+        } catch(err) { els.salidaResumen.textContent = err.message || "No se pudo validar el QR."; }
+      }
+      async function cobrarTicket(id){
+        try {
+          var data = await request(api("cobrar_salida"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ ticket_id:id, metodo_pago:"efectivo" }) });
+          state.selected = data.ticket; state.cobro = data.cobro;
+          renderSalida(data.ticket, data.cobro);
+          renderReceipt(data.ticket, data.cobro);
+          await load();
+          showPanel("recibo");
+          if ((state.dashboard.config || {}).imprimir_recibo_salida) setTimeout(function(){ window.print(); }, 250);
+        } catch(err) { setMsg(err.message || "No se pudo cerrar salida.", "error"); }
+      }
+      async function cobrarQR(){
+        try {
+          var token = (els.salidaToken.value || "").trim();
+          if (!token && state.selected) token = state.selected.qr_token;
+          if (!token) throw new Error("Ingresa o escanea el token QR.");
+          var data = await request(api("cobrar_salida"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ token:token, metodo_pago:"efectivo" }) });
+          state.selected = data.ticket; state.cobro = data.cobro;
+          renderSalida(data.ticket, data.cobro);
+          renderReceipt(data.ticket, data.cobro);
+          await load();
+          showPanel("recibo");
+        } catch(err) { els.salidaResumen.textContent = err.message || "No se pudo cerrar la salida."; }
+      }
+      async function anularTicket(id){
+        if (!confirm("Anular este ticket abierto?")) return;
+        await request(api("anular"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ ticket_id:id, motivo:"Anulado desde modulo parqueadero" }) });
+        await load();
+      }
+      function renderSalida(ticket, cobro){
+        if (!ticket || !cobro) { els.salidaResumen.textContent = "Sin ticket seleccionado."; return; }
+        els.salidaResumen.innerHTML = '<div class="parking-ticket-card"><div class="parking-plate">' + escapeHtml(ticket.placa) + '</div><div>Ticket: <strong>' + escapeHtml(ticket.codigo_ticket) + '</strong></div><div>Tiempo real: <strong>' + Number(cobro.minutos_reales || 0) + ' min</strong></div><div>Cobrados: <strong>' + Number(cobro.minutos_cobrados || 0) + ' min</strong></div><div>Total: <strong>' + money(cobro.total) + '</strong></div><div class="form-help">' + escapeHtml(cobro.detalle || '') + '</div></div>';
+      }
+      function renderReceipt(ticket, cobro){
+        var cfg = (state.dashboard && state.dashboard.config) || {};
+        ticket = ticket || {};
+        cobro = cobro || {};
+        els.receiptTitle.textContent = cfg.nombre || "Parqueadero";
+        els.rTicket.textContent = ticket.codigo_ticket || "-";
+        els.rPlaca.textContent = ticket.placa || "-";
+        els.rEntrada.textContent = ticket.fecha_entrada || "-";
+        els.rSalida.textContent = cobro.fecha_salida || ticket.fecha_salida || "Pendiente";
+        els.rMinutos.textContent = cobro.minutos_cobrados || ticket.minutos_cobrados || 0;
+        els.rSubtotal.textContent = money(cobro.subtotal || ticket.subtotal || 0);
+        els.rImpuestos.textContent = money(cobro.impuestos || ticket.impuestos || 0);
+        els.rTotal.textContent = money(cobro.total || ticket.total || 0);
+        renderQR(ticket.qr_payload || ticket.qr_token || "");
+      }
+      function renderQR(text){
+        els.receiptQR.innerHTML = "";
+        if (!text) { els.receiptQR.textContent = "Sin QR"; return; }
+        if (window.QRCode && window.QRCode.toCanvas) {
+          var canvas = document.createElement("canvas");
+          els.receiptQR.appendChild(canvas);
+          window.QRCode.toCanvas(canvas, text, { width:160, margin:1, errorCorrectionLevel:"M" }).catch(function(){ fallbackQR(text); });
+        } else {
+          fallbackQR(text);
+        }
+      }
+      function fallbackQR(text){
+        els.receiptQR.innerHTML = '<div style="font-size:11px;word-break:break-all;text-align:center;">' + escapeHtml(text) + '</div>';
+      }
+      async function guardarConfig(){
+        var payload = {
+          nombre: els.cfgNombre.value,
+          prefijo_ticket: els.cfgPrefijo.value,
+          moneda: els.cfgMoneda.value,
+          minutos_tolerancia: Number(els.cfgTolerancia.value || 0),
+          minutos_base: Number(els.cfgMinBase.value || 60),
+          tarifa_base: Number(els.cfgTarifaBase.value || 0),
+          minutos_fraccion: Number(els.cfgMinFraccion.value || 15),
+          tarifa_fraccion: Number(els.cfgTarifaFraccion.value || 0),
+          tarifa_dia_max: Number(els.cfgDiaMax.value || 0),
+          iva_porcentaje: Number(els.cfgIva.value || 0),
+          cobrar_fraccion_completa: els.cfgFraccionCompleta.checked,
+          iva_incluido: els.cfgIvaIncluido.checked,
+          salida_requiere_qr: els.cfgSalidaQR.checked,
+          imprimir_ticket_entrada: els.cfgPrintEntrada.checked,
+          imprimir_recibo_salida: els.cfgPrintSalida.checked
+        };
+        await request(api("config"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Tarifas guardadas.", "success");
+        await load();
+      }
+      document.querySelectorAll(".parking-tab").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panel); }); });
+      els.btnEmitirTicket.addEventListener("click", emitirTicket);
+      els.btnRefrescar.addEventListener("click", load);
+      els.btnValidarQR.addEventListener("click", validarQR);
+      els.btnCobrarQR.addEventListener("click", cobrarQR);
+      els.btnGuardarConfig.addEventListener("click", guardarConfig);
+      els.btnImprimirRecibo.addEventListener("click", function(){ window.print(); });
+      load().catch(function(err){ setMsg(err.message || "No se pudo cargar parqueadero.", "error"); });
+    })();
+  </script>
+</body>
+</html>

@@ -888,6 +888,11 @@
   function setRobotInlineVisible(on) {
     var els = getRobotInlineElements();
     state.robotAssistantVisible = !!on;
+    try {
+      document.documentElement.classList.toggle('robot-inline-visible', !!on && isAvatarPersonalityMode(getChatPersonalityMode()));
+    } catch (error) {
+      // no-op
+    }
     if (els.host && isAvatarPersonalityMode(getChatPersonalityMode())) {
       els.host.style.display = on ? 'inline-flex' : 'none';
       els.host.setAttribute('aria-hidden', on ? 'false' : 'true');

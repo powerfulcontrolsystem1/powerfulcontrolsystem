@@ -117,6 +117,8 @@ try {
     document.getElementById("linkCompras"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
+    document.getElementById("linkParqueadero"),
+    document.getElementById("linkApartamentosTuristicos"),
     document.getElementById("linkAlquileres"),
     document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
@@ -131,6 +133,8 @@ try {
     document.getElementById("linkFacturacionElectronica"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
+    document.getElementById("linkContabilidadColombia"),
+    document.getElementById("linkContabilidadColombiaAvanzada"),
     document.getElementById("linkBackups"),
     document.getElementById("linkSoporteRemoto"),
     document.getElementById("linkUbicacionGPS"),
@@ -182,6 +186,8 @@ try {
   var permModuleInventario = "inventario";
   var permModuleCompras = "compras";
   var permModuleFinanzas = "finanzas";
+  var permModuleContabilidadCO = "contabilidad_colombia";
+  var permModuleContabilidadCOAv = "contabilidad_colombia_avanzada";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
   var permModuleSeguridad = "seguridad";
@@ -189,6 +195,8 @@ try {
   var permModuleGimnasio = "gimnasio";
   var permModuleTaxiSystem = "taxi_system";
   var permModuleDomicilios = "domicilios";
+  var permModuleParqueadero = "parqueadero";
+  var permModuleApartTuristicos = "apartamentos_turisticos";
   var permModuleAlquileres = "alquileres";
   var permModuleOdontologia = "odontologia";
   var permModuleTurnos = "turnos_atencion";
@@ -228,6 +236,8 @@ try {
     linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
     linkTaxiSystem: { module: permModuleTaxiSystem, action: permActionCreate },
     linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
+    linkParqueadero: { module: permModuleParqueadero, action: permActionCreate },
+    linkApartamentosTuristicos: { module: permModuleApartTuristicos, action: permActionCreate },
     linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
     linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
     linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
@@ -238,6 +248,8 @@ try {
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
+    linkContabilidadColombia: { module: permModuleContabilidadCO, action: permActionCreate },
+    linkContabilidadColombiaAvanzada: { module: permModuleContabilidadCOAv, action: permActionCreate },
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },
@@ -670,6 +682,8 @@ try {
         break;
 
       case permModuleFinanzas:
+      case permModuleContabilidadCO:
+      case permModuleContabilidadCOAv:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
@@ -710,6 +724,8 @@ try {
       case permModuleGimnasio:
       case permModuleTaxiSystem:
       case permModuleDomicilios:
+      case permModuleParqueadero:
+      case permModuleApartTuristicos:
       case permModuleAlquileres:
       case permModuleOdontologia:
       case permModuleTurnos:

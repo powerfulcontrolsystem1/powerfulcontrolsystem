@@ -31,6 +31,8 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaVentasPermissions(",
 		"WithEmpresaInventarioPermissions(",
 		"WithEmpresaFinanzasPermissions(",
+		"WithEmpresaContabilidadColombiaPermissions(",
+		"WithEmpresaContabilidadColombiaAvanzadaPermissions(",
 		"WithEmpresaClientesPermissions(",
 		"WithEmpresaComprasPermissions(",
 		"WithEmpresaFacturacionPermissions(",
@@ -39,10 +41,13 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaGimnasioPermissions(",
 		"WithEmpresaTaxiSystemPermissions(",
 		"WithEmpresaDomiciliosPermissions(",
+		"WithEmpresaParqueaderoPermissions(",
+		"WithEmpresaApartamentosTuristicosPermissions(",
 		"WithEmpresaAlquileresPermissions(",
 		"WithEmpresaOdontologiaPermissions(",
 		"WithEmpresaTurnosAtencionPermissions(",
 		"WithEmpresaControlElectricoPermissions(",
+		"WithEmpresaCarnetsPermissions(",
 		"WithEmpresaPublicScope(",
 	}
 	allowedPublicPaths := map[string]bool{

@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Apartamentos turísticos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .apt-page{color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg));min-height:100vh}
+    .apt-shell{display:grid;gap:16px;padding:18px}
+    .apt-hero,.apt-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 14px 32px rgba(15,23,42,.09);padding:18px}
+    .apt-hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:16px;align-items:start}
+    .apt-kicker{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .apt-hero h1{margin:8px 0;color:var(--text);font-size:1.95rem;line-height:1.08}
+    .apt-hero p,.apt-card p{color:var(--muted);line-height:1.5}
+    .apt-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .apt-kpi{display:grid;gap:6px;padding:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .apt-kpi span{color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
+    .apt-kpi strong{color:var(--text);font-size:1.38rem;line-height:1}
+    .apt-tabs,.apt-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .apt-tab{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:10px 13px;font-weight:800;cursor:pointer}
+    .apt-tab.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .apt-panel[hidden]{display:none!important}
+    .apt-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+    .apt-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .apt-list{display:grid;gap:10px}
+    .apt-unit{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .apt-unit-photo{width:88px;aspect-ratio:4/3;border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--surface) 82%),color-mix(in srgb,var(--accent-2) 18%,var(--surface-soft) 82%));display:grid;place-items:center;color:var(--text);font-weight:900}
+    .apt-unit-photo img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+    .apt-unit h3,.apt-card h2{margin:0;color:var(--text)}
+    .apt-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;color:var(--muted);font-size:.82rem}
+    .apt-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:color-mix(in srgb,var(--surface) 80%,var(--accent) 20%);color:var(--text);font-size:.72rem;font-weight:850;white-space:nowrap}
+    .apt-badge.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:var(--success)}
+    .apt-badge.warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35);color:#b7791f}
+    .apt-badge.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:var(--danger)}
+    .apt-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .apt-table{width:100%;min-width:880px;margin:0;border-collapse:collapse}
+    .apt-table th,.apt-table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .apt-table th{color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+    .apt-table td{color:var(--text)}
+    .apt-empty{padding:16px;border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft);color:var(--muted);text-align:center}
+    .apt-msg{min-height:22px;color:var(--muted)}
+    .apt-msg.success{color:var(--success)}
+    .apt-msg.error{color:var(--danger)}
+    @media (max-width:1040px){.apt-hero,.apt-grid-2,.apt-grid-3{grid-template-columns:1fr}.apt-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:620px){.apt-shell{padding:12px}.apt-kpis{grid-template-columns:1fr}.apt-unit{grid-template-columns:1fr}.apt-unit-photo{width:100%;max-height:180px}.apt-tab{flex:1 1 150px}.apt-actions .btn{width:100%}}
+  </style>
+</head>
+<body class="empresa-subpage apt-page">
+  <main class="container apt-shell">
+    <section class="apt-hero">
+      <div>
+        <span class="apt-kicker">Alquiler vacacional por empresa</span>
+        <h1>Apartamentos turísticos, reservas, tarifas y limpieza en una sola operación</h1>
+        <p>Administra unidades, disponibilidad, huéspedes, pagos estimados, códigos de acceso, canales de venta y tareas posteriores al checkout.</p>
+        <div class="apt-actions">
+          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
+          <button class="btn" type="button" data-panel-jump="reservas">Nueva reserva</button>
+          <button class="btn secondary" type="button" data-panel-jump="apartamentos">Nuevo apartamento</button>
+        </div>
+      </div>
+      <div class="apt-kpis">
+        <div class="apt-kpi"><span>Apartamentos</span><strong id="kpiApartamentos">0</strong></div>
+        <div class="apt-kpi"><span>Disponibles</span><strong id="kpiDisponibles">0</strong></div>
+        <div class="apt-kpi"><span>Ocupados</span><strong id="kpiOcupados">0</strong></div>
+        <div class="apt-kpi"><span>Reservas activas</span><strong id="kpiReservas">0</strong></div>
+        <div class="apt-kpi"><span>Check-in hoy</span><strong id="kpiCheckins">0</strong></div>
+        <div class="apt-kpi"><span>Ingresos mes</span><strong id="kpiIngresos">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="apt-card">
+      <div class="apt-tabs" role="tablist">
+        <button class="apt-tab is-active" type="button" data-panel="dashboard">Dashboard</button>
+        <button class="apt-tab" type="button" data-panel="apartamentos">Apartamentos</button>
+        <button class="apt-tab" type="button" data-panel="reservas">Reservas</button>
+        <button class="apt-tab" type="button" data-panel="tarifas">Tarifas</button>
+        <button class="apt-tab" type="button" data-panel="tareas">Limpieza y mantenimiento</button>
+        <button class="apt-tab" type="button" data-panel="config">Configuración</button>
+      </div>
+    </section>
+
+    <section id="panel-dashboard" class="apt-panel apt-grid-2">
+      <article class="apt-card">
+        <h2>Disponibilidad</h2>
+        <div id="unitsSummary" class="apt-list"></div>
+      </article>
+      <article class="apt-card">
+        <h2>Próximas reservas y tareas</h2>
+        <div id="operationsSummary" class="apt-list"></div>
+      </article>
+    </section>
+
+    <section id="panel-apartamentos" class="apt-panel apt-grid-2" hidden>
+      <article class="apt-card">
+        <h2>Nuevo apartamento</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="aptCodigo">Código</label><input id="aptCodigo" class="form-input" placeholder="APT-101"></div>
+          <div class="form-col"><label class="form-label" for="aptNombre">Nombre comercial</label><input id="aptNombre" class="form-input" placeholder="Suite Vista Ciudad"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="aptTipo">Tipo</label><select id="aptTipo" class="form-input"><option value="apartamento">Apartamento</option><option value="suite">Suite</option><option value="casa">Casa</option><option value="estudio">Estudio</option><option value="cabana">Cabaña</option></select></div>
+          <div class="form-col"><label class="form-label" for="aptUbicacion">Ubicación</label><input id="aptUbicacion" class="form-input" placeholder="Torre, barrio, ciudad"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="aptCapacidad">Capacidad</label><input id="aptCapacidad" class="form-input" type="number" min="1" value="2"></div>
+          <div class="form-col"><label class="form-label" for="aptHabitaciones">Habitaciones</label><input id="aptHabitaciones" class="form-input" type="number" min="1" value="1"></div>
+          <div class="form-col"><label class="form-label" for="aptCamas">Camas</label><input id="aptCamas" class="form-input" type="number" min="1" value="1"></div>
+          <div class="form-col"><label class="form-label" for="aptBanos">Baños</label><input id="aptBanos" class="form-input" type="number" min="1" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="aptPrecio">Precio base noche</label><input id="aptPrecio" class="form-input" type="number" min="0" step="1000"></div>
+          <div class="form-col"><label class="form-label" for="aptLimpieza">Tarifa limpieza</label><input id="aptLimpieza" class="form-input" type="number" min="0" step="1000"></div>
+          <div class="form-col"><label class="form-label" for="aptDeposito">Depósito sugerido</label><input id="aptDeposito" class="form-input" type="number" min="0" step="1000"></div>
+        </div>
+        <label class="form-label" for="aptFoto">Foto principal</label>
+        <input id="aptFoto" class="form-input" placeholder="/uploads/empresa/.../foto.jpg">
+        <label class="form-label" for="aptAmenidades">Amenidades</label>
+        <textarea id="aptAmenidades" class="form-input" rows="2" placeholder="WiFi, cocina, aire acondicionado, parqueadero"></textarea>
+        <label class="form-label" for="aptReglas">Reglas de casa</label>
+        <textarea id="aptReglas" class="form-input" rows="2" placeholder="No fumar, no fiestas, check-out puntual"></textarea>
+        <div class="apt-actions" style="margin-top:12px"><button id="btnSaveUnit" class="btn" type="button">Guardar apartamento</button></div>
+      </article>
+      <article class="apt-card">
+        <h2>Inventario de unidades</h2>
+        <div id="unitsList" class="apt-list"></div>
+      </article>
+    </section>
+
+    <section id="panel-reservas" class="apt-panel apt-grid-2" hidden>
+      <article class="apt-card">
+        <h2>Nueva reserva</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="resApartamento">Apartamento</label><select id="resApartamento" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="resCanal">Canal</label><select id="resCanal" class="form-input"><option value="directo">Directo</option><option value="web">Web pública</option><option value="airbnb">Airbnb</option><option value="booking">Booking</option><option value="whatsapp">WhatsApp</option><option value="agencia">Agencia</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="resHuesped">Huésped</label><input id="resHuesped" class="form-input" placeholder="Nombre completo"></div>
+          <div class="form-col"><label class="form-label" for="resDocumento">Documento</label><input id="resDocumento" class="form-input" placeholder="CC, pasaporte o NIT"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="resTelefono">Teléfono</label><input id="resTelefono" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="resEmail">Email</label><input id="resEmail" class="form-input" type="email"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="resEntrada">Entrada</label><input id="resEntrada" class="form-input" type="date"></div>
+          <div class="form-col"><label class="form-label" for="resSalida">Salida</label><input id="resSalida" class="form-input" type="date"></div>
+          <div class="form-col"><label class="form-label" for="resHuespedes">Huéspedes</label><input id="resHuespedes" class="form-input" type="number" min="1" value="1"></div>
+        </div>
+        <label class="form-label" for="resObs">Observaciones</label>
+        <textarea id="resObs" class="form-input" rows="3" placeholder="Hora estimada de llegada, solicitudes, abonos"></textarea>
+        <div class="apt-actions" style="margin-top:12px"><button id="btnSaveReserva" class="btn" type="button">Confirmar reserva</button></div>
+      </article>
+      <article class="apt-card">
+        <h2>Reservas recientes</h2>
+        <div class="apt-table-wrap"><table class="apt-table"><thead><tr><th>Código</th><th>Huésped</th><th>Fechas</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="reservasBody"></tbody></table></div>
+      </article>
+    </section>
+
+    <section id="panel-tarifas" class="apt-panel apt-grid-2" hidden>
+      <article class="apt-card">
+        <h2>Tarifa por canal o temporada</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="tarNombre">Nombre</label><input id="tarNombre" class="form-input" placeholder="Temporada alta"></div>
+          <div class="form-col"><label class="form-label" for="tarApartamento">Apartamento</label><select id="tarApartamento" class="form-input"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="tarCanal">Canal</label><select id="tarCanal" class="form-input"><option value="directo">Directo</option><option value="web">Web</option><option value="airbnb">Airbnb</option><option value="booking">Booking</option><option value="agencia">Agencia</option></select></div>
+          <div class="form-col"><label class="form-label" for="tarPrecio">Precio noche</label><input id="tarPrecio" class="form-input" type="number" min="0" step="1000"></div>
+          <div class="form-col"><label class="form-label" for="tarMinimo">Mínimo noches</label><input id="tarMinimo" class="form-input" type="number" min="1" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="tarDesde">Desde</label><input id="tarDesde" class="form-input" type="date"></div>
+          <div class="form-col"><label class="form-label" for="tarHasta">Hasta</label><input id="tarHasta" class="form-input" type="date"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="tarSemanal">Descuento semanal %</label><input id="tarSemanal" class="form-input" type="number" min="0" step=".01"></div>
+          <div class="form-col"><label class="form-label" for="tarMensual">Descuento mensual %</label><input id="tarMensual" class="form-input" type="number" min="0" step=".01"></div>
+        </div>
+        <div class="apt-actions" style="margin-top:12px"><button id="btnSaveTarifa" class="btn" type="button">Guardar tarifa</button></div>
+      </article>
+      <article class="apt-card">
+        <h2>Tarifas configuradas</h2>
+        <div class="apt-table-wrap"><table class="apt-table"><thead><tr><th>Nombre</th><th>Apartamento</th><th>Canal</th><th>Vigencia</th><th>Precio</th></tr></thead><tbody id="tarifasBody"></tbody></table></div>
+      </article>
+    </section>
+
+    <section id="panel-tareas" class="apt-panel apt-grid-2" hidden>
+      <article class="apt-card">
+        <h2>Nueva tarea</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="taskApartamento">Apartamento</label><select id="taskApartamento" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="taskTipo">Tipo</label><select id="taskTipo" class="form-input"><option value="limpieza">Limpieza</option><option value="mantenimiento">Mantenimiento</option><option value="inspeccion">Inspección</option><option value="inventario">Inventario</option><option value="lavanderia">Lavandería</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="taskPrioridad">Prioridad</label><select id="taskPrioridad" class="form-input"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Crítica</option><option value="baja">Baja</option></select></div>
+          <div class="form-col"><label class="form-label" for="taskResponsable">Responsable</label><input id="taskResponsable" class="form-input" placeholder="Equipo o persona"></div>
+          <div class="form-col"><label class="form-label" for="taskFecha">Programada</label><input id="taskFecha" class="form-input" type="datetime-local"></div>
+        </div>
+        <label class="form-label" for="taskDescripcion">Descripción</label>
+        <textarea id="taskDescripcion" class="form-input" rows="3" placeholder="Checklist, novedad, materiales"></textarea>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="taskCosto">Costo estimado</label><input id="taskCosto" class="form-input" type="number" min="0" step="1000"></div>
+        </div>
+        <div class="apt-actions" style="margin-top:12px"><button id="btnSaveTask" class="btn" type="button">Guardar tarea</button></div>
+      </article>
+      <article class="apt-card">
+        <h2>Tareas pendientes</h2>
+        <div id="tasksList" class="apt-list"></div>
+      </article>
+    </section>
+
+    <section id="panel-config" class="apt-panel apt-grid-2" hidden>
+      <article class="apt-card">
+        <h2>Configuración operacional</h2>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgNombre">Nombre del módulo</label><input id="cfgNombre" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cfgMoneda">Moneda</label><input id="cfgMoneda" class="form-input" maxlength="3" placeholder="COP"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgCheckin">Hora check-in</label><input id="cfgCheckin" class="form-input" type="time"></div>
+          <div class="form-col"><label class="form-label" for="cfgCheckout">Hora check-out</label><input id="cfgCheckout" class="form-input" type="time"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cfgDeposito">Depósito %</label><input id="cfgDeposito" class="form-input" type="number" min="0" step=".01"></div>
+          <div class="form-col"><label class="form-label" for="cfgImpuesto">Impuesto %</label><input id="cfgImpuesto" class="form-input" type="number" min="0" step=".01"></div>
+        </div>
+        <label class="lic-superrol-item"><input id="cfgAutoLimpieza" type="checkbox"> Programar limpieza automáticamente al checkout</label>
+        <label class="lic-superrol-item"><input id="cfgPublicas" type="checkbox"> Permitir reservas públicas cuando se conecte el portal</label>
+        <label class="lic-superrol-item"><input id="cfgDocumento" type="checkbox"> Requerir documento del huésped</label>
+        <div class="apt-actions" style="margin-top:12px"><button id="btnSaveConfig" class="btn" type="button">Guardar configuración</button></div>
+      </article>
+      <article class="apt-card">
+        <h2>Control de estados</h2>
+        <p>Actualiza disponibilidad cuando una unidad queda lista, bloqueada o en mantenimiento.</p>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="stateApartamento">Apartamento</label><select id="stateApartamento" class="form-input"></select></div>
+          <div class="form-col"><label class="form-label" for="stateOperativo">Operativo</label><select id="stateOperativo" class="form-input"><option value="activo">Activo</option><option value="bloqueado">Bloqueado</option><option value="mantenimiento">Mantenimiento</option><option value="inactivo">Inactivo</option></select></div>
+          <div class="form-col"><label class="form-label" for="stateOcupacion">Ocupación</label><select id="stateOcupacion" class="form-input"><option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="ocupado">Ocupado</option><option value="limpieza">Limpieza</option><option value="mantenimiento">Mantenimiento</option></select></div>
+        </div>
+        <div class="apt-actions"><button id="btnSaveState" class="btn secondary" type="button">Actualizar estado</button></div>
+      </article>
+    </section>
+
+    <div id="aptMsg" class="apt-msg"></div>
+  </main>
+
+  <script>
+    (function(){
+      var state = { empresaID:getEmpresaID(), dashboard:null, tarifas:[], tareas:[] };
+      var ids = ["kpiApartamentos","kpiDisponibles","kpiOcupados","kpiReservas","kpiCheckins","kpiIngresos","unitsSummary","operationsSummary","unitsList","reservasBody","tarifasBody","tasksList","aptMsg","btnRefresh","btnSaveUnit","btnSaveReserva","btnSaveTarifa","btnSaveTask","btnSaveConfig","btnSaveState","aptCodigo","aptNombre","aptTipo","aptUbicacion","aptCapacidad","aptHabitaciones","aptCamas","aptBanos","aptPrecio","aptLimpieza","aptDeposito","aptFoto","aptAmenidades","aptReglas","resApartamento","resCanal","resHuesped","resDocumento","resTelefono","resEmail","resEntrada","resSalida","resHuespedes","resObs","tarNombre","tarApartamento","tarCanal","tarPrecio","tarMinimo","tarDesde","tarHasta","tarSemanal","tarMensual","taskApartamento","taskTipo","taskPrioridad","taskResponsable","taskFecha","taskDescripcion","taskCosto","cfgNombre","cfgMoneda","cfgCheckin","cfgCheckout","cfgDeposito","cfgImpuesto","cfgAutoLimpieza","cfgPublicas","cfgDocumento","stateApartamento","stateOperativo","stateOcupacion"];
+      var els = {};
+      ids.forEach(function(id){ els[id] = document.getElementById(id); });
+
+      function getEmpresaID(){
+        try {
+          var p = new URLSearchParams(location.search || "");
+          var id = p.get("empresa_id") || p.get("id");
+          if (id) return id;
+        } catch(e) {}
+        try {
+          if (parent && parent.__resolveEmpresaIdContext) return String(parent.__resolveEmpresaIdContext() || "");
+        } catch(e) {}
+        return "";
+      }
+      function api(action){ return "/api/empresa/apartamentos_turisticos?empresa_id=" + encodeURIComponent(state.empresaID) + (action ? "&action=" + encodeURIComponent(action) : ""); }
+      async function request(url, opts){
+        var res = await fetch(url, Object.assign({ credentials:"same-origin" }, opts || {}));
+        var text = await res.text();
+        var data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch(e) { data = { error:text }; }
+        if (!res.ok) throw new Error(data.error || data.message || text || ("HTTP " + res.status));
+        return data;
+      }
+      function escapeHtml(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+      function money(v){
+        var moneda = (state.dashboard && state.dashboard.config && state.dashboard.config.moneda) || "COP";
+        try { return new Intl.NumberFormat("es-CO",{style:"currency",currency:moneda,maximumFractionDigits:0}).format(Number(v || 0)); }
+        catch(e){ return "$" + Number(v || 0).toFixed(0); }
+      }
+      function setMsg(text,type){ els.aptMsg.textContent = text || ""; els.aptMsg.className = "apt-msg " + (type || ""); }
+      function badge(text,type){ return '<span class="apt-badge ' + (type || '') + '">' + escapeHtml(text || '-') + '</span>'; }
+      function showPanel(name){
+        document.querySelectorAll(".apt-tab").forEach(function(btn){ btn.classList.toggle("is-active", btn.dataset.panel === name); });
+        document.querySelectorAll(".apt-panel").forEach(function(panel){ panel.hidden = panel.id !== "panel-" + name; });
+      }
+      async function load(){
+        if (!state.empresaID) { setMsg("Falta empresa_id en la URL.", "error"); return; }
+        var dashboard = await request(api("dashboard"));
+        var tarifas = await request(api("tarifas"));
+        state.dashboard = dashboard;
+        state.tarifas = Array.isArray(tarifas) ? tarifas : [];
+        state.tareas = dashboard.tareas_pendientes || [];
+        renderAll();
+      }
+      function renderAll(){
+        var d = state.dashboard || {};
+        els.kpiApartamentos.textContent = d.apartamentos || 0;
+        els.kpiDisponibles.textContent = d.disponibles || 0;
+        els.kpiOcupados.textContent = d.ocupados || 0;
+        els.kpiReservas.textContent = d.reservas_activas || 0;
+        els.kpiCheckins.textContent = d.checkins_hoy || 0;
+        els.kpiIngresos.textContent = money(d.ingresos_mes || 0);
+        fillConfig(d.config || {});
+        fillSelects(d.unidades || []);
+        renderUnits(d.unidades || []);
+        renderReservas(d.reservas || []);
+        renderTarifas(state.tarifas || []);
+        renderTasks(d.tareas_pendientes || []);
+        renderDashboardSummary(d);
+      }
+      function renderDashboardSummary(d){
+        renderUnitsSummary(d.unidades || []);
+        var reservas = (d.reservas || []).slice(0,5).map(function(r){ return '<div class="apt-unit"><div class="apt-unit-photo">RES</div><div><h3>' + escapeHtml(r.codigo_reserva) + '</h3><div class="apt-meta"><span>' + escapeHtml(r.huesped_nombre) + '</span><span>' + escapeHtml(r.apartamento_nombre) + '</span><span>' + escapeHtml(r.fecha_entrada) + ' / ' + escapeHtml(r.fecha_salida) + '</span></div><div class="apt-meta">' + badge(r.estado_reserva,statusKind(r.estado_reserva)) + badge(money(r.total || 0),'') + '</div></div></div>'; }).join("");
+        var tareas = (d.tareas_pendientes || []).slice(0,4).map(function(t){ return '<div class="apt-unit"><div class="apt-unit-photo">TAR</div><div><h3>' + escapeHtml(t.tipo) + '</h3><div class="apt-meta"><span>' + escapeHtml(t.apartamento_nombre) + '</span><span>' + escapeHtml(t.responsable || 'Sin responsable') + '</span><span>' + escapeHtml(t.fecha_programada || 'Sin fecha') + '</span></div></div></div>'; }).join("");
+        els.operationsSummary.innerHTML = reservas + tareas || '<div class="apt-empty">Sin reservas ni tareas recientes.</div>';
+      }
+      function renderUnitsSummary(rows){ els.unitsSummary.innerHTML = rows.length ? rows.map(unitCard).join("") : '<div class="apt-empty">Crea el primer apartamento turístico para iniciar operación.</div>'; }
+      function unitCard(u){
+        var photo = u.url_foto ? '<img src="' + escapeHtml(u.url_foto) + '" alt="">' : escapeHtml((u.codigo || "APT").slice(0,5));
+        return '<article class="apt-unit"><div class="apt-unit-photo">' + photo + '</div><div><h3>' + escapeHtml(u.nombre) + '</h3><div class="apt-meta"><span>' + escapeHtml(u.codigo) + '</span><span>' + escapeHtml(u.tipo) + '</span><span>' + Number(u.capacidad || 0) + ' huéspedes</span><span>' + money(u.precio_base_noche || 0) + '/noche</span></div><div class="apt-meta">' + badge(u.estado_operativo,statusKind(u.estado_operativo)) + badge(u.estado_ocupacion,statusKind(u.estado_ocupacion)) + '</div><div class="apt-meta"><span>' + escapeHtml(u.ubicacion || '') + '</span><span>' + escapeHtml(u.amenidades || '') + '</span></div></div></article>';
+      }
+      function renderUnits(rows){ els.unitsList.innerHTML = rows.length ? rows.map(unitCard).join("") : '<div class="apt-empty">Sin apartamentos registrados.</div>'; }
+      function renderReservas(rows){
+        els.reservasBody.innerHTML = rows.length ? rows.map(function(r){
+          return '<tr><td><strong>' + escapeHtml(r.codigo_reserva) + '</strong><div class="form-help">Acceso: ' + escapeHtml(r.codigo_acceso || '-') + '</div></td><td>' + escapeHtml(r.huesped_nombre) + '<div class="form-help">' + escapeHtml(r.huesped_telefono || r.huesped_email || '') + '</div></td><td>' + escapeHtml(r.apartamento_nombre) + '<div class="form-help">' + escapeHtml(r.fecha_entrada) + ' a ' + escapeHtml(r.fecha_salida) + ' · ' + Number(r.noches || 0) + ' noches</div></td><td>' + money(r.total || 0) + '<div class="form-help">Saldo ' + money(r.saldo_pendiente || 0) + '</div></td><td>' + badge(r.estado_reserva,statusKind(r.estado_reserva)) + '<div class="form-help">' + escapeHtml(r.estado_pago || '') + '</div></td><td><div class="apt-actions"><button class="btn small secondary" data-checkin="' + Number(r.id) + '" type="button">Check-in</button><button class="btn small secondary" data-checkout="' + Number(r.id) + '" type="button">Checkout</button><button class="btn small danger" data-cancelar="' + Number(r.id) + '" type="button">Cancelar</button></div></td></tr>';
+        }).join("") : '<tr><td colspan="6"><div class="apt-empty">Sin reservas registradas.</div></td></tr>';
+        bindReservaActions();
+      }
+      function bindReservaActions(){
+        els.reservasBody.querySelectorAll("[data-checkin]").forEach(function(btn){ btn.addEventListener("click", function(){ changeReserva("checkin", Number(btn.dataset.checkin)); }); });
+        els.reservasBody.querySelectorAll("[data-checkout]").forEach(function(btn){ btn.addEventListener("click", function(){ changeReserva("checkout", Number(btn.dataset.checkout)); }); });
+        els.reservasBody.querySelectorAll("[data-cancelar]").forEach(function(btn){ btn.addEventListener("click", function(){ changeReserva("cancelar", Number(btn.dataset.cancelar)); }); });
+      }
+      function renderTarifas(rows){
+        els.tarifasBody.innerHTML = rows.length ? rows.map(function(t){ return '<tr><td><strong>' + escapeHtml(t.nombre) + '</strong></td><td>' + escapeHtml(t.apartamento_nombre || 'Global') + '</td><td>' + escapeHtml(t.canal) + '</td><td>' + escapeHtml(t.fecha_desde || '-') + ' / ' + escapeHtml(t.fecha_hasta || '-') + '<div class="form-help">Mín. ' + Number(t.minimo_noches || 1) + ' noche(s)</div></td><td>' + money(t.precio_noche || 0) + '<div class="form-help">Sem. ' + Number(t.descuento_semanal || 0) + '% · Mes ' + Number(t.descuento_mensual || 0) + '%</div></td></tr>'; }).join("") : '<tr><td colspan="5"><div class="apt-empty">Sin tarifas especiales.</div></td></tr>';
+      }
+      function renderTasks(rows){
+        els.tasksList.innerHTML = rows.length ? rows.map(function(t){ return '<article class="apt-unit"><div class="apt-unit-photo">' + escapeHtml((t.tipo || "T").slice(0,3).toUpperCase()) + '</div><div><h3>' + escapeHtml(t.tipo) + '</h3><div class="apt-meta"><span>' + escapeHtml(t.apartamento_nombre) + '</span><span>' + escapeHtml(t.responsable || 'Sin responsable') + '</span><span>' + escapeHtml(t.fecha_programada || 'Sin fecha') + '</span></div><div class="apt-meta">' + badge(t.prioridad,statusKind(t.prioridad)) + badge(t.estado,statusKind(t.estado)) + '<span>' + money(t.costo_estimado || 0) + '</span></div><p>' + escapeHtml(t.descripcion || '') + '</p><div class="apt-actions"><button class="btn small secondary" type="button" data-task-progress="' + Number(t.id) + '">En proceso</button><button class="btn small" type="button" data-task-done="' + Number(t.id) + '">Completar</button></div></div></article>'; }).join("") : '<div class="apt-empty">Sin tareas pendientes.</div>';
+        els.tasksList.querySelectorAll("[data-task-progress]").forEach(function(btn){ btn.addEventListener("click", function(){ changeTask(Number(btn.dataset.taskProgress), "en_proceso"); }); });
+        els.tasksList.querySelectorAll("[data-task-done]").forEach(function(btn){ btn.addEventListener("click", function(){ changeTask(Number(btn.dataset.taskDone), "completada"); }); });
+      }
+      function fillSelects(units){
+        var opts = units.map(function(u){ return '<option value="' + Number(u.id) + '">' + escapeHtml(u.codigo + ' - ' + u.nombre) + '</option>'; }).join("");
+        var optsGlobal = '<option value="0">Global para todos</option>' + opts;
+        ["resApartamento","taskApartamento","stateApartamento"].forEach(function(id){ els[id].innerHTML = opts || '<option value="">Sin apartamentos</option>'; });
+        els.tarApartamento.innerHTML = optsGlobal;
+      }
+      function fillConfig(cfg){
+        els.cfgNombre.value = cfg.nombre_sistema || "Apartamentos turísticos";
+        els.cfgMoneda.value = cfg.moneda || "COP";
+        els.cfgCheckin.value = cfg.hora_check_in || "15:00";
+        els.cfgCheckout.value = cfg.hora_check_out || "11:00";
+        els.cfgDeposito.value = cfg.deposito_porcentaje || 0;
+        els.cfgImpuesto.value = cfg.impuesto_porcentaje || 0;
+        els.cfgAutoLimpieza.checked = cfg.auto_programar_limpieza !== false;
+        els.cfgPublicas.checked = cfg.permitir_reservas_publicas !== false;
+        els.cfgDocumento.checked = cfg.requerir_documento_huesped !== false;
+      }
+      function statusKind(v){
+        v = String(v || "").toLowerCase();
+        if (["disponible","activo","confirmada","completada","checkin","baja"].indexOf(v) >= 0) return "ok";
+        if (["limpieza","reservado","pendiente","en_proceso","media","alta"].indexOf(v) >= 0) return "warn";
+        if (["ocupado","mantenimiento","bloqueado","cancelada","critica","inactivo"].indexOf(v) >= 0) return "danger";
+        return "";
+      }
+      async function saveUnit(){
+        var payload = { codigo:els.aptCodigo.value, nombre:els.aptNombre.value, tipo:els.aptTipo.value, ubicacion:els.aptUbicacion.value, capacidad:Number(els.aptCapacidad.value || 1), habitaciones:Number(els.aptHabitaciones.value || 1), camas:Number(els.aptCamas.value || 1), banos:Number(els.aptBanos.value || 1), precio_base_noche:Number(els.aptPrecio.value || 0), tarifa_limpieza:Number(els.aptLimpieza.value || 0), deposito_sugerido:Number(els.aptDeposito.value || 0), url_foto:els.aptFoto.value, amenidades:els.aptAmenidades.value, reglas_casa:els.aptReglas.value };
+        await request(api("apartamentos"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Apartamento guardado.", "success");
+        ["aptCodigo","aptNombre","aptUbicacion","aptPrecio","aptLimpieza","aptDeposito","aptFoto","aptAmenidades","aptReglas"].forEach(function(id){ els[id].value = ""; });
+        await load();
+      }
+      async function saveReserva(){
+        var payload = { apartamento_id:Number(els.resApartamento.value || 0), canal:els.resCanal.value, huesped_nombre:els.resHuesped.value, huesped_documento:els.resDocumento.value, huesped_telefono:els.resTelefono.value, huesped_email:els.resEmail.value, cantidad_huespedes:Number(els.resHuespedes.value || 1), fecha_entrada:els.resEntrada.value, fecha_salida:els.resSalida.value, observaciones:els.resObs.value };
+        await request(api("reservas"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Reserva confirmada.", "success");
+        ["resHuesped","resDocumento","resTelefono","resEmail","resEntrada","resSalida","resObs"].forEach(function(id){ els[id].value = ""; });
+        await load();
+      }
+      async function saveTarifa(){
+        var payload = { apartamento_id:Number(els.tarApartamento.value || 0), nombre:els.tarNombre.value, canal:els.tarCanal.value, precio_noche:Number(els.tarPrecio.value || 0), minimo_noches:Number(els.tarMinimo.value || 1), fecha_desde:els.tarDesde.value, fecha_hasta:els.tarHasta.value, descuento_semanal:Number(els.tarSemanal.value || 0), descuento_mensual:Number(els.tarMensual.value || 0), estado:"activo" };
+        await request(api("tarifas"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Tarifa guardada.", "success");
+        ["tarNombre","tarPrecio","tarDesde","tarHasta","tarSemanal","tarMensual"].forEach(function(id){ els[id].value = ""; });
+        await load();
+      }
+      async function saveTask(){
+        var payload = { apartamento_id:Number(els.taskApartamento.value || 0), tipo:els.taskTipo.value, prioridad:els.taskPrioridad.value, responsable:els.taskResponsable.value, fecha_programada:els.taskFecha.value, descripcion:els.taskDescripcion.value, costo_estimado:Number(els.taskCosto.value || 0), estado:"pendiente" };
+        await request(api("tareas"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Tarea guardada.", "success");
+        ["taskResponsable","taskFecha","taskDescripcion","taskCosto"].forEach(function(id){ els[id].value = ""; });
+        await load();
+      }
+      async function saveConfig(){
+        var payload = { nombre_sistema:els.cfgNombre.value, moneda:els.cfgMoneda.value, hora_check_in:els.cfgCheckin.value, hora_check_out:els.cfgCheckout.value, deposito_porcentaje:Number(els.cfgDeposito.value || 0), impuesto_porcentaje:Number(els.cfgImpuesto.value || 0), auto_programar_limpieza:els.cfgAutoLimpieza.checked, permitir_reservas_publicas:els.cfgPublicas.checked, requerir_documento_huesped:els.cfgDocumento.checked };
+        await request(api("config"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Configuración guardada.", "success");
+        await load();
+      }
+      async function saveState(){
+        var payload = { apartamento_id:Number(els.stateApartamento.value || 0), estado_operativo:els.stateOperativo.value, estado_ocupacion:els.stateOcupacion.value };
+        await request(api("estado_apartamento"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+        setMsg("Estado actualizado.", "success");
+        await load();
+      }
+      async function changeReserva(action,id){
+        if (action === "cancelar" && !confirm("Cancelar esta reserva?")) return;
+        await request(api(action), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ reserva_id:id }) });
+        setMsg("Reserva actualizada.", "success");
+        await load();
+      }
+      async function changeTask(id,estado){
+        await request(api("estado_tarea"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ tarea_id:id, estado:estado, costo_real:0 }) });
+        setMsg("Tarea actualizada.", "success");
+        await load();
+      }
+      document.querySelectorAll(".apt-tab").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panel); }); });
+      document.querySelectorAll("[data-panel-jump]").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panelJump); }); });
+      els.btnRefresh.addEventListener("click", function(){ load().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveUnit.addEventListener("click", function(){ saveUnit().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveReserva.addEventListener("click", function(){ saveReserva().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveTarifa.addEventListener("click", function(){ saveTarifa().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveTask.addEventListener("click", function(){ saveTask().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveConfig.addEventListener("click", function(){ saveConfig().catch(function(err){ setMsg(err.message, "error"); }); });
+      els.btnSaveState.addEventListener("click", function(){ saveState().catch(function(err){ setMsg(err.message, "error"); }); });
+      load().catch(function(err){ setMsg(err.message || "No se pudo cargar apartamentos turísticos.", "error"); });
+    })();
+  </script>
+</body>
+</html>

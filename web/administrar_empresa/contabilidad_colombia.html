@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contabilidad Colombia</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .coacct-page{min-height:100vh;color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
+    .coacct-shell{display:grid;gap:16px;padding:18px}
+    .coacct-hero,.coacct-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 14px 34px rgba(15,23,42,.09);padding:18px}
+    .coacct-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:16px;align-items:start}
+    .coacct-kicker{color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.06em;font-size:.76rem}
+    .coacct-hero h1{margin:8px 0;color:var(--text);font-size:1.9rem;line-height:1.08}
+    .coacct-hero p,.coacct-card p{color:var(--muted);line-height:1.5}
+    .coacct-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .coacct-kpi{display:grid;gap:5px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .coacct-kpi span{color:var(--muted);font-size:.75rem;font-weight:850;text-transform:uppercase;letter-spacing:.035em}
+    .coacct-kpi strong{font-size:1.25rem;color:var(--text)}
+    .coacct-tabs,.coacct-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .coacct-tab{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:10px 13px;font-weight:800;cursor:pointer}
+    .coacct-tab.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .coacct-panel[hidden]{display:none!important}
+    .coacct-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+    .coacct-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .coacct-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .coacct-table{width:100%;min-width:760px;border-collapse:collapse;margin:0}
+    .coacct-table th,.coacct-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .coacct-table th{color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em}
+    .coacct-table td{color:var(--text)}
+    .coacct-lines{display:grid;gap:8px}
+    .coacct-line{display:grid;grid-template-columns:minmax(130px,1fr) minmax(100px,.8fr) minmax(100px,.8fr) auto;gap:8px;align-items:end}
+    .coacct-badge{display:inline-flex;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--surface-soft);font-size:.72rem;font-weight:850;color:var(--text)}
+    .coacct-badge.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:var(--success)}
+    .coacct-badge.warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35);color:#b7791f}
+    .coacct-badge.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:var(--danger)}
+    .coacct-empty{padding:14px;border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft);color:var(--muted);text-align:center}
+    .coacct-msg{min-height:22px;color:var(--muted)}
+    .coacct-msg.success{color:var(--success)}.coacct-msg.error{color:var(--danger)}
+    @media(max-width:1020px){.coacct-hero,.coacct-grid-2,.coacct-grid-3{grid-template-columns:1fr}.coacct-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:680px){.coacct-shell{padding:12px}.coacct-kpis{grid-template-columns:1fr}.coacct-line{grid-template-columns:1fr}.coacct-line .btn{width:100%}.coacct-tab{flex:1 1 140px}}
+  </style>
+</head>
+<body class="empresa-subpage coacct-page">
+  <main class="container coacct-shell">
+    <section class="coacct-hero">
+      <div>
+        <div class="coacct-kicker">Contabilidad legal colombiana</div>
+        <h1>PUC, NIIF, comprobantes, asientos y cierres por empresa</h1>
+        <p>Registra contabilidad de doble partida, administra terceros, impuestos, plan de cuentas colombiano, libros base y cierres de periodo conectados con la operación financiera.</p>
+        <div class="coacct-actions">
+          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnSeed" class="btn" type="button">Cargar PUC base</button>
+          <button class="btn secondary" type="button" data-jump="comprobantes">Nuevo comprobante</button>
+        </div>
+      </div>
+      <div class="coacct-kpis">
+        <div class="coacct-kpi"><span>Cuentas PUC</span><strong id="kpiCuentas">0</strong></div>
+        <div class="coacct-kpi"><span>Terceros</span><strong id="kpiTerceros">0</strong></div>
+        <div class="coacct-kpi"><span>Comprobantes mes</span><strong id="kpiComp">0</strong></div>
+        <div class="coacct-kpi"><span>Débito mes</span><strong id="kpiDebito">$0</strong></div>
+        <div class="coacct-kpi"><span>Crédito mes</span><strong id="kpiCredito">$0</strong></div>
+        <div class="coacct-kpi"><span>Diferencia</span><strong id="kpiDif">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="coacct-card">
+      <div class="coacct-tabs">
+        <button class="coacct-tab is-active" type="button" data-panel="dashboard">Dashboard</button>
+        <button class="coacct-tab" type="button" data-panel="puc">PUC</button>
+        <button class="coacct-tab" type="button" data-panel="terceros">Terceros</button>
+        <button class="coacct-tab" type="button" data-panel="impuestos">Impuestos</button>
+        <button class="coacct-tab" type="button" data-panel="comprobantes">Comprobantes</button>
+        <button class="coacct-tab" type="button" data-panel="cierres">Cierres</button>
+        <button class="coacct-tab" type="button" data-panel="config">Configuración</button>
+      </div>
+    </section>
+
+    <section id="panel-dashboard" class="coacct-panel coacct-grid-2">
+      <article class="coacct-card"><h2>Últimos comprobantes</h2><div class="coacct-table-wrap"><table class="coacct-table"><thead><tr><th>Código</th><th>Tipo</th><th>Periodo</th><th>Concepto</th><th>Débito</th><th>Crédito</th><th>Estado</th></tr></thead><tbody id="dashboardBody"></tbody></table></div></article>
+      <article class="coacct-card"><h2>Estado de periodos</h2><div id="periodosSummary"></div></article>
+    </section>
+
+    <section id="panel-puc" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card">
+        <h2>Nueva cuenta PUC</h2>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="ctaCodigo">Código</label><input id="ctaCodigo" class="form-input" placeholder="110505"></div><div class="form-col"><label class="form-label" for="ctaNombre">Nombre</label><input id="ctaNombre" class="form-input" placeholder="Caja general"></div></div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="ctaNaturaleza">Naturaleza</label><select id="ctaNaturaleza" class="form-input"><option value="debito">Débito</option><option value="credito">Crédito</option></select></div><div class="form-col"><label class="form-label" for="ctaTipo">Tipo</label><select id="ctaTipo" class="form-input"><option value="auxiliar">Auxiliar</option><option value="mayor">Mayor</option></select></div><div class="form-col"><label class="form-label" for="ctaPadre">Cuenta padre</label><input id="ctaPadre" class="form-input"></div></div>
+        <label class="lic-superrol-item"><input id="ctaMovimiento" type="checkbox" checked> Acepta movimiento</label>
+        <label class="lic-superrol-item"><input id="ctaTercero" type="checkbox"> Requiere tercero</label>
+        <label class="lic-superrol-item"><input id="ctaImpuesto" type="checkbox"> Requiere impuesto</label>
+        <button id="btnSaveCuenta" class="btn" type="button">Guardar cuenta</button>
+      </article>
+      <article class="coacct-card"><h2>Plan de cuentas</h2><div class="coacct-table-wrap"><table class="coacct-table"><thead><tr><th>Código</th><th>Nombre</th><th>Naturaleza</th><th>Tipo</th><th>Movimiento</th></tr></thead><tbody id="cuentasBody"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-terceros" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card">
+        <h2>Nuevo tercero</h2>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="terTipoDoc">Tipo doc.</label><select id="terTipoDoc" class="form-input"><option>NIT</option><option>CC</option><option>CE</option><option>PA</option></select></div><div class="form-col"><label class="form-label" for="terDoc">Documento</label><input id="terDoc" class="form-input"></div><div class="form-col"><label class="form-label" for="terDV">DV</label><input id="terDV" class="form-input" maxlength="2"></div></div>
+        <label class="form-label" for="terNombre">Nombre o razón social</label><input id="terNombre" class="form-input">
+        <div class="form-row"><div class="form-col"><label class="form-label" for="terTipo">Tipo tercero</label><select id="terTipo" class="form-input"><option value="cliente_proveedor">Cliente y proveedor</option><option value="cliente">Cliente</option><option value="proveedor">Proveedor</option><option value="empleado">Empleado</option></select></div><div class="form-col"><label class="form-label" for="terRegimen">Régimen</label><select id="terRegimen" class="form-input"><option value="responsable_iva">Responsable IVA</option><option value="no_responsable_iva">No responsable IVA</option><option value="simple">Régimen simple</option><option value="gran_contribuyente">Gran contribuyente</option></select></div></div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="terEmail">Email</label><input id="terEmail" class="form-input"></div><div class="form-col"><label class="form-label" for="terTel">Teléfono</label><input id="terTel" class="form-input"></div></div>
+        <button id="btnSaveTercero" class="btn" type="button">Guardar tercero</button>
+      </article>
+      <article class="coacct-card"><h2>Terceros</h2><div class="coacct-table-wrap"><table class="coacct-table"><thead><tr><th>Documento</th><th>Nombre</th><th>Tipo</th><th>Régimen</th><th>Contacto</th></tr></thead><tbody id="tercerosBody"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-impuestos" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card">
+        <h2>Nuevo impuesto/retención</h2>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="impCodigo">Código</label><input id="impCodigo" class="form-input" placeholder="IVA19"></div><div class="form-col"><label class="form-label" for="impNombre">Nombre</label><input id="impNombre" class="form-input"></div></div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="impTipo">Tipo</label><select id="impTipo" class="form-input"><option value="iva">IVA</option><option value="retencion_fuente">Retefuente</option><option value="reteica">ReteICA</option><option value="reteiva">ReteIVA</option><option value="autorretencion">Autorretención</option></select></div><div class="form-col"><label class="form-label" for="impPorcentaje">%</label><input id="impPorcentaje" class="form-input" type="number" step=".001"></div></div>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="impDebito">Cuenta débito</label><input id="impDebito" class="form-input"></div><div class="form-col"><label class="form-label" for="impCredito">Cuenta crédito</label><input id="impCredito" class="form-input"></div></div>
+        <button id="btnSaveImpuesto" class="btn" type="button">Guardar impuesto</button>
+      </article>
+      <article class="coacct-card"><h2>Tabla tributaria</h2><div class="coacct-table-wrap"><table class="coacct-table"><thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>%</th><th>Cuentas</th></tr></thead><tbody id="impuestosBody"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-comprobantes" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card">
+        <h2>Nuevo comprobante</h2>
+        <div class="form-row"><div class="form-col"><label class="form-label" for="compTipo">Tipo</label><select id="compTipo" class="form-input"><option value="nota_contable">Nota contable</option><option value="comprobante_ingreso">Comprobante ingreso</option><option value="comprobante_egreso">Comprobante egreso</option><option value="causacion">Causación</option><option value="ajuste">Ajuste</option></select></div><div class="form-col"><label class="form-label" for="compFecha">Fecha</label><input id="compFecha" class="form-input" type="date"></div><div class="form-col"><label class="form-label" for="compPeriodo">Periodo</label><input id="compPeriodo" class="form-input" placeholder="2026-05"></div></div>
+        <label class="form-label" for="compConcepto">Concepto</label><input id="compConcepto" class="form-input" placeholder="Causación venta / pago proveedor / ajuste">
+        <div class="coacct-lines" id="lineasBox"></div>
+        <div class="coacct-actions"><button id="btnAddLinea" class="btn secondary" type="button">Agregar línea</button><button id="btnSaveComp" class="btn" type="button">Contabilizar</button></div>
+        <div class="form-help" id="balancePreview">Débito $0 · Crédito $0 · Diferencia $0</div>
+      </article>
+      <article class="coacct-card"><h2>Comprobantes</h2><div class="coacct-table-wrap"><table class="coacct-table"><thead><tr><th>Código</th><th>Fecha</th><th>Concepto</th><th>Débito</th><th>Crédito</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-cierres" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card"><h2>Cerrar periodo</h2><div class="form-row"><div class="form-col"><label class="form-label" for="cierrePeriodo">Periodo</label><input id="cierrePeriodo" class="form-input" placeholder="2026-05"></div></div><label class="form-label" for="cierreObs">Observaciones</label><textarea id="cierreObs" class="form-input" rows="3"></textarea><div class="coacct-actions"><button id="btnCerrarPeriodo" class="btn" type="button">Cerrar periodo</button><button id="btnReabrirPeriodo" class="btn secondary" type="button">Reabrir periodo</button></div></article>
+      <article class="coacct-card"><h2>Historial</h2><div id="periodosList"></div></article>
+    </section>
+
+    <section id="panel-config" class="coacct-panel coacct-grid-2" hidden>
+      <article class="coacct-card"><h2>Configuración</h2><div class="form-row"><div class="form-col"><label class="form-label" for="cfgNombre">Nombre</label><input id="cfgNombre" class="form-input"></div><div class="form-col"><label class="form-label" for="cfgMoneda">Moneda</label><input id="cfgMoneda" class="form-input" maxlength="3"></div></div><div class="form-row"><div class="form-col"><label class="form-label" for="cfgPeriodo">Periodo actual</label><input id="cfgPeriodo" class="form-input"></div><div class="form-col"><label class="form-label" for="cfgPuc">Versión PUC</label><input id="cfgPuc" class="form-input"></div><div class="form-col"><label class="form-label" for="cfgNiif">Base NIIF</label><input id="cfgNiif" class="form-input"></div></div><label class="lic-superrol-item"><input id="cfgBloquear" type="checkbox" checked> Bloquear movimientos en periodos cerrados</label><button id="btnSaveConfig" class="btn" type="button">Guardar configuración</button></article>
+      <article class="coacct-card"><h2>Reportes incluidos</h2><p>Libro diario, mayor auxiliar, balance de prueba, terceros, impuestos y base para información exógena DIAN. Los datos se generan desde comprobantes contabilizados por empresa.</p></article>
+    </section>
+
+    <div id="msg" class="coacct-msg"></div>
+  </main>
+  <script>
+  (function(){
+    var state={empresaID:getEmpresaID(),dashboard:null,cuentas:[],terceros:[],impuestos:[],comprobantes:[]};
+    var ids=["btnRefresh","btnSeed","kpiCuentas","kpiTerceros","kpiComp","kpiDebito","kpiCredito","kpiDif","dashboardBody","periodosSummary","periodosList","cuentasBody","tercerosBody","impuestosBody","comprobantesBody","lineasBox","balancePreview","msg","ctaCodigo","ctaNombre","ctaNaturaleza","ctaTipo","ctaPadre","ctaMovimiento","ctaTercero","ctaImpuesto","btnSaveCuenta","terTipoDoc","terDoc","terDV","terNombre","terTipo","terRegimen","terEmail","terTel","btnSaveTercero","impCodigo","impNombre","impTipo","impPorcentaje","impDebito","impCredito","btnSaveImpuesto","compTipo","compFecha","compPeriodo","compConcepto","btnAddLinea","btnSaveComp","cierrePeriodo","cierreObs","btnCerrarPeriodo","btnReabrirPeriodo","cfgNombre","cfgMoneda","cfgPeriodo","cfgPuc","cfgNiif","cfgBloquear","btnSaveConfig"];
+    var els={}; ids.forEach(function(id){els[id]=document.getElementById(id);});
+    function getEmpresaID(){try{var p=new URLSearchParams(location.search||"");var id=p.get("empresa_id")||p.get("id");if(id)return id;}catch(e){} try{if(parent&&parent.__resolveEmpresaIdContext)return String(parent.__resolveEmpresaIdContext()||"");}catch(e){} return "";}
+    function api(a){return "/api/empresa/contabilidad_colombia?empresa_id="+encodeURIComponent(state.empresaID)+(a?"&action="+encodeURIComponent(a):"");}
+    async function req(url,opt){var res=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));var text=await res.text();var data={};try{data=text?JSON.parse(text):{};}catch(e){data={error:text};}if(!res.ok)throw new Error(data.error||text||("HTTP "+res.status));return data;}
+    function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+    function money(v){try{return new Intl.NumberFormat("es-CO",{style:"currency",currency:(state.dashboard&&state.dashboard.config&&state.dashboard.config.moneda)||"COP",maximumFractionDigits:0}).format(Number(v||0));}catch(e){return "$"+Number(v||0).toFixed(0);}}
+    function msg(t,c){els.msg.textContent=t||"";els.msg.className="coacct-msg "+(c||"");}
+    function badge(t){var s=String(t||"");var k=s==="contabilizado"||s==="cerrado"?"ok":(s==="borrador"||s==="abierto"?"warn":(s==="anulado"?"danger":""));return '<span class="coacct-badge '+k+'">'+esc(s||"-")+'</span>';}
+    function showPanel(name){document.querySelectorAll(".coacct-tab").forEach(function(b){b.classList.toggle("is-active",b.dataset.panel===name);});document.querySelectorAll(".coacct-panel").forEach(function(p){p.hidden=p.id!=="panel-"+name;});}
+    async function load(){if(!state.empresaID){msg("Falta empresa_id en la URL.","error");return;}var all=await Promise.all([req(api("dashboard")),req(api("cuentas")),req(api("terceros")),req(api("impuestos")),req(api("comprobantes"))]);state.dashboard=all[0];state.cuentas=all[1]||[];state.terceros=all[2]||[];state.impuestos=all[3]||[];state.comprobantes=all[4]||[];render();}
+    function render(){var d=state.dashboard||{};els.kpiCuentas.textContent=d.cuentas||0;els.kpiTerceros.textContent=d.terceros||0;els.kpiComp.textContent=d.comprobantes_mes||0;els.kpiDebito.textContent=money(d.total_debito_mes);els.kpiCredito.textContent=money(d.total_credito_mes);els.kpiDif.textContent=money(d.diferencia_mes);fillConfig(d.config||{});renderComps(d.ultimos_comprobantes||[],els.dashboardBody,false);renderCuentas();renderTerceros();renderImpuestos();renderComps(state.comprobantes,els.comprobantesBody,true);renderPeriodos(d.periodos||[]);refreshBalance();}
+    function fillConfig(c){els.cfgNombre.value=c.nombre_sistema||"Contabilidad Colombia";els.cfgMoneda.value=c.moneda||"COP";els.cfgPeriodo.value=c.periodo_actual||new Date().toISOString().slice(0,7);els.cfgPuc.value=c.puc_version||"PUC Colombia base";els.cfgNiif.value=c.base_niif||"NIIF pymes";els.cfgBloquear.checked=c.bloquear_cierre!==false;els.compPeriodo.value=els.compPeriodo.value||els.cfgPeriodo.value;els.cierrePeriodo.value=els.cierrePeriodo.value||els.cfgPeriodo.value;}
+    function renderCuentas(){els.cuentasBody.innerHTML=state.cuentas.map(function(x){return "<tr><td><strong>"+esc(x.codigo)+"</strong></td><td>"+esc(x.nombre)+"</td><td>"+esc(x.naturaleza)+"</td><td>"+esc(x.tipo_cuenta)+"</td><td>"+(x.acepta_movimiento?"Sí":"No")+"</td></tr>";}).join("")||'<tr><td colspan="5"><div class="coacct-empty">Sin cuentas.</div></td></tr>';renderLineOptions();}
+    function renderTerceros(){els.tercerosBody.innerHTML=state.terceros.map(function(x){return "<tr><td>"+esc(x.tipo_documento)+" "+esc(x.documento)+"</td><td><strong>"+esc(x.nombre)+"</strong></td><td>"+esc(x.tipo_tercero)+"</td><td>"+esc(x.regimen_fiscal)+"</td><td>"+esc(x.email||x.telefono||"")+"</td></tr>";}).join("")||'<tr><td colspan="5"><div class="coacct-empty">Sin terceros.</div></td></tr>';renderLineOptions();}
+    function renderImpuestos(){els.impuestosBody.innerHTML=state.impuestos.map(function(x){return "<tr><td><strong>"+esc(x.codigo)+"</strong></td><td>"+esc(x.nombre)+"</td><td>"+esc(x.tipo)+"</td><td>"+Number(x.porcentaje||0)+"%</td><td>"+esc(x.cuenta_debito)+" / "+esc(x.cuenta_credito)+"</td></tr>";}).join("")||'<tr><td colspan="5"><div class="coacct-empty">Sin impuestos.</div></td></tr>';}
+    function renderComps(rows,body,actions){body.innerHTML=rows.map(function(x){return "<tr><td><strong>"+esc(x.codigo)+"</strong></td><td>"+esc(x.fecha_comprobante||x.tipo_comprobante)+"</td><td>"+esc(x.concepto)+"<div class='form-help'>"+esc(x.periodo_contable)+"</div></td><td>"+money(x.total_debito)+"</td><td>"+money(x.total_credito)+"</td><td>"+badge(x.estado)+"</td>"+(actions?"<td><button class='btn small danger' data-anular='"+Number(x.id)+"' type='button'>Anular</button></td>":"")+"</tr>";}).join("")||'<tr><td colspan="'+(actions?7:7)+'"><div class="coacct-empty">Sin comprobantes.</div></td></tr>';if(actions)body.querySelectorAll("[data-anular]").forEach(function(b){b.addEventListener("click",function(){anular(Number(b.dataset.anular));});});}
+    function renderPeriodos(rows){var html=rows.map(function(p){return '<div class="coacct-card" style="box-shadow:none;margin-bottom:8px;padding:12px"><strong>'+esc(p.periodo)+'</strong> '+badge(p.estado)+'<div class="form-help">Débito '+money(p.total_debito)+' · Crédito '+money(p.total_credito)+' · Diferencia '+money(p.diferencia)+'</div></div>';}).join("")||'<div class="coacct-empty">Sin periodos cerrados.</div>';els.periodosSummary.innerHTML=html;els.periodosList.innerHTML=html;}
+    function lineTemplate(){var idx=Date.now()+Math.random();return '<div class="coacct-line" data-line="'+idx+'"><div><label class="form-label">Cuenta</label><select class="form-input line-cuenta"></select></div><div><label class="form-label">Débito</label><input class="form-input line-debito" type="number" step=".01" value="0"></div><div><label class="form-label">Crédito</label><input class="form-input line-credito" type="number" step=".01" value="0"></div><button class="btn danger line-remove" type="button">Quitar</button><div style="grid-column:1/-1"><input class="form-input line-detalle" placeholder="Detalle de la línea"></div></div>';}
+    function addLine(){els.lineasBox.insertAdjacentHTML("beforeend",lineTemplate());renderLineOptions();els.lineasBox.querySelectorAll("input,select").forEach(function(n){n.oninput=refreshBalance;});els.lineasBox.querySelectorAll(".line-remove").forEach(function(b){b.onclick=function(){b.closest(".coacct-line").remove();refreshBalance();};});refreshBalance();}
+    function renderLineOptions(){var opts=state.cuentas.filter(function(c){return c.acepta_movimiento!==false;}).map(function(c){return '<option value="'+esc(c.codigo)+'">'+esc(c.codigo+" - "+c.nombre)+'</option>';}).join("");els.lineasBox.querySelectorAll(".line-cuenta").forEach(function(s){var v=s.value;s.innerHTML=opts;s.value=v||s.value;});}
+    function refreshBalance(){var deb=0,cred=0;els.lineasBox.querySelectorAll(".coacct-line").forEach(function(l){deb+=Number(l.querySelector(".line-debito").value||0);cred+=Number(l.querySelector(".line-credito").value||0);});els.balancePreview.textContent="Débito "+money(deb)+" · Crédito "+money(cred)+" · Diferencia "+money(deb-cred);}
+    async function saveCuenta(){await req(api("cuentas"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({codigo:els.ctaCodigo.value,nombre:els.ctaNombre.value,naturaleza:els.ctaNaturaleza.value,tipo_cuenta:els.ctaTipo.value,cuenta_padre:els.ctaPadre.value,acepta_movimiento:els.ctaMovimiento.checked,tercero_requerido:els.ctaTercero.checked,impuesto_requerido:els.ctaImpuesto.checked})});msg("Cuenta guardada.","success");await load();}
+    async function saveTercero(){await req(api("terceros"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo_documento:els.terTipoDoc.value,documento:els.terDoc.value,digito_verificacion:els.terDV.value,nombre:els.terNombre.value,tipo_tercero:els.terTipo.value,regimen_fiscal:els.terRegimen.value,email:els.terEmail.value,telefono:els.terTel.value})});msg("Tercero guardado.","success");await load();}
+    async function saveImpuesto(){await req(api("impuestos"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({codigo:els.impCodigo.value,nombre:els.impNombre.value,tipo:els.impTipo.value,porcentaje:Number(els.impPorcentaje.value||0),cuenta_debito:els.impDebito.value,cuenta_credito:els.impCredito.value})});msg("Impuesto guardado.","success");await load();}
+    async function saveComp(){var lineas=[];els.lineasBox.querySelectorAll(".coacct-line").forEach(function(l){lineas.push({cuenta_codigo:l.querySelector(".line-cuenta").value,detalle:l.querySelector(".line-detalle").value,debito:Number(l.querySelector(".line-debito").value||0),credito:Number(l.querySelector(".line-credito").value||0)});});await req(api("comprobantes"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo_comprobante:els.compTipo.value,fecha_comprobante:els.compFecha.value||new Date().toISOString().slice(0,10),periodo_contable:els.compPeriodo.value,concepto:els.compConcepto.value,lineas:lineas})});msg("Comprobante contabilizado.","success");await load();}
+    async function anular(id){if(!confirm("Anular comprobante?"))return;await req(api("anular_comprobante"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:id})});msg("Comprobante anulado.","success");await load();}
+    async function periodo(action){await req(api(action),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({periodo:els.cierrePeriodo.value,observaciones:els.cierreObs.value})});msg("Periodo actualizado.","success");await load();}
+    async function saveConfig(){await req(api("config"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre_sistema:els.cfgNombre.value,moneda:els.cfgMoneda.value,periodo_actual:els.cfgPeriodo.value,puc_version:els.cfgPuc.value,base_niif:els.cfgNiif.value,bloquear_cierre:els.cfgBloquear.checked})});msg("Configuración guardada.","success");await load();}
+    document.querySelectorAll(".coacct-tab").forEach(function(b){b.onclick=function(){showPanel(b.dataset.panel);};});document.querySelectorAll("[data-jump]").forEach(function(b){b.onclick=function(){showPanel(b.dataset.jump);};});
+    els.btnRefresh.onclick=function(){load().catch(function(e){msg(e.message,"error");});};els.btnSeed.onclick=function(){req(api("seed"),{method:"POST"}).then(load).then(function(){msg("PUC base cargado.","success");}).catch(function(e){msg(e.message,"error");});};
+    els.btnSaveCuenta.onclick=function(){saveCuenta().catch(function(e){msg(e.message,"error");});};els.btnSaveTercero.onclick=function(){saveTercero().catch(function(e){msg(e.message,"error");});};els.btnSaveImpuesto.onclick=function(){saveImpuesto().catch(function(e){msg(e.message,"error");});};els.btnAddLinea.onclick=addLine;els.btnSaveComp.onclick=function(){saveComp().catch(function(e){msg(e.message,"error");});};els.btnCerrarPeriodo.onclick=function(){periodo("cerrar_periodo").catch(function(e){msg(e.message,"error");});};els.btnReabrirPeriodo.onclick=function(){periodo("reabrir_periodo").catch(function(e){msg(e.message,"error");});};els.btnSaveConfig.onclick=function(){saveConfig().catch(function(e){msg(e.message,"error");});};
+    addLine();addLine();load().catch(function(e){msg(e.message,"error");});
+  })();
+  </script>
+</body>
+</html>

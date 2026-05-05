@@ -1,3 +1,30 @@
+2026-05-05: Contabilidad Colombia NIIF/DIAN
+- Modulos afectados: `contabilidad_colombia`, `finanzas`, `facturacion`, `roles/licencias`, `administrar_empresa`
+- Cambio funcional: se agrega el modulo `Contabilidad Colombia` en Administrar empresa > Finanzas y cumplimiento como capa contable/legal independiente de finanzas operativas.
+- Backend: nueva API `/api/empresa/contabilidad_colombia` con dashboard, configuracion, PUC, terceros, impuestos, comprobantes de doble partida, anulacion, cierre y reapertura de periodos.
+- Base de datos: nuevas tablas `empresa_contabilidad_colombia_config`, `empresa_contabilidad_colombia_cuentas`, `empresa_contabilidad_colombia_terceros`, `empresa_contabilidad_colombia_impuestos`, `empresa_contabilidad_colombia_comprobantes`, `empresa_contabilidad_colombia_lineas` y `empresa_contabilidad_colombia_periodos`, todas aisladas por `empresa_id`.
+- Seguridad: modulo de licencia `contabilidad_colombia`, pagina `linkContabilidadColombia`, wrapper `WithEmpresaContabilidadColombiaPermissions` y roles contables con acciones diferenciadas.
+- Frontend: `web/administrar_empresa/contabilidad_colombia.html` incluye dashboard, PUC, terceros, impuestos, comprobantes, cierres y configuracion con apariencia centralizada.
+- Documentacion: se agrega `documentos/contabilidad_colombia.md`.
+
+2026-05-05: Suite Contable Colombia Avanzada
+- Modulos afectados: `contabilidad_colombia_avanzada`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`, `DIAN`.
+- Cambio funcional: se agrega una suite profesional con submodulos de informacion exogena/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales.
+- Backend: nueva API `/api/empresa/contabilidad_colombia_avanzada` con dashboard, formatos exogena, registros, generacion desde asientos, nomina electronica, documentos soporte, activos, cartera y libros.
+- Base de datos: nuevas tablas `empresa_contabilidad_exogena_formatos`, `empresa_contabilidad_exogena_registros`, `empresa_contabilidad_nomina_electronica`, `empresa_contabilidad_documentos_soporte`, `empresa_contabilidad_activos_fijos` y `empresa_contabilidad_cartera_cxp`, todas aisladas por `empresa_id`.
+- Seguridad: modulo de licencia `contabilidad_colombia_avanzada`, pagina `linkContabilidadColombiaAvanzada`, wrapper `WithEmpresaContabilidadColombiaAvanzadaPermissions` y acciones contables para roles de contabilidad.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` incluye pestañas profesionales para cada submodulo con formularios, tablas, KPIs y generacion de libros.
+- Documentacion: se agrega `documentos/contabilidad_colombia_avanzada.md`.
+
+2026-05-05: Apartamentos turísticos - alquiler vacacional profesional
+- Modulos afectados: `apartamentos_turisticos`, `administrar_empresa`, `roles/licencias`, `reservas`, `limpieza/mantenimiento`
+- Cambio funcional: se agrega `Apartamentos turísticos` en Administrar empresa > Operación y ventas para gestionar alquiler vacacional por empresa con apartamentos, suites, casas, estudios o cabañas.
+- Backend: nueva API `/api/empresa/apartamentos_turisticos` con dashboard, configuración, unidades, tarifas, reservas, check-in, checkout, cancelación, estados de apartamento y tareas operativas.
+- Base de datos: nuevas tablas `empresa_apartamentos_turisticos_config`, `empresa_apartamentos_turisticos_unidades`, `empresa_apartamentos_turisticos_tarifas`, `empresa_apartamentos_turisticos_reservas` y `empresa_apartamentos_turisticos_tareas`, todas aisladas por `empresa_id`.
+- Seguridad: modulo independiente `apartamentos_turisticos`, pagina `linkApartamentosTuristicos`, wrapper `WithEmpresaApartamentosTuristicosPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/apartamentos_turisticos.html` incluye dashboard, inventario de unidades, tarifas por canal/temporada, reservas, tareas de limpieza/mantenimiento y configuración operacional con apariencia centralizada.
+- Documentación: se agrega `documentos/apartamentos_turisticos.md`.
+
 2026-05-05: Carnets empresariales profesionales
 - Modulos afectados: `carnets`, `usuarios`, `roles/licencias`, `administrar_empresa`, `portal_publico`
 - Cambio funcional: se agrega `Carnets` en Administrar empresa > Personas y activos para emitir carnets modernos de empleados, usuarios internos, contratistas, visitantes, temporales y directivos.
@@ -1440,3 +1467,5 @@ Criterio de esta guia:
 Referencia compacta: `documentos/reporte_estado_modulos_2026-05-03.md`.
 
 Cambios documentados: estaciones operativas con tarjetas adaptables al texto, carrito reparado desde estacion, pago con retorno automatico a estaciones, panel empresarial con `USD / COP` primero, configuracion de estaciones ampliada y despliegue VPS validado. Los modulos principales se clasifican como operativos, implementados o integrados segun su madurez real. Los modulos que usan hardware o servicios externos quedan sujetos a validacion en sitio y credenciales productivas.
+Parqueadero y tickets QR
+- Modulo empresarial por empresa_id para registrar ingreso de vehiculos, emitir ticket, generar QR de salida, calcular cobros automaticamente por tiempo/fracciones/tolerancia y cerrar la salida con recibo imprimible.

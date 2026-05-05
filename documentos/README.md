@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-05
-Estado: vigente, actualizado con domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
+Estado: vigente, actualizado con suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-05: agregado modulo `Contabilidad Colombia avanzada` con informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP, libros oficiales, API `/api/empresa/contabilidad_colombia_avanzada`, pagina administrativa y control por licencia `contabilidad_colombia_avanzada`.
 - 2026-05-05: agregado modulo profesional `Carnets empresariales` con API `/api/empresa/carnets`, pagina `administrar_empresa/carnets.html`, plantillas, QR, exportacion, bitacora y control por licencia `carnets`.
 - 2026-05-05: rectificado el aislamiento multiempresa de todos los modulos privados `/api/empresa/...`; los wrappers `WithEmpresa*` rechazan inconsistencias de `empresa_id` entre URL, cabecera, formulario/multipart y JSON.
 - 2026-05-05: creado `documentos/reporte_estado_modulos_2026-05-05.md` como corte integral del estado actual de modulos, portal publico, carta QR, Motel Calipso, domicilios, Taxi System, roles/licencias, apariencia y base de datos.
@@ -47,6 +48,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
+- Suite contable Colombia avanzada: `documentos/contabilidad_colombia_avanzada.md`
 - Carnets empresariales: `documentos/carnets_empresariales.md`
 - Reporte de estado integral vigente: `documentos/reporte_estado_modulos_2026-05-05.md`
 - Taxi System profesional y GPS: `documentos/taxi_system_profesional.md`

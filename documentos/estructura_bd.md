@@ -26,6 +26,15 @@ Actualizacion 2026-05-05 (carnets empresariales por empresa)
 - `empresa_carnets_eventos`: bitacora por `empresa_id` y `carnet_id` para emision, actualizacion, suspension, revocacion, vencimiento e impresion/exportacion.
 - El modulo se expone por `/api/empresa/carnets` con wrapper `WithEmpresaCarnetsPermissions`; no comparte carnets entre empresas.
 
+Actualizacion 2026-05-05 (suite contable Colombia avanzada)
+- `empresa_contabilidad_exogena_formatos`: formatos DIAN/medios magneticos configurables por `empresa_id`, formato, version, año gravable, concepto, periodicidad, estado y ultima generacion.
+- `empresa_contabilidad_exogena_registros`: registros por tercero/formato para exogena, con documento, razon social, cuenta, base, IVA, retencion, total, validaciones y estado.
+- `empresa_contabilidad_nomina_electronica`: documentos de nomina electronica por empleado/documento y periodo, con salario, devengados, deducciones, total, CUNE, estado DIAN, respuesta y payload.
+- `empresa_contabilidad_documentos_soporte`: documentos soporte electronicos para compras a no obligados a facturar, con proveedor, periodo, subtotal, IVA, retenciones, total, CUDS, estado DIAN y payload.
+- `empresa_contabilidad_activos_fijos`: activos fijos por empresa con costo, valor residual, vida util, depreciacion mensual/acumulada, valor en libros y cuentas contables.
+- `empresa_contabilidad_cartera_cxp`: cuentas por cobrar y por pagar con tercero, documento, vencimiento, valor original, valor pagado, saldo, estado y referencia externa.
+- El modulo reutiliza `empresa_contabilidad_colombia_comprobantes` y `empresa_contabilidad_colombia_lineas` para generar libros oficiales y registros de exogena sin duplicar el PUC ni los asientos.
+
 Actualizacion 2026-05-05 (venta publica, carta QR y red social Motel Calipso)
 - No introduce tablas nuevas; consolida el uso productivo de las tablas existentes de publicacion externa.
 - `empresa_venta_publica_configuracion` mantiene la configuracion publica por empresa, incluyendo slug, estado visible y datos comerciales.

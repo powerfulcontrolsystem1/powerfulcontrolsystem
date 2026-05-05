@@ -719,6 +719,14 @@ func main() {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_finanzas_schema")
+	if err := dbpkg.EnsureEmpresaContabilidadColombiaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure contabilidad colombia schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_contabilidad_colombia_schema")
+	if err := dbpkg.EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure contabilidad colombia avanzada schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_contabilidad_colombia_avanzada_schema")
 	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
 	}
@@ -735,6 +743,12 @@ func main() {
 	}
 	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaParqueaderoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure parqueadero empresa schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaApartamentosTuristicosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure apartamentos turisticos empresa schema in empresas db: %v", err)
 	}
 	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
@@ -890,6 +904,8 @@ func main() {
 	http.HandleFunc("/api/empresa/gimnasio", handlers.WithEmpresaGimnasioPermissions(dbEmpresas, dbSuper, handlers.EmpresaGimnasioHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/taxi_system", handlers.WithEmpresaTaxiSystemPermissions(dbEmpresas, dbSuper, handlers.EmpresaTaxiSystemHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/domicilios", handlers.WithEmpresaDomiciliosPermissions(dbEmpresas, dbSuper, handlers.EmpresaDomiciliosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/parqueadero", handlers.WithEmpresaParqueaderoPermissions(dbEmpresas, dbSuper, handlers.EmpresaParqueaderoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/apartamentos_turisticos", handlers.WithEmpresaApartamentosTuristicosPermissions(dbEmpresas, dbSuper, handlers.EmpresaApartamentosTuristicosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/alquileres", handlers.WithEmpresaAlquileresPermissions(dbEmpresas, dbSuper, handlers.EmpresaAlquileresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/odontologia", handlers.WithEmpresaOdontologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaOdontologiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/turnos_atencion", handlers.WithEmpresaTurnosAtencionPermissions(dbEmpresas, dbSuper, handlers.EmpresaTurnosAtencionHandler(dbEmpresas)))
@@ -906,6 +922,7 @@ func main() {
 	http.HandleFunc("/api/public/turnos_atencion", handlers.PublicTurnosAtencionHandler(dbEmpresas))
 	http.HandleFunc("/api/public/taxi_system", handlers.PublicTaxiSystemHandler(dbEmpresas))
 	http.HandleFunc("/api/public/domicilios", handlers.PublicDomiciliosHandler(dbEmpresas))
+	http.HandleFunc("/api/public/parqueadero", handlers.PublicParqueaderoHandler(dbEmpresas))
 	http.HandleFunc("/api/public/estacion_vip", handlers.PublicEstacionVIPHandler(dbEmpresas))
 	http.HandleFunc("/api/public/chat_portal", handlers.PublicPortalCompanyChatHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/public/chat_portal_stream", handlers.PublicPortalCompanyChatStreamHandler(dbEmpresas, dbSuper))
@@ -955,6 +972,8 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))

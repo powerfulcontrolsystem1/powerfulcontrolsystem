@@ -28,6 +28,8 @@ const (
 	permModuleVentas           = "ventas"
 	permModuleInventario       = "inventario"
 	permModuleFinanzas         = "finanzas"
+	permModuleContabilidadCO   = "contabilidad_colombia"
+	permModuleContabilidadCOAv = "contabilidad_colombia_avanzada"
 	permModuleClientes         = "clientes"
 	permModuleCompras          = "compras"
 	permModuleFacturacion      = "facturacion"
@@ -36,6 +38,8 @@ const (
 	permModuleGimnasio         = "gimnasio"
 	permModuleTaxiSystem       = "taxi_system"
 	permModuleDomicilios       = "domicilios"
+	permModuleParqueadero      = "parqueadero"
+	permModuleApartTuristicos  = "apartamentos_turisticos"
 	permModuleAlquileres       = "alquileres"
 	permModuleOdontologia      = "odontologia"
 	permModuleTurnos           = "turnos_atencion"
@@ -144,6 +148,8 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleVentas,
 	permModuleInventario,
 	permModuleFinanzas,
+	permModuleContabilidadCO,
+	permModuleContabilidadCOAv,
 	permModuleClientes,
 	permModuleCompras,
 	permModuleFacturacion,
@@ -152,6 +158,8 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleGimnasio,
 	permModuleTaxiSystem,
 	permModuleDomicilios,
+	permModuleParqueadero,
+	permModuleApartTuristicos,
 	permModuleAlquileres,
 	permModuleOdontologia,
 	permModuleTurnos,
@@ -181,6 +189,8 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleVentas:           "Ventas y servicio al cliente",
 	permModuleInventario:       "Inventario y almacén",
 	permModuleFinanzas:         "Finanzas, caja y reportes",
+	permModuleContabilidadCO:   "Contabilidad Colombia NIIF/DIAN",
+	permModuleContabilidadCOAv: "Suite contable Colombia avanzada",
 	permModuleClientes:         "Clientes y cartera comercial",
 	permModuleCompras:          "Compras y proveedores",
 	permModuleFacturacion:      "Facturación electrónica (DIAN)",
@@ -189,6 +199,8 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleGimnasio:         "Gimnasio y membresias",
 	permModuleTaxiSystem:       "Taxi system y despacho GPS",
 	permModuleDomicilios:       "Domicilios y delivery",
+	permModuleParqueadero:      "Parqueadero y tickets QR",
+	permModuleApartTuristicos:  "Apartamentos turisticos",
 	permModuleAlquileres:       "Alquileres de equipos y vehiculos",
 	permModuleOdontologia:      "Odontologia y agenda clinica",
 	permModuleTurnos:           "Turnos de atencion",
@@ -227,6 +239,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTaxiSystem", Modulo: permModuleTaxiSystem, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Operación y venta"},
 	{PaginaClave: "linkDomicilios", Modulo: permModuleDomicilios, Accion: permActionCreate, Titulo: "Domicilios y delivery", Grupo: "Operación y venta"},
+	{PaginaClave: "linkParqueadero", Modulo: permModuleParqueadero, Accion: permActionCreate, Titulo: "Parqueadero y tickets QR", Grupo: "Operación y venta"},
+	{PaginaClave: "linkApartamentosTuristicos", Modulo: permModuleApartTuristicos, Accion: permActionCreate, Titulo: "Apartamentos turisticos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkAlquileres", Modulo: permModuleAlquileres, Accion: permActionCreate, Titulo: "Alquiler de equipos y vehículos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Clientes"},
 	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación y venta"},
@@ -259,6 +273,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkContabilidadColombia", Modulo: permModuleContabilidadCO, Accion: permActionCreate, Titulo: "Contabilidad Colombia NIIF/DIAN", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkContabilidadColombiaAvanzada", Modulo: permModuleContabilidadCOAv, Accion: permActionCreate, Titulo: "Suite contable Colombia avanzada", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
@@ -575,6 +591,16 @@ func WithEmpresaFinanzasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFun
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFinanzas, resolveFinanzasPermissionAction, next)
 }
 
+// WithEmpresaContabilidadColombiaPermissions aplica permisos independientes para contabilidad legal colombiana.
+func WithEmpresaContabilidadColombiaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleContabilidadCO, resolveContabilidadColombiaPermissionAction, next)
+}
+
+// WithEmpresaContabilidadColombiaAvanzadaPermissions aplica permisos para exogena, nomina DIAN, activos y libros oficiales.
+func WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleContabilidadCOAv, resolveContabilidadColombiaAvanzadaPermissionAction, next)
+}
+
 // WithEmpresaClientesPermissions aplica control de alcance por empresa y permisos por rol para clientes.
 func WithEmpresaClientesPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleClientes, resolveClientesPermissionAction, next)
@@ -613,6 +639,16 @@ func WithEmpresaTaxiSystemPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerF
 // WithEmpresaDomiciliosPermissions aplica permisos independientes para domicilios.
 func WithEmpresaDomiciliosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDomicilios, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaParqueaderoPermissions aplica permisos independientes para parqueadero.
+func WithEmpresaParqueaderoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleParqueadero, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaApartamentosTuristicosPermissions aplica permisos independientes para apartamentos turisticos.
+func WithEmpresaApartamentosTuristicosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleApartTuristicos, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaAlquileresPermissions aplica permisos independientes para alquileres.
@@ -1295,6 +1331,30 @@ func resolveFinanzasPermissionAction(r *http.Request) string {
 	return defaultPermissionActionFromMethod(r.Method)
 }
 
+func resolveContabilidadColombiaPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "cerrar_periodo", "reabrir_periodo", "seed":
+		return permActionApprove
+	case "anular_comprobante":
+		return permActionDelete
+	case "config", "cuentas", "terceros", "impuestos", "comprobantes":
+		return defaultPermissionActionFromMethod(r.Method)
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveContabilidadColombiaAvanzadaPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "seed", "generar_exogena", "libros", "libros_resumen":
+		return permActionApprove
+	case "exogena_formatos", "exogena_registros", "nomina_electronica", "documentos_soporte", "activos_fijos", "cartera_cxp":
+		return defaultPermissionActionFromMethod(r.Method)
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
 func resolveClientesPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	if action == "activar" || action == "desactivar" {
@@ -1427,7 +1487,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
 		}
 
-	case permModuleVentaPublica, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleAlquileres, permModuleOdontologia, permModuleTurnos, permModuleCarnets:
+	case permModuleVentaPublica, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleParqueadero, permModuleApartTuristicos, permModuleAlquileres, permModuleOdontologia, permModuleTurnos, permModuleCarnets:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -1445,7 +1505,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario")
 		}
 
-	case permModuleFinanzas:
+	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2059,6 +2119,10 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkCorteCaja"
 	case strings.HasPrefix(path, "/api/empresa/finanzas/"):
 		return "linkFinanzas"
+	case path == "/api/empresa/contabilidad_colombia":
+		return "linkContabilidadColombia"
+	case path == "/api/empresa/contabilidad_colombia_avanzada":
+		return "linkContabilidadColombiaAvanzada"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):
@@ -2113,6 +2177,10 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTaxiSystem"
 	case path == "/api/empresa/domicilios":
 		return "linkDomicilios"
+	case path == "/api/empresa/parqueadero":
+		return "linkParqueadero"
+	case path == "/api/empresa/apartamentos_turisticos":
+		return "linkApartamentosTuristicos"
 	case path == "/api/empresa/alquileres":
 		return "linkAlquileres"
 	case path == "/api/empresa/odontologia":

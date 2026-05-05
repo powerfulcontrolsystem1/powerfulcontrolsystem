@@ -475,6 +475,136 @@ html[data-theme="dark-emerald"] {
   --ambient-glow: rgba(36,210,154,0.2);
 }
 
+/* Robot IA/secretaria: zona segura para no bloquear botones de las paginas. */
+.robot-inline-visible .ai-chat-toggle-button.is-robot-avatar,
+.robot-inline-visible .ai-chat-toggle-button.is-robot-avatar #robotAvatarGraphic,
+.robot-inline-visible .ai-chat-toggle-button.is-robot-avatar .robot-3d-avatar,
+.robot-inline-visible .ai-chat-toggle-button.is-robot-avatar .secretary-3d-avatar{
+  pointer-events:none !important;
+}
+
+.robot-inline-visible .robot-inline-status,
+.robot-inline-visible .robot-cloud-assistant,
+.robot-inline-visible .robot-cloud-user{
+  pointer-events:none !important;
+}
+
+.robot-inline-visible .robot-inline-chat-panel{
+  right:clamp(176px, 18vw, 224px) !important;
+  bottom:max(72px, env(safe-area-inset-bottom, 0px) + 56px) !important;
+  width:min(390px, calc(100vw - clamp(320px, 36vw, 430px))) !important;
+}
+
+.robot-inline-visible .robot-cloud-input,
+.robot-inline-visible .robot-assistant-actions,
+.robot-inline-visible .robot-cloud-input *,
+.robot-inline-visible .robot-assistant-actions *{
+  pointer-events:auto !important;
+}
+
+.robot-inline-visible #robotHideBtn,
+#robotShowBtn{
+  pointer-events:auto !important;
+  z-index:1686 !important;
+}
+
+@media (max-width: 900px){
+  .robot-inline-visible .robot-inline-chat-panel{
+    left:12px !important;
+    right:112px !important;
+    bottom:max(18px, env(safe-area-inset-bottom, 0px) + 12px) !important;
+    width:auto !important;
+    align-items:stretch !important;
+    gap:8px !important;
+  }
+
+  .robot-inline-visible .robot-inline-status,
+  .robot-inline-visible .robot-cloud-assistant,
+  .robot-inline-visible .robot-cloud-input,
+  .robot-inline-visible .robot-assistant-actions{
+    width:100% !important;
+    align-self:stretch !important;
+  }
+
+  .robot-inline-visible .robot-cloud-assistant{
+    max-height:88px !important;
+    overflow:auto !important;
+    font-size:.8rem !important;
+    padding:9px 10px !important;
+  }
+
+  .robot-inline-visible .robot-cloud-input{
+    grid-template-columns:minmax(0,1fr) auto auto auto !important;
+  }
+
+  .robot-inline-visible #robotHideBtn{
+    right:12px !important;
+    bottom:max(134px, env(safe-area-inset-bottom, 0px) + 126px) !important;
+  }
+}
+
+@media (max-width: 520px){
+  .robot-inline-visible .ai-chat-toggle-button.is-robot-avatar{
+    width:74px !important;
+    height:90px !important;
+    right:8px !important;
+    bottom:max(8px, env(safe-area-inset-bottom, 0px) + 6px) !important;
+    opacity:.86 !important;
+  }
+
+  .robot-inline-visible #robotAvatarGraphic,
+  .robot-inline-visible .robot-3d-avatar,
+  .robot-inline-visible .secretary-3d-avatar{
+    width:74px !important;
+    height:90px !important;
+  }
+
+  .robot-inline-visible .robot-inline-chat-panel{
+    left:8px !important;
+    right:90px !important;
+    bottom:max(8px, env(safe-area-inset-bottom, 0px) + 6px) !important;
+  }
+
+  .robot-inline-visible .robot-inline-status{
+    display:none !important;
+  }
+
+  .robot-inline-visible .robot-cloud-input{
+    grid-template-columns:minmax(0,1fr) auto auto auto !important;
+    padding:6px !important;
+    gap:5px !important;
+  }
+
+  .robot-inline-visible .robot-cloud-input textarea{
+    min-height:34px !important;
+    max-height:84px !important;
+    font-size:.84rem !important;
+  }
+
+  .robot-inline-visible .robot-cloud-input button{
+    min-height:34px !important;
+    padding-inline:7px !important;
+    font-size:.74rem !important;
+  }
+
+  .robot-inline-visible .robot-cloud-input .robot-inline-mic,
+  .robot-inline-visible .robot-cloud-input .robot-inline-stop-voice{
+    width:30px !important;
+    min-width:30px !important;
+  }
+
+  .robot-inline-visible #robotHideBtn{
+    right:8px !important;
+    bottom:max(104px, env(safe-area-inset-bottom, 0px) + 98px) !important;
+    max-width:86px !important;
+    min-height:30px !important;
+    padding:4px 7px !important;
+    font-size:.68rem !important;
+    line-height:1.1 !important;
+    text-align:center !important;
+  }
+}
+
 /* Iconos de menu: se aplican al final para que ningun ajuste movil los convierta en iconos gigantes o monocromaticos. */
 .admin-sidebar .nav a img.icon{
   width:28px !important;
