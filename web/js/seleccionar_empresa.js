@@ -404,6 +404,114 @@
     var normalized = normalizeCompanyTypeName(tipoNombre);
     var visualRules = [
       {
+        pattern: /(hotel|hostal|hosped|apartahotel|resort|alojamiento)/,
+        tone: "lodging",
+        icon: "/img/hotel-logo.svg",
+        alt: "Logo de hotel",
+        eyebrow: "Operacion hotelera",
+        activeCopy: "Gestion preparada para reservas, recepcion, habitaciones, tarifas por dia y seguimiento operativo.",
+        pendingCopy: "Activa la licencia para gestionar hospedaje, recepcion y trazabilidad por habitacion."
+      },
+      {
+        pattern: /(\bbar\b|\bpub\b|licoreria|discoteca|coctel|bebida|barra)/,
+        tone: "food",
+        icon: "/img/bar-logo.svg",
+        alt: "Logo de bar",
+        eyebrow: "Barra y eventos",
+        activeCopy: "Operacion lista para bebidas, mesas, barra, eventos, consumos y caja.",
+        pendingCopy: "Configura la licencia para activar control de barra, mesas, inventario y cobros."
+      },
+      {
+        pattern: /(gimnasio|gym|fitness|entrenamiento|deporte)/,
+        tone: "health",
+        icon: "/img/gym-logo.svg",
+        alt: "Logo de gimnasio",
+        eyebrow: "Planes y socios",
+        activeCopy: "Gestion lista para membresias, socios, entrenadores, clases y control de accesos.",
+        pendingCopy: "Activa la licencia para operar planes, renovaciones, clases y recaudo de socios."
+      },
+      {
+        pattern: /(odontologia|odontologico|dental|dentista|consultorio dental)/,
+        tone: "health",
+        icon: "/img/dental-logo.svg",
+        alt: "Logo de odontologia",
+        eyebrow: "Atencion clinica",
+        activeCopy: "Gestion lista para pacientes, agenda, tratamientos, presupuestos y recaudo por consulta.",
+        pendingCopy: "Activa la licencia para organizar consultorios, profesionales y tratamientos odontologicos."
+      },
+      {
+        pattern: /(turno|turnos|fila|colas|ticket|llamado|atencion al cliente)/,
+        tone: "queue",
+        icon: "/img/turnos-logo.svg",
+        alt: "Logo de manejo de turnos",
+        eyebrow: "Turnos y llamados",
+        activeCopy: "Operacion preparada para emitir turnos, llamar clientes y monitorear puestos de atencion.",
+        pendingCopy: "Activa la licencia para ordenar servicios, puestos, pantalla publica y flujo de atencion."
+      },
+      {
+        pattern: /(vehiculo|vehiculos|flota|flotas|parqueadero|transporte|automotor)/,
+        tone: "fleet",
+        icon: "/img/vehiculos-flotas-logo.svg",
+        alt: "Logo de vehiculos y flotas",
+        eyebrow: "Vehiculos y flotas",
+        activeCopy: "Empresa lista para registro de vehiculos, hoja de vida, mantenimientos, alertas y permanencia.",
+        pendingCopy: "Activa la licencia para gestionar flota, historiales, mantenimientos y control operativo."
+      },
+      {
+        pattern: /(pyme|pymes|empresa general|microempresa|negocio general)/,
+        tone: "generic",
+        icon: "/img/pymes-logo.svg",
+        alt: "Logo de pymes",
+        eyebrow: "Gestion empresarial",
+        activeCopy: "Empresa lista para venta directa, inventario, servicios, usuarios y control administrativo.",
+        pendingCopy: "Activa la licencia para administrar ventas, catalogo, caja y operaciones de la pyme."
+      },
+      {
+        pattern: /(sensor|sensores|monitoreo|raspberry|iot|acceso|control electrico|puerta|alarma)/,
+        tone: "sensor",
+        icon: "/img/sensores-logo.svg",
+        alt: "Logo de sensores y monitoreo",
+        eyebrow: "Sensores y monitoreo",
+        activeCopy: "Operacion lista para sensores, accesos, dispositivos, alertas y monitoreo en tiempo real.",
+        pendingCopy: "Activa la licencia para conectar dispositivos, controlar accesos y auditar eventos."
+      },
+      {
+        pattern: /(agencia|marketing|publicidad|digital|red social|redes sociales|contenido|media|estudio creativo|creador)/,
+        tone: "digital",
+        icon: "/img/redes-sociales-logo.svg",
+        alt: "Logo de redes sociales",
+        eyebrow: "Canales y servicios digitales",
+        activeCopy: "Negocio listo para organizar clientes, tareas, cobros y seguimiento comercial de servicios digitales.",
+        pendingCopy: "Configura la licencia para convertir esta cuenta en un centro operativo de servicios digitales."
+      },
+      {
+        pattern: /(salon|belleza|spa|estetica|peluqueria|barberia|manicure|cosmetica)/,
+        tone: "services",
+        icon: "/img/salon-belleza-logo.svg",
+        alt: "Logo de salon de belleza",
+        eyebrow: "Agenda y servicios",
+        activeCopy: "Empresa lista para servicios, agenda, estilistas, comisiones y cobro por atencion.",
+        pendingCopy: "Activa la licencia para organizar sillas, agenda, servicios y comisiones del salon."
+      },
+      {
+        pattern: /(lavadero|lavado|autolavado|car wash|lavanderia de autos)/,
+        tone: "services",
+        icon: "/img/lavadero-autos-logo.svg",
+        alt: "Logo de lavadero de autos",
+        eyebrow: "Lavado y vehiculos",
+        activeCopy: "Operacion lista para bahias, servicios de lavado, vehiculos, tiempos y comisiones.",
+        pendingCopy: "Activa la licencia para controlar bahias, servicios, tiempos y recaudo de lavadero."
+      },
+      {
+        pattern: /(taller|mecanico|mecanica|reparacion|mantenimiento automotriz)/,
+        tone: "services",
+        icon: "/img/taller-mecanico-logo.svg",
+        alt: "Logo de taller mecanico",
+        eyebrow: "Ordenes de servicio",
+        activeCopy: "Empresa lista para bahias, tecnicos, ordenes, repuestos, comisiones y trazabilidad.",
+        pendingCopy: "Activa la licencia para gestionar servicios mecanicos, vehiculos, tecnicos y cobros."
+      },
+      {
         pattern: /(restaurante|restaurant|bar|cafe|cafeteria|panaderia|pasteleria|comida|pizzeria|licoreria|gastro)/,
         tone: "food",
         icon: "/img/restaurante.png",

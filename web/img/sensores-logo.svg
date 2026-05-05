@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para sensores y monitoreo</title>
+  <desc id="desc">Logo con nodo central, ondas y puntos conectados sobre fondo tecnologico.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172554"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <circle cx="128" cy="128" r="30" fill="#ffffff"/>
+  <circle cx="128" cy="128" r="12" fill="#0f766e"/>
+  <path d="M88 96c21-21 59-21 80 0M74 78c30-30 78-30 108 0M88 160c21 21 59 21 80 0M74 178c30 30 78 30 108 0" fill="none" stroke="#8ff2df" stroke-width="10" stroke-linecap="round"/>
+  <path d="M128 98V70M128 158v28M98 128H70M158 128h28" stroke="#ffe7bf" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="128" cy="70" r="10" fill="#ffe7bf"/>
+  <circle cx="128" cy="186" r="10" fill="#ffe7bf"/>
+  <circle cx="70" cy="128" r="10" fill="#ffe7bf"/>
+  <circle cx="186" cy="128" r="10" fill="#ffe7bf"/>
+</svg>

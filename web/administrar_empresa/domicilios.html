@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Domicilios</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    .dom-page{color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
+    .dom-shell{display:grid;gap:18px;padding:18px}
+    .dom-hero,.dom-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 96%,var(--accent) 4%),var(--surface));border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:18px}
+    .dom-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:16px}
+    .dom-kicker,.dom-badge{display:inline-flex;align-items:center;gap:8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));color:var(--text);font-weight:900}
+    .dom-kicker{padding:8px 14px;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em}
+    .dom-badge{padding:6px 10px;font-size:.82rem}
+    .dom-hero h1,.dom-card h2,.dom-card h3{color:var(--text)}
+    .dom-hero h1{margin:12px 0 8px;font-size:clamp(1.75rem,2vw + 1rem,2.6rem);line-height:1.05}
+    .dom-hero p,.dom-card p{margin:0;color:var(--muted);line-height:1.6}
+    .dom-main{display:grid;grid-template-columns:minmax(230px,290px) minmax(0,1fr);gap:18px;align-items:start}
+    .dom-nav{display:grid;gap:10px;position:sticky;top:16px}
+    .dom-nav button{width:100%;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:13px 14px;cursor:pointer}
+    .dom-nav button strong{display:block}.dom-nav button span{display:block;color:var(--muted);font-size:.82rem;margin-top:4px}
+    .dom-nav button.is-active{border-color:color-mix(in srgb,var(--accent) 42%,var(--border));background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--surface)),var(--surface-soft))}
+    .dom-content{display:grid;gap:18px}.dom-panel[hidden]{display:none!important}
+    .dom-grid-2,.dom-grid-3{display:grid;gap:14px}.dom-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.dom-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .dom-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .dom-list{display:grid;gap:10px;margin-top:12px}.dom-item{padding:13px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .dom-item strong{display:block;color:var(--text);margin-bottom:4px}.dom-item small{color:var(--muted)}
+    .dom-map{height:520px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .dom-context{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.dom-msg{min-width:min(360px,100%);padding:12px 14px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border);color:var(--muted)}
+    @media(max-width:1080px){.dom-hero,.dom-main,.dom-grid-2,.dom-grid-3{grid-template-columns:1fr}.dom-nav{position:static}}
+    @media(max-width:720px){.dom-shell{padding:14px}.dom-context{flex-direction:column}.dom-msg{width:100%}}
+  </style>
+</head>
+<body class="super-page dom-page">
+  <div class="container dom-shell">
+    <section class="dom-hero">
+      <article>
+        <span class="dom-kicker">Domicilios tipo Rappi</span>
+        <h1>Central profesional para restaurantes, domiciliarios y pedidos en vivo</h1>
+        <p>Opera pedidos de comida, confirma preparación, asigna domiciliarios cercanos, monitorea GPS en mapa y entrega con código de seguridad.</p>
+      </article>
+      <aside class="dom-card">
+        <h2 style="margin-top:0;">Portales listos</h2>
+        <p>Cliente público, panel de restaurante y app móvil de domiciliario con tracking por geolocalización del navegador.</p>
+        <div class="dom-actions" style="margin-top:12px;">
+          <a id="openCustomerPortal" class="btn secondary" target="_blank" rel="noopener">Cliente</a>
+          <a id="openRestaurantPortal" class="btn secondary" target="_blank" rel="noopener">Restaurante</a>
+          <a id="openCourierPortal" class="btn secondary" target="_blank" rel="noopener">Domiciliario</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-box"><span class="kpi-label">Pendientes</span><strong id="kpiPendientes">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Preparación</span><strong id="kpiPreparacion">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">En ruta</span><strong id="kpiRuta">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Online</span><strong id="kpiOnline">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Disponibles</span><strong id="kpiDisponibles">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">Ventas hoy</span><strong id="kpiVentas">$0</strong></div>
+    </section>
+
+    <section class="dom-main">
+      <nav class="dom-nav" aria-label="Secciones domicilios">
+        <button class="is-active" data-tab="central"><strong>Central</strong><span>Pedidos, despacho y mapa</span></button>
+        <button data-tab="restaurantes"><strong>Restaurantes</strong><span>Aliados, PIN y operación</span></button>
+        <button data-tab="domiciliarios"><strong>Domiciliarios</strong><span>Flota, vehículo y disponibilidad</span></button>
+        <button data-tab="menu"><strong>Menú</strong><span>Productos por restaurante</span></button>
+        <button data-tab="config"><strong>Configuración</strong><span>Tarifas, radios y reglas</span></button>
+      </nav>
+
+      <section class="dom-content">
+        <article class="dom-card dom-context">
+          <div><span class="dom-kicker">Panel activo</span><h2 id="sectionTitle">Central</h2><p id="sectionSummary">Monitorea pedidos y ubicación de domiciliarios en tiempo real.</p></div>
+          <div id="domMsg" class="dom-msg">Listo para operar domicilios.</div>
+        </article>
+
+        <section id="panel-central" class="dom-panel">
+          <div class="dom-grid-2">
+            <article class="dom-card">
+              <h3>Pedidos</h3>
+              <div class="dom-actions">
+                <button id="refreshBtn" class="btn secondary" type="button">Actualizar</button>
+                <button id="seedBtn" class="btn" type="button">Cargar demo productiva</button>
+              </div>
+              <div id="ordersList" class="dom-list"></div>
+            </article>
+            <article class="dom-card">
+              <h3>Mapa en vivo</h3>
+              <div id="domMap" class="dom-map"></div>
+              <div id="offersList" class="dom-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="panel-restaurantes" class="dom-panel" hidden>
+          <div class="dom-grid-2">
+            <form id="restaurantForm" class="dom-card form">
+              <h3>Restaurante aliado</h3>
+              <input type="hidden" id="restId">
+              <div class="form-row"><div class="form-col"><label class="form-label">Código</label><input id="restCodigo" class="form-input" placeholder="REST-001"></div><div class="form-col"><label class="form-label">PIN portal</label><input id="restPin" class="form-input" placeholder="1234"></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Nombre</label><input id="restNombre" class="form-input" required></div><div class="form-col"><label class="form-label">Categoría</label><input id="restCategoria" class="form-input" placeholder="Hamburguesas, almuerzos"></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Teléfono</label><input id="restTelefono" class="form-input"></div><div class="form-col"><label class="form-label">Dirección</label><input id="restDireccion" class="form-input"></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Latitud</label><input id="restLat" class="form-input"></div><div class="form-col"><label class="form-label">Longitud</label><input id="restLng" class="form-input"></div><div class="form-col"><label class="form-label">Prep. min</label><input id="restPrep" type="number" class="form-input" value="20"></div></div>
+              <label class="remember-label"><input id="restAcepta" type="checkbox" checked> Acepta pedidos</label>
+              <div class="dom-actions"><button class="btn" type="submit">Guardar restaurante</button><button id="restNew" class="btn secondary" type="button">Nuevo</button></div>
+            </form>
+            <article class="dom-card"><h3>Restaurantes</h3><div id="restaurantsList" class="dom-list"></div></article>
+          </div>
+        </section>
+
+        <section id="panel-domiciliarios" class="dom-panel" hidden>
+          <div class="dom-grid-2">
+            <form id="courierForm" class="dom-card form">
+              <h3>Domiciliario</h3>
+              <input type="hidden" id="courierId">
+              <div class="form-row"><div class="form-col"><label class="form-label">Código</label><input id="courierCodigo" class="form-input" placeholder="DOM-001"></div><div class="form-col"><label class="form-label">PIN app</label><input id="courierPin" class="form-input" placeholder="1234"></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Nombre</label><input id="courierNombre" class="form-input" required></div><div class="form-col"><label class="form-label">Documento</label><input id="courierDocumento" class="form-input" required></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Teléfono</label><input id="courierTelefono" class="form-input"></div><div class="form-col"><label class="form-label">Vehículo</label><select id="courierVehiculo" class="form-input"><option>Moto</option><option>Bicicleta</option><option>Carro</option><option>A pie</option></select></div><div class="form-col"><label class="form-label">Placa</label><input id="courierPlaca" class="form-input"></div></div>
+              <div class="dom-actions"><button class="btn" type="submit">Guardar domiciliario</button><button id="courierNew" class="btn secondary" type="button">Nuevo</button></div>
+            </form>
+            <article class="dom-card"><h3>Domiciliarios</h3><div id="couriersList" class="dom-list"></div></article>
+          </div>
+        </section>
+
+        <section id="panel-menu" class="dom-panel" hidden>
+          <div class="dom-grid-2">
+            <form id="menuForm" class="dom-card form">
+              <h3>Producto del menú</h3>
+              <input type="hidden" id="menuId">
+              <div class="form-row"><div class="form-col"><label class="form-label">Restaurante</label><select id="menuRestaurant" class="form-input"></select></div><div class="form-col"><label class="form-label">Código</label><input id="menuCodigo" class="form-input"></div></div>
+              <div class="form-row"><div class="form-col"><label class="form-label">Nombre</label><input id="menuNombre" class="form-input" required></div><div class="form-col"><label class="form-label">Categoría</label><input id="menuCategoria" class="form-input"></div><div class="form-col"><label class="form-label">Precio</label><input id="menuPrecio" type="number" class="form-input" value="0"></div></div>
+              <label class="form-label">Descripción<textarea id="menuDescripcion" class="form-textarea"></textarea></label>
+              <label class="form-label">Imagen URL<input id="menuImagen" class="form-input"></label>
+              <label class="remember-label"><input id="menuDisponible" type="checkbox" checked> Disponible</label>
+              <div class="dom-actions"><button class="btn" type="submit">Guardar producto</button><button id="menuNew" class="btn secondary" type="button">Nuevo</button></div>
+            </form>
+            <article class="dom-card"><h3>Menú publicado</h3><div id="menuList" class="dom-list"></div></article>
+          </div>
+        </section>
+
+        <section id="panel-config" class="dom-panel" hidden>
+          <form id="configForm" class="dom-card form">
+            <h3>Configuración productiva</h3>
+            <div class="form-row"><div class="form-col"><label class="form-label">Nombre sistema</label><input id="cfgNombreSistema" class="form-input"></div><div class="form-col"><label class="form-label">Nombre portal</label><input id="cfgNombrePortal" class="form-input"></div><div class="form-col"><label class="form-label">Moneda</label><input id="cfgMoneda" class="form-input" value="COP"></div></div>
+            <div class="form-row"><div class="form-col"><label class="form-label">Radio cobertura KM</label><input id="cfgCobertura" type="number" step="0.1" class="form-input"></div><div class="form-col"><label class="form-label">Radio asignación KM</label><input id="cfgAsignacion" type="number" step="0.1" class="form-input"></div><div class="form-col"><label class="form-label">Domiciliarios ronda</label><input id="cfgRonda" type="number" class="form-input"></div></div>
+            <div class="form-row"><div class="form-col"><label class="form-label">Tarifa base</label><input id="cfgTarifaBase" type="number" class="form-input"></div><div class="form-col"><label class="form-label">Tarifa KM</label><input id="cfgTarifaKm" type="number" class="form-input"></div><div class="form-col"><label class="form-label">Comisión %</label><input id="cfgComision" type="number" class="form-input"></div></div>
+            <div class="form-row"><label class="remember-label"><input id="cfgAuto" type="checkbox"> Autoasignar</label><label class="remember-label"><input id="cfgPublico" type="checkbox"> Pedidos públicos</label><label class="remember-label"><input id="cfgCodigo" type="checkbox"> Código de entrega</label></div>
+            <div class="dom-actions"><button class="btn" type="submit">Guardar configuración</button></div>
+          </form>
+        </section>
+      </section>
+    </section>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/domicilios.js"></script>
+</body>
+</html>

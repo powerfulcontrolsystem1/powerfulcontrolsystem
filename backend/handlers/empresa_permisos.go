@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -24,13 +25,22 @@ const (
 	permActionDelete  = "D"
 	permActionApprove = "A"
 
-	permModuleVentas      = "ventas"
-	permModuleInventario  = "inventario"
-	permModuleFinanzas    = "finanzas"
-	permModuleClientes    = "clientes"
-	permModuleCompras     = "compras"
-	permModuleFacturacion = "facturacion"
-	permModuleSeguridad   = "seguridad"
+	permModuleVentas           = "ventas"
+	permModuleInventario       = "inventario"
+	permModuleFinanzas         = "finanzas"
+	permModuleClientes         = "clientes"
+	permModuleCompras          = "compras"
+	permModuleFacturacion      = "facturacion"
+	permModuleSeguridad        = "seguridad"
+	permModuleVentaPublica     = "venta_publica"
+	permModuleGimnasio         = "gimnasio"
+	permModuleTaxiSystem       = "taxi_system"
+	permModuleDomicilios       = "domicilios"
+	permModuleAlquileres       = "alquileres"
+	permModuleOdontologia      = "odontologia"
+	permModuleTurnos           = "turnos_atencion"
+	permModuleControlElectrico = "control_electrico"
+	permModuleCarnets          = "carnets"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -138,6 +148,15 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleCompras,
 	permModuleFacturacion,
 	permModuleSeguridad,
+	permModuleVentaPublica,
+	permModuleGimnasio,
+	permModuleTaxiSystem,
+	permModuleDomicilios,
+	permModuleAlquileres,
+	permModuleOdontologia,
+	permModuleTurnos,
+	permModuleControlElectrico,
+	permModuleCarnets,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -159,13 +178,22 @@ var permissionActionDisplayNames = map[string]string{
 
 // permissionModuleDisplayNames nombres de negocio por clave de módulo.
 var permissionModuleDisplayNames = map[string]string{
-	permModuleVentas:      "Ventas y servicio al cliente",
-	permModuleInventario:  "Inventario y almacén",
-	permModuleFinanzas:    "Finanzas, caja y reportes",
-	permModuleClientes:    "Clientes y cartera comercial",
-	permModuleCompras:     "Compras y proveedores",
-	permModuleFacturacion: "Facturación electrónica (DIAN)",
-	permModuleSeguridad:   "Seguridad, usuarios e integración",
+	permModuleVentas:           "Ventas y servicio al cliente",
+	permModuleInventario:       "Inventario y almacén",
+	permModuleFinanzas:         "Finanzas, caja y reportes",
+	permModuleClientes:         "Clientes y cartera comercial",
+	permModuleCompras:          "Compras y proveedores",
+	permModuleFacturacion:      "Facturación electrónica (DIAN)",
+	permModuleSeguridad:        "Seguridad, usuarios e integración",
+	permModuleVentaPublica:     "Venta publica y carta de productos",
+	permModuleGimnasio:         "Gimnasio y membresias",
+	permModuleTaxiSystem:       "Taxi system y despacho GPS",
+	permModuleDomicilios:       "Domicilios y delivery",
+	permModuleAlquileres:       "Alquileres de equipos y vehiculos",
+	permModuleOdontologia:      "Odontologia y agenda clinica",
+	permModuleTurnos:           "Turnos de atencion",
+	permModuleControlElectrico: "Control electrico e IoT",
+	permModuleCarnets:          "Carnets empresariales",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -195,15 +223,16 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "Operación y venta"},
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "Operación y venta"},
-	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Turnos de atención y fila", Grupo: "Operación y venta"},
-	{PaginaClave: "linkGimnasio", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
-	{PaginaClave: "linkTaxiSystem", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Operación y venta"},
-	{PaginaClave: "linkAlquileres", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Alquiler de equipos y vehículos", Grupo: "Operación y venta"},
-	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Clientes"},
-	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atención y fila", Grupo: "Operación y venta"},
+	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
+	{PaginaClave: "linkTaxiSystem", Modulo: permModuleTaxiSystem, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Operación y venta"},
+	{PaginaClave: "linkDomicilios", Modulo: permModuleDomicilios, Accion: permActionCreate, Titulo: "Domicilios y delivery", Grupo: "Operación y venta"},
+	{PaginaClave: "linkAlquileres", Modulo: permModuleAlquileres, Accion: permActionCreate, Titulo: "Alquiler de equipos y vehículos", Grupo: "Operación y venta"},
+	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Clientes"},
+	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catálogo"},
-	{PaginaClave: "linkCartaProductosPublica", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carta publica de productos", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkCartaProductosPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Carta publica de productos", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de códigos de barras", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
@@ -211,33 +240,44 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkConfiguracionGuiada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración guiada con IA", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkPortalUsuarios", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Portal de usuarios", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkHorariosTrabajadores", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Horarios laborales", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkCarnets", Modulo: permModuleCarnets, Accion: permActionCreate, Titulo: "Carnets de empleados y usuarios", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Finanzas y nómina"},
 	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehículos", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación y venta"},
+	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operación y venta"},
 	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
 	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM comercial y embudo", Grupo: "Clientes"},
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
+	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkNextcloud", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Nextcloud", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobación: configuración de estaciones", Grupo: "Operación y venta"},
 	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por habitacion", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de hotel", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTarifasMotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de motel", Grupo: "Operación y venta"},
+	{PaginaClave: "linkHotelTarjetasAcceso", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarjetas de acceso hotel", Grupo: "Operación y venta"},
 	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Finanzas y reportes"},
@@ -555,6 +595,51 @@ func WithEmpresaSeguridadPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFu
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleSeguridad, resolveSeguridadPermissionAction, next)
 }
 
+// WithEmpresaVentaPublicaPermissions aplica permisos independientes para venta publica y carta.
+func WithEmpresaVentaPublicaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleVentaPublica, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaGimnasioPermissions aplica permisos independientes para gimnasio.
+func WithEmpresaGimnasioPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleGimnasio, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaTaxiSystemPermissions aplica permisos independientes para taxi system.
+func WithEmpresaTaxiSystemPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleTaxiSystem, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaDomiciliosPermissions aplica permisos independientes para domicilios.
+func WithEmpresaDomiciliosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDomicilios, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaAlquileresPermissions aplica permisos independientes para alquileres.
+func WithEmpresaAlquileresPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAlquileres, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaOdontologiaPermissions aplica permisos independientes para odontologia.
+func WithEmpresaOdontologiaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleOdontologia, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaTurnosAtencionPermissions aplica permisos independientes para turnos.
+func WithEmpresaTurnosAtencionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleTurnos, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaControlElectricoPermissions aplica permisos independientes para control electrico.
+func WithEmpresaControlElectricoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleControlElectrico, resolveControlElectricoPermissionAction, next)
+}
+
+// WithEmpresaCarnetsPermissions aplica permisos independientes para carnets empresariales.
+func WithEmpresaCarnetsPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCarnets, resolveVerticalPermissionAction, next)
+}
+
 // WithEmpresaPublicScope aplica validacion minima de alcance por empresa para endpoints publicos
 // que no pueden exigir autenticacion previa (por ejemplo login y primer establecimiento de password).
 func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
@@ -562,6 +647,10 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
 			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -670,6 +759,10 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
 			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -864,6 +957,96 @@ func extractEmpresaIDFromJSONBody(r *http.Request) int64 {
 		}
 	}
 	return 0
+}
+
+func validateEmpresaIDConsistency(r *http.Request, empresaID int64) error {
+	if r == nil || empresaID <= 0 {
+		return nil
+	}
+	if id, err := parseEmpresaIDQueryValue(r); err != nil {
+		return fmt.Errorf("empresa_id invalido en query")
+	} else if id > 0 && id != empresaID {
+		return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+	}
+	if id := parsePositiveInt64(strings.TrimSpace(r.Header.Get("X-Empresa-ID"))); id > 0 && id != empresaID {
+		return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+	}
+
+	method := strings.ToUpper(strings.TrimSpace(r.Method))
+	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch && method != http.MethodDelete {
+		return nil
+	}
+
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if strings.Contains(contentType, "application/json") {
+		if id, err := extractEmpresaIDFromJSONBodyStrict(r); err != nil {
+			return err
+		} else if id > 0 && id != empresaID {
+			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		}
+		return nil
+	}
+	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			return fmt.Errorf("empresa_id invalido en formulario")
+		}
+		if id := parsePositiveInt64(strings.TrimSpace(r.FormValue("empresa_id"))); id > 0 && id != empresaID {
+			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		}
+		return nil
+	}
+	if strings.Contains(contentType, "multipart/form-data") {
+		if err := r.ParseMultipartForm(12 << 20); err != nil {
+			return fmt.Errorf("empresa_id invalido en multipart")
+		}
+		if id := parsePositiveInt64(strings.TrimSpace(r.FormValue("empresa_id"))); id > 0 && id != empresaID {
+			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		}
+	}
+	return nil
+}
+
+func parseEmpresaIDQueryValue(r *http.Request) (int64, error) {
+	if r == nil || r.URL == nil {
+		return 0, nil
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("empresa_id"))
+	if raw == "" {
+		return 0, nil
+	}
+	return strconv.ParseInt(raw, 10, 64)
+}
+
+func extractEmpresaIDFromJSONBodyStrict(r *http.Request) (int64, error) {
+	if r.Body == nil {
+		return 0, nil
+	}
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		r.Body = io.NopCloser(bytes.NewReader(raw))
+		return 0, fmt.Errorf("empresa_id invalido en JSON")
+	}
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	if len(raw) == 0 {
+		return 0, nil
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return 0, fmt.Errorf("empresa_id invalido en JSON")
+	}
+	if v, ok := payload["empresa_id"]; ok {
+		return toPositiveInt64(v), nil
+	}
+	if v, ok := payload["empresaId"]; ok {
+		return toPositiveInt64(v), nil
+	}
+	if empresaObj, ok := payload["empresa"].(map[string]interface{}); ok {
+		if v, exists := empresaObj["id"]; exists {
+			return toPositiveInt64(v), nil
+		}
+	}
+	return 0, nil
 }
 
 func toPositiveInt64(v interface{}) int64 {
@@ -1174,6 +1357,32 @@ func resolveSeguridadPermissionAction(r *http.Request) string {
 	return defaultPermissionActionFromMethod(r.Method)
 }
 
+func resolveVerticalPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "activar", "desactivar":
+		return permActionUpdate
+	case "anular", "cancelar", "eliminar":
+		return permActionDelete
+	case "aprobar", "cerrar", "despachar", "dispatch":
+		return permActionApprove
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveControlElectricoPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "config", "raspberry_pi", "rele", "rele_foto":
+		return defaultPermissionActionFromMethod(r.Method)
+	case "probar_rele", "sincronizar", "ejecutar_programacion":
+		return permActionApprove
+	case "activar", "desactivar":
+		return permActionUpdate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
 func normalizePermissionRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "super_administrador", "superadmin", "super":
@@ -1216,6 +1425,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+		}
+
+	case permModuleVentaPublica, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleAlquileres, permModuleOdontologia, permModuleTurnos, permModuleCarnets:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+		case permActionDelete:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal")
 		}
 
 	case permModuleInventario:
@@ -1271,6 +1490,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
+			return roleIn(role, "admin_empresa")
+		}
+
+	case permModuleControlElectrico:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal")
+		case permActionDelete, permActionApprove:
 			return roleIn(role, "admin_empresa")
 		}
 	}
@@ -1819,12 +2048,16 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkChatTareas"
 	case strings.HasPrefix(path, "/api/empresa/chat_con_inteligencia_artificial"):
 		return "linkChatIA"
+	case path == "/api/empresa/impuestos":
+		return "linkImpuestos"
 	case strings.HasPrefix(path, "/api/empresa/facturacion_electronica"):
 		if action == "emitir" || !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet) {
 			return "linkFacturacionElectronica"
 		}
 		return "linkFacturasElectronicas"
-	case strings.HasPrefix(path, "/api/empresa/finanzas/") || path == "/api/empresa/corte_caja":
+	case path == "/api/empresa/corte_caja":
+		return "linkCorteCaja"
+	case strings.HasPrefix(path, "/api/empresa/finanzas/"):
 		return "linkFinanzas"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
@@ -1836,7 +2069,12 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkComisiones"
 	case path == "/api/empresa/codigos_de_descuento":
 		return "linkCodigosDescuento"
+	case strings.HasPrefix(path, "/api/empresa/publicaciones"):
+		return "linkRedSocialComercial"
 	case path == "/api/empresa/venta_publica":
+		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("perm_page")), "linkCartaProductosPublica") {
+			return "linkCartaProductosPublica"
+		}
 		return "linkVentaPublica"
 	case path == "/api/empresa/carritos_compra":
 		if strings.Contains(action, "estacion") || strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
@@ -1855,6 +2093,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTarifasPorDia"
 	case path == "/api/empresa/tarifas_motel":
 		return "linkTarifasMotel"
+	case path == "/api/empresa/hotel_tarjetas_acceso":
+		return "linkHotelTarjetasAcceso"
 	case path == "/api/empresa/nomina_sueldos":
 		return "linkNominaSueldos"
 	case path == "/api/empresa/horarios_trabajadores":
@@ -1865,16 +2105,26 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkAsistenciaEmpleados"
 	case path == "/api/empresa/vehiculos_registro":
 		return "linkVehiculosRegistro"
+	case path == "/api/empresa/carnets":
+		return "linkCarnets"
 	case path == "/api/empresa/gimnasio":
 		return "linkGimnasio"
 	case path == "/api/empresa/taxi_system":
 		return "linkTaxiSystem"
+	case path == "/api/empresa/domicilios":
+		return "linkDomicilios"
 	case path == "/api/empresa/alquileres":
 		return "linkAlquileres"
 	case path == "/api/empresa/odontologia":
 		return "linkConsultorioOdontologico"
 	case path == "/api/empresa/turnos_atencion":
 		return "linkTurnosAtencion"
+	case path == "/api/empresa/control_electrico":
+		return "linkControlElectrico"
+	case path == "/api/empresa/documentos":
+		return "linkDocumentosOnlyOffice"
+	case path == "/api/empresa/nextcloud":
+		return "linkNextcloud"
 	case strings.HasPrefix(path, "/api/empresa/reportes"):
 		if strings.Contains(path, "/ia") {
 			return "linkReportesIAChat"

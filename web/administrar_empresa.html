@@ -21,13 +21,6 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Trabajo colaborativo</div>
-          <ul class="admin-nav-sublist">
-            <li><a id="linkChatTareas" href="/administrar_empresa/chat_tareas_chats.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
-          </ul>
-        </li>
-
-        <li class="admin-nav-group">
           <div class="admin-nav-group-title">Operación y ventas</div>
           <ul class="admin-nav-sublist">
             <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
@@ -40,6 +33,7 @@
             <li><a id="linkGimnasio" href="/administrar_empresa/gimnasio.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Gimnasio</a></li>
             <li><a id="linkConsultorioOdontologico" href="/administrar_empresa/consultorio_odontologico.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Odontologia</a></li>
             <li><a id="linkTaxiSystem" href="/administrar_empresa/taxi_system.html" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Taxi system</a></li>
+            <li><a id="linkDomicilios" href="/administrar_empresa/domicilios.html" target="contentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Domicilios</a></li>
             <li><a id="linkAlquileres" href="/administrar_empresa/alquileres.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Alquileres</a></li>
             <li><a id="linkTurnosAtencion" href="/administrar_empresa/turnos_atencion.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Turnos de atención</a></li>
             <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
@@ -48,6 +42,13 @@
             <li><a id="linkRedSocialComercial" href="/administrar_empresa/publicar_red_social.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">Red social empresarial</a></li>
             <li><a id="linkCodigosDescuento" href="/administrar_empresa/codigos_de_descuento.html" target="contentFrame"><img class="icon" src="/img/gift-card.svg" alt="">Códigos de descuento</a></li>
             <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de caja</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Trabajo colaborativo</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkChatTareas" href="/administrar_empresa/chat_tareas_chats.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
           </ul>
         </li>
 
@@ -76,6 +77,7 @@
             <li><a id="linkPortalUsuarios" href="/login_usuario.html"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
             <li><a id="linkHorariosTrabajadores" href="/administrar_empresa/horarios_trabajadores.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Horarios laborales</a></li>
             <li><a id="linkAsistenciaEmpleados" href="/administrar_empresa/asistencia_empleados.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencia de empleados</a></li>
+            <li><a id="linkCarnets" href="/administrar_empresa/carnets.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carnets</a></li>
             <li><a id="linkVehiculosRegistro" href="/administrar_empresa/vehiculos_registro.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Registro de vehículos</a></li>
             <li><a id="linkHojaVidaOperativa" href="/administrar_empresa/hoja_vida_operativa.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Historial de activos</a></li>
             <li><a id="linkUbicacionGPS" href="/administrar_empresa/ubicacion_gps.html" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Ubicación GPS</a></li>
@@ -139,7 +141,16 @@
         <h2>10 emisoras top de internet</h2>
         <p>Activa una emisora y sigue trabajando con el reproductor compacto.</p>
       </div>
-      <button id="closeRadioDrawer" type="button" class="ai-chat-close" aria-label="Cerrar radio">×</button>
+      <div class="radio-drawer-actions">
+        <label class="radio-drawer-toggle" for="radioFloatingEnabled">
+          <input id="radioFloatingEnabled" type="checkbox" checked>
+          <span>
+            <strong>Radio activa</strong>
+            <small id="radioFloatingStatus">Lista para reproducir</small>
+          </span>
+        </label>
+        <button id="closeRadioDrawer" type="button" class="ai-chat-close" aria-label="Cerrar radio">×</button>
+      </div>
     </div>
     <div id="radioStationGrid" class="radio-station-grid"></div>
   </section>

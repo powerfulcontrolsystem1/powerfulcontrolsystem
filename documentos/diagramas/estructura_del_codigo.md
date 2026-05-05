@@ -1,3 +1,10 @@
+## Actualizacion 2026-05-05 (portal publico, carta QR y publicacion Motel Calipso)
+
+- `web/index.html` contiene la seccion publica `Modulos del sistema` y el arreglo `fallbackCards`; ambos describen el alcance comercial actual de la plataforma: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios, taxi, turnos, control electrico, venta publica, carta QR, red social, roles/licencias y hoja de vida.
+- `backend/utils/utils.go` en `AuthMiddleware` declara como publicas las rutas de carta `visualizar_productos_y_precios_publico.html` tanto directa como bajo `/{empresa_slug}/...`. Esto mantiene el contrato de solo lectura externa y evita `401` para visitantes.
+- `backend/tmp_tools/seed_motel_calipso_publicacion/main.go` es un helper idempotente para publicar Motel Calipso en `empresa_venta_publica_configuracion`, `empresa_venta_publica_paginas`, `empresa_venta_publica_items` y `empresa_publicaciones_red_social`.
+- `documentos/carta_publica_productos.md`, `documentos/domicilios_profesional.md` y `documentos/taxi_system_profesional.md` registran la documentacion funcional de los modulos publicos/verticales y su presencia en el portal.
+
 ## Actualizacion 2026-04-30 (pagos, chat IA, documentos y empresas compartidas)
 
 - Checkout Epayco:

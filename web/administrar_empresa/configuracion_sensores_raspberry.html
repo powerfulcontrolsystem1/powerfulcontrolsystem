@@ -165,12 +165,31 @@
         }
       }
 
+      function parseStationConfigValue(raw) {
+        var current = raw;
+        for (var i = 0; i < 8; i += 1) {
+          if (typeof current !== 'string') break;
+          var trimmed = current.trim();
+          if (!trimmed) return null;
+          try {
+            current = JSON.parse(trimmed);
+          } catch (e) {
+            return null;
+          }
+        }
+        return current && typeof current === 'object' ? current : null;
+      }
+
       async function getStationConfig() {
         if (!empresaId) return null;
         try {
-          var res = await fetch('/api/empresa/estaciones_config?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
-          if (!res.ok) return null;
-          return await res.json();
+          var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+          var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+          var pref = prefs.find(function (item) {
+            return item && Number(item.estacion_id || 0) === 0 && String(item.clave || '') === 'estaciones_config';
+          });
+          if (!pref || !pref.valor) return null;
+          return parseStationConfigValue(pref.valor);
         } catch (e) {
           return null;
         }

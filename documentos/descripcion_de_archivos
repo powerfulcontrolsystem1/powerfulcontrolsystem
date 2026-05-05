@@ -1,3 +1,21 @@
+- Actualizacion 2026-05-05: modulo profesional de carnets empresariales
+	- `backend/db/carnets_empresa.go` : esquema, plantillas, carnets emitidos, eventos, dashboard, personas fuente y datos demo por `empresa_id`.
+	- `backend/handlers/carnets_empresa.go` : API `/api/empresa/carnets` con acciones de dashboard, plantillas, personas, listado, emision, actualizacion, estados, impresion y demo.
+	- `backend/handlers/empresa_permisos.go` : agrega modulo `carnets`, pagina `linkCarnets` y wrapper `WithEmpresaCarnetsPermissions`.
+	- `backend/main.go` : asegura esquema de carnets y registra ruta protegida.
+	- `web/administrar_empresa/carnets.html` : interfaz profesional para emitir, disenar, previsualizar, imprimir y exportar carnets.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` : agregan entrada de menu y control de visibilidad por permisos/licencia.
+	- `web/super/licencias.html` : agrega `carnets` como modulo activable por licencia y en preset enterprise.
+	- `documentos/carnets_empresariales.md` : documentacion funcional y operativa del modulo.
+
+- Actualizacion 2026-05-05: portal publico, carta QR y Motel Calipso publicado
+	- `web/index.html` : actualiza textos comerciales de la seccion `Modulos del sistema` y del arreglo `fallbackCards`; incluye Domicilios, Taxi System, Turnos, Odontologia, Control electrico, Carta QR, Red social, roles/licencias y hoja de vida.
+	- `backend/utils/utils.go` : permite publicamente `/visualizar_productos_y_precios_publico.html` y `/{empresa_slug}/visualizar_productos_y_precios_publico.html` sin sesion, manteniendo protegida la administracion.
+	- `backend/utils/auth_middleware_test.go` : cubre que la carta publica directa y la carta por slug pasen por el middleware sin `401`.
+	- `backend/tmp_tools/seed_motel_calipso_publicacion/main.go` : helper idempotente para publicar Motel Calipso en venta publica, carta de productos/precios y red social comercial.
+	- `documentos/carta_publica_productos.md` : documenta rutas publicas, QR exportable, liberacion de middleware, datos sembrados de Motel Calipso y validaciones.
+	- `documentos/domicilios_profesional.md` y `documentos/taxi_system_profesional.md` : agregan presencia en portal publico y resumen comercial de cada modulo.
+
 - Actualizacion 2026-05-04: control electrico Raspberry Pi
 	- `backend/db/control_electrico.go` : esquema, CRUD y consultas del modulo de control electrico por empresa: configuracion Raspberry Pi, multiples relés por estacion/salida y bitacora de eventos.
 	- `backend/handlers/control_electrico.go` : endpoint protegido `/api/empresa/control_electrico`, pruebas manuales ON/OFF, sincronizacion y despacho HTTP hacia la Raspberry Pi.

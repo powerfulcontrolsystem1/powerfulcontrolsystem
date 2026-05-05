@@ -183,6 +183,15 @@
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="compras"><span class="lic-coverage-h">Compras y proveedores</span><span class="lic-coverage-d">Órdenes y abastecimiento.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">Facturación electrónica (DIAN)</span><span class="lic-coverage-d">Emisión y consulta de documentos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Seguridad e integración</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditoría, ERP.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="venta_publica"><span class="lic-coverage-h">Venta pública y carta</span><span class="lic-coverage-d">E-commerce, catálogo público, QR y precios.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="gimnasio"><span class="lic-coverage-h">Gimnasio</span><span class="lic-coverage-d">Membresías, accesos, clases y dispositivos.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="taxi_system"><span class="lic-coverage-h">Taxi system</span><span class="lic-coverage-d">Despacho tipo Uber, mapa, GPS y conductores.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="domicilios"><span class="lic-coverage-h">Domicilios</span><span class="lic-coverage-d">Restaurantes, domiciliarios, pedidos y tracking.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="alquileres"><span class="lic-coverage-h">Alquileres</span><span class="lic-coverage-d">Activos, contratos, tarifas y mantenimiento.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="odontologia"><span class="lic-coverage-h">Odontología</span><span class="lic-coverage-d">Pacientes, agenda clínica y tratamientos.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="turnos_atencion"><span class="lic-coverage-h">Turnos de atención</span><span class="lic-coverage-d">Servicios, puestos, pantalla pública y fila.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="control_electrico"><span class="lic-coverage-h">Control eléctrico</span><span class="lic-coverage-d">Raspberry Pi, relés, habitaciones e IoT.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="carnets"><span class="lic-coverage-h">Carnets empresariales</span><span class="lic-coverage-d">Emisión, diseño, QR, impresión y control de carnets.</span></label>
             </div>
           </div>
         </div>
@@ -243,14 +252,23 @@
         clientes: 'Clientes',
         compras: 'Compras',
         facturacion: 'Facturación',
-        seguridad: 'Seguridad'
+        seguridad: 'Seguridad',
+        venta_publica: 'Venta pública y carta',
+        gimnasio: 'Gimnasio',
+        taxi_system: 'Taxi system',
+        domicilios: 'Domicilios',
+        alquileres: 'Alquileres',
+        odontologia: 'Odontología',
+        turnos_atencion: 'Turnos',
+        control_electrico: 'Control eléctrico',
+        carnets: 'Carnets'
       };
       const modulePresets = {
         all: '',
-        operativo: 'ventas,inventario,clientes',
+        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios',
         financiero: 'ventas,finanzas,facturacion',
-        comercial: 'ventas,clientes,compras',
-        enterprise: 'ventas,inventario,finanzas,clientes,compras,facturacion,seguridad'
+        comercial: 'ventas,venta_publica,clientes,compras,domicilios',
+        enterprise: 'ventas,inventario,finanzas,clientes,compras,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,alquileres,odontologia,turnos_atencion,control_electrico,carnets'
       };
 
       function parseTruthy(v){

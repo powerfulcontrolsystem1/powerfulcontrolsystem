@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io"
-	"strconv"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -143,7 +143,7 @@ func hydrateEmpresaDefaults(dbEmp *sql.DB, cfg *dbpkg.EmpresaConfiguracionAvanza
 
 	var nombre string
 	var nit string
-	err := dbEmp.QueryRow(`SELECT COALESCE(nombre, ''), COALESCE(nit, '') FROM empresas WHERE id = ? LIMIT 1`, cfg.EmpresaID).Scan(&nombre, &nit)
+	err := dbpkg.QueryRowCompat(dbEmp, `SELECT COALESCE(nombre, ''), COALESCE(nit, '') FROM empresas WHERE id = ? LIMIT 1`, cfg.EmpresaID).Scan(&nombre, &nit)
 	if err != nil {
 		return
 	}

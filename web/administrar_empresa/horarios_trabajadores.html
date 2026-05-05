@@ -16,11 +16,12 @@
     .horarios-hero-card,
     .horarios-panel-card,
     .horarios-table-card {
-      background: linear-gradient(180deg, rgba(10,22,36,0.96), rgba(12,27,42,0.92));
-      border: 1px solid rgba(122, 154, 190, 0.18);
-      border-radius: 18px;
-      box-shadow: 0 18px 38px rgba(0,0,0,.24);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--accent) 6%), color-mix(in srgb, var(--surface-soft) 92%, var(--accent-2) 8%));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
       padding: 18px;
+      color: var(--text);
     }
     .horarios-hero-badge {
       display:inline-flex;
@@ -28,58 +29,59 @@
       gap:8px;
       border-radius:999px;
       padding:7px 14px;
-      background: rgba(49,157,231,0.12);
-      color:#b8ddff;
-      border:1px solid rgba(49,157,231,0.28);
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+      color: var(--text);
+      border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
       font-size:.8rem;
       font-weight:900;
       text-transform:uppercase;
       letter-spacing:.06em;
     }
-    .horarios-hero-card h1 { margin:12px 0 8px; font-size:2rem; color:#f4f8ff; }
+    .horarios-hero-card h1 { margin:12px 0 8px; font-size:2rem; color:var(--text); }
     .horarios-hero-card p,
-    .horarios-panel-card p { margin:0; color:#b8cadb; line-height:1.55; }
+    .horarios-panel-card p { margin:0; color:var(--muted); line-height:1.55; }
     .horarios-badge-row,
     .horarios-chip-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
     .horarios-chip {
       display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px;
-      background: rgba(255,255,255,0.05); color:#edf4ff; border:1px solid rgba(150,176,206,0.16);
+      background: var(--surface-soft); color:var(--text); border:1px solid var(--border);
       font-weight:700; font-size:.9rem;
     }
     .horarios-semaforos { display:grid; gap:10px; margin-top:14px; }
     .horarios-semaforo {
-      border-radius:14px; padding:12px 14px; border:1px solid rgba(150,176,206,0.18);
-      background: rgba(255,255,255,0.04);
+      border-radius:8px; padding:12px 14px; border:1px solid var(--border);
+      background: var(--surface-soft);
     }
-    .horarios-semaforo strong { display:block; color:#f4f8ff; margin-bottom:4px; }
-    .horarios-semaforo span { color:#bed0e3; display:block; font-size:.92rem; }
-    .horarios-semaforo[data-state="solido"] { border-color: rgba(53,187,137,.4); }
-    .horarios-semaforo[data-state="estable"] { border-color: rgba(49,157,231,.4); }
-    .horarios-semaforo[data-state="atencion"] { border-color: rgba(255,189,89,.42); }
-    .horarios-semaforo[data-state="critico"] { border-color: rgba(239,83,80,.42); }
+    .horarios-semaforo strong,
+    .horarios-panel-card > strong { display:block; color:var(--text); margin-bottom:4px; }
+    .horarios-semaforo span { color:var(--muted); display:block; font-size:.92rem; }
+    .horarios-semaforo[data-state="solido"] { border-color: color-mix(in srgb, var(--success) 42%, var(--border)); }
+    .horarios-semaforo[data-state="estable"] { border-color: color-mix(in srgb, var(--accent) 42%, var(--border)); }
+    .horarios-semaforo[data-state="atencion"] { border-color: color-mix(in srgb, var(--warning, #f59e0b) 42%, var(--border)); }
+    .horarios-semaforo[data-state="critico"] { border-color: color-mix(in srgb, var(--danger) 42%, var(--border)); }
     .horarios-grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
     .horarios-grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:16px; }
     .horarios-list {
-      display:grid; gap:10px; margin-top:10px; color:#d7e4f4;
+      display:grid; gap:10px; margin-top:10px; color:var(--text);
     }
     .horarios-list-item {
-      border-radius:12px; padding:12px 14px; background: rgba(255,255,255,.045);
-      border:1px solid rgba(150,176,206,.12);
+      border-radius:8px; padding:12px 14px; background: var(--surface-soft);
+      border:1px solid var(--border);
     }
-    .horarios-list-item strong { display:block; color:#f4f8ff; margin-bottom:4px; }
+    .horarios-list-item strong { display:block; color:var(--text); margin-bottom:4px; }
     .horarios-weekdays { display:flex; flex-wrap:wrap; gap:10px; }
     .horarios-weekdays label {
       display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
-      border:1px solid var(--border-color, rgba(150,176,206,.18)); border-radius:999px;
-      background: rgba(255,255,255,.04); color:#e7eef8; font-weight:700; cursor:pointer;
+      border:1px solid var(--border-color, var(--border)); border-radius:999px;
+      background: var(--surface-soft); color:var(--text); font-weight:700; cursor:pointer;
     }
     .horarios-actions { display:flex; flex-wrap:wrap; gap:10px; }
     .horarios-table-card table { width:100%; }
     .horarios-color-dot {
       width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle;
-      box-shadow:0 0 0 2px rgba(255,255,255,.1);
+      box-shadow:0 0 0 2px color-mix(in srgb, var(--surface) 80%, transparent);
     }
-    .horarios-empty { color:#9fb4c8; text-align:center; padding:16px; }
+    .horarios-empty { color:var(--muted); text-align:center; padding:16px; }
     @media (max-width: 1080px) {
       .horarios-hero,
       .horarios-grid-2,
@@ -101,7 +103,7 @@
         </div>
       </article>
       <aside class="horarios-panel-card">
-        <strong style="display:block;color:#f4f8ff;font-size:1.1rem;">Lectura rápida</strong>
+        <strong style="display:block;font-size:1.1rem;">Lectura rápida</strong>
         <p style="margin-top:8px;">Este módulo está pensado para recepción, supervisión y recursos humanos: permite planear la semana, detectar presión de horas y dejar evidencia clara de lo que ya fue publicado al equipo.</p>
         <div id="semaforosBox" class="horarios-semaforos"></div>
       </aside>
@@ -155,11 +157,11 @@
       </div>
       <div class="horarios-grid-2" style="margin-top:16px;">
         <div class="horarios-panel-card">
-          <strong style="display:block;color:#f4f8ff;">Alertas operativas</strong>
+          <strong style="display:block;">Alertas operativas</strong>
           <div id="alertasBox" class="horarios-list"></div>
         </div>
         <div class="horarios-panel-card">
-          <strong style="display:block;color:#f4f8ff;">Oportunidades</strong>
+          <strong style="display:block;">Oportunidades</strong>
           <div id="oportunidadesBox" class="horarios-list"></div>
         </div>
       </div>
@@ -335,11 +337,11 @@
 
         <div class="horarios-grid-2" style="margin-top:16px;">
           <div class="horarios-panel-card">
-            <strong style="display:block;color:#f4f8ff;">Carga por área</strong>
+            <strong style="display:block;">Carga por área</strong>
             <div id="areasBox" class="horarios-list"></div>
           </div>
           <div class="horarios-panel-card">
-            <strong style="display:block;color:#f4f8ff;">Carga por sede</strong>
+            <strong style="display:block;">Carga por sede</strong>
             <div id="sedesBox" class="horarios-list"></div>
           </div>
         </div>

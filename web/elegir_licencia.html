@@ -214,10 +214,20 @@
       function getLicenciaIcon(licencia, tipoNombre) {
         var tipo = String((licencia && (licencia.tipo_nombre || licencia.tipoNombre)) || tipoNombre || '').toLowerCase();
         var nombre = String((licencia && (licencia.nombre || licencia.Nombre)) || '').toLowerCase();
-        if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/settings-color.svg';
+        if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/hotel-logo.svg';
         if (tipo.indexOf('motel') >= 0 || nombre.indexOf('motel') >= 0) return '/img/motel.png';
+        if (/\bbar\b|\bpub\b|licoreria|discoteca|coctel|bebida|barra/.test(tipo + ' ' + nombre)) return '/img/bar-logo.svg';
         if (tipo.indexOf('restaurante') >= 0 || nombre.indexOf('restaurante') >= 0) return '/img/restaurante.png';
-        if (tipo.indexOf('sensor') >= 0 || nombre.indexOf('sensor') >= 0) return '/img/sensor.png';
+        if (tipo.indexOf('gimnasio') >= 0 || nombre.indexOf('gimnasio') >= 0) return '/img/gym-logo.svg';
+        if (tipo.indexOf('odont') >= 0 || nombre.indexOf('odont') >= 0 || tipo.indexOf('dental') >= 0 || nombre.indexOf('dental') >= 0) return '/img/dental-logo.svg';
+        if (tipo.indexOf('turno') >= 0 || nombre.indexOf('turno') >= 0) return '/img/turnos-logo.svg';
+        if (tipo.indexOf('vehiculo') >= 0 || nombre.indexOf('vehiculo') >= 0 || tipo.indexOf('flota') >= 0 || nombre.indexOf('flota') >= 0) return '/img/vehiculos-flotas-logo.svg';
+        if (tipo.indexOf('salon') >= 0 || nombre.indexOf('salon') >= 0 || tipo.indexOf('belleza') >= 0 || nombre.indexOf('belleza') >= 0) return '/img/salon-belleza-logo.svg';
+        if (tipo.indexOf('lavadero') >= 0 || nombre.indexOf('lavadero') >= 0 || tipo.indexOf('lavado') >= 0 || nombre.indexOf('lavado') >= 0) return '/img/lavadero-autos-logo.svg';
+        if (tipo.indexOf('taller') >= 0 || nombre.indexOf('taller') >= 0 || tipo.indexOf('mecanico') >= 0 || nombre.indexOf('mecanico') >= 0) return '/img/taller-mecanico-logo.svg';
+        if (tipo.indexOf('pyme') >= 0 || nombre.indexOf('pyme') >= 0) return '/img/pymes-logo.svg';
+        if (tipo.indexOf('red social') >= 0 || nombre.indexOf('red social') >= 0 || tipo.indexOf('redes sociales') >= 0 || nombre.indexOf('redes sociales') >= 0) return '/img/redes-sociales-logo.svg';
+        if (tipo.indexOf('sensor') >= 0 || nombre.indexOf('sensor') >= 0 || tipo.indexOf('monitoreo') >= 0 || nombre.indexOf('monitoreo') >= 0) return '/img/sensores-logo.svg';
         return '/img/punto_venta.png';
       }
 

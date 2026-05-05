@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para bares</title>
+  <desc id="desc">Logo con copa, burbujas y barra sobre fondo violeta vino.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38113f"/>
+      <stop offset="100%" stop-color="#8d244f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffe0ef"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M82 62h92l-12 66c-4 20-18 34-34 34s-30-14-34-34z" fill="url(#glass)"/>
+  <path d="M96 92h64l-6 34c-3 13-12 22-26 22s-23-9-26-22z" fill="#d54770"/>
+  <path d="M128 162v34M100 204h56" stroke="#ffe7bf" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="88" cy="178" r="8" fill="#8ff2df"/>
+  <circle cx="176" cy="74" r="9" fill="#ffd39b"/>
+  <circle cx="188" cy="112" r="6" fill="#8ff2df"/>
+</svg>

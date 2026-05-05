@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Carnets empresariales</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <style>
+    :root {
+      --carnet-surface: var(--surface, #ffffff);
+      --carnet-surface-2: var(--surface-2, #f8fafc);
+      --carnet-text: var(--text, #111827);
+      --carnet-muted: var(--muted, #64748b);
+      --carnet-border: var(--border, rgba(148, 163, 184, .35));
+    }
+    .carnets-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(340px, 420px);
+      gap: 16px;
+      align-items: start;
+    }
+    .carnets-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .metric-box {
+      border: 1px solid var(--carnet-border);
+      background: var(--carnet-surface);
+      color: var(--carnet-text);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 74px;
+    }
+    .metric-box span {
+      display: block;
+      color: var(--carnet-muted);
+      font-size: .82rem;
+      margin-bottom: 6px;
+    }
+    .metric-box strong {
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+    .carnet-preview-shell {
+      position: sticky;
+      top: 12px;
+    }
+    .carnet-card-preview {
+      width: min(100%, 320px);
+      aspect-ratio: 54 / 86;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      color: #fff;
+      background: #1f6feb;
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 18px 40px rgba(15,23,42,.22);
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .carnet-card-preview.horizontal {
+      aspect-ratio: 86 / 54;
+      width: min(100%, 390px);
+    }
+    .carnet-card-band {
+      padding: 16px 16px 12px;
+      background: linear-gradient(135deg, rgba(0,0,0,.22), rgba(255,255,255,.08));
+    }
+    .carnet-brand-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+    }
+    .carnet-logo-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      color: #0f172a;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .carnet-company-name {
+      font-size: .92rem;
+      font-weight: 700;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .carnet-type {
+      margin-top: 4px;
+      font-size: .72rem;
+      opacity: .82;
+      text-transform: uppercase;
+    }
+    .carnet-person-zone {
+      padding: 14px 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .carnet-photo {
+      width: 104px;
+      height: 120px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.18);
+      border: 2px solid rgba(255,255,255,.72);
+      display: grid;
+      place-items: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      overflow: hidden;
+    }
+    .horizontal .carnet-person-zone {
+      grid-template-columns: 112px 1fr;
+      align-items: center;
+    }
+    .horizontal .carnet-photo {
+      width: 96px;
+      height: 108px;
+    }
+    .carnet-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .carnet-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+    .carnet-role {
+      margin-top: 4px;
+      font-size: .86rem;
+      opacity: .9;
+      overflow-wrap: anywhere;
+    }
+    .carnet-data {
+      display: grid;
+      gap: 3px;
+      margin-top: 10px;
+      font-size: .72rem;
+      line-height: 1.25;
+    }
+    .carnet-bottom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+      padding: 12px 16px 16px;
+      background: rgba(0,0,0,.24);
+    }
+    .carnet-code {
+      font-size: .72rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .carnet-qr {
+      width: 66px;
+      height: 66px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 5px;
+      display: grid;
+      place-items: center;
+    }
+    .carnet-qr canvas {
+      width: 56px !important;
+      height: 56px !important;
+    }
+    .carnet-designer {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .carnet-list {
+      display: grid;
+      gap: 8px;
+      max-height: 460px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .carnet-list-item {
+      border: 1px solid var(--carnet-border);
+      background: var(--carnet-surface);
+      color: var(--carnet-text);
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .carnet-list-item small {
+      display: block;
+      color: var(--carnet-muted);
+      margin-top: 4px;
+    }
+    .status-pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: .74rem;
+      border: 1px solid var(--carnet-border);
+      background: var(--carnet-surface-2);
+      color: var(--carnet-text);
+      text-transform: capitalize;
+    }
+    .print-only-frame {
+      display: none;
+    }
+    @media (max-width: 980px) {
+      .carnets-layout,
+      .metric-row,
+      .carnet-designer {
+        grid-template-columns: 1fr;
+      }
+      .carnet-preview-shell {
+        position: static;
+      }
+    }
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      .carnet-card-preview,
+      .carnet-card-preview * {
+        visibility: visible !important;
+      }
+      .carnet-card-preview {
+        position: fixed;
+        inset: 18mm auto auto 18mm;
+        width: 54mm !important;
+        height: 86mm !important;
+        box-shadow: none;
+      }
+      .carnet-card-preview.horizontal {
+        width: 86mm !important;
+        height: 54mm !important;
+      }
+    }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Carnets empresariales</h1>
+      </div>
+      <div class="form-actions">
+        <button id="seedBtn" class="btn secondary" type="button">Cargar demo</button>
+        <button id="printBtn" class="btn" type="button">Imprimir</button>
+      </div>
+    </div>
+
+    <section class="metric-row" id="metricRow"></section>
+
+    <div class="carnets-layout">
+      <div>
+        <section class="form" style="margin-bottom:14px;">
+          <div class="carnets-toolbar">
+            <div class="form-row" style="flex:1;margin:0;">
+              <div class="form-col">
+                <label class="form-label" for="filterQ">Buscar carnet</label>
+                <input id="filterQ" class="form-input" placeholder="Nombre, documento, codigo, cargo">
+              </div>
+              <div class="form-col" style="max-width:180px;">
+                <label class="form-label" for="filterEstado">Estado</label>
+                <select id="filterEstado" class="form-input">
+                  <option value="">Todos</option>
+                  <option value="vigente">Vigente</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="suspendido">Suspendido</option>
+                  <option value="vencido">Vencido</option>
+                  <option value="revocado">Revocado</option>
+                </select>
+              </div>
+            </div>
+            <button id="reloadBtn" class="btn secondary" type="button">Recargar</button>
+          </div>
+          <div id="carnetsList" class="carnet-list">Cargando...</div>
+        </section>
+
+        <section class="form" style="margin-bottom:14px;">
+          <h2 style="margin-top:0;">Emitir carnet</h2>
+          <form id="carnetForm">
+            <input id="carnetId" type="hidden">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="usuario_id">Usuario vinculado</label>
+                <select id="usuario_id" class="form-input"></select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="plantilla_id">Plantilla</label>
+                <select id="plantilla_id" class="form-input"></select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="tipo_persona">Tipo</label>
+                <select id="tipo_persona" class="form-input">
+                  <option value="empleado">Empleado</option>
+                  <option value="usuario">Usuario</option>
+                  <option value="contratista">Contratista</option>
+                  <option value="visitante">Visitante</option>
+                  <option value="temporal">Temporal</option>
+                  <option value="directivo">Directivo</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="nombre_completo">Nombre completo</label>
+                <input id="nombre_completo" class="form-input" required>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="documento">Documento</label>
+                <input id="documento" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cargo">Cargo</label>
+                <input id="cargo" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="area">Area</label>
+                <input id="area" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="nivel_acceso">Nivel acceso</label>
+                <input id="nivel_acceso" class="form-input" placeholder="general, pos, administracion">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="email">Email</label>
+                <input id="email" type="email" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="telefono">Telefono</label>
+                <input id="telefono" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="grupo_sanguineo">Grupo sanguineo</label>
+                <input id="grupo_sanguineo" class="form-input" placeholder="O+, A-">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="foto_url">Foto URL</label>
+                <input id="foto_url" class="form-input" placeholder="/uploads/... o https://...">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="fecha_vencimiento">Vencimiento</label>
+                <input id="fecha_vencimiento" type="date" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="contacto_emergencia">Contacto emergencia</label>
+                <input id="contacto_emergencia" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="telefono_emergencia">Telefono emergencia</label>
+                <input id="telefono_emergencia" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="observaciones">Observaciones</label>
+                <textarea id="observaciones" class="form-textarea" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Guardar carnet</button>
+              <button id="newBtn" class="btn secondary" type="button">Nuevo</button>
+              <button id="suspendBtn" class="btn secondary" type="button">Suspender</button>
+              <button id="revokeBtn" class="btn danger" type="button">Revocar</button>
+            </div>
+            <div id="formMsg" class="form-help"></div>
+          </form>
+        </section>
+
+        <section class="form">
+          <h2 style="margin-top:0;">Plantilla visual</h2>
+          <form id="templateForm">
+            <input id="templateId" type="hidden">
+            <div class="carnet-designer">
+              <div>
+                <label class="form-label" for="templateNombre">Nombre plantilla</label>
+                <input id="templateNombre" class="form-input" value="Carnet corporativo moderno">
+              </div>
+              <div>
+                <label class="form-label" for="templateOrientacion">Orientacion</label>
+                <select id="templateOrientacion" class="form-input">
+                  <option value="vertical">Vertical</option>
+                  <option value="horizontal">Horizontal</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" for="colorPrimario">Color primario</label>
+                <input id="colorPrimario" type="color" class="form-input" value="#1f6feb">
+              </div>
+              <div>
+                <label class="form-label" for="colorSecundario">Color secundario</label>
+                <input id="colorSecundario" type="color" class="form-input" value="#0f172a">
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:10px;">
+              <div class="form-col" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <label><input id="mostrarLogo" type="checkbox" checked> Logo</label>
+                <label><input id="mostrarFoto" type="checkbox" checked> Foto</label>
+                <label><input id="mostrarQR" type="checkbox" checked> QR</label>
+                <label><input id="mostrarCodigoBarras" type="checkbox"> Codigo barras</label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn secondary" type="submit">Guardar plantilla</button>
+              <button id="applyTemplateBtn" class="btn secondary" type="button">Aplicar vista</button>
+            </div>
+            <div id="templateMsg" class="form-help"></div>
+          </form>
+        </section>
+      </div>
+
+      <aside class="carnet-preview-shell">
+        <section class="form">
+          <h2 style="margin-top:0;">Vista previa y exportacion</h2>
+          <div id="carnetPreview" class="carnet-card-preview">
+            <div class="carnet-card-band">
+              <div class="carnet-brand-row">
+                <div id="previewLogo" class="carnet-logo-mark">PCS</div>
+                <div>
+                  <div id="previewCompany" class="carnet-company-name">Empresa</div>
+                  <div id="previewType" class="carnet-type">Empleado</div>
+                </div>
+              </div>
+            </div>
+            <div class="carnet-person-zone">
+              <div id="previewPhoto" class="carnet-photo">CR</div>
+              <div>
+                <div id="previewName" class="carnet-name">Nombre completo</div>
+                <div id="previewRole" class="carnet-role">Cargo / Area</div>
+                <div class="carnet-data">
+                  <span id="previewDoc">Doc: --</span>
+                  <span id="previewAccess">Acceso: general</span>
+                  <span id="previewBlood">RH: --</span>
+                  <span id="previewExpire">Vence: --</span>
+                </div>
+              </div>
+            </div>
+            <div class="carnet-bottom">
+              <div>
+                <div id="previewCode" class="carnet-code">SIN-CODIGO</div>
+                <div id="previewEmail" class="carnet-code">correo@empresa.com</div>
+              </div>
+              <div id="previewQR" class="carnet-qr"></div>
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:14px;">
+            <button id="exportPngBtn" class="btn secondary" type="button">PNG</button>
+            <button id="exportSvgBtn" class="btn secondary" type="button">SVG</button>
+            <button id="markPrintedBtn" class="btn secondary" type="button">Marcar impreso</button>
+          </div>
+          <canvas id="exportCanvas" width="640" height="1018" hidden></canvas>
+          <div id="exportMsg" class="form-help"></div>
+        </section>
+
+        <section class="form" style="margin-top:14px;">
+          <h2 style="margin-top:0;">Bitacora</h2>
+          <div id="eventsList" class="table-block">Selecciona un carnet.</div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var empresaId = resolveEmpresaId();
+      var state = { carnets: [], plantillas: [], personas: [], selected: null, company: "Empresa" };
+      var els = {};
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        [
+          "metricRow","carnetsList","filterQ","filterEstado","reloadBtn","seedBtn","printBtn","carnetForm","newBtn",
+          "suspendBtn","revokeBtn","formMsg","usuario_id","plantilla_id","tipo_persona","nombre_completo","documento",
+          "cargo","area","nivel_acceso","email","telefono","grupo_sanguineo","foto_url","fecha_vencimiento",
+          "contacto_emergencia","telefono_emergencia","observaciones","carnetId","templateForm","templateId",
+          "templateNombre","templateOrientacion","colorPrimario","colorSecundario","mostrarLogo","mostrarFoto",
+          "mostrarQR","mostrarCodigoBarras","templateMsg","applyTemplateBtn","carnetPreview","previewLogo",
+          "previewCompany","previewType","previewPhoto","previewName","previewRole","previewDoc","previewAccess",
+          "previewBlood","previewExpire","previewCode","previewEmail","previewQR","exportCanvas","exportPngBtn",
+          "exportSvgBtn","markPrintedBtn","exportMsg","eventsList"
+        ].forEach(function (id) { els[id] = document.getElementById(id); });
+
+        if (!empresaId) {
+          setMsg(els.formMsg, "No se encontro empresa activa.", true);
+          return;
+        }
+        try {
+          state.company = sessionStorage.getItem("empresa_nombre") || localStorage.getItem("empresa_nombre") || "Empresa";
+        } catch (e) {}
+        bindEvents();
+        resetForm();
+        loadAll();
+      }
+
+      function resolveEmpresaId() {
+        if (window.__resolveEmpresaIdContext) return window.__resolveEmpresaIdContext();
+        var params = new URLSearchParams(location.search);
+        return params.get("empresa_id") || params.get("id") || sessionStorage.getItem("empresa_id") || localStorage.getItem("empresa_id") || "";
+      }
+
+      function api(action, options) {
+        var url = "/api/empresa/carnets?empresa_id=" + encodeURIComponent(empresaId);
+        if (action) url += "&action=" + encodeURIComponent(action);
+        return fetch(url, Object.assign({ credentials: "include", headers: { "Content-Type": "application/json" } }, options || {})).then(function (res) {
+          if (!res.ok) return res.text().then(function (text) { throw new Error(text || ("HTTP " + res.status)); });
+          if (res.status === 204) return null;
+          return res.json();
+        });
+      }
+
+      function bindEvents() {
+        els.reloadBtn.addEventListener("click", loadAll);
+        els.seedBtn.addEventListener("click", function () {
+          api("seed_demo", { method: "POST", body: "{}" }).then(loadAll).catch(showFormError);
+        });
+        els.filterQ.addEventListener("input", debounce(loadCarnets, 250));
+        els.filterEstado.addEventListener("change", loadCarnets);
+        els.carnetForm.addEventListener("submit", saveCarnet);
+        els.templateForm.addEventListener("submit", saveTemplate);
+        els.applyTemplateBtn.addEventListener("click", function () { applyTemplate(getCurrentTemplate()); updatePreview(); });
+        els.newBtn.addEventListener("click", resetForm);
+        els.usuario_id.addEventListener("change", applyPersona);
+        ["tipo_persona","nombre_completo","documento","cargo","area","nivel_acceso","email","grupo_sanguineo","foto_url","fecha_vencimiento"].forEach(function (id) {
+          els[id].addEventListener("input", updatePreview);
+          els[id].addEventListener("change", updatePreview);
+        });
+        ["templateOrientacion","colorPrimario","colorSecundario","mostrarLogo","mostrarFoto","mostrarQR"].forEach(function (id) {
+          els[id].addEventListener("input", function () { applyTemplate(readTemplateForm()); updatePreview(); });
+          els[id].addEventListener("change", function () { applyTemplate(readTemplateForm()); updatePreview(); });
+        });
+        els.printBtn.addEventListener("click", function () { window.print(); markPrinted(); });
+        els.exportPngBtn.addEventListener("click", exportPNG);
+        els.exportSvgBtn.addEventListener("click", exportSVG);
+        els.markPrintedBtn.addEventListener("click", markPrinted);
+        els.suspendBtn.addEventListener("click", function () { setCarnetState("suspendido"); });
+        els.revokeBtn.addEventListener("click", function () { setCarnetState("revocado"); });
+      }
+
+      function loadAll() {
+        return Promise.all([loadDashboard(), loadPlantillas(), loadPersonas(), loadCarnets()]).then(updatePreview).catch(showFormError);
+      }
+
+      function loadDashboard() {
+        return api("dashboard").then(function (data) {
+          renderMetrics(data || {});
+          if (Array.isArray(data.plantillas) && data.plantillas.length) {
+            state.plantillas = data.plantillas;
+          }
+        });
+      }
+
+      function loadPlantillas() {
+        return api("plantillas").then(function (rows) {
+          state.plantillas = Array.isArray(rows) ? rows : [];
+          renderTemplateSelect();
+          if (state.plantillas[0]) applyTemplate(state.plantillas[0]);
+        });
+      }
+
+      function loadPersonas() {
+        return api("personas").then(function (rows) {
+          state.personas = Array.isArray(rows) ? rows : [];
+          els.usuario_id.innerHTML = '<option value="">Carnet manual</option>' + state.personas.map(function (p) {
+            return '<option value="' + esc(p.id) + '">' + esc(p.nombre || p.email || ("Usuario " + p.id)) + '</option>';
+          }).join("");
+        });
+      }
+
+      function loadCarnets() {
+        var action = "carnets";
+        var estado = els.filterEstado.value;
+        var q = els.filterQ.value.trim();
+        var url = "/api/empresa/carnets?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + action + "&limit=200";
+        if (estado) url += "&estado_carnet=" + encodeURIComponent(estado);
+        if (q) url += "&q=" + encodeURIComponent(q);
+        return fetch(url, { credentials: "include" }).then(function (res) {
+          if (!res.ok) return res.text().then(function (text) { throw new Error(text); });
+          return res.json();
+        }).then(function (rows) {
+          state.carnets = Array.isArray(rows) ? rows : [];
+          renderCarnets();
+        });
+      }
+
+      function renderMetrics(data) {
+        var items = [
+          ["Total", data.total || 0],
+          ["Vigentes", data.vigentes || 0],
+          ["Suspendidos", data.suspendidos || 0],
+          ["Vencidos", data.vencidos || 0],
+          ["Plantillas", data.plantillas_activas || 0]
+        ];
+        els.metricRow.innerHTML = items.map(function (m) {
+          return '<div class="metric-box"><span>' + esc(m[0]) + '</span><strong>' + esc(m[1]) + '</strong></div>';
+        }).join("");
+      }
+
+      function renderTemplateSelect() {
+        els.plantilla_id.innerHTML = state.plantillas.map(function (p) {
+          return '<option value="' + esc(p.id) + '">' + esc(p.nombre) + '</option>';
+        }).join("");
+      }
+
+      function renderCarnets() {
+        if (!state.carnets.length) {
+          els.carnetsList.textContent = "No hay carnets registrados.";
+          return;
+        }
+        els.carnetsList.innerHTML = state.carnets.map(function (c) {
+          return '<button type="button" class="carnet-list-item" data-id="' + esc(c.id) + '">' +
+            '<span><strong>' + esc(c.nombre_completo) + '</strong><small>' + esc(c.codigo) + ' · ' + esc(c.cargo || c.tipo_persona) + ' · ' + esc(c.area || 'Sin area') + '</small></span>' +
+            '<span class="status-pill">' + esc(c.estado_carnet) + '</span></button>';
+        }).join("");
+        Array.prototype.forEach.call(els.carnetsList.querySelectorAll("[data-id]"), function (btn) {
+          btn.addEventListener("click", function () {
+            var id = Number(btn.getAttribute("data-id"));
+            var carnet = state.carnets.find(function (c) { return Number(c.id) === id; });
+            if (carnet) selectCarnet(carnet);
+          });
+        });
+      }
+
+      function selectCarnet(c) {
+        state.selected = c;
+        els.carnetId.value = c.id || "";
+        setValue("plantilla_id", c.plantilla_id);
+        setValue("usuario_id", c.usuario_id);
+        setValue("tipo_persona", c.tipo_persona);
+        setValue("nombre_completo", c.nombre_completo);
+        setValue("documento", c.documento);
+        setValue("cargo", c.cargo);
+        setValue("area", c.area);
+        setValue("nivel_acceso", c.nivel_acceso);
+        setValue("email", c.email);
+        setValue("telefono", c.telefono);
+        setValue("grupo_sanguineo", c.grupo_sanguineo);
+        setValue("foto_url", c.foto_url);
+        setValue("fecha_vencimiento", (c.fecha_vencimiento || "").slice(0, 10));
+        setValue("contacto_emergencia", c.contacto_emergencia);
+        setValue("telefono_emergencia", c.telefono_emergencia);
+        setValue("observaciones", c.observaciones);
+        applyTemplate(getCurrentTemplate());
+        updatePreview();
+        loadEvents(c.id);
+      }
+
+      function loadEvents(carnetId) {
+        fetch("/api/empresa/carnets?empresa_id=" + encodeURIComponent(empresaId) + "&action=eventos&carnet_id=" + encodeURIComponent(carnetId), { credentials: "include" })
+          .then(function (res) { return res.ok ? res.json() : []; })
+          .then(function (rows) {
+            rows = Array.isArray(rows) ? rows : [];
+            els.eventsList.innerHTML = rows.length ? rows.map(function (e) {
+              return '<div><strong>' + esc(e.evento) + '</strong><br><small>' + esc(e.fecha_creacion || '') + ' · ' + esc(e.detalle || '') + '</small></div>';
+            }).join("<hr>") : "Sin eventos.";
+          });
+      }
+
+      function resetForm() {
+        state.selected = null;
+        els.carnetForm.reset();
+        els.carnetId.value = "";
+        els.tipo_persona.value = "empleado";
+        els.nivel_acceso.value = "general";
+        els.eventsList.textContent = "Selecciona un carnet.";
+        updatePreview();
+      }
+
+      function saveCarnet(ev) {
+        ev.preventDefault();
+        var id = Number(els.carnetId.value || 0);
+        var payload = readCarnetForm();
+        api("carnet", { method: id ? "PUT" : "POST", body: JSON.stringify(payload) })
+          .then(function () {
+            setMsg(els.formMsg, "Carnet guardado.");
+            return Promise.all([loadDashboard(), loadCarnets()]);
+          })
+          .catch(showFormError);
+      }
+
+      function readCarnetForm() {
+        var selected = state.selected || {};
+        return {
+          id: Number(els.carnetId.value || 0),
+          plantilla_id: Number(els.plantilla_id.value || 0),
+          usuario_id: Number(els.usuario_id.value || 0),
+          codigo: selected.codigo || "",
+          tipo_persona: els.tipo_persona.value,
+          nombre_completo: els.nombre_completo.value.trim(),
+          documento: els.documento.value.trim(),
+          cargo: els.cargo.value.trim(),
+          area: els.area.value.trim(),
+          email: els.email.value.trim(),
+          telefono: els.telefono.value.trim(),
+          foto_url: els.foto_url.value.trim(),
+          nivel_acceso: els.nivel_acceso.value.trim() || "general",
+          grupo_sanguineo: els.grupo_sanguineo.value.trim(),
+          contacto_emergencia: els.contacto_emergencia.value.trim(),
+          telefono_emergencia: els.telefono_emergencia.value.trim(),
+          fecha_vencimiento: els.fecha_vencimiento.value,
+          qr_payload: selected.qr_payload || "",
+          estado_carnet: selected.estado_carnet || "vigente",
+          observaciones: els.observaciones.value.trim()
+        };
+      }
+
+      function saveTemplate(ev) {
+        ev.preventDefault();
+        var payload = readTemplateForm();
+        api("plantilla", { method: payload.id ? "PUT" : "POST", body: JSON.stringify(payload) })
+          .then(function () {
+            setMsg(els.templateMsg, "Plantilla guardada.");
+            return loadPlantillas();
+          })
+          .catch(function (err) { setMsg(els.templateMsg, err.message, true); });
+      }
+
+      function readTemplateForm() {
+        return {
+          id: Number(els.templateId.value || 0),
+          nombre: els.templateNombre.value.trim() || "Carnet corporativo",
+          tipo: els.tipo_persona.value || "empleado",
+          orientacion: els.templateOrientacion.value,
+          ancho_mm: els.templateOrientacion.value === "horizontal" ? 86 : 54,
+          alto_mm: els.templateOrientacion.value === "horizontal" ? 54 : 86,
+          color_primario: els.colorPrimario.value,
+          color_secundario: els.colorSecundario.value,
+          color_texto: "#ffffff",
+          mostrar_logo: els.mostrarLogo.checked,
+          mostrar_foto: els.mostrarFoto.checked,
+          mostrar_qr: els.mostrarQR.checked,
+          mostrar_codigo_barras: els.mostrarCodigoBarras.checked,
+          es_predeterminada: true
+        };
+      }
+
+      function getCurrentTemplate() {
+        var id = Number(els.plantilla_id.value || 0);
+        return state.plantillas.find(function (p) { return Number(p.id) === id; }) || state.plantillas[0] || readTemplateForm();
+      }
+
+      function applyTemplate(t) {
+        if (!t) return;
+        els.templateId.value = t.id || "";
+        setValue("templateNombre", t.nombre || "Carnet corporativo");
+        setValue("templateOrientacion", t.orientacion || "vertical");
+        setValue("colorPrimario", t.color_primario || "#1f6feb");
+        setValue("colorSecundario", t.color_secundario || "#0f172a");
+        els.mostrarLogo.checked = t.mostrar_logo !== false;
+        els.mostrarFoto.checked = t.mostrar_foto !== false;
+        els.mostrarQR.checked = t.mostrar_qr !== false;
+        els.mostrarCodigoBarras.checked = !!t.mostrar_codigo_barras;
+        els.carnetPreview.style.background = "linear-gradient(160deg," + (t.color_primario || "#1f6feb") + "," + (t.color_secundario || "#0f172a") + ")";
+        els.carnetPreview.classList.toggle("horizontal", (t.orientacion || "vertical") === "horizontal");
+        els.previewLogo.style.display = t.mostrar_logo === false ? "none" : "grid";
+        els.previewPhoto.style.display = t.mostrar_foto === false ? "none" : "grid";
+        els.previewQR.style.display = t.mostrar_qr === false ? "none" : "grid";
+      }
+
+      function applyPersona() {
+        var id = Number(els.usuario_id.value || 0);
+        var p = state.personas.find(function (row) { return Number(row.id) === id; });
+        if (!p) return;
+        setValue("nombre_completo", p.nombre);
+        setValue("documento", p.documento);
+        setValue("email", p.email);
+        setValue("cargo", p.cargo);
+        setValue("tipo_persona", "usuario");
+        updatePreview();
+      }
+
+      function updatePreview() {
+        var t = getCurrentTemplate();
+        applyTemplate(t);
+        var name = els.nombre_completo.value.trim() || "Nombre completo";
+        var initials = name.split(/\s+/).slice(0, 2).map(function (p) { return p.charAt(0); }).join("").toUpperCase() || "CR";
+        els.previewCompany.textContent = state.company || "Empresa";
+        els.previewType.textContent = els.tipo_persona.value || "empleado";
+        els.previewName.textContent = name;
+        els.previewRole.textContent = [els.cargo.value, els.area.value].filter(Boolean).join(" / ") || "Cargo / Area";
+        els.previewDoc.textContent = "Doc: " + (els.documento.value || "--");
+        els.previewAccess.textContent = "Acceso: " + (els.nivel_acceso.value || "general");
+        els.previewBlood.textContent = "RH: " + (els.grupo_sanguineo.value || "--");
+        els.previewExpire.textContent = "Vence: " + (els.fecha_vencimiento.value || "--");
+        els.previewCode.textContent = (state.selected && state.selected.codigo) || "CODIGO NUEVO";
+        els.previewEmail.textContent = els.email.value || "correo@empresa.com";
+        els.previewPhoto.innerHTML = "";
+        if (els.foto_url.value.trim()) {
+          var img = document.createElement("img");
+          img.alt = "";
+          img.src = els.foto_url.value.trim();
+          img.onerror = function () { els.previewPhoto.textContent = initials; };
+          els.previewPhoto.appendChild(img);
+        } else {
+          els.previewPhoto.textContent = initials;
+        }
+        renderQR((state.selected && state.selected.qr_payload) || ["PCS", empresaId, name, els.documento.value].join(":"));
+      }
+
+      function renderQR(text) {
+        els.previewQR.innerHTML = "";
+        if (window.QRCode && window.QRCode.toCanvas) {
+          var canvas = document.createElement("canvas");
+          els.previewQR.appendChild(canvas);
+          window.QRCode.toCanvas(canvas, text || "PCS", { width: 56, margin: 0, errorCorrectionLevel: "M" }).catch(function () {
+            fallbackQR(text);
+          });
+        } else {
+          fallbackQR(text);
+        }
+      }
+
+      function fallbackQR(text) {
+        var canvas = document.createElement("canvas");
+        canvas.width = 56;
+        canvas.height = 56;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 56, 56);
+        ctx.fillStyle = "#111";
+        var seed = 0;
+        String(text || "PCS").split("").forEach(function (ch) { seed += ch.charCodeAt(0); });
+        for (var y = 0; y < 7; y += 1) for (var x = 0; x < 7; x += 1) {
+          if (((x * 17 + y * 31 + seed) % 5) < 2) ctx.fillRect(x * 8, y * 8, 6, 6);
+        }
+        els.previewQR.appendChild(canvas);
+      }
+
+      function exportPNG() {
+        var canvas = drawExportCanvas();
+        download(canvas.toDataURL("image/png"), "carnet-" + safeFileName(els.previewCode.textContent) + ".png");
+        markPrinted();
+      }
+
+      function exportSVG() {
+        var t = getCurrentTemplate();
+        var w = (t.orientacion || "vertical") === "horizontal" ? 860 : 540;
+        var h = (t.orientacion || "vertical") === "horizontal" ? 540 : 860;
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+          '<rect width="100%" height="100%" rx="28" fill="' + escAttr(t.color_primario || "#1f6feb") + '"/>' +
+          '<rect y="' + (h - 180) + '" width="100%" height="180" fill="' + escAttr(t.color_secundario || "#0f172a") + '" opacity=".85"/>' +
+          '<text x="42" y="70" fill="#fff" font-size="30" font-family="Arial" font-weight="700">' + escXML(state.company || "Empresa") + '</text>' +
+          '<text x="42" y="220" fill="#fff" font-size="42" font-family="Arial" font-weight="800">' + escXML(els.nombre_completo.value || "Nombre completo") + '</text>' +
+          '<text x="42" y="270" fill="#fff" font-size="24" font-family="Arial">' + escXML([els.cargo.value, els.area.value].filter(Boolean).join(" / ")) + '</text>' +
+          '<text x="42" y="' + (h - 92) + '" fill="#fff" font-size="22" font-family="Arial">' + escXML(els.previewCode.textContent) + '</text>' +
+          '<text x="42" y="' + (h - 54) + '" fill="#fff" font-size="18" font-family="Arial">Doc: ' + escXML(els.documento.value || "--") + ' · Vence: ' + escXML(els.fecha_vencimiento.value || "--") + '</text>' +
+          '</svg>';
+        var blob = new Blob([svg], { type: "image/svg+xml" });
+        download(URL.createObjectURL(blob), "carnet-" + safeFileName(els.previewCode.textContent) + ".svg");
+        markPrinted();
+      }
+
+      function drawExportCanvas() {
+        var t = getCurrentTemplate();
+        var horizontal = (t.orientacion || "vertical") === "horizontal";
+        var canvas = els.exportCanvas;
+        canvas.width = horizontal ? 1018 : 640;
+        canvas.height = horizontal ? 640 : 1018;
+        var ctx = canvas.getContext("2d");
+        var w = canvas.width, h = canvas.height;
+        var grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, t.color_primario || "#1f6feb");
+        grad.addColorStop(1, t.color_secundario || "#0f172a");
+        ctx.fillStyle = grad;
+        roundRect(ctx, 0, 0, w, h, 34); ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,.24)";
+        roundRect(ctx, 0, h - 190, w, 190, 0); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "700 34px Arial";
+        ctx.fillText(state.company || "Empresa", 44, 70);
+        ctx.font = "800 48px Arial";
+        wrapText(ctx, els.nombre_completo.value || "Nombre completo", 44, horizontal ? 190 : 290, w - 88, 54);
+        ctx.font = "26px Arial";
+        wrapText(ctx, [els.cargo.value, els.area.value].filter(Boolean).join(" / ") || "Cargo / Area", 44, horizontal ? 310 : 410, w - 88, 32);
+        ctx.font = "22px Arial";
+        ctx.fillText("Doc: " + (els.documento.value || "--"), 44, h - 120);
+        ctx.fillText("Acceso: " + (els.nivel_acceso.value || "general"), 44, h - 88);
+        ctx.fillText("Vence: " + (els.fecha_vencimiento.value || "--"), 44, h - 56);
+        ctx.font = "700 24px Arial";
+        ctx.fillText(els.previewCode.textContent || "CODIGO", 44, h - 22);
+        var qrCanvas = els.previewQR.querySelector("canvas");
+        if (qrCanvas) ctx.drawImage(qrCanvas, w - 150, h - 150, 110, 110);
+        return canvas;
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        var words = String(text || "").split(/\s+/);
+        var line = "";
+        words.forEach(function (word) {
+          var test = line ? line + " " + word : word;
+          if (ctx.measureText(test).width > maxWidth && line) {
+            ctx.fillText(line, x, y);
+            line = word;
+            y += lineHeight;
+          } else {
+            line = test;
+          }
+        });
+        if (line) ctx.fillText(line, x, y);
+      }
+
+      function markPrinted() {
+        if (!state.selected || !state.selected.id) return;
+        api("impreso", { method: "PUT", body: JSON.stringify({ id: state.selected.id }) })
+          .then(function () { setMsg(els.exportMsg, "Bitacora actualizada."); loadEvents(state.selected.id); })
+          .catch(function (err) { setMsg(els.exportMsg, err.message, true); });
+      }
+
+      function setCarnetState(nextState) {
+        if (!state.selected || !state.selected.id) {
+          setMsg(els.formMsg, "Selecciona un carnet primero.", true);
+          return;
+        }
+        api("estado", { method: "PUT", body: JSON.stringify({ id: state.selected.id, estado_carnet: nextState, detalle: "Cambio desde panel de carnets" }) })
+          .then(function () { setMsg(els.formMsg, "Estado actualizado."); return loadAll(); })
+          .catch(showFormError);
+      }
+
+      function setValue(id, value) {
+        if (els[id]) els[id].value = value == null ? "" : value;
+      }
+      function setMsg(el, text, error) {
+        el.textContent = text || "";
+        el.style.color = error ? "var(--danger, #dc2626)" : "var(--success, #16a34a)";
+      }
+      function showFormError(err) { setMsg(els.formMsg, err.message || String(err), true); }
+      function debounce(fn, wait) {
+        var t;
+        return function () { clearTimeout(t); t = setTimeout(fn, wait); };
+      }
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (m) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+        });
+      }
+      function escXML(value) { return esc(value); }
+      function escAttr(value) { return esc(value).replace(/"/g, "&quot;"); }
+      function safeFileName(value) { return String(value || "nuevo").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "carnet"; }
+      function download(url, name) {
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        if (url.indexOf("blob:") === 0) setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+    })();
+  </script>
+</body>
+</html>

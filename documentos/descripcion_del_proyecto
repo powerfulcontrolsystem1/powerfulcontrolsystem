@@ -1,9 +1,9 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-05-04
+Actualizacion: 2026-05-05
 
-Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
+Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, control electrico y configuracion modular por roles/licencias.
 
 ## Objetivo funcional
 
@@ -13,6 +13,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Preparar configuracion fiscal y de impresion para facturacion.
 - Permitir desde el panel super la descarga consolidada de la informacion de cada empresa en formatos profesionales y de interoperabilidad (`PDF`, `XLS`, `CSV`, `JSON`, `TXT`).
 - Permitir que cada empresa configure sus propias credenciales de Wompi y Epayco para vender desde su pagina de venta publica, con activacion o desactivacion independiente por empresa.
+- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi y carnets empresariales.
 
 ## Stack y tecnologia
 
@@ -36,6 +37,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - `backend/vpssecurity/`: modulo de seguridad VPS Linux para configuracion, ejecucion de escaneos, parsers, persistencia de reportes y comparacion historica.
 - `web/`: interfaz de usuario por modulos (`super` y `administrar_empresa`).
 	- `web/estilos.css`: capa visual compartida del portal publico, login y shells administrativos, con breakpoints responsive para escritorio, tablet y movil.
+	- `web/index.html`: portal publico comercial con tarjetas de soluciones y descripciones ejecutivas de modulos; se actualiza para reflejar POS, hotel/motel, gimnasio, odontologia, domicilios, taxi, turnos, carnets empresariales, control electrico, venta publica, carta QR, red social y permisos/licencias.
 
 ## Gobernanza interna de agentes
 
@@ -51,6 +53,11 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - El protocolo incluye ademas un semaforo ejecutivo por modulo y reglas para rechazar cierres sin evidencia minima de backend, frontend o QA segun el frente activado.
 
 ## Modulos principales
+
+Actualizacion operativa 2026-05-05:
+- El portal publico `index.html` describe los modulos con enfoque de producto: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios tipo Rappi, Taxi System tipo Uber, turnos de atencion, inventario, finanzas, facturacion, usuarios/permisos/licencias, IA, reportes, carta QR, red social y hoja de vida.
+- Motel Calipso queda como empresa de referencia publicada con slug `motel-calipso`, venta publica, carta publica de productos y precios, items de ejemplo, publicaciones de red social y rutas productivas `/{slug}/venta_publica.html` y `/{slug}/visualizar_productos_y_precios_publico.html`.
+- La carta publica de productos es una pagina externa de solo lectura; el QR se genera desde Administrar empresa y se exporta en PNG, SVG, PDF o impresion directa.
 
 1) Autenticacion y sesiones
 - Login Google para administradores.

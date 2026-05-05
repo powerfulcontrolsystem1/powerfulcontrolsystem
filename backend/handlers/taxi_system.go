@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-func EmpresaTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaTaxiSystemHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
@@ -79,6 +80,20 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				rows, err := dbpkg.ListTaxiRoutePoints(dbEmp, empresaID, requestID, 500)
 				if err != nil {
 					http.Error(w, "No se pudo consultar la ruta", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			case "gps_devices":
+				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
+					return
+				}
+				includeInactive := queryBool(r, "include_inactive")
+				q := strings.TrimSpace(r.URL.Query().Get("q"))
+				rows, err := dbpkg.GetEmpresaGPSDispositivos(dbEmp, empresaID, includeInactive, q)
+				if err != nil {
+					http.Error(w, "No se pudieron listar los dispositivos GPS", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, rows)
@@ -157,6 +172,46 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, row)
 				return
+			case "gps_devices":
+				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
+					return
+				}
+				var payload dbpkg.EmpresaGPSDispositivo
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.Nombre = strings.TrimSpace(payload.Nombre)
+				if payload.Nombre == "" {
+					http.Error(w, "nombre es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if len(dbSuper) > 0 && dbSuper[0] != nil {
+					maxGPS, err := MaxGPSDispositivosPorEmpresa(dbSuper[0])
+					if err != nil {
+						http.Error(w, "No se pudo validar limite de dispositivos GPS: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					existing, err := dbpkg.CountEmpresaGPSDispositivos(dbEmp, payload.EmpresaID)
+					if err != nil {
+						http.Error(w, "No se pudo contar dispositivos GPS", http.StatusInternalServerError)
+						return
+					}
+					if maxGPS >= 0 && existing >= maxGPS {
+						http.Error(w, fmt.Sprintf("La empresa alcanzo el maximo de dispositivos GPS permitidos (%d).", maxGPS), http.StatusConflict)
+						return
+					}
+				}
+				payload.UsuarioCreador = adminEmail
+				id, err := dbpkg.CreateEmpresaGPSDispositivo(dbEmp, payload)
+				if err != nil {
+					http.Error(w, "No se pudo crear el dispositivo GPS", http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
 			}
 
 		case http.MethodPut:
@@ -170,6 +225,32 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				payload.EmpresaID = empresaID
 				if err := dbpkg.UpdateEmpresaTaxiDriver(dbEmp, payload); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			case "gps_devices":
+				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
+					return
+				}
+				var payload dbpkg.EmpresaGPSDispositivo
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.Nombre = strings.TrimSpace(payload.Nombre)
+				if payload.ID <= 0 || payload.Nombre == "" {
+					http.Error(w, "id y nombre son obligatorios", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.UpdateEmpresaGPSDispositivo(dbEmp, payload); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "dispositivo gps no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo actualizar el dispositivo GPS", http.StatusBadRequest)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -304,13 +385,13 @@ func PublicTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "share_location":
 				var payload struct {
-					RequestID         int64   `json:"request_id"`
-					CustomerToken     string  `json:"customer_token"`
-					Latitud           float64 `json:"latitud"`
-					Longitud          float64 `json:"longitud"`
-					PrecisionMetros   float64 `json:"precision_metros"`
-					VelocidadKMH      float64 `json:"velocidad_kmh"`
-					RumboGrados       float64 `json:"rumbo_grados"`
+					RequestID       int64   `json:"request_id"`
+					CustomerToken   string  `json:"customer_token"`
+					Latitud         float64 `json:"latitud"`
+					Longitud        float64 `json:"longitud"`
+					PrecisionMetros float64 `json:"precision_metros"`
+					VelocidadKMH    float64 `json:"velocidad_kmh"`
+					RumboGrados     float64 `json:"rumbo_grados"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -377,13 +458,13 @@ func PublicTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "driver_location":
 				var payload struct {
-					Token            string  `json:"token"`
-					RequestID        int64   `json:"request_id"`
-					Latitud          float64 `json:"latitud"`
-					Longitud         float64 `json:"longitud"`
-					PrecisionMetros  float64 `json:"precision_metros"`
-					VelocidadKMH     float64 `json:"velocidad_kmh"`
-					RumboGrados      float64 `json:"rumbo_grados"`
+					Token           string  `json:"token"`
+					RequestID       int64   `json:"request_id"`
+					Latitud         float64 `json:"latitud"`
+					Longitud        float64 `json:"longitud"`
+					PrecisionMetros float64 `json:"precision_metros"`
+					VelocidadKMH    float64 `json:"velocidad_kmh"`
+					RumboGrados     float64 `json:"rumbo_grados"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -408,7 +489,9 @@ func PublicTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "driver_offers":
 				token := strings.TrimSpace(r.Header.Get("X-Taxi-Driver-Token"))
-				var payload struct{ Token string `json:"token"` }
+				var payload struct {
+					Token string `json:"token"`
+				}
 				_ = json.NewDecoder(r.Body).Decode(&payload)
 				driver, err := dbpkg.ResolveTaxiDriverByToken(dbEmp, empresaID, firstNonEmptyString(payload.Token, token))
 				if err != nil {
@@ -424,9 +507,9 @@ func PublicTaxiSystemHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "respond_offer":
 				var payload struct {
-					Token        string `json:"token"`
-					OfferID      int64  `json:"offer_id"`
-					Accept       bool   `json:"accept"`
+					Token         string `json:"token"`
+					OfferID       int64  `json:"offer_id"`
+					Accept        bool   `json:"accept"`
 					Observaciones string `json:"observaciones"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

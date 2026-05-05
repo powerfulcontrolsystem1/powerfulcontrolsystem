@@ -144,7 +144,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_config_avanzada_estado ON empresa_configuracion_avanzada(empresa_id, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -288,6 +288,9 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "cantidad_decimales", "INTEGER DEFAULT 2"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_actualizacion", "TEXT"); err != nil {
@@ -455,7 +458,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		return nil, err
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := QueryRowCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(modo_documento_venta, 'comprobante_pago'),
@@ -704,7 +707,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		frecuenciaAutomaticaActivaInt = 1
 	}
 
-	_, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
+	_, err := ExecCompat(dbConn, `INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
 		modo_documento_venta,
 		enviar_email_venta,
@@ -871,7 +874,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 
 	var id int64
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, payload.EmpresaID).Scan(&id); err != nil {
+	if err := QueryRowCompat(dbConn, `SELECT id FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, payload.EmpresaID).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil

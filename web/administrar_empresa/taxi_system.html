@@ -53,9 +53,16 @@
     .taxi-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
     .taxi-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);border:1px solid color-mix(in srgb, var(--accent) 14%, transparent);color:var(--text);font-size:.82rem;font-weight:700}
     .taxi-map{height:500px;border-radius:16px;overflow:hidden;border:1px solid color-mix(in srgb, var(--accent) 10%, var(--border) 90%)}
+    .taxi-map-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .taxi-map-toolbar .form-input{min-width:170px}
+    .taxi-device-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+    .taxi-device-dot{width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+    .taxi-device-dot.is-online{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.14)}
+    .taxi-operator-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+    .taxi-operator-strip .taxi-item{margin:0}
     .taxi-page .table thead th{background:var(--table-head-bg);color:var(--muted)}
     .taxi-page .table tbody tr:hover{background:linear-gradient(180deg, var(--table-row-hover-start), var(--table-row-hover-end))}
-    @media (max-width:1080px){.taxi-hero,.taxi-grid-2,.taxi-grid-3,.taxi-main{grid-template-columns:1fr}.taxi-sidebar{position:static}}
+    @media (max-width:1080px){.taxi-hero,.taxi-grid-2,.taxi-grid-3,.taxi-main,.taxi-operator-strip{grid-template-columns:1fr}.taxi-sidebar{position:static}}
     @media (max-width:720px){.taxi-shell{padding:14px}.taxi-context{flex-direction:column}.taxi-context-msg{width:100%;min-width:0}}
   </style>
 </head>
@@ -83,6 +90,7 @@
       <div class="kpi-box"><span class="kpi-label">Conductores online</span><strong id="kpiOnline">0</strong></div>
       <div class="kpi-box"><span class="kpi-label">Disponibles</span><strong id="kpiDisponibles">0</strong></div>
       <div class="kpi-box"><span class="kpi-label">Clientes registrados</span><strong id="kpiClientes">0</strong></div>
+      <div class="kpi-box"><span class="kpi-label">GPS conectados</span><strong id="kpiGps">0</strong></div>
     </section>
 
     <section class="taxi-main">
@@ -99,6 +107,10 @@
           <button type="button" class="taxi-nav-btn" data-taxi-tab="conductores">
             <strong>Conductores</strong>
             <span>Registro, credenciales y flota activa</span>
+          </button>
+          <button type="button" class="taxi-nav-btn" data-taxi-tab="gps">
+            <strong>GPS y telemetria</strong>
+            <span>Equipos, apps, protocolos y proveedores</span>
           </button>
           <button type="button" class="taxi-nav-btn" data-taxi-tab="despacho">
             <strong>Despacho</strong>
@@ -199,6 +211,30 @@
                 <div class="form-col"><label class="form-label" for="drvTipo">Tipo</label><input id="drvTipo" class="form-input" placeholder="Taxi, SUV, Moto"></div>
                 <div class="form-col"><label class="form-label" for="drvPin">PIN acceso móvil</label><input id="drvPin" class="form-input" placeholder="4-8 dígitos"></div>
               </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="drvGpsDevice">GPS vinculado</label><select id="drvGpsDevice" class="form-input"></select></div>
+                <div class="form-col"><label class="form-label" for="drvGpsTipo">Tipo GPS</label><select id="drvGpsTipo" class="form-input">
+                  <option value="app_movil">App movil conductor</option>
+                  <option value="gps_tracker">Tracker dedicado</option>
+                  <option value="obd2">OBD2 vehicular</option>
+                  <option value="celular">Celular corporativo</option>
+                  <option value="tablet">Tablet despacho</option>
+                  <option value="webhook">Webhook externo</option>
+                </select></div>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="drvGpsProveedor">Proveedor GPS</label><input id="drvGpsProveedor" class="form-input" placeholder="Traccar, Teltonika, GT06, app propia"></div>
+                <div class="form-col"><label class="form-label" for="drvGpsProtocolo">Protocolo</label><select id="drvGpsProtocolo" class="form-input">
+                  <option value="app_movil">App movil</option>
+                  <option value="traccar">Traccar</option>
+                  <option value="teltonika">Teltonika</option>
+                  <option value="gt06">GT06</option>
+                  <option value="gps103">GPS103</option>
+                  <option value="osmand">OsmAnd</option>
+                  <option value="webhook">Webhook HTTP</option>
+                  <option value="manual">Manual</option>
+                </select></div>
+              </div>
               <div class="taxi-actions"><button class="btn add" type="submit">Crear conductor</button></div>
               <div id="driverMsg" class="form-help"></div>
             </form>
@@ -209,6 +245,65 @@
                 <p>Consulta estado online, disponibilidad y último reporte GPS de cada conductor.</p>
               </div>
               <div id="driversList" class="taxi-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="taxi-panel" id="taxiPanel-gps" hidden>
+          <div class="taxi-grid-2">
+            <form id="gpsDeviceForm" class="form taxi-card">
+              <div class="taxi-panel-head">
+                <h3>Registrar equipo GPS</h3>
+                <p>Agrega apps de conductor, trackers dedicados, OBD2, celulares corporativos o integraciones por webhook para operar la flota tipo Uber.</p>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="gpsCodigo">Codigo</label><input id="gpsCodigo" class="form-input" placeholder="GPS-TAXI-001"></div>
+                <div class="form-col"><label class="form-label" for="gpsNombre">Nombre</label><input id="gpsNombre" class="form-input" required placeholder="Unidad Centro 01"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="gpsTipo">Tipo de GPS</label><select id="gpsTipo" class="form-input">
+                  <option value="app_movil">App movil conductor</option>
+                  <option value="gps_tracker">Tracker dedicado</option>
+                  <option value="obd2">OBD2 vehicular</option>
+                  <option value="celular">Celular corporativo</option>
+                  <option value="tablet">Tablet despacho</option>
+                  <option value="dashcam">Dashcam GPS</option>
+                  <option value="webhook">Webhook externo</option>
+                </select></div>
+                <div class="form-col"><label class="form-label" for="gpsProtocolo">Protocolo</label><select id="gpsProtocolo" class="form-input">
+                  <option value="app_movil">App movil</option>
+                  <option value="traccar">Traccar</option>
+                  <option value="teltonika">Teltonika</option>
+                  <option value="gt06">GT06 / Concox</option>
+                  <option value="gps103">GPS103</option>
+                  <option value="osmand">OsmAnd</option>
+                  <option value="webhook">Webhook HTTP</option>
+                  <option value="mqtt">MQTT</option>
+                  <option value="manual">Manual</option>
+                </select></div>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="gpsProveedor">Proveedor</label><input id="gpsProveedor" class="form-input" placeholder="Traccar, Teltonika, proveedor local"></div>
+                <div class="form-col"><label class="form-label" for="gpsHardware">IMEI / identificador</label><input id="gpsHardware" class="form-input" placeholder="IMEI, token, device_id"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="gpsPlaca">Placa / activo</label><input id="gpsPlaca" class="form-input" placeholder="ABC123"></div>
+                <div class="form-col"><label class="form-label" for="gpsIntervalo">Intervalo reporte seg</label><input id="gpsIntervalo" type="number" min="5" value="10" class="form-input"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-col"><label class="form-label" for="gpsMarca">Marca</label><input id="gpsMarca" class="form-input" placeholder="Teltonika, Coban, Xiaomi"></div>
+                <div class="form-col"><label class="form-label" for="gpsModelo">Modelo</label><input id="gpsModelo" class="form-input" placeholder="FMB920, GT06N, Android"></div>
+              </div>
+              <div class="taxi-actions"><button class="btn add" type="submit">Agregar GPS</button></div>
+              <div id="gpsMsg" class="form-help"></div>
+            </form>
+
+            <section class="taxi-card">
+              <div class="taxi-panel-head">
+                <h3>Dispositivos conectables</h3>
+                <p>Listado operativo para asociar equipos a conductores y ver telemetria reciente en el mapa.</p>
+              </div>
+              <div id="gpsDevicesList" class="taxi-list"></div>
             </section>
           </div>
         </section>
@@ -243,6 +338,27 @@
               <div class="taxi-panel-head">
                 <h3>Mapa y recorridos</h3>
                 <p>Supervisa conductores conectados, puntos de recogida y ruta GPS del servicio seleccionado.</p>
+              </div>
+              <div id="operatorStrip" class="taxi-operator-strip"></div>
+              <div class="taxi-map-toolbar">
+                <div class="taxi-actions">
+                  <select id="mapLayerSelect" class="form-input" aria-label="Capa de mapa">
+                    <option value="osm">OpenStreetMap</option>
+                    <option value="carto">Claro profesional</option>
+                    <option value="hot">Calles detalladas</option>
+                  </select>
+                  <select id="mapFilterSelect" class="form-input" aria-label="Filtro operativo">
+                    <option value="all">Todo</option>
+                    <option value="available">Conductores disponibles</option>
+                    <option value="busy">Conductores ocupados</option>
+                    <option value="requests">Solicitudes</option>
+                    <option value="gps">GPS externos</option>
+                  </select>
+                </div>
+                <div class="taxi-actions">
+                  <button id="centerMapBtn" class="btn secondary" type="button">Centrar mapa</button>
+                  <button id="useMyBaseBtn" class="btn secondary" type="button">Usar mi ubicacion como base</button>
+                </div>
               </div>
               <div id="taxiMap" class="taxi-map"></div>
               <div id="mapMsg" class="form-help"></div>

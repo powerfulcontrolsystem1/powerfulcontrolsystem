@@ -1,3 +1,21 @@
+2026-05-05: Carnets empresariales profesionales
+- Modulos afectados: `carnets`, `usuarios`, `roles/licencias`, `administrar_empresa`, `portal_publico`
+- Cambio funcional: se agrega `Carnets` en Administrar empresa > Personas y activos para emitir carnets modernos de empleados, usuarios internos, contratistas, visitantes, temporales y directivos.
+- Backend: nueva API `/api/empresa/carnets` con dashboard, plantillas, personas fuente, CRUD de carnets, estados, marcado de impresion/exportacion, bitacora y datos demo.
+- Base de datos: nuevas tablas `empresa_carnets_plantillas`, `empresa_carnets` y `empresa_carnets_eventos`, todas con `empresa_id`.
+- Seguridad: modulo independiente `carnets`, pagina `linkCarnets`, wrapper `WithEmpresaCarnetsPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/carnets.html` incluye vista previa, plantillas, colores, QR, foto, exportacion PNG/SVG e impresion.
+- Portal: `web/index.html` incorpora descripcion comercial del modulo y tarjeta fallback.
+
+2026-05-05: Portal publico, carta QR y publicacion Motel Calipso
+- Modulos afectados: `portal_publico`, `venta_publica`, `red_social_comercial`, `roles/licencias`, `domicilios`, `taxi_system`, `odontologia`, `turnos_atencion`, `control_electrico`
+- Cambio funcional: `web/index.html` actualiza la descripcion ejecutiva de los modulos del sistema para reflejar el alcance real actual: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios tipo Rappi, Taxi System tipo Uber, turnos, inventario, finanzas, facturacion, usuarios/permisos/licencias, chat/tareas/IA, reportes, venta publica, carta QR, red social y hoja de vida.
+- Tarjetas comerciales: el arreglo `fallbackCards` del index ahora incorpora descripciones mas completas para Punto de venta, Motel, Restaurante, Control por sensor, Hotel, Gimnasio y Odontologia, y agrega tarjetas para Domicilios, Taxi System y Turnos de atencion.
+- Carta publica: `visualizar_productos_y_precios_publico.html` queda documentada como pagina publica de solo lectura, con acceso por query, ruta `/{empresa_slug}/...` o subdominio, y QR exportable desde Administrar empresa en PNG, SVG, PDF o impresion.
+- Motel Calipso: se publica la configuracion operativa de `motel-calipso` con venta publica, carta publica, paginas `experiencias-calipso`, `carta-productos-precios`, `pos-motel-calipso`, items de ejemplo y publicaciones en red social comercial.
+- Seguridad: se corrige la consideracion publica de la carta en `AuthMiddleware`; la administracion sigue protegida por `venta_publica`, rol, licencia y `linkCartaProductosPublica`.
+- Verificacion: `go test ./utils`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion productiva HTTP 200 de venta publica, carta publica y red social de Motel Calipso.
+
 2026-05-04: Control electrico - Raspberry Pi GPIO por estacion
 - Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`, `habitaciones`
 - Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion/habitacion contra un pin GPIO.

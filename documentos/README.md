@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-05
-Estado: vigente, actualizado con carta publica de productos 2026-05-05
+Estado: vigente, actualizado con domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -12,11 +12,21 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 3. `documentos/diagramas/estructura_del_codigo.md`
 4. `documentos/descripcion_de_modulos`
 5. `documentos/matriz_roles_permisos_pos_multiempresa.md`
-6. `documentos/gobernanza_tecnica/README.md`
-7. `documentos/historial_de_cambios`
-8. `CHANGELOG.md`
+6. `documentos/reporte_estado_modulos_2026-05-05.md`
+7. `documentos/gobernanza_tecnica/README.md`
+8. `documentos/historial_de_cambios`
+9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-05: agregado modulo profesional `Carnets empresariales` con API `/api/empresa/carnets`, pagina `administrar_empresa/carnets.html`, plantillas, QR, exportacion, bitacora y control por licencia `carnets`.
+- 2026-05-05: rectificado el aislamiento multiempresa de todos los modulos privados `/api/empresa/...`; los wrappers `WithEmpresa*` rechazan inconsistencias de `empresa_id` entre URL, cabecera, formulario/multipart y JSON.
+- 2026-05-05: creado `documentos/reporte_estado_modulos_2026-05-05.md` como corte integral del estado actual de modulos, portal publico, carta QR, Motel Calipso, domicilios, Taxi System, roles/licencias, apariencia y base de datos.
+- 2026-05-05: actualizado el portal `web/index.html` con descripciones comerciales completas de modulos, incluyendo POS, hotel/motel, gimnasio, odontologia, domicilios tipo Rappi, Taxi System tipo Uber, turnos, control electrico, carta QR, red social, roles/licencias y hoja de vida.
+- 2026-05-05: publicada y documentada la operacion real de Motel Calipso: venta publica, carta publica de productos/precios, QR exportable desde administracion y publicaciones en red social comercial.
+- 2026-05-05: corregida y documentada la exposicion publica de `visualizar_productos_y_precios_publico.html`; la ruta directa y la ruta `/{empresa_slug}/visualizar_productos_y_precios_publico.html` quedan sin login y validadas en produccion.
+- 2026-05-05: documentado `Domicilios` profesional en `documentos/domicilios_profesional.md`, con central, restaurantes, domiciliarios, cliente publico, tracking GPS, codigo de entrega, endpoints, datos demo y control independiente por roles/licencias.
+- 2026-05-05: actualizada la matriz de roles/licencias para modulos verticales (`venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion`, `control_electrico`) con wrappers dedicados y activacion por licencia.
+- 2026-05-05: documentado `Taxi System` profesional en `documentos/taxi_system_profesional.md`, con mapa operativo, filtros, GPS por tipo/protocolo, asociacion de dispositivos a conductores y endpoints privados.
 - 2026-05-05: documentada la carta publica de productos en `documentos/carta_publica_productos.md`, con modulo administrativo, pagina publica `visualizar_productos_y_precios_publico.html`, rutas por slug/subdominio, permisos y pruebas.
 - 2026-05-03: estado de modulos actualizado en `documentos/reporte_estado_modulos_2026-05-03.md`; se documentan reparaciones de estaciones/carrito, retorno a estaciones al pagar, tarjetas adaptables al texto, `USD / COP` como primer indicador y despliegue VPS correcto.
 - 2026-05-03: ayuda del sistema actualizada con estado operativo, rutas criticas, configuracion de estaciones, flujo de pago del carrito y advertencia honesta sobre validacion integral por hardware/proveedores.
@@ -37,6 +47,10 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
+- Carnets empresariales: `documentos/carnets_empresariales.md`
+- Reporte de estado integral vigente: `documentos/reporte_estado_modulos_2026-05-05.md`
+- Taxi System profesional y GPS: `documentos/taxi_system_profesional.md`
+- Domicilios profesional: `documentos/domicilios_profesional.md`
 - Inventario documental y de archivos: `documentos/descripcion_de_archivos`
 - Historial detallado de trabajo: `documentos/historial_de_cambios`
 - Resumen ejecutivo de cambios: `CHANGELOG.md`

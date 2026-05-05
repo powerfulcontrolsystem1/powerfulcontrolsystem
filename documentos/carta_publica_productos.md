@@ -3,6 +3,16 @@
 Fecha: 2026-05-05
 Estado: vigente
 
+## Actualizacion 2026-05-05
+
+- La carta publica queda incluida en la descripcion comercial del portal `web/index.html` como `Venta publica, carta QR y red social`.
+- La ruta `/visualizar_productos_y_precios_publico.html` y la ruta `/{empresa_slug}/visualizar_productos_y_precios_publico.html` quedan consideradas publicas por el middleware de autenticacion; no deben pedir sesion porque son vistas externas de solo lectura.
+- Motel Calipso queda publicado con slug `motel-calipso`, carta publica y venta publica en produccion.
+- Validacion productiva realizada contra:
+  - `https://powerfulcontrolsystem.com/motel-calipso/venta_publica.html`
+  - `https://powerfulcontrolsystem.com/motel-calipso/visualizar_productos_y_precios_publico.html`
+  - `https://powerfulcontrolsystem.com/red_social_comercial.html`
+
 ## Objetivo
 
 El modulo permite publicar una carta externa de solo lectura con productos, precios y fotos. Esta pagina no crea pedidos, no agrega carrito y no inicia pagos; su proposito es mostrar informacion comercial al publico bajo el slug o subdominio de la empresa.
@@ -24,6 +34,18 @@ El modulo permite publicar una carta externa de solo lectura con productos, prec
 4. Guardar la seccion principal de la carta.
 5. Publicar productos desde el inventario. El modulo sincroniza nombre, descripcion, precio, foto, SKU y stock publicado.
 6. Usar el boton `Visualizar carta publica` para abrir la pagina externa.
+7. Generar el QR del enlace publico y exportarlo para impresion.
+
+## QR imprimible
+
+La pantalla administrativa genera localmente un codigo QR a partir de la URL publica actual de la carta. No depende de servicios externos. Cada cambio de slug, dominio o nombre actualiza el QR visible.
+
+Formatos disponibles:
+
+- PNG: recomendado para avisos rapidos, imagenes y documentos sencillos.
+- SVG: recomendado para imprenta o material que necesite escala sin perdida.
+- PDF: hoja lista para imprimir con QR, nombre de la carta y direccion publica.
+- Imprimir QR: abre una vista imprimible en el navegador.
 
 ## Comportamiento publico
 
@@ -44,7 +66,18 @@ La configuracion y los productos publicados usan las tablas existentes del modul
 - `empresa_venta_publica_paginas`
 - `empresa_venta_publica_items`
 
-El menu `linkCartaProductosPublica` queda registrado como pagina de ventas, porque la publicacion externa comparte el contrato administrativo de venta publica. La pantalla tambien consulta inventario para listar productos activos.
+El menu `linkCartaProductosPublica` queda registrado dentro del modulo independiente `venta_publica`, porque la publicacion externa comparte el contrato administrativo de venta publica. La pantalla envia `perm_page=linkCartaProductosPublica` en sus llamadas administrativas para que la anulacion por pagina del rol aplique a la carta y no a toda la venta publica. Tambien consulta inventario para listar productos activos, asi que el rol debe conservar lectura/consulta de inventario cuando administre productos de la carta.
+
+## Publicacion operativa Motel Calipso
+
+Datos semilla aplicados en empresa `7`:
+
+- Configuracion `empresa_venta_publica_configuracion`: slug `motel-calipso`, tienda `Motel Calipso`, moneda `COP`, stock visible y pedidos/tracking habilitados para la operacion publica.
+- Paginas publicas activas: `experiencias-calipso`, `carta-productos-precios` y `pos-motel-calipso`.
+- Items publicados de ejemplo: decoracion de habitacion, noche romantica, combo bebidas y snacks, kit de aseo premium, desayuno en habitacion y POS Motel Calipso.
+- Publicaciones de red social: `POS y carta publica de Motel Calipso` y `Experiencias Calipso disponibles en linea`.
+
+La operacion se sembro de forma idempotente con `backend/tmp_tools/seed_motel_calipso_publicacion`, para poder repetir la publicacion sin duplicar registros.
 
 ## Pruebas
 
@@ -58,6 +91,14 @@ Comandos de validacion aplicables:
 ```powershell
 cd backend
 go test ./...
+```
+
+Pruebas puntuales aplicadas tras liberar la ruta publica:
+
+```powershell
+cd backend
+go test ./utils
+go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1
 ```
 
 Validacion frontend de sintaxis:

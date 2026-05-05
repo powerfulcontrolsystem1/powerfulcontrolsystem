@@ -1,8 +1,8 @@
 # Resumen del proyecto Powerful Control System
 
-Actualizacion: 2026-05-02
+Actualizacion: 2026-05-05
 
-Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, inventario, finanzas, facturacion, reportes, soporte remoto y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
+Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles, gimnasios, consultorios odontologicos, domicilios, taxi/flotas y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, carnets empresariales, inventario, finanzas, facturacion, reportes, soporte remoto, venta publica, red social comercial, carta QR y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
 
 ## Tecnologias principales
 
@@ -22,7 +22,7 @@ Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a 
 
 ### Portal publico y comercial
 
-El portal publico presenta la oferta comercial, tarjetas configurables, informacion de contacto, chat IA del index, venta digital y paginas publicas de empresas. Tambien permite consulta publica de catalogos, pagos de productos y pagos de licencias cuando las pasarelas estan configuradas.
+El portal publico presenta la oferta comercial, tarjetas configurables, informacion de contacto, chat IA del index, venta digital y paginas publicas de empresas. Desde 2026-05-05 el index describe los modulos con enfoque comercial y operativo actualizado: POS, hotel/motel, gimnasio, odontologia, domicilios tipo Rappi, Taxi System tipo Uber, turnos, control electrico, carta publica con QR, red social, permisos/licencias y hoja de vida. Tambien permite consulta publica de catalogos, pagos de productos y pagos de licencias cuando las pasarelas estan configuradas.
 
 ### Super administrador
 
@@ -77,6 +77,18 @@ El sistema incluye un modulo de gimnasio con dashboard, socios, planes, entrenad
 ### Consultorios odontologicos
 
 Existe un modulo de consultorio odontologico con pacientes, profesionales, consultorios, citas, historias clinicas, odontogramas, tratamientos, presupuestos y pagos. La intencion es cubrir agenda, trazabilidad clinica y operacion financiera del consultorio desde el mismo panel empresarial.
+
+### Domicilios y restaurantes
+
+El modulo de domicilios opera como una central tipo Rappi para restaurantes, clientes y domiciliarios. Incluye productos/menu, pedidos, estados de cocina, ofertas a domiciliarios, presencia movil, ubicacion GPS, tracking en tiempo real y codigo de entrega. La central administrativa administra configuracion, restaurantes, domiciliarios, pedidos y metricas.
+
+### Taxi System y flotas
+
+Taxi System opera como una central tipo Uber para conductores, clientes y administracion. Incluye mapa operativo, solicitudes, despacho, estados del viaje, conductores, vehiculos, GPS configurable, dispositivos externos y trazabilidad de ruta. El modulo puede controlarse por licencia, rol y usuario.
+
+### Venta publica, carta QR y red social
+
+La venta publica permite publicar tiendas, secciones, productos, precios, fotos y checkout bajo slug o subdominio de la empresa. La carta publica `visualizar_productos_y_precios_publico.html` es una vista externa de solo lectura con QR exportable en PNG, SVG y PDF desde Administrar empresa. La red social comercial permite publicar posts empresariales con imagen/video para visibilidad externa.
 
 ### Taxi system y movilidad
 

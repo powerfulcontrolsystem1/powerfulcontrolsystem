@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para salones de belleza</title>
+  <desc id="desc">Logo con silueta de cabello, tijeras y brillo sobre fondo rosado elegante.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5b1738"/>
+      <stop offset="100%" stop-color="#c44775"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff6ea"/>
+      <stop offset="100%" stop-color="#ffd0a1"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M128 54c-37 0-64 26-64 64 0 25 11 47 29 61-4-24 4-45 26-57 27-15 47-32 49-55 16 12 24 30 24 52 0 28-14 52-36 65 31-10 53-37 53-70 0-36-32-60-81-60z" fill="url(#hair)"/>
+  <circle cx="128" cy="136" r="28" fill="#fff8ef"/>
+  <path d="M74 198l34-34M74 164l34 34M182 198l-34-34M182 164l-34 34" stroke="#8ff2df" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="74" cy="164" r="8" fill="#8ff2df"/>
+  <circle cx="182" cy="164" r="8" fill="#8ff2df"/>
+  <path d="M188 72l8 10 12-2-6 10 6 10-12-2-8 10-2-12-11-6 11-6z" fill="#fff3b0"/>
+</svg>

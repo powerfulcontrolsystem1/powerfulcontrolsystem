@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-30.1.0
-Ultima actualizacion: 2026-04-30
+Version: 2026-05-05.1.0
+Ultima actualizacion: 2026-05-05
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -19,6 +19,20 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-05-05 (carnets empresariales por empresa)
+- `empresa_carnets_plantillas`: plantillas visuales por `empresa_id` para carnets modernos. Incluye tipo, orientacion, ancho/alto, colores, visibilidad de logo/foto/QR/codigo de barras, campos visibles, diseno JSON, plantilla predeterminada, estado y auditoria basica.
+- `empresa_carnets`: carnets emitidos por `empresa_id`, vinculables a `users.id`. Incluye codigo unico por empresa, tipo de persona, datos de identidad, cargo, area, foto, nivel de acceso, grupo sanguineo, contacto de emergencia, emision, vencimiento, payload QR, estado del carnet y ultima impresion.
+- `empresa_carnets_eventos`: bitacora por `empresa_id` y `carnet_id` para emision, actualizacion, suspension, revocacion, vencimiento e impresion/exportacion.
+- El modulo se expone por `/api/empresa/carnets` con wrapper `WithEmpresaCarnetsPermissions`; no comparte carnets entre empresas.
+
+Actualizacion 2026-05-05 (venta publica, carta QR y red social Motel Calipso)
+- No introduce tablas nuevas; consolida el uso productivo de las tablas existentes de publicacion externa.
+- `empresa_venta_publica_configuracion` mantiene la configuracion publica por empresa, incluyendo slug, estado visible y datos comerciales.
+- `empresa_venta_publica_paginas` registra paginas publicas por empresa. Para `empresa_id=7` (`Motel Calipso`) quedan activas `experiencias-calipso`, `carta-productos-precios` y `pos-motel-calipso`.
+- `empresa_venta_publica_items` almacena productos, servicios, experiencias y paquetes visibles en la pagina publica. Para Motel Calipso quedan ejemplos activos de decoracion romantica, noche romantica, bebidas/snacks, kit de aseo, desayuno y acceso POS.
+- `empresa_publicaciones_red_social` registra publicaciones comerciales visibles en la red social del sistema; Motel Calipso queda con publicaciones activas para carta QR y experiencias.
+- La exposicion publica de `visualizar_productos_y_precios_publico.html` se resolvio en middleware/rutas; no requiere migracion ni cambio fisico de esquema.
 
 Actualizacion 2026-04-30 (pagos, empresas compartidas y documentos IA)
 - admin_empresa_compartida:

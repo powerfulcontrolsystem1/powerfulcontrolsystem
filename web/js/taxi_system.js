@@ -10,6 +10,10 @@
       title: "Conductores",
       summary: "Registra la flota, administra acceso móvil y controla disponibilidad y último GPS."
     },
+    gps: {
+      title: "GPS y telemetria",
+      summary: "Conecta apps moviles, trackers, OBD2, celulares y proveedores externos a la operacion taxi."
+    },
     despacho: {
       title: "Despacho",
       summary: "Opera solicitudes, relanza ofertas y decide cancelaciones desde la central."
@@ -35,9 +39,14 @@
   var empresaId = q("empresa_id") || (window.__resolveEmpresaIdContext ? window.__resolveEmpresaIdContext() : "");
   var base = "/api/empresa/taxi_system?empresa_id=" + encodeURIComponent(empresaId);
   var map = L.map("taxiMap").setView([4.711, -74.0721], 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+  var tileLayers = {
+    osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }),
+    carto: L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { attribution: "&copy; OpenStreetMap &copy; CARTO" }),
+    hot: L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap, HOT" })
+  };
+  var activeTileLayer = tileLayers.osm.addTo(map);
   var layer = L.layerGroup().addTo(map);
-  var state = { cfg: null, requests: [], drivers: [] };
+  var state = { cfg: null, requests: [], drivers: [], gpsDevices: [], mapFilter: "all" };
 
   function setMsg(id, text, bad) {
     var el = document.getElementById(id);
@@ -69,6 +78,12 @@
     var summaryEl = document.getElementById("taxiSectionSummary");
     if (titleEl) titleEl.textContent = meta.title;
     if (summaryEl) summaryEl.textContent = meta.summary;
+    if (tab === "seguimiento") {
+      window.setTimeout(function () {
+        map.invalidateSize();
+        drawMap();
+      }, 80);
+    }
   }
 
   function fillKpis(d) {
@@ -77,6 +92,29 @@
     document.getElementById("kpiOnline").textContent = d.conductores_online || 0;
     document.getElementById("kpiDisponibles").textContent = d.conductores_disponibles || 0;
     document.getElementById("kpiClientes").textContent = d.clientes_registrados || 0;
+  }
+
+  function gpsOnlineCount() {
+    return state.gpsDevices.filter(function (x) { return !!(x.ultima_latitud || x.ultima_longitud || x.ultimo_reporte_en); }).length;
+  }
+
+  function fillGpsKpi() {
+    var el = document.getElementById("kpiGps");
+    if (el) el.textContent = String(gpsOnlineCount());
+  }
+
+  function renderOperatorStrip() {
+    var box = document.getElementById("operatorStrip");
+    if (!box) return;
+    var active = state.requests.filter(function (x) { return ["aceptada", "en_camino", "abordo"].indexOf(String(x.estado || "")) >= 0; }).length;
+    var pending = state.requests.filter(function (x) { return ["pendiente", "ofertado"].indexOf(String(x.estado || "")) >= 0; }).length;
+    var available = state.drivers.filter(function (x) { return x.online && x.disponible; }).length;
+    box.innerHTML = [
+      '<div class="taxi-item"><strong>' + pending + '</strong><span class="form-help">Solicitudes en cola</span></div>',
+      '<div class="taxi-item"><strong>' + active + '</strong><span class="form-help">Viajes activos</span></div>',
+      '<div class="taxi-item"><strong>' + available + '</strong><span class="form-help">Unidades libres</span></div>',
+      '<div class="taxi-item"><strong>' + gpsOnlineCount() + '</strong><span class="form-help">GPS reportando</span></div>'
+    ].join("");
   }
 
   function renderRequests(items) {
@@ -117,6 +155,8 @@
         '<div class="taxi-badges">' +
         '<span class="taxi-badge">' + (x.online ? "Online" : "Offline") + '</span>' +
         '<span class="taxi-badge">' + (x.disponible ? "Disponible" : "Ocupado") + '</span>' +
+        (x.gps_tipo ? '<span class="taxi-badge">GPS: ' + esc(x.gps_tipo) + '</span>' : '') +
+        (x.gps_codigo ? '<span class="taxi-badge">' + esc(x.gps_codigo) + '</span>' : '') +
         (x.ultimo_reporte_en ? '<span class="taxi-badge">GPS: ' + esc(x.ultimo_reporte_en) + '</span>' : '') +
         '</div>' +
         '</article>';
@@ -134,28 +174,97 @@
     }).join("");
   }
 
+  function renderGpsDevices(items) {
+    var box = document.getElementById("gpsDevicesList");
+    if (!box) return;
+    if (!items.length) {
+      box.innerHTML = '<div class="taxi-item">No hay dispositivos GPS registrados para taxi.</div>';
+      return;
+    }
+    box.innerHTML = items.map(function (x) {
+      var online = !!(x.ultima_latitud || x.ultima_longitud || x.ultimo_reporte_en);
+      return '<article class="taxi-item taxi-device-card">' +
+        '<div><strong><span class="taxi-device-dot ' + (online ? "is-online" : "") + '"></span> ' + esc(x.nombre || x.codigo || "GPS") + '</strong>' +
+        '<div>' + esc([x.proveedor, x.marca, x.modelo].filter(Boolean).join(" / ") || "Sin proveedor definido") + '</div>' +
+        '<div class="taxi-badges">' +
+        '<span class="taxi-badge">' + esc(x.tipo_dispositivo || "gps_tracker") + '</span>' +
+        '<span class="taxi-badge">' + esc(x.protocolo || "manual") + '</span>' +
+        (x.placa_activo ? '<span class="taxi-badge">Placa: ' + esc(x.placa_activo) + '</span>' : '') +
+        (x.ultimo_reporte_en ? '<span class="taxi-badge">Ultimo: ' + esc(x.ultimo_reporte_en) + '</span>' : '') +
+        '</div></div>' +
+        '<span class="taxi-badge">' + (online ? "Reportando" : "Configurado") + '</span>' +
+        '</article>';
+    }).join("");
+  }
+
+  function fillDriverGpsSelect() {
+    var select = document.getElementById("drvGpsDevice");
+    if (!select) return;
+    select.innerHTML = '<option value="">Sin equipo dedicado / usar app movil</option>' + state.gpsDevices.map(function (x) {
+      return '<option value="' + esc(x.id) + '" data-code="' + esc(x.codigo || "") + '" data-type="' + esc(x.tipo_dispositivo || "") + '" data-provider="' + esc(x.proveedor || "") + '" data-protocol="' + esc(x.protocolo || "") + '">' + esc((x.codigo ? x.codigo + " - " : "") + (x.nombre || "GPS")) + '</option>';
+    }).join("");
+  }
+
+  async function loadGpsDevices() {
+    try {
+      var rows = await j(base + "&action=gps_devices&include_inactive=1");
+      state.gpsDevices = Array.isArray(rows) ? rows : [];
+      renderGpsDevices(state.gpsDevices);
+      fillDriverGpsSelect();
+      fillGpsKpi();
+      renderOperatorStrip();
+      drawMap();
+    } catch (e) {
+      setMsg("gpsMsg", e.message, true);
+    }
+  }
+
   function drawMap() {
     layer.clearLayers();
     var bounds = [];
+    var filter = state.mapFilter || "all";
+    if (state.cfg && num(state.cfg.latitud_base) && num(state.cfg.longitud_base) && filter === "all") {
+      var baseMarker = L.circleMarker([num(state.cfg.latitud_base), num(state.cfg.longitud_base)], { radius: 10, color: "#111827", weight: 2, fillColor: "#ffffff", fillOpacity: 1 }).addTo(layer);
+      baseMarker.bindPopup("<strong>Base de operacion</strong><br>Central taxi");
+      bounds.push([num(state.cfg.latitud_base), num(state.cfg.longitud_base)]);
+    }
     state.drivers.forEach(function (d) {
       if (!num(d.ultima_latitud) && !num(d.ultima_longitud)) return;
-      var marker = L.circleMarker([num(d.ultima_latitud), num(d.ultima_longitud)], { radius: 8, color: d.disponible ? "#27ae60" : "#f39c12", weight: 2, fillOpacity: 0.85 }).addTo(layer);
-      marker.bindPopup("<strong>" + esc(d.nombre) + "</strong><br>" + esc(d.vehiculo_placa || d.vehiculo_modelo || ""));
+      if (filter === "requests" || filter === "gps") return;
+      if (filter === "available" && !(d.online && d.disponible)) return;
+      if (filter === "busy" && d.disponible) return;
+      var color = d.disponible ? "#16a34a" : "#f59e0b";
+      var marker = L.circleMarker([num(d.ultima_latitud), num(d.ultima_longitud)], { radius: 9, color: color, weight: 3, fillColor: color, fillOpacity: 0.82 }).addTo(layer);
+      marker.bindPopup("<strong>" + esc(d.nombre) + "</strong><br>" + esc(d.vehiculo_placa || d.vehiculo_modelo || "") + "<br>GPS: " + esc(d.gps_tipo || "app_movil") + (d.ultimo_reporte_en ? "<br>Ultimo reporte: " + esc(d.ultimo_reporte_en) : ""));
       bounds.push([num(d.ultima_latitud), num(d.ultima_longitud)]);
     });
     state.requests.forEach(function (r) {
       var lat = num(r.recoger_latitud), lng = num(r.recoger_longitud);
       if (!lat && !lng) return;
-      var marker = L.marker([lat, lng]).addTo(layer);
+      if (filter === "available" || filter === "busy" || filter === "gps") return;
+      var marker = L.circleMarker([lat, lng], { radius: 8, color: "#dc2626", weight: 3, fillColor: "#fee2e2", fillOpacity: 0.9 }).addTo(layer);
       marker.bindPopup("<strong>Servicio #" + r.id + "</strong><br>" + esc(r.cliente_nombre) + "<br>" + esc(r.recoger_texto || ""));
       bounds.push([lat, lng]);
+      if (num(r.destino_latitud) || num(r.destino_longitud)) {
+        var dest = [num(r.destino_latitud), num(r.destino_longitud)];
+        var destMarker = L.circleMarker(dest, { radius: 7, color: "#2563eb", weight: 3, fillColor: "#dbeafe", fillOpacity: 0.9 }).addTo(layer);
+        destMarker.bindPopup("<strong>Destino #" + r.id + "</strong><br>" + esc(r.destino_texto || ""));
+        L.polyline([[lat, lng], dest], { color: "#2563eb", weight: 3, dashArray: "8 7" }).addTo(layer);
+        bounds.push(dest);
+      }
     });
-    if (state.cfg && num(state.cfg.latitud_base) && num(state.cfg.longitud_base)) {
-      bounds.push([num(state.cfg.latitud_base), num(state.cfg.longitud_base)]);
-    }
+    state.gpsDevices.forEach(function (g) {
+      var lat = num(g.ultima_latitud), lng = num(g.ultima_longitud);
+      if (!lat && !lng) return;
+      if (filter !== "all" && filter !== "gps") return;
+      var marker = L.circleMarker([lat, lng], { radius: 7, color: "#7c3aed", weight: 2, fillColor: "#ede9fe", fillOpacity: 0.95 }).addTo(layer);
+      marker.bindPopup("<strong>" + esc(g.nombre || g.codigo || "GPS") + "</strong><br>" + esc(g.tipo_dispositivo || "") + " / " + esc(g.protocolo || "") + (g.ultima_velocidad_kmh ? "<br>Velocidad: " + esc(g.ultima_velocidad_kmh) + " km/h" : ""));
+      bounds.push([lat, lng]);
+    });
     if (bounds.length) {
       map.fitBounds(bounds, { padding: [20, 20] });
     }
+    renderOperatorStrip();
   }
 
   async function loadConfig() {
@@ -183,6 +292,7 @@
     renderRequests(state.requests);
     renderDrivers(state.drivers);
     renderOffers(Array.isArray(d.offers) ? d.offers : []);
+    renderOperatorStrip();
     drawMap();
   }
 
@@ -238,6 +348,8 @@
   document.getElementById("driverForm").addEventListener("submit", async function (ev) {
     ev.preventDefault();
     try {
+      var gpsSelect = document.getElementById("drvGpsDevice");
+      var gpsOption = gpsSelect && gpsSelect.selectedOptions && gpsSelect.selectedOptions[0] ? gpsSelect.selectedOptions[0] : null;
       await j(base + "&action=drivers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         codigo: document.getElementById("drvCodigo").value,
         nombre: document.getElementById("drvNombre").value,
@@ -246,6 +358,11 @@
         vehiculo_placa: document.getElementById("drvPlaca").value,
         vehiculo_modelo: document.getElementById("drvModelo").value,
         vehiculo_tipo: document.getElementById("drvTipo").value,
+        gps_dispositivo_id: gpsSelect && gpsSelect.value ? Number(gpsSelect.value) : 0,
+        gps_codigo: gpsOption ? (gpsOption.getAttribute("data-code") || "") : "",
+        gps_tipo: document.getElementById("drvGpsTipo").value,
+        gps_proveedor: document.getElementById("drvGpsProveedor").value || (gpsOption ? (gpsOption.getAttribute("data-provider") || "") : ""),
+        gps_protocolo: document.getElementById("drvGpsProtocolo").value,
         pin: document.getElementById("drvPin").value
       }) });
       setMsg("driverMsg", "Conductor creado correctamente.");
@@ -256,6 +373,72 @@
       setMsg("driverMsg", e.message, true);
       setPageMsg(e.message, true);
     }
+  });
+
+  document.getElementById("drvGpsDevice").addEventListener("change", function (ev) {
+    var option = ev.target.selectedOptions && ev.target.selectedOptions[0] ? ev.target.selectedOptions[0] : null;
+    if (!option || !option.value) return;
+    document.getElementById("drvGpsTipo").value = option.getAttribute("data-type") || "gps_tracker";
+    document.getElementById("drvGpsProveedor").value = option.getAttribute("data-provider") || "";
+    document.getElementById("drvGpsProtocolo").value = option.getAttribute("data-protocol") || "manual";
+  });
+
+  document.getElementById("gpsDeviceForm").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    try {
+      await j(base + "&action=gps_devices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        codigo: document.getElementById("gpsCodigo").value,
+        nombre: document.getElementById("gpsNombre").value,
+        tipo_dispositivo: document.getElementById("gpsTipo").value,
+        protocolo: document.getElementById("gpsProtocolo").value,
+        proveedor: document.getElementById("gpsProveedor").value,
+        identificador_hardware: document.getElementById("gpsHardware").value,
+        placa_activo: document.getElementById("gpsPlaca").value,
+        intervalo_reporte_segundos: num(document.getElementById("gpsIntervalo").value) || 10,
+        marca: document.getElementById("gpsMarca").value,
+        modelo: document.getElementById("gpsModelo").value,
+        estado: "activo"
+      }) });
+      setMsg("gpsMsg", "Dispositivo GPS agregado correctamente.");
+      setPageMsg("GPS listo para vincular a conductores y visualizar en el mapa.");
+      ev.target.reset();
+      document.getElementById("gpsIntervalo").value = "10";
+      await loadGpsDevices();
+    } catch (e) {
+      setMsg("gpsMsg", e.message, true);
+      setPageMsg(e.message, true);
+    }
+  });
+
+  document.getElementById("mapLayerSelect").addEventListener("change", function (ev) {
+    var next = tileLayers[ev.target.value] || tileLayers.osm;
+    if (activeTileLayer) map.removeLayer(activeTileLayer);
+    activeTileLayer = next.addTo(map);
+  });
+
+  document.getElementById("mapFilterSelect").addEventListener("change", function (ev) {
+    state.mapFilter = ev.target.value || "all";
+    drawMap();
+  });
+
+  document.getElementById("centerMapBtn").addEventListener("click", function () {
+    drawMap();
+    setPageMsg("Mapa centrado con la operacion visible.");
+  });
+
+  document.getElementById("useMyBaseBtn").addEventListener("click", function () {
+    if (!navigator.geolocation) {
+      setMsg("mapMsg", "El navegador no permite geolocalizacion.", true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      document.getElementById("cfgLatBase").value = pos.coords.latitude.toFixed(8);
+      document.getElementById("cfgLngBase").value = pos.coords.longitude.toFixed(8);
+      setTab("configuracion");
+      setMsg("configMsg", "Ubicacion cargada. Guarda la configuracion para fijarla como base.");
+    }, function () {
+      setMsg("mapMsg", "No se pudo obtener la ubicacion del navegador.", true);
+    }, { enableHighAccuracy: true, timeout: 10000 });
   });
 
   document.getElementById("requestsList").addEventListener("click", async function (ev) {
@@ -286,8 +469,10 @@
       setTab("configuracion");
       setPageMsg("Listo para configurar el despacho, registrar conductores y monitorear la operación.");
       await loadConfig();
+      await loadGpsDevices();
       await loadDashboard();
       setInterval(loadDashboard, 15000);
+      setInterval(loadGpsDevices, 30000);
     } catch (e) {
       setMsg("mapMsg", e.message, true);
       setPageMsg(e.message, true);

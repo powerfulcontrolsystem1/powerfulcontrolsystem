@@ -137,25 +137,31 @@ try {
     document.getElementById("linkReservasHotel"),
     document.getElementById("linkTarifasHotel"),
     document.getElementById("linkTarifasMotel"),
+    document.getElementById("linkHotelTarjetasAcceso"),
     document.getElementById("linkControlElectrico"),
     document.getElementById("linkConsultorioOdontologico"),
+    document.getElementById("linkDomicilios"),
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
+    document.getElementById("linkPortalUsuarios"),
     document.getElementById("linkHorariosTrabajadores"),
     document.getElementById("linkCodigosDescuento"),
     document.getElementById("linkCorteCaja"),
     document.getElementById("linkGeneradorCodigosBarras"),
     document.getElementById("linkAsistenciaEmpleados"),
+    document.getElementById("linkCarnets"),
     document.getElementById("linkVehiculosRegistro"),
     document.getElementById("linkHojaVidaOperativa"),
     document.getElementById("linkAuditoria"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
+    document.getElementById("linkCRMComercial"),
     document.getElementById("linkVentaPublica"),
     document.getElementById("linkRedSocialComercial"),
     document.getElementById("linkDocumentosOnlyOffice"),
     document.getElementById("linkRadioOnline"),
     document.getElementById("linkImpuestos"),
+    document.getElementById("linkEgresosIngresos"),
     document.getElementById("linkNextcloud"),
     document.getElementById("linkPropinas"),
     document.getElementById("linkComisiones"),
@@ -179,12 +185,21 @@ try {
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
   var permModuleSeguridad = "seguridad";
+  var permModuleVentaPublica = "venta_publica";
+  var permModuleGimnasio = "gimnasio";
+  var permModuleTaxiSystem = "taxi_system";
+  var permModuleDomicilios = "domicilios";
+  var permModuleAlquileres = "alquileres";
+  var permModuleOdontologia = "odontologia";
+  var permModuleTurnos = "turnos_atencion";
+  var permModuleControlElectrico = "control_electrico";
+  var permModuleCarnets = "carnets";
 
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
-    linkCartaProductosPublica: { module: permModuleVentas, action: permActionCreate },
+    linkCartaProductosPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
@@ -200,25 +215,30 @@ try {
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
     linkHorariosTrabajadores: { module: permModuleSeguridad, action: permActionUpdate },
     linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
+    linkCarnets: { module: permModuleCarnets, action: permActionCreate },
+    linkPortalUsuarios: { module: permModuleSeguridad, action: permActionRead },
     linkNominaSueldos: { module: permModuleFinanzas, action: permActionCreate },
     linkVehiculosRegistro: { module: permModuleSeguridad, action: permActionCreate },
     linkHojaVidaOperativa: { module: permModuleSeguridad, action: permActionUpdate },
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
+    linkCRMComercial: { module: permModuleClientes, action: permActionCreate },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
-    linkGimnasio: { module: permModuleVentas, action: permActionCreate },
-    linkTaxiSystem: { module: permModuleVentas, action: permActionCreate },
-    linkAlquileres: { module: permModuleVentas, action: permActionCreate },
-    linkConsultorioOdontologico: { module: permModuleClientes, action: permActionCreate },
-    linkTurnosAtencion: { module: permModuleVentas, action: permActionCreate },
-    linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
+    linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
+    linkTaxiSystem: { module: permModuleTaxiSystem, action: permActionCreate },
+    linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
+    linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
+    linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
+    linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
+    linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
     linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
+    linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },
     linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
@@ -231,7 +251,8 @@ try {
     linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
     linkTarifasHotel: { module: permModuleVentas, action: permActionCreate },
     linkTarifasMotel: { module: permModuleVentas, action: permActionCreate },
-    linkControlElectrico: { module: permModuleSeguridad, action: permActionUpdate },
+    linkHotelTarjetasAcceso: { module: permModuleVentas, action: permActionCreate },
+    linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
     linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
     linkImpuestos: { module: permModuleFacturacion, action: permActionUpdate },
     linkDocumentosOnlyOffice: { module: permModuleSeguridad, action: permActionRead },
@@ -681,6 +702,33 @@ try {
       case permModuleSeguridad:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa"]);
+        }
+        break;
+
+      case permModuleVentaPublica:
+      case permModuleGimnasio:
+      case permModuleTaxiSystem:
+      case permModuleDomicilios:
+      case permModuleAlquileres:
+      case permModuleOdontologia:
+      case permModuleTurnos:
+      case permModuleCarnets:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero"]);
+        }
+        if (normalizedAction === "D") {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
+        }
+        break;
+
+      case permModuleControlElectrico:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
+        }
+        if (normalizedAction === "D" || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa"]);
         }
         break;

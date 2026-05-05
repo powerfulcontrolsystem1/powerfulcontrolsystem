@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para lavaderos de autos</title>
+  <desc id="desc">Logo con auto, agua y espuma sobre fondo azul limpio.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f3b57"/>
+      <stop offset="100%" stop-color="#1592a6"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d8f7ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M70 142l16-40c4-11 14-18 26-18h32c12 0 22 7 26 18l16 40v42H70z" fill="url(#car)"/>
+  <path d="M96 126h64l-8-22c-2-6-7-9-14-9h-20c-7 0-12 3-14 9z" fill="#2b7890"/>
+  <circle cx="96" cy="184" r="14" fill="#14324d"/>
+  <circle cx="160" cy="184" r="14" fill="#14324d"/>
+  <path d="M76 148h24M156 148h24" stroke="#8ff2df" stroke-width="10" stroke-linecap="round"/>
+  <path d="M80 64c-15 20-15 36 0 48 15-12 15-28 0-48zM176 54c-12 16-12 29 0 39 12-10 12-23 0-39z" fill="#a9f5ff"/>
+  <circle cx="122" cy="62" r="8" fill="#fff3d4"/>
+  <circle cx="142" cy="66" r="6" fill="#fff3d4"/>
+</svg>

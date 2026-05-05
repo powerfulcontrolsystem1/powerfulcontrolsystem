@@ -21,19 +21,19 @@ var (
 )
 
 type EmpresaTaxiConfig struct {
-	EmpresaID                   int64   `json:"empresa_id"`
-	NombreSistema               string  `json:"nombre_sistema"`
-	NombrePortal                string  `json:"nombre_portal"`
-	RadioBusquedaKM             float64 `json:"radio_busqueda_km"`
-	ConductoresPorRonda         int     `json:"conductores_por_ronda"`
-	TimeoutOfertaSegundos       int     `json:"timeout_oferta_segundos"`
-	PermitirRegistroCliente     bool    `json:"permitir_registro_cliente"`
-	PermitirUbicacionCliente    bool    `json:"permitir_ubicacion_cliente"`
-	PermitirDespachoAutomatico  bool    `json:"permitir_despacho_automatico"`
-	LatitudBase                 float64 `json:"latitud_base"`
-	LongitudBase                float64 `json:"longitud_base"`
-	FechaActualizacion          string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador              string  `json:"usuario_creador,omitempty"`
+	EmpresaID                  int64   `json:"empresa_id"`
+	NombreSistema              string  `json:"nombre_sistema"`
+	NombrePortal               string  `json:"nombre_portal"`
+	RadioBusquedaKM            float64 `json:"radio_busqueda_km"`
+	ConductoresPorRonda        int     `json:"conductores_por_ronda"`
+	TimeoutOfertaSegundos      int     `json:"timeout_oferta_segundos"`
+	PermitirRegistroCliente    bool    `json:"permitir_registro_cliente"`
+	PermitirUbicacionCliente   bool    `json:"permitir_ubicacion_cliente"`
+	PermitirDespachoAutomatico bool    `json:"permitir_despacho_automatico"`
+	LatitudBase                float64 `json:"latitud_base"`
+	LongitudBase               float64 `json:"longitud_base"`
+	FechaActualizacion         string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador             string  `json:"usuario_creador,omitempty"`
 }
 
 type EmpresaTaxiDriver struct {
@@ -49,6 +49,11 @@ type EmpresaTaxiDriver struct {
 	VehiculoTipo          string  `json:"vehiculo_tipo,omitempty"`
 	VehiculoColor         string  `json:"vehiculo_color,omitempty"`
 	LicenciaConduccion    string  `json:"licencia_conduccion,omitempty"`
+	GPSDispositivoID      int64   `json:"gps_dispositivo_id,omitempty"`
+	GPSCodigo             string  `json:"gps_codigo,omitempty"`
+	GPSTipo               string  `json:"gps_tipo,omitempty"`
+	GPSProveedor          string  `json:"gps_proveedor,omitempty"`
+	GPSProtocolo          string  `json:"gps_protocolo,omitempty"`
 	Pin                   string  `json:"pin,omitempty"`
 	TokenSesion           string  `json:"token_sesion,omitempty"`
 	TokenExpira           string  `json:"token_expira,omitempty"`
@@ -130,29 +135,29 @@ type EmpresaTaxiOffer struct {
 }
 
 type EmpresaTaxiRoutePoint struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	RequestID          int64   `json:"request_id,omitempty"`
-	ConductorID        int64   `json:"conductor_id,omitempty"`
-	ActorTipo          string  `json:"actor_tipo"`
-	Latitud            float64 `json:"latitud"`
-	Longitud           float64 `json:"longitud"`
-	PrecisionMetros    float64 `json:"precision_metros,omitempty"`
-	VelocidadKMH       float64 `json:"velocidad_kmh,omitempty"`
-	RumboGrados        float64 `json:"rumbo_grados,omitempty"`
-	CapturadoEn        string  `json:"capturado_en,omitempty"`
+	ID              int64   `json:"id"`
+	EmpresaID       int64   `json:"empresa_id"`
+	RequestID       int64   `json:"request_id,omitempty"`
+	ConductorID     int64   `json:"conductor_id,omitempty"`
+	ActorTipo       string  `json:"actor_tipo"`
+	Latitud         float64 `json:"latitud"`
+	Longitud        float64 `json:"longitud"`
+	PrecisionMetros float64 `json:"precision_metros,omitempty"`
+	VelocidadKMH    float64 `json:"velocidad_kmh,omitempty"`
+	RumboGrados     float64 `json:"rumbo_grados,omitempty"`
+	CapturadoEn     string  `json:"capturado_en,omitempty"`
 }
 
 type EmpresaTaxiDashboard struct {
-	EmpresaID            int64                `json:"empresa_id"`
-	SolicitudesPendientes int                 `json:"solicitudes_pendientes"`
-	ServiciosActivos     int                  `json:"servicios_activos"`
-	ConductoresOnline    int                  `json:"conductores_online"`
-	ConductoresDisponibles int                `json:"conductores_disponibles"`
-	ClientesRegistrados  int                  `json:"clientes_registrados"`
-	Requests             []EmpresaTaxiRequest `json:"requests"`
-	Drivers              []EmpresaTaxiDriver  `json:"drivers"`
-	Offers               []EmpresaTaxiOffer   `json:"offers"`
+	EmpresaID              int64                `json:"empresa_id"`
+	SolicitudesPendientes  int                  `json:"solicitudes_pendientes"`
+	ServiciosActivos       int                  `json:"servicios_activos"`
+	ConductoresOnline      int                  `json:"conductores_online"`
+	ConductoresDisponibles int                  `json:"conductores_disponibles"`
+	ClientesRegistrados    int                  `json:"clientes_registrados"`
+	Requests               []EmpresaTaxiRequest `json:"requests"`
+	Drivers                []EmpresaTaxiDriver  `json:"drivers"`
+	Offers                 []EmpresaTaxiOffer   `json:"offers"`
 }
 
 func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
@@ -185,6 +190,11 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 			vehiculo_tipo TEXT,
 			vehiculo_color TEXT,
 			licencia_conduccion TEXT,
+			gps_dispositivo_id BIGINT DEFAULT 0,
+			gps_codigo TEXT,
+			gps_tipo TEXT DEFAULT 'app_movil',
+			gps_proveedor TEXT,
+			gps_protocolo TEXT DEFAULT 'app_movil',
 			pin_hash TEXT,
 			pin_salt TEXT,
 			token_sesion TEXT,
@@ -282,6 +292,20 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+	for _, col := range []struct {
+		name string
+		def  string
+	}{
+		{"gps_dispositivo_id", "BIGINT DEFAULT 0"},
+		{"gps_codigo", "TEXT"},
+		{"gps_tipo", "TEXT DEFAULT 'app_movil'"},
+		{"gps_proveedor", "TEXT"},
+		{"gps_protocolo", "TEXT DEFAULT 'app_movil'"},
+	} {
+		if err := ensureColumnIfMissing(dbConn, "empresa_taxi_drivers", col.name, col.def); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -363,7 +387,7 @@ func ListEmpresaTaxiDrivers(dbConn *sql.DB, empresaID int64, onlyOnline bool) ([
 	if err := EnsureEmpresaTaxiSystemSchema(dbConn); err != nil {
 		return nil, err
 	}
-	query := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(ultima_latitud,0), COALESCE(ultima_longitud,0), COALESCE(ultima_precision_metros,0), COALESCE(ultima_velocidad_kmh,0), COALESCE(ultimo_reporte_en,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo'), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(observaciones,'') FROM empresa_taxi_drivers WHERE empresa_id = ?`
+	query := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(gps_dispositivo_id,0), COALESCE(gps_codigo,''), COALESCE(gps_tipo,'app_movil'), COALESCE(gps_proveedor,''), COALESCE(gps_protocolo,'app_movil'), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(ultima_latitud,0), COALESCE(ultima_longitud,0), COALESCE(ultima_precision_metros,0), COALESCE(ultima_velocidad_kmh,0), COALESCE(ultimo_reporte_en,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo'), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(observaciones,'') FROM empresa_taxi_drivers WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
 	if onlyOnline {
 		query += ` AND online = 1 AND estado = 'activo'`
@@ -378,7 +402,7 @@ func ListEmpresaTaxiDrivers(dbConn *sql.DB, empresaID int64, onlyOnline bool) ([
 	for rows.Next() {
 		var item EmpresaTaxiDriver
 		var online, disponible int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &item.TokenSesion, &item.TokenExpira, &item.UltimaLatitud, &item.UltimaLongitud, &item.UltimaPrecisionMetros, &item.UltimaVelocidadKMH, &item.UltimoReporteEn, &online, &disponible, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Observaciones); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &item.GPSDispositivoID, &item.GPSCodigo, &item.GPSTipo, &item.GPSProveedor, &item.GPSProtocolo, &item.TokenSesion, &item.TokenExpira, &item.UltimaLatitud, &item.UltimaLongitud, &item.UltimaPrecisionMetros, &item.UltimaVelocidadKMH, &item.UltimoReporteEn, &online, &disponible, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Observaciones); err != nil {
 			return nil, err
 		}
 		item.Online = online > 0
@@ -402,9 +426,9 @@ func CreateEmpresaTaxiDriver(dbConn *sql.DB, item EmpresaTaxiDriver) (int64, err
 		return 0, fmt.Errorf("nombre y documento son obligatorios")
 	}
 	salt, hash := hashTaxiPin(item.Pin)
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_drivers (empresa_id, codigo, nombre, documento, telefono, email, vehiculo_placa, vehiculo_modelo, vehiculo_tipo, vehiculo_color, licencia_conduccion, pin_hash, pin_salt, online, disponible, estado, fecha_creacion, fecha_actualizacion, usuario_creador, observaciones)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, COALESCE(NULLIF(?, ''), 'activo'), ?, ?, ?, ?)`,
-		item.EmpresaID, item.Codigo, item.Nombre, item.Documento, strings.TrimSpace(item.Telefono), strings.TrimSpace(item.Email), strings.ToUpper(strings.TrimSpace(item.VehiculoPlaca)), strings.TrimSpace(item.VehiculoModelo), strings.TrimSpace(item.VehiculoTipo), strings.TrimSpace(item.VehiculoColor), strings.TrimSpace(item.LicenciaConduccion), hash, salt, strings.TrimSpace(item.Estado), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"), strings.TrimSpace(item.UsuarioCreador), strings.TrimSpace(item.Observaciones))
+	res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_drivers (empresa_id, codigo, nombre, documento, telefono, email, vehiculo_placa, vehiculo_modelo, vehiculo_tipo, vehiculo_color, licencia_conduccion, gps_dispositivo_id, gps_codigo, gps_tipo, gps_proveedor, gps_protocolo, pin_hash, pin_salt, online, disponible, estado, fecha_creacion, fecha_actualizacion, usuario_creador, observaciones)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, COALESCE(NULLIF(?, ''), 'activo'), ?, ?, ?, ?)`,
+		item.EmpresaID, item.Codigo, item.Nombre, item.Documento, strings.TrimSpace(item.Telefono), strings.TrimSpace(item.Email), strings.ToUpper(strings.TrimSpace(item.VehiculoPlaca)), strings.TrimSpace(item.VehiculoModelo), strings.TrimSpace(item.VehiculoTipo), strings.TrimSpace(item.VehiculoColor), strings.TrimSpace(item.LicenciaConduccion), item.GPSDispositivoID, strings.TrimSpace(item.GPSCodigo), firstTaxiState(item.GPSTipo, "app_movil"), strings.TrimSpace(item.GPSProveedor), firstTaxiState(item.GPSProtocolo, "app_movil"), hash, salt, strings.TrimSpace(item.Estado), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"), strings.TrimSpace(item.UsuarioCreador), strings.TrimSpace(item.Observaciones))
 	if err != nil {
 		return 0, err
 	}
@@ -423,8 +447,8 @@ func UpdateEmpresaTaxiDriver(dbConn *sql.DB, item EmpresaTaxiDriver) error {
 	if item.Nombre == "" || item.Documento == "" {
 		return fmt.Errorf("nombre y documento son obligatorios")
 	}
-	query := `UPDATE empresa_taxi_drivers SET codigo = ?, nombre = ?, documento = ?, telefono = ?, email = ?, vehiculo_placa = ?, vehiculo_modelo = ?, vehiculo_tipo = ?, vehiculo_color = ?, licencia_conduccion = ?, estado = ?, observaciones = ?, fecha_actualizacion = ?`
-	args := []interface{}{strings.ToUpper(strings.TrimSpace(item.Codigo)), item.Nombre, item.Documento, strings.TrimSpace(item.Telefono), strings.TrimSpace(item.Email), strings.ToUpper(strings.TrimSpace(item.VehiculoPlaca)), strings.TrimSpace(item.VehiculoModelo), strings.TrimSpace(item.VehiculoTipo), strings.TrimSpace(item.VehiculoColor), strings.TrimSpace(item.LicenciaConduccion), firstTaxiState(item.Estado, "activo"), strings.TrimSpace(item.Observaciones), time.Now().Format("2006-01-02 15:04:05")}
+	query := `UPDATE empresa_taxi_drivers SET codigo = ?, nombre = ?, documento = ?, telefono = ?, email = ?, vehiculo_placa = ?, vehiculo_modelo = ?, vehiculo_tipo = ?, vehiculo_color = ?, licencia_conduccion = ?, gps_dispositivo_id = ?, gps_codigo = ?, gps_tipo = ?, gps_proveedor = ?, gps_protocolo = ?, estado = ?, observaciones = ?, fecha_actualizacion = ?`
+	args := []interface{}{strings.ToUpper(strings.TrimSpace(item.Codigo)), item.Nombre, item.Documento, strings.TrimSpace(item.Telefono), strings.TrimSpace(item.Email), strings.ToUpper(strings.TrimSpace(item.VehiculoPlaca)), strings.TrimSpace(item.VehiculoModelo), strings.TrimSpace(item.VehiculoTipo), strings.TrimSpace(item.VehiculoColor), strings.TrimSpace(item.LicenciaConduccion), item.GPSDispositivoID, strings.TrimSpace(item.GPSCodigo), firstTaxiState(item.GPSTipo, "app_movil"), strings.TrimSpace(item.GPSProveedor), firstTaxiState(item.GPSProtocolo, "app_movil"), firstTaxiState(item.Estado, "activo"), strings.TrimSpace(item.Observaciones), time.Now().Format("2006-01-02 15:04:05")}
 	if strings.TrimSpace(item.Pin) != "" {
 		salt, hash := hashTaxiPin(item.Pin)
 		query += `, pin_hash = ?, pin_salt = ?`
@@ -443,8 +467,8 @@ func TaxiDriverLogin(dbConn *sql.DB, empresaID int64, documento, pin string) (Em
 	var item EmpresaTaxiDriver
 	var hash, salt string
 	var online, disponible int
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(pin_hash,''), COALESCE(pin_salt,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo') FROM empresa_taxi_drivers WHERE empresa_id = ? AND documento = ?`, empresaID, strings.TrimSpace(documento)).Scan(
-		&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &hash, &salt, &online, &disponible, &item.Estado,
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(gps_dispositivo_id,0), COALESCE(gps_codigo,''), COALESCE(gps_tipo,'app_movil'), COALESCE(gps_proveedor,''), COALESCE(gps_protocolo,'app_movil'), COALESCE(pin_hash,''), COALESCE(pin_salt,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo') FROM empresa_taxi_drivers WHERE empresa_id = ? AND documento = ?`, empresaID, strings.TrimSpace(documento)).Scan(
+		&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &item.GPSDispositivoID, &item.GPSCodigo, &item.GPSTipo, &item.GPSProveedor, &item.GPSProtocolo, &hash, &salt, &online, &disponible, &item.Estado,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -469,8 +493,8 @@ func TaxiDriverLogin(dbConn *sql.DB, empresaID int64, documento, pin string) (Em
 func ResolveTaxiDriverByToken(dbConn *sql.DB, empresaID int64, token string) (EmpresaTaxiDriver, error) {
 	var item EmpresaTaxiDriver
 	var online, disponible int
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(ultima_latitud,0), COALESCE(ultima_longitud,0), COALESCE(ultima_precision_metros,0), COALESCE(ultima_velocidad_kmh,0), COALESCE(ultimo_reporte_en,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo') FROM empresa_taxi_drivers WHERE empresa_id = ? AND token_sesion = ?`, empresaID, strings.TrimSpace(token)).Scan(
-		&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &item.TokenSesion, &item.TokenExpira, &item.UltimaLatitud, &item.UltimaLongitud, &item.UltimaPrecisionMetros, &item.UltimaVelocidadKMH, &item.UltimoReporteEn, &online, &disponible, &item.Estado,
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(vehiculo_placa,''), COALESCE(vehiculo_modelo,''), COALESCE(vehiculo_tipo,''), COALESCE(vehiculo_color,''), COALESCE(licencia_conduccion,''), COALESCE(gps_dispositivo_id,0), COALESCE(gps_codigo,''), COALESCE(gps_tipo,'app_movil'), COALESCE(gps_proveedor,''), COALESCE(gps_protocolo,'app_movil'), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(ultima_latitud,0), COALESCE(ultima_longitud,0), COALESCE(ultima_precision_metros,0), COALESCE(ultima_velocidad_kmh,0), COALESCE(ultimo_reporte_en,''), COALESCE(online,0), COALESCE(disponible,1), COALESCE(estado,'activo') FROM empresa_taxi_drivers WHERE empresa_id = ? AND token_sesion = ?`, empresaID, strings.TrimSpace(token)).Scan(
+		&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.VehiculoPlaca, &item.VehiculoModelo, &item.VehiculoTipo, &item.VehiculoColor, &item.LicenciaConduccion, &item.GPSDispositivoID, &item.GPSCodigo, &item.GPSTipo, &item.GPSProveedor, &item.GPSProtocolo, &item.TokenSesion, &item.TokenExpira, &item.UltimaLatitud, &item.UltimaLongitud, &item.UltimaPrecisionMetros, &item.UltimaVelocidadKMH, &item.UltimoReporteEn, &online, &disponible, &item.Estado,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -663,8 +687,8 @@ func DispatchTaxiRequestToNearbyDrivers(dbConn *sql.DB, empresaID, requestID, ac
 		return nil, err
 	}
 	type ranked struct {
-		Driver EmpresaTaxiDriver
-		DistKM float64
+		Driver  EmpresaTaxiDriver
+		DistKM  float64
 		TimeMin float64
 	}
 	candidates := make([]ranked, 0)

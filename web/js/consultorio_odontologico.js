@@ -76,9 +76,7 @@
     var el = document.getElementById("odontoNotice");
     if (!el) return;
     el.textContent = text || "";
-    el.style.color = isError ? "#b91c1c" : "";
-    el.style.borderColor = isError ? "rgba(185,28,28,.22)" : "rgba(148,163,184,.18)";
-    el.style.background = isError ? "rgba(254,242,242,.92)" : "rgba(248,250,252,.9)";
+    el.classList.toggle("is-error", !!isError);
   }
 
   async function fetchJSON(url, options) {

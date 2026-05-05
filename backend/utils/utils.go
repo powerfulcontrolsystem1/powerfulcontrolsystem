@@ -587,6 +587,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/red_social_comercial.html":                            {},
 			"/perfil_red_social.html":                               {},
 			"/venta_publica.html":                                   {},
+			"/visualizar_productos_y_precios_publico.html":          {},
 			"/pagar_productos_de_venta_publica.html":                {},
 			"/pagar_licencia.html":                                  {},
 			"/venta_digital.html":                                   {},
@@ -651,6 +652,14 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 		if strings.HasSuffix(strings.ToLower(path), "/venta_publica.html") {
+			trimmed := strings.Trim(path, "/")
+			parts := strings.Split(trimmed, "/")
+			if len(parts) == 2 && strings.TrimSpace(parts[0]) != "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		if strings.HasSuffix(strings.ToLower(path), "/visualizar_productos_y_precios_publico.html") {
 			trimmed := strings.Trim(path, "/")
 			parts := strings.Split(trimmed, "/")
 			if len(parts) == 2 && strings.TrimSpace(parts[0]) != "" {

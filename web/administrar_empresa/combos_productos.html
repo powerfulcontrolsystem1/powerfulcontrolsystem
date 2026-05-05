@@ -7,50 +7,51 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .combo-shell{display:grid;gap:16px}
-    .combo-hero,.combo-card{background:linear-gradient(180deg,rgba(10,24,38,.96),rgba(14,31,48,.92));border:1px solid rgba(120,154,190,.18);border-radius:18px;box-shadow:0 18px 38px rgba(0,0,0,.22);padding:18px}
+    .combo-hero,.combo-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 94%,var(--accent) 6%),color-mix(in srgb,var(--surface-soft) 92%,var(--accent-2) 8%));border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:18px;color:var(--text)}
     .combo-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px}
-    .combo-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(49,157,231,.12);border:1px solid rgba(49,157,231,.24);color:#bde1ff;font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
-    .combo-hero h1,.combo-card h2,.combo-card h3{margin:12px 0 8px;color:#f4f8ff}
-    .combo-hero p,.combo-card p{margin:0;color:#b8cada;line-height:1.55}
+    .combo-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));color:var(--text);font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .combo-hero h1,.combo-card h2,.combo-card h3{margin:12px 0 8px;color:var(--text)}
+    .combo-hero p,.combo-card p{margin:0;color:var(--muted);line-height:1.55}
     .combo-grid-2,.combo-grid-3,.combo-grid-main{display:grid;gap:16px}
     .combo-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
     .combo-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
     .combo-grid-main{grid-template-columns:minmax(0,1.5fr) minmax(340px,.9fr)}
     .combo-inline-metrics{display:grid;gap:10px}
-    .combo-inline-metric{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
-    .combo-inline-metric strong{display:block;color:#f4f8ff}
+    .combo-inline-metric{padding:12px 14px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
+    .combo-inline-metric strong{display:block;color:var(--text)}
     .combo-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .combo-summary-box{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
-    .combo-summary-box span{display:block;font-size:.82rem;color:#9fb4c8;text-transform:uppercase;letter-spacing:.06em}
-    .combo-summary-box strong{display:block;margin-top:8px;color:#f4f8ff;font-size:1.55rem}
+    .combo-summary-box{padding:14px 16px;border-radius:8px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .combo-summary-box span{display:block;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .combo-summary-box strong{display:block;margin-top:8px;color:var(--text);font-size:1.55rem}
     .combo-form{display:grid;gap:16px}
-    .combo-section{padding:16px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(150,176,206,.12)}
+    .combo-section{padding:16px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
     .combo-form-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
     .combo-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .combo-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(150,176,206,.16);color:#edf3fb;font-size:.82rem;font-weight:700}
-    .combo-empty{padding:18px;border-radius:14px;border:1px dashed rgba(150,176,206,.18);color:#9fb4c8;text-align:center}
+    .combo-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.82rem;font-weight:700}
+    .combo-empty{padding:18px;border-radius:8px;border:1px dashed var(--border);color:var(--muted);text-align:center}
     .combo-ingredients-table .table{margin:0}
     .combo-card-list{display:grid;gap:12px}
-    .combo-item{padding:16px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(150,176,206,.12)}
+    .combo-item{padding:16px;border-radius:8px;background:var(--surface);border:1px solid var(--border)}
     .combo-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
     .combo-item-title{display:grid;gap:6px}
-    .combo-item-title strong{font-size:1.02rem;color:#f4f8ff}
-    .combo-item-title small{color:#90a7ba}
+    .combo-item-title strong{font-size:1.02rem;color:var(--text)}
+    .combo-item-title small{color:var(--muted)}
     .combo-item-actions{display:flex;flex-wrap:wrap;gap:8px}
     .combo-item-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
-    .combo-item-stat{padding:10px 12px;border-radius:12px;background:rgba(5,14,24,.34);border:1px solid rgba(150,176,206,.1)}
-    .combo-item-stat span{display:block;color:#8fa5ba;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
-    .combo-item-stat strong{display:block;margin-top:6px;color:#f4f8ff}
-    .combo-status-active{color:#7ef0b4}
-    .combo-status-inactive{color:#ffb4b4}
-    .combo-metric-positive{color:#7ef0b4}
-    .combo-metric-negative{color:#ffb4b4}
-    .combo-helper{color:#9fb4c8;font-size:.92rem}
+    .combo-item-stat{padding:10px 12px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
+    .combo-item-stat span{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+    .combo-item-stat strong{display:block;margin-top:6px;color:var(--text)}
+    .combo-status-active{color:var(--success)}
+    .combo-status-inactive{color:var(--danger)}
+    .combo-metric-positive{color:var(--success)}
+    .combo-metric-negative{color:var(--danger)}
+    .combo-helper{color:var(--muted);font-size:.92rem}
+    .combo-msg-error{color:var(--danger)}
     @media (max-width: 1100px){.combo-grid-main,.combo-hero,.combo-summary-grid,.combo-item-stats{grid-template-columns:1fr}}
     @media (max-width: 880px){.combo-grid-2,.combo-grid-3{grid-template-columns:1fr}}
   </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page">
   <div class="container combo-shell">
     <section class="combo-hero">
       <article>
@@ -325,7 +326,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.textContent = text || '';
-      el.style.color = isError ? '#ef5350' : '';
+      el.classList.toggle('combo-msg-error', !!isError);
     }
 
     async function ensureOk(res) {

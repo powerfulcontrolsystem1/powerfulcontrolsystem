@@ -1,6 +1,39 @@
+2026-05-05: Auditoria de enlaces por empresa y no duplicidad de modulos
+- El menu principal de `web/administrar_empresa.html` queda alineado con `permissionPagesCatalogOrdered` y `web/js/administrar_empresa.js`: no hay enlaces visibles sin regla de pagina ni sin regla frontend.
+- Las claves de modulo del backend (`empresa_permisos.go`), licencias (`web/super/licencias.html`) y menu empresa (`web/js/administrar_empresa.js`) coinciden para modulos base y verticales.
+- No se duplican wrappers ni funciones para resolver permisos: los nuevos verticales reutilizan `withEmpresaRolePermissions` y solo declaran wrappers finos cuando necesitan una clave de modulo independiente.
+- Auditoria estatica ejecutada: sin rutas `/api/empresa` duplicadas, sin claves de modulo duplicadas y todas las rutas empresariales registradas con `WithEmpresa*` o `WithEmpresaPublicScope`.
+
+2026-05-05: Modulo `carnets` para empleados y usuarios
+- Se agrega clave de licencia y permisos `carnets`.
+- La pagina `linkCarnets` queda bajo modulo `carnets` con accion `C`.
+- El endpoint `/api/empresa/carnets` usa `WithEmpresaCarnetsPermissions` y opera siempre dentro del `empresa_id` validado.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y `cajero`; eliminar/revocar queda restringido a `admin_empresa` y `supervisor_sucursal`.
+- La pantalla de licencias (`web/super/licencias.html`) incluye `carnets` como modulo activable y dentro del preset enterprise.
+
+2026-05-05: Rectificacion de aislamiento por empresa en todos los modulos
+- Todas las rutas privadas bajo `/api/empresa/...` deben pasar por un wrapper `WithEmpresa*` o `WithEmpresaPublicScope`.
+- El wrapper central valida que el `empresa_id` usado para permisos sea consistente entre query string, cabecera `X-Empresa-ID`, formulario/multipart y cuerpo JSON.
+- Si una peticion envia `empresa_id` contradictorios, el backend responde `400` con `empresa_id no coincide con el contexto de empresa` antes de llegar al handler del modulo.
+- El contexto `empresaID` queda inyectado en `request.Context()` y las funciones comunes `parseEmpresaIDQuery` / `parseInt64QueryOptional(..., "empresa_id")` priorizan ese contexto.
+- La validacion aplica transversalmente a ventas/POS, estaciones, inventario, compras, clientes, finanzas, facturacion, usuarios, roles, hotel/motel, gimnasio, odontologia, domicilios, Taxi System, turnos, control electrico, hoja de vida, reportes, IA empresarial, backups, soporte remoto, documentos y modulos ERP adicionales.
+- Las rutas publicas (`/api/public/...`) siguen siendo de solo lectura o flujos publicos controlados, y deben resolver empresa por `empresa_id`, slug o token publico segun el contrato de cada modulo.
+
+2026-05-05: Nota operativa para `portal_publico`, carta publica y Motel Calipso
+- `web/index.html` es una superficie publica comercial; sus descripciones de modulos y tarjetas fallback no requieren sesion ni permisos empresariales porque no ejecutan operaciones.
+- La pagina `visualizar_productos_y_precios_publico.html` y la ruta `/{empresa_slug}/visualizar_productos_y_precios_publico.html` son publicas y de solo lectura. Deben pasar por `AuthMiddleware` sin sesion, igual que `venta_publica.html`, porque el alcance de datos se resuelve por slug/empresa y API publica.
+- La administracion de la carta sigue protegida: `administrar_empresa/carta_productos_publica.html` usa modulo `venta_publica`, `linkCartaProductosPublica`, licencia activa y permisos por rol.
+- La publicacion operativa de Motel Calipso (`empresa_id=7`, slug `motel-calipso`) no cambia permisos globales; solo crea/actualiza datos de venta publica, paginas, items y publicaciones de red social dentro de esa empresa.
+
+2026-05-05: Nota operativa para `modulos verticales`, roles y licencias
+- Se agregan claves de modulo independientes para `venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion` y `control_electrico`.
+- Cada clave entra al catalogo central de permisos por rol (R/C/U/D/A), al catalogo de paginas `link*` del panel empresa y a `licencias.modulos_habilitados`, permitiendo activar o desactivar el acceso tanto por licencia como por usuario/rol.
+- Los endpoints protegidos principales dejan de depender del modulo generico `ventas` o `seguridad` cuando existe modulo vertical propio: `WithEmpresaDomiciliosPermissions`, `WithEmpresaTaxiSystemPermissions`, `WithEmpresaGimnasioPermissions`, `WithEmpresaAlquileresPermissions`, `WithEmpresaOdontologiaPermissions`, `WithEmpresaTurnosAtencionPermissions`, `WithEmpresaVentaPublicaPermissions` y `WithEmpresaControlElectricoPermissions`.
+- Las rutas publicas asociadas a taxi, domicilios, turnos y venta publica conservan alcance publico sanitario/operativo; la administracion interna sigue gobernada por licencia + rol + pagina.
+
 2026-05-05: Nota operativa para `carta publica de productos`
-- El acceso `linkCartaProductosPublica` queda registrado bajo modulo `ventas` con accion `C`, porque publica productos hacia la vitrina externa reutilizando `/api/empresa/venta_publica`.
-- La pantalla administrativa tambien consulta `/api/empresa/productos` para leer inventario activo; por tanto los roles operativos deben combinar permiso de ventas para publicar y permiso de inventario para consultar productos.
+- El acceso `linkCartaProductosPublica` queda registrado bajo modulo `venta_publica` con accion `C`, igual que el endpoint administrativo `/api/empresa/venta_publica`.
+- La pantalla administrativa tambien consulta `/api/empresa/productos` para leer inventario activo; por tanto los roles operativos deben combinar permiso de `venta_publica` para publicar y permiso de inventario para consultar productos.
 - La pagina publica `visualizar_productos_y_precios_publico.html` usa `/api/public/venta_publica?action=catalogo` y solo expone catalogo de lectura: no crea pedidos, pagos ni carrito.
 
 2026-04-30: Nota operativa para `chat IA`, `documentos dinamicos`, `empresas compartidas` y `pagos`
@@ -113,7 +146,7 @@
 
 2026-04-24: Nota operativa para `red_social_empresarial` y `venta_publica`
 - La red social empresarial conserva escritura bajo `/api/empresa/publicaciones` con `WithEmpresaVentasPermissions`; la lectura pÃºblica `/api/public/publicaciones` no expone datos sensibles y ahora muestra nombre de empresa para el feed.
-- Venta pÃºblica se administra desde el mÃ³dulo principal `Venta pÃºblica`; `/api/empresa/venta_publica?action=paginas|config|catalogo` mantiene el wrapper de ventas, mientras `/api/public/venta_publica` permanece pÃºblico solo para catÃ¡logo, creaciÃ³n/estado de pago y datos sanitizados.
+- Venta publica se administra desde el modulo independiente `venta_publica`; `/api/empresa/venta_publica?action=paginas|config|catalogo` usa `WithEmpresaVentaPublicaPermissions`, mientras `/api/public/venta_publica` permanece publico solo para catalogo, creacion/estado de pago y datos sanitizados.
 
 2026-04-20: Nota operativa para apariencia global, autenticacion y acceso publico a Juegos
 - La reparacion de `menu.js`, `login.js`, `login_usuario.js` y los endpoints de login solo sincroniza una preferencia visual por usuario (`apariencia`) y no agrega permisos nuevos ni altera wrappers de acceso.
@@ -1110,7 +1143,7 @@ Regla de lectura comun (R):
 | `/api/empresa/chat_tareas/tareas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | colaboracion operativa bajo modulo ventas |
 | `/api/empresa/chat_tareas/citas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | agenda de citas compartida por empresa con recordatorios y estado operativo |
 | `/api/empresa/publicaciones` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | posts de red social empresarial por `empresa_id`; lectura pÃºblica separada en `/api/public/publicaciones` |
-| `/api/empresa/venta_publica` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | configura tienda/pasarelas propias, pÃ¡ginas pÃºblicas (`action=paginas`), productos publicados y Ã³rdenes por empresa |
+| `/api/empresa/venta_publica` | `WithEmpresaVentaPublicaPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | configura tienda/pasarelas propias, paginas publicas (`action=paginas`), productos publicados y ordenes por empresa |
 | `/api/empresa/bodegas` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/categorias_productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
@@ -1138,7 +1171,7 @@ Regla de lectura comun (R):
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
 | `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto` por empresa |
 | `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`/`producto_id` |
-| `/api/empresa/control_electrico` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | configuracion Raspberry Pi, relés GPIO por estacion, pruebas manuales y sincronizacion electrica; requiere prueba con hardware real |
+| `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Raspberry Pi, reles GPIO por estacion, pruebas manuales y sincronizacion electrica; acciones de prueba/sincronizacion requieren `A` |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`) |

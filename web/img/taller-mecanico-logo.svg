@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para talleres mecanicos</title>
+  <desc id="desc">Logo con llave mecanica, engranaje y auto sobre fondo acero.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#4b6476"/>
+    </linearGradient>
+    <linearGradient id="tool" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff6e6"/>
+      <stop offset="100%" stop-color="#ffc46b"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <circle cx="166" cy="92" r="31" fill="#8ff2df"/>
+  <circle cx="166" cy="92" r="13" fill="#1f2937"/>
+  <path d="M74 176l62-62 22 22-62 62c-7 7-18 7-25 0s-7-16 3-22z" fill="url(#tool)"/>
+  <path d="M76 126l13-28c4-8 12-14 22-14h36c10 0 18 6 22 14l13 28" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 132h112v32H72z" fill="#ffffff"/>
+  <circle cx="98" cy="164" r="10" fill="#26374d"/>
+  <circle cx="158" cy="164" r="10" fill="#26374d"/>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para hoteles</title>
+  <desc id="desc">Logo con edificio de hotel, luna y llave sobre fondo azul profundo.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14324d"/>
+      <stop offset="100%" stop-color="#2b6f87"/>
+    </linearGradient>
+    <linearGradient id="front" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cfeeff"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M80 204V78c0-12 10-22 22-22h52c12 0 22 10 22 22v126" fill="url(#front)"/>
+  <path d="M64 204h128" stroke="#fff3d4" stroke-width="14" stroke-linecap="round"/>
+  <path d="M104 96h16M136 96h16M104 124h16M136 124h16M104 152h16M136 152h16" stroke="#27627b" stroke-width="10" stroke-linecap="round"/>
+  <path d="M116 204v-26c0-7 5-12 12-12s12 5 12 12v26" fill="#27627b"/>
+  <path d="M172 58c-16 8-20 28-8 40 8 8 20 10 30 5-7 15-26 20-41 9-17-13-17-39 2-51 6-4 12-5 17-3z" fill="#ffe7a8"/>
+  <circle cx="190" cy="146" r="10" fill="#8ff2df"/>
+  <path d="M190 156v20h18m-9 0v12" stroke="#8ff2df" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

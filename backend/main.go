@@ -733,6 +733,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure control electrico schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
 	}
@@ -883,11 +886,13 @@ func main() {
 	http.HandleFunc("/api/empresa/asistencia_empleados", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAsistenciaEmpleadosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/gimnasio", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGimnasioHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/taxi_system", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTaxiSystemHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/alquileres", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaAlquileresHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/odontologia", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaOdontologiaHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/turnos_atencion", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTurnosAtencionHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/carnets", handlers.WithEmpresaCarnetsPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarnetsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/gimnasio", handlers.WithEmpresaGimnasioPermissions(dbEmpresas, dbSuper, handlers.EmpresaGimnasioHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/taxi_system", handlers.WithEmpresaTaxiSystemPermissions(dbEmpresas, dbSuper, handlers.EmpresaTaxiSystemHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/domicilios", handlers.WithEmpresaDomiciliosPermissions(dbEmpresas, dbSuper, handlers.EmpresaDomiciliosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/alquileres", handlers.WithEmpresaAlquileresPermissions(dbEmpresas, dbSuper, handlers.EmpresaAlquileresHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/odontologia", handlers.WithEmpresaOdontologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaOdontologiaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/turnos_atencion", handlers.WithEmpresaTurnosAtencionPermissions(dbEmpresas, dbSuper, handlers.EmpresaTurnosAtencionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido
 	http.HandleFunc("/api/empresa/publicaciones/", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/publicaciones", handlers.PublicacionesRedSocialHandler(dbEmpresas)) // Publico
@@ -896,10 +901,11 @@ func main() {
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentaPublicaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
 	http.HandleFunc("/api/public/turnos_atencion", handlers.PublicTurnosAtencionHandler(dbEmpresas))
 	http.HandleFunc("/api/public/taxi_system", handlers.PublicTaxiSystemHandler(dbEmpresas))
+	http.HandleFunc("/api/public/domicilios", handlers.PublicDomiciliosHandler(dbEmpresas))
 	http.HandleFunc("/api/public/estacion_vip", handlers.PublicEstacionVIPHandler(dbEmpresas))
 	http.HandleFunc("/api/public/chat_portal", handlers.PublicPortalCompanyChatHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/public/chat_portal_stream", handlers.PublicPortalCompanyChatStreamHandler(dbEmpresas, dbSuper))
@@ -972,7 +978,7 @@ func main() {
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_empresa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosFinosHandler(dbSuper)))

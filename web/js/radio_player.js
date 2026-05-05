@@ -19,6 +19,8 @@
   var miniPlayPause = document.getElementById("radioMiniPlayPause");
   var miniVolume = document.getElementById("radioMiniVolume");
   var miniClose = document.getElementById("radioMiniClose");
+  var enabledToggle = document.getElementById("radioFloatingEnabled");
+  var enabledStatus = document.getElementById("radioFloatingStatus");
 
   var state = {
     stationId: "",
@@ -64,6 +66,7 @@
 
   function renderGrid() {
     if (!grid) return;
+    grid.classList.toggle("is-disabled", !state.enabled);
     grid.innerHTML = stations.map(function (station) {
       var active = state.stationId === station.id;
       return '' +
@@ -75,7 +78,7 @@
         '    <span>' + escapeHTML(station.genre) + '</span>' +
         '  </div>' +
         '  <div class="radio-station-actions">' +
-        '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '">' + (active && state.playing ? 'Sonando' : 'Escuchar') + '</button>' +
+        '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '"' + (!state.enabled ? ' disabled' : '') + '>' + (!state.enabled ? 'Desactivada' : (active && state.playing ? 'Sonando' : 'Escuchar')) + '</button>' +
         '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' +
         '  </div>' +
         '</article>';
@@ -149,11 +152,17 @@
       window.localStorage.setItem(ENABLED_KEY, state.enabled ? "1" : "0");
     } catch (_) {}
     if (!state.enabled) {
-      setDrawerOpen(false);
       stopPlayback();
     }
-    if (openBtn) openBtn.hidden = !state.enabled;
-    if (drawer) drawer.hidden = !state.enabled;
+    if (enabledToggle) enabledToggle.checked = state.enabled;
+    if (enabledStatus) enabledStatus.textContent = state.enabled ? "Lista para reproducir" : "Reproductor apagado";
+    if (openBtn) {
+      openBtn.classList.toggle("is-disabled", !state.enabled);
+      openBtn.setAttribute("aria-pressed", state.enabled ? "true" : "false");
+      openBtn.setAttribute("title", state.enabled ? "Abrir radio online" : "Radio apagada. Abrir para activarla.");
+      var label = openBtn.querySelector(".ai-chat-toggle-label");
+      if (label) label.textContent = state.enabled ? "Radio online" : "Radio apagada";
+    }
     renderGrid();
     updateMiniPlayer();
   }
@@ -176,10 +185,12 @@
 
   function wireEvents() {
     if (openBtn) openBtn.addEventListener("click", function () {
-      if (!state.enabled) return;
       setDrawerOpen(!drawer.classList.contains("is-open"));
     });
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
+    if (enabledToggle) enabledToggle.addEventListener("change", function () {
+      setRadioEnabled(!!enabledToggle.checked);
+    });
     if (miniClose) miniClose.addEventListener("click", stopPlayback);
     if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
     if (miniVolume) miniVolume.addEventListener("input", function () {
