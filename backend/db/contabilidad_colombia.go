@@ -569,12 +569,45 @@ func CerrarEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, 
 		return errors.New("no se puede cerrar un periodo descuadrado")
 	}
 	_, err := ExecCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_periodos (empresa_id,periodo,estado,total_debito,total_credito,diferencia,cerrado_por,fecha_cierre,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) ON CONFLICT (empresa_id,periodo) DO UPDATE SET estado='cerrado', total_debito=EXCLUDED.total_debito, total_credito=EXCLUDED.total_credito, diferencia=EXCLUDED.diferencia, cerrado_por=EXCLUDED.cerrado_por, fecha_cierre=CURRENT_TIMESTAMP, observaciones=EXCLUDED.observaciones, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=EXCLUDED.usuario_creador`, empresaID, periodo, "cerrado", deb, cred, diff, usuario, strings.TrimSpace(observaciones), usuario)
-	return err
+	if err != nil {
+		return err
+	}
+	t, _ := time.Parse("2006-01", periodo)
+	_, _ = UpsertEmpresaCierreFiscalPeriodo(dbConn, EmpresaCierreFiscalPeriodo{
+		EmpresaID:           empresaID,
+		Periodo:             periodo,
+		FechaDesde:          periodo + "-01",
+		FechaHasta:          lastDayOfCierreFiscalMonth(t),
+		TipoCierre:          "mensual",
+		EstadoPeriodo:       "cerrado",
+		BloqueaVentas:       false,
+		BloqueaCompras:      false,
+		BloqueaCaja:         false,
+		BloqueaInventario:   false,
+		BloqueaContabilidad: true,
+		BloqueaFacturacion:  true,
+		CerradoPor:          usuario,
+		FechaCierre:         time.Now().Format(time.RFC3339),
+		Motivo:              strings.TrimSpace(observaciones),
+		Observaciones:       "Sincronizado desde cierre de Contabilidad Colombia.",
+		UsuarioCreador:      usuario,
+	})
+	return nil
 }
 
 func ReabrirEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, usuario, observaciones string) error {
 	_, err := ExecCompat(dbConn, `UPDATE empresa_contabilidad_colombia_periodos SET estado='abierto', observaciones=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=COALESCE(NULLIF(?,''),usuario_creador) WHERE empresa_id=? AND periodo=?`, strings.TrimSpace(observaciones), usuario, empresaID, strings.TrimSpace(periodo))
-	return err
+	if err != nil {
+		return err
+	}
+	fiscales, _ := ListEmpresaCierreFiscalPeriodos(dbConn, empresaID, "", 240)
+	for _, p := range fiscales {
+		if p.Periodo == strings.TrimSpace(periodo) {
+			_, _ = CambiarEstadoEmpresaCierreFiscalPeriodo(dbConn, empresaID, p.ID, "abierto", usuario, strings.TrimSpace(observaciones))
+			break
+		}
+	}
+	return nil
 }
 
 func BuildEmpresaContabilidadDashboard(dbConn *sql.DB, empresaID int64) (EmpresaContabilidadDashboard, error) {

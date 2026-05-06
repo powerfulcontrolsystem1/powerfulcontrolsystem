@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-05-05.1.0
-Ultima actualizacion: 2026-05-05
+Version: 2026-05-06.1.0
+Ultima actualizacion: 2026-05-06
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -19,6 +19,47 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-05-06 (portal de terceros y certificados tributarios)
+- `empresa_portal_terceros`: maestro de terceros por `empresa_id`, tipo, documento, DV, razon social, contacto, regimen, estado, token y auditoria.
+- `empresa_certificados_tributarios`: certificados por tercero y empresa, tipo de certificado, periodo, base, retenciones, total, estado, firma, token publico y fechas de emision/envio/anulacion.
+- `empresa_certificados_tributarios_descargas`: bitacora de descargas publicas con certificado, tercero, canal, IP, navegador y fecha.
+
+Actualizacion 2026-05-06 (activos fijos NIIF/Fiscal)
+- `empresa_contabilidad_activos_fijos`: se amplia como libro maestro de PPE e intangibles por `empresa_id`, con campos NIIF (`vida_util_meses`, `metodo_depreciacion`, `depreciacion_acumulada`, `deterioro_acumulado`, `valor_razonable`, `valor_libros`) y fiscales (`base_fiscal`, `vida_util_fiscal_meses`, `metodo_depreciacion_fiscal`, `depreciacion_acumulada_fiscal`, `valor_fiscal`, `diferencia_niif_fiscal`).
+- `empresa_contabilidad_activos_depreciacion`: conserva la depreciacion mensual por activo y periodo, usada por la nueva API `/api/empresa/activos_fijos_niif_fiscal`.
+- `empresa_contabilidad_activos_eventos`: registra traslados, mantenimientos, ajustes, bajas, ventas y retiros con ubicacion, responsable, valor, detalle y auditoria.
+
+Actualizacion 2026-05-06 (centros de costo y rentabilidad)
+- `empresa_centros_costo`: maestro de centros por `empresa_id`, codigo, nombre, tipo, nivel, padre, responsable, sucursal, area, unidad de negocio, meta de margen, estado y auditoria.
+- `empresa_centros_costo_reglas`: reglas de imputacion por `empresa_id`, centro, origen de modulo, categoria, tercero/cuenta patron, porcentaje, prioridad, activa, estado y auditoria.
+- `empresa_centros_costo_presupuestos`: presupuesto por `empresa_id`, centro, periodo, escenario, ingresos, egresos, meta de margen, responsable, estado y auditoria.
+- `empresa_declaraciones_tributarias`: declaraciones por `empresa_id`, tipo, periodo, anio, periodicidad, rango, vencimiento, NIT/municipio, formulario, bases, IVA, retenciones, consumo, anticipos, sanciones, intereses, saldos, estado, soportes y auditoria.
+- `empresa_declaraciones_tributarias_movimientos`: detalle de conciliacion por `empresa_id`, declaracion, tipo, periodo, modulo origen, referencia, tercero, concepto, base, impuesto, retencion, naturaleza y estado.
+- `empresa_calendario_tributario`: calendario editable por `empresa_id`, tipo de declaracion, anio, periodo, periodicidad, rango, vencimiento, digitos de NIT, estado y observaciones.
+- `empresa_wms_ubicaciones`: ubicaciones internas por `empresa_id`, codigo, bodega, zona, pasillo, rack, nivel, posicion, tipo, capacidad, ocupacion y estado.
+- `empresa_wms_ordenes`: ordenes WMS por `empresa_id`, codigo, tipo, documento origen, tercero/cliente, fecha compromiso, prioridad, responsable, estado y auditoria.
+- `empresa_wms_items`: items de picking/packing por `empresa_id`, orden, producto/SKU, ubicacion origen/destino, lote, serial, cantidades solicitadas/pickeadas/empacadas y estado.
+- `empresa_wms_despachos`: despachos por `empresa_id`, orden, codigo, transportadora, guia, conductor, vehiculo, ruta, fechas, flete y estado.
+- `empresa_wms_eventos`: bitacora de operaciones WMS por `empresa_id`, referencia, evento, cambio de estado, detalle y usuario.
+- El dashboard del modulo no crea movimientos duplicados: consolida datos existentes con `centro_costo` desde contabilidad Colombia, tesoreria, compras avanzadas, captura OCR/IA y AIU construccion.
+
+Actualizacion 2026-05-06 (propiedad horizontal)
+- `empresa_propiedad_horizontal_config`: configuracion de copropiedad por `empresa_id`, con datos fiscales, contacto, mora, facturacion electronica y portal de residentes.
+- `empresa_propiedad_horizontal_unidades`: unidades privadas/comunes, torres, coeficiente, cuota base, parqueadero, deposito y estado.
+- `empresa_propiedad_horizontal_personas`: propietarios, residentes, arrendatarios y apoderados vinculados a unidades.
+- `empresa_propiedad_horizontal_cargos`: cuotas ordinarias/extraordinarias, multas, mora, descuentos, total, saldo y vencimiento.
+- `empresa_propiedad_horizontal_recaudos`: pagos aplicados a unidad/cargo con metodo, referencia y valor.
+- `empresa_propiedad_horizontal_pqrs`: peticiones, quejas, reclamos, mantenimiento y seguridad con prioridad/responsable.
+- `empresa_propiedad_horizontal_asambleas`: convocatorias, quorum, acta y estado.
+- `configuraciones`: claves `licencias.asesor_promo.enabled`, `licencias.asesor_promo.percent` y `licencias.asesor_promo.updated_by` para promocion de licencias por asesor.
+
+Actualizacion 2026-05-06 (cierre y bloqueo fiscal)
+- `empresa_cierre_fiscal_politicas`: politica por `empresa_id` y modulo, con bloqueo automatico, dias de edicion retroactiva, reapertura aprobada, excepciones, notificacion post-cierre, estado y auditoria.
+- `empresa_cierre_fiscal_periodos`: periodos por empresa con rango de fechas, estado (`abierto`, `en_revision`, `cerrado`, `bloqueado`) y banderas para bloquear ventas, compras, caja, inventario, contabilidad y facturacion.
+- `empresa_cierre_fiscal_excepciones`: autorizaciones temporales por periodo, modulo, accion y documento para operar sobre periodos cerrados.
+- `empresa_cierre_fiscal_eventos`: bitacora de validaciones, bloqueos, cierres, reaperturas y acciones post-cierre.
+- `empresa_contabilidad_colombia_periodos` queda sincronizado con `empresa_cierre_fiscal_periodos` al cerrar o reabrir desde Contabilidad Colombia.
 
 Actualizacion 2026-05-05 (carnets empresariales por empresa)
 - `empresa_carnets_plantillas`: plantillas visuales por `empresa_id` para carnets modernos. Incluye tipo, orientacion, ancho/alto, colores, visibilidad de logo/foto/QR/codigo de barras, campos visibles, diseno JSON, plantilla predeterminada, estado y auditoria basica.

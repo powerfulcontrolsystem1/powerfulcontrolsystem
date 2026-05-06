@@ -1220,14 +1220,24 @@ func activateLicenciaCheckoutContext(dbSuper *sql.DB, licenciaID, empresaID int6
 type licenciaCheckoutSummary struct {
 	OriginalValue             float64 `json:"original_value"`
 	DiscountValue             float64 `json:"discount_value"`
+	AdvisorDiscountValue      float64 `json:"advisor_discount_value,omitempty"`
+	AdvisorDiscountPercent    float64 `json:"advisor_discount_percent,omitempty"`
 	TotalValue                float64 `json:"total_value"`
 	DiscountCode              string  `json:"discount_code,omitempty"`
+	AsesorID                  string  `json:"asesor_id,omitempty"`
 	DiscountApplied           bool    `json:"discount_applied"`
 	DiscountLabel             string  `json:"discount_label,omitempty"`
+	AdvisorDiscountApplied    bool    `json:"advisor_discount_applied,omitempty"`
+	AdvisorDiscountLabel      string  `json:"advisor_discount_label,omitempty"`
 	IsZeroTotal               bool    `json:"is_zero_total"`
 	ZeroTotalBlocked          bool    `json:"zero_total_blocked"`
 	CanActivateWithoutPayment bool    `json:"can_activate_without_payment"`
 	Message                   string  `json:"message,omitempty"`
+}
+
+type licenciaAdvisorPromoConfig struct {
+	Enabled bool    `json:"enabled"`
+	Percent float64 `json:"percent"`
 }
 
 func roundLicenciaCheckoutAmount(value float64) float64 {
@@ -1308,6 +1318,55 @@ func resolveLicenciaDiscountAmount(dbSuper *sql.DB, discountCode string, origina
 	return amount, label, ok, nil
 }
 
+func readLicenciaAdvisorPromoConfig(dbSuper *sql.DB) (licenciaAdvisorPromoConfig, error) {
+	cfg := licenciaAdvisorPromoConfig{Enabled: false, Percent: 10}
+	rawEnabled, _, err := dbpkg.GetConfigValue(dbSuper, "licencias.asesor_promo.enabled")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return cfg, err
+	}
+	cfg.Enabled = parseBoolConfigValue(rawEnabled)
+	rawPct, _, err := dbpkg.GetConfigValue(dbSuper, "licencias.asesor_promo.percent")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return cfg, err
+	}
+	if pct, perr := strconv.ParseFloat(strings.ReplaceAll(strings.TrimSpace(rawPct), ",", "."), 64); perr == nil {
+		cfg.Percent = pct
+	}
+	if cfg.Percent < 0 {
+		cfg.Percent = 0
+	}
+	if cfg.Percent > 100 {
+		cfg.Percent = 100
+	}
+	return cfg, nil
+}
+
+func resolveLicenciaAdvisorDiscountAmount(dbSuper *sql.DB, asesorID string, subtotal float64) (float64, float64, string, bool, error) {
+	asesorID = strings.ToUpper(strings.TrimSpace(asesorID))
+	if asesorID == "" || subtotal <= 0 {
+		return 0, 0, "", false, nil
+	}
+	cfg, err := readLicenciaAdvisorPromoConfig(dbSuper)
+	if err != nil {
+		return 0, 0, "", false, err
+	}
+	if !cfg.Enabled || cfg.Percent <= 0 {
+		return 0, cfg.Percent, "", false, nil
+	}
+	advisor, err := dbpkg.GetAsesorComercialByCode(dbSuper, asesorID)
+	if err != nil {
+		return 0, cfg.Percent, "", false, err
+	}
+	if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
+		return 0, cfg.Percent, "", false, fmt.Errorf("codigo de asesor invalido o no aceptado: %s", asesorID)
+	}
+	amount := roundLicenciaCheckoutAmount(subtotal * (cfg.Percent / 100))
+	if amount > subtotal {
+		amount = subtotal
+	}
+	return amount, cfg.Percent, fmt.Sprintf("Promocion asesor %s %.2f%%", asesorID, cfg.Percent), amount > 0, nil
+}
+
 func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (bool, error) {
 	if lic == nil || empresaID <= 0 {
 		return false, nil
@@ -1321,7 +1380,7 @@ func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, emp
 	return dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
 }
 
-func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (licenciaCheckoutSummary, error) {
+func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, asesorID string) (licenciaCheckoutSummary, error) {
 	summary := licenciaCheckoutSummary{}
 	if lic == nil {
 		return summary, errors.New("licencia no disponible")
@@ -1343,7 +1402,12 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	if discountValue > originalValue {
 		discountValue = originalValue
 	}
-	totalValue := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	subtotalAfterDiscount := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	advisorDiscount, advisorPct, advisorLabel, advisorApplied, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, asesorID, subtotalAfterDiscount)
+	if err != nil {
+		return summary, err
+	}
+	totalValue := roundLicenciaCheckoutAmount(subtotalAfterDiscount - advisorDiscount)
 	isZeroTotal := totalValue <= 0
 	zeroBlocked := false
 	if isZeroTotal {
@@ -1354,11 +1418,16 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	}
 	summary = licenciaCheckoutSummary{
 		OriginalValue:             originalValue,
-		DiscountValue:             discountValue,
+		DiscountValue:             roundLicenciaCheckoutAmount(discountValue + advisorDiscount),
+		AdvisorDiscountValue:      advisorDiscount,
+		AdvisorDiscountPercent:    advisorPct,
 		TotalValue:                totalValue,
 		DiscountCode:              strings.TrimSpace(discountCode),
+		AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
 		DiscountApplied:           discountApplied && discountValue > 0,
 		DiscountLabel:             discountLabel,
+		AdvisorDiscountApplied:    advisorApplied,
+		AdvisorDiscountLabel:      advisorLabel,
 		IsZeroTotal:               isZeroTotal,
 		ZeroTotalBlocked:          zeroBlocked,
 		CanActivateWithoutPayment: isZeroTotal && !zeroBlocked,
@@ -1371,16 +1440,16 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 		}
 	} else if isZeroTotal {
 		summary.Message = "El total quedó en cero. Puedes activar la licencia sin pasar por la pasarela."
-	} else if summary.DiscountApplied {
+	} else if summary.DiscountApplied || summary.AdvisorDiscountApplied {
 		summary.Message = "Se aplicó el descuento y el total ya está actualizado para el checkout."
 	}
 	return summary, nil
 }
 
-func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {
+func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, asesorID, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
 	if mode == "" {
-		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode)
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode, asesorID)
 		return summary, nil, err
 	}
 	bundle, err := dbpkg.BuildEmpresaLicenciaBundleSummary(dbSuper, empresaID, mode, addonLicenciaIDs)
@@ -1401,14 +1470,24 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 			return licenciaCheckoutSummary{}, nil, fmt.Errorf("este codigo de descuento ya fue usado por esta empresa")
 		}
 	}
-	totalValue := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	subtotalAfterDiscount := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	advisorDiscount, advisorPct, advisorLabel, advisorApplied, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, asesorID, subtotalAfterDiscount)
+	if err != nil {
+		return licenciaCheckoutSummary{}, nil, err
+	}
+	totalValue := roundLicenciaCheckoutAmount(subtotalAfterDiscount - advisorDiscount)
 	summary := licenciaCheckoutSummary{
 		OriginalValue:             originalValue,
-		DiscountValue:             discountValue,
+		DiscountValue:             roundLicenciaCheckoutAmount(discountValue + advisorDiscount),
+		AdvisorDiscountValue:      advisorDiscount,
+		AdvisorDiscountPercent:    advisorPct,
 		TotalValue:                totalValue,
 		DiscountCode:              strings.TrimSpace(discountCode),
+		AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
 		DiscountApplied:           discountApplied && discountValue > 0,
 		DiscountLabel:             discountLabel,
+		AdvisorDiscountApplied:    advisorApplied,
+		AdvisorDiscountLabel:      advisorLabel,
 		IsZeroTotal:               totalValue <= 0,
 		ZeroTotalBlocked:          false,
 		CanActivateWithoutPayment: totalValue <= 0,
@@ -1422,6 +1501,9 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 	if summary.DiscountApplied {
 		summary.Message += " Se aplicó el descuento al total agrupado."
 	}
+	if summary.AdvisorDiscountApplied {
+		summary.Message += " Se aplico la promocion por codigo de asesor."
+	}
 	return summary, bundle, nil
 }
 
@@ -1434,6 +1516,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		licenciaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("licencia_id")), 10, 64)
 		empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
 		discountCode := strings.TrimSpace(r.URL.Query().Get("discount_code"))
+		asesorID := strings.TrimSpace(r.URL.Query().Get("asesor_id"))
 		checkoutMode := strings.TrimSpace(r.URL.Query().Get("checkout_mode"))
 		addonLicenciaIDs := parseLicenciaIDsCSV(r.URL.Query().Get("addon_licencia_ids"))
 		if licenciaID <= 0 {
@@ -1449,7 +1532,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if empresaID > 0 {
 			empresa, _ = dbpkg.GetEmpresaByID(dbSuper, empresaID)
 		}
-		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, empresaID, discountCode, checkoutMode, addonLicenciaIDs)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, empresaID, discountCode, asesorID, checkoutMode, addonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve checkout summary: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -3432,7 +3515,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -4287,7 +4370,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
@@ -5114,7 +5197,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			return
 		}
 
-		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.CheckoutMode, payload.AddonLicenciaIDs)
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
 			return

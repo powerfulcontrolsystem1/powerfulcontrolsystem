@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Portal de terceros y certificados tributarios</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.pt-page{margin:0;background:var(--page-bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    [data-theme="dark"] body.pt-page,body.dark.pt-page{background:#0f1724;color:#e8eef7}
+    .pt-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}.pt-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}.pt-head h1{margin:0;font-size:23px}.pt-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:900px}.pt-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .pt-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--button-bg,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.pt-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}.pt-btn.small{min-height:31px;padding:5px 8px;font-size:12px}
+    .pt-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.pt-kpi,.pt-box{background:var(--card-bg,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.pt-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.pt-kpi strong{display:block;margin-top:6px;font-size:20px;line-height:1.1}
+    .pt-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.pt-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.pt-tab.is-active{border-color:#1769e0;color:#1769e0}.pt-panel{display:none}.pt-panel.is-active{display:grid;gap:12px}
+    .pt-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(380px,.65fr);gap:12px;align-items:start}.pt-form{display:grid;gap:9px}.pt-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.pt-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}.pt-field{display:grid;gap:4px}.pt-field label{font-size:12px;color:var(--muted,#65758b)}.pt-field input,.pt-field select,.pt-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.pt-field textarea{min-height:74px;resize:vertical}
+    .pt-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.pt-table{width:100%;min-width:1040px;border-collapse:collapse;background:var(--card-bg,#fff)}.pt-table th,.pt-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px;vertical-align:top}.pt-table th{color:var(--muted,#65758b)}.pt-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}.pt-good{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}.pt-warn{background:color-mix(in srgb,#f59e0b 16%,transparent);color:#b45309}.pt-bad{background:color-mix(in srgb,#ef4444 14%,transparent);color:#b91c1c}
+    .pt-list{display:grid;gap:8px}.pt-alert{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;background:color-mix(in srgb,#f59e0b 10%,transparent)}.pt-muted{color:var(--muted,#65758b)}.pt-msg{min-height:24px;color:var(--muted,#65758b)}.pt-msg.is-error{color:#c43737}.pt-copy{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+    @media(max-width:1120px){.pt-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.pt-grid{grid-template-columns:1fr}.pt-head{display:grid}.pt-actions{justify-content:flex-start}}@media(max-width:720px){.pt-shell{padding:12px}.pt-kpis,.pt-row,.pt-row.three{grid-template-columns:1fr}.pt-tab{flex:1 1 42%}.pt-table{min-width:940px}}
+  </style>
+</head>
+<body class="pt-page">
+  <main class="pt-shell">
+    <header class="pt-head">
+      <div>
+        <h1>Portal de terceros y certificados tributarios</h1>
+        <p>Emite certificados de retenciones, ingresos y soportes tributarios para proveedores, clientes, empleados y contratistas con enlace público seguro, trazabilidad y control por empresa.</p>
+      </div>
+      <div class="pt-actions">
+        <button id="btnRefresh" class="pt-btn" type="button">Actualizar</button>
+        <button id="btnSeed" class="pt-btn" type="button">Cargar demo</button>
+        <button id="btnExport" class="pt-btn primary" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="pt-kpis">
+      <article class="pt-kpi"><span>Terceros activos</span><strong id="kpiTerceros">0</strong></article>
+      <article class="pt-kpi"><span>Emitidos</span><strong id="kpiEmitidos">0</strong></article>
+      <article class="pt-kpi"><span>Borradores</span><strong id="kpiBorrador">0</strong></article>
+      <article class="pt-kpi"><span>Anulados</span><strong id="kpiAnulados">0</strong></article>
+      <article class="pt-kpi"><span>Descargas mes</span><strong id="kpiDescargas">0</strong></article>
+      <article class="pt-kpi"><span>Retenciones</span><strong id="kpiRetenciones">$0</strong></article>
+    </section>
+
+    <nav class="pt-tabs">
+      <button class="pt-tab is-active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="pt-tab" data-tab="terceros" type="button">Terceros</button>
+      <button class="pt-tab" data-tab="certificados" type="button">Certificados</button>
+      <button class="pt-tab" data-tab="descargas" type="button">Descargas</button>
+    </nav>
+    <div id="msg" class="pt-msg"></div>
+
+    <section id="tab-dashboard" class="pt-panel is-active">
+      <div class="pt-grid">
+        <div class="pt-box"><h2>Certificados recientes</h2><div id="certificadosResumen" class="pt-table-wrap"></div></div>
+        <aside class="pt-box"><h2>Alertas</h2><div id="alertas" class="pt-list"></div></aside>
+      </div>
+    </section>
+
+    <section id="tab-terceros" class="pt-panel">
+      <div class="pt-grid">
+        <form id="terceroForm" class="pt-box pt-form">
+          <h2>Tercero</h2>
+          <input id="terceroId" type="hidden">
+          <div class="pt-row three"><div class="pt-field"><label>Tipo</label><select id="tipoTercero"><option value="proveedor">Proveedor</option><option value="cliente">Cliente</option><option value="empleado">Empleado</option><option value="contratista">Contratista</option><option value="contador">Contador</option><option value="accionista">Accionista</option><option value="otro">Otro</option></select></div><div class="pt-field"><label>Documento</label><input id="documento" required></div><div class="pt-field"><label>DV</label><input id="dv"></div></div>
+          <div class="pt-field"><label>Razón social / Nombre</label><input id="razonSocial" required></div>
+          <div class="pt-row three"><div class="pt-field"><label>Email</label><input id="email" type="email"></div><div class="pt-field"><label>Teléfono</label><input id="telefono"></div><div class="pt-field"><label>Ciudad</label><input id="ciudad"></div></div>
+          <div class="pt-row"><div class="pt-field"><label>Régimen</label><select id="regimen"><option value="responsable_iva">Responsable IVA</option><option value="no_responsable_iva">No responsable IVA</option><option value="simple">Simple</option><option value="gran_contribuyente">Gran contribuyente</option><option value="persona_natural">Persona natural</option><option value="no_residente">No residente</option></select></div><div class="pt-field"><label>Estado</label><select id="estadoTercero"><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="bloqueado">Bloqueado</option><option value="archivado">Archivado</option></select></div></div>
+          <div class="pt-field"><label>Dirección</label><input id="direccion"></div>
+          <div class="pt-field"><label>Observaciones</label><textarea id="obsTercero"></textarea></div>
+          <button class="pt-btn primary" type="submit">Guardar tercero</button>
+        </form>
+        <div class="pt-box"><h2>Maestro de terceros</h2><div id="tercerosTable" class="pt-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-certificados" class="pt-panel">
+      <div class="pt-grid">
+        <form id="certForm" class="pt-box pt-form">
+          <h2>Certificado tributario</h2>
+          <input id="certId" type="hidden">
+          <div class="pt-row"><div class="pt-field"><label>Tercero</label><select id="certTercero"></select></div><div class="pt-field"><label>Tipo certificado</label><select id="tipoCert"><option value="retencion_fuente">Retención en la fuente</option><option value="retencion_iva">Retención IVA</option><option value="retencion_ica">Retención ICA</option><option value="ingresos_retenciones">Ingresos y retenciones</option><option value="certificado_proveedor">Certificado proveedor</option><option value="certificado_cliente">Certificado cliente</option><option value="autorretenedores">Autorretenedores</option><option value="otro">Otro</option></select></div></div>
+          <div class="pt-row three"><div class="pt-field"><label>Año</label><input id="anio" type="number" min="2000"></div><div class="pt-field"><label>Desde</label><input id="desde" type="date"></div><div class="pt-field"><label>Hasta</label><input id="hasta" type="date"></div></div>
+          <div class="pt-field"><label>Concepto</label><input id="concepto" placeholder="Pagos, compras, servicios o ingresos certificados"></div>
+          <div class="pt-row three"><div class="pt-field"><label>Base</label><input id="baseValor" type="number" step="0.01" value="0"></div><div class="pt-field"><label>Ret. fuente</label><input id="retFuente" type="number" step="0.01" value="0"></div><div class="pt-field"><label>Ret. IVA</label><input id="retIVA" type="number" step="0.01" value="0"></div></div>
+          <div class="pt-row three"><div class="pt-field"><label>Ret. ICA</label><input id="retICA" type="number" step="0.01" value="0"></div><div class="pt-field"><label>Otros</label><input id="otros" type="number" step="0.01" value="0"></div><div class="pt-field"><label>Estado</label><select id="estadoCert"><option value="emitido">Emitido</option><option value="borrador">Borrador</option><option value="enviado">Enviado</option><option value="anulado">Anulado</option></select></div></div>
+          <div class="pt-row"><div class="pt-field"><label>Firma</label><input id="firmaNombre" placeholder="Nombre firmante"></div><div class="pt-field"><label>Cargo</label><input id="firmaCargo" placeholder="Contador / Representante legal"></div></div>
+          <div class="pt-field"><label>Observaciones</label><textarea id="obsCert"></textarea></div>
+          <button class="pt-btn primary" type="submit">Guardar certificado</button>
+        </form>
+        <div class="pt-box"><h2>Certificados</h2><div id="certificadosTable" class="pt-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-descargas" class="pt-panel">
+      <div class="pt-box"><h2>Bitácora de descargas</h2><div id="descargasTable" class="pt-table-wrap"></div></div>
+    </section>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state={empresaId:resolveEmpresaId(),dashboard:null,terceros:[],certificados:[],descargas:[]};
+      function el(id){return document.getElementById(id)} function val(id){return (el(id)&&el(id).value||"").trim()} function num(id){return Number(val(id)||0)} function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+      function money(n){return Number(n||0).toLocaleString("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0})}
+      function resolveEmpresaId(){var s=[location.search];try{if(window.parent&&window.parent!==window)s.push(window.parent.location.search)}catch(_){}for(var i=0;i<s.length;i++){var id=new URLSearchParams(s[i]).get("empresa_id");if(id)return id}try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||""}catch(_){return ""}}
+      function api(action,options,extra){if(!state.empresaId)return Promise.reject(new Error("empresa_id no disponible"));var url="/api/empresa/portal_terceros_certificados?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+(extra||"");return fetch(url,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},options||{})).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t||r.statusText)});return r.json()})}
+      function msg(t,e){el("msg").textContent=t||"";el("msg").classList.toggle("is-error",!!e)} function chip(v,c){return '<span class="pt-chip '+(c||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>'}
+      function publicUrl(token){return location.origin+"/visualizar_certificado_tributario_publico.html?token="+encodeURIComponent(token||"")}
+      function defaults(){var y=new Date().getFullYear();if(!val("anio"))el("anio").value=y;if(!val("desde"))el("desde").value=y+"-01-01";if(!val("hasta"))el("hasta").value=y+"-12-31"}
+      function load(){defaults();msg("Cargando...");Promise.all([api("dashboard"),api("terceros"),api("certificados"),api("descargas")]).then(function(rows){state.dashboard=rows[0]||{};state.terceros=rows[1]||[];state.certificados=rows[2]||[];state.descargas=rows[3]||[];render();msg("Actualizado")}).catch(function(e){msg(e.message,true)})}
+      function render(){var d=state.dashboard||{};el("kpiTerceros").textContent=d.terceros_activos||0;el("kpiEmitidos").textContent=d.certificados_emitidos||0;el("kpiBorrador").textContent=d.certificados_borrador||0;el("kpiAnulados").textContent=d.certificados_anulados||0;el("kpiDescargas").textContent=d.descargas_mes||0;el("kpiRetenciones").textContent=money(d.retenciones_total);renderTerceros();renderCertificados();renderDescargas();renderAlertas();fillSelects();el("certificadosResumen").innerHTML=el("certificadosTable").innerHTML}
+      function renderAlertas(){el("alertas").innerHTML=((state.dashboard||{}).alertas||[]).map(function(a){return '<div class="pt-alert">'+esc(a)+'</div>'}).join("")||'<div class="pt-muted">Sin alertas.</div>'}
+      function renderTerceros(){var rows=state.terceros||[];el("tercerosTable").innerHTML=rows.length?'<table class="pt-table"><thead><tr><th>Tercero</th><th>Documento</th><th>Contacto</th><th>Regimen</th><th>Certificados</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td><strong>'+esc(x.razon_social)+'</strong><br>'+chip(x.tipo_tercero)+'</td><td>'+esc(x.tipo_documento||"NIT")+" "+esc(x.documento)+(x.dv?"-"+esc(x.dv):"")+'</td><td>'+esc(x.email||"-")+'<br>'+esc(x.telefono||"")+'</td><td>'+chip(x.regimen)+'</td><td>'+esc(x.certificados||0)+' cert. / '+esc(x.descargas||0)+' desc.</td><td>'+chip(x.estado,x.estado==="activo"?"pt-good":"pt-warn")+'</td><td><button class="pt-btn small" data-edit-tercero="'+x.id+'">Editar</button></td></tr>'}).join("")+'</tbody></table>':'<div class="pt-muted" style="padding:12px">Sin terceros.</div>'}
+      function renderCertificados(){var rows=state.certificados||[];el("certificadosTable").innerHTML=rows.length?'<table class="pt-table"><thead><tr><th>Número</th><th>Tercero</th><th>Tipo</th><th>Periodo</th><th>Base</th><th>Retenciones</th><th>Estado</th><th>Portal</th></tr></thead><tbody>'+rows.map(function(x){var url=publicUrl(x.public_token);return '<tr><td><strong>'+esc(x.numero_certificado)+'</strong><br>'+esc(x.fecha_emision||"")+'</td><td>'+esc(x.tercero_nombre||"-")+'<br>'+esc(x.tercero_documento||"")+'</td><td>'+chip(x.tipo_certificado)+'</td><td>'+esc(x.periodo_desde)+' a '+esc(x.periodo_hasta)+'</td><td>'+money(x.base_valor)+'</td><td>'+money(x.total_certificado)+'</td><td>'+chip(x.estado,x.estado==="emitido"||x.estado==="enviado"?"pt-good":(x.estado==="anulado"?"pt-bad":"pt-warn"))+'</td><td><span class="pt-copy">'+esc(url)+'</span><br><button class="pt-btn small" data-open-public="'+esc(url)+'">Ver</button> <button class="pt-btn small" data-copy="'+esc(url)+'">Copiar</button></td></tr>'}).join("")+'</tbody></table>':'<div class="pt-muted" style="padding:12px">Sin certificados.</div>'}
+      function renderDescargas(){var rows=state.descargas||[];el("descargasTable").innerHTML=rows.length?'<table class="pt-table"><thead><tr><th>Fecha</th><th>Certificado</th><th>Tercero</th><th>Canal</th><th>IP</th><th>Navegador</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td>'+esc(x.fecha_descarga)+'</td><td>#'+esc(x.certificado_id)+'</td><td>#'+esc(x.tercero_id)+'</td><td>'+chip(x.canal)+'</td><td>'+esc(x.ip||"-")+'</td><td>'+esc(x.user_agent||"-")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="pt-muted" style="padding:12px">Sin descargas registradas.</div>'}
+      function fillSelects(){el("certTercero").innerHTML=(state.terceros||[]).filter(function(x){return x.estado==="activo"}).map(function(x){return '<option value="'+x.id+'">'+esc(x.razon_social+" - "+x.documento)+'</option>'}).join("")}
+      document.addEventListener("click",function(ev){var t=ev.target.closest("[data-tab]");if(t){document.querySelectorAll(".pt-tab").forEach(function(b){b.classList.toggle("is-active",b===t)});document.querySelectorAll(".pt-panel").forEach(function(p){p.classList.toggle("is-active",p.id==="tab-"+t.dataset.tab)});return}var edit=ev.target.getAttribute("data-edit-tercero");if(edit){var x=state.terceros.find(function(r){return String(r.id)===String(edit)});if(x){el("terceroId").value=x.id;el("tipoTercero").value=x.tipo_tercero;el("documento").value=x.documento;el("dv").value=x.dv||"";el("razonSocial").value=x.razon_social;el("email").value=x.email||"";el("telefono").value=x.telefono||"";el("ciudad").value=x.ciudad||"";el("regimen").value=x.regimen;el("estadoTercero").value=x.estado;el("direccion").value=x.direccion||"";el("obsTercero").value=x.observaciones||""}}var open=ev.target.getAttribute("data-open-public");if(open){window.open(open,"_blank","noopener")}var copy=ev.target.getAttribute("data-copy");if(copy){navigator.clipboard&&navigator.clipboard.writeText(copy);msg("Enlace copiado")}})
+      el("btnRefresh").onclick=load;el("btnSeed").onclick=function(){api("seed_demo",{method:"POST",body:"{}"}).then(load).catch(function(e){msg(e.message,true)})}
+      el("btnExport").onclick=function(){var rows=[["Numero","Tercero","Documento","Tipo","Anio","Base","Retenciones","Estado","URL"]].concat((state.certificados||[]).map(function(x){return [x.numero_certificado,x.tercero_nombre,x.tercero_documento,x.tipo_certificado,x.anio,x.base_valor,x.total_certificado,x.estado,publicUrl(x.public_token)]}));var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||"").replace(/"/g,'""')+'"'}).join(",")}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="certificados_tributarios.csv";a.click();setTimeout(function(){URL.revokeObjectURL(url)},800)}
+      el("terceroForm").addEventListener("submit",function(ev){ev.preventDefault();api("tercero",{method:num("terceroId")?"PUT":"POST",body:JSON.stringify({id:num("terceroId"),tipo_tercero:val("tipoTercero"),tipo_documento:"NIT",documento:val("documento"),dv:val("dv"),razon_social:val("razonSocial"),email:val("email"),telefono:val("telefono"),direccion:val("direccion"),ciudad:val("ciudad"),regimen:val("regimen"),estado:val("estadoTercero"),observaciones:val("obsTercero")})}).then(function(){ev.target.reset();load()}).catch(function(e){msg(e.message,true)})})
+      el("certForm").addEventListener("submit",function(ev){ev.preventDefault();api("certificado",{method:num("certId")?"PUT":"POST",body:JSON.stringify({id:num("certId"),tercero_id:num("certTercero"),tipo_certificado:val("tipoCert"),anio:num("anio"),periodo_desde:val("desde"),periodo_hasta:val("hasta"),concepto:val("concepto"),base_valor:num("baseValor"),retencion_fuente:num("retFuente"),retencion_iva:num("retIVA"),retencion_ica:num("retICA"),otros_valores:num("otros"),estado:val("estadoCert"),firma_nombre:val("firmaNombre"),firma_cargo:val("firmaCargo"),observaciones:val("obsCert")})}).then(function(){ev.target.reset();defaults();load()}).catch(function(e){msg(e.message,true)})})
+      defaults();load();
+    })();
+  </script>
+</body>
+</html>

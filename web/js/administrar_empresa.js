@@ -120,10 +120,12 @@ try {
     document.getElementById("linkSoportesComprasIA"),
     document.getElementById("linkImportacionesCosteo"),
     document.getElementById("linkProduccionMRP"),
+    document.getElementById("linkLogisticaWMS"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
     document.getElementById("linkParqueadero"),
     document.getElementById("linkApartamentosTuristicos"),
+    document.getElementById("linkPropiedadHorizontal"),
     document.getElementById("linkAlquileres"),
     document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
@@ -142,6 +144,11 @@ try {
     document.getElementById("linkFinanzasMain"),
     document.getElementById("linkContabilidadColombia"),
     document.getElementById("linkContabilidadColombiaAvanzada"),
+    document.getElementById("linkCentrosCosto"),
+    document.getElementById("linkCierreFiscal"),
+    document.getElementById("linkActivosFijosNIIF"),
+    document.getElementById("linkDeclaracionesTributarias"),
+    document.getElementById("linkPortalTercerosCertificados"),
     document.getElementById("linkTesoreriaPresupuesto"),
     document.getElementById("linkBackups"),
     document.getElementById("linkSoporteRemoto"),
@@ -176,8 +183,13 @@ try {
     document.getElementById("linkImpuestos"),
     document.getElementById("linkEgresosIngresos"),
     document.getElementById("linkCreditosMenu"),
+    document.getElementById("linkCentrosCostoMenu"),
+    document.getElementById("linkCierreFiscalMenu"),
+    document.getElementById("linkActivosFijosNIIFMenu"),
+    document.getElementById("linkDeclaracionesTributariasMenu"),
     document.getElementById("linkCobranzaMenu"),
     document.getElementById("linkPortalContadorMenu"),
+    document.getElementById("linkPortalTercerosCertificadosMenu"),
     document.getElementById("linkNominaMenu"),
     document.getElementById("linkERPExtendidoMenu"),
     document.getElementById("linkNextcloud"),
@@ -202,10 +214,16 @@ try {
   var permModuleFinanzas = "finanzas";
   var permModuleContabilidadCO = "contabilidad_colombia";
   var permModuleContabilidadCOAv = "contabilidad_colombia_avanzada";
+  var permModuleCentrosCosto = "centros_costo";
+  var permModuleCierreFiscal = "cierre_fiscal";
+  var permModuleActivosFijosNIIF = "activos_fijos_niif_fiscal";
+  var permModuleDeclaracionesTrib = "declaraciones_tributarias";
   var permModuleTesoreria = "tesoreria_presupuesto";
   var permModuleImportaciones = "importaciones_costeo";
+  var permModuleLogisticaWMS = "logistica_wms";
   var permModuleCobranza = "cobranza";
   var permModulePortalContador = "portal_contador";
+  var permModulePortalTerceros = "portal_terceros_certificados";
   var permModuleSoportesComprasIA = "soportes_compras_ia";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
@@ -217,6 +235,7 @@ try {
   var permModuleDomicilios = "domicilios";
   var permModuleParqueadero = "parqueadero";
   var permModuleApartTuristicos = "apartamentos_turisticos";
+  var permModulePropiedadHorizontal = "propiedad_horizontal";
   var permModuleAlquileres = "alquileres";
   var permModuleOdontologia = "odontologia";
   var permModuleTurnos = "turnos_atencion";
@@ -239,6 +258,7 @@ try {
     linkSoportesComprasIAMenu: { module: permModuleSoportesComprasIA, action: permActionCreate },
     linkImportacionesCosteo: { module: permModuleImportaciones, action: permActionCreate },
     linkProduccionMRP: { module: permModuleProduccionMRP, action: permActionCreate },
+    linkLogisticaWMS: { module: permModuleLogisticaWMS, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionImpresora: { module: permModuleSeguridad, action: permActionUpdate },
@@ -266,6 +286,7 @@ try {
     linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
     linkParqueadero: { module: permModuleParqueadero, action: permActionCreate },
     linkApartamentosTuristicos: { module: permModuleApartTuristicos, action: permActionCreate },
+    linkPropiedadHorizontal: { module: permModulePropiedadHorizontal, action: permActionCreate },
     linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
     linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
     linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
@@ -280,6 +301,14 @@ try {
     linkFinanzasMain: { module: permModuleFinanzas, action: permActionCreate },
     linkContabilidadColombia: { module: permModuleContabilidadCO, action: permActionCreate },
     linkContabilidadColombiaAvanzada: { module: permModuleContabilidadCOAv, action: permActionCreate },
+    linkCentrosCosto: { module: permModuleCentrosCosto, action: permActionCreate },
+    linkCentrosCostoMenu: { module: permModuleCentrosCosto, action: permActionCreate },
+    linkCierreFiscal: { module: permModuleCierreFiscal, action: permActionApprove },
+    linkCierreFiscalMenu: { module: permModuleCierreFiscal, action: permActionApprove },
+    linkActivosFijosNIIF: { module: permModuleActivosFijosNIIF, action: permActionCreate },
+    linkActivosFijosNIIFMenu: { module: permModuleActivosFijosNIIF, action: permActionCreate },
+    linkDeclaracionesTributarias: { module: permModuleDeclaracionesTrib, action: permActionCreate },
+    linkDeclaracionesTributariasMenu: { module: permModuleDeclaracionesTrib, action: permActionCreate },
     linkTesoreriaPresupuesto: { module: permModuleTesoreria, action: permActionCreate },
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
@@ -288,6 +317,8 @@ try {
     linkCobranzaMenu: { module: permModuleCobranza, action: permActionCreate },
     linkPortalContador: { module: permModulePortalContador, action: permActionCreate },
     linkPortalContadorMenu: { module: permModulePortalContador, action: permActionCreate },
+    linkPortalTercerosCertificados: { module: permModulePortalTerceros, action: permActionCreate },
+    linkPortalTercerosCertificadosMenu: { module: permModulePortalTerceros, action: permActionCreate },
     linkNominaMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },
@@ -783,9 +814,14 @@ try {
       case permModuleFinanzas:
       case permModuleContabilidadCO:
       case permModuleContabilidadCOAv:
+      case permModuleCentrosCosto:
+      case permModuleCierreFiscal:
+      case permModuleActivosFijosNIIF:
+      case permModuleDeclaracionesTrib:
       case permModuleTesoreria:
       case permModuleCobranza:
       case permModulePortalContador:
+      case permModulePortalTerceros:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
@@ -838,6 +874,7 @@ try {
       case permModuleDomicilios:
       case permModuleParqueadero:
       case permModuleApartTuristicos:
+      case permModulePropiedadHorizontal:
       case permModuleAlquileres:
       case permModuleOdontologia:
       case permModuleTurnos:
@@ -852,6 +889,7 @@ try {
         break;
 
       case permModuleProduccionMRP:
+      case permModuleLogisticaWMS:
       case permModuleImportaciones:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {

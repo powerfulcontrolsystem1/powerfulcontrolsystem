@@ -33,6 +33,10 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaFinanzasPermissions(",
 		"WithEmpresaContabilidadColombiaPermissions(",
 		"WithEmpresaContabilidadColombiaAvanzadaPermissions(",
+		"WithEmpresaActivosFijosNIIFPermissions(",
+		"WithEmpresaDeclaracionesTributariasPermissions(",
+		"WithEmpresaCentrosCostoPermissions(",
+		"WithEmpresaCierreFiscalPermissions(",
 		"WithEmpresaClientesPermissions(",
 		"WithEmpresaComprasPermissions(",
 		"WithEmpresaSoportesComprasIAPermissions(",
@@ -44,17 +48,20 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaDomiciliosPermissions(",
 		"WithEmpresaParqueaderoPermissions(",
 		"WithEmpresaApartamentosTuristicosPermissions(",
+		"WithEmpresaPropiedadHorizontalPermissions(",
 		"WithEmpresaAlquileresPermissions(",
 		"WithEmpresaOdontologiaPermissions(",
 		"WithEmpresaTurnosAtencionPermissions(",
 		"WithEmpresaControlElectricoPermissions(",
 		"WithEmpresaCarnetsPermissions(",
 		"WithEmpresaProduccionMRPPermissions(",
+		"WithEmpresaWMSPermissions(",
 		"WithEmpresaTesoreriaPresupuestoPermissions(",
 		"WithEmpresaImportacionesCosteoPermissions(",
 		"WithEmpresaAIUConstruccionPermissions(",
 		"WithEmpresaCobranzaPermissions(",
 		"WithEmpresaPortalContadorPermissions(",
+		"WithEmpresaPortalTercerosPermissions(",
 		"WithEmpresaPublicScope(",
 	}
 	allowedPublicPaths := map[string]bool{
@@ -63,6 +70,7 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"/api/empresa/usuarios/solicitar_recuperacion_password": true,
 		"/api/empresa/usuarios/restablecer_password":            true,
 		"/api/empresa/usuarios/cambiar_password":                true,
+		"/api/public/certificados_tributarios":                  true,
 	}
 
 	violations := make([]string, 0)

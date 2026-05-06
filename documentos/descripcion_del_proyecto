@@ -3,7 +3,7 @@
 
 Actualizacion: 2026-05-06
 
-Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
+Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 
 Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrigio coherencia de permisos locales para `administrador_total`, se optimizaron dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y se documento el resultado en `documentos/reporte_qa_modulos_2026-05-06.md`. La portada publica `web/index.html` tambien queda actualizada para describir Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
 
@@ -15,7 +15,7 @@ Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super
 - Preparar configuracion fiscal y de impresion para facturacion.
 - Permitir desde el panel super la descarga consolidada de la informacion de cada empresa en formatos profesionales y de interoperabilidad (`PDF`, `XLS`, `CSV`, `JSON`, `TXT`).
 - Permitir que cada empresa configure sus propias credenciales de Wompi y Epayco para vender desde su pagina de venta publica, con activacion o desactivacion independiente por empresa.
-- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi, carnets empresariales, cobranza, portal contador, captura IA/OCR, AIU construccion, parqueaderos y apartamentos turisticos.
+- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi, carnets empresariales, activos fijos NIIF/Fiscal, certificados tributarios de terceros, cobranza, portal contador, captura IA/OCR, AIU construccion, parqueaderos y apartamentos turisticos.
 
 ## Stack y tecnologia
 
@@ -61,6 +61,10 @@ Actualizacion operativa 2026-05-05:
 - Motel Calipso queda como empresa de referencia publicada con slug `motel-calipso`, venta publica, carta publica de productos y precios, items de ejemplo, publicaciones de red social y rutas productivas `/{slug}/venta_publica.html` y `/{slug}/visualizar_productos_y_precios_publico.html`.
 - La carta publica de productos es una pagina externa de solo lectura; el QR se genera desde Administrar empresa y se exporta en PNG, SVG, PDF o impresion directa.
 - La contabilidad Colombia queda ampliada con una suite avanzada por empresa para informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales, enlazada al nucleo de PUC, terceros, impuestos y comprobantes.
+- Cierre y bloqueo fiscal se agrega al Centro financiero y contable para cerrar, bloquear o reabrir periodos con motivo obligatorio, politicas por modulo, dias de edicion retroactiva, excepciones aprobadas, simulador de validacion y bitacora de intentos post-cierre.
+- Propiedad horizontal se agrega como modulo vertical para conjuntos, edificios y condominios, con unidades, propietarios, residentes, coeficientes, cuotas, cartera, recaudos, PQR, mantenimiento, asambleas y quorum por empresa.
+- La compra de licencias permite promocion por codigo de asesor comercial: el super administrador la activa/desactiva desde Asesor comercial y define el porcentaje adicional aplicado en checkout.
+- Centros de costo y rentabilidad se agrega como modulo financiero formal para medir utilidad por sucursal, area, unidad de negocio o proyecto, con maestro, reglas de imputacion, presupuesto por periodo, dashboard comparativo y movimientos integrados desde contabilidad, tesoreria, compras, OCR/IA y AIU.
 - Gestion de cobranza se agrega al Centro financiero y contable como modulo profesional propio para recuperar cartera sin duplicar cuentas por cobrar: dashboard, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio, datos demo y exportacion CSV por empresa.
 - Portal contador se agrega al Centro financiero y contable como oficina virtual para contadores y firmas contables, con clientes contables, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, tablero de vencimientos y permisos por modulo/licencia.
 - La navegacion empresarial se organiza por dominios: Finanzas operativas, Contabilidad Colombia y Suite contable Colombia se agrupan bajo `Centro financiero y contable` sin eliminar rutas internas ni duplicar codigo.
@@ -288,3 +292,6 @@ Estado general: plataforma implementada con multiples modulos operativos. No se 
 ## Actualizacion operativa 2026-05-06
 
 Se agrega el modulo `Captura inteligente de compras y gastos` en Compras. Permite cargar foto, PDF o XML de soportes, ejecutar OCR/IA con el modelo `openai:gpt-5.5`, normalizar datos de proveedor/documento/impuestos/totales, detectar duplicados, exigir revision humana, aprobar o rechazar y contabilizar como cuenta por pagar. El modulo queda aislado por `empresa_id`, con permiso/licencia `soportes_compras_ia` y documentacion tecnica en `documentos/soportes_compras_ia.md`.
+Actualizacion 2026-05-06: el sistema incorpora el modulo `Logistica avanzada / WMS`, integrado a Inventario y compras. Permite administrar ubicaciones internas, ordenes WMS, picking, packing, despachos, rutas, conteos operativos, bitacora y control por roles/licencias sin duplicar productos ni existencias.
+
+Actualizacion 2026-05-06: el sistema incorpora el modulo `Declaraciones Tributarias y Motor de Impuestos Colombia`, integrado al Centro financiero y contable. Permite preliquidar y administrar IVA, retenciones, ICA/ReteICA, impuesto al consumo, renta y regimen simple por empresa, con calendario editable, saldos, soportes, movimientos de conciliacion y control por roles/licencias.

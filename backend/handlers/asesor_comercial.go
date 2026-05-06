@@ -189,6 +189,15 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		switch r.Method {
 		case http.MethodGet:
+			if strings.EqualFold(r.URL.Query().Get("action"), "promocion") {
+				cfg, err := readLicenciaAdvisorPromoConfig(dbSuper)
+				if err != nil {
+					http.Error(w, "no se pudo cargar promocion de asesores: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "promocion": cfg})
+				return
+			}
 			if strings.EqualFold(r.URL.Query().Get("action"), "comisiones") {
 				items, err := dbpkg.ListAsesorComercialComisiones(dbSuper, "", true)
 				if err != nil {
@@ -304,6 +313,35 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			writeJSON(w, http.StatusOK, resp)
 		case http.MethodPut:
+			if strings.EqualFold(r.URL.Query().Get("action"), "promocion") {
+				var payload struct {
+					Enabled bool    `json:"enabled"`
+					Percent float64 `json:"percent"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "payload invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.Percent < 0 || payload.Percent > 100 {
+					http.Error(w, "percent debe estar entre 0 y 100", http.StatusBadRequest)
+					return
+				}
+				enabledValue := "0"
+				if payload.Enabled {
+					enabledValue = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.enabled", enabledValue, false); err != nil {
+					http.Error(w, "no se pudo guardar activacion: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.percent", fmt.Sprintf("%.2f", payload.Percent), false); err != nil {
+					http.Error(w, "no se pudo guardar porcentaje: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				_ = dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.updated_by", admin.Email, false)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "promocion": payload})
+				return
+			}
 			id, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("id")), 10, 64)
 			if id <= 0 {
 				http.Error(w, "id requerido", http.StatusBadRequest)

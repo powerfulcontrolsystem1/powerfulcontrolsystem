@@ -1,3 +1,71 @@
+- Actualizacion 2026-05-06: logistica avanzada / WMS
+	- `backend/db/logistica_wms.go` : esquema, normalizacion, CRUD de ubicaciones, ordenes, items, despachos, eventos, dashboard y datos demo por `empresa_id`.
+	- `backend/handlers/logistica_wms.go` : API `/api/empresa/logistica_wms` con acciones de consulta, guardado, avance operativo y demo.
+	- `backend/db/logistica_wms_test.go` : pruebas de normalizacion de codigo, progreso de picking/packing e inferencia de estado.
+	- `backend/handlers/empresa_permisos.go` : agrega modulo `logistica_wms`, pagina `linkLogisticaWMS`, wrapper y resolucion por roles de inventario/compras.
+	- `backend/main.go` : asegura esquema y registra ruta protegida.
+	- `web/administrar_empresa/logistica_wms.html` : interfaz profesional con KPIs, ubicaciones, ordenes, picking/packing, despachos y bitacora.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` : enlazan el modulo y su visibilidad por permisos/licencia.
+	- `web/super/licencias.html` : agrega `logistica_wms` como modulo activable y dentro de presets operativo/enterprise.
+	- `documentos/logistica_wms.md` : documentacion funcional y operativa.
+
+- Actualizacion 2026-05-06: declaraciones tributarias y motor de impuestos Colombia
+	- `backend/db/declaraciones_tributarias.go` : esquema, normalizacion, preliquidacion, calculo de saldos, calendario, movimientos de conciliacion, dashboard y datos demo por `empresa_id`.
+	- `backend/handlers/declaraciones_tributarias.go` : API `/api/empresa/declaraciones_tributarias` con dashboard, declaraciones, calendario, movimientos, guardado, preliquidacion y demo.
+	- `backend/db/declaraciones_tributarias_test.go` : pruebas de rango de periodo, normalizacion de tipo y saldos IVA/saldo a favor.
+	- `backend/handlers/empresa_permisos.go` : agrega modulo `declaraciones_tributarias`, paginas `linkDeclaracionesTributarias`/`linkDeclaracionesTributariasMenu`, wrapper y resolucion de acciones.
+	- `backend/main.go` : asegura esquema y registra ruta protegida.
+	- `web/administrar_empresa/declaraciones_tributarias.html` : interfaz profesional con KPIs, preliquidacion, edicion manual, calendario, movimientos y exportacion CSV.
+	- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js` : enlazan el modulo y su visibilidad por permisos/licencia.
+	- `web/super/licencias.html` : agrega `declaraciones_tributarias` como modulo activable y dentro de presets financieros/enterprise.
+	- `documentos/declaraciones_tributarias.md` : documentacion funcional y operativa.
+
+- Actualizacion 2026-05-06: portal de terceros y certificados tributarios
+	- `backend/db/portal_terceros_certificados.go` : esquema, CRUD, dashboard, tokens publicos, bitacora de descargas y datos demo.
+	- `backend/handlers/portal_terceros_certificados.go` : API administrativa y API publica de consulta por token.
+	- `web/administrar_empresa/portal_terceros_certificados.html` : pantalla profesional con terceros, certificados, enlaces publicos, dashboard y exportacion.
+	- `web/visualizar_certificado_tributario_publico.html` : pagina publica para consulta, registro de descarga e impresion/PDF del certificado.
+	- `documentos/portal_terceros_certificados.md` : documentacion funcional y tecnica del modulo.
+
+- Actualizacion 2026-05-06: activos fijos e intangibles NIIF/Fiscal
+	- `backend/handlers/activos_fijos_niif_fiscal.go` : API especializada que reutiliza las tablas contables de activos para dashboard, libro, depreciaciones, eventos y datos demo por `empresa_id`.
+	- `backend/db/contabilidad_colombia_avanzada.go` : ampliacion del libro de activos con campos NIIF/fiscales, deterioro, valor fiscal y diferencia NIIF/fiscal.
+	- `web/administrar_empresa/activos_fijos_niif_fiscal.html` : pantalla profesional del modulo con KPIs, libro maestro, registro, depreciacion, eventos, alertas y exportacion CSV.
+	- `documentos/activos_fijos_niif_fiscal.md` : documentacion funcional y tecnica del modulo.
+
+- Actualizacion 2026-05-06: propiedad horizontal y promocion por asesor
+	- `backend/db/propiedad_horizontal.go` : esquema, normalizacion, CRUD de configuracion, unidades, personas, cargos, recaudos, PQR, asambleas, dashboard y datos demo por `empresa_id`.
+	- `backend/handlers/propiedad_horizontal.go` : API `/api/empresa/propiedad_horizontal`.
+	- `backend/handlers/payments_handlers.go` : aplica descuento adicional por `asesor_id` cuando la promocion global esta activa y el asesor esta aceptado.
+	- `backend/handlers/asesor_comercial.go` : API super para leer/guardar `licencias.asesor_promo.enabled` y `licencias.asesor_promo.percent`.
+	- `web/administrar_empresa/propiedad_horizontal.html` : pantalla profesional de copropiedades.
+	- `web/super/asesor_comercial.html` : check y selector de porcentaje para promocion por asesor.
+	- `web/pagar_licencia.html` : recalcula el resumen al escribir codigo de asesor.
+	- `documentos/propiedad_horizontal.md` y `documentos/promocion_asesor_licencias.md` : documentacion funcional.
+
+- Actualizacion 2026-05-06: cierre y bloqueo fiscal avanzado
+	- `backend/db/cierre_fiscal.go` : esquema, normalizacion, CRUD de politicas/periodos/excepciones, validacion de operaciones, bitacora, dashboard y datos demo por `empresa_id`.
+	- `backend/handlers/cierre_fiscal.go` : API `/api/empresa/cierre_fiscal` con acciones de dashboard, politicas, periodos, excepciones, eventos, validacion y demo.
+	- `backend/db/cierre_fiscal_test.go` : pruebas de normalizacion de periodo/politica y bloqueo de operaciones por periodo cerrado.
+	- `backend/db/contabilidad_colombia.go` : sincroniza cierres y reaperturas contables con el modulo fiscal.
+	- `backend/handlers/empresa_permisos.go` : agrega modulo `cierre_fiscal`, paginas `linkCierreFiscal`/`linkCierreFiscalMenu`, wrapper y resolucion de acciones.
+	- `backend/main.go` : asegura esquema y registra ruta protegida.
+	- `web/administrar_empresa/cierre_fiscal.html` : interfaz profesional con KPIs, periodos, politicas, excepciones, simulador de bloqueo y bitacora exportable.
+	- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js` : enlazan el modulo y su visibilidad por permisos/licencia.
+	- `web/super/licencias.html` : agrega `cierre_fiscal` como modulo activable y dentro de presets financieros/enterprise.
+	- `documentos/cierre_fiscal.md` : documentacion funcional y operativa.
+
+- Actualizacion 2026-05-06: centros de costo y rentabilidad
+	- `backend/db/centros_costo.go` : esquema, normalizacion, CRUD de centros/reglas/presupuestos, datos demo y dashboard de rentabilidad integrado por `empresa_id`.
+	- `backend/handlers/centros_costo.go` : API `/api/empresa/centros_costo` con acciones de consulta, guardado y demo.
+	- `backend/handlers/empresa_permisos.go` : agrega modulo `centros_costo`, paginas `linkCentrosCosto`/`linkCentrosCostoMenu`, wrapper y resolucion de acciones.
+	- `backend/main.go` : asegura esquema y registra ruta protegida.
+	- `backend/db/centros_costo_test.go` : pruebas de normalizacion y agregacion de dashboard.
+	- `web/administrar_empresa/centros_costo.html` : interfaz profesional con KPIs, maestro, presupuesto, reglas, movimientos y exportacion CSV.
+	- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js` : enlazan el modulo y su visibilidad por permisos/licencia.
+	- `web/super/licencias.html` : agrega `centros_costo` como modulo activable y dentro de presets financieros/enterprise.
+	- `documentos/centros_costo.md` : documentacion funcional y operativa.
+
 - Actualizacion 2026-05-05: modulo profesional de carnets empresariales
 	- `backend/db/carnets_empresa.go` : esquema, plantillas, carnets emitidos, eventos, dashboard, personas fuente y datos demo por `empresa_id`.
 	- `backend/handlers/carnets_empresa.go` : API `/api/empresa/carnets` con acciones de dashboard, plantillas, personas, listado, emision, actualizacion, estados, impresion y demo.

@@ -1,3 +1,7 @@
+- **Logistica avanzada / WMS**: nuevo modulo `logistica_wms` para operar bodega profesional con ubicaciones internas, ordenes WMS, picking, packing, despachos, rutas, avance por item, bitacora, datos demo y exportacion CSV. Integra `/api/empresa/logistica_wms`, permisos/licencia independientes, menu de Inventario y compras, pantalla `web/administrar_empresa/logistica_wms.html`, tablas WMS por `empresa_id` y documentacion. Verificacion: `go test ./db -run Test.*WMS -count=1`, `go test ./... -count=1` y `git diff --check`.
+
+- **Declaraciones Tributarias y Motor de Impuestos Colombia**: nuevo modulo financiero `declaraciones_tributarias` para preliquidar, revisar y controlar IVA, retencion en la fuente, ReteIVA, ICA/ReteICA, consumo, renta y regimen simple por empresa. Agrega `/api/empresa/declaraciones_tributarias`, tablas de declaraciones, movimientos de conciliacion y calendario tributario editable, permisos/licencia independientes, pantalla `web/administrar_empresa/declaraciones_tributarias.html`, enlace en Centro financiero y documentacion. Verificacion: `go test ./db -run Test.*Declaracion -count=1`, `go test ./... -count=1` y `git diff --check`.
+
 - **Captura inteligente de compras/gastos**: nuevo modulo empresarial `soportes_compras_ia` en Compras para cargar foto/PDF/XML, extraer datos con GPT-5.5, detectar duplicados, aprobar/rechazar y contabilizar como cuenta por pagar. Integra `/api/empresa/soportes_compras_ia`, permisos/licencia independientes, pantalla operativa, tablas de soportes/eventos y documentacion. Verificacion: `go test ./db -run Test.*Soporte.*IA -count=1`, `go test ./... -count=1` y `git diff --check`.
 
 - **Portal contador / oficina virtual contable**: nuevo modulo `portal_contador` para firmas contables y contadores externos con portafolio de clientes, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, dashboard, datos demo y exportacion CSV. Integra `/api/empresa/portal_contador`, permisos/licencia independientes, menu financiero y documentacion. Verificacion: `go test ./db -run TestPortalContador -count=1` y `go test ./... -count=1`.
@@ -70,6 +74,33 @@
 # CHANGELOG
 
 ## 2026-05-06
+- Portal de Terceros y Certificados Tributarios.
+	- Se agrego el modulo `portal_terceros_certificados` con maestro de terceros, certificados de retencion/ingresos, enlace publico por token, impresion y bitacora de descargas.
+	- Se agregaron las rutas `/api/empresa/portal_terceros_certificados` y `/api/public/certificados_tributarios`.
+	- Se agregaron la pantalla administrativa `web/administrar_empresa/portal_terceros_certificados.html`, la pagina publica `web/visualizar_certificado_tributario_publico.html`, permisos, licencia, menu y documentacion.
+	- Pruebas: `cd backend; go test ./... -count=1`.
+
+- Activos Fijos e Intangibles NIIF/Fiscal.
+	- Se formalizo el modulo `activos_fijos_niif_fiscal` reutilizando el nucleo de activos de la suite contable Colombia avanzada.
+	- Se amplio `empresa_contabilidad_activos_fijos` con base fiscal, vida util fiscal, depreciacion fiscal acumulada, valor fiscal, diferencia NIIF/fiscal, deterioro, valor razonable y cuenta de deterioro.
+	- Se agrego API `/api/empresa/activos_fijos_niif_fiscal`, pantalla administrativa, enlaces de menu, permisos por rol, licencias y documentacion.
+	- Pruebas: `cd backend; go test ./... -count=1`.
+
+- Propiedad horizontal y promocion por asesor.
+	- Archivos: `backend/db/propiedad_horizontal.go`, `backend/db/propiedad_horizontal_test.go`, `backend/handlers/propiedad_horizontal.go`, `backend/handlers/asesor_comercial.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/empresa_permisos.go`, `backend/main.go`, `web/administrar_empresa/propiedad_horizontal.html`, `web/super/asesor_comercial.html`, `web/pagar_licencia.html`, `web/super/licencias.html`, `documentos/propiedad_horizontal.md`, `documentos/promocion_asesor_licencias.md`.
+	- Descripcion: se agrega modulo profesional de administracion de copropiedades con unidades, residentes, cargos, recaudos, PQR, asambleas y dashboard. Se agrega promocion global para que un codigo de asesor aceptado aplique descuento adicional configurable al comprar licencias.
+	- Verificacion: `go test ./... -count=1` en `backend/`.
+
+- Cierre y bloqueo fiscal avanzado.
+	- Archivos: `backend/db/cierre_fiscal.go`, `backend/db/cierre_fiscal_test.go`, `backend/handlers/cierre_fiscal.go`, `backend/handlers/empresa_permisos.go`, `backend/db/contabilidad_colombia.go`, `backend/main.go`, `web/administrar_empresa/cierre_fiscal.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/js/administrar_empresa.js`, `web/super/licencias.html`, `documentos/cierre_fiscal.md`.
+	- Descripcion: se agrega modulo profesional para periodos fiscales, politicas de bloqueo por modulo, dias de edicion retroactiva, reaperturas con motivo, excepciones aprobadas, validacion de operaciones y bitacora de bloqueos por empresa. El cierre/reapertura de Contabilidad Colombia sincroniza el periodo fiscal.
+	- Verificacion: `go test ./... -count=1` en `backend/`.
+
+- Centros de costo y rentabilidad.
+	- Archivos: `backend/db/centros_costo.go`, `backend/handlers/centros_costo.go`, `backend/handlers/empresa_permisos.go`, `backend/main.go`, `web/administrar_empresa/centros_costo.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/js/administrar_empresa.js`, `documentos/centros_costo.md`.
+	- Descripcion: se agrega modulo formal `centros_costo` para medir rentabilidad por sucursal, area, unidad de negocio o proyecto, con maestro, reglas de imputacion, presupuesto por periodo, dashboard comparativo, movimientos integrados desde contabilidad/tesoreria/compras/OCR/AIU y exportacion CSV, sin duplicar Finanzas ni Contabilidad.
+	- Verificacion: `go test ./... -count=1` en `backend/`.
+
 - QA transversal de modulos y profesionalizacion operativa.
 	- Archivos: `backend/db/cobranza.go`, `backend/db/portal_contador.go`, `backend/db/soportes_compras_ia.go`, `web/js/administrar_empresa.js`, `web/administrar_empresa/soportes_compras_ia.html`, `web/index.html`, `documentos/reporte_qa_modulos_2026-05-06.md`.
 	- Descripcion: se alinean permisos locales para `administrador_total`, se optimizan dashboards nuevos para no repetir validaciones de esquema, se endurecen enlaces dinamicos de soportes IA y se documenta la prueba autenticada de Motel Calipso con paginas/API 200. La portada publica actualiza la descripcion de modulos para incluir Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.

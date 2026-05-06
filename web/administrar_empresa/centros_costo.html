@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Centros de costo y rentabilidad</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.cc-page{margin:0;background:var(--page-bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    [data-theme="dark"] body.cc-page,body.dark.cc-page{background:#0f1724;color:#e8eef7}
+    .cc-shell{padding:18px;display:grid;gap:14px;max-width:1440px;margin:0 auto}.cc-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}
+    .cc-head h1{margin:0;font-size:23px}.cc-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:860px}.cc-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.cc-period{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+    .cc-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--button-bg,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.cc-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}.cc-btn.small{min-height:32px;padding:6px 9px;font-size:12px}
+    .cc-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.cc-kpi,.cc-box{background:var(--card-bg,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.cc-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.cc-kpi strong{display:block;margin-top:6px;font-size:20px;line-height:1.1}
+    .cc-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:12px;align-items:start}.cc-box h2{margin:0 0 10px;font-size:16px}.cc-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.cc-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.cc-tab.is-active{border-color:#1769e0;color:#1769e0}
+    .cc-panel{display:none}.cc-panel.is-active{display:grid;gap:12px}.cc-form{display:grid;gap:9px}.cc-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.cc-field{display:grid;gap:4px}.cc-field label{font-size:12px;color:var(--muted,#65758b)}.cc-field input,.cc-field select,.cc-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.cc-field textarea{min-height:74px;resize:vertical}
+    .cc-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.cc-table{width:100%;min-width:820px;border-collapse:collapse;background:var(--card-bg,#fff)}.cc-table th,.cc-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px;vertical-align:top}.cc-table th{color:var(--muted,#65758b)}.cc-table td.num{text-align:right;font-variant-numeric:tabular-nums}.cc-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}.cc-warn{background:color-mix(in srgb,#f59e0b 16%,transparent);color:#b45309}.cc-bad{background:color-mix(in srgb,#ef4444 14%,transparent);color:#b91c1c}.cc-good{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}
+    .cc-alerts{display:grid;gap:8px}.cc-alert{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;background:color-mix(in srgb,#f59e0b 10%,transparent)}.cc-muted{color:var(--muted,#65758b)}.cc-msg{min-height:24px;color:var(--muted,#65758b)}.cc-msg.is-error{color:#c43737}
+    @media(max-width:1120px){.cc-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-grid{grid-template-columns:1fr}.cc-head{display:grid}.cc-actions{justify-content:flex-start}}@media(max-width:680px){.cc-shell{padding:12px}.cc-kpis,.cc-row{grid-template-columns:1fr}.cc-tab{flex:1 1 42%}.cc-period{display:grid}.cc-table{min-width:720px}}
+  </style>
+</head>
+<body class="cc-page">
+  <main class="cc-shell">
+    <header class="cc-head">
+      <div>
+        <h1>Centros de costo y rentabilidad</h1>
+        <p>Control formal por empresa para medir utilidad por sucursal, area, unidad de negocio o proyecto, con reglas de imputacion, presupuesto y comparativos.</p>
+      </div>
+      <div class="cc-actions">
+        <div class="cc-period">
+          <div class="cc-field"><label for="ccPeriodo">Periodo</label><input id="ccPeriodo" placeholder="2026-05"></div>
+          <button class="cc-btn" id="ccRefresh" type="button">Actualizar</button>
+        </div>
+        <button class="cc-btn" id="ccSeed" type="button">Cargar demo</button>
+        <button class="cc-btn primary" id="ccExport" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="cc-kpis" aria-label="Indicadores de centros de costo">
+      <article class="cc-kpi"><span>Centros activos</span><strong id="kpiCentros">0</strong></article>
+      <article class="cc-kpi"><span>Reglas activas</span><strong id="kpiReglas">0</strong></article>
+      <article class="cc-kpi"><span>Ingresos</span><strong id="kpiIngresos">$0</strong></article>
+      <article class="cc-kpi"><span>Egresos</span><strong id="kpiEgresos">$0</strong></article>
+      <article class="cc-kpi"><span>Margen</span><strong id="kpiMargen">$0</strong></article>
+      <article class="cc-kpi"><span>Margen %</span><strong id="kpiMargenPct">0%</strong></article>
+    </section>
+
+    <nav class="cc-tabs" aria-label="Vistas del modulo">
+      <button class="cc-tab is-active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="cc-tab" data-tab="centros" type="button">Centros</button>
+      <button class="cc-tab" data-tab="presupuesto" type="button">Presupuesto</button>
+      <button class="cc-tab" data-tab="reglas" type="button">Reglas</button>
+      <button class="cc-tab" data-tab="movimientos" type="button">Movimientos</button>
+    </nav>
+    <div id="ccMsg" class="cc-msg"></div>
+
+    <section id="tab-dashboard" class="cc-panel is-active">
+      <div class="cc-grid">
+        <div class="cc-box">
+          <h2>Rentabilidad comparativa</h2>
+          <div id="rentabilidadTable" class="cc-table-wrap"></div>
+        </div>
+        <aside class="cc-box">
+          <h2>Alertas</h2>
+          <div id="alertasList" class="cc-alerts"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-centros" class="cc-panel">
+      <div class="cc-grid">
+        <form id="centroForm" class="cc-box cc-form">
+          <h2>Centro de costo</h2>
+          <input type="hidden" id="centroId">
+          <div class="cc-row"><div class="cc-field"><label>Codigo</label><input id="centroCodigo" required placeholder="MOTEL-CALIPSO"></div><div class="cc-field"><label>Tipo</label><select id="centroTipo"><option value="operativo">Operativo</option><option value="sucursal">Sucursal</option><option value="area">Area</option><option value="unidad_negocio">Unidad negocio</option><option value="proyecto">Proyecto</option><option value="administrativo">Administrativo</option></select></div></div>
+          <div class="cc-field"><label>Nombre</label><input id="centroNombre" required></div>
+          <div class="cc-row"><div class="cc-field"><label>Sucursal</label><input id="centroSucursal"></div><div class="cc-field"><label>Area</label><input id="centroArea"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Unidad de negocio</label><input id="centroUnidad"></div><div class="cc-field"><label>Responsable</label><input id="centroResponsable"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Meta margen %</label><input id="centroMeta" type="number" min="0" max="100" step="0.01" value="0"></div><div class="cc-field"><label>Estado</label><select id="centroEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="cerrado">Cerrado</option><option value="suspendido">Suspendido</option></select></div></div>
+          <div class="cc-field"><label>Observaciones</label><textarea id="centroObs"></textarea></div>
+          <button class="cc-btn primary" type="submit">Guardar centro</button>
+        </form>
+        <div class="cc-box">
+          <h2>Maestro</h2>
+          <div id="centrosTable" class="cc-table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-presupuesto" class="cc-panel">
+      <div class="cc-grid">
+        <form id="presForm" class="cc-box cc-form">
+          <h2>Presupuesto por centro</h2>
+          <input type="hidden" id="presId">
+          <div class="cc-row"><div class="cc-field"><label>Centro</label><select id="presCentro"></select></div><div class="cc-field"><label>Periodo</label><input id="presPeriodo" placeholder="2026-05"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Ingresos presupuesto</label><input id="presIngresos" type="number" step="0.01" value="0"></div><div class="cc-field"><label>Egresos presupuesto</label><input id="presEgresos" type="number" step="0.01" value="0"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Meta margen %</label><input id="presMeta" type="number" step="0.01" value="0"></div><div class="cc-field"><label>Responsable</label><input id="presResponsable"></div></div>
+          <button class="cc-btn primary" type="submit">Guardar presupuesto</button>
+        </form>
+        <div class="cc-box"><h2>Presupuestos</h2><div id="presTable" class="cc-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-reglas" class="cc-panel">
+      <div class="cc-grid">
+        <form id="reglaForm" class="cc-box cc-form">
+          <h2>Regla de imputacion</h2>
+          <input type="hidden" id="reglaId">
+          <div class="cc-row"><div class="cc-field"><label>Centro</label><select id="reglaCentro"></select></div><div class="cc-field"><label>Origen</label><select id="reglaOrigen"><option value="general">General</option><option value="contabilidad_colombia">Contabilidad</option><option value="tesoreria_presupuesto">Tesoreria</option><option value="compras_avanzadas">Compras</option><option value="soportes_compras_ia">OCR compras</option><option value="aiu_construccion">AIU</option></select></div></div>
+          <div class="cc-field"><label>Nombre</label><input id="reglaNombre" required></div>
+          <div class="cc-row"><div class="cc-field"><label>Categoria</label><input id="reglaCategoria"></div><div class="cc-field"><label>Cuenta patron</label><input id="reglaCuenta" placeholder="4135"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Tercero patron</label><input id="reglaTercero"></div><div class="cc-field"><label>Porcentaje</label><input id="reglaPorcentaje" type="number" min="0" max="100" step="0.01" value="100"></div></div>
+          <div class="cc-row"><div class="cc-field"><label>Prioridad</label><input id="reglaPrioridad" type="number" value="100"></div><label class="cc-field"><span>Activa</span><select id="reglaActiva"><option value="true">Si</option><option value="false">No</option></select></label></div>
+          <button class="cc-btn primary" type="submit">Guardar regla</button>
+        </form>
+        <div class="cc-box"><h2>Reglas</h2><div id="reglasTable" class="cc-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-movimientos" class="cc-panel">
+      <div class="cc-box"><h2>Movimientos integrados</h2><div id="movsTable" class="cc-table-wrap"></div></div>
+    </section>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state={empresaId:resolveEmpresaId(),dashboard:null};
+      var money=new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});
+      function el(id){return document.getElementById(id);}
+      function val(id){return (el(id)&&el(id).value||"").trim();}
+      function num(id){return Number(val(id)||0);}
+      function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];});}
+      function resolveEmpresaId(){var sources=[location.search];try{if(window.parent&&window.parent!==window)sources.push(window.parent.location.search);}catch(_){}for(var i=0;i<sources.length;i++){var id=new URLSearchParams(sources[i]).get("empresa_id");if(id)return id;}try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||"";}catch(_){return "";}}
+      function period(){return val("ccPeriodo")||new Date().toISOString().slice(0,7);}
+      function msg(text,err){var n=el("ccMsg");n.textContent=text||"";n.classList.toggle("is-error",!!err);}
+      function api(action,options){if(!state.empresaId)return Promise.reject(new Error("empresa_id no disponible"));var url="/api/empresa/centros_costo?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+"&periodo="+encodeURIComponent(period());return fetch(url,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},options||{})).then(function(res){if(!res.ok)return res.text().then(function(t){throw new Error(t||res.statusText);});return res.json();});}
+      function chip(v,extra){return '<span class="cc-chip '+(extra||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>';}
+      function load(){el("ccPeriodo").value=period();msg("Cargando...");api("dashboard").then(function(d){state.dashboard=d||{};render();msg("Actualizado");}).catch(function(e){msg(e.message,true);});}
+      function render(){var d=state.dashboard||{};el("kpiCentros").textContent=d.centros_activos||0;el("kpiReglas").textContent=d.reglas_activas||0;el("kpiIngresos").textContent=money.format(d.ingresos_total||0);el("kpiEgresos").textContent=money.format(d.egresos_total||0);el("kpiMargen").textContent=money.format(d.margen_total||0);el("kpiMargenPct").textContent=(d.margen_pct||0).toFixed(1)+"%";renderSelects();renderRentabilidad();renderCentros();renderPres();renderReglas();renderMovs();renderAlertas();}
+      function renderSelects(){var centers=(state.dashboard.centros||[]).concat((state.dashboard.rentabilidad||[]).filter(function(r){return r.inferido_de_movimientos;}).map(function(r){return {codigo:r.centro_costo_codigo,nombre:r.centro_costo_nombre};}));var seen={};var html=centers.filter(function(c){var k=c.codigo||c.centro_costo_codigo;if(!k||seen[k])return false;seen[k]=true;return true;}).map(function(c){var code=c.codigo||c.centro_costo_codigo;return '<option value="'+esc(code)+'">'+esc(code+" - "+(c.nombre||c.centro_costo_nombre||""))+'</option>';}).join("");["presCentro","reglaCentro"].forEach(function(id){el(id).innerHTML=html;});}
+      function renderRentabilidad(){var rows=state.dashboard.rentabilidad||[];if(!rows.length){el("rentabilidadTable").innerHTML='<div class="cc-muted" style="padding:12px">Sin datos para el periodo.</div>';return;}el("rentabilidadTable").innerHTML='<table class="cc-table"><thead><tr><th>Centro</th><th>Tipo</th><th>Ingresos</th><th>Egresos</th><th>Margen</th><th>Margen %</th><th>Ejec. ing.</th><th>Ejec. egr.</th><th>Alerta</th></tr></thead><tbody>'+rows.map(function(r){var cls=r.alerta?"cc-warn":(r.margen>=0?"cc-good":"cc-bad");return '<tr><td><strong>'+esc(r.centro_costo_codigo)+'</strong><br><span class="cc-muted">'+esc(r.centro_costo_nombre)+'</span></td><td>'+chip(r.tipo||"inferido")+'</td><td class="num">'+money.format(r.ingresos||0)+'</td><td class="num">'+money.format(r.egresos||0)+'</td><td class="num">'+money.format(r.margen||0)+'</td><td>'+chip((r.margen_pct||0).toFixed(1)+"%",cls)+'</td><td class="num">'+(r.ejecucion_ingresos_pct||0).toFixed(1)+'%</td><td class="num">'+(r.ejecucion_egresos_pct||0).toFixed(1)+'%</td><td>'+esc(r.alerta||"-")+'</td></tr>';}).join("")+'</tbody></table>';}
+      function renderCentros(){var rows=state.dashboard.centros||[];el("centrosTable").innerHTML=rows.length?'<table class="cc-table"><thead><tr><th>Codigo</th><th>Nombre</th><th>Tipo</th><th>Sucursal/Area</th><th>Responsable</th><th>Meta</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(c){return '<tr><td>'+esc(c.codigo)+'</td><td>'+esc(c.nombre)+'</td><td>'+chip(c.tipo)+'</td><td>'+esc([c.sucursal,c.area,c.unidad_negocio].filter(Boolean).join(" / "))+'</td><td>'+esc(c.responsable||"-")+'</td><td class="num">'+(c.meta_margen_pct||0).toFixed(1)+'%</td><td>'+chip(c.estado,c.estado==="activo"?"cc-good":"cc-warn")+'</td><td><button class="cc-btn small" data-edit-centro="'+esc(c.codigo)+'" type="button">Editar</button></td></tr>';}).join("")+'</tbody></table>':'<div class="cc-muted" style="padding:12px">Sin centros creados.</div>';}
+      function renderPres(){var rows=state.dashboard.presupuestos||[];el("presTable").innerHTML=rows.length?'<table class="cc-table"><thead><tr><th>Centro</th><th>Periodo</th><th>Ingresos</th><th>Egresos</th><th>Meta</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(p){return '<tr><td>'+esc(p.centro_costo_codigo)+'</td><td>'+esc(p.periodo)+'</td><td class="num">'+money.format(p.ingresos_presupuesto||0)+'</td><td class="num">'+money.format(p.egresos_presupuesto||0)+'</td><td class="num">'+(p.meta_margen_pct||0).toFixed(1)+'%</td><td>'+chip(p.estado)+'</td><td><button class="cc-btn small" data-edit-pres="'+p.id+'" type="button">Editar</button></td></tr>';}).join("")+'</tbody></table>':'<div class="cc-muted" style="padding:12px">Sin presupuesto del periodo.</div>';}
+      function renderReglas(){var rows=state.dashboard.reglas||[];el("reglasTable").innerHTML=rows.length?'<table class="cc-table"><thead><tr><th>Nombre</th><th>Centro</th><th>Origen</th><th>Patrones</th><th>%</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+esc(r.nombre)+'</td><td>'+esc(r.centro_costo_codigo)+'</td><td>'+chip(r.origen_modulo)+'</td><td>'+esc([r.categoria,r.cuenta_patron,r.tercero_patron].filter(Boolean).join(" / "))+'</td><td class="num">'+(r.porcentaje||0).toFixed(1)+'%</td><td class="num">'+(r.prioridad||0)+'</td><td>'+chip(r.activa&&r.estado==="activo"?"activa":"inactiva",r.activa?"cc-good":"cc-warn")+'</td><td><button class="cc-btn small" data-edit-regla="'+r.id+'" type="button">Editar</button></td></tr>';}).join("")+'</tbody></table>':'<div class="cc-muted" style="padding:12px">Sin reglas.</div>';}
+      function renderMovs(){var rows=state.dashboard.movimientos_recientes||[];el("movsTable").innerHTML=rows.length?'<table class="cc-table"><thead><tr><th>Fecha</th><th>Centro</th><th>Modulo</th><th>Referencia</th><th>Concepto</th><th>Ingresos</th><th>Egresos</th><th>Valor</th></tr></thead><tbody>'+rows.map(function(m){return '<tr><td>'+esc(m.fecha||m.periodo||"-")+'</td><td>'+esc(m.centro_costo_codigo)+'</td><td>'+chip(m.origen_modulo)+'</td><td>'+esc(m.referencia||"-")+'</td><td>'+esc(m.concepto||m.categoria||"-")+'</td><td class="num">'+money.format(m.ingresos||0)+'</td><td class="num">'+money.format(m.egresos||0)+'</td><td class="num">'+money.format(m.valor||0)+'</td></tr>';}).join("")+'</tbody></table>':'<div class="cc-muted" style="padding:12px">Sin movimientos integrados.</div>';}
+      function renderAlertas(){var rows=state.dashboard.alertas||[];el("alertasList").innerHTML=rows.map(function(a){return '<div class="cc-alert">'+esc(a)+'</div>';}).join("")||'<div class="cc-muted">Sin alertas.</div>';}
+      function payloadCentro(){return {id:num("centroId"),codigo:val("centroCodigo"),nombre:val("centroNombre"),tipo:val("centroTipo"),sucursal:val("centroSucursal"),area:val("centroArea"),unidad_negocio:val("centroUnidad"),responsable:val("centroResponsable"),meta_margen_pct:num("centroMeta"),estado:val("centroEstado"),observaciones:val("centroObs")};}
+      function payloadPres(){return {id:num("presId"),centro_costo_codigo:val("presCentro"),periodo:val("presPeriodo")||period(),escenario:"base",ingresos_presupuesto:num("presIngresos"),egresos_presupuesto:num("presEgresos"),meta_margen_pct:num("presMeta"),responsable:val("presResponsable"),estado:"aprobado"};}
+      function payloadRegla(){return {id:num("reglaId"),centro_costo_codigo:val("reglaCentro"),nombre:val("reglaNombre"),origen_modulo:val("reglaOrigen"),categoria:val("reglaCategoria"),cuenta_patron:val("reglaCuenta"),tercero_patron:val("reglaTercero"),porcentaje:num("reglaPorcentaje"),prioridad:num("reglaPrioridad"),activa:val("reglaActiva")!=="false",estado:"activo"};}
+      document.addEventListener("click",function(ev){var tab=ev.target.closest("[data-tab]");if(tab){document.querySelectorAll(".cc-tab").forEach(function(b){b.classList.toggle("is-active",b===tab);});document.querySelectorAll(".cc-panel").forEach(function(p){p.classList.toggle("is-active",p.id==="tab-"+tab.dataset.tab);});return;}var code=ev.target.getAttribute("data-edit-centro");if(code){var c=(state.dashboard.centros||[]).find(function(x){return x.codigo===code;});if(c){el("centroId").value=c.id||0;el("centroCodigo").value=c.codigo||"";el("centroNombre").value=c.nombre||"";el("centroTipo").value=c.tipo||"operativo";el("centroSucursal").value=c.sucursal||"";el("centroArea").value=c.area||"";el("centroUnidad").value=c.unidad_negocio||"";el("centroResponsable").value=c.responsable||"";el("centroMeta").value=c.meta_margen_pct||0;el("centroEstado").value=c.estado||"activo";el("centroObs").value=c.observaciones||"";}return;}var pid=ev.target.getAttribute("data-edit-pres");if(pid){var p=(state.dashboard.presupuestos||[]).find(function(x){return String(x.id)===String(pid);});if(p){el("presId").value=p.id||0;el("presCentro").value=p.centro_costo_codigo||"";el("presPeriodo").value=p.periodo||period();el("presIngresos").value=p.ingresos_presupuesto||0;el("presEgresos").value=p.egresos_presupuesto||0;el("presMeta").value=p.meta_margen_pct||0;el("presResponsable").value=p.responsable||"";}return;}var rid=ev.target.getAttribute("data-edit-regla");if(rid){var r=(state.dashboard.reglas||[]).find(function(x){return String(x.id)===String(rid);});if(r){el("reglaId").value=r.id||0;el("reglaCentro").value=r.centro_costo_codigo||"";el("reglaNombre").value=r.nombre||"";el("reglaOrigen").value=r.origen_modulo||"general";el("reglaCategoria").value=r.categoria||"";el("reglaCuenta").value=r.cuenta_patron||"";el("reglaTercero").value=r.tercero_patron||"";el("reglaPorcentaje").value=r.porcentaje||100;el("reglaPrioridad").value=r.prioridad||100;el("reglaActiva").value=r.activa?"true":"false";}}});
+      el("ccRefresh").addEventListener("click",load);el("ccSeed").addEventListener("click",function(){api("seed_demo",{method:"POST",body:"{}"}).then(load).catch(function(e){msg(e.message,true);});});
+      el("ccExport").addEventListener("click",function(){var rows=[["Centro","Nombre","Ingresos","Egresos","Margen","Margen %","Presupuesto ingresos","Presupuesto egresos"]].concat((state.dashboard.rentabilidad||[]).map(function(r){return [r.centro_costo_codigo,r.centro_costo_nombre,r.ingresos,r.egresos,r.margen,r.margen_pct,r.presupuesto_ingresos,r.presupuesto_egresos];}));var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="centros_costo_rentabilidad_"+period()+".csv";a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);});
+      el("centroForm").addEventListener("submit",function(ev){ev.preventDefault();api("centro",{method:num("centroId")?"PUT":"POST",body:JSON.stringify(payloadCentro())}).then(function(){ev.target.reset();el("centroId").value="";load();}).catch(function(e){msg(e.message,true);});});
+      el("presForm").addEventListener("submit",function(ev){ev.preventDefault();api("presupuesto",{method:num("presId")?"PUT":"POST",body:JSON.stringify(payloadPres())}).then(function(){el("presId").value="";load();}).catch(function(e){msg(e.message,true);});});
+      el("reglaForm").addEventListener("submit",function(ev){ev.preventDefault();api("regla",{method:num("reglaId")?"PUT":"POST",body:JSON.stringify(payloadRegla())}).then(function(){el("reglaId").value="";load();}).catch(function(e){msg(e.message,true);});});
+      load();
+    })();
+  </script>
+</body>
+</html>

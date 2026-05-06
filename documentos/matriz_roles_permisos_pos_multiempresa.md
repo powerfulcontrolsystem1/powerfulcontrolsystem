@@ -1,3 +1,59 @@
+2026-05-06: Nota operativa para `logistica_wms`
+- Se agrega clave independiente `logistica_wms`, activable por licencia mediante `licencias.modulos_habilitados`.
+- La pagina `linkLogisticaWMS` queda registrada en el catalogo de paginas y se muestra en Administrar empresa > Inventario y compras.
+- El endpoint `/api/empresa/logistica_wms` usa `WithEmpresaWMSPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `inventario` y `compras`.
+- Todas las ubicaciones, ordenes, items, despachos y eventos incluyen `empresa_id`; el modulo se integra con inventario sin duplicar productos ni existencias.
+
+2026-05-06: Nota operativa para `declaraciones_tributarias`
+- Se agrega clave independiente `declaraciones_tributarias`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkDeclaracionesTributarias` y `linkDeclaracionesTributariasMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
+- El endpoint `/api/empresa/declaraciones_tributarias` usa `WithEmpresaDeclaracionesTributariasPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`, alineado con la matriz financiera.
+- Todas las declaraciones, movimientos y vencimientos incluyen `empresa_id`; el calendario editable no concede permisos cruzados ni mezcla obligaciones entre empresas.
+
+2026-05-06: Nota operativa para `portal_terceros_certificados`
+- Se agrega clave independiente `portal_terceros_certificados`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkPortalTercerosCertificados` y `linkPortalTercerosCertificadosMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
+- El endpoint administrativo `/api/empresa/portal_terceros_certificados` usa `WithEmpresaPortalTercerosPermissions`.
+- La consulta externa `/api/public/certificados_tributarios` solo permite ver certificados emitidos/enviados mediante token publico y no lista informacion de otros terceros.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`.
+- Todas las tablas incluyen `empresa_id`; los tokens no reemplazan el aislamiento interno por empresa.
+
+2026-05-06: Nota operativa para `activos_fijos_niif_fiscal`
+- Se agrega clave independiente `activos_fijos_niif_fiscal`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkActivosFijosNIIF` y `linkActivosFijosNIIFMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
+- El endpoint `/api/empresa/activos_fijos_niif_fiscal` usa `WithEmpresaActivosFijosNIIFPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`, alineado con la matriz financiera.
+- Reutiliza `empresa_contabilidad_activos_fijos`, `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`, todas filtradas por `empresa_id`.
+
+2026-05-06: Nota operativa para `propiedad_horizontal`
+- Se agrega clave independiente `propiedad_horizontal`, activable por licencia mediante `licencias.modulos_habilitados`.
+- La pagina `linkPropiedadHorizontal` queda registrada en el catalogo de paginas y se muestra en Administrar empresa.
+- El endpoint `/api/empresa/propiedad_horizontal` usa `WithEmpresaPropiedadHorizontalPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y roles operativos autorizados por verticales.
+- Todas las tablas nuevas incluyen `empresa_id`; unidades, residentes, cargos, recaudos, PQR y asambleas no se mezclan entre empresas.
+
+2026-05-06: Nota operativa para promocion de licencias por asesor
+- La promocion se controla desde Super administrador > Asesor comercial, con check de activacion y porcentaje.
+- El codigo de asesor debe existir, estar activo y tener invitacion aceptada para aplicar descuento.
+- La promocion no reemplaza la comision del asesor: conserva `asesor_id` en pagos Wompi/Epayco/manual y sigue registrando comisiones.
+
+2026-05-06: Nota operativa para `cierre_fiscal`
+- Se agrega clave independiente `cierre_fiscal`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkCierreFiscal` y `linkCierreFiscalMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
+- El endpoint `/api/empresa/cierre_fiscal` usa `WithEmpresaCierreFiscalPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`, alineado con los controles de cierre financiero.
+- Las tablas nuevas incluyen `empresa_id`; las excepciones y eventos se registran por periodo, modulo, accion y usuario sin conceder permisos cruzados ni mezclar empresas.
+- El cierre/reapertura desde `contabilidad_colombia` sincroniza el periodo fiscal para evitar duplicar fuentes de verdad.
+
+2026-05-06: Nota operativa para `centros_costo`
+- Se agrega clave independiente `centros_costo`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkCentrosCosto` y `linkCentrosCostoMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
+- El endpoint `/api/empresa/centros_costo` usa `WithEmpresaCentrosCostoPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`, alineado con los modulos financieros.
+- Todas las tablas nuevas incluyen `empresa_id`; los movimientos del dashboard se consultan desde modulos existentes sin conceder permisos cruzados ni mezclar empresas.
+
 2026-05-06: Nota operativa para `crm_ventas_avanzadas`
 - Se agrega la pagina `linkCRMAvanzado` bajo el modulo/licencia existente `clientes`; no se duplican clientes ni ventas.
 - El endpoint `/api/empresa/crm_avanzado` reutiliza `WithEmpresaClientesPermissions`.
@@ -42,9 +98,9 @@
 - Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `compras` e `inventario`, porque el costo aterrizado cruza compra internacional e inventario.
 - Todas las importaciones, items y costos incluyen `empresa_id`; no se mezclan embarques ni costos entre empresas.
 
-2026-05-06: Nota operativa para `activos_fijos` avanzado
-- Los activos fijos avanzados viven dentro de `contabilidad_colombia_avanzada`; no se crea clave de licencia ni wrapper nuevo.
-- Las acciones `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento` quedan bajo `/api/empresa/contabilidad_colombia_avanzada` y heredan el mismo control financiero/contable.
+2026-05-06: Nota operativa para compatibilidad de `activos_fijos` avanzado
+- Las acciones antiguas de activos dentro de `/api/empresa/contabilidad_colombia_avanzada` se conservan por compatibilidad y heredan el control financiero/contable.
+- El modulo formal nuevo es `activos_fijos_niif_fiscal`, con wrapper, licencia y pantalla propia; ambos caminos usan las mismas tablas para no duplicar activos, eventos ni depreciaciones.
 - Las tablas `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos` usan `empresa_id` y no comparten eventos, depreciaciones ni mantenimientos entre empresas.
 
 2026-05-06: Nota operativa para `nomina_sueldos` y Nomina Colombia avanzada

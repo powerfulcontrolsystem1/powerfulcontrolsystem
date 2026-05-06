@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Propiedad Horizontal</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;padding:18px;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
+    .ph-shell{max-width:1320px;margin:0 auto;display:grid;gap:16px}
+    .ph-hero,.ph-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow);padding:18px}
+    .ph-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+    .ph-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+    .ph-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .ph-kpi span{display:block;color:var(--muted);font-size:.78rem}.ph-kpi strong{font-size:1.12rem}
+    .ph-tabs{display:flex;gap:8px;flex-wrap:wrap}.ph-tabs button{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:9px 12px;cursor:pointer}.ph-tabs button.active{background:var(--accent);color:var(--btn-primary-text,#fff)}
+    .ph-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:14px;align-items:start}
+    .ph-form{display:grid;gap:10px}.ph-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .ph-table-wrap{overflow:auto}.ph-table{width:100%;border-collapse:collapse;font-size:.88rem}.ph-table th,.ph-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.ph-table th{font-size:.76rem;text-transform:uppercase;color:var(--muted)}
+    .ph-pill{display:inline-flex;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--surface-soft);font-size:.78rem}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    @media(max-width:980px){body{padding:10px}.ph-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ph-grid,.ph-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="ph-shell">
+    <section class="ph-hero">
+      <div>
+        <h1>Propiedad Horizontal / Copropiedades</h1>
+        <p class="muted">Administra conjuntos, edificios y condominios con unidades, propietarios, residentes, cuotas, cartera, recaudos, PQR y asambleas.</p>
+      </div>
+      <div class="form-actions">
+        <button id="seedBtn" class="btn secondary" type="button">Cargar demo</button>
+        <button id="reloadBtn" class="btn" type="button">Actualizar</button>
+      </div>
+    </section>
+
+    <section class="ph-kpis" id="kpis"></section>
+    <nav class="ph-tabs" id="tabs"></nav>
+
+    <section id="tab-dashboard" class="tab-panel active ph-card">
+      <div class="ph-grid">
+        <form id="configForm" class="ph-card ph-form">
+          <h2>Configuracion de copropiedad</h2>
+          <label class="form-label">Nombre<input id="cfgNombre" class="form-input"></label>
+          <div class="ph-row"><label class="form-label">NIT<input id="cfgNit" class="form-input"></label><label class="form-label">Tipo<select id="cfgTipo" class="form-input"><option value="conjunto_residencial">Conjunto residencial</option><option value="edificio">Edificio</option><option value="condominio">Condominio</option><option value="centro_comercial">Centro comercial</option><option value="mixto">Mixto</option><option value="colegio">Colegio</option></select></label></div>
+          <label class="form-label">Direccion<input id="cfgDireccion" class="form-input"></label>
+          <div class="ph-row"><label class="form-label">Ciudad<input id="cfgCiudad" class="form-input"></label><label class="form-label">Administrador<input id="cfgAdmin" class="form-input"></label></div>
+          <div class="ph-row"><label class="form-label">Telefono<input id="cfgTel" class="form-input"></label><label class="form-label">Email<input id="cfgEmail" class="form-input"></label></div>
+          <div class="ph-row"><label class="form-label">Interes mora mensual %<input id="cfgMora" class="form-input" type="number" step="0.01"></label><label class="form-label">Dias de gracia<input id="cfgGracia" class="form-input" type="number"></label></div>
+          <label class="form-label"><input id="cfgFE" type="checkbox"> Facturacion electronica para cuotas</label>
+          <label class="form-label"><input id="cfgPortal" type="checkbox"> Portal de residentes habilitado</label>
+          <button class="btn" type="submit">Guardar configuracion</button>
+          <div id="configMsg" class="form-help"></div>
+        </form>
+        <article class="ph-card">
+          <h2>Tablero gerencial</h2>
+          <div id="dashboardLists" class="ph-table-wrap"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="tab-unidades" class="tab-panel ph-card"><div class="ph-grid"><form id="unidadForm" class="ph-card ph-form"><h2>Unidad</h2><div class="ph-row"><input id="uCodigo" class="form-input" placeholder="Codigo"><input id="uTorre" class="form-input" placeholder="Torre"></div><div class="ph-row"><input id="uPiso" class="form-input" placeholder="Piso"><select id="uTipo" class="form-input"><option value="apartamento">Apartamento</option><option value="casa">Casa</option><option value="local">Local</option><option value="oficina">Oficina</option></select></div><div class="ph-row"><input id="uArea" class="form-input" type="number" step="0.01" placeholder="Area m2"><input id="uCoef" class="form-input" type="number" step="0.0001" placeholder="Coeficiente"></div><div class="ph-row"><input id="uCuota" class="form-input" type="number" placeholder="Cuota base"><select id="uEstado" class="form-input"><option value="ocupada">Ocupada</option><option value="desocupada">Desocupada</option><option value="en_mora">En mora</option></select></div><div class="ph-row"><input id="uParq" class="form-input" placeholder="Parqueadero"><input id="uDep" class="form-input" placeholder="Deposito"></div><button class="btn" type="submit">Guardar unidad</button></form><div class="ph-table-wrap" id="unidadesBox"></div></div></section>
+    <section id="tab-personas" class="tab-panel ph-card"><div class="ph-grid"><form id="personaForm" class="ph-card ph-form"><h2>Propietario / residente</h2><select id="pUnidad" class="form-input"></select><select id="pRelacion" class="form-input"><option value="propietario">Propietario</option><option value="residente">Residente</option><option value="arrendatario">Arrendatario</option><option value="apoderado">Apoderado</option></select><input id="pNombre" class="form-input" placeholder="Nombre"><input id="pDoc" class="form-input" placeholder="Documento"><div class="ph-row"><input id="pTel" class="form-input" placeholder="Telefono"><input id="pEmail" class="form-input" placeholder="Email"></div><button class="btn" type="submit">Guardar persona</button></form><div class="ph-table-wrap" id="personasBox"></div></div></section>
+    <section id="tab-cartera" class="tab-panel ph-card"><div class="ph-grid"><form id="cargoForm" class="ph-card ph-form"><h2>Cargo / cuota</h2><select id="cUnidad" class="form-input"></select><div class="ph-row"><input id="cPeriodo" class="form-input" placeholder="YYYY-MM"><select id="cTipo" class="form-input"><option value="cuota_administracion">Cuota administracion</option><option value="cuota_extraordinaria">Cuota extraordinaria</option><option value="multa">Multa</option><option value="reserva_zona">Reserva zona</option></select></div><input id="cConcepto" class="form-input" placeholder="Concepto"><div class="ph-row"><input id="cValor" class="form-input" type="number" placeholder="Valor base"><input id="cMora" class="form-input" type="number" placeholder="Mora"></div><div class="ph-row"><input id="cDesc" class="form-input" type="number" placeholder="Descuento"><input id="cVence" class="form-input" type="date"></div><button class="btn" type="submit">Crear cargo</button></form><div class="ph-table-wrap" id="cargosBox"></div></div></section>
+    <section id="tab-recaudos" class="tab-panel ph-card"><div class="ph-grid"><form id="recaudoForm" class="ph-card ph-form"><h2>Recaudo</h2><select id="rCargo" class="form-input"></select><select id="rUnidad" class="form-input"></select><div class="ph-row"><input id="rFecha" class="form-input" type="date"><select id="rMetodo" class="form-input"><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="pse">PSE</option><option value="consignacion">Consignacion</option></select></div><input id="rRef" class="form-input" placeholder="Referencia"><input id="rValor" class="form-input" type="number" placeholder="Valor pagado"><button class="btn" type="submit">Registrar recaudo</button></form><div class="ph-table-wrap" id="recaudosBox"></div></div></section>
+    <section id="tab-pqrs" class="tab-panel ph-card"><div class="ph-grid"><form id="pqrForm" class="ph-card ph-form"><h2>PQR / mantenimiento</h2><select id="qUnidad" class="form-input"></select><div class="ph-row"><select id="qTipo" class="form-input"><option value="peticion">Peticion</option><option value="queja">Queja</option><option value="reclamo">Reclamo</option><option value="mantenimiento">Mantenimiento</option><option value="seguridad">Seguridad</option></select><select id="qPrioridad" class="form-input"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option></select></div><input id="qAsunto" class="form-input" placeholder="Asunto"><textarea id="qDesc" class="form-textarea" placeholder="Descripcion"></textarea><div class="ph-row"><input id="qResp" class="form-input" placeholder="Responsable"><input id="qLimite" class="form-input" type="date"></div><button class="btn" type="submit">Guardar PQR</button></form><div class="ph-table-wrap" id="pqrsBox"></div></div></section>
+    <section id="tab-asambleas" class="tab-panel ph-card"><div class="ph-grid"><form id="asambleaForm" class="ph-card ph-form"><h2>Asamblea</h2><input id="aTitulo" class="form-input" placeholder="Titulo"><div class="ph-row"><select id="aTipo" class="form-input"><option value="ordinaria">Ordinaria</option><option value="extraordinaria">Extraordinaria</option><option value="consejo">Consejo</option></select><input id="aFecha" class="form-input" type="date"></div><div class="ph-row"><input id="aQuorum" class="form-input" type="number" value="51"><input id="aActual" class="form-input" type="number" value="0"></div><input id="aActa" class="form-input" placeholder="URL acta"><button class="btn" type="submit">Guardar asamblea</button></form><div class="ph-table-wrap" id="asambleasBox"></div></div></section>
+  </main>
+
+  <script>
+    const params=new URLSearchParams(location.search); const empresaId=params.get("empresa_id")||params.get("id")||localStorage.getItem("empresa_id")||"";
+    const apiBase="/api/empresa/propiedad_horizontal?empresa_id="+encodeURIComponent(empresaId);
+    const money=new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});
+    const tabDefs=[["dashboard","Dashboard"],["unidades","Unidades"],["personas","Personas"],["cartera","Cartera"],["recaudos","Recaudos"],["pqrs","PQR"],["asambleas","Asambleas"]];
+    let state={unidades:[],personas:[],cargos:[],recaudos:[],pqrs:[],asambleas:[]};
+    function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));}
+    function val(id){return document.getElementById(id).value.trim();}
+    async function api(action, method, body){const res=await fetch(apiBase+"&action="+action,{method:method||"GET",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"}); const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch(e){} if(!res.ok) throw new Error((data&&data.error)||txt||"Error"); return data;}
+    function table(cols, rows){return '<table class="ph-table"><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';}
+    function options(items, includeEmpty){return (includeEmpty?'<option value="0">Sin unidad</option>':'')+items.map(u=>'<option value="'+Number(u.id)+'">'+esc(u.codigo)+' '+esc(u.torre||"")+'</option>').join('');}
+    function render(d){
+      state=d; const c=d.config||{};
+      cfgNombre.value=c.nombre_copropiedad||""; cfgNit.value=c.nit||""; cfgTipo.value=c.tipo_copropiedad||"conjunto_residencial"; cfgDireccion.value=c.direccion||""; cfgCiudad.value=c.ciudad||""; cfgAdmin.value=c.administrador||""; cfgTel.value=c.telefono||""; cfgEmail.value=c.email||""; cfgMora.value=c.interes_mora_mensual||2; cfgGracia.value=c.dias_gracia||5; cfgFE.checked=!!c.facturacion_electronica; cfgPortal.checked=!!c.permitir_portal_residente;
+      kpis.innerHTML=[["Unidades",d.total_unidades],["Ocupadas",d.unidades_ocupadas],["Residentes",d.residentes_activos],["Cartera",money.format(d.cartera_pendiente||0)],["Recaudo mes",money.format(d.recaudo_mes||0)],["PQR abiertas",d.pqr_pendientes]].map(x=>'<div class="ph-kpi"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');
+      [pUnidad,cUnidad,rUnidad,qUnidad].forEach(s=>s.innerHTML=options(d.unidades||[],s===qUnidad||s===pUnidad)); rCargo.innerHTML='<option value="0">Sin cargo</option>'+(d.cargos||[]).filter(x=>Number(x.saldo_pendiente||0)>0).map(x=>'<option value="'+x.id+'" data-unidad="'+x.unidad_id+'" data-saldo="'+x.saldo_pendiente+'">'+esc(x.unidad_codigo)+' '+esc(x.concepto)+' '+money.format(x.saldo_pendiente||0)+'</option>').join('');
+      dashboardLists.innerHTML=table(["Ultimos cargos","Unidad","Saldo"],(d.cargos||[]).slice(0,8).map(x=>'<tr><td>'+esc(x.concepto)+'</td><td>'+esc(x.unidad_codigo)+'</td><td>'+money.format(x.saldo_pendiente||0)+'</td></tr>'));
+      unidadesBox.innerHTML=table(["Codigo","Tipo","Coef.","Cuota","Estado"],(d.unidades||[]).map(x=>'<tr><td><strong>'+esc(x.codigo)+'</strong><br>'+esc(x.torre)+'</td><td>'+esc(x.tipo_unidad)+'</td><td>'+Number(x.coeficiente||0).toFixed(4)+'</td><td>'+money.format(x.cuota_base||0)+'</td><td><span class="ph-pill">'+esc(x.estado)+'</span></td></tr>'));
+      personasBox.innerHTML=table(["Nombre","Unidad","Relacion","Contacto"],(d.personas||[]).map(x=>'<tr><td>'+esc(x.nombre)+'<br><span class="muted">'+esc(x.documento)+'</span></td><td>'+esc(x.unidad_codigo)+'</td><td>'+esc(x.tipo_relacion)+'</td><td>'+esc(x.telefono)+'<br>'+esc(x.email)+'</td></tr>'));
+      cargosBox.innerHTML=table(["Periodo","Unidad","Concepto","Total","Saldo","Estado"],(d.cargos||[]).map(x=>'<tr><td>'+esc(x.periodo)+'</td><td>'+esc(x.unidad_codigo)+'</td><td>'+esc(x.concepto)+'</td><td>'+money.format(x.total||0)+'</td><td>'+money.format(x.saldo_pendiente||0)+'</td><td>'+esc(x.estado)+'</td></tr>'));
+      recaudosBox.innerHTML=table(["Fecha","Unidad","Metodo","Valor","Referencia"],(d.recaudos||[]).map(x=>'<tr><td>'+esc(x.fecha_pago)+'</td><td>'+esc(x.unidad_codigo)+'</td><td>'+esc(x.metodo_pago)+'</td><td>'+money.format(x.valor_pagado||0)+'</td><td>'+esc(x.referencia)+'</td></tr>'));
+      pqrsBox.innerHTML=table(["Asunto","Unidad","Prioridad","Estado","Responsable"],(d.pqrs||[]).map(x=>'<tr><td>'+esc(x.asunto)+'</td><td>'+esc(x.unidad_codigo)+'</td><td>'+esc(x.prioridad)+'</td><td>'+esc(x.estado)+'</td><td>'+esc(x.responsable)+'</td></tr>'));
+      asambleasBox.innerHTML=table(["Titulo","Fecha","Quorum","Estado","Acta"],(d.asambleas||[]).map(x=>'<tr><td>'+esc(x.titulo)+'</td><td>'+esc(x.fecha)+'</td><td>'+Number(x.quorum_actual||0).toFixed(2)+'% / '+Number(x.quorum_objetivo||0).toFixed(2)+'%</td><td>'+esc(x.estado)+'</td><td>'+esc(x.acta_url)+'</td></tr>'));
+    }
+    async function load(){render(await api("dashboard"))}
+    tabDefs.forEach((t,i)=>{const b=document.createElement("button"); b.textContent=t[1]; b.className=i?"":"active"; b.onclick=()=>{document.querySelectorAll(".ph-tabs button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active")); document.getElementById("tab-"+t[0]).classList.add("active")}; document.getElementById("tabs").appendChild(b)});
+    configForm.onsubmit=async e=>{e.preventDefault(); await api("config","POST",{nombre_copropiedad:val("cfgNombre"),nit:val("cfgNit"),tipo_copropiedad:val("cfgTipo"),direccion:val("cfgDireccion"),ciudad:val("cfgCiudad"),administrador:val("cfgAdmin"),telefono:val("cfgTel"),email:val("cfgEmail"),interes_mora_mensual:Number(val("cfgMora")||0),dias_gracia:Number(val("cfgGracia")||0),facturacion_electronica:cfgFE.checked,permitir_portal_residente:cfgPortal.checked}); configMsg.textContent="Configuracion guardada"; load()};
+    unidadForm.onsubmit=async e=>{e.preventDefault(); await api("unidad","POST",{codigo:val("uCodigo"),torre:val("uTorre"),piso:val("uPiso"),tipo_unidad:val("uTipo"),area_m2:Number(val("uArea")||0),coeficiente:Number(val("uCoef")||0),cuota_base:Number(val("uCuota")||0),parqueadero:val("uParq"),deposito:val("uDep"),estado:val("uEstado")}); unidadForm.reset(); load()};
+    personaForm.onsubmit=async e=>{e.preventDefault(); await api("persona","POST",{unidad_id:Number(val("pUnidad")||0),tipo_relacion:val("pRelacion"),nombre:val("pNombre"),documento:val("pDoc"),telefono:val("pTel"),email:val("pEmail")}); personaForm.reset(); load()};
+    cargoForm.onsubmit=async e=>{e.preventDefault(); await api("cargo","POST",{unidad_id:Number(val("cUnidad")||0),periodo:val("cPeriodo"),tipo_cargo:val("cTipo"),concepto:val("cConcepto"),valor_base:Number(val("cValor")||0),interes_mora:Number(val("cMora")||0),descuento:Number(val("cDesc")||0),fecha_vencimiento:val("cVence")}); cargoForm.reset(); load()};
+    rCargo.onchange=()=>{const o=rCargo.selectedOptions[0]; if(o){rUnidad.value=o.dataset.unidad||rUnidad.value; rValor.value=o.dataset.saldo||rValor.value}};
+    recaudoForm.onsubmit=async e=>{e.preventDefault(); await api("recaudo","POST",{cargo_id:Number(val("rCargo")||0),unidad_id:Number(val("rUnidad")||0),fecha_pago:val("rFecha"),metodo_pago:val("rMetodo"),referencia:val("rRef"),valor_pagado:Number(val("rValor")||0)}); recaudoForm.reset(); load()};
+    pqrForm.onsubmit=async e=>{e.preventDefault(); await api("pqr","POST",{unidad_id:Number(val("qUnidad")||0),tipo:val("qTipo"),prioridad:val("qPrioridad"),asunto:val("qAsunto"),descripcion:val("qDesc"),responsable:val("qResp"),fecha_limite:val("qLimite")}); pqrForm.reset(); load()};
+    asambleaForm.onsubmit=async e=>{e.preventDefault(); await api("asamblea","POST",{titulo:val("aTitulo"),tipo_asamblea:val("aTipo"),fecha:val("aFecha"),quorum_objetivo:Number(val("aQuorum")||51),quorum_actual:Number(val("aActual")||0),acta_url:val("aActa")}); asambleaForm.reset(); load()};
+    reloadBtn.onclick=load; seedBtn.onclick=async()=>{await api("seed_demo","POST",{}); load()}; load().catch(err=>{document.body.insertAdjacentHTML("afterbegin",'<div class="error">'+esc(err.message)+'</div>')});
+  </script>
+</body>
+</html>

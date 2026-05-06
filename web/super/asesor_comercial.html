@@ -25,6 +25,7 @@
     .ac-section-title{margin:12px 0 4px;color:var(--text);font-size:.96rem}
     .ac-pay-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
     .ac-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .ac-promo-form{display:grid;grid-template-columns:minmax(220px,1fr) 170px auto;gap:12px;align-items:end}
     .ac-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 12px}
     .ac-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:5px 9px;background:var(--surface);font-size:.78rem;color:var(--muted)}
     .ac-table-wrap{overflow:auto}
@@ -32,7 +33,7 @@
     .ac-table th,.ac-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
     .ac-table th{color:var(--muted);font-size:.78rem;text-transform:uppercase}
     .ac-paid{color:var(--success);font-weight:800}.ac-pending{color:var(--accent-yellow);font-weight:800}
-    @media(max-width:900px){body{padding:10px}.ac-grid,.ac-row,.ac-pay-grid{grid-template-columns:1fr}.ac-metrics,.ac-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:900px){body{padding:10px}.ac-grid,.ac-row,.ac-pay-grid,.ac-promo-form{grid-template-columns:1fr}.ac-metrics,.ac-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -43,6 +44,34 @@
         <p class="muted">Invita administradores registrados para que acepten operar como asesores comerciales. Cada asesor recibe un código único que se usa en el pago de licencias y conserva comisiones durante el plazo configurado.</p>
       </div>
       <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </section>
+
+    <section class="ac-card">
+      <div class="ac-toolbar">
+        <div>
+          <h2>Promocion por codigo de asesor</h2>
+          <p class="muted">Cuando esta activa, el comprador que escriba un codigo de asesor aceptado recibe un descuento adicional en la licencia antes de pagar.</p>
+        </div>
+      </div>
+      <form id="advisorPromoForm" class="ac-promo-form">
+        <label class="form-label" style="display:flex;gap:10px;align-items:center;margin:0;">
+          <input id="advisorPromoEnabled" type="checkbox">
+          Activar descuento por codigo de asesor
+        </label>
+        <div>
+          <label class="form-label" for="advisorPromoPercent">Descuento adicional</label>
+          <select id="advisorPromoPercent" class="form-input">
+            <option value="5">5%</option>
+            <option value="10">10%</option>
+            <option value="15">15%</option>
+            <option value="20">20%</option>
+            <option value="25">25%</option>
+            <option value="30">30%</option>
+          </select>
+        </div>
+        <button class="btn" type="submit">Guardar promocion</button>
+      </form>
+      <div id="advisorPromoMsg" class="form-help"></div>
     </section>
 
     <section class="ac-grid">
@@ -418,6 +447,10 @@
         }).join("")}</tbody></table>`;
       };
       window.loadAll = async function(){
+        const promo = await requestJSON("/super/api/asesor_comercial?action=promocion");
+        const cfg = promo && promo.promocion ? promo.promocion : {};
+        document.getElementById("advisorPromoEnabled").checked = Boolean(cfg.enabled);
+        writeField("advisorPromoPercent", String(Number(cfg.percent || 10)));
         const advisors = await requestJSON("/super/api/asesor_comercial");
         window.renderAdvisors((advisors && advisors.items) || []);
         const commissions = await requestJSON("/super/api/asesor_comercial?action=comisiones");
@@ -468,6 +501,27 @@
         }
       });
       document.getElementById("cancelEditBtn").addEventListener("click", resetAdvisorEditor);
+      document.getElementById("advisorPromoForm").addEventListener("submit", async function(ev){
+        ev.preventDefault();
+        const msg = document.getElementById("advisorPromoMsg");
+        msg.textContent = "Guardando promocion...";
+        msg.style.color = "var(--muted)";
+        try {
+          await requestJSON("/super/api/asesor_comercial?action=promocion", {
+            method:"PUT",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({
+              enabled: document.getElementById("advisorPromoEnabled").checked,
+              percent: Number(field("advisorPromoPercent") || 10)
+            })
+          });
+          msg.textContent = "Promocion guardada correctamente.";
+          msg.style.color = "var(--success)";
+        } catch(err) {
+          msg.textContent = err.message;
+          msg.style.color = "var(--danger)";
+        }
+      });
       document.getElementById("reloadBtn").addEventListener("click", window.loadAll);
       document.getElementById("reloadCommissionsBtn").addEventListener("click", window.loadAll);
       resetAdvisorEditor();

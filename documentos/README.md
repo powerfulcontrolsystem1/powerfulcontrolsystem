@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-06
-Estado: vigente, actualizado con CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
+Estado: vigente, actualizado con Logistica avanzada / WMS, Declaraciones Tributarias y Motor de Impuestos Colombia, Portal de Terceros y Certificados Tributarios, Activos Fijos e Intangibles NIIF/Fiscal, Propiedad Horizontal, promocion de licencias por asesor, Cierre y bloqueo fiscal, Centros de costo y rentabilidad, CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,14 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-06: agregado modulo `Logistica avanzada / WMS` con API `/api/empresa/logistica_wms`, ubicaciones internas, ordenes WMS, picking, packing, despachos, rutas, avance por item, bitacora, permiso/licencia `logistica_wms`, pantalla `web/administrar_empresa/logistica_wms.html` y documento `documentos/logistica_wms.md`.
+- 2026-05-06: agregado modulo `Declaraciones Tributarias y Motor de Impuestos Colombia` con API `/api/empresa/declaraciones_tributarias`, preliquidacion de IVA, retenciones, ICA, consumo, renta y regimen simple, calendario tributario editable, saldos a pagar/favor, movimientos de conciliacion, permiso/licencia `declaraciones_tributarias`, pantalla `web/administrar_empresa/declaraciones_tributarias.html` y documento `documentos/declaraciones_tributarias.md`.
+- 2026-05-06: agregado modulo `Portal de Terceros y Certificados Tributarios` con API `/api/empresa/portal_terceros_certificados`, API publica `/api/public/certificados_tributarios`, maestro de terceros, certificados de retencion/ingresos, enlace publico seguro, bitacora de descargas, permiso/licencia `portal_terceros_certificados`, pantalla `web/administrar_empresa/portal_terceros_certificados.html`, pagina `web/visualizar_certificado_tributario_publico.html` y documento `documentos/portal_terceros_certificados.md`.
+- 2026-05-06: agregado modulo formal `Activos Fijos e Intangibles NIIF/Fiscal` con API `/api/empresa/activos_fijos_niif_fiscal`, libro maestro, depreciacion por periodo, vida util NIIF y fiscal, deterioro, valor fiscal, diferencia NIIF/fiscal, eventos, seguros, mantenimientos, permiso/licencia `activos_fijos_niif_fiscal`, pantalla `web/administrar_empresa/activos_fijos_niif_fiscal.html` y documento `documentos/activos_fijos_niif_fiscal.md`.
+- 2026-05-06: agregado modulo `Propiedad Horizontal / Administracion de Copropiedades` con API `/api/empresa/propiedad_horizontal`, unidades, propietarios/residentes, cargos, recaudos, PQR, asambleas, dashboard, datos demo, permiso/licencia `propiedad_horizontal` y pantalla `web/administrar_empresa/propiedad_horizontal.html`.
+- 2026-05-06: agregada promocion configurable de licencias por codigo de asesor desde `web/super/asesor_comercial.html`; usa `licencias.asesor_promo.enabled` y `licencias.asesor_promo.percent`, aplica descuento adicional en checkout y conserva comisiones.
+- 2026-05-06: agregado modulo `Cierre y bloqueo fiscal` con API `/api/empresa/cierre_fiscal`, politicas por modulo, periodos fiscales, bloqueos por fecha, excepciones aprobadas, simulador, bitacora, permiso/licencia `cierre_fiscal`, pantalla `web/administrar_empresa/cierre_fiscal.html`, sincronizacion con cierre/reapertura de Contabilidad Colombia y documento `documentos/cierre_fiscal.md`.
+- 2026-05-06: agregado modulo formal `Centros de costo y rentabilidad` con API `/api/empresa/centros_costo`, maestro, reglas de imputacion, presupuesto por periodo, dashboard comparativo, movimientos integrados desde contabilidad/tesoreria/compras/OCR/AIU, permiso/licencia `centros_costo`, pantalla `web/administrar_empresa/centros_costo.html` y documento `documentos/centros_costo.md`.
 - 2026-05-06: actualizado `web/index.html` para describir los modulos recientes en la portada publica: Cobranza, Portal contador, Captura IA/OCR de compras y gastos, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos, tanto en la seccion fija de modulos como en tarjetas fallback.
 - 2026-05-06: agregado `documentos/reporte_qa_modulos_2026-05-06.md` con revision transversal autenticada de Motel Calipso, paginas/API 200, auditoria estatica de enlaces/botones, optimizacion de dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y nota de limitacion del navegador embebido por bloqueo local de Node.
 - 2026-05-06: agregado modulo `Captura inteligente de compras y gastos` con API `/api/empresa/soportes_compras_ia`, foto/PDF/XML, extraccion OCR/IA con `openai:gpt-5.5`, aprobacion, contabilizacion CxP, permisos/licencia `soportes_compras_ia`, pantalla `web/administrar_empresa/soportes_compras_ia.html` y documento `documentos/soportes_compras_ia.md`.
@@ -62,8 +70,16 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
 - Suite contable Colombia avanzada: `documentos/contabilidad_colombia_avanzada.md`
+- Declaraciones tributarias Colombia: `documentos/declaraciones_tributarias.md`
+- Cierre y bloqueo fiscal: `documentos/cierre_fiscal.md`
+- Activos fijos NIIF/Fiscal: `documentos/activos_fijos_niif_fiscal.md`
+- Portal de terceros y certificados tributarios: `documentos/portal_terceros_certificados.md`
+- Propiedad horizontal: `documentos/propiedad_horizontal.md`
+- Promocion de licencias por asesor: `documentos/promocion_asesor_licencias.md`
+- Centros de costo y rentabilidad: `documentos/centros_costo.md`
 - Carnets empresariales: `documentos/carnets_empresariales.md`
 - Produccion / MRP: `documentos/produccion_mrp.md`
+- Logistica avanzada / WMS: `documentos/logistica_wms.md`
 - Tesoreria y presupuesto: `documentos/tesoreria_presupuesto.md`
 - Nomina Colombia avanzada: `documentos/nomina_colombia_avanzada.md`
 - Activos fijos avanzado: `documentos/activos_fijos_avanzado.md`

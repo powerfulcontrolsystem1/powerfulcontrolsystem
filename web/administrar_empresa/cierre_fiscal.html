@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cierre y bloqueo fiscal</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.cf-page{margin:0;background:var(--page-bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    [data-theme="dark"] body.cf-page,body.dark.cf-page{background:#0f1724;color:#e8eef7}
+    .cf-shell{padding:18px;display:grid;gap:14px;max-width:1440px;margin:0 auto}.cf-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}.cf-head h1{margin:0;font-size:23px}.cf-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:880px}.cf-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .cf-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--button-bg,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.cf-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}.cf-btn.small{min-height:32px;padding:6px 9px;font-size:12px}
+    .cf-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.cf-kpi,.cf-box{background:var(--card-bg,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.cf-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.cf-kpi strong{display:block;margin-top:6px;font-size:20px;line-height:1.1}
+    .cf-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:12px;align-items:start}.cf-box h2{margin:0 0 10px;font-size:16px}.cf-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.cf-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.cf-tab.is-active{border-color:#1769e0;color:#1769e0}
+    .cf-panel{display:none}.cf-panel.is-active{display:grid;gap:12px}.cf-form{display:grid;gap:9px}.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.cf-field{display:grid;gap:4px}.cf-field label{font-size:12px;color:var(--muted,#65758b)}.cf-field input,.cf-field select,.cf-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.cf-field textarea{min-height:74px;resize:vertical}
+    .cf-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.cf-table{width:100%;min-width:860px;border-collapse:collapse;background:var(--card-bg,#fff)}.cf-table th,.cf-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px;vertical-align:top}.cf-table th{color:var(--muted,#65758b)}.cf-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}.cf-good{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}.cf-warn{background:color-mix(in srgb,#f59e0b 16%,transparent);color:#b45309}.cf-bad{background:color-mix(in srgb,#ef4444 14%,transparent);color:#b91c1c}
+    .cf-alerts{display:grid;gap:8px}.cf-alert{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;background:color-mix(in srgb,#f59e0b 10%,transparent)}.cf-muted{color:var(--muted,#65758b)}.cf-msg{min-height:24px;color:var(--muted,#65758b)}.cf-msg.is-error{color:#c43737}.cf-result{white-space:pre-wrap;max-height:180px;overflow:auto}
+    @media(max-width:1120px){.cf-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cf-grid{grid-template-columns:1fr}.cf-head{display:grid}.cf-actions{justify-content:flex-start}}@media(max-width:680px){.cf-shell{padding:12px}.cf-kpis,.cf-row{grid-template-columns:1fr}.cf-tab{flex:1 1 42%}.cf-table{min-width:760px}}
+  </style>
+</head>
+<body class="cf-page">
+  <main class="cf-shell">
+    <header class="cf-head">
+      <div>
+        <h1>Cierre y bloqueo fiscal</h1>
+        <p>Controla periodos cerrados, bloqueos por fecha, reaperturas autorizadas y excepciones auditables para proteger ventas, compras, caja, inventario, contabilidad y facturacion.</p>
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn" id="cfRefresh" type="button">Actualizar</button>
+        <button class="cf-btn" id="cfSeed" type="button">Cargar demo</button>
+        <button class="cf-btn primary" id="cfExport" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="cf-kpis" aria-label="Indicadores cierre fiscal">
+      <article class="cf-kpi"><span>Abiertos</span><strong id="kpiAbiertos">0</strong></article>
+      <article class="cf-kpi"><span>En revision</span><strong id="kpiRevision">0</strong></article>
+      <article class="cf-kpi"><span>Cerrados</span><strong id="kpiCerrados">0</strong></article>
+      <article class="cf-kpi"><span>Bloqueados</span><strong id="kpiBloqueados">0</strong></article>
+      <article class="cf-kpi"><span>Excepciones</span><strong id="kpiExcepciones">0</strong></article>
+      <article class="cf-kpi"><span>Bloqueos 30 dias</span><strong id="kpiEventos">0</strong></article>
+    </section>
+
+    <nav class="cf-tabs">
+      <button class="cf-tab is-active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="cf-tab" data-tab="periodos" type="button">Periodos</button>
+      <button class="cf-tab" data-tab="politicas" type="button">Politicas</button>
+      <button class="cf-tab" data-tab="excepciones" type="button">Excepciones</button>
+      <button class="cf-tab" data-tab="validar" type="button">Validar</button>
+      <button class="cf-tab" data-tab="eventos" type="button">Bitacora</button>
+    </nav>
+    <div id="cfMsg" class="cf-msg"></div>
+
+    <section id="tab-dashboard" class="cf-panel is-active">
+      <div class="cf-grid">
+        <div class="cf-box"><h2>Periodos fiscales</h2><div id="periodosResumen" class="cf-table-wrap"></div></div>
+        <aside class="cf-box"><h2>Alertas</h2><div id="alertasList" class="cf-alerts"></div></aside>
+      </div>
+    </section>
+
+    <section id="tab-periodos" class="cf-panel">
+      <div class="cf-grid">
+        <form id="periodoForm" class="cf-box cf-form">
+          <h2>Periodo</h2>
+          <input type="hidden" id="periodoId">
+          <div class="cf-row"><div class="cf-field"><label>Periodo</label><input id="periodoCodigo" placeholder="2026-05" required></div><div class="cf-field"><label>Estado</label><select id="periodoEstado"><option value="abierto">Abierto</option><option value="en_revision">En revision</option><option value="cerrado">Cerrado</option><option value="bloqueado">Bloqueado</option></select></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Desde</label><input id="periodoDesde" type="date" required></div><div class="cf-field"><label>Hasta</label><input id="periodoHasta" type="date" required></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Tipo cierre</label><select id="periodoTipo"><option value="mensual">Mensual</option><option value="bimestral">Bimestral</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="manual">Manual</option></select></div><div class="cf-field"><label>Motivo</label><input id="periodoMotivo"></div></div>
+          <div class="cf-row"><label><input id="bloqVentas" type="checkbox" checked> Ventas</label><label><input id="bloqCompras" type="checkbox" checked> Compras</label><label><input id="bloqCaja" type="checkbox" checked> Caja</label><label><input id="bloqInventario" type="checkbox" checked> Inventario</label><label><input id="bloqContabilidad" type="checkbox" checked> Contabilidad</label><label><input id="bloqFacturacion" type="checkbox" checked> Facturacion</label></div>
+          <button class="cf-btn primary" type="submit">Guardar periodo</button>
+        </form>
+        <div class="cf-box"><h2>Listado</h2><div id="periodosTable" class="cf-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-politicas" class="cf-panel">
+      <div class="cf-grid">
+        <form id="politicaForm" class="cf-box cf-form">
+          <h2>Politica por modulo</h2>
+          <div class="cf-row"><div class="cf-field"><label>Modulo</label><select id="polModulo"><option value="ventas">Ventas</option><option value="compras">Compras</option><option value="caja">Caja/Tesoreria</option><option value="inventario">Inventario</option><option value="contabilidad">Contabilidad</option><option value="facturacion">Facturacion</option></select></div><div class="cf-field"><label>Nombre</label><input id="polNombre" required></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Dias retroactivos</label><input id="polDias" type="number" min="0" value="30"></div><div class="cf-field"><label>Estado</label><select id="polEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div></div>
+          <div class="cf-row"><label><input id="polAuto" type="checkbox" checked> Bloqueo automatico</label><label><input id="polReapertura" type="checkbox" checked> Reapertura aprobada</label><label><input id="polExcepciones" type="checkbox" checked> Permitir excepciones</label><label><input id="polNotificar" type="checkbox" checked> Notificar cambios post-cierre</label></div>
+          <button class="cf-btn primary" type="submit">Guardar politica</button>
+        </form>
+        <div class="cf-box"><h2>Politicas</h2><div id="politicasTable" class="cf-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-excepciones" class="cf-panel">
+      <div class="cf-grid">
+        <form id="excepcionForm" class="cf-box cf-form">
+          <h2>Excepcion aprobada</h2>
+          <div class="cf-row"><div class="cf-field"><label>Periodo</label><input id="exPeriodo" placeholder="2026-05" required></div><div class="cf-field"><label>Modulo</label><select id="exModulo"><option value="todos">Todos</option><option value="ventas">Ventas</option><option value="compras">Compras</option><option value="caja">Caja</option><option value="inventario">Inventario</option><option value="contabilidad">Contabilidad</option><option value="facturacion">Facturacion</option></select></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Accion</label><select id="exAccion"><option value="actualizar">Actualizar</option><option value="crear">Crear</option><option value="anular">Anular</option><option value="contabilizar">Contabilizar</option><option value="emitir">Emitir</option><option value="todas">Todas</option></select></div><div class="cf-field"><label>Expira</label><input id="exExpira" type="date"></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Documento tipo</label><input id="exDocTipo"></div><div class="cf-field"><label>Documento ID</label><input id="exDocId" type="number" value="0"></div></div>
+          <div class="cf-field"><label>Motivo</label><textarea id="exMotivo" required></textarea></div>
+          <button class="cf-btn primary" type="submit">Crear excepcion</button>
+        </form>
+        <div class="cf-box"><h2>Excepciones</h2><div id="excepcionesTable" class="cf-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-validar" class="cf-panel">
+      <div class="cf-grid">
+        <form id="validarForm" class="cf-box cf-form">
+          <h2>Simulador de bloqueo</h2>
+          <div class="cf-row"><div class="cf-field"><label>Fecha operacion</label><input id="valFecha" type="date"></div><div class="cf-field"><label>Modulo</label><select id="valModulo"><option value="ventas">Ventas</option><option value="compras">Compras</option><option value="caja">Caja</option><option value="inventario">Inventario</option><option value="contabilidad">Contabilidad</option><option value="facturacion">Facturacion</option></select></div></div>
+          <div class="cf-row"><div class="cf-field"><label>Accion</label><select id="valAccion"><option value="crear">Crear</option><option value="actualizar">Actualizar</option><option value="anular">Anular</option><option value="emitir">Emitir</option><option value="contabilizar">Contabilizar</option></select></div><div class="cf-field"><label>Documento tipo</label><input id="valDocTipo"></div></div>
+          <button class="cf-btn primary" type="submit">Validar operacion</button>
+        </form>
+        <div class="cf-box"><h2>Resultado</h2><pre id="validacionResult" class="cf-result"></pre></div>
+      </div>
+    </section>
+
+    <section id="tab-eventos" class="cf-panel">
+      <div class="cf-box"><h2>Bitacora</h2><div id="eventosTable" class="cf-table-wrap"></div></div>
+    </section>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state={empresaId:resolveEmpresaId(),dashboard:null};
+      function el(id){return document.getElementById(id)} function val(id){return (el(id)&&el(id).value||"").trim()} function num(id){return Number(val(id)||0)} function ck(id){return !!(el(id)&&el(id).checked)}
+      function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]})}
+      function resolveEmpresaId(){var s=[location.search];try{if(window.parent&&window.parent!==window)s.push(window.parent.location.search)}catch(_){}for(var i=0;i<s.length;i++){var id=new URLSearchParams(s[i]).get("empresa_id");if(id)return id}try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||""}catch(_){return ""}}
+      function api(action,options,extra){if(!state.empresaId)return Promise.reject(new Error("empresa_id no disponible"));var url="/api/empresa/cierre_fiscal?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+(extra||"");return fetch(url,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},options||{})).then(function(res){if(!res.ok)return res.text().then(function(t){throw new Error(t||res.statusText)});return res.json()})}
+      function msg(t,e){el("cfMsg").textContent=t||"";el("cfMsg").classList.toggle("is-error",!!e)} function chip(v,c){return '<span class="cf-chip '+(c||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>'}
+      function load(){msg("Cargando...");api("dashboard").then(function(d){state.dashboard=d||{};render();msg("Actualizado")}).catch(function(e){msg(e.message,true)})}
+      function render(){var d=state.dashboard||{};el("kpiAbiertos").textContent=d.periodos_abiertos||0;el("kpiRevision").textContent=d.periodos_revision||0;el("kpiCerrados").textContent=d.periodos_cerrados||0;el("kpiBloqueados").textContent=d.periodos_bloqueados||0;el("kpiExcepciones").textContent=d.excepciones_activas||0;el("kpiEventos").textContent=d.eventos_bloqueados_30_dias||0;renderPeriodos();renderPoliticas();renderExcepciones();renderEventos();el("periodosResumen").innerHTML=el("periodosTable").innerHTML;el("alertasList").innerHTML=(d.alertas||[]).map(function(a){return '<div class="cf-alert">'+esc(a)+'</div>'}).join("")}
+      function estadoClass(v){return v==="abierto"?"cf-good":(v==="en_revision"?"cf-warn":"cf-bad")}
+      function renderPeriodos(){var rows=state.dashboard.periodos||[];el("periodosTable").innerHTML=rows.length?'<table class="cf-table"><thead><tr><th>Periodo</th><th>Rango</th><th>Estado</th><th>Bloquea</th><th>Motivo</th><th>Acciones</th></tr></thead><tbody>'+rows.map(function(p){var mods=[p.bloquea_ventas&&"ventas",p.bloquea_compras&&"compras",p.bloquea_caja&&"caja",p.bloquea_inventario&&"inventario",p.bloquea_contabilidad&&"contabilidad",p.bloquea_facturacion&&"facturacion"].filter(Boolean).join(", ");return '<tr><td><strong>'+esc(p.periodo)+'</strong><br>'+esc(p.tipo_cierre)+'</td><td>'+esc(p.fecha_desde)+' a '+esc(p.fecha_hasta)+'</td><td>'+chip(p.estado_periodo,estadoClass(p.estado_periodo))+'</td><td>'+esc(mods)+'</td><td>'+esc(p.motivo||"-")+'</td><td><button class="cf-btn small" data-edit-periodo="'+p.id+'">Editar</button> <button class="cf-btn small" data-cerrar="'+p.id+'">Cerrar</button> <button class="cf-btn small" data-reabrir="'+p.id+'">Reabrir</button></td></tr>'}).join("")+'</tbody></table>':'<div class="cf-muted" style="padding:12px">Sin periodos.</div>'}
+      function renderPoliticas(){var rows=state.dashboard.politicas||[];el("politicasTable").innerHTML=rows.length?'<table class="cf-table"><thead><tr><th>Modulo</th><th>Dias</th><th>Controles</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(p){return '<tr><td><strong>'+esc(p.nombre)+'</strong><br>'+esc(p.modulo)+'</td><td>'+esc(p.dias_edicion_retroactiva)+'</td><td>'+[p.bloqueo_automatico&&"auto",p.requiere_aprobacion_reapertura&&"reapertura",p.permite_excepciones&&"excepciones",p.notificar_cambios_post_cierre&&"notifica"].filter(Boolean).map(function(x){return chip(x)}).join(" ")+'</td><td>'+chip(p.estado,p.estado==="activo"?"cf-good":"cf-warn")+'</td><td><button class="cf-btn small" data-edit-pol="'+esc(p.modulo)+'">Editar</button></td></tr>'}).join("")+'</tbody></table>':'<div class="cf-muted" style="padding:12px">Sin politicas.</div>'}
+      function renderExcepciones(){var rows=state.dashboard.excepciones||[];el("excepcionesTable").innerHTML=rows.length?'<table class="cf-table"><thead><tr><th>Periodo</th><th>Modulo</th><th>Accion</th><th>Documento</th><th>Expira</th><th>Motivo</th><th>Estado</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td>'+esc(x.periodo)+'</td><td>'+chip(x.modulo)+'</td><td>'+esc(x.accion_permitida)+'</td><td>'+esc([x.documento_tipo,x.documento_id||""].filter(Boolean).join(" #"))+'</td><td>'+esc(x.expira_en||"-")+'</td><td>'+esc(x.motivo)+'</td><td>'+chip(x.estado,x.estado==="activa"?"cf-good":"cf-warn")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="cf-muted" style="padding:12px">Sin excepciones activas.</div>'}
+      function renderEventos(){var rows=state.dashboard.eventos_recientes||[];el("eventosTable").innerHTML=rows.length?'<table class="cf-table"><thead><tr><th>Fecha</th><th>Periodo</th><th>Modulo</th><th>Accion</th><th>Resultado</th><th>Motivo</th><th>Usuario</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td>'+esc(x.fecha_creacion||"-")+'</td><td>'+esc(x.periodo||"-")+'</td><td>'+chip(x.modulo)+'</td><td>'+esc(x.accion)+'</td><td>'+chip(x.resultado,x.resultado==="bloqueado"?"cf-bad":"cf-good")+'</td><td>'+esc(x.motivo||"-")+'</td><td>'+esc(x.usuario||"-")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="cf-muted" style="padding:12px">Sin bitacora.</div>'}
+      document.addEventListener("click",function(ev){var tab=ev.target.closest("[data-tab]");if(tab){document.querySelectorAll(".cf-tab").forEach(function(b){b.classList.toggle("is-active",b===tab)});document.querySelectorAll(".cf-panel").forEach(function(p){p.classList.toggle("is-active",p.id==="tab-"+tab.dataset.tab)});return}var pid=ev.target.getAttribute("data-edit-periodo");if(pid){var p=(state.dashboard.periodos||[]).find(function(x){return String(x.id)===String(pid)});if(p){el("periodoId").value=p.id;el("periodoCodigo").value=p.periodo;el("periodoDesde").value=p.fecha_desde;el("periodoHasta").value=p.fecha_hasta;el("periodoEstado").value=p.estado_periodo;el("periodoTipo").value=p.tipo_cierre;el("periodoMotivo").value=p.motivo||"";["Ventas","Compras","Caja","Inventario","Contabilidad","Facturacion"].forEach(function(k){el("bloq"+k).checked=!!p["bloquea_"+k.toLowerCase()]})}}var pol=ev.target.getAttribute("data-edit-pol");if(pol){var r=(state.dashboard.politicas||[]).find(function(x){return x.modulo===pol});if(r){el("polModulo").value=r.modulo;el("polNombre").value=r.nombre;el("polDias").value=r.dias_edicion_retroactiva;el("polEstado").value=r.estado;el("polAuto").checked=!!r.bloqueo_automatico;el("polReapertura").checked=!!r.requiere_aprobacion_reapertura;el("polExcepciones").checked=!!r.permite_excepciones;el("polNotificar").checked=!!r.notificar_cambios_post_cierre}}var closeId=ev.target.getAttribute("data-cerrar");if(closeId){estadoPeriodo(closeId,"cerrado")}var openId=ev.target.getAttribute("data-reabrir");if(openId){estadoPeriodo(openId,"abierto")}})
+      function estadoPeriodo(id,estado){var motivo=prompt("Motivo obligatorio");if(!motivo)return;api("estado_periodo",{method:"POST",body:JSON.stringify({id:Number(id),estado:estado,motivo:motivo})}).then(load).catch(function(e){msg(e.message,true)})}
+      el("cfRefresh").addEventListener("click",load);el("cfSeed").addEventListener("click",function(){api("seed_demo",{method:"POST",body:"{}"}).then(load).catch(function(e){msg(e.message,true)})})
+      el("cfExport").addEventListener("click",function(){var rows=[["Periodo","Desde","Hasta","Estado","Motivo"]].concat((state.dashboard.periodos||[]).map(function(p){return [p.periodo,p.fecha_desde,p.fecha_hasta,p.estado_periodo,p.motivo]}));var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||"").replace(/"/g,'""')+'"'}).join(",")}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="cierre_fiscal_periodos.csv";a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000)})
+      el("periodoForm").addEventListener("submit",function(ev){ev.preventDefault();api("periodo",{method:num("periodoId")?"PUT":"POST",body:JSON.stringify({id:num("periodoId"),periodo:val("periodoCodigo"),fecha_desde:val("periodoDesde"),fecha_hasta:val("periodoHasta"),estado_periodo:val("periodoEstado"),tipo_cierre:val("periodoTipo"),motivo:val("periodoMotivo"),bloquea_ventas:ck("bloqVentas"),bloquea_compras:ck("bloqCompras"),bloquea_caja:ck("bloqCaja"),bloquea_inventario:ck("bloqInventario"),bloquea_contabilidad:ck("bloqContabilidad"),bloquea_facturacion:ck("bloqFacturacion")})}).then(load).catch(function(e){msg(e.message,true)})})
+      el("politicaForm").addEventListener("submit",function(ev){ev.preventDefault();api("politica",{method:"POST",body:JSON.stringify({modulo:val("polModulo"),nombre:val("polNombre"),dias_edicion_retroactiva:num("polDias"),estado:val("polEstado"),bloqueo_automatico:ck("polAuto"),requiere_aprobacion_reapertura:ck("polReapertura"),permite_excepciones:ck("polExcepciones"),notificar_cambios_post_cierre:ck("polNotificar")})}).then(load).catch(function(e){msg(e.message,true)})})
+      el("excepcionForm").addEventListener("submit",function(ev){ev.preventDefault();api("excepcion",{method:"POST",body:JSON.stringify({periodo:val("exPeriodo"),modulo:val("exModulo"),accion_permitida:val("exAccion"),documento_tipo:val("exDocTipo"),documento_id:num("exDocId"),expira_en:val("exExpira"),motivo:val("exMotivo"),estado:"activa"})}).then(load).catch(function(e){msg(e.message,true)})})
+      el("validarForm").addEventListener("submit",function(ev){ev.preventDefault();var extra="&fecha_operacion="+encodeURIComponent(val("valFecha"))+"&modulo="+encodeURIComponent(val("valModulo"))+"&accion="+encodeURIComponent(val("valAccion"))+"&documento_tipo="+encodeURIComponent(val("valDocTipo"));api("validar",null,extra).then(function(r){el("validacionResult").textContent=JSON.stringify(r,null,2);load()}).catch(function(e){msg(e.message,true)})})
+      load()
+    })();
+  </script>
+</body>
+</html>

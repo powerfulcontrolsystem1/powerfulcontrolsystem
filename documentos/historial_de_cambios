@@ -1,3 +1,27 @@
+- 2026-05-06: Portal de Terceros y Certificados Tributarios.
+    - Se agrego modulo `portal_terceros_certificados` con API administrativa, API publica por token, maestro de terceros, certificados tributarios, bitacora de descargas, pantalla administrativa, pagina publica, permisos/licencias y documentacion.
+    - Pruebas: `cd backend; go test ./... -count=1`.
+
+- 2026-05-06: Activos Fijos e Intangibles NIIF/Fiscal.
+    - Se agrego modulo formal `activos_fijos_niif_fiscal` con API `/api/empresa/activos_fijos_niif_fiscal`, pantalla `web/administrar_empresa/activos_fijos_niif_fiscal.html`, permiso/licencia propia, enlaces de menu y documentacion.
+    - Se amplio el libro de activos de `backend/db/contabilidad_colombia_avanzada.go` con campos NIIF/fiscales, deterioro, valor fiscal, diferencia NIIF/fiscal, seguros y mantenimiento.
+    - Pruebas: `cd backend; go test ./... -count=1`.
+
+- 2026-05-06: Propiedad horizontal y promocion por asesor.
+    - Archivos: `backend/db/propiedad_horizontal.go`, `backend/db/propiedad_horizontal_test.go`, `backend/handlers/propiedad_horizontal.go`, `backend/handlers/asesor_comercial.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/empresa_permisos.go`, `backend/main.go`, `web/administrar_empresa/propiedad_horizontal.html`, `web/super/asesor_comercial.html`, `web/pagar_licencia.html`, `web/super/licencias.html`, `documentos/propiedad_horizontal.md`, `documentos/promocion_asesor_licencias.md`.
+    - Descripcion: se agrega modulo de copropiedades con unidades, residentes, cargos, recaudos, PQR, asambleas y dashboard. Se agrega promocion global para descuento adicional por codigo de asesor aceptado en compra de licencias.
+    - Verificacion: `go test ./... -count=1` en `backend/`.
+
+- 2026-05-06: Cierre y bloqueo fiscal avanzado.
+    - Archivos: `backend/db/cierre_fiscal.go`, `backend/db/cierre_fiscal_test.go`, `backend/handlers/cierre_fiscal.go`, `backend/handlers/empresa_permisos.go`, `backend/db/contabilidad_colombia.go`, `backend/main.go`, `backend/main_empresa_routes_security_test.go`, `web/administrar_empresa/cierre_fiscal.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/js/administrar_empresa.js`, `web/super/licencias.html`, `documentos/cierre_fiscal.md`, documentacion central.
+    - Descripcion: se agrega el modulo `cierre_fiscal` para cerrar, revisar, bloquear y reabrir periodos fiscales/contables con motivo obligatorio, politicas por modulo, dias de edicion retroactiva, excepciones aprobadas, simulador de validacion y bitacora de intentos post-cierre. El cierre/reapertura de Contabilidad Colombia sincroniza el periodo fiscal.
+    - Verificacion: `go test ./... -count=1` en `backend/`.
+
+- 2026-05-06: Centros de costo y rentabilidad.
+    - Archivos: `backend/db/centros_costo.go`, `backend/db/centros_costo_test.go`, `backend/handlers/centros_costo.go`, `backend/handlers/empresa_permisos.go`, `backend/main.go`, `backend/main_empresa_routes_security_test.go`, `web/administrar_empresa/centros_costo.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/js/administrar_empresa.js`, `documentos/centros_costo.md`, documentacion central.
+    - Descripcion: se agrega el modulo formal `centros_costo` con maestro, reglas de imputacion, presupuesto por periodo, dashboard de rentabilidad, movimientos integrados y exportacion CSV. Se enlaza por empresa y se controla por licencia/rol sin duplicar Finanzas, Contabilidad, Tesoreria, Compras ni AIU.
+    - Verificacion: `go test ./... -count=1` en `backend/`.
+
 - 2026-05-06: QA transversal de modulos y profesionalizacion operativa.
     - Archivos: `backend/db/cobranza.go`, `backend/db/portal_contador.go`, `backend/db/soportes_compras_ia.go`, `web/js/administrar_empresa.js`, `web/administrar_empresa/soportes_compras_ia.html`, `web/index.html`, `documentos/reporte_qa_modulos_2026-05-06.md`, `documentos/README.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `CHANGELOG.md`, `RESUMEN_DEL_PROYECTO.md`.
     - Descripcion: se revisan los modulos recientes y paginas principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrige la evaluacion local de permisos para `administrador_total`, se optimizan dashboards de Cobranza/Portal contador/Captura IA y se valida el enlace dinamico de archivos en Captura IA. La portada publica actualiza la descripcion de modulos para Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
@@ -18812,3 +18836,14 @@ Archivos modificados:
 - web/administrar_empresa/soportes_compras_ia.html
 - web/index.html
 - web/js/administrar_empresa.js
+2026-05-06: Logistica avanzada / WMS
+- Se crea el modulo `logistica_wms` para ubicaciones internas de bodega, ordenes WMS, picking, packing, despachos, rutas y bitacora.
+- Se agregan tablas `empresa_wms_ubicaciones`, `empresa_wms_ordenes`, `empresa_wms_items`, `empresa_wms_despachos` y `empresa_wms_eventos`.
+- Se registra la API `/api/empresa/logistica_wms`, pantalla administrativa, enlace de menu, permiso/licencia, preset operativo/enterprise y documentacion.
+- Se agregan pruebas unitarias para codigos WMS, progreso operativo e inferencia de estado.
+
+2026-05-06: Declaraciones Tributarias y Motor de Impuestos Colombia
+- Se crea el modulo `declaraciones_tributarias` para controlar por empresa IVA, retenciones, ICA/ReteICA, consumo, renta y regimen simple.
+- Se agregan tablas `empresa_declaraciones_tributarias`, `empresa_declaraciones_tributarias_movimientos` y `empresa_calendario_tributario`.
+- Se registra la API `/api/empresa/declaraciones_tributarias`, pantalla administrativa, enlaces de menu, permiso/licencia, preset financiero/enterprise y documentacion.
+- Se agregan pruebas unitarias para rango de periodo, normalizacion y calculo de saldos.

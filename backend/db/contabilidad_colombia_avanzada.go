@@ -115,42 +115,53 @@ type EmpresaDocumentoSoporteElectronico struct {
 }
 
 type EmpresaActivoFijo struct {
-	ID                      int64   `json:"id"`
-	EmpresaID               int64   `json:"empresa_id"`
-	Codigo                  string  `json:"codigo"`
-	Nombre                  string  `json:"nombre"`
-	Categoria               string  `json:"categoria"`
-	Serial                  string  `json:"serial,omitempty"`
-	Placa                   string  `json:"placa,omitempty"`
-	FechaCompra             string  `json:"fecha_compra"`
-	Costo                   float64 `json:"costo"`
-	ValorResidual           float64 `json:"valor_residual"`
-	VidaUtilMeses           int     `json:"vida_util_meses"`
-	MetodoDepreciacion      string  `json:"metodo_depreciacion"`
-	FechaInicioDepreciacion string  `json:"fecha_inicio_depreciacion,omitempty"`
-	DepreciacionMensual     float64 `json:"depreciacion_mensual"`
-	DepreciacionAcumulada   float64 `json:"depreciacion_acumulada"`
-	ValorLibros             float64 `json:"valor_libros"`
-	CuentaActivo            string  `json:"cuenta_activo"`
-	CuentaDepreciacion      string  `json:"cuenta_depreciacion"`
-	CuentaGasto             string  `json:"cuenta_gasto"`
-	Ubicacion               string  `json:"ubicacion,omitempty"`
-	Responsable             string  `json:"responsable,omitempty"`
-	CentroCosto             string  `json:"centro_costo,omitempty"`
-	Proveedor               string  `json:"proveedor,omitempty"`
-	ValorAsegurado          float64 `json:"valor_asegurado,omitempty"`
-	Poliza                  string  `json:"poliza,omitempty"`
-	MantenimientoCadaDias   int     `json:"mantenimiento_cada_dias,omitempty"`
-	UltimoMantenimiento     string  `json:"ultimo_mantenimiento,omitempty"`
-	ProximoMantenimiento    string  `json:"proximo_mantenimiento,omitempty"`
-	EstadoOperativo         string  `json:"estado_operativo,omitempty"`
-	FechaBaja               string  `json:"fecha_baja,omitempty"`
-	MotivoBaja              string  `json:"motivo_baja,omitempty"`
-	ValorBaja               float64 `json:"valor_baja,omitempty"`
-	Estado                  string  `json:"estado"`
-	FechaCreacion           string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion      string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador          string  `json:"usuario_creador,omitempty"`
+	ID                          int64   `json:"id"`
+	EmpresaID                   int64   `json:"empresa_id"`
+	Codigo                      string  `json:"codigo"`
+	Nombre                      string  `json:"nombre"`
+	Categoria                   string  `json:"categoria"`
+	Serial                      string  `json:"serial,omitempty"`
+	Placa                       string  `json:"placa,omitempty"`
+	FechaCompra                 string  `json:"fecha_compra"`
+	Costo                       float64 `json:"costo"`
+	ValorResidual               float64 `json:"valor_residual"`
+	VidaUtilMeses               int     `json:"vida_util_meses"`
+	MetodoDepreciacion          string  `json:"metodo_depreciacion"`
+	FechaInicioDepreciacion     string  `json:"fecha_inicio_depreciacion,omitempty"`
+	DepreciacionMensual         float64 `json:"depreciacion_mensual"`
+	DepreciacionAcumulada       float64 `json:"depreciacion_acumulada"`
+	ValorLibros                 float64 `json:"valor_libros"`
+	BaseFiscal                  float64 `json:"base_fiscal"`
+	VidaUtilFiscalMeses         int     `json:"vida_util_fiscal_meses"`
+	MetodoDepreciacionFiscal    string  `json:"metodo_depreciacion_fiscal"`
+	DepreciacionMensualFiscal   float64 `json:"depreciacion_mensual_fiscal"`
+	DepreciacionAcumuladaFiscal float64 `json:"depreciacion_acumulada_fiscal"`
+	ValorFiscal                 float64 `json:"valor_fiscal"`
+	DiferenciaNIIFFiscal        float64 `json:"diferencia_niif_fiscal"`
+	DeterioroAcumulado          float64 `json:"deterioro_acumulado"`
+	ValorRazonable              float64 `json:"valor_razonable"`
+	FechaUltimaValoracion       string  `json:"fecha_ultima_valoracion,omitempty"`
+	CuentaDeterioro             string  `json:"cuenta_deterioro,omitempty"`
+	CuentaActivo                string  `json:"cuenta_activo"`
+	CuentaDepreciacion          string  `json:"cuenta_depreciacion"`
+	CuentaGasto                 string  `json:"cuenta_gasto"`
+	Ubicacion                   string  `json:"ubicacion,omitempty"`
+	Responsable                 string  `json:"responsable,omitempty"`
+	CentroCosto                 string  `json:"centro_costo,omitempty"`
+	Proveedor                   string  `json:"proveedor,omitempty"`
+	ValorAsegurado              float64 `json:"valor_asegurado,omitempty"`
+	Poliza                      string  `json:"poliza,omitempty"`
+	MantenimientoCadaDias       int     `json:"mantenimiento_cada_dias,omitempty"`
+	UltimoMantenimiento         string  `json:"ultimo_mantenimiento,omitempty"`
+	ProximoMantenimiento        string  `json:"proximo_mantenimiento,omitempty"`
+	EstadoOperativo             string  `json:"estado_operativo,omitempty"`
+	FechaBaja                   string  `json:"fecha_baja,omitempty"`
+	MotivoBaja                  string  `json:"motivo_baja,omitempty"`
+	ValorBaja                   float64 `json:"valor_baja,omitempty"`
+	Estado                      string  `json:"estado"`
+	FechaCreacion               string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion          string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador              string  `json:"usuario_creador,omitempty"`
 }
 
 type EmpresaActivoDepreciacion struct {
@@ -197,6 +208,9 @@ type EmpresaActivosFijosAvanzadoResumen struct {
 	ActivosBaja                int                         `json:"activos_baja"`
 	CostoTotal                 float64                     `json:"costo_total"`
 	ValorLibrosTotal           float64                     `json:"valor_libros_total"`
+	ValorFiscalTotal           float64                     `json:"valor_fiscal_total"`
+	DiferenciaNIIFFiscalTotal  float64                     `json:"diferencia_niif_fiscal_total"`
+	DeterioroAcumuladoTotal    float64                     `json:"deterioro_acumulado_total"`
 	DepreciacionAcumuladaTotal float64                     `json:"depreciacion_acumulada_total"`
 	DepreciacionPeriodoTotal   float64                     `json:"depreciacion_periodo_total"`
 	MantenimientosPendientes   int                         `json:"mantenimientos_pendientes"`
@@ -396,6 +410,17 @@ func ensureEmpresaActivosFijosAvanzadoSchema(dbConn *sql.DB) error {
 		{"placa", "TEXT"},
 		{"metodo_depreciacion", "TEXT DEFAULT 'linea_recta'"},
 		{"fecha_inicio_depreciacion", "TEXT"},
+		{"base_fiscal", "REAL DEFAULT 0"},
+		{"vida_util_fiscal_meses", "INTEGER DEFAULT 0"},
+		{"metodo_depreciacion_fiscal", "TEXT DEFAULT 'linea_recta'"},
+		{"depreciacion_mensual_fiscal", "REAL DEFAULT 0"},
+		{"depreciacion_acumulada_fiscal", "REAL DEFAULT 0"},
+		{"valor_fiscal", "REAL DEFAULT 0"},
+		{"diferencia_niif_fiscal", "REAL DEFAULT 0"},
+		{"deterioro_acumulado", "REAL DEFAULT 0"},
+		{"valor_razonable", "REAL DEFAULT 0"},
+		{"fecha_ultima_valoracion", "TEXT"},
+		{"cuenta_deterioro", "TEXT"},
 		{"centro_costo", "TEXT"},
 		{"proveedor", "TEXT"},
 		{"valor_asegurado", "REAL DEFAULT 0"},
@@ -750,13 +775,35 @@ func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error)
 	x.FechaCompra = firstContabilidadValue(x.FechaCompra, time.Now().Format("2006-01-02"))
 	x.FechaInicioDepreciacion = firstContabilidadValue(x.FechaInicioDepreciacion, x.FechaCompra)
 	x.MetodoDepreciacion = normalizeActivoMetodoDepreciacion(x.MetodoDepreciacion)
+	x.MetodoDepreciacionFiscal = normalizeActivoMetodoDepreciacion(x.MetodoDepreciacionFiscal)
+	if x.VidaUtilFiscalMeses <= 0 {
+		x.VidaUtilFiscalMeses = x.VidaUtilMeses
+	}
+	if x.BaseFiscal <= 0 {
+		x.BaseFiscal = x.Costo
+	}
 	x.EstadoOperativo = firstContabilidadValue(x.EstadoOperativo, "operativo")
 	x.Estado = firstContabilidadValue(x.Estado, "activo")
 	x.DepreciacionMensual = calcularActivoDepreciacionMensual(x.Costo, x.ValorResidual, x.VidaUtilMeses)
 	if x.DepreciacionAcumulada < 0 {
 		x.DepreciacionAcumulada = 0
 	}
-	x.ValorLibros = roundContabilidad(x.Costo - x.DepreciacionAcumulada)
+	if x.DepreciacionAcumuladaFiscal < 0 {
+		x.DepreciacionAcumuladaFiscal = 0
+	}
+	if x.DeterioroAcumulado < 0 {
+		x.DeterioroAcumulado = 0
+	}
+	x.DepreciacionMensualFiscal = calcularActivoDepreciacionMensual(x.BaseFiscal, x.ValorResidual, x.VidaUtilFiscalMeses)
+	x.ValorLibros = roundContabilidad(x.Costo - x.DepreciacionAcumulada - x.DeterioroAcumulado)
+	if x.ValorLibros < 0 {
+		x.ValorLibros = 0
+	}
+	x.ValorFiscal = roundContabilidad(x.BaseFiscal - x.DepreciacionAcumuladaFiscal)
+	if x.ValorFiscal < 0 {
+		x.ValorFiscal = 0
+	}
+	x.DiferenciaNIIFFiscal = roundContabilidad(x.ValorLibros - x.ValorFiscal)
 	if x.MantenimientoCadaDias > 0 && strings.TrimSpace(x.ProximoMantenimiento) == "" {
 		base := x.FechaCompra
 		if strings.TrimSpace(x.UltimoMantenimiento) != "" {
@@ -765,9 +812,9 @@ func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error)
 		x.ProximoMantenimiento = addDaysContabilidad(base, x.MantenimientoCadaDias)
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_activos_fijos
-		(empresa_id, codigo, nombre, categoria, serial, placa, fecha_compra, costo, valor_residual, vida_util_meses, metodo_depreciacion, fecha_inicio_depreciacion, depreciacion_mensual, depreciacion_acumulada, valor_libros, cuenta_activo, cuenta_depreciacion, cuenta_gasto, ubicacion, responsable, centro_costo, proveedor, valor_asegurado, poliza, mantenimiento_cada_dias, ultimo_mantenimiento, proximo_mantenimiento, estado_operativo, estado, usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		x.EmpresaID, strings.ToUpper(strings.TrimSpace(x.Codigo)), strings.TrimSpace(x.Nombre), x.Categoria, strings.TrimSpace(x.Serial), strings.TrimSpace(x.Placa), x.FechaCompra, x.Costo, x.ValorResidual, x.VidaUtilMeses, x.MetodoDepreciacion, x.FechaInicioDepreciacion, x.DepreciacionMensual, x.DepreciacionAcumulada, x.ValorLibros, x.CuentaActivo, x.CuentaDepreciacion, x.CuentaGasto, x.Ubicacion, x.Responsable, x.CentroCosto, x.Proveedor, x.ValorAsegurado, x.Poliza, x.MantenimientoCadaDias, x.UltimoMantenimiento, x.ProximoMantenimiento, x.EstadoOperativo, x.Estado, x.UsuarioCreador)
+		(empresa_id, codigo, nombre, categoria, serial, placa, fecha_compra, costo, valor_residual, vida_util_meses, metodo_depreciacion, fecha_inicio_depreciacion, depreciacion_mensual, depreciacion_acumulada, valor_libros, base_fiscal, vida_util_fiscal_meses, metodo_depreciacion_fiscal, depreciacion_mensual_fiscal, depreciacion_acumulada_fiscal, valor_fiscal, diferencia_niif_fiscal, deterioro_acumulado, valor_razonable, fecha_ultima_valoracion, cuenta_deterioro, cuenta_activo, cuenta_depreciacion, cuenta_gasto, ubicacion, responsable, centro_costo, proveedor, valor_asegurado, poliza, mantenimiento_cada_dias, ultimo_mantenimiento, proximo_mantenimiento, estado_operativo, estado, usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		x.EmpresaID, strings.ToUpper(strings.TrimSpace(x.Codigo)), strings.TrimSpace(x.Nombre), x.Categoria, strings.TrimSpace(x.Serial), strings.TrimSpace(x.Placa), x.FechaCompra, x.Costo, x.ValorResidual, x.VidaUtilMeses, x.MetodoDepreciacion, x.FechaInicioDepreciacion, x.DepreciacionMensual, x.DepreciacionAcumulada, x.ValorLibros, x.BaseFiscal, x.VidaUtilFiscalMeses, x.MetodoDepreciacionFiscal, x.DepreciacionMensualFiscal, x.DepreciacionAcumuladaFiscal, x.ValorFiscal, x.DiferenciaNIIFFiscal, x.DeterioroAcumulado, x.ValorRazonable, x.FechaUltimaValoracion, x.CuentaDeterioro, x.CuentaActivo, x.CuentaDepreciacion, x.CuentaGasto, x.Ubicacion, x.Responsable, x.CentroCosto, x.Proveedor, x.ValorAsegurado, x.Poliza, x.MantenimientoCadaDias, x.UltimoMantenimiento, x.ProximoMantenimiento, x.EstadoOperativo, x.Estado, x.UsuarioCreador)
 }
 
 func ListEmpresaActivosFijos(dbConn *sql.DB, empresaID int64, estado string) ([]EmpresaActivoFijo, error) {
@@ -778,7 +825,9 @@ func ListEmpresaActivosFijos(dbConn *sql.DB, empresaID int64, estado string) ([]
 		args = append(args, estado)
 	}
 	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, codigo, nombre, categoria, COALESCE(serial,''), COALESCE(placa,''), fecha_compra, costo, valor_residual, vida_util_meses,
-		COALESCE(metodo_depreciacion,'linea_recta'), COALESCE(fecha_inicio_depreciacion,''), depreciacion_mensual, depreciacion_acumulada, valor_libros, cuenta_activo, cuenta_depreciacion, cuenta_gasto,
+		COALESCE(metodo_depreciacion,'linea_recta'), COALESCE(fecha_inicio_depreciacion,''), depreciacion_mensual, depreciacion_acumulada, valor_libros,
+		COALESCE(base_fiscal,0), COALESCE(vida_util_fiscal_meses,0), COALESCE(metodo_depreciacion_fiscal,'linea_recta'), COALESCE(depreciacion_mensual_fiscal,0), COALESCE(depreciacion_acumulada_fiscal,0), COALESCE(valor_fiscal,0), COALESCE(diferencia_niif_fiscal,0), COALESCE(deterioro_acumulado,0), COALESCE(valor_razonable,0), COALESCE(fecha_ultima_valoracion,''), COALESCE(cuenta_deterioro,''),
+		cuenta_activo, cuenta_depreciacion, cuenta_gasto,
 		COALESCE(ubicacion,''), COALESCE(responsable,''), COALESCE(centro_costo,''), COALESCE(proveedor,''), COALESCE(valor_asegurado,0), COALESCE(poliza,''), COALESCE(mantenimiento_cada_dias,0),
 		COALESCE(ultimo_mantenimiento,''), COALESCE(proximo_mantenimiento,''), COALESCE(estado_operativo,'operativo'), COALESCE(fecha_baja,''), COALESCE(motivo_baja,''), COALESCE(valor_baja,0),
 		estado, COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
@@ -790,7 +839,7 @@ func ListEmpresaActivosFijos(dbConn *sql.DB, empresaID int64, estado string) ([]
 	var out []EmpresaActivoFijo
 	for rows.Next() {
 		var x EmpresaActivoFijo
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.Categoria, &x.Serial, &x.Placa, &x.FechaCompra, &x.Costo, &x.ValorResidual, &x.VidaUtilMeses, &x.MetodoDepreciacion, &x.FechaInicioDepreciacion, &x.DepreciacionMensual, &x.DepreciacionAcumulada, &x.ValorLibros, &x.CuentaActivo, &x.CuentaDepreciacion, &x.CuentaGasto, &x.Ubicacion, &x.Responsable, &x.CentroCosto, &x.Proveedor, &x.ValorAsegurado, &x.Poliza, &x.MantenimientoCadaDias, &x.UltimoMantenimiento, &x.ProximoMantenimiento, &x.EstadoOperativo, &x.FechaBaja, &x.MotivoBaja, &x.ValorBaja, &x.Estado, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.Categoria, &x.Serial, &x.Placa, &x.FechaCompra, &x.Costo, &x.ValorResidual, &x.VidaUtilMeses, &x.MetodoDepreciacion, &x.FechaInicioDepreciacion, &x.DepreciacionMensual, &x.DepreciacionAcumulada, &x.ValorLibros, &x.BaseFiscal, &x.VidaUtilFiscalMeses, &x.MetodoDepreciacionFiscal, &x.DepreciacionMensualFiscal, &x.DepreciacionAcumuladaFiscal, &x.ValorFiscal, &x.DiferenciaNIIFFiscal, &x.DeterioroAcumulado, &x.ValorRazonable, &x.FechaUltimaValoracion, &x.CuentaDeterioro, &x.CuentaActivo, &x.CuentaDepreciacion, &x.CuentaGasto, &x.Ubicacion, &x.Responsable, &x.CentroCosto, &x.Proveedor, &x.ValorAsegurado, &x.Poliza, &x.MantenimientoCadaDias, &x.UltimoMantenimiento, &x.ProximoMantenimiento, &x.EstadoOperativo, &x.FechaBaja, &x.MotivoBaja, &x.ValorBaja, &x.Estado, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -829,9 +878,9 @@ func GenerarEmpresaActivosDepreciacion(dbConn *sql.DB, empresaID int64, periodo,
 			return nil, err
 		}
 		if _, err := ExecCompat(dbConn, `UPDATE empresa_contabilidad_activos_fijos
-			SET depreciacion_acumulada=?, valor_libros=?, fecha_actualizacion=CURRENT_TIMESTAMP
+			SET depreciacion_acumulada=?, valor_libros=?, depreciacion_acumulada_fiscal=?, valor_fiscal=?, diferencia_niif_fiscal=?, fecha_actualizacion=CURRENT_TIMESTAMP
 			WHERE empresa_id=? AND id=?`,
-			row.DepreciacionAcumulada, row.ValorLibros, empresaID, row.ActivoID); err != nil {
+			row.DepreciacionAcumulada, row.ValorLibros, calcularActivoDepreciacionFiscalAcumulada(activo, periodo), calcularActivoValorFiscalPeriodo(activo, periodo), roundContabilidad(row.ValorLibros-calcularActivoValorFiscalPeriodo(activo, periodo)), empresaID, row.ActivoID); err != nil {
 			return nil, err
 		}
 	}
@@ -945,7 +994,7 @@ func BuildEmpresaActivosFijosAvanzadoResumen(dbConn *sql.DB, empresaID int64, pe
 		periodo = time.Now().Format("2006-01")
 	}
 	res := EmpresaActivosFijosAvanzadoResumen{EmpresaID: empresaID}
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(*),COALESCE(SUM(costo),0),COALESCE(SUM(valor_libros),0),COALESCE(SUM(depreciacion_acumulada),0) FROM empresa_contabilidad_activos_fijos WHERE empresa_id=? AND estado='activo'`, empresaID).Scan(&res.ActivosActivos, &res.CostoTotal, &res.ValorLibrosTotal, &res.DepreciacionAcumuladaTotal)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*),COALESCE(SUM(costo),0),COALESCE(SUM(valor_libros),0),COALESCE(SUM(valor_fiscal),0),COALESCE(SUM(diferencia_niif_fiscal),0),COALESCE(SUM(deterioro_acumulado),0),COALESCE(SUM(depreciacion_acumulada),0) FROM empresa_contabilidad_activos_fijos WHERE empresa_id=? AND estado='activo'`, empresaID).Scan(&res.ActivosActivos, &res.CostoTotal, &res.ValorLibrosTotal, &res.ValorFiscalTotal, &res.DiferenciaNIIFFiscalTotal, &res.DeterioroAcumuladoTotal, &res.DepreciacionAcumuladaTotal)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_activos_fijos WHERE empresa_id=? AND estado IN ('baja','vendido','retirado')`, empresaID).Scan(&res.ActivosBaja)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_activos_fijos WHERE empresa_id=? AND estado='activo' AND COALESCE(proximo_mantenimiento,'')<>'' AND proximo_mantenimiento<=?`, empresaID, time.Now().Format("2006-01-02")).Scan(&res.MantenimientosPendientes)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(depreciacion_periodo),0) FROM empresa_contabilidad_activos_depreciacion WHERE empresa_id=? AND periodo=?`, empresaID, periodo).Scan(&res.DepreciacionPeriodoTotal)
@@ -1067,6 +1116,40 @@ func calcularActivoDepreciacionMensual(costo, residual float64, vidaUtilMeses in
 		base = 0
 	}
 	return roundContabilidad(base / float64(vidaUtilMeses))
+}
+
+func calcularActivoDepreciacionFiscalAcumulada(activo EmpresaActivoFijo, periodo string) float64 {
+	baseFiscal := activo.BaseFiscal
+	if baseFiscal <= 0 {
+		baseFiscal = activo.Costo
+	}
+	vidaFiscal := activo.VidaUtilFiscalMeses
+	if vidaFiscal <= 0 {
+		vidaFiscal = activo.VidaUtilMeses
+	}
+	if vidaFiscal <= 0 {
+		vidaFiscal = 60
+	}
+	meses := mesesDepreciacionHastaPeriodo(firstContabilidadValue(activo.FechaInicioDepreciacion, activo.FechaCompra), periodo)
+	if meses < 0 {
+		meses = 0
+	}
+	if meses > vidaFiscal {
+		meses = vidaFiscal
+	}
+	return roundContabilidad(float64(meses) * calcularActivoDepreciacionMensual(baseFiscal, activo.ValorResidual, vidaFiscal))
+}
+
+func calcularActivoValorFiscalPeriodo(activo EmpresaActivoFijo, periodo string) float64 {
+	baseFiscal := activo.BaseFiscal
+	if baseFiscal <= 0 {
+		baseFiscal = activo.Costo
+	}
+	valor := roundContabilidad(baseFiscal - calcularActivoDepreciacionFiscalAcumulada(activo, periodo))
+	if valor < 0 {
+		return 0
+	}
+	return valor
 }
 
 func mesesDepreciacionHastaPeriodo(fechaInicio, periodo string) int {

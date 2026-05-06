@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Certificado tributario</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;background:#f4f6f9;color:#182235;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.ct-shell{max-width:940px;margin:0 auto;padding:24px}.ct-card{background:#fff;border:1px solid #d9e0ea;border-radius:8px;padding:28px;box-shadow:0 10px 30px rgba(15,23,42,.08)}.ct-head{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #182235;padding-bottom:16px;margin-bottom:18px}.ct-head h1{margin:0;font-size:24px}.ct-muted{color:#667085}.ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ct-box{border:1px solid #d9e0ea;border-radius:8px;padding:12px}.ct-box span{display:block;font-size:12px;color:#667085}.ct-box strong{display:block;margin-top:4px}.ct-table{width:100%;border-collapse:collapse;margin-top:18px}.ct-table th,.ct-table td{border-bottom:1px solid #d9e0ea;padding:10px;text-align:left}.ct-table th{background:#f8fafc}.ct-total{font-size:20px;font-weight:800}.ct-actions{display:flex;gap:8px;justify-content:flex-end;margin:0 0 14px}.ct-btn{border:1px solid #ccd4df;background:#fff;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:700}.ct-btn.primary{background:#1769e0;border-color:#1769e0;color:#fff}.ct-sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:34px}.ct-line{border-top:1px solid #182235;padding-top:8px}.ct-error{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;border-radius:8px;padding:14px}@media(max-width:720px){.ct-shell{padding:12px}.ct-card{padding:18px}.ct-head,.ct-grid,.ct-sign{display:grid;grid-template-columns:1fr}.ct-actions{justify-content:flex-start}}@media print{body{background:#fff}.ct-shell{padding:0}.ct-actions{display:none}.ct-card{box-shadow:none;border:0}}
+  </style>
+</head>
+<body>
+  <main class="ct-shell">
+    <div class="ct-actions"><button class="ct-btn" id="btnDownload" type="button">Registrar descarga</button><button class="ct-btn primary" onclick="window.print()" type="button">Imprimir / PDF</button></div>
+    <section id="content" class="ct-card">Cargando certificado...</section>
+  </main>
+  <script>
+    (function(){
+      var token=new URLSearchParams(location.search).get("token")||"";
+      var cert=null;
+      function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+      function money(n){return Number(n||0).toLocaleString("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0})}
+      function label(v){return String(v||"").replace(/_/g," ")}
+      function render(c){cert=c;document.getElementById("content").innerHTML='<header class="ct-head"><div><h1>Certificado tributario</h1><div class="ct-muted">'+esc(label(c.tipo_certificado))+'</div></div><div><strong>'+esc(c.numero_certificado)+'</strong><br><span class="ct-muted">Emitido: '+esc(c.fecha_emision||c.fecha_creacion||"-")+'</span></div></header><div class="ct-grid"><div class="ct-box"><span>Tercero</span><strong>'+esc(c.tercero_nombre)+'</strong><div>'+esc(c.tercero_documento)+'</div></div><div class="ct-box"><span>Periodo certificado</span><strong>'+esc(c.periodo_desde)+' a '+esc(c.periodo_hasta)+'</strong><div>Año '+esc(c.anio)+'</div></div><div class="ct-box"><span>Concepto</span><strong>'+esc(c.concepto||"-")+'</strong></div><div class="ct-box"><span>Estado</span><strong>'+esc(label(c.estado))+'</strong></div></div><table class="ct-table"><thead><tr><th>Concepto</th><th>Valor</th></tr></thead><tbody><tr><td>Base certificada</td><td>'+money(c.base_valor)+'</td></tr><tr><td>Retención en la fuente</td><td>'+money(c.retencion_fuente)+'</td></tr><tr><td>Retención IVA</td><td>'+money(c.retencion_iva)+'</td></tr><tr><td>Retención ICA</td><td>'+money(c.retencion_ica)+'</td></tr><tr><td>Otros valores certificados</td><td>'+money(c.otros_valores)+'</td></tr><tr><td class="ct-total">Total certificado</td><td class="ct-total">'+money(c.total_certificado)+'</td></tr></tbody></table><p class="ct-muted">Este documento se genera desde Powerful Control System para consulta del tercero mediante enlace seguro. Verifique el número del certificado y el periodo antes de usarlo como soporte tributario.</p><section class="ct-sign"><div class="ct-line"><strong>'+esc(c.firma_nombre||"Firma autorizada")+'</strong><br><span>'+esc(c.firma_cargo||"Responsable")+'</span></div><div class="ct-line"><strong>Validación digital</strong><br><span>'+esc(c.public_token)+'</span></div></section>'}
+      function load(){if(!token){document.getElementById("content").innerHTML='<div class="ct-error">Token requerido.</div>';return;}fetch("/api/public/certificados_tributarios?token="+encodeURIComponent(token),{credentials:"same-origin"}).then(function(r){if(!r.ok)throw new Error("Certificado no disponible");return r.json()}).then(render).catch(function(e){document.getElementById("content").innerHTML='<div class="ct-error">'+esc(e.message)+'</div>'})}
+      document.getElementById("btnDownload").onclick=function(){if(!cert)return;fetch("/api/public/certificados_tributarios?token="+encodeURIComponent(token),{method:"POST",credentials:"same-origin"}).then(function(){window.print()})}
+      load();
+    })();
+  </script>
+</body>
+</html>

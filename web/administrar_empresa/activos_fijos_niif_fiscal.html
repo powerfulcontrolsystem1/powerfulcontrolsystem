@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Activos fijos NIIF/Fiscal</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.af-page{margin:0;background:var(--page-bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    [data-theme="dark"] body.af-page,body.dark.af-page{background:#0f1724;color:#e8eef7}
+    .af-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}.af-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}.af-head h1{margin:0;font-size:23px}.af-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:900px}.af-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .af-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--button-bg,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.af-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}.af-btn.small{min-height:31px;padding:5px 8px;font-size:12px}.af-btn:disabled{opacity:.62;cursor:not-allowed}
+    .af-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.af-kpi,.af-box{background:var(--card-bg,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.af-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.af-kpi strong{display:block;margin-top:6px;font-size:20px;line-height:1.1}
+    .af-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.af-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.af-tab.is-active{border-color:#1769e0;color:#1769e0}.af-panel{display:none}.af-panel.is-active{display:grid;gap:12px}
+    .af-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:12px;align-items:start}.af-form{display:grid;gap:9px}.af-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.af-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}.af-field{display:grid;gap:4px}.af-field label{font-size:12px;color:var(--muted,#65758b)}.af-field input,.af-field select,.af-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.af-field textarea{min-height:72px;resize:vertical}
+    .af-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.af-table{width:100%;min-width:1080px;border-collapse:collapse;background:var(--card-bg,#fff)}.af-table th,.af-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px;vertical-align:top}.af-table th{color:var(--muted,#65758b)}.af-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}.af-good{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}.af-warn{background:color-mix(in srgb,#f59e0b 16%,transparent);color:#b45309}.af-bad{background:color-mix(in srgb,#ef4444 14%,transparent);color:#b91c1c}
+    .af-list{display:grid;gap:8px}.af-alert{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;background:color-mix(in srgb,#f59e0b 10%,transparent)}.af-muted{color:var(--muted,#65758b)}.af-msg{min-height:24px;color:var(--muted,#65758b)}.af-msg.is-error{color:#c43737}.af-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:1120px){.af-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.af-grid,.af-split{grid-template-columns:1fr}.af-head{display:grid}.af-actions{justify-content:flex-start}}@media(max-width:720px){.af-shell{padding:12px}.af-kpis,.af-row,.af-row.three{grid-template-columns:1fr}.af-tab{flex:1 1 42%}.af-table{min-width:980px}}
+  </style>
+</head>
+<body class="af-page">
+  <main class="af-shell">
+    <header class="af-head">
+      <div>
+        <h1>Activos fijos e intangibles NIIF/Fiscal</h1>
+        <p>Administra propiedad, planta y equipo, intangibles, depreciaciones, deterioro, valor fiscal, responsables, ubicaciones, pólizas, traslados y mantenimientos por empresa.</p>
+      </div>
+      <div class="af-actions">
+        <input id="periodo" type="month" class="af-btn" aria-label="Periodo">
+        <button id="btnRefresh" class="af-btn" type="button">Actualizar</button>
+        <button id="btnSeed" class="af-btn" type="button">Cargar demo</button>
+        <button id="btnExport" class="af-btn primary" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="af-kpis" aria-label="Indicadores de activos">
+      <article class="af-kpi"><span>Activos vigentes</span><strong id="kpiActivos">0</strong></article>
+      <article class="af-kpi"><span>Costo histórico</span><strong id="kpiCosto">$0</strong></article>
+      <article class="af-kpi"><span>Valor libros NIIF</span><strong id="kpiLibros">$0</strong></article>
+      <article class="af-kpi"><span>Valor fiscal</span><strong id="kpiFiscal">$0</strong></article>
+      <article class="af-kpi"><span>Diferencia NIIF/Fiscal</span><strong id="kpiDif">$0</strong></article>
+      <article class="af-kpi"><span>Mantenimientos</span><strong id="kpiMant">0</strong></article>
+    </section>
+
+    <nav class="af-tabs">
+      <button class="af-tab is-active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="af-tab" data-tab="activos" type="button">Libro</button>
+      <button class="af-tab" data-tab="nuevo" type="button">Registrar</button>
+      <button class="af-tab" data-tab="depreciacion" type="button">Depreciación</button>
+      <button class="af-tab" data-tab="eventos" type="button">Eventos</button>
+    </nav>
+    <div id="msg" class="af-msg"></div>
+
+    <section id="tab-dashboard" class="af-panel is-active">
+      <div class="af-grid">
+        <div class="af-box"><h2>Composición por categoría</h2><div id="categoriaTable" class="af-table-wrap"></div></div>
+        <aside class="af-box"><h2>Alertas</h2><div id="alertas" class="af-list"></div></aside>
+      </div>
+      <div class="af-box"><h2>Responsables</h2><div id="responsablesTable" class="af-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-activos" class="af-panel">
+      <div class="af-box"><h2>Libro maestro de activos</h2><div id="activosTable" class="af-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-nuevo" class="af-panel">
+      <form id="activoForm" class="af-box af-form">
+        <h2>Activo o intangible</h2>
+        <div class="af-row three"><div class="af-field"><label>Código</label><input id="codigo" required placeholder="AF-001"></div><div class="af-field"><label>Nombre</label><input id="nombre" required></div><div class="af-field"><label>Categoría</label><select id="categoria"><option value="equipo_computo">Equipo de cómputo</option><option value="muebles_enseres">Muebles y enseres</option><option value="maquinaria">Maquinaria</option><option value="vehiculo">Vehículo</option><option value="edificacion">Edificación</option><option value="intangible">Intangible</option><option value="mejora_propiedad_ajena">Mejora en propiedad ajena</option></select></div></div>
+        <div class="af-row three"><div class="af-field"><label>Serial</label><input id="serial"></div><div class="af-field"><label>Placa interna</label><input id="placa"></div><div class="af-field"><label>Fecha compra</label><input id="fechaCompra" type="date" required></div></div>
+        <div class="af-row three"><div class="af-field"><label>Costo</label><input id="costo" type="number" min="0" step="0.01"></div><div class="af-field"><label>Valor residual</label><input id="residual" type="number" min="0" step="0.01"></div><div class="af-field"><label>Deterioro acumulado</label><input id="deterioro" type="number" min="0" step="0.01"></div></div>
+        <div class="af-row three"><div class="af-field"><label>Vida NIIF meses</label><input id="vidaNiif" type="number" min="1" value="60"></div><div class="af-field"><label>Método NIIF</label><select id="metodoNiif"><option value="linea_recta">Línea recta</option><option value="doble_saldo">Doble saldo</option></select></div><div class="af-field"><label>Inicio depreciación</label><input id="inicioDep" type="date"></div></div>
+        <div class="af-row three"><div class="af-field"><label>Base fiscal</label><input id="baseFiscal" type="number" min="0" step="0.01"></div><div class="af-field"><label>Vida fiscal meses</label><input id="vidaFiscal" type="number" min="1" value="60"></div><div class="af-field"><label>Método fiscal</label><select id="metodoFiscal"><option value="linea_recta">Línea recta</option><option value="doble_saldo">Doble saldo</option></select></div></div>
+        <div class="af-row three"><div class="af-field"><label>Cuenta activo</label><input id="ctaActivo" placeholder="152805"></div><div class="af-field"><label>Cuenta depreciación</label><input id="ctaDep" placeholder="159205"></div><div class="af-field"><label>Cuenta gasto</label><input id="ctaGasto" placeholder="516020"></div></div>
+        <div class="af-row three"><div class="af-field"><label>Cuenta deterioro</label><input id="ctaDeterioro"></div><div class="af-field"><label>Valor razonable</label><input id="valorRazonable" type="number" min="0" step="0.01"></div><div class="af-field"><label>Última valoración</label><input id="fechaValoracion" type="date"></div></div>
+        <div class="af-row three"><div class="af-field"><label>Ubicación</label><input id="ubicacion"></div><div class="af-field"><label>Responsable</label><input id="responsable"></div><div class="af-field"><label>Centro de costo</label><input id="centroCosto"></div></div>
+        <div class="af-row three"><div class="af-field"><label>Proveedor</label><input id="proveedor"></div><div class="af-field"><label>Valor asegurado</label><input id="valorAsegurado" type="number" min="0" step="0.01"></div><div class="af-field"><label>Póliza</label><input id="poliza"></div></div>
+        <div class="af-row"><div class="af-field"><label>Mantenimiento cada días</label><input id="mantDias" type="number" min="0" value="0"></div><div class="af-field"><label>Último mantenimiento</label><input id="ultimoMant" type="date"></div></div>
+        <button class="af-btn primary" type="submit">Guardar activo</button>
+      </form>
+    </section>
+
+    <section id="tab-depreciacion" class="af-panel">
+      <div class="af-split">
+        <form id="depForm" class="af-box af-form">
+          <h2>Generar depreciación</h2>
+          <div class="af-field"><label>Periodo</label><input id="depPeriodo" type="month" required></div>
+          <button class="af-btn primary" type="submit">Generar periodo</button>
+        </form>
+        <div class="af-box"><h2>Depreciaciones</h2><div id="depsTable" class="af-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-eventos" class="af-panel">
+      <div class="af-grid">
+        <form id="eventoForm" class="af-box af-form">
+          <h2>Evento del activo</h2>
+          <div class="af-row"><div class="af-field"><label>Activo</label><select id="eventoActivo"></select></div><div class="af-field"><label>Tipo</label><select id="eventoTipo"><option value="traslado">Traslado</option><option value="mantenimiento">Mantenimiento</option><option value="ajuste">Ajuste valor</option><option value="baja">Baja</option><option value="venta">Venta</option><option value="retiro">Retiro</option></select></div></div>
+          <div class="af-row"><div class="af-field"><label>Fecha</label><input id="eventoFecha" type="date"></div><div class="af-field"><label>Valor</label><input id="eventoValor" type="number" step="0.01" value="0"></div></div>
+          <div class="af-row"><div class="af-field"><label>Ubicación destino</label><input id="eventoUbicacion"></div><div class="af-field"><label>Responsable destino</label><input id="eventoResponsable"></div></div>
+          <div class="af-field"><label>Detalle</label><textarea id="eventoDetalle"></textarea></div>
+          <button class="af-btn primary" type="submit">Registrar evento</button>
+        </form>
+        <div class="af-box"><h2>Bitácora</h2><div id="eventosTable" class="af-table-wrap"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state={empresaId:resolveEmpresaId(),data:null};
+      function el(id){return document.getElementById(id)} function val(id){return (el(id)&&el(id).value||"").trim()} function num(id){return Number(val(id)||0)} function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+      function money(n){return Number(n||0).toLocaleString("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0})}
+      function resolveEmpresaId(){var s=[location.search];try{if(window.parent&&window.parent!==window)s.push(window.parent.location.search)}catch(_){}for(var i=0;i<s.length;i++){var id=new URLSearchParams(s[i]).get("empresa_id");if(id)return id}try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||""}catch(_){return ""}}
+      function api(action,options,extra){if(!state.empresaId)return Promise.reject(new Error("empresa_id no disponible"));var url="/api/empresa/activos_fijos_niif_fiscal?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+(extra||"");return fetch(url,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},options||{})).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t||r.statusText)});return r.json()})}
+      function msg(t,e){el("msg").textContent=t||"";el("msg").classList.toggle("is-error",!!e)} function chip(v,c){return '<span class="af-chip '+(c||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>'}
+      function period(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+      function defaults(){if(!val("periodo"))el("periodo").value=period();if(!val("depPeriodo"))el("depPeriodo").value=val("periodo")||period();if(!val("fechaCompra"))el("fechaCompra").value=new Date().toISOString().slice(0,10);if(!val("eventoFecha"))el("eventoFecha").value=new Date().toISOString().slice(0,10)}
+      function load(){defaults();msg("Cargando...");api("dashboard",null,"&periodo="+encodeURIComponent(val("periodo")||period())).then(function(d){state.data=d||{};render();msg("Actualizado")}).catch(function(e){msg(e.message,true)})}
+      function render(){var d=state.data||{},r=d.resumen||{};el("kpiActivos").textContent=r.activos_activos||0;el("kpiCosto").textContent=money(r.costo_total);el("kpiLibros").textContent=money(r.valor_libros_total);el("kpiFiscal").textContent=money(r.valor_fiscal_total);el("kpiDif").textContent=money(r.diferencia_niif_fiscal_total);el("kpiMant").textContent=r.mantenimientos_pendientes||0;renderActivos();renderDeps();renderEventos();renderGroups();renderAlerts();fillActivosSelect()}
+      function renderActivos(){var rows=state.data.activos||[];el("activosTable").innerHTML=rows.length?'<table class="af-table"><thead><tr><th>Código</th><th>Activo</th><th>NIIF</th><th>Fiscal</th><th>Diferencia</th><th>Ubicación</th><th>Responsable</th><th>Seguro</th><th>Estado</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td><strong>'+esc(x.codigo)+'</strong><br>'+esc(x.placa||x.serial||"")+'</td><td>'+esc(x.nombre)+'<br>'+chip(x.categoria)+'</td><td>Costo '+money(x.costo)+'<br>Libros '+money(x.valor_libros)+'<br>Dep. '+money(x.depreciacion_acumulada)+'</td><td>Base '+money(x.base_fiscal||x.costo)+'<br>Fiscal '+money(x.valor_fiscal)+'<br>Vida '+esc(x.vida_util_fiscal_meses||x.vida_util_meses)+' meses</td><td>'+money(x.diferencia_niif_fiscal)+'</td><td>'+esc(x.ubicacion||"-")+'<br>'+esc(x.centro_costo||"")+'</td><td>'+esc(x.responsable||"-")+'</td><td>'+money(x.valor_asegurado)+'<br>'+esc(x.poliza||"")+'</td><td>'+chip(x.estado,x.estado==="activo"?"af-good":"af-warn")+'<br>'+esc(x.estado_operativo||"")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="af-muted" style="padding:12px">Sin activos registrados.</div>'}
+      function renderDeps(){var rows=state.data.depreciaciones||[];el("depsTable").innerHTML=rows.length?'<table class="af-table"><thead><tr><th>Periodo</th><th>Activo</th><th>Método</th><th>Base</th><th>Dep. periodo</th><th>Acumulada</th><th>Valor libros</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td>'+esc(x.periodo)+'</td><td>'+esc(x.activo_codigo+" "+x.activo_nombre)+'</td><td>'+esc(x.metodo)+'</td><td>'+money(x.base_depreciable)+'</td><td>'+money(x.depreciacion_periodo)+'</td><td>'+money(x.depreciacion_acumulada)+'</td><td>'+money(x.valor_libros)+'</td></tr>'}).join("")+'</tbody></table>':'<div class="af-muted" style="padding:12px">Sin depreciaciones del periodo.</div>'}
+      function renderEventos(){var rows=state.data.eventos||[];el("eventosTable").innerHTML=rows.length?'<table class="af-table"><thead><tr><th>Fecha</th><th>Activo</th><th>Tipo</th><th>Origen</th><th>Destino</th><th>Valor</th><th>Detalle</th><th>Estado</th></tr></thead><tbody>'+rows.map(function(x){return '<tr><td>'+esc(x.fecha_evento)+'</td><td>'+esc(x.activo_codigo+" "+x.activo_nombre)+'</td><td>'+chip(x.tipo)+'</td><td>'+esc([x.ubicacion_origen,x.responsable_origen].filter(Boolean).join(" / "))+'</td><td>'+esc([x.ubicacion_destino,x.responsable_destino].filter(Boolean).join(" / "))+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.detalle||"-")+'</td><td>'+chip(x.estado,x.estado==="cerrado"?"af-good":"af-warn")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="af-muted" style="padding:12px">Sin eventos.</div>'}
+      function renderGroups(){var cat=state.data.por_categoria||{},resp=state.data.por_responsable||{};el("categoriaTable").innerHTML='<table class="af-table"><thead><tr><th>Categoría</th><th>Valor libros</th></tr></thead><tbody>'+Object.keys(cat).map(function(k){return '<tr><td>'+chip(k)+'</td><td>'+money(cat[k])+'</td></tr>'}).join("")+'</tbody></table>';el("responsablesTable").innerHTML='<table class="af-table"><thead><tr><th>Responsable</th><th>Activos</th></tr></thead><tbody>'+Object.keys(resp).map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+esc(resp[k])+'</td></tr>'}).join("")+'</tbody></table>'}
+      function renderAlerts(){el("alertas").innerHTML=(state.data.alertas||[]).map(function(a){return '<div class="af-alert">'+esc(a)+'</div>'}).join("")}
+      function fillActivosSelect(){var rows=(state.data.activos||[]).filter(function(x){return x.estado==="activo"});el("eventoActivo").innerHTML=rows.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.codigo+" - "+x.nombre)+'</option>'}).join("")}
+      document.addEventListener("click",function(ev){var t=ev.target.closest("[data-tab]");if(!t)return;document.querySelectorAll(".af-tab").forEach(function(b){b.classList.toggle("is-active",b===t)});document.querySelectorAll(".af-panel").forEach(function(p){p.classList.toggle("is-active",p.id==="tab-"+t.dataset.tab)})})
+      el("btnRefresh").onclick=load;el("periodo").addEventListener("change",load);el("btnSeed").onclick=function(){api("seed_demo",{method:"POST",body:"{}"}).then(load).catch(function(e){msg(e.message,true)})}
+      el("btnExport").onclick=function(){var rows=[["Codigo","Nombre","Categoria","Costo","Valor libros","Valor fiscal","Diferencia","Ubicacion","Responsable","Estado"]].concat((state.data.activos||[]).map(function(x){return [x.codigo,x.nombre,x.categoria,x.costo,x.valor_libros,x.valor_fiscal,x.diferencia_niif_fiscal,x.ubicacion,x.responsable,x.estado]}));var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||"").replace(/"/g,'""')+'"'}).join(",")}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="activos_fijos_niif_fiscal.csv";a.click();setTimeout(function(){URL.revokeObjectURL(url)},800)}
+      el("activoForm").addEventListener("submit",function(ev){ev.preventDefault();api("activo",{method:"POST",body:JSON.stringify({codigo:val("codigo"),nombre:val("nombre"),categoria:val("categoria"),serial:val("serial"),placa:val("placa"),fecha_compra:val("fechaCompra"),costo:num("costo"),valor_residual:num("residual"),deterioro_acumulado:num("deterioro"),vida_util_meses:num("vidaNiif"),metodo_depreciacion:val("metodoNiif"),fecha_inicio_depreciacion:val("inicioDep"),base_fiscal:num("baseFiscal"),vida_util_fiscal_meses:num("vidaFiscal"),metodo_depreciacion_fiscal:val("metodoFiscal"),cuenta_activo:val("ctaActivo"),cuenta_depreciacion:val("ctaDep"),cuenta_gasto:val("ctaGasto"),cuenta_deterioro:val("ctaDeterioro"),valor_razonable:num("valorRazonable"),fecha_ultima_valoracion:val("fechaValoracion"),ubicacion:val("ubicacion"),responsable:val("responsable"),centro_costo:val("centroCosto"),proveedor:val("proveedor"),valor_asegurado:num("valorAsegurado"),poliza:val("poliza"),mantenimiento_cada_dias:num("mantDias"),ultimo_mantenimiento:val("ultimoMant")})}).then(function(){ev.target.reset();defaults();load()}).catch(function(e){msg(e.message,true)})})
+      el("depForm").addEventListener("submit",function(ev){ev.preventDefault();api("depreciacion",{method:"POST",body:JSON.stringify({periodo:val("depPeriodo")})}).then(load).catch(function(e){msg(e.message,true)})})
+      el("eventoForm").addEventListener("submit",function(ev){ev.preventDefault();api("evento",{method:"POST",body:JSON.stringify({activo_id:num("eventoActivo"),tipo:val("eventoTipo"),fecha_evento:val("eventoFecha"),valor:num("eventoValor"),ubicacion_destino:val("eventoUbicacion"),responsable_destino:val("eventoResponsable"),detalle:val("eventoDetalle"),estado:"cerrado"})}).then(function(){ev.target.reset();defaults();load()}).catch(function(e){msg(e.message,true)})})
+      defaults();load();
+    })();
+  </script>
+</body>
+</html>

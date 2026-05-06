@@ -631,7 +631,7 @@
             epaycoTermsChk: document.getElementById('epaycoTermsChk'),
             epaycoStatus: document.getElementById('epaycoStatus'),
             discountCodeInput: document.getElementById('discountCode'),
-	            asesorIdInput: document.getElementById('asesorId'),
+            asesorIdInput: document.getElementById('asesorId'),
             summaryOriginalValue: document.getElementById('summaryOriginalValue'),
             summaryDiscountValue: document.getElementById('summaryDiscountValue'),
             summaryTotalValue: document.getElementById('summaryTotalValue'),
@@ -656,6 +656,8 @@
             if (addonLicenciaIDs) query.set('addon_licencia_ids', addonLicenciaIDs);
             var code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
             if (code) query.set('discount_code', code);
+            var advisor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
+            if (advisor) query.set('asesor_id', advisor);
             var res = await fetch('/api/public/licencias/checkout_summary?' + query.toString(), { credentials: 'same-origin' });
             var raw = await res.text();
             var data = null;
@@ -708,8 +710,11 @@
             }
             if (ui.checkoutSummaryMessage) ui.checkoutSummaryMessage.textContent = summary && summary.message ? summary.message : '';
             if (ui.discountCodeStatus) {
-              if (summary && summary.discount_applied) {
-                ui.discountCodeStatus.textContent = 'Código aplicado correctamente' + (summary.discount_label ? ': ' + summary.discount_label : '.');
+              if (summary && (summary.discount_applied || summary.advisor_discount_applied)) {
+                var labels = [];
+                if (summary.discount_applied) labels.push(summary.discount_label || 'código promocional');
+                if (summary.advisor_discount_applied) labels.push(summary.advisor_discount_label || 'promoción de asesor');
+                ui.discountCodeStatus.textContent = 'Descuento aplicado correctamente: ' + labels.join(' + ');
                 ui.discountCodeStatus.classList.remove('error');
                 ui.discountCodeStatus.classList.add('success');
               } else {
@@ -959,6 +964,10 @@
           if (ui.discountCodeInput) {
             ui.discountCodeInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
             ui.discountCodeInput.addEventListener('blur', refreshCheckoutSummary);
+          }
+          if (ui.asesorIdInput) {
+            ui.asesorIdInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
+            ui.asesorIdInput.addEventListener('blur', refreshCheckoutSummary);
           }
 
           if (ui.activateFreeBtn) ui.activateFreeBtn.addEventListener('click', async function(){
@@ -1263,4 +1272,3 @@
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>
-

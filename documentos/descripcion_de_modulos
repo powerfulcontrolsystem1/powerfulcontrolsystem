@@ -1,3 +1,70 @@
+2026-05-06: Logistica avanzada / WMS de bodega, picking, packing y despachos
+- Modulos afectados: `logistica_wms`, `inventario`, `compras`, `produccion_mrp`, `importaciones_costeo`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional de bodega para ubicaciones internas, picking, packing, despachos, rutas, avance por item, conteos y bitacora sin duplicar inventario.
+- Backend: nueva API `/api/empresa/logistica_wms` con acciones `dashboard`, `ubicaciones`, `ordenes`, `detalle`, `items`, `despachos`, `eventos`, `ubicacion`, `orden`, `item`, `avance_item`, `despacho` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_wms_ubicaciones`, `empresa_wms_ordenes`, `empresa_wms_items`, `empresa_wms_despachos` y `empresa_wms_eventos`, todas aisladas por `empresa_id`.
+- Seguridad: nuevo modulo de permiso/licencia `logistica_wms`, pagina `linkLogisticaWMS` y wrapper `WithEmpresaWMSPermissions`.
+- Frontend: nueva pantalla `web/administrar_empresa/logistica_wms.html` enlazada desde Inventario y compras.
+- Documentacion: se agrega `documentos/logistica_wms.md`.
+
+2026-05-06: Declaraciones Tributarias y Motor de Impuestos Colombia
+- Modulos afectados: `declaraciones_tributarias`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `centros_costo`, `cierre_fiscal`, `portal_terceros_certificados`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional para preparar, preliquidar y controlar declaraciones de IVA, retencion en la fuente, ReteIVA, ICA/ReteICA, impuesto al consumo, renta y regimen simple por empresa.
+- Backend: nueva API `/api/empresa/declaraciones_tributarias` con acciones `dashboard`, `declaraciones`, `calendario`, `movimientos`, `declaracion`, `preliquidar` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_declaraciones_tributarias`, `empresa_declaraciones_tributarias_movimientos` y `empresa_calendario_tributario`, todas aisladas por `empresa_id`.
+- Frontend: nueva pantalla `web/administrar_empresa/declaraciones_tributarias.html` con dashboard, KPIs, preliquidacion, edicion manual, calendario, movimientos y exportacion CSV.
+- Seguridad: nuevo modulo de permiso/licencia `declaraciones_tributarias`, enlaces `linkDeclaracionesTributarias`/`linkDeclaracionesTributariasMenu` y wrapper `WithEmpresaDeclaracionesTributariasPermissions`.
+- Documentacion: se agrega `documentos/declaraciones_tributarias.md`.
+
+2026-05-06: Portal de Terceros y Certificados Tributarios
+- Modulos afectados: `portal_terceros_certificados`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `nomina_sueldos`, `compras`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional para terceros externos con maestro de terceros, certificados tributarios, enlaces publicos por token, impresion, exportacion CSV y bitacora de descargas.
+- Backend: nueva API administrativa `/api/empresa/portal_terceros_certificados` y API publica `/api/public/certificados_tributarios`.
+- Frontend: nueva pantalla `web/administrar_empresa/portal_terceros_certificados.html` y pagina publica `web/visualizar_certificado_tributario_publico.html`.
+- Documentacion: `documentos/portal_terceros_certificados.md`.
+
+2026-05-06: Activos Fijos e Intangibles NIIF / Fiscal
+- Modulos afectados: `activos_fijos_niif_fiscal`, `contabilidad_colombia_avanzada`, `centros_costo`, `cierre_fiscal`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se formaliza activos fijos como modulo independiente reutilizando el nucleo contable existente, con libro maestro, PPE e intangibles, vida util NIIF y fiscal, deterioro, valor fiscal, diferencia NIIF/fiscal, seguros, mantenimientos, traslados, bajas y depreciacion por periodo.
+- Backend: nueva API `/api/empresa/activos_fijos_niif_fiscal` con acciones `dashboard`, `activos`, `depreciaciones`, `eventos`, `activo`, `depreciacion`, `evento` y `seed_demo`.
+- Frontend: nueva pantalla `web/administrar_empresa/activos_fijos_niif_fiscal.html`, enlace principal `linkActivosFijosNIIF`, enlace del centro financiero `linkActivosFijosNIIFMenu` y licencia `activos_fijos_niif_fiscal`.
+- Documentacion: `documentos/activos_fijos_niif_fiscal.md`.
+
+2026-05-06: Propiedad Horizontal / Administracion de Copropiedades
+- Modulos afectados: `propiedad_horizontal`, `roles/licencias`, `administrar_empresa`, `finanzas`, `facturacion`.
+- Cambio funcional: se agrega modulo para conjuntos residenciales, edificios, condominios y copropiedades con unidades, propietarios, residentes, cuotas, cartera, recaudos, PQR y asambleas.
+- Backend: nueva API `/api/empresa/propiedad_horizontal` con acciones `dashboard`, `config`, `unidades`, `personas`, `cargos`, `recaudos`, `pqrs`, `asambleas`, `unidad`, `persona`, `cargo`, `recaudo`, `pqr`, `asamblea` y `seed_demo`.
+- Seguridad: modulo independiente `propiedad_horizontal`, pagina `linkPropiedadHorizontal`, wrapper `WithEmpresaPropiedadHorizontalPermissions` y activacion por licencia.
+- Frontend: `web/administrar_empresa/propiedad_horizontal.html` queda enlazada desde Administrar empresa.
+- Documentacion: se agrega `documentos/propiedad_horizontal.md`.
+
+2026-05-06: Promocion por codigo de asesor en licencias
+- Modulos afectados: `asesor_comercial`, `licencias`, `checkout`, `wompi`, `epayco`.
+- Cambio funcional: el super administrador puede activar/desactivar una promocion para que el codigo de asesor comercial aplique descuento adicional configurable en compras de licencia.
+- Backend: `checkout_summary`, Wompi, Epayco y activacion sin pago reciben `asesor_id`; validan asesor activo/aceptado y aplican `licencias.asesor_promo.percent` cuando `licencias.asesor_promo.enabled` esta activo.
+- Frontend: `web/super/asesor_comercial.html` agrega check y selector de porcentaje; `web/pagar_licencia.html` recalcula el resumen cuando cambia el codigo de asesor.
+- Documentacion: se agrega `documentos/promocion_asesor_licencias.md`.
+
+2026-05-06: Cierre y bloqueo fiscal avanzado
+- Modulos afectados: `cierre_fiscal`, `contabilidad_colombia`, `finanzas`, `ventas`, `compras`, `inventario`, `facturacion`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega control formal para cerrar, revisar, bloquear y reabrir periodos fiscales/contables con motivo obligatorio, excepciones aprobadas y bitacora de intentos.
+- Backend: nueva API `/api/empresa/cierre_fiscal` con acciones `dashboard`, `politicas`, `periodos`, `excepciones`, `eventos`, `validar`, `politica`, `periodo`, `estado_periodo`, `excepcion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_cierre_fiscal_politicas`, `empresa_cierre_fiscal_periodos`, `empresa_cierre_fiscal_excepciones` y `empresa_cierre_fiscal_eventos`, todas con `empresa_id`.
+- Integracion: el cierre/reapertura de `contabilidad_colombia` sincroniza el periodo del modulo fiscal; otros modulos pueden usar `ValidarEmpresaCierreFiscalOperacion` para bloqueo por fecha.
+- Seguridad: modulo independiente `cierre_fiscal`, paginas `linkCierreFiscal`/`linkCierreFiscalMenu`, wrapper `WithEmpresaCierreFiscalPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/cierre_fiscal.html` queda enlazada desde Finanzas y cumplimiento y desde el Centro financiero y contable.
+- Documentacion: se agrega `documentos/cierre_fiscal.md`.
+
+2026-05-06: Centros de costo y rentabilidad
+- Modulos afectados: `centros_costo`, `finanzas`, `contabilidad_colombia`, `tesoreria_presupuesto`, `compras_avanzadas`, `soportes_compras_ia`, `aiu_construccion`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se convierte el uso disperso de centros de costo en un modulo formal comparable a software contable colombiano, con maestro por sucursal/area/unidad/proyecto, reglas de imputacion, presupuesto, rentabilidad, reportes comparativos y dashboard.
+- Backend: nueva API `/api/empresa/centros_costo` con acciones `dashboard`, `centros`, `reglas`, `presupuestos`, `movimientos`, `centro`, `regla`, `presupuesto` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_centros_costo`, `empresa_centros_costo_reglas` y `empresa_centros_costo_presupuestos`, todas con `empresa_id`.
+- Integracion: el dashboard lee movimientos con `centro_costo` desde contabilidad Colombia, tesoreria, compras avanzadas, captura OCR/IA de compras y AIU construccion; no duplica finanzas ni asientos.
+- Seguridad: modulo independiente `centros_costo`, paginas `linkCentrosCosto`/`linkCentrosCostoMenu`, wrapper `WithEmpresaCentrosCostoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/centros_costo.html` queda enlazada desde Finanzas y cumplimiento y desde el Centro financiero y contable.
+- Documentacion: se agrega `documentos/centros_costo.md`.
+
 2026-05-06: QA transversal y profesionalizacion de modulos
 - Modulos afectados: `administrar_empresa`, `cobranza`, `portal_contador`, `soportes_compras_ia`, `roles/licencias`, `configuracion`, `taxi_system`, `domicilios`, `odontologia`, `parqueadero`, `apartamentos_turisticos` y `aiu_construccion`.
 - Cambio funcional: se revisan accesos principales, enlaces, botones declarativos y dashboards con sesion super administradora sobre Motel Calipso (`empresa_id=7`).

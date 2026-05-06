@@ -9048,3 +9048,13 @@
 2026-05-06T11:30:44-05:00 [INFO] req_id=req-1778085044014357100-3666786fce16 event=request_end method=GET path=/super_administrador.html status=200 dur_ms=378
 2026-05-06T11:38:29-05:00 [INFO] req_id=req-1778085509472057800-9f47811a12b7 event=request_start method=POST path=/super/api/administradores/login ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
 2026-05-06T11:38:30-05:00 [INFO] req_id=req-1778085509472057800-9f47811a12b7 event=request_end method=POST path=/super/api/administradores/login status=200 dur_ms=749
+2026-05-06T14:46:34-05:00 [INFO] req_id=req-1778096794099918900-70a216e6e469 event=request_start method=GET path=/ ip=192.168.1.7 ua="Avast Antivirus"
+2026-05-06T14:46:34-05:00 [INFO] req_id=req-1778096794099918900-70a216e6e469 event=request_end method=GET path=/ status=200 dur_ms=332
+2026-05-06T14:46:41-05:00 [INFO] req_id=req-1778096801825831800-d2b30e2a3a26 event=request_start method=GET path=/HNAP1/ ip=192.168.1.7 ua="Avast Antivirus"
+2026-05-06T14:46:41-05:00 [WARNING] req_id=req-1778096801825831800-d2b30e2a3a26 event=request_end method=GET path=/HNAP1/ status=401 dur_ms=1
+2026-05-06T14:46:45-05:00 [INFO] req_id=req-1778096805890174700-75450484b10e event=request_start method=GET path=/ ip=192.168.1.7 ua=""
+2026-05-06T14:46:45-05:00 [INFO] req_id=req-1778096805890174700-75450484b10e event=request_end method=GET path=/ status=200 dur_ms=46
+2026-05-06T14:46:45-05:00 [INFO] req_id=req-1778096805951953500-713d81a6092d event=request_start method=GET path=/loginMsg.js ip=192.168.1.7 ua="Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"
+2026-05-06T14:46:45-05:00 [WARNING] req_id=req-1778096805951953500-713d81a6092d event=request_end method=GET path=/loginMsg.js status=401 dur_ms=1
+2026-05-06T14:46:45-05:00 [INFO] req_id=req-1778096805956529000-34cdc6c77bce event=request_start method=GET path=/cgi/get.cgi?cmd=home_login ip=192.168.1.7 ua="Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"
+2026-05-06T14:46:45-05:00 [WARNING] req_id=req-1778096805956529000-34cdc6c77bce event=request_end method=GET path=/cgi/get.cgi?cmd=home_login status=401 dur_ms=1

@@ -66,6 +66,27 @@ func TestCalcularEmpresaActivoDepreciacionPeriodoLineaRecta(t *testing.T) {
 	}
 }
 
+func TestCalcularActivoFiscalPeriodo(t *testing.T) {
+	activo := EmpresaActivoFijo{
+		EmpresaID:               7,
+		Codigo:                  "AF-FISCAL",
+		Nombre:                  "Activo fiscal QA",
+		FechaCompra:             "2026-01-01",
+		FechaInicioDepreciacion: "2026-01-01",
+		Costo:                   1200000,
+		BaseFiscal:              900000,
+		ValorResidual:           0,
+		VidaUtilMeses:           60,
+		VidaUtilFiscalMeses:     30,
+	}
+	if got := calcularActivoDepreciacionFiscalAcumulada(activo, "2026-03"); got != 90000 {
+		t.Fatalf("depreciacion fiscal acumulada = %v", got)
+	}
+	if got := calcularActivoValorFiscalPeriodo(activo, "2026-03"); got != 810000 {
+		t.Fatalf("valor fiscal = %v", got)
+	}
+}
+
 func TestNormalizeActivoEventoTipo(t *testing.T) {
 	if got := normalizeActivoEventoTipo(" TRASLADO "); got != "traslado" {
 		t.Fatalf("tipo evento = %q", got)
