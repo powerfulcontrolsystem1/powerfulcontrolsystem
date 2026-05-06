@@ -81,12 +81,16 @@ const (
 	reporteDatasetOperativoCadena             = "operativo_cadena_cumplimiento"
 	reporteDatasetOperativoVentasEmbudo       = "operativo_ventas_embudo_conversion"
 	reporteDatasetOperativoVentasDetalle      = "operativo_ventas_detalle"
+	reporteDatasetVentasDiariasMetodoPago     = "ventas_diarias_metodos_pago"
+	reporteDatasetVentasRentabilidadProducto  = "ventas_rentabilidad_productos"
 	reporteDatasetOperativoTurno              = "reporte_de_turno"
 	reporteDatasetOperativoTopProductos       = "operativo_top_productos"
 	reporteDatasetOperativoTopClientes        = "operativo_top_clientes"
 	reporteDatasetOperativoClientesSegmentos  = "operativo_clientes_segmentacion_comercial"
 	reporteDatasetOperativoInventario         = "operativo_inventario_bodega"
+	reporteDatasetInventarioKardexValorizado  = "inventario_kardex_valorizado"
 	reporteDatasetOperativoCompras            = "operativo_compras_movimientos"
+	reporteDatasetComprasProveedorDetalle     = "compras_proveedores_detalle"
 	reporteDatasetOperativoPropinas           = "operativo_propinas_acumulado"
 	reporteDatasetOperativoComisiones         = "operativo_comisiones_lavador"
 	reporteDatasetOperativoFacturacion        = "operativo_facturacion_trazabilidad"
@@ -102,6 +106,13 @@ const (
 	reporteDatasetContableEventos             = "contable_eventos_contables"
 	reporteDatasetContableAsientos            = "contable_asientos_contables"
 	reporteDatasetContableNomina              = "contable_nomina_liquidaciones"
+	reporteDatasetContableBalancePrueba       = "contable_balance_prueba"
+	reporteDatasetContableLibroAuxiliar       = "contable_libro_auxiliar"
+	reporteDatasetContableLibroMayor          = "contable_libro_mayor"
+	reporteDatasetFiscalImpuestosRetenciones  = "fiscal_impuestos_retenciones"
+	reporteDatasetFiscalInformacionExogena    = "fiscal_informacion_exogena_base"
+	reporteDatasetCarteraEdadesCobrar         = "cartera_edades_cuentas_por_cobrar"
+	reporteDatasetCarteraEdadesPagar          = "cartera_edades_cuentas_por_pagar"
 )
 
 var reportesCatalogo = []empresaReporteCatalogoItem{
@@ -183,6 +194,20 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
+		Key:         reporteDatasetVentasDiariasMetodoPago,
+		Title:       "Ventas Diarias por Medio de Pago",
+		Level:       "ventas",
+		Description: "Informe diario tipo POS con ventas, impuestos, ticket promedio y recaudo por medio de pago.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetVentasRentabilidadProducto,
+		Title:       "Rentabilidad por Producto",
+		Level:       "ventas",
+		Description: "Margen bruto estimado por producto o servicio usando costo configurado y ventas reales.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
 		Key:         reporteDatasetOperativoTurno,
 		Title:       "Reporte de Turno",
 		Level:       "operativo",
@@ -218,10 +243,24 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
+		Key:         reporteDatasetInventarioKardexValorizado,
+		Title:       "Kardex Valorizado",
+		Level:       "inventario",
+		Description: "Movimientos de inventario con entradas, salidas, costo, saldo acumulado y valorizacion por producto.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
 		Key:         reporteDatasetOperativoCompras,
 		Title:       "Compras por Proveedor y Recepcion vs Orden",
 		Level:       "operativo",
 		Description: "Consolida documentos de compra por proveedor para medir costo ordenado, recepcionado y brecha operativa.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetComprasProveedorDetalle,
+		Title:       "Compras Detalladas por Proveedor",
+		Level:       "compras",
+		Description: "Documentos de compra por proveedor con aprobacion, recepcion, validacion documental y monto.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -327,6 +366,55 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Nomina Liquidaciones",
 		Level:       "contable",
 		Description: "Liquidaciones de nomina por periodo y empleado con totales devengado, deducciones y neto.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableBalancePrueba,
+		Title:       "Balance de Prueba",
+		Level:       "contable",
+		Description: "Saldos por cuenta con debitos, creditos, saldo debito/credito y diferencia de cuadre.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableLibroAuxiliar,
+		Title:       "Libro Auxiliar",
+		Level:       "contable",
+		Description: "Detalle contable por cuenta, documento y asiento para auditoria o revision del contador.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableLibroMayor,
+		Title:       "Libro Mayor",
+		Level:       "contable",
+		Description: "Mayor contable agrupado por cuenta, periodo y naturaleza con saldos consolidados.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetFiscalImpuestosRetenciones,
+		Title:       "Impuestos y Retenciones",
+		Level:       "fiscal",
+		Description: "Base gravable, IVA generado y movimientos de cuentas fiscales/retenciones para control tributario colombiano.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetFiscalInformacionExogena,
+		Title:       "Informacion Exogena Base",
+		Level:       "fiscal",
+		Description: "Base exportable por tercero, documento y concepto para preparar medios magneticos e informacion exogena.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetCarteraEdadesCobrar,
+		Title:       "Edades de Cartera por Cobrar",
+		Level:       "cartera",
+		Description: "Aging de cartera de clientes por vencimiento: corriente, 1-30, 31-60, 61-90 y mayor a 90 dias.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetCarteraEdadesPagar,
+		Title:       "Edades de Cuentas por Pagar",
+		Level:       "cartera",
+		Description: "Aging de obligaciones con proveedores por vencimiento y prioridad de pago.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 }
@@ -656,6 +744,10 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoVentasEmbudoConversionDataset()
 	case reporteDatasetOperativoVentasDetalle:
 		return b.buildOperativoVentasDetalleDataset()
+	case reporteDatasetVentasDiariasMetodoPago:
+		return b.buildVentasDiariasMetodosPagoDataset()
+	case reporteDatasetVentasRentabilidadProducto:
+		return b.buildVentasRentabilidadProductosDataset()
 	case reporteDatasetOperativoTurno:
 		return b.buildOperativoTurnoDataset()
 	case reporteDatasetOperativoTopProductos:
@@ -666,8 +758,12 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoClientesSegmentacionComercialDataset()
 	case reporteDatasetOperativoInventario:
 		return b.buildOperativoInventarioBodegaDataset()
+	case reporteDatasetInventarioKardexValorizado:
+		return b.buildInventarioKardexValorizadoDataset()
 	case reporteDatasetOperativoCompras:
 		return b.buildOperativoComprasMovimientosDataset()
+	case reporteDatasetComprasProveedorDetalle:
+		return b.buildComprasProveedoresDetalleDataset()
 	case reporteDatasetOperativoPropinas:
 		return b.buildOperativoPropinasAcumuladoDataset()
 	case reporteDatasetOperativoComisiones:
@@ -698,6 +794,20 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildContableAsientosDataset()
 	case reporteDatasetContableNomina:
 		return b.buildContableNominaLiquidacionesDataset()
+	case reporteDatasetContableBalancePrueba:
+		return b.buildContableBalancePruebaDataset()
+	case reporteDatasetContableLibroAuxiliar:
+		return b.buildContableLibroAuxiliarDataset()
+	case reporteDatasetContableLibroMayor:
+		return b.buildContableLibroMayorDataset()
+	case reporteDatasetFiscalImpuestosRetenciones:
+		return b.buildFiscalImpuestosRetencionesDataset()
+	case reporteDatasetFiscalInformacionExogena:
+		return b.buildFiscalInformacionExogenaDataset()
+	case reporteDatasetCarteraEdadesCobrar:
+		return b.buildCarteraEdadesDataset(reporteDatasetCarteraEdadesCobrar, "empresa_cuentas_por_cobrar", "cliente_nombre")
+	case reporteDatasetCarteraEdadesPagar:
+		return b.buildCarteraEdadesDataset(reporteDatasetCarteraEdadesPagar, "empresa_cuentas_por_pagar", "proveedor_nombre")
 	default:
 		return empresaReporteDataset{}, fmt.Errorf("dataset no soportado")
 	}
@@ -1322,6 +1432,249 @@ func (b *reportesBuilder) buildOperativoVentasDetalleDataset() (empresaReporteDa
 	ds.Summary["ingresos"] = reportesRound(totalVentas)
 	if ds.RowCount > 0 {
 		ds.Summary["ticket_promedio"] = reportesRound(totalVentas / float64(ds.RowCount))
+	}
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildVentasDiariasMetodosPagoDataset() (empresaReporteDataset, error) {
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type agg struct {
+		ventas       int64
+		total        float64
+		impuestos    float64
+		clientes     map[string]struct{}
+		usuarios     map[string]struct{}
+		primeraVenta string
+		ultimaVenta  string
+	}
+	porDiaMetodo := make(map[string]*agg)
+	totalVentas := 0.0
+	totalImpuestos := 0.0
+
+	for _, venta := range ventas {
+		fechaPago := reportesFirstNonBlank(venta.PagadoEn, venta.FechaActualizacion, venta.FechaCreacion)
+		fecha := reportesNormalizeDatePart(fechaPago)
+		if fecha == "" {
+			continue
+		}
+		metodo := dbpkg.NormalizeMetodoPagoCarrito(venta.MetodoPago)
+		if metodo == "" {
+			metodo = reportesFirstNonBlank(strings.ToLower(strings.TrimSpace(venta.MetodoPago)), "sin_metodo")
+		}
+		key := fecha + "|" + metodo
+		current := porDiaMetodo[key]
+		if current == nil {
+			current = &agg{clientes: make(map[string]struct{}), usuarios: make(map[string]struct{})}
+			porDiaMetodo[key] = current
+		}
+		current.ventas++
+		total := reportesVentaTotal(venta)
+		current.total += total
+		current.impuestos += venta.ImpuestoTotal
+		totalVentas += total
+		totalImpuestos += venta.ImpuestoTotal
+		cliente := reportesFirstNonBlank(venta.ClienteNombre, strconv.FormatInt(venta.ClienteID, 10), "sin_cliente")
+		current.clientes[cliente] = struct{}{}
+		usuario := reportesFirstNonBlank(venta.UsuarioCreador, "sistema")
+		current.usuarios[usuario] = struct{}{}
+		if current.primeraVenta == "" || fechaPago < current.primeraVenta {
+			current.primeraVenta = fechaPago
+		}
+		if fechaPago > current.ultimaVenta {
+			current.ultimaVenta = fechaPago
+		}
+	}
+
+	keys := make([]string, 0, len(porDiaMetodo))
+	for key := range porDiaMetodo {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	ds := b.newDataset(reporteDatasetVentasDiariasMetodoPago, []string{
+		"fecha",
+		"metodo_pago",
+		"ventas",
+		"clientes_distintos",
+		"usuarios_distintos",
+		"total_recaudado",
+		"impuestos",
+		"ticket_promedio",
+		"primera_venta",
+		"ultima_venta",
+	})
+	for _, key := range keys {
+		parts := strings.SplitN(key, "|", 2)
+		current := porDiaMetodo[key]
+		ticketPromedio := 0.0
+		if current.ventas > 0 {
+			ticketPromedio = reportesRound(current.total / float64(current.ventas))
+		}
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha":              parts[0],
+			"metodo_pago":        parts[1],
+			"ventas":             current.ventas,
+			"clientes_distintos": len(current.clientes),
+			"usuarios_distintos": len(current.usuarios),
+			"total_recaudado":    reportesRound(current.total),
+			"impuestos":          reportesRound(current.impuestos),
+			"ticket_promedio":    ticketPromedio,
+			"primera_venta":      current.primeraVenta,
+			"ultima_venta":       current.ultimaVenta,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["ventas"] = len(ventas)
+	ds.Summary["total_recaudado"] = reportesRound(totalVentas)
+	ds.Summary["impuestos"] = reportesRound(totalImpuestos)
+	ds.Summary["metodos_pago"] = ds.RowCount
+	if len(ventas) > 0 {
+		ds.Summary["ticket_promedio"] = reportesRound(totalVentas / float64(len(ventas)))
+	}
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildVentasRentabilidadProductosDataset() (empresaReporteDataset, error) {
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if err := b.ensureItemsForCarritos(ventas); err != nil {
+		return empresaReporteDataset{}, err
+	}
+	costos, err := b.reportesProductoCostos()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type agg struct {
+		itemKey        string
+		tipoItem       string
+		codigo         string
+		nombre         string
+		cantidad       float64
+		ingresos       float64
+		descuentos     float64
+		impuestos      float64
+		costoEstimado  float64
+		ventasSet      map[int64]struct{}
+		sinCostoConfig bool
+	}
+	porItem := make(map[string]*agg)
+
+	for _, venta := range ventas {
+		for _, it := range b.itemsCache[venta.ID] {
+			if !reportesEstadoActivo(it.Estado) {
+				continue
+			}
+			tipo := strings.ToLower(strings.TrimSpace(it.TipoItem))
+			key := tipo + ":" + strings.TrimSpace(it.CodigoItem)
+			if it.ReferenciaID > 0 {
+				key = tipo + ":" + strconv.FormatInt(it.ReferenciaID, 10)
+			}
+			if key == ":" || key == "" {
+				key = "item:" + strconv.FormatInt(it.ID, 10)
+			}
+			current := porItem[key]
+			if current == nil {
+				current = &agg{
+					itemKey:   key,
+					tipoItem:  reportesFirstNonBlank(tipo, "producto"),
+					codigo:    it.CodigoItem,
+					nombre:    reportesFirstNonBlank(it.Descripcion, it.CodigoItem, key),
+					ventasSet: make(map[int64]struct{}),
+				}
+				porItem[key] = current
+			}
+			costoUnitario, ok := costos[it.ReferenciaID]
+			if it.ReferenciaID <= 0 || !ok {
+				current.sinCostoConfig = true
+			}
+			current.cantidad += it.Cantidad
+			current.ingresos += it.TotalLinea
+			current.descuentos += it.ValorDescuento
+			current.impuestos += it.ValorImpuesto
+			current.costoEstimado += costoUnitario * it.Cantidad
+			current.ventasSet[venta.ID] = struct{}{}
+		}
+	}
+
+	rows := make([]*agg, 0, len(porItem))
+	for _, item := range porItem {
+		rows = append(rows, item)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		mi := rows[i].ingresos - rows[i].costoEstimado
+		mj := rows[j].ingresos - rows[j].costoEstimado
+		if mi == mj {
+			return rows[i].ingresos > rows[j].ingresos
+		}
+		return mi > mj
+	})
+	if len(rows) > b.maxRows {
+		rows = rows[:b.maxRows]
+	}
+
+	ds := b.newDataset(reporteDatasetVentasRentabilidadProducto, []string{
+		"item_key",
+		"tipo_item",
+		"codigo",
+		"producto_servicio",
+		"cantidad_vendida",
+		"ventas_relacionadas",
+		"ingresos",
+		"descuentos",
+		"impuestos",
+		"costo_estimado",
+		"margen_bruto",
+		"margen_pct",
+		"nota",
+	})
+	totalIngresos := 0.0
+	totalCosto := 0.0
+	sinCosto := 0
+	for _, item := range rows {
+		margen := reportesRound(item.ingresos - item.costoEstimado)
+		margenPct := 0.0
+		if item.ingresos > 0 {
+			margenPct = reportesRound((margen / item.ingresos) * 100)
+		}
+		nota := "ok"
+		if item.sinCostoConfig {
+			nota = "costo_no_configurado_o_item_sin_referencia"
+			sinCosto++
+		}
+		totalIngresos += item.ingresos
+		totalCosto += item.costoEstimado
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"item_key":            item.itemKey,
+			"tipo_item":           item.tipoItem,
+			"codigo":              item.codigo,
+			"producto_servicio":   item.nombre,
+			"cantidad_vendida":    reportesRound(item.cantidad),
+			"ventas_relacionadas": len(item.ventasSet),
+			"ingresos":            reportesRound(item.ingresos),
+			"descuentos":          reportesRound(item.descuentos),
+			"impuestos":           reportesRound(item.impuestos),
+			"costo_estimado":      reportesRound(item.costoEstimado),
+			"margen_bruto":        margen,
+			"margen_pct":          margenPct,
+			"nota":                nota,
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["items"] = ds.RowCount
+	ds.Summary["ingresos"] = reportesRound(totalIngresos)
+	ds.Summary["costo_estimado"] = reportesRound(totalCosto)
+	ds.Summary["margen_bruto"] = reportesRound(totalIngresos - totalCosto)
+	ds.Summary["items_sin_costo_configurado"] = sinCosto
+	if totalIngresos > 0 {
+		ds.Summary["margen_pct"] = reportesRound(((totalIngresos - totalCosto) / totalIngresos) * 100)
 	}
 	return ds, nil
 }
@@ -2996,6 +3349,144 @@ func (b *reportesBuilder) buildOperativoInventarioBodegaDataset() (empresaReport
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildInventarioKardexValorizadoDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetInventarioKardexValorizado, []string{
+		"fecha_movimiento",
+		"producto_id",
+		"sku",
+		"producto",
+		"bodega_origen_id",
+		"bodega_destino_id",
+		"tipo_movimiento",
+		"referencia",
+		"entrada_cantidad",
+		"salida_cantidad",
+		"costo_unitario",
+		"entrada_valor",
+		"salida_valor",
+		"saldo_cantidad",
+		"saldo_valor",
+		"usuario",
+	})
+
+	existe, err := b.reportesTableExists("inventario_movimientos")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if !existe {
+		ds.Summary["nota"] = "tabla_inventario_movimientos_no_disponible"
+		return ds, nil
+	}
+
+	query := `SELECT
+		m.id,
+		COALESCE(m.fecha_movimiento, ''),
+		COALESCE(m.producto_id, 0),
+		COALESCE(p.sku, ''),
+		COALESCE(p.nombre, ''),
+		COALESCE(m.bodega_origen_id, 0),
+		COALESCE(m.bodega_destino_id, 0),
+		COALESCE(m.tipo, ''),
+		COALESCE(m.cantidad, 0),
+		COALESCE(m.costo_unitario, 0),
+		COALESCE(m.referencia, ''),
+		COALESCE(m.usuario_creador, '')
+	FROM inventario_movimientos m
+	LEFT JOIN productos p ON p.empresa_id = m.empresa_id AND p.id = m.producto_id
+	WHERE m.empresa_id = ?
+		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'`
+	args := []interface{}{b.empresaID}
+	if strings.TrimSpace(b.desde) != "" {
+		query += ` AND substr(COALESCE(m.fecha_movimiento, ''), 1, 10) >= ?`
+		args = append(args, strings.TrimSpace(b.desde))
+	}
+	if strings.TrimSpace(b.hasta) != "" {
+		query += ` AND substr(COALESCE(m.fecha_movimiento, ''), 1, 10) <= ?`
+		args = append(args, strings.TrimSpace(b.hasta))
+	}
+	query += ` ORDER BY COALESCE(p.nombre, ''), m.producto_id, COALESCE(m.fecha_movimiento, ''), m.id LIMIT ?`
+	args = append(args, b.maxRows)
+
+	rows, err := dbpkg.ExecQueryCompat(b.db, query, args...)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	defer rows.Close()
+
+	saldosCantidad := make(map[int64]float64)
+	saldosValor := make(map[int64]float64)
+	totalEntradas := 0.0
+	totalSalidas := 0.0
+	totalEntradaValor := 0.0
+	totalSalidaValor := 0.0
+	productosSet := make(map[int64]struct{})
+
+	for rows.Next() {
+		var id int64
+		var fecha string
+		var productoID int64
+		var sku, producto string
+		var bodegaOrigenID, bodegaDestinoID int64
+		var tipo string
+		var cantidad, costoUnitario float64
+		var referencia, usuario string
+		if err := rows.Scan(&id, &fecha, &productoID, &sku, &producto, &bodegaOrigenID, &bodegaDestinoID, &tipo, &cantidad, &costoUnitario, &referencia, &usuario); err != nil {
+			return empresaReporteDataset{}, err
+		}
+		_ = id
+		tipoNorm := strings.ToLower(strings.TrimSpace(tipo))
+		entradaCantidad := 0.0
+		salidaCantidad := 0.0
+		if reportesInventarioTipoEsSalida(tipoNorm) {
+			salidaCantidad = math.Abs(cantidad)
+		} else {
+			entradaCantidad = math.Abs(cantidad)
+		}
+		entradaValor := reportesRound(entradaCantidad * costoUnitario)
+		salidaValor := reportesRound(salidaCantidad * costoUnitario)
+		saldosCantidad[productoID] = reportesRound(saldosCantidad[productoID] + entradaCantidad - salidaCantidad)
+		saldosValor[productoID] = reportesRound(saldosValor[productoID] + entradaValor - salidaValor)
+		totalEntradas += entradaCantidad
+		totalSalidas += salidaCantidad
+		totalEntradaValor += entradaValor
+		totalSalidaValor += salidaValor
+		productosSet[productoID] = struct{}{}
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha_movimiento":  fecha,
+			"producto_id":       productoID,
+			"sku":               sku,
+			"producto":          reportesFirstNonBlank(producto, "Producto #"+strconv.FormatInt(productoID, 10)),
+			"bodega_origen_id":  bodegaOrigenID,
+			"bodega_destino_id": bodegaDestinoID,
+			"tipo_movimiento":   tipoNorm,
+			"referencia":        referencia,
+			"entrada_cantidad":  reportesRound(entradaCantidad),
+			"salida_cantidad":   reportesRound(salidaCantidad),
+			"costo_unitario":    reportesRound(costoUnitario),
+			"entrada_valor":     entradaValor,
+			"salida_valor":      salidaValor,
+			"saldo_cantidad":    saldosCantidad[productoID],
+			"saldo_valor":       saldosValor[productoID],
+			"usuario":           reportesFirstNonBlank(usuario, "sistema"),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["movimientos"] = ds.RowCount
+	ds.Summary["productos"] = len(productosSet)
+	ds.Summary["entrada_cantidad"] = reportesRound(totalEntradas)
+	ds.Summary["salida_cantidad"] = reportesRound(totalSalidas)
+	ds.Summary["entrada_valor"] = reportesRound(totalEntradaValor)
+	ds.Summary["salida_valor"] = reportesRound(totalSalidaValor)
+	ds.Summary["saldo_valor_periodo"] = reportesRound(totalEntradaValor - totalSalidaValor)
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	return ds, nil
+}
+
 func (b *reportesBuilder) buildOperativoComprasMovimientosDataset() (empresaReporteDataset, error) {
 	type comprasProveedorAgg struct {
 		ProveedorID          int64
@@ -3294,6 +3785,100 @@ func (b *reportesBuilder) buildOperativoComprasMovimientosDataset() (empresaRepo
 	ds.Summary["moneda"] = monedaResumen
 	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
 	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildComprasProveedoresDetalleDataset() (empresaReporteDataset, error) {
+	rows, err := dbpkg.ListEmpresaGenericRows(b.db, "empresa_compras_documentos", b.empresaID, dbpkg.EmpresaGenericListFilter{
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+		SearchColumns:   []string{"documento_codigo", "tipo_documento", "estado_documento", "proveedor_documento_ref", "factura_documento_ref"},
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(reporteDatasetComprasProveedorDetalle, []string{
+		"fecha_documento",
+		"proveedor_id",
+		"proveedor_referencia",
+		"tipo_documento",
+		"documento_codigo",
+		"estado_documento",
+		"validacion_documental",
+		"requiere_aprobacion",
+		"nivel_aprobacion_actual",
+		"niveles_requeridos",
+		"recepcion_estado",
+		"monto_total",
+		"moneda",
+		"periodo_contable",
+		"usuario_creador",
+	})
+
+	totalMonto := 0.0
+	pendientesAprobacion := 0
+	pendientesValidacion := 0
+	pendientesRecepcion := 0
+	monedaResumen := ""
+	monedaMixta := false
+
+	for _, row := range rows {
+		fecha := reportesAnyString(row["fecha_documento"])
+		if !reportesDateWithinRange(fecha, b.desde, b.hasta) {
+			continue
+		}
+		monto := reportesAnyFloat(row["monto_total"])
+		requiereAprobacion := reportesAnyBool(row["requiere_aprobacion"])
+		nivelActual := int64(reportesAnyFloat(row["nivel_aprobacion_actual"]))
+		nivelesRequeridos := int64(reportesAnyFloat(row["niveles_aprobacion_requeridos"]))
+		if requiereAprobacion && nivelActual < nivelesRequeridos {
+			pendientesAprobacion++
+		}
+		validacion := reportesFirstNonBlank(reportesAnyString(row["validacion_documental_estado"]), "no_aplica")
+		if !strings.EqualFold(validacion, "aprobada") && !strings.EqualFold(validacion, "no_aplica") {
+			pendientesValidacion++
+		}
+		recepcionEstado := reportesCompraRecepcionEstado(row)
+		if recepcionEstado == "pendiente" || recepcionEstado == "parcial" {
+			pendientesRecepcion++
+		}
+		moneda := strings.ToUpper(reportesFirstNonBlank(reportesAnyString(row["moneda"]), "COP"))
+		if monedaResumen == "" {
+			monedaResumen = moneda
+		} else if monedaResumen != moneda {
+			monedaMixta = true
+		}
+		totalMonto += monto
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha_documento":         fecha,
+			"proveedor_id":            int64(reportesAnyFloat(row["proveedor_id"])),
+			"proveedor_referencia":    reportesAnyString(row["proveedor_documento_ref"]),
+			"tipo_documento":          reportesAnyString(row["tipo_documento"]),
+			"documento_codigo":        reportesAnyString(row["documento_codigo"]),
+			"estado_documento":        reportesAnyString(row["estado_documento"]),
+			"validacion_documental":   validacion,
+			"requiere_aprobacion":     requiereAprobacion,
+			"nivel_aprobacion_actual": nivelActual,
+			"niveles_requeridos":      nivelesRequeridos,
+			"recepcion_estado":        recepcionEstado,
+			"monto_total":             reportesRound(monto),
+			"moneda":                  moneda,
+			"periodo_contable":        reportesAnyString(row["periodo_contable"]),
+			"usuario_creador":         reportesFirstNonBlank(reportesAnyString(row["usuario_creador"]), "sistema"),
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["documentos"] = ds.RowCount
+	ds.Summary["monto_total"] = reportesRound(totalMonto)
+	ds.Summary["pendientes_aprobacion"] = pendientesAprobacion
+	ds.Summary["pendientes_validacion"] = pendientesValidacion
+	ds.Summary["pendientes_recepcion"] = pendientesRecepcion
+	if monedaMixta {
+		ds.Summary["moneda"] = "MIXTA"
+	} else {
+		ds.Summary["moneda"] = reportesFirstNonBlank(monedaResumen, "COP")
+	}
 	return ds, nil
 }
 
@@ -5056,6 +5641,564 @@ func (b *reportesBuilder) buildContableNominaLiquidacionesDataset() (empresaRepo
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildContableBalancePruebaDataset() (empresaReporteDataset, error) {
+	lineas, err := b.reportesAsientoLineas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	type agg struct {
+		cuenta      string
+		descripcion string
+		debito      float64
+		credito     float64
+		movimientos int64
+	}
+	porCuenta := make(map[string]*agg)
+	for _, ln := range lineas {
+		key := ln.Cuenta
+		if key == "" {
+			key = "sin_cuenta"
+		}
+		current := porCuenta[key]
+		if current == nil {
+			current = &agg{cuenta: key, descripcion: ln.Descripcion}
+			porCuenta[key] = current
+		}
+		if current.descripcion == "" {
+			current.descripcion = ln.Descripcion
+		}
+		current.debito += ln.Debito
+		current.credito += ln.Credito
+		current.movimientos++
+	}
+	rows := make([]*agg, 0, len(porCuenta))
+	for _, item := range porCuenta {
+		rows = append(rows, item)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i].cuenta < rows[j].cuenta
+	})
+	if len(rows) > b.maxRows {
+		rows = rows[:b.maxRows]
+	}
+	ds := b.newDataset(reporteDatasetContableBalancePrueba, []string{
+		"cuenta",
+		"descripcion",
+		"movimientos",
+		"debito",
+		"credito",
+		"saldo_debito",
+		"saldo_credito",
+		"naturaleza",
+	})
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, item := range rows {
+		debito := reportesRound(item.debito)
+		credito := reportesRound(item.credito)
+		saldo := reportesRound(debito - credito)
+		saldoDebito := 0.0
+		saldoCredito := 0.0
+		if saldo >= 0 {
+			saldoDebito = saldo
+		} else {
+			saldoCredito = reportesRound(math.Abs(saldo))
+		}
+		totalDebito += debito
+		totalCredito += credito
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"cuenta":        item.cuenta,
+			"descripcion":   item.descripcion,
+			"movimientos":   item.movimientos,
+			"debito":        debito,
+			"credito":       credito,
+			"saldo_debito":  saldoDebito,
+			"saldo_credito": saldoCredito,
+			"naturaleza":    reportesCuentaNaturaleza(item.cuenta),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["cuentas"] = ds.RowCount
+	ds.Summary["total_debito"] = reportesRound(totalDebito)
+	ds.Summary["total_credito"] = reportesRound(totalCredito)
+	ds.Summary["diferencia"] = reportesRound(totalDebito - totalCredito)
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildContableLibroAuxiliarDataset() (empresaReporteDataset, error) {
+	lineas, err := b.reportesAsientoLineas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	filtroCuenta := strings.ToLower(strings.TrimSpace(b.categoria))
+	ds := b.newDataset(reporteDatasetContableLibroAuxiliar, []string{
+		"fecha_asiento",
+		"periodo_contable",
+		"cuenta",
+		"descripcion",
+		"documento_tipo",
+		"documento_codigo",
+		"modulo",
+		"evento",
+		"debito",
+		"credito",
+		"saldo_movimiento",
+	})
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, ln := range lineas {
+		if filtroCuenta != "" && !strings.HasPrefix(strings.ToLower(ln.Cuenta), filtroCuenta) {
+			continue
+		}
+		saldo := reportesRound(ln.Debito - ln.Credito)
+		totalDebito += ln.Debito
+		totalCredito += ln.Credito
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha_asiento":    ln.FechaAsiento,
+			"periodo_contable": ln.PeriodoContable,
+			"cuenta":           ln.Cuenta,
+			"descripcion":      ln.Descripcion,
+			"documento_tipo":   ln.DocumentoTipo,
+			"documento_codigo": ln.DocumentoCodigo,
+			"modulo":           ln.Modulo,
+			"evento":           ln.Evento,
+			"debito":           reportesRound(ln.Debito),
+			"credito":          reportesRound(ln.Credito),
+			"saldo_movimiento": saldo,
+		})
+		if len(ds.Rows) >= b.maxRows {
+			break
+		}
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["lineas"] = ds.RowCount
+	ds.Summary["total_debito"] = reportesRound(totalDebito)
+	ds.Summary["total_credito"] = reportesRound(totalCredito)
+	ds.Summary["saldo"] = reportesRound(totalDebito - totalCredito)
+	ds.Summary["filtro_cuenta_prefijo"] = reportesFirstNonBlank(filtroCuenta, "todas")
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildContableLibroMayorDataset() (empresaReporteDataset, error) {
+	lineas, err := b.reportesAsientoLineas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	type agg struct {
+		periodo     string
+		cuenta      string
+		descripcion string
+		debito      float64
+		credito     float64
+		movimientos int64
+	}
+	porPeriodoCuenta := make(map[string]*agg)
+	for _, ln := range lineas {
+		periodo := reportesFirstNonBlank(ln.PeriodoContable, reportesNormalizeDatePart(ln.FechaAsiento), "sin_periodo")
+		key := periodo + "|" + ln.Cuenta
+		current := porPeriodoCuenta[key]
+		if current == nil {
+			current = &agg{periodo: periodo, cuenta: ln.Cuenta, descripcion: ln.Descripcion}
+			porPeriodoCuenta[key] = current
+		}
+		current.debito += ln.Debito
+		current.credito += ln.Credito
+		current.movimientos++
+	}
+	rows := make([]*agg, 0, len(porPeriodoCuenta))
+	for _, item := range porPeriodoCuenta {
+		rows = append(rows, item)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].periodo == rows[j].periodo {
+			return rows[i].cuenta < rows[j].cuenta
+		}
+		return rows[i].periodo < rows[j].periodo
+	})
+	if len(rows) > b.maxRows {
+		rows = rows[:b.maxRows]
+	}
+	ds := b.newDataset(reporteDatasetContableLibroMayor, []string{
+		"periodo_contable",
+		"cuenta",
+		"descripcion",
+		"movimientos",
+		"debito",
+		"credito",
+		"saldo",
+		"naturaleza",
+	})
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, item := range rows {
+		totalDebito += item.debito
+		totalCredito += item.credito
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"periodo_contable": item.periodo,
+			"cuenta":           item.cuenta,
+			"descripcion":      item.descripcion,
+			"movimientos":      item.movimientos,
+			"debito":           reportesRound(item.debito),
+			"credito":          reportesRound(item.credito),
+			"saldo":            reportesRound(item.debito - item.credito),
+			"naturaleza":       reportesCuentaNaturaleza(item.cuenta),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["cuentas_periodo"] = ds.RowCount
+	ds.Summary["total_debito"] = reportesRound(totalDebito)
+	ds.Summary["total_credito"] = reportesRound(totalCredito)
+	ds.Summary["saldo"] = reportesRound(totalDebito - totalCredito)
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildFiscalImpuestosRetencionesDataset() (empresaReporteDataset, error) {
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if err := b.ensureItemsForCarritos(ventas); err != nil {
+		return empresaReporteDataset{}, err
+	}
+	type agg struct {
+		concepto   string
+		fuente     string
+		base       float64
+		impuesto   float64
+		debito     float64
+		credito    float64
+		documentos int64
+	}
+	porConcepto := make(map[string]*agg)
+	for _, venta := range ventas {
+		for _, it := range b.itemsCache[venta.ID] {
+			if !reportesEstadoActivo(it.Estado) {
+				continue
+			}
+			concepto := strings.ToUpper(reportesFirstNonBlank(it.ImpuestoCodigo, fmt.Sprintf("IVA %.2f%%", it.ImpuestoPorcentaje)))
+			if concepto == "" {
+				concepto = "IVA"
+			}
+			key := "venta|" + concepto
+			current := porConcepto[key]
+			if current == nil {
+				current = &agg{concepto: concepto, fuente: "ventas_pos"}
+				porConcepto[key] = current
+			}
+			current.base += it.BaseGravable
+			current.impuesto += it.ValorImpuesto
+			current.documentos++
+		}
+	}
+
+	lineas, err := b.reportesAsientoLineas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	for _, ln := range lineas {
+		if !reportesCuentaEsFiscal(ln.Cuenta) {
+			continue
+		}
+		concepto := reportesConceptoFiscalCuenta(ln.Cuenta, ln.Descripcion)
+		key := "asiento|" + concepto + "|" + ln.Cuenta
+		current := porConcepto[key]
+		if current == nil {
+			current = &agg{concepto: concepto, fuente: "asientos_contables"}
+			porConcepto[key] = current
+		}
+		current.debito += ln.Debito
+		current.credito += ln.Credito
+		current.documentos++
+	}
+
+	rows := make([]*agg, 0, len(porConcepto))
+	for _, item := range porConcepto {
+		rows = append(rows, item)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].fuente == rows[j].fuente {
+			return rows[i].concepto < rows[j].concepto
+		}
+		return rows[i].fuente < rows[j].fuente
+	})
+	ds := b.newDataset(reporteDatasetFiscalImpuestosRetenciones, []string{
+		"fuente",
+		"concepto",
+		"documentos_lineas",
+		"base_gravable",
+		"impuesto_generado",
+		"debito",
+		"credito",
+		"saldo_fiscal",
+	})
+	totalBase := 0.0
+	totalImpuesto := 0.0
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, item := range rows {
+		totalBase += item.base
+		totalImpuesto += item.impuesto
+		totalDebito += item.debito
+		totalCredito += item.credito
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fuente":            item.fuente,
+			"concepto":          item.concepto,
+			"documentos_lineas": item.documentos,
+			"base_gravable":     reportesRound(item.base),
+			"impuesto_generado": reportesRound(item.impuesto),
+			"debito":            reportesRound(item.debito),
+			"credito":           reportesRound(item.credito),
+			"saldo_fiscal":      reportesRound(item.credito - item.debito),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["conceptos"] = ds.RowCount
+	ds.Summary["base_gravable"] = reportesRound(totalBase)
+	ds.Summary["impuesto_generado"] = reportesRound(totalImpuesto)
+	ds.Summary["debito"] = reportesRound(totalDebito)
+	ds.Summary["credito"] = reportesRound(totalCredito)
+	ds.Summary["saldo_fiscal"] = reportesRound(totalCredito - totalDebito)
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildFiscalInformacionExogenaDataset() (empresaReporteDataset, error) {
+	type rowExogena struct {
+		fuente          string
+		tercero         string
+		documentoTipo   string
+		documentoCodigo string
+		concepto        string
+		fecha           string
+		valor           float64
+		base            float64
+		impuesto        float64
+	}
+	items := make([]rowExogena, 0)
+
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	for _, venta := range ventas {
+		items = append(items, rowExogena{
+			fuente:          "ventas",
+			tercero:         reportesFirstNonBlank(venta.ClienteNombre, "Consumidor final"),
+			documentoTipo:   "venta",
+			documentoCodigo: reportesFirstNonBlank(venta.Codigo, strconv.FormatInt(venta.ID, 10)),
+			concepto:        "ingresos_operacionales",
+			fecha:           reportesFirstNonBlank(venta.PagadoEn, venta.FechaActualizacion, venta.FechaCreacion),
+			valor:           reportesVentaTotal(venta),
+			base:            reportesRound(reportesVentaTotal(venta) - venta.ImpuestoTotal),
+			impuesto:        venta.ImpuestoTotal,
+		})
+	}
+
+	for _, tableInfo := range []struct {
+		table      string
+		terceroCol string
+		fuente     string
+		concepto   string
+	}{
+		{"empresa_cuentas_por_cobrar", "cliente_nombre", "cartera_cobrar", "cuentas_por_cobrar"},
+		{"empresa_cuentas_por_pagar", "proveedor_nombre", "cartera_pagar", "cuentas_por_pagar"},
+	} {
+		rows, err := dbpkg.ListEmpresaGenericRows(b.db, tableInfo.table, b.empresaID, dbpkg.EmpresaGenericListFilter{IncludeInactive: b.includeInactive, Limit: b.maxRows})
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		for _, row := range rows {
+			fecha := reportesAnyString(row["fecha_emision"])
+			if !reportesDateWithinRange(fecha, b.desde, b.hasta) {
+				continue
+			}
+			items = append(items, rowExogena{
+				fuente:          tableInfo.fuente,
+				tercero:         reportesFirstNonBlank(reportesAnyString(row[tableInfo.terceroCol]), "Sin tercero"),
+				documentoTipo:   reportesAnyString(row["documento_tipo"]),
+				documentoCodigo: reportesAnyString(row["documento_codigo"]),
+				concepto:        tableInfo.concepto,
+				fecha:           fecha,
+				valor:           reportesAnyFloat(row["valor_original"]),
+				base:            reportesAnyFloat(row["saldo"]),
+			})
+		}
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].tercero == items[j].tercero {
+			return items[i].fecha < items[j].fecha
+		}
+		return items[i].tercero < items[j].tercero
+	})
+	if len(items) > b.maxRows {
+		items = items[:b.maxRows]
+	}
+	ds := b.newDataset(reporteDatasetFiscalInformacionExogena, []string{
+		"fuente",
+		"tercero",
+		"documento_tipo",
+		"documento_codigo",
+		"concepto",
+		"fecha",
+		"valor",
+		"base_o_saldo",
+		"impuesto",
+	})
+	totalValor := 0.0
+	totalBase := 0.0
+	totalImpuesto := 0.0
+	terceros := make(map[string]struct{})
+	for _, item := range items {
+		totalValor += item.valor
+		totalBase += item.base
+		totalImpuesto += item.impuesto
+		terceros[strings.ToLower(strings.TrimSpace(item.tercero))] = struct{}{}
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fuente":           item.fuente,
+			"tercero":          item.tercero,
+			"documento_tipo":   item.documentoTipo,
+			"documento_codigo": item.documentoCodigo,
+			"concepto":         item.concepto,
+			"fecha":            item.fecha,
+			"valor":            reportesRound(item.valor),
+			"base_o_saldo":     reportesRound(item.base),
+			"impuesto":         reportesRound(item.impuesto),
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["registros"] = ds.RowCount
+	ds.Summary["terceros"] = len(terceros)
+	ds.Summary["valor"] = reportesRound(totalValor)
+	ds.Summary["base_o_saldo"] = reportesRound(totalBase)
+	ds.Summary["impuesto"] = reportesRound(totalImpuesto)
+	ds.Summary["nota"] = "base_operativa_para_revision_del_contador_antes_de_presentar_medios_magneticos"
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildCarteraEdadesDataset(key, table, terceroCol string) (empresaReporteDataset, error) {
+	rows, err := dbpkg.ListEmpresaGenericRows(b.db, table, b.empresaID, dbpkg.EmpresaGenericListFilter{
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+		SearchColumns:   []string{"codigo", terceroCol, "documento_codigo", "estado_cartera"},
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(key, []string{
+		"tercero",
+		"documentos",
+		"saldo_corriente",
+		"saldo_1_30",
+		"saldo_31_60",
+		"saldo_61_90",
+		"saldo_mayor_90",
+		"saldo_total",
+		"documentos_vencidos",
+		"dias_mora_max",
+		"prioridad",
+	})
+	type agg struct {
+		tercero     string
+		documentos  int64
+		corriente   float64
+		d1_30       float64
+		d31_60      float64
+		d61_90      float64
+		d90         float64
+		vencidos    int64
+		diasMoraMax int64
+	}
+	porTercero := make(map[string]*agg)
+	for _, row := range rows {
+		fechaEmision := reportesAnyString(row["fecha_emision"])
+		if !reportesDateWithinRange(fechaEmision, b.desde, b.hasta) {
+			continue
+		}
+		saldo := reportesAnyFloat(row["saldo"])
+		if saldo <= 0 {
+			continue
+		}
+		tercero := reportesFirstNonBlank(reportesAnyString(row[terceroCol]), "Sin tercero")
+		keyTercero := strings.ToLower(tercero)
+		current := porTercero[keyTercero]
+		if current == nil {
+			current = &agg{tercero: tercero}
+			porTercero[keyTercero] = current
+		}
+		diasMora := int64(reportesAnyFloat(row["dias_mora"]))
+		if diasMora <= 0 {
+			diasMora = reportesDiasMoraDesdeFecha(reportesAnyString(row["fecha_vencimiento"]))
+		}
+		current.documentos++
+		if diasMora > 0 {
+			current.vencidos++
+		}
+		if diasMora > current.diasMoraMax {
+			current.diasMoraMax = diasMora
+		}
+		switch {
+		case diasMora <= 0:
+			current.corriente += saldo
+		case diasMora <= 30:
+			current.d1_30 += saldo
+		case diasMora <= 60:
+			current.d31_60 += saldo
+		case diasMora <= 90:
+			current.d61_90 += saldo
+		default:
+			current.d90 += saldo
+		}
+	}
+	items := make([]*agg, 0, len(porTercero))
+	for _, item := range porTercero {
+		items = append(items, item)
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		totalI := items[i].corriente + items[i].d1_30 + items[i].d31_60 + items[i].d61_90 + items[i].d90
+		totalJ := items[j].corriente + items[j].d1_30 + items[j].d31_60 + items[j].d61_90 + items[j].d90
+		return totalI > totalJ
+	})
+	totalSaldo := 0.0
+	totalVencido := 0.0
+	for _, item := range items {
+		saldoTotal := reportesRound(item.corriente + item.d1_30 + item.d31_60 + item.d61_90 + item.d90)
+		saldoVencido := reportesRound(item.d1_30 + item.d31_60 + item.d61_90 + item.d90)
+		prioridad := "corriente"
+		if item.d90 > 0 {
+			prioridad = "critica_mayor_90"
+		} else if item.d61_90 > 0 {
+			prioridad = "alta_61_90"
+		} else if item.d31_60 > 0 {
+			prioridad = "media_31_60"
+		} else if item.d1_30 > 0 {
+			prioridad = "baja_1_30"
+		}
+		totalSaldo += saldoTotal
+		totalVencido += saldoVencido
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"tercero":             item.tercero,
+			"documentos":          item.documentos,
+			"saldo_corriente":     reportesRound(item.corriente),
+			"saldo_1_30":          reportesRound(item.d1_30),
+			"saldo_31_60":         reportesRound(item.d31_60),
+			"saldo_61_90":         reportesRound(item.d61_90),
+			"saldo_mayor_90":      reportesRound(item.d90),
+			"saldo_total":         saldoTotal,
+			"documentos_vencidos": item.vencidos,
+			"dias_mora_max":       item.diasMoraMax,
+			"prioridad":           prioridad,
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["terceros"] = ds.RowCount
+	ds.Summary["saldo_total"] = reportesRound(totalSaldo)
+	ds.Summary["saldo_vencido"] = reportesRound(totalVencido)
+	if totalSaldo > 0 {
+		ds.Summary["porcentaje_vencido"] = reportesRound((totalVencido / totalSaldo) * 100)
+	}
+	return ds, nil
+}
+
 func writeReportesDatasetExport(w http.ResponseWriter, ds empresaReporteDataset, format string) error {
 	format = strings.ToLower(strings.TrimSpace(format))
 	if format == "excel" {
@@ -5433,6 +6576,184 @@ func reportesAnyBool(v interface{}) bool {
 	default:
 		return false
 	}
+}
+
+type reporteAsientoLineaRow struct {
+	FechaAsiento    string
+	PeriodoContable string
+	DocumentoTipo   string
+	DocumentoCodigo string
+	Modulo          string
+	Evento          string
+	Cuenta          string
+	Descripcion     string
+	Debito          float64
+	Credito         float64
+}
+
+func (b *reportesBuilder) reportesProductoCostos() (map[int64]float64, error) {
+	costos := make(map[int64]float64)
+	rows, err := dbpkg.ExecQueryCompat(b.db, `SELECT id, COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, b.empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var costo float64
+		if err := rows.Scan(&id, &costo); err != nil {
+			return nil, err
+		}
+		costos[id] = costo
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return costos, nil
+}
+
+func (b *reportesBuilder) reportesAsientoLineas() ([]reporteAsientoLineaRow, error) {
+	asientos, err := dbpkg.ListEmpresaAsientosContables(b.db, b.empresaID, dbpkg.EmpresaAsientoContableFilter{
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]reporteAsientoLineaRow, 0)
+	for _, asiento := range asientos {
+		var lineas []dbpkg.EmpresaAsientoContableLinea
+		if err := json.Unmarshal([]byte(strings.TrimSpace(reportesFirstNonBlank(asiento.LineasJSON, "[]"))), &lineas); err != nil {
+			continue
+		}
+		for _, ln := range lineas {
+			cuenta := strings.TrimSpace(ln.Cuenta)
+			if cuenta == "" {
+				continue
+			}
+			out = append(out, reporteAsientoLineaRow{
+				FechaAsiento:    asiento.FechaAsiento,
+				PeriodoContable: asiento.PeriodoContable,
+				DocumentoTipo:   asiento.DocumentoTipo,
+				DocumentoCodigo: asiento.DocumentoCodigo,
+				Modulo:          asiento.Modulo,
+				Evento:          asiento.Evento,
+				Cuenta:          cuenta,
+				Descripcion:     strings.TrimSpace(ln.Descripcion),
+				Debito:          reportesRound(ln.Debito),
+				Credito:         reportesRound(ln.Credito),
+			})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].FechaAsiento == out[j].FechaAsiento {
+			return out[i].Cuenta < out[j].Cuenta
+		}
+		return out[i].FechaAsiento < out[j].FechaAsiento
+	})
+	return out, nil
+}
+
+func reportesInventarioTipoEsSalida(tipo string) bool {
+	tipo = strings.ToLower(strings.TrimSpace(tipo))
+	return strings.Contains(tipo, "salida") ||
+		strings.Contains(tipo, "venta") ||
+		strings.Contains(tipo, "consumo") ||
+		strings.Contains(tipo, "merma") ||
+		strings.Contains(tipo, "devolucion_proveedor") ||
+		tipo == "ajuste_negativo"
+}
+
+func reportesCompraRecepcionEstado(row map[string]interface{}) string {
+	estadoDocumento := strings.ToLower(strings.TrimSpace(reportesAnyString(row["estado_documento"])))
+	if strings.Contains(estadoDocumento, "recepcion_parcial") || strings.Contains(estadoDocumento, "parcial") {
+		return "parcial"
+	}
+	if strings.Contains(estadoDocumento, "recepcion") || strings.Contains(estadoDocumento, "contabilizada") {
+		return "completa"
+	}
+	resumen := strings.ToLower(strings.TrimSpace(reportesAnyString(row["recepcion_resumen_json"])))
+	if resumen == "" || resumen == "null" || resumen == "{}" || resumen == "[]" {
+		return "pendiente"
+	}
+	if strings.Contains(resumen, "parcial") {
+		return "parcial"
+	}
+	return "registrada"
+}
+
+func reportesCuentaNaturaleza(cuenta string) string {
+	cuenta = strings.TrimSpace(cuenta)
+	if cuenta == "" {
+		return "sin_cuenta"
+	}
+	switch cuenta[0] {
+	case '1':
+		return "activo"
+	case '2':
+		return "pasivo"
+	case '3':
+		return "patrimonio"
+	case '4':
+		return "ingreso"
+	case '5', '6', '7':
+		return "gasto_costo"
+	case '8', '9':
+		return "orden"
+	default:
+		return "otra"
+	}
+}
+
+func reportesCuentaEsFiscal(cuenta string) bool {
+	cuenta = strings.TrimSpace(cuenta)
+	if cuenta == "" {
+		return false
+	}
+	prefixes := []string{"1355", "2365", "2367", "2368", "2408", "2412", "2436", "2495"}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(cuenta, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func reportesConceptoFiscalCuenta(cuenta, descripcion string) string {
+	desc := strings.ToLower(strings.TrimSpace(descripcion))
+	switch {
+	case strings.HasPrefix(cuenta, "2408"):
+		return "iva_por_pagar"
+	case strings.HasPrefix(cuenta, "1355"):
+		return "anticipos_retenciones_a_favor"
+	case strings.HasPrefix(cuenta, "2367"):
+		return "retencion_iva"
+	case strings.HasPrefix(cuenta, "2368"):
+		return "retencion_ica"
+	case strings.HasPrefix(cuenta, "2365") || strings.Contains(desc, "retencion") || strings.Contains(desc, "rete"):
+		return "retenciones_en_la_fuente"
+	default:
+		return reportesFirstNonBlank(strings.ReplaceAll(desc, " ", "_"), "cuenta_fiscal_"+cuenta)
+	}
+}
+
+func reportesDiasMoraDesdeFecha(fechaVencimiento string) int64 {
+	fecha := reportesNormalizeDatePart(fechaVencimiento)
+	if fecha == "" {
+		return 0
+	}
+	vencimiento, err := time.Parse("2006-01-02", fecha)
+	if err != nil {
+		return 0
+	}
+	hoy, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
+	if !hoy.After(vencimiento) {
+		return 0
+	}
+	return int64(hoy.Sub(vencimiento).Hours() / 24)
 }
 
 func reportesNormalizeMetodoPagoFinanzas(v string) string {

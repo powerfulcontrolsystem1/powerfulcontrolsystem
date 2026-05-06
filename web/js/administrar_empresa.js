@@ -589,7 +589,58 @@ try {
       var linkHref = normalizeHref(link.getAttribute("href")).split("?")[0];
       if (linkHref && linkHref === current) {
         link.classList.add("active");
+        openMenuGroupForLink(link);
       }
+    });
+  }
+
+  function setAdminNavGroupOpen(group, open) {
+    if (!group) return;
+    if (open && group.parentElement) {
+      var siblings = Array.prototype.slice.call(group.parentElement.querySelectorAll(".admin-nav-group"));
+      siblings.forEach(function (other) {
+        if (other !== group) {
+          other.classList.remove("is-open");
+          var otherTitle = other.querySelector(".admin-nav-group-title");
+          if (otherTitle) otherTitle.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+    group.classList.toggle("is-open", !!open);
+    var title = group.querySelector(".admin-nav-group-title");
+    if (title) {
+      title.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+  }
+
+  function openMenuGroupForLink(link) {
+    if (!link || typeof link.closest !== "function") return;
+    var group = link.closest(".admin-nav-group");
+    if (!group) return;
+    setAdminNavGroupOpen(group, true);
+  }
+
+  function setupAdminNavGroups() {
+    var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
+    groups.forEach(function (group, index) {
+      var title = group.querySelector(".admin-nav-group-title");
+      if (!title) return;
+      if (title.tagName && title.tagName.toLowerCase() !== "button") {
+        title.setAttribute("role", "button");
+        title.setAttribute("tabindex", "0");
+      }
+      var defaultOpen = group.classList.contains("is-open") || index === 0;
+      setAdminNavGroupOpen(group, defaultOpen);
+      var toggle = function () {
+        setAdminNavGroupOpen(group, !group.classList.contains("is-open"));
+      };
+      title.addEventListener("click", toggle);
+      title.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggle();
+        }
+      });
     });
   }
 
@@ -1272,6 +1323,8 @@ try {
       }
     });
   }
+
+  setupAdminNavGroups();
 
   fetchCurrentAdminRole()
     .then(function (role) {

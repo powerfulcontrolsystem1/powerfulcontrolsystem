@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-05
-Estado: vigente, actualizado con suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
+Estado: vigente, actualizado con reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -19,6 +19,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 ## Estado documental reciente
 - 2026-05-05: reorganizado el menu empresarial para fusionar Finanzas, Contabilidad Colombia y Suite contable bajo `Centro financiero y contable`; la ayuda administrativa principal queda restringida a `super_administrador` y se agrega el rol `control_super_administrador` para supervision limitada del panel super.
+- 2026-05-05: agregado paquete de reportes avanzados comparables con software colombiano conocido: ventas diarias POS, rentabilidad, Kardex valorizado, compras por proveedor, balance de prueba, libros contables, impuestos/retenciones, exogena base y edades de cartera CxC/CxP.
 - 2026-05-05: agregado modulo `Contabilidad Colombia avanzada` con informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP, libros oficiales, API `/api/empresa/contabilidad_colombia_avanzada`, pagina administrativa y control por licencia `contabilidad_colombia_avanzada`.
 - 2026-05-05: agregado modulo profesional `Carnets empresariales` con API `/api/empresa/carnets`, pagina `administrar_empresa/carnets.html`, plantillas, QR, exportacion, bitacora y control por licencia `carnets`.
 - 2026-05-05: rectificado el aislamiento multiempresa de todos los modulos privados `/api/empresa/...`; los wrappers `WithEmpresa*` rechazan inconsistencias de `empresa_id` entre URL, cabecera, formulario/multipart y JSON.

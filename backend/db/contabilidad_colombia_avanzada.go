@@ -371,14 +371,10 @@ func CreateEmpresaExogenaFormato(dbConn *sql.DB, x EmpresaExogenaFormato) (int64
 	x.Version = firstContabilidadValue(x.Version, "configurable")
 	x.Periodicidad = firstContabilidadValue(x.Periodicidad, "anual")
 	x.Estado = firstContabilidadValue(x.Estado, "activo")
-	res, err := dbConn.Exec(`INSERT INTO empresa_contabilidad_exogena_formatos
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_exogena_formatos
 		(empresa_id, formato, version, anio_gravable, concepto, descripcion, periodicidad, estado, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.Formato, x.Version, x.AnioGravable, x.Concepto, x.Descripcion, x.Periodicidad, x.Estado, x.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ListEmpresaExogenaFormatos(dbConn *sql.DB, empresaID int64, anio int) ([]EmpresaExogenaFormato, error) {
@@ -416,14 +412,10 @@ func CreateEmpresaExogenaRegistro(dbConn *sql.DB, x EmpresaExogenaRegistro) (int
 		x.Total = x.BaseValor + x.IVA - x.Retencion
 	}
 	x.Validaciones = validateExogenaRegistro(x)
-	res, err := dbConn.Exec(`INSERT INTO empresa_contabilidad_exogena_registros
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_exogena_registros
 		(empresa_id, formato_id, tercero_id, tipo_documento, documento, digito_verificacion, razon_social, concepto, cuenta_codigo, base_valor, iva, retencion, total, validaciones, estado, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.FormatoID, x.TerceroID, x.TipoDocumento, x.Documento, x.DigitoVerificacion, x.RazonSocial, x.Concepto, x.CuentaCodigo, x.BaseValor, x.IVA, x.Retencion, x.Total, x.Validaciones, x.Estado, x.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ListEmpresaExogenaRegistros(dbConn *sql.DB, empresaID, formatoID int64) ([]EmpresaExogenaRegistro, error) {
@@ -504,14 +496,31 @@ func CreateEmpresaNominaElectronica(dbConn *sql.DB, x EmpresaNominaElectronica) 
 	if x.Total == 0 {
 		x.Total = x.Devengados - x.Deducciones
 	}
-	res, err := dbConn.Exec(`INSERT OR REPLACE INTO empresa_contabilidad_nomina_electronica
+	var id int64
+	err := queryRowSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_nomina_electronica
 		(empresa_id, empleado_id, tipo_documento, documento, nombre, periodo, fecha_pago, salario_base, devengados, deducciones, total, cune, estado_dian, respuesta_dian, json_payload, fecha_actualizacion, usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)`,
-		x.EmpresaID, x.EmpleadoID, x.TipoDocumento, x.Documento, x.Nombre, x.Periodo, firstContabilidadValue(x.FechaPago, time.Now().Format("2006-01-02")), x.SalarioBase, x.Devengados, x.Deducciones, x.Total, x.CUNE, x.EstadoDIAN, x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)
+		ON CONFLICT (empresa_id, documento, periodo) DO UPDATE SET
+			empleado_id=EXCLUDED.empleado_id,
+			tipo_documento=EXCLUDED.tipo_documento,
+			nombre=EXCLUDED.nombre,
+			fecha_pago=EXCLUDED.fecha_pago,
+			salario_base=EXCLUDED.salario_base,
+			devengados=EXCLUDED.devengados,
+			deducciones=EXCLUDED.deducciones,
+			total=EXCLUDED.total,
+			cune=EXCLUDED.cune,
+			estado_dian=EXCLUDED.estado_dian,
+			respuesta_dian=EXCLUDED.respuesta_dian,
+			json_payload=EXCLUDED.json_payload,
+			fecha_actualizacion=CURRENT_TIMESTAMP,
+			usuario_creador=EXCLUDED.usuario_creador
+		RETURNING id`,
+		x.EmpresaID, x.EmpleadoID, x.TipoDocumento, x.Documento, x.Nombre, x.Periodo, firstContabilidadValue(x.FechaPago, time.Now().Format("2006-01-02")), x.SalarioBase, x.Devengados, x.Deducciones, x.Total, x.CUNE, x.EstadoDIAN, x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo string) ([]EmpresaNominaElectronica, error) {
@@ -549,14 +558,10 @@ func CreateEmpresaDocumentoSoporte(dbConn *sql.DB, x EmpresaDocumentoSoporteElec
 	if x.Total == 0 {
 		x.Total = x.Subtotal + x.IVA - x.Retenciones
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_contabilidad_documentos_soporte
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_documentos_soporte
 		(empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo, concepto, subtotal, iva, retenciones, total, cuds, estado_dian, respuesta_dian, json_payload, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.ProveedorID, x.TipoDocumento, x.Documento, x.NombreProveedor, firstContabilidadValue(x.FechaDocumento, time.Now().Format("2006-01-02")), firstContabilidadValue(x.Periodo, time.Now().Format("2006-01")), x.Concepto, x.Subtotal, x.IVA, x.Retenciones, x.Total, x.CUDS, x.EstadoDIAN, x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo string) ([]EmpresaDocumentoSoporteElectronico, error) {
@@ -600,14 +605,10 @@ func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error)
 		x.DepreciacionAcumulada = 0
 	}
 	x.ValorLibros = roundContabilidad(x.Costo - x.DepreciacionAcumulada)
-	res, err := dbConn.Exec(`INSERT INTO empresa_contabilidad_activos_fijos
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_activos_fijos
 		(empresa_id, codigo, nombre, categoria, fecha_compra, costo, valor_residual, vida_util_meses, depreciacion_mensual, depreciacion_acumulada, valor_libros, cuenta_activo, cuenta_depreciacion, cuenta_gasto, ubicacion, responsable, estado, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, strings.ToUpper(strings.TrimSpace(x.Codigo)), x.Nombre, x.Categoria, x.FechaCompra, x.Costo, x.ValorResidual, x.VidaUtilMeses, x.DepreciacionMensual, x.DepreciacionAcumulada, x.ValorLibros, x.CuentaActivo, x.CuentaDepreciacion, x.CuentaGasto, x.Ubicacion, x.Responsable, x.Estado, x.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ListEmpresaActivosFijos(dbConn *sql.DB, empresaID int64, estado string) ([]EmpresaActivoFijo, error) {
@@ -651,14 +652,10 @@ func CreateEmpresaCarteraCXP(dbConn *sql.DB, x EmpresaCarteraCXP) (int64, error)
 	if x.Saldo == 0 {
 		x.Saldo = x.ValorOriginal - x.ValorPagado
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_contabilidad_cartera_cxp
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_cartera_cxp
 		(empresa_id, tipo, tercero_id, tercero_nombre, documento, fecha_emision, fecha_vencimiento, cuenta_codigo, concepto, valor_original, valor_pagado, saldo, estado, origen_modulo, referencia_externa, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.Tipo, x.TerceroID, x.TerceroNombre, x.Documento, x.FechaEmision, x.FechaVencimiento, x.CuentaCodigo, x.Concepto, x.ValorOriginal, x.ValorPagado, x.Saldo, x.Estado, x.OrigenModulo, x.ReferenciaExterna, x.UsuarioCreador)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func ListEmpresaCarteraCXP(dbConn *sql.DB, empresaID int64, tipo, estado string) ([]EmpresaCarteraCXP, error) {

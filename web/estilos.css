@@ -1272,7 +1272,10 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar .nav a[href*="seleccionar_empresa"],.admin-sidebar .nav a.select-company{--menu-icon-bg:#fef3c7;--menu-icon-border:#f59e0b}
 .admin-sidebar .nav.admin-nav-grouped{gap:10px}
 .admin-sidebar .nav .admin-nav-group{display:flex;flex-direction:column;gap:7px;padding:10px;border:1px solid color-mix(in srgb, var(--border) 82%, transparent);border-radius:8px;background:color-mix(in srgb, var(--surface-soft) 74%, transparent)}
-.admin-sidebar .nav .admin-nav-group-title{color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;line-height:1.2;text-transform:uppercase;padding:0 2px}
+.admin-sidebar .nav .admin-nav-group-title{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;line-height:1.2;text-transform:uppercase;padding:0 2px;background:transparent;border:0;text-align:left;font-family:inherit;cursor:pointer}
+.admin-sidebar .nav .admin-nav-group-title::after{content:"+";display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;border:1px solid var(--border);color:var(--text);font-size:.78rem;line-height:1;background:var(--surface)}
+.admin-sidebar .nav .admin-nav-group.is-open .admin-nav-group-title::after{content:"-"}
+.admin-sidebar .nav .admin-nav-group:not(.is-open) .admin-nav-sublist{display:none}
 .admin-sidebar .nav .admin-nav-sublist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .admin-sidebar .nav .admin-nav-sublist li{min-width:0}
 .admin-sidebar .nav .admin-nav-sublist a{min-height:40px;padding:9px 12px;border-radius:8px;font-size:.9rem}

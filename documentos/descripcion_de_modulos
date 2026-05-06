@@ -1,3 +1,11 @@
+2026-05-05: Reportes colombianos avanzados
+- Modulos afectados: `reportes`, `ventas`, `inventario`, `compras`, `finanzas`, `contabilidad`, `cartera`.
+- Cambio funcional: el catalogo central de `/api/empresa/reportes` incorpora reportes frecuentes en software colombiano como Siigo/Alegra/World Office/Helisa: `ventas_diarias_metodos_pago`, `ventas_rentabilidad_productos`, `inventario_kardex_valorizado`, `compras_proveedores_detalle`, `contable_balance_prueba`, `contable_libro_auxiliar`, `contable_libro_mayor`, `fiscal_impuestos_retenciones`, `fiscal_informacion_exogena_base`, `cartera_edades_cuentas_por_cobrar` y `cartera_edades_cuentas_por_pagar`.
+- Integracion: no se crea un modulo paralelo; todos los datasets salen por el endpoint existente, respetan `empresa_id`, filtros de fecha, permisos de reportes/finanzas, exportacion `JSON/CSV/TXT/XLS/PDF`, plantillas y programacion.
+- Frontend: `web/administrar_empresa/reportes_menu.html` agrega accesos directos a los nuevos informes para que el contador o administrador pueda abrirlos desde el centro de reportes.
+- Alcance contable: los reportes fiscales y de exogena son base operativa exportable para revision del contador antes de presentaciones oficiales.
+- Navegacion: `web/administrar_empresa.html` reorganiza el menu principal en categorias plegables y separa las subpaginas operativas de las de ventas/clientes/caja, conservando ids, rutas, permisos y parametro `empresa_id`.
+
 2026-05-05: Organizacion profesional de modulos y rol contralor super
 - Modulos afectados: `administrar_empresa`, `finanzas`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `ayuda`, `super_administrador`, `roles`.
 - Cambio funcional: el menu principal fusiona las entradas repetidas de finanzas/contabilidad bajo `Centro financiero y contable`; las rutas internas se conservan para compatibilidad, permisos, favoritos y enlaces existentes.

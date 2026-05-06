@@ -426,13 +426,9 @@ func CreateEmpresaTaxiDriver(dbConn *sql.DB, item EmpresaTaxiDriver) (int64, err
 		return 0, fmt.Errorf("nombre y documento son obligatorios")
 	}
 	salt, hash := hashTaxiPin(item.Pin)
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_drivers (empresa_id, codigo, nombre, documento, telefono, email, vehiculo_placa, vehiculo_modelo, vehiculo_tipo, vehiculo_color, licencia_conduccion, gps_dispositivo_id, gps_codigo, gps_tipo, gps_proveedor, gps_protocolo, pin_hash, pin_salt, online, disponible, estado, fecha_creacion, fecha_actualizacion, usuario_creador, observaciones)
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_drivers (empresa_id, codigo, nombre, documento, telefono, email, vehiculo_placa, vehiculo_modelo, vehiculo_tipo, vehiculo_color, licencia_conduccion, gps_dispositivo_id, gps_codigo, gps_tipo, gps_proveedor, gps_protocolo, pin_hash, pin_salt, online, disponible, estado, fecha_creacion, fecha_actualizacion, usuario_creador, observaciones)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, COALESCE(NULLIF(?, ''), 'activo'), ?, ?, ?, ?)`,
 		item.EmpresaID, item.Codigo, item.Nombre, item.Documento, strings.TrimSpace(item.Telefono), strings.TrimSpace(item.Email), strings.ToUpper(strings.TrimSpace(item.VehiculoPlaca)), strings.TrimSpace(item.VehiculoModelo), strings.TrimSpace(item.VehiculoTipo), strings.TrimSpace(item.VehiculoColor), strings.TrimSpace(item.LicenciaConduccion), item.GPSDispositivoID, strings.TrimSpace(item.GPSCodigo), firstTaxiState(item.GPSTipo, "app_movil"), strings.TrimSpace(item.GPSProveedor), firstTaxiState(item.GPSProtocolo, "app_movil"), hash, salt, strings.TrimSpace(item.Estado), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"), strings.TrimSpace(item.UsuarioCreador), strings.TrimSpace(item.Observaciones))
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateEmpresaTaxiDriver(dbConn *sql.DB, item EmpresaTaxiDriver) error {
@@ -539,11 +535,11 @@ func RegisterTaxiCustomer(dbConn *sql.DB, item EmpresaTaxiCustomer) (EmpresaTaxi
 		return EmpresaTaxiCustomer{}, fmt.Errorf("nombre, telefono y pin son obligatorios")
 	}
 	salt, hash := hashTaxiPin(item.Pin)
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_customers (empresa_id, nombre, documento, telefono, email, pin_hash, pin_salt, estado, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?)`, item.EmpresaID, item.Nombre, strings.TrimSpace(item.Documento), item.Telefono, strings.TrimSpace(item.Email), hash, salt, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
+	var err error
+	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_customers (empresa_id, nombre, documento, telefono, email, pin_hash, pin_salt, estado, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?)`, item.EmpresaID, item.Nombre, strings.TrimSpace(item.Documento), item.Telefono, strings.TrimSpace(item.Email), hash, salt, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return EmpresaTaxiCustomer{}, err
 	}
-	item.ID, _ = res.LastInsertId()
 	item.Pin = ""
 	return item, nil
 }
@@ -605,13 +601,12 @@ func CreateTaxiRequest(dbConn *sql.DB, item EmpresaTaxiRequest) (EmpresaTaxiRequ
 		item.TiempoEstimadoMin = math.Round((item.DistanciaEstimadaKM/28.0)*60*10) / 10
 		item.TarifaEstimada = math.Round((6000+(item.DistanciaEstimadaKM*1900))*100) / 100
 	}
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_requests (empresa_id, customer_id, codigo_servicio, cliente_nombre, cliente_telefono, cliente_documento, recoger_texto, recoger_latitud, recoger_longitud, destino_texto, destino_latitud, destino_longitud, comparte_ubicacion_cliente, metodo_solicitud, estado, canal, notas, distancia_estimada_km, tiempo_estimado_min, tarifa_estimada, fecha_solicitud)
+	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_requests (empresa_id, customer_id, codigo_servicio, cliente_nombre, cliente_telefono, cliente_documento, recoger_texto, recoger_latitud, recoger_longitud, destino_texto, destino_latitud, destino_longitud, comparte_ubicacion_cliente, metodo_solicitud, estado, canal, notas, distancia_estimada_km, tiempo_estimado_min, tarifa_estimada, fecha_solicitud)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?)`,
 		item.EmpresaID, nullableID(item.CustomerID), item.CodigoServicio, item.ClienteNombre, item.ClienteTelefono, strings.TrimSpace(item.ClienteDocumento), item.RecogerTexto, item.RecogerLatitud, item.RecogerLongitud, strings.TrimSpace(item.DestinoTexto), item.DestinoLatitud, item.DestinoLongitud, taxiBoolToInt(item.ComparteUbicacionCliente), item.MetodoSolicitud, item.Canal, strings.TrimSpace(item.Notas), item.DistanciaEstimadaKM, item.TiempoEstimadoMin, item.TarifaEstimada, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return EmpresaTaxiRequest{}, err
 	}
-	item.ID, _ = res.LastInsertId()
 	item.FechaSolicitud = time.Now().Format("2006-01-02 15:04:05")
 	if cfg.PermitirDespachoAutomatico {
 		_, _ = DispatchTaxiRequestToNearbyDrivers(dbConn, item.EmpresaID, item.ID, 0)
@@ -711,12 +706,11 @@ func DispatchTaxiRequestToNearbyDrivers(dbConn *sql.DB, empresaID, requestID, ac
 	}
 	offers := make([]EmpresaTaxiOffer, 0, len(candidates))
 	for _, c := range candidates {
-		res, err := ExecCompat(dbConn, `INSERT INTO empresa_taxi_offers (empresa_id, request_id, conductor_id, distancia_km, tiempo_aproximado_min, estado, fecha_oferta) VALUES (?, ?, ?, ?, ?, 'pendiente', ?)`,
+		offerID, err := insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_offers (empresa_id, request_id, conductor_id, distancia_km, tiempo_aproximado_min, estado, fecha_oferta) VALUES (?, ?, ?, ?, ?, 'pendiente', ?)`,
 			empresaID, requestID, c.Driver.ID, c.DistKM, c.TimeMin, time.Now().Format("2006-01-02 15:04:05"))
 		if err != nil {
 			return nil, err
 		}
-		offerID, _ := res.LastInsertId()
 		offers = append(offers, EmpresaTaxiOffer{
 			ID:               offerID,
 			EmpresaID:        empresaID,

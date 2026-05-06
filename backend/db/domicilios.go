@@ -484,12 +484,8 @@ func CreateDomicilioRestaurant(dbConn *sql.DB, x EmpresaDomicilioRestaurant) (in
 		x.TiempoPreparacionMin = 20
 	}
 	salt, hash := hashDomicilioPin(x.Pin)
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_domicilios_restaurantes (empresa_id,codigo,nombre,categoria,responsable,telefono,email,direccion,latitud,longitud,tiempo_preparacion_min,comision_porcentaje,acepta_pedidos,estado,pin_hash,pin_salt,fecha_creacion,fecha_actualizacion,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_restaurantes (empresa_id,codigo,nombre,categoria,responsable,telefono,email,direccion,latitud,longitud,tiempo_preparacion_min,comision_porcentaje,acepta_pedidos,estado,pin_hash,pin_salt,fecha_creacion,fecha_actualizacion,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.Codigo, x.Nombre, strings.TrimSpace(x.Categoria), strings.TrimSpace(x.Responsable), strings.TrimSpace(x.Telefono), strings.TrimSpace(x.Email), strings.TrimSpace(x.Direccion), x.Latitud, x.Longitud, x.TiempoPreparacionMin, x.ComisionPorcentaje, domicilioBoolToInt(defaultTrueDomicilio(x.AceptaPedidos)), firstDomicilioState(x.Estado, "activo"), hash, salt, nowDomicilio(), nowDomicilio(), strings.TrimSpace(x.UsuarioCreador), strings.TrimSpace(x.Observaciones))
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateDomicilioRestaurant(dbConn *sql.DB, x EmpresaDomicilioRestaurant) error {
@@ -551,12 +547,8 @@ func CreateDomicilioCourier(dbConn *sql.DB, x EmpresaDomicilioCourier) (int64, e
 		return 0, fmt.Errorf("nombre y documento son obligatorios")
 	}
 	salt, hash := hashDomicilioPin(x.Pin)
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_domicilios_couriers (empresa_id,codigo,nombre,documento,telefono,email,vehiculo_tipo,vehiculo_placa,zona_base,pin_hash,pin_salt,online,disponible,estado,fecha_creacion,fecha_actualizacion,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,1,?,?,?, ?,?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_couriers (empresa_id,codigo,nombre,documento,telefono,email,vehiculo_tipo,vehiculo_placa,zona_base,pin_hash,pin_salt,online,disponible,estado,fecha_creacion,fecha_actualizacion,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,1,?,?,?,?,?)`,
 		x.EmpresaID, x.Codigo, x.Nombre, x.Documento, strings.TrimSpace(x.Telefono), strings.TrimSpace(x.Email), strings.TrimSpace(x.VehiculoTipo), strings.ToUpper(strings.TrimSpace(x.VehiculoPlaca)), strings.TrimSpace(x.ZonaBase), hash, salt, firstDomicilioState(x.Estado, "activo"), nowDomicilio(), nowDomicilio(), strings.TrimSpace(x.UsuarioCreador), strings.TrimSpace(x.Observaciones))
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func UpdateDomicilioCourier(dbConn *sql.DB, x EmpresaDomicilioCourier) error {
@@ -623,12 +615,8 @@ func UpsertDomicilioMenuItem(dbConn *sql.DB, x EmpresaDomicilioMenuItem) (int64,
 			x.RestaurantID, strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(x.Disponible), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), x.ID, x.EmpresaID)
 		return x.ID, err
 	}
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_domicilios_menu_items (empresa_id,restaurant_id,codigo,nombre,descripcion,categoria,precio,imagen_url,disponible,tiempo_preparacion_min,orden,fecha_creacion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_menu_items (empresa_id,restaurant_id,codigo,nombre,descripcion,categoria,precio,imagen_url,disponible,tiempo_preparacion_min,orden,fecha_creacion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.RestaurantID, strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(defaultTrueDomicilio(x.Disponible)), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), nowDomicilio())
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 func BuildEmpresaDomiciliosDashboard(dbConn *sql.DB, empresaID int64) (EmpresaDomiciliosDashboard, error) {
@@ -804,12 +792,11 @@ func CreateDomicilioOrder(dbConn *sql.DB, order EmpresaDomicilioOrder) (EmpresaD
 	if strings.TrimSpace(order.Estado) == "" {
 		order.Estado = "nuevo"
 	}
-	res, err := ExecCompat(dbConn, `INSERT INTO empresa_domicilios_orders (empresa_id,restaurant_id,codigo_pedido,codigo_entrega,token_cliente,cliente_nombre,cliente_telefono,cliente_direccion,cliente_latitud,cliente_longitud,metodo_pago,estado,canal,notas_cliente,subtotal,tarifa_domicilio,propina,descuento,total,distancia_estimada_km,tiempo_estimado_min,fecha_pedido) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	order.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_orders (empresa_id,restaurant_id,codigo_pedido,codigo_entrega,token_cliente,cliente_nombre,cliente_telefono,cliente_direccion,cliente_latitud,cliente_longitud,metodo_pago,estado,canal,notas_cliente,subtotal,tarifa_domicilio,propina,descuento,total,distancia_estimada_km,tiempo_estimado_min,fecha_pedido) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		order.EmpresaID, order.RestaurantID, order.CodigoPedido, order.CodigoEntrega, order.TokenCliente, strings.TrimSpace(order.ClienteNombre), strings.TrimSpace(order.ClienteTelefono), strings.TrimSpace(order.ClienteDireccion), order.ClienteLatitud, order.ClienteLongitud, firstDomicilioState(order.MetodoPago, "efectivo"), order.Estado, firstDomicilioState(order.Canal, "web"), strings.TrimSpace(order.NotasCliente), order.Subtotal, order.TarifaDomicilio, order.Propina, order.Descuento, order.Total, order.DistanciaEstimadaKM, order.TiempoEstimadoMin, nowDomicilio())
 	if err != nil {
 		return EmpresaDomicilioOrder{}, err
 	}
-	order.ID, _ = res.LastInsertId()
 	for _, it := range items {
 		_, err = ExecCompat(dbConn, `INSERT INTO empresa_domicilios_order_items (empresa_id,order_id,menu_item_id,nombre,cantidad,precio_unit,subtotal,notas) VALUES (?,?,?,?,?,?,?,?)`, order.EmpresaID, order.ID, it.MenuItemID, it.Nombre, it.Cantidad, it.PrecioUnit, it.Subtotal, it.Notas)
 		if err != nil {
@@ -921,11 +908,10 @@ func DispatchDomicilioOrder(dbConn *sql.DB, empresaID, orderID int64, maxCourier
 		if i >= maxCouriers {
 			break
 		}
-		res, err := ExecCompat(dbConn, `INSERT INTO empresa_domicilios_offers (empresa_id,order_id,courier_id,distancia_km,tiempo_aproximado_min,estado,fecha_oferta) VALUES (?,?,?,?,?,?,?)`, empresaID, orderID, c.c.ID, roundDomicilio(c.d), math.Ceil(c.d*4+4), "pendiente", nowDomicilio())
+		id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_offers (empresa_id,order_id,courier_id,distancia_km,tiempo_aproximado_min,estado,fecha_oferta) VALUES (?,?,?,?,?,?,?)`, empresaID, orderID, c.c.ID, roundDomicilio(c.d), math.Ceil(c.d*4+4), "pendiente", nowDomicilio())
 		if err != nil {
 			return offers, err
 		}
-		id, _ := res.LastInsertId()
 		offers = append(offers, EmpresaDomicilioOffer{ID: id, EmpresaID: empresaID, OrderID: orderID, CourierID: c.c.ID, CourierNombre: c.c.Nombre, DistanciaKM: roundDomicilio(c.d), TiempoAproximado: math.Ceil(c.d*4 + 4), Estado: "pendiente", FechaOferta: nowDomicilio()})
 	}
 	return offers, nil

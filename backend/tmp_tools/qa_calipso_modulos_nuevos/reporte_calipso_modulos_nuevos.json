@@ -1,0 +1,184 @@
+{
+  "empresa_id": 7,
+  "run_id": "20260505-194023",
+  "started_at": "2026-05-05T19:40:23-05:00",
+  "steps": [
+    {
+      "module": "schema",
+      "action": "ensure_modulos_nuevos",
+      "ok": true
+    },
+    {
+      "module": "contabilidad_colombia",
+      "action": "crear_tercero_qa",
+      "ok": true,
+      "id": 6
+    },
+    {
+      "module": "contabilidad_colombia",
+      "action": "crear_comprobante_balanceado",
+      "ok": true,
+      "id": 6,
+      "meta": {
+        "periodo": "2026-05"
+      }
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "seed_formatos_dian",
+      "ok": true
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "crear_registro_exogena",
+      "ok": true,
+      "id": 48,
+      "meta": {
+        "formato": "1001"
+      }
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "generar_exogena_desde_asientos",
+      "ok": true,
+      "meta": {
+        "registros_generados": 18
+      }
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "crear_nomina_electronica",
+      "ok": true,
+      "id": 5
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "crear_documento_soporte",
+      "ok": true,
+      "id": 5
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "crear_activo_fijo",
+      "ok": true,
+      "id": 5
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "crear_cartera_cxc",
+      "ok": true,
+      "id": 5
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "validar_libro_mayor",
+      "ok": true,
+      "meta": {
+        "lineas": 18
+      }
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "activos": 5,
+        "exogena": 66,
+        "formatos": 7
+      }
+    },
+    {
+      "module": "domicilios",
+      "action": "flujo_restaurante_domiciliario_pedido",
+      "ok": true,
+      "id": 5
+    },
+    {
+      "module": "domicilios",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "domiciliarios_online": 4,
+        "pedidos_ruta": 0,
+        "restaurantes": 5
+      }
+    },
+    {
+      "module": "parqueadero",
+      "action": "ticket_qr_y_cobro",
+      "ok": true,
+      "id": 4
+    },
+    {
+      "module": "parqueadero",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "abiertos": 0,
+        "ingresos_hoy": 112000,
+        "salidos_hoy": 4
+      }
+    },
+    {
+      "module": "apartamentos_turisticos",
+      "action": "unidad_reserva_checkout_limpieza",
+      "ok": true,
+      "id": 3
+    },
+    {
+      "module": "apartamentos_turisticos",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "limpieza": 3,
+        "reservas_activas": 0,
+        "unidades": 4
+      }
+    },
+    {
+      "module": "carnets",
+      "action": "plantilla_carnet_impresion",
+      "ok": true,
+      "id": 3
+    },
+    {
+      "module": "carnets",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "plantillas": 1,
+        "vigentes": 3
+      }
+    },
+    {
+      "module": "taxi_system",
+      "action": "servicio_con_gps_y_mapa",
+      "ok": true,
+      "id": 2
+    },
+    {
+      "module": "taxi_system",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "conductores_online": 2,
+        "servicios_activos": 0,
+        "solicitudes": 2
+      }
+    },
+    {
+      "module": "resumen",
+      "action": "conteos_empresa_7",
+      "ok": true,
+      "meta": {
+        "apartamentos_reservas": 3,
+        "carnets": 3,
+        "contabilidad_comprobantes": 6,
+        "domicilios_orders": 4,
+        "parqueadero_tickets": 4,
+        "taxi_requests": 2
+      }
+    }
+  ],
+  "failures": null
+}

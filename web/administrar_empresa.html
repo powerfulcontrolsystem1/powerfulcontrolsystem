@@ -13,18 +13,17 @@
       <h2 id="empresaTitleMenu">Administrar Empresa</h2>
       <p id="empresaNameMenu" class="empresa-name-menu"></p>
       <ul class="nav admin-nav-grouped" id="adminSidebarNav">
-        <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Inicio</div>
+        <li class="admin-nav-group is-open">
+          <button type="button" class="admin-nav-group-title" aria-expanded="true">Inicio</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkPanelEmpresa" href="/administrar_empresa/panel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a></li>
           </ul>
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Operación y ventas</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Operación por tipo</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
-            <li><a id="linkVentaDirecta" href="/administrar_empresa/venta_directa.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Venta directa</a></li>
             <li><a id="linkReservasHotel" href="/administrar_empresa/reservas_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reservas</a></li>
             <li><a id="linkTarifasHotel" href="/administrar_empresa/tarifas_de_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas de hotel</a></li>
             <li><a id="linkTarifasMotel" href="/administrar_empresa/tarifas_de_motel.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Tarifas de motel</a></li>
@@ -38,24 +37,25 @@
             <li><a id="linkApartamentosTuristicos" href="/administrar_empresa/apartamentos_turisticos.html" target="contentFrame"><img class="icon" src="/img/hotel-logo.svg" alt="">Apartamentos turísticos</a></li>
             <li><a id="linkAlquileres" href="/administrar_empresa/alquileres.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Alquileres</a></li>
             <li><a id="linkTurnosAtencion" href="/administrar_empresa/turnos_atencion.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Turnos de atención</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Ventas, clientes y caja</button>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkVentaDirecta" href="/administrar_empresa/venta_directa.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Venta directa</a></li>
             <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
             <li><a id="linkCRMComercial" href="/administrar_empresa/crm_comercial.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">CRM comercial</a></li>
             <li><a id="linkVentaPublica" href="/administrar_empresa/venta_publica.html" target="contentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Venta pública</a></li>
             <li><a id="linkRedSocialComercial" href="/administrar_empresa/publicar_red_social.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">Red social empresarial</a></li>
             <li><a id="linkCodigosDescuento" href="/administrar_empresa/codigos_de_descuento.html" target="contentFrame"><img class="icon" src="/img/gift-card.svg" alt="">Códigos de descuento</a></li>
             <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de caja</a></li>
-          </ul>
-        </li>
-
-        <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Trabajo colaborativo</div>
-          <ul class="admin-nav-sublist">
             <li><a id="linkChatTareas" href="/administrar_empresa/chat_tareas_chats.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
           </ul>
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Inventario y compras</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Inventario y compras</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkProductos" href="/administrar_empresa/administrar_productos_menu.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Productos</a></li>
             <li><a id="linkCompras" href="/administrar_empresa/compras_menu.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Compras</a></li>
@@ -63,7 +63,7 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Finanzas y cumplimiento</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Finanzas y cumplimiento</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Centro financiero y contable</a></li>
             <li><a id="linkEgresosIngresos" href="/administrar_empresa/egresos_ingresos_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Egresos e ingresos</a></li>
@@ -73,7 +73,7 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Personas y activos</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Personas y activos</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkUsuarios" href="/administrar_empresa/administrar_usuarios.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Usuarios</a></li>
             <li><a id="linkPortalUsuarios" href="/login_usuario.html"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
@@ -87,7 +87,7 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Análisis y control</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Análisis y control</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkReportes" href="/administrar_empresa/reportes_menu.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Reportes</a></li>
             <li><a id="linkAuditoria" href="/administrar_empresa/auditoria.html" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoría</a></li>
@@ -96,7 +96,7 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Documentos, nube y soporte</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Documentos, nube y soporte</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkDocumentosOnlyOffice" href="/administrar_empresa/documentos_onlyoffice.html" target="contentFrame"><img class="icon" src="/img/excel.svg" alt="">OnlyOffice</a></li>
             <li><a id="linkNextcloud" href="/administrar_empresa/nextcloud.html" target="contentFrame"><img class="icon" src="/img/google-drive.svg" alt="">Nextcloud</a></li>
@@ -106,7 +106,7 @@
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Administración</div>
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Administración</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkConfiguracion" href="/administrar_empresa/configuracion_menu.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración</a></li>
           </ul>
