@@ -4146,3 +4146,7 @@ Archivos modificados:
 - web/js/produccion_mrp.js
 - web/js/tesoreria_presupuesto.js
 - web/super/licencias.html
+
+2026-05-06 08:23:06 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a19d3c8a; PushStatus: OK
+Archivos modificados:
+- web/js/super_administrador.js
