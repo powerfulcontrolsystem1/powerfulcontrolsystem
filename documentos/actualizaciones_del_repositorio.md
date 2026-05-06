@@ -4150,3 +4150,29 @@ Archivos modificados:
 2026-05-06 08:23:06 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a19d3c8a; PushStatus: OK
 Archivos modificados:
 - web/js/super_administrador.js
+
+2026-05-06 10:12:42 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 8593a901; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- RESUMEN_DEL_PROYECTO.md
+- backend/db/aiu_construccion.go
+- backend/db/aiu_construccion_test.go
+- backend/db/facturacion_electronica.go
+- backend/handlers/aiu_construccion.go
+- backend/handlers/documentos_lifecycle.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- backend/tmp/plink_tunnel_db_15432.err.log
+- documentos/CHANGELOG.md
+- documentos/aiu_construccion.md
+- documentos/descripcion_del_proyecto
+- web/administrar_empresa/aiu_construccion.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_menu.html
+- web/js/administrar_empresa.js
