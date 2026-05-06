@@ -4279,3 +4279,16 @@ Archivos modificados:
 - web/super/asesor_comercial.html
 - web/super/licencias.html
 - web/visualizar_certificado_tributario_publico.html
+
+2026-05-06 14:59:56 - Mensaje: Ajusta temas y documenta plan E2E modulos faltantes; Commit: 9ce3af88; PushStatus: OK
+Archivos modificados:
+- documentos/plan_modulos_faltantes_colombia_2026-05-06.md
+- documentos/plan_qa_e2e_motel_calipso_2026-05-06.md
+- web/administrar_empresa/activos_fijos_niif_fiscal.html
+- web/administrar_empresa/centros_costo.html
+- web/administrar_empresa/cierre_fiscal.html
+- web/administrar_empresa/declaraciones_tributarias.html
+- web/administrar_empresa/logistica_wms.html
+- web/administrar_empresa/portal_terceros_certificados.html
+- web/administrar_empresa/propiedad_horizontal.html
+- web/js/empresa_submenu_context.js
