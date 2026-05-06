@@ -16,6 +16,25 @@
 - Roles base: lectura para roles operativos autorizados por compras; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y `compras`.
 - Las requisiciones, items, cotizaciones, aprobaciones y recepciones guardan `empresa_id`, manteniendo aislamiento multiempresa.
 
+2026-05-06: Nota operativa para QA transversal de modulos
+- La evaluacion frontend de permisos en `web/js/administrar_empresa.js` reconoce `administrador_total` como rol con acceso total, igual que `super_administrador`, para evitar que el menu oculte modulos que el backend permite.
+- La prueba autenticada sobre Motel Calipso confirma `super_administrador` efectivo en `/api/empresa/permisos_contexto?empresa_id=7&include_matrix=1`.
+- No se agregan rutas publicas nuevas ni se amplian permisos por fuera de las licencias/modulos existentes; el cambio solo corrige coherencia de menu y documenta QA.
+
+2026-05-06: Nota operativa para `portal_contador`
+- Se agrega clave independiente `portal_contador`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkPortalContador` y `linkPortalContadorMenu` quedan registradas en el catalogo de paginas y se muestran dentro del Centro financiero y contable.
+- El endpoint `/api/empresa/portal_contador` usa `WithEmpresaPortalContadorPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar para `admin_empresa` y `contabilidad` segun la matriz financiera.
+- Todas las tablas incluyen `empresa_id`. El campo `cliente_empresa_id` es una referencia opcional a otra empresa del sistema, no reemplaza el control de alcance ni concede permisos cruzados.
+
+2026-05-06: Nota operativa para `cobranza`
+- Se agrega clave independiente `cobranza`, activable por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkCobranza` y `linkCobranzaMenu` quedan registradas en el catalogo de paginas y se muestran dentro del Centro financiero y contable.
+- El endpoint `/api/empresa/cobranza` usa `WithEmpresaCobranzaPermissions`; no abre rutas publicas ni proveedores externos directos.
+- Roles base: lectura para roles operativos; crear/actualizar para `admin_empresa`, `supervisor_sucursal` y `contabilidad`; marcar promesas como cumplidas/incumplidas usa accion de aprobacion.
+- Todas las plantillas, campanas, gestiones y promesas incluyen `empresa_id`; las gestiones referencian `empresa_cuentas_por_cobrar` por `cuenta_id` para no duplicar cartera.
+
 2026-05-06: Nota operativa para `importaciones_costeo`
 - Se agrega clave independiente `importaciones_costeo`, activable por licencia mediante `licencias.modulos_habilitados`.
 - La pagina `linkImportacionesCosteo` queda registrada en el catalogo de paginas y se muestra en Administrar empresa > Inventario y compras.
@@ -1208,6 +1227,7 @@ Regla de lectura comun (R):
 | `/api/empresa/ubicacion_gps/recorridos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | geolocalizacion en politica inventario |
 | `/api/empresa/clientes` | `WithEmpresaClientesPermissions` | SA, AE, SS, CJ | - | modulo clientes sin `D` por politica actual |
 | `/api/empresa/proveedores` | `WithEmpresaComprasPermissions` | SA, AE, SS, CO | - | `action=emitir_orden|recepcionar_compra|contabilizar_compra|aprobar` exige `A` |
+| `/api/empresa/soportes_compras_ia` | `WithEmpresaSoportesComprasIAPermissions` | SA, AE, SS, CO, CT | - | captura foto/PDF/XML de compras y gastos; `action=extraer_ia` usa `U`, `aprobar|rechazar|contabilizar` exige `A` |
 | `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=emitir|nota_credito|emitir_factura|emitir_documento` exige `A` |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | consulta/actualizacion bajo politica facturacion |
 | `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | incluye `action=guia_onboarding|validar_credenciales|subir_firma|checklist|validar|generar_cufe_demo|generar_xml_demo|generar_xml_ubl_base|firmar_xml_real|firmar_xml_xades_base|diagnostico_oficial|enviar_documento_real|consultar_acuse_real|reconexion_dian|enviar_set_pruebas`; opera por `empresa_id` con `NIT/token/certificado` por empresa y software compartido opcional |

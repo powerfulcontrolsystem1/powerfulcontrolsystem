@@ -117,6 +117,7 @@ try {
     document.getElementById("linkInventarioAvanzado"),
     document.getElementById("linkCompras"),
     document.getElementById("linkComprasAvanzadas"),
+    document.getElementById("linkSoportesComprasIA"),
     document.getElementById("linkImportacionesCosteo"),
     document.getElementById("linkProduccionMRP"),
     document.getElementById("linkGimnasio"),
@@ -175,6 +176,8 @@ try {
     document.getElementById("linkImpuestos"),
     document.getElementById("linkEgresosIngresos"),
     document.getElementById("linkCreditosMenu"),
+    document.getElementById("linkCobranzaMenu"),
+    document.getElementById("linkPortalContadorMenu"),
     document.getElementById("linkNominaMenu"),
     document.getElementById("linkERPExtendidoMenu"),
     document.getElementById("linkNextcloud"),
@@ -201,6 +204,9 @@ try {
   var permModuleContabilidadCOAv = "contabilidad_colombia_avanzada";
   var permModuleTesoreria = "tesoreria_presupuesto";
   var permModuleImportaciones = "importaciones_costeo";
+  var permModuleCobranza = "cobranza";
+  var permModulePortalContador = "portal_contador";
+  var permModuleSoportesComprasIA = "soportes_compras_ia";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
@@ -229,6 +235,8 @@ try {
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
     linkComprasAvanzadas: { module: permModuleCompras, action: permActionCreate },
+    linkSoportesComprasIA: { module: permModuleSoportesComprasIA, action: permActionCreate },
+    linkSoportesComprasIAMenu: { module: permModuleSoportesComprasIA, action: permActionCreate },
     linkImportacionesCosteo: { module: permModuleImportaciones, action: permActionCreate },
     linkProduccionMRP: { module: permModuleProduccionMRP, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
@@ -276,6 +284,10 @@ try {
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
+    linkCobranza: { module: permModuleCobranza, action: permActionCreate },
+    linkCobranzaMenu: { module: permModuleCobranza, action: permActionCreate },
+    linkPortalContador: { module: permModulePortalContador, action: permActionCreate },
+    linkPortalContadorMenu: { module: permModulePortalContador, action: permActionCreate },
     linkNominaMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },
@@ -732,7 +744,7 @@ try {
     var normalizedAction = normalizePermissionAction(action);
     var allReadRoles = ["admin_empresa", "supervisor_sucursal", "cajero", "inventario", "compras", "contabilidad", "auditor"];
 
-    if (normalizedRole === "super_administrador") {
+    if (normalizedRole === "super_administrador" || normalizedRole === "administrador_total") {
       return true;
     }
 
@@ -758,10 +770,22 @@ try {
         }
         break;
 
+      case permModuleSoportesComprasIA:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "compras", "contabilidad"]);
+        }
+        if (normalizedAction === "D") {
+          return false;
+        }
+        break;
+
       case permModuleFinanzas:
       case permModuleContabilidadCO:
       case permModuleContabilidadCOAv:
       case permModuleTesoreria:
+      case permModuleCobranza:
+      case permModulePortalContador:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);

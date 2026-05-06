@@ -25,30 +25,33 @@ const (
 	permActionDelete  = "D"
 	permActionApprove = "A"
 
-	permModuleVentas           = "ventas"
-	permModuleInventario       = "inventario"
-	permModuleFinanzas         = "finanzas"
-	permModuleContabilidadCO   = "contabilidad_colombia"
-	permModuleContabilidadCOAv = "contabilidad_colombia_avanzada"
-	permModuleClientes         = "clientes"
-	permModuleCompras          = "compras"
-	permModuleFacturacion      = "facturacion"
-	permModuleSeguridad        = "seguridad"
-	permModuleVentaPublica     = "venta_publica"
-	permModuleGimnasio         = "gimnasio"
-	permModuleTaxiSystem       = "taxi_system"
-	permModuleDomicilios       = "domicilios"
-	permModuleParqueadero      = "parqueadero"
-	permModuleApartTuristicos  = "apartamentos_turisticos"
-	permModuleAlquileres       = "alquileres"
-	permModuleOdontologia      = "odontologia"
-	permModuleTurnos           = "turnos_atencion"
-	permModuleControlElectrico = "control_electrico"
-	permModuleCarnets          = "carnets"
-	permModuleProduccionMRP    = "produccion_mrp"
-	permModuleTesoreria        = "tesoreria_presupuesto"
-	permModuleImportaciones    = "importaciones_costeo"
-	permModuleAIUConstruccion  = "aiu_construccion"
+	permModuleVentas            = "ventas"
+	permModuleInventario        = "inventario"
+	permModuleFinanzas          = "finanzas"
+	permModuleContabilidadCO    = "contabilidad_colombia"
+	permModuleContabilidadCOAv  = "contabilidad_colombia_avanzada"
+	permModuleClientes          = "clientes"
+	permModuleCompras           = "compras"
+	permModuleFacturacion       = "facturacion"
+	permModuleSeguridad         = "seguridad"
+	permModuleVentaPublica      = "venta_publica"
+	permModuleGimnasio          = "gimnasio"
+	permModuleTaxiSystem        = "taxi_system"
+	permModuleDomicilios        = "domicilios"
+	permModuleParqueadero       = "parqueadero"
+	permModuleApartTuristicos   = "apartamentos_turisticos"
+	permModuleAlquileres        = "alquileres"
+	permModuleOdontologia       = "odontologia"
+	permModuleTurnos            = "turnos_atencion"
+	permModuleControlElectrico  = "control_electrico"
+	permModuleCarnets           = "carnets"
+	permModuleProduccionMRP     = "produccion_mrp"
+	permModuleTesoreria         = "tesoreria_presupuesto"
+	permModuleImportaciones     = "importaciones_costeo"
+	permModuleAIUConstruccion   = "aiu_construccion"
+	permModuleCobranza          = "cobranza"
+	permModulePortalContador    = "portal_contador"
+	permModuleSoportesComprasIA = "soportes_compras_ia"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -173,6 +176,9 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleTesoreria,
 	permModuleImportaciones,
 	permModuleAIUConstruccion,
+	permModuleCobranza,
+	permModulePortalContador,
+	permModuleSoportesComprasIA,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -194,30 +200,33 @@ var permissionActionDisplayNames = map[string]string{
 
 // permissionModuleDisplayNames nombres de negocio por clave de módulo.
 var permissionModuleDisplayNames = map[string]string{
-	permModuleVentas:           "Ventas y servicio al cliente",
-	permModuleInventario:       "Inventario y almacén",
-	permModuleFinanzas:         "Finanzas, caja y reportes",
-	permModuleContabilidadCO:   "Contabilidad Colombia NIIF/DIAN",
-	permModuleContabilidadCOAv: "Suite contable Colombia avanzada",
-	permModuleClientes:         "Clientes y cartera comercial",
-	permModuleCompras:          "Compras y proveedores",
-	permModuleFacturacion:      "Facturación electrónica (DIAN)",
-	permModuleSeguridad:        "Seguridad, usuarios e integración",
-	permModuleVentaPublica:     "Venta publica y carta de productos",
-	permModuleGimnasio:         "Gimnasio y membresias",
-	permModuleTaxiSystem:       "Taxi system y despacho GPS",
-	permModuleDomicilios:       "Domicilios y delivery",
-	permModuleParqueadero:      "Parqueadero y tickets QR",
-	permModuleApartTuristicos:  "Apartamentos turisticos",
-	permModuleAlquileres:       "Alquileres de equipos y vehiculos",
-	permModuleOdontologia:      "Odontologia y agenda clinica",
-	permModuleTurnos:           "Turnos de atencion",
-	permModuleControlElectrico: "Control electrico e IoT",
-	permModuleCarnets:          "Carnets empresariales",
-	permModuleProduccionMRP:    "Produccion / MRP",
-	permModuleTesoreria:        "Tesoreria y presupuesto",
-	permModuleImportaciones:    "Importaciones y costeo",
-	permModuleAIUConstruccion:  "AIU construccion y contratos de obra",
+	permModuleVentas:            "Ventas y servicio al cliente",
+	permModuleInventario:        "Inventario y almacén",
+	permModuleFinanzas:          "Finanzas, caja y reportes",
+	permModuleContabilidadCO:    "Contabilidad Colombia NIIF/DIAN",
+	permModuleContabilidadCOAv:  "Suite contable Colombia avanzada",
+	permModuleClientes:          "Clientes y cartera comercial",
+	permModuleCompras:           "Compras y proveedores",
+	permModuleFacturacion:       "Facturación electrónica (DIAN)",
+	permModuleSeguridad:         "Seguridad, usuarios e integración",
+	permModuleVentaPublica:      "Venta publica y carta de productos",
+	permModuleGimnasio:          "Gimnasio y membresias",
+	permModuleTaxiSystem:        "Taxi system y despacho GPS",
+	permModuleDomicilios:        "Domicilios y delivery",
+	permModuleParqueadero:       "Parqueadero y tickets QR",
+	permModuleApartTuristicos:   "Apartamentos turisticos",
+	permModuleAlquileres:        "Alquileres de equipos y vehiculos",
+	permModuleOdontologia:       "Odontologia y agenda clinica",
+	permModuleTurnos:            "Turnos de atencion",
+	permModuleControlElectrico:  "Control electrico e IoT",
+	permModuleCarnets:           "Carnets empresariales",
+	permModuleProduccionMRP:     "Produccion / MRP",
+	permModuleTesoreria:         "Tesoreria y presupuesto",
+	permModuleImportaciones:     "Importaciones y costeo",
+	permModuleAIUConstruccion:   "AIU construccion y contratos de obra",
+	permModuleCobranza:          "Gestion de cobranza",
+	permModulePortalContador:    "Portal contador",
+	permModuleSoportesComprasIA: "Captura inteligente de compras y gastos",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -265,6 +274,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
 	{PaginaClave: "linkComprasAvanzadas", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras avanzadas", Grupo: "Compras"},
+	{PaginaClave: "linkSoportesComprasIA", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Compras"},
+	{PaginaClave: "linkSoportesComprasIAMenu", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Compras"},
 	{PaginaClave: "linkImportacionesCosteo", Modulo: permModuleImportaciones, Accion: permActionCreate, Titulo: "Importaciones y costeo", Grupo: "Compras"},
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
@@ -297,6 +308,10 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCobranza", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCobranzaMenu", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkPortalContador", Modulo: permModulePortalContador, Accion: permActionCreate, Titulo: "Portal contador", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkPortalContadorMenu", Modulo: permModulePortalContador, Accion: permActionCreate, Titulo: "Portal contador", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Seguridad e integración"},
@@ -630,6 +645,11 @@ func WithEmpresaComprasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCompras, resolveComprasPermissionAction, next)
 }
 
+// WithEmpresaSoportesComprasIAPermissions aplica permisos independientes para captura OCR/IA de compras y gastos.
+func WithEmpresaSoportesComprasIAPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleSoportesComprasIA, resolveSoportesComprasIAPermissionAction, next)
+}
+
 // WithEmpresaFacturacionPermissions aplica control de alcance por empresa y permisos por rol para facturacion.
 func WithEmpresaFacturacionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacion, resolveFacturacionPermissionAction, next)
@@ -638,6 +658,16 @@ func WithEmpresaFacturacionPermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 // WithEmpresaAIUConstruccionPermissions aplica permisos independientes para contratos de obra y AIU.
 func WithEmpresaAIUConstruccionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAIUConstruccion, resolveAIUConstruccionPermissionAction, next)
+}
+
+// WithEmpresaCobranzaPermissions aplica permisos independientes para gestion de cobranza.
+func WithEmpresaCobranzaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCobranza, resolveCobranzaPermissionAction, next)
+}
+
+// WithEmpresaPortalContadorPermissions aplica permisos independientes para oficina virtual de contadores.
+func WithEmpresaPortalContadorPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModulePortalContador, resolvePortalContadorPermissionAction, next)
 }
 
 // WithEmpresaSeguridadPermissions aplica control de alcance por empresa y permisos por rol para seguridad/usuarios.
@@ -1370,6 +1400,50 @@ func resolveFinanzasPermissionAction(r *http.Request) string {
 	return defaultPermissionActionFromMethod(r.Method)
 }
 
+func resolveCobranzaPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "dashboard", "cuentas", "plantillas", "campanas", "gestiones", "promesas":
+		return permActionRead
+	case "marcar_promesa":
+		return permActionApprove
+	case "plantilla", "campana", "gestion", "promesa", "simular_envio", "seed_demo":
+		return permActionCreate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolvePortalContadorPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "dashboard", "clientes", "obligaciones", "solicitudes", "comunicaciones":
+		return permActionRead
+	case "obligacion", "solicitud":
+		if r.Method == http.MethodPut {
+			return permActionUpdate
+		}
+		return permActionCreate
+	case "cliente", "comunicacion", "seed_demo":
+		return permActionCreate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "dashboard", "soportes", "eventos":
+		return permActionRead
+	case "aprobar", "rechazar", "contabilizar":
+		return permActionApprove
+	case "extraer_ia":
+		return permActionUpdate
+	case "radicar", "seed_demo":
+		return permActionCreate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
 func resolveContabilidadColombiaPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
@@ -1566,7 +1640,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "compras")
 		}
 
-	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleTesoreria:
+	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleTesoreria, permModuleCobranza, permModulePortalContador:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -1592,6 +1666,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "compras")
+		case permActionDelete:
+			return false
+		}
+
+	case permModuleSoportesComprasIA:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "compras", "contabilidad")
 		case permActionDelete:
 			return false
 		}
@@ -2198,6 +2282,10 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkContabilidadColombia"
 	case path == "/api/empresa/contabilidad_colombia_avanzada":
 		return "linkContabilidadColombiaAvanzada"
+	case path == "/api/empresa/cobranza":
+		return "linkCobranza"
+	case path == "/api/empresa/portal_contador":
+		return "linkPortalContador"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):
@@ -2270,6 +2358,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkInventarioAvanzado"
 	case path == "/api/empresa/importaciones_costeo":
 		return "linkImportacionesCosteo"
+	case path == "/api/empresa/soportes_compras_ia":
+		return "linkSoportesComprasIA"
 	case path == "/api/empresa/compras_avanzadas":
 		return "linkComprasAvanzadas"
 	case path == "/api/empresa/tesoreria_presupuesto":

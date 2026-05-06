@@ -1,8 +1,12 @@
 # Resumen del proyecto Powerful Control System
 
-Actualizacion: 2026-05-05
+Actualizacion: 2026-05-06
 
 Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles, gimnasios, consultorios odontologicos, domicilios, taxi/flotas y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, carnets empresariales, inventario, finanzas, facturacion, reportes, soporte remoto, venta publica, red social comercial, carta QR y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
+
+Revision 2026-05-06: se ejecuto QA transversal autenticado sobre Motel Calipso (`empresa_id=7`), con paginas y APIs principales de modulos recientes respondiendo HTTP 200. Se profesionalizaron permisos locales de menu para `administrador_total`, rendimiento de dashboards de Cobranza, Portal contador y Captura inteligente de compras/gastos, y validacion segura de enlaces dinamicos de soportes IA. El detalle queda en `documentos/reporte_qa_modulos_2026-05-06.md`.
+
+La portada publica `web/index.html` se actualizo para que la descripcion comercial de modulos incluya tambien Cobranza, Portal contador, Captura IA/OCR de compras y gastos, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos, manteniendo coherencia con roles/licencias y la documentacion funcional vigente.
 
 ## Tecnologias principales
 
@@ -52,13 +56,17 @@ Inventario administra productos, categorias, bodegas, proveedores, existencias, 
 
 ### Finanzas y contabilidad
 
-Finanzas registra ingresos y egresos, comprobantes adjuntos, configuracion contable, periodos, cierres de caja, conciliacion bancaria, eventos contables y asientos. Incluye categorias y cuentas base para operacion en Colombia, con destinos configurables como SIIGO, World Office, Alegra, Helisa, Loggro y ContaPyme. Los reportes entregan KPI, flujo de caja, estado de resultados, balance, auditoria y exportes en PDF, XLS, CSV, JSON y TXT.
+Finanzas registra ingresos y egresos, comprobantes adjuntos, configuracion contable, periodos, cierres de caja, conciliacion bancaria, eventos contables y asientos. Incluye categorias y cuentas base para operacion en Colombia, con destinos configurables como SIIGO, World Office, Alegra, Helisa, Loggro y ContaPyme. El Centro financiero y contable incorpora Gestion de cobranza como modulo independiente para recuperar cartera reutilizando `empresa_cuentas_por_cobrar`, con dashboard, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio y exportacion CSV por empresa. Tambien incorpora Portal contador como oficina virtual para firmas contables, con clientes, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones y tablero de vencimientos. Los reportes entregan KPI, flujo de caja, estado de resultados, balance, auditoria y exportes en PDF, XLS, CSV, JSON y TXT.
 
 ### Facturacion electronica e impuestos
 
 El sistema permite configurar facturacion electronica por empresa y pais, con soporte inicial para Colombia, Ecuador y Panama. Para Colombia se mantiene trazabilidad por empresa y NIT, sin reutilizar tokens ni firmas entre empresas. El flujo operacional cubre documentos electronicos adicionales a la factura: nota credito, nota debito, documento soporte, nomina electronica y documento equivalente POS electronico, todos registrables desde la pantalla de facturacion electronica y conciliables en la cola DIAN/proveedor. El modulo de impuestos permite parametrizar tasas por empresa y generar reportes de deuda estimada.
 
 El modulo AIU construccion complementa facturacion electronica para arquitectos, constructoras, contratistas y pequenas empresas de obra. Permite crear contratos con responsable, centro de costo, modalidad, riesgo, avance, capitulos y conceptos; calcula Administracion/Imprevistos/Utilidad, define si la base AIU se suma o no al total, permite escoger base de IVA, retenciones, anticipo, garantia y neto a cobrar, controla estados de aprobacion/ejecucion/cierre y genera una factura electronica AIU enlazada al repositorio de documentos de facturacion por `empresa_id`.
+
+### Captura inteligente de compras y gastos
+
+El modulo `soportes_compras_ia` permite radicar soportes de compra o gasto con foto, PDF o XML, extraer datos con OCR/IA usando `openai:gpt-5.5`, detectar duplicados por hash/documento, marcar revision humana por confianza, aprobar o rechazar y convertir soportes aprobados en cuentas por pagar. Queda enlazado por `empresa_id`, controlado por permisos/licencia y ubicado en `Administrar empresa > Compras > Captura IA/OCR`.
 
 ### Usuarios, permisos y seguridad
 

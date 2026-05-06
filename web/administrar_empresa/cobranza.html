@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gestion de cobranza</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .cob-page{max-width:1380px;margin:0 auto;padding:22px}
+    .cob-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .cob-header h1{margin:0;font-size:clamp(1.7rem,3vw,2.35rem)}
+    .cob-subtitle{margin:6px 0 0;color:var(--muted);max-width:900px}
+    .cob-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .cob-kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+    .cob-kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;min-height:92px}
+    .cob-kpi span{display:block;color:var(--muted);font-size:.84rem}
+    .cob-kpi strong{display:block;margin-top:8px;font-size:1.18rem;line-height:1.15}
+    .cob-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);gap:14px;align-items:start}
+    .cob-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+    .cob-panel h2{margin:0 0 12px;font-size:1.1rem}
+    .cob-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+    .cob-toolbar .form-col{min-width:160px;flex:1}
+    .cob-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .cob-form-grid .wide{grid-column:span 2}
+    .cob-form-grid .full{grid-column:1 / -1}
+    .cob-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .cob-tab{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer}
+    .cob-tab.active{background:var(--primary);border-color:var(--primary);color:var(--primary-contrast,#fff)}
+    .cob-table{width:100%;border-collapse:collapse}
+    .cob-table th,.cob-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .cob-table th{color:var(--muted);font-size:.84rem}
+    .cob-table td:last-child{text-align:right}
+    .cob-status{display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border-radius:999px;border:1px solid var(--border);font-size:.82rem;text-transform:capitalize}
+    .cob-status.vencida,.cob-status.incumplida,.cob-status.juridica{background:rgba(239,68,68,.16)}
+    .cob-status.pendiente,.cob-status.preventiva,.cob-status.borrador{background:rgba(245,158,11,.18)}
+    .cob-status.activa,.cob-status.cumplida,.cob-status.enviado_simulado{background:rgba(34,197,94,.18)}
+    .cob-status.pausada,.cob-status.reprogramado{background:rgba(59,130,246,.16)}
+    .cob-alerts{display:grid;gap:8px}
+    .cob-alert{border:1px solid var(--border);border-radius:8px;padding:10px;background:rgba(245,158,11,.12)}
+    .cob-muted{color:var(--muted)}
+    .cob-list-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .cob-hidden{display:none!important}
+    .cob-result{white-space:pre-wrap;max-height:160px;overflow:auto}
+    @media (max-width:1180px){.cob-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cob-grid{grid-template-columns:1fr}.cob-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:720px){.cob-page{padding:14px}.cob-header{display:block}.cob-actions{justify-content:flex-start;margin-top:12px}.cob-kpis{grid-template-columns:1fr}.cob-form-grid{grid-template-columns:1fr}.cob-form-grid .wide{grid-column:auto}.cob-table thead{display:none}.cob-table,.cob-table tbody,.cob-table tr,.cob-table td{display:block;width:100%}.cob-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.cob-table td{border:0;text-align:left!important}.cob-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}.cob-list-actions{justify-content:flex-start}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <main class="cob-page">
+    <header class="cob-header">
+      <div>
+        <h1>Gestion de cobranza</h1>
+        <p class="cob-subtitle">Cartera por empresa, campanas, plantillas multicanal, gestiones, promesas de pago, priorizacion de mora y seguimiento ejecutivo.</p>
+      </div>
+      <div class="cob-actions">
+        <button class="btn secondary" type="button" id="btnDemo">Demo</button>
+        <button class="btn secondary" type="button" id="btnExportar">Exportar CSV</button>
+        <button class="btn" type="button" id="btnRefrescar">Actualizar</button>
+      </div>
+    </header>
+
+    <section class="cob-kpis" aria-label="Indicadores de cobranza">
+      <div class="cob-kpi"><span>Saldo total</span><strong id="kpiSaldo">$0</strong></div>
+      <div class="cob-kpi"><span>Vencido</span><strong id="kpiVencido">$0</strong></div>
+      <div class="cob-kpi"><span>Mora critica</span><strong id="kpiCritica">$0</strong></div>
+      <div class="cob-kpi"><span>Cuentas vencidas</span><strong id="kpiCuentas">0</strong></div>
+      <div class="cob-kpi"><span>Promesas</span><strong id="kpiPromesas">0</strong></div>
+      <div class="cob-kpi"><span>Gestiones hoy</span><strong id="kpiGestiones">0</strong></div>
+    </section>
+
+    <div class="cob-grid">
+      <div>
+        <section class="cob-panel">
+          <h2>Cuentas por cobrar</h2>
+          <div class="cob-toolbar">
+            <div class="form-col">
+              <label class="form-label" for="filtro_q">Buscar</label>
+              <input id="filtro_q" class="form-input" placeholder="Cliente, factura, codigo">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="filtro_estado">Estado</label>
+              <select id="filtro_estado" class="form-input">
+                <option value="todas">Todas</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="vencida">Vencida</option>
+                <option value="pagada">Pagada</option>
+                <option value="castigada">Castigada</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="filtro_mora">Mora minima</label>
+              <input id="filtro_mora" type="number" min="0" step="1" class="form-input" value="0">
+            </div>
+            <button class="btn secondary" type="button" id="btnFiltrar">Filtrar</button>
+          </div>
+          <div id="cuentasList" class="table-wrap">Cargando...</div>
+        </section>
+
+        <section class="cob-panel">
+          <h2>Gestion</h2>
+          <form id="gestionForm" class="form">
+            <input type="hidden" id="cuenta_id">
+            <div class="cob-form-grid">
+              <div class="wide"><label class="form-label" for="cliente_nombre">Cliente</label><input id="cliente_nombre" class="form-input" placeholder="Cliente"></div>
+              <div><label class="form-label" for="documento_codigo">Documento</label><input id="documento_codigo" class="form-input" placeholder="FE-0001"></div>
+              <div><label class="form-label" for="canal">Canal</label><select id="canal" class="form-input"><option value="llamada">Llamada</option><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="sms">SMS</option></select></div>
+              <div><label class="form-label" for="resultado">Resultado</label><select id="resultado" class="form-input"><option value="contactado">Contactado</option><option value="sin_respuesta">Sin respuesta</option><option value="promesa_pago">Promesa de pago</option><option value="reprogramado">Reprogramado</option><option value="escalado">Escalado</option><option value="fallido">Fallido</option></select></div>
+              <div><label class="form-label" for="fecha_proximo_contacto">Proximo contacto</label><input id="fecha_proximo_contacto" type="datetime-local" class="form-input"></div>
+              <div><label class="form-label" for="valor_compromiso">Valor compromiso</label><input id="valor_compromiso" type="number" step="0.01" class="form-input" value="0"></div>
+              <div><label class="form-label" for="promesa_fecha">Fecha promesa</label><input id="promesa_fecha" type="date" class="form-input"></div>
+              <div class="wide"><label class="form-label" for="contacto">Contacto</label><input id="contacto" class="form-input" placeholder="Telefono, correo o persona"></div>
+              <div class="full"><label class="form-label" for="mensaje">Mensaje</label><textarea id="mensaje" class="form-textarea" placeholder="Detalle de la conversacion, acuerdo o mensaje enviado"></textarea></div>
+              <div class="full"><label class="form-label" for="observaciones">Observaciones internas</label><textarea id="observaciones" class="form-textarea" placeholder="Notas para auditoria de cobranza"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Registrar gestion</button>
+              <button class="btn secondary" type="button" id="btnSimularEnvio">Simular envio</button>
+            </div>
+            <div id="msg" class="form-help"></div>
+          </form>
+        </section>
+
+        <section class="cob-panel">
+          <h2>Historial</h2>
+          <div id="gestionesList" class="table-wrap">Cargando...</div>
+        </section>
+      </div>
+
+      <aside>
+        <section class="cob-panel">
+          <h2>Alertas</h2>
+          <div id="alertasList" class="cob-alerts"></div>
+        </section>
+
+        <section class="cob-panel">
+          <div class="cob-tabs" role="tablist">
+            <button class="cob-tab active" type="button" data-tab="campanas">Campanas</button>
+            <button class="cob-tab" type="button" data-tab="plantillas">Plantillas</button>
+            <button class="cob-tab" type="button" data-tab="promesas">Promesas</button>
+          </div>
+
+          <div id="tabCampanas">
+            <form id="campanaForm" class="form">
+              <div class="cob-form-grid">
+                <div class="wide"><label class="form-label" for="campana_nombre">Nombre</label><input id="campana_nombre" class="form-input" placeholder="Recuperacion cartera vencida"></div>
+                <div><label class="form-label" for="campana_tipo">Tipo</label><select id="campana_tipo" class="form-input"><option value="preventiva">Preventiva</option><option value="recuperacion">Recuperacion</option><option value="juridica">Juridica</option><option value="masiva">Masiva</option><option value="vip">VIP</option></select></div>
+                <div><label class="form-label" for="campana_canal">Canal</label><select id="campana_canal" class="form-input"><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="sms">SMS</option><option value="llamada">Llamada</option></select></div>
+                <div><label class="form-label" for="campana_estado">Estado</label><select id="campana_estado" class="form-input"><option value="borrador">Borrador</option><option value="activa">Activa</option><option value="pausada">Pausada</option><option value="finalizada">Finalizada</option></select></div>
+                <div class="wide"><label class="form-label" for="campana_segmento">Segmento</label><input id="campana_segmento" class="form-input" placeholder="Mora mayor a 15 dias"></div>
+                <div><label class="form-label" for="campana_meta">Meta recaudo</label><input id="campana_meta" type="number" step="0.01" class="form-input" value="0"></div>
+                <div><label class="form-label" for="campana_inicio">Inicio</label><input id="campana_inicio" type="date" class="form-input"></div>
+                <div><label class="form-label" for="campana_fin">Fin</label><input id="campana_fin" type="date" class="form-input"></div>
+              </div>
+              <div class="form-actions"><button class="btn secondary" type="submit">Guardar campana</button></div>
+            </form>
+            <div id="campanasList" class="table-wrap"></div>
+          </div>
+
+          <div id="tabPlantillas" class="cob-hidden">
+            <form id="plantillaForm" class="form">
+              <div class="cob-form-grid">
+                <div class="wide"><label class="form-label" for="plantilla_nombre">Nombre</label><input id="plantilla_nombre" class="form-input" placeholder="Recordatorio preventivo"></div>
+                <div><label class="form-label" for="plantilla_canal">Canal</label><select id="plantilla_canal" class="form-input"><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="sms">SMS</option><option value="llamada">Llamada</option></select></div>
+                <div><label class="form-label" for="plantilla_desde">Mora desde</label><input id="plantilla_desde" type="number" step="1" class="form-input" value="0"></div>
+                <div><label class="form-label" for="plantilla_hasta">Mora hasta</label><input id="plantilla_hasta" type="number" step="1" class="form-input" value="9999"></div>
+                <div><label class="form-label" for="plantilla_prioridad">Prioridad</label><input id="plantilla_prioridad" type="number" step="1" class="form-input" value="1"></div>
+                <div class="wide"><label class="form-label" for="plantilla_asunto">Asunto</label><input id="plantilla_asunto" class="form-input" placeholder="Recordatorio de pago"></div>
+                <div class="full"><label class="form-label" for="plantilla_cuerpo">Cuerpo</label><textarea id="plantilla_cuerpo" class="form-textarea" placeholder="Hola {{cliente}}, tu documento {{documento}} tiene saldo {{saldo}}."></textarea></div>
+              </div>
+              <div class="form-actions"><button class="btn secondary" type="submit">Guardar plantilla</button></div>
+            </form>
+            <div id="plantillasList" class="table-wrap"></div>
+          </div>
+
+          <div id="tabPromesas" class="cob-hidden">
+            <div id="promesasList" class="table-wrap"></div>
+          </div>
+        </section>
+
+        <section class="cob-panel">
+          <h2>Salida</h2>
+          <pre id="resultadoOutput" class="cob-result"></pre>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state = { empresaId: resolveEmpresaId(), cuentas: [], gestiones: [], campanas: [], plantillas: [], promesas: [], dashboard: null, selectedCuenta: null };
+      var fmtMoney = new Intl.NumberFormat("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 });
+
+      function el(id){ return document.getElementById(id); }
+      function value(id){ return (el(id) && el(id).value || "").trim(); }
+      function num(id){ return Number(value(id) || 0); }
+      function setMsg(text, ok){ var node=el("msg"); if(node){ node.textContent=text || ""; node.style.color=ok ? "var(--success,#16a34a)" : "var(--danger,#dc2626)"; } }
+      function escapeHtml(text){ return String(text == null ? "" : text).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]; }); }
+      function resolveEmpresaId(){
+        var sources = [location.search];
+        try { if (window.parent && window.parent !== window) sources.push(window.parent.location.search); } catch(_){}
+        for (var i=0;i<sources.length;i++){ var id = new URLSearchParams(sources[i]).get("empresa_id"); if(id) return id; }
+        try { return sessionStorage.getItem("empresa_id") || localStorage.getItem("empresa_id") || ""; } catch(_){ return ""; }
+      }
+      function api(action, options){
+        if(!state.empresaId){ return Promise.reject(new Error("empresa_id no disponible")); }
+        var extra = "";
+        if (String(action).indexOf("&") >= 0) {
+          var parts = String(action).split("&");
+          action = parts.shift();
+          extra = "&" + parts.join("&");
+        }
+        var url = "/api/empresa/cobranza?empresa_id=" + encodeURIComponent(state.empresaId) + "&action=" + encodeURIComponent(action) + extra;
+        return fetch(url, Object.assign({ headers:{ "Content-Type":"application/json" }, credentials:"same-origin" }, options || {})).then(function(res){
+          if(!res.ok){ return res.text().then(function(t){ throw new Error(t || res.statusText); }); }
+          return res.json();
+        });
+      }
+      function status(value){ return '<span class="cob-status '+escapeHtml(value || "")+'">'+escapeHtml(String(value || "-").replace(/_/g," "))+'</span>'; }
+
+      function loadAll(){
+        setMsg("", true);
+        return Promise.all([
+          api("dashboard"),
+          api("cuentas&estado=" + encodeURIComponent(value("filtro_estado") || "todas") + "&q=" + encodeURIComponent(value("filtro_q")) + "&mora_min=" + encodeURIComponent(value("filtro_mora") || "0")),
+          api("gestiones"),
+          api("campanas"),
+          api("plantillas"),
+          api("promesas")
+        ]).then(function(rows){
+          state.dashboard = rows[0] || {};
+          state.cuentas = rows[1] || [];
+          state.gestiones = rows[2] || [];
+          state.campanas = rows[3] || [];
+          state.plantillas = rows[4] || [];
+          state.promesas = rows[5] || [];
+          render();
+        }).catch(function(err){
+          setMsg(err.message || "No se pudo cargar cobranza", false);
+          el("cuentasList").textContent = err.message || "Error";
+        });
+      }
+
+      function render(){
+        var d = state.dashboard || {};
+        el("kpiSaldo").textContent = fmtMoney.format(d.saldo_total || 0);
+        el("kpiVencido").textContent = fmtMoney.format(d.saldo_vencido || 0);
+        el("kpiCritica").textContent = fmtMoney.format(d.saldo_mora_critica || 0);
+        el("kpiCuentas").textContent = d.cuentas_vencidas || 0;
+        el("kpiPromesas").textContent = d.promesas_pendientes || 0;
+        el("kpiGestiones").textContent = d.gestiones_hoy || 0;
+        renderAlertas(d.alertas || []);
+        renderCuentas();
+        renderGestiones();
+        renderCampanas();
+        renderPlantillas();
+        renderPromesas();
+      }
+
+      function renderAlertas(alertas){
+        el("alertasList").innerHTML = alertas.length ? alertas.map(function(a){ return '<div class="cob-alert">'+escapeHtml(a)+'</div>'; }).join("") : '<div class="cob-muted">Sin alertas activas.</div>';
+      }
+
+      function renderCuentas(){
+        if(!state.cuentas.length){ el("cuentasList").innerHTML = '<div class="cob-muted">Sin cuentas abiertas.</div>'; return; }
+        el("cuentasList").innerHTML = '<table class="cob-table"><thead><tr><th>Cliente</th><th>Documento</th><th>Vence</th><th>Mora</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>' + state.cuentas.map(function(c){
+          return '<tr><td data-label="Cliente">'+escapeHtml(c.cliente_nombre)+'</td><td data-label="Documento">'+escapeHtml(c.documento_codigo || c.codigo)+'</td><td data-label="Vence">'+escapeHtml(c.fecha_vencimiento || "-")+'</td><td data-label="Mora">'+(c.dias_mora || 0)+' dias</td><td data-label="Saldo">'+fmtMoney.format(c.saldo || 0)+'</td><td data-label="Estado">'+status(c.estado_cartera)+'</td><td data-label="Acciones"><div class="cob-list-actions"><button class="btn secondary btn-small" type="button" data-select-cuenta="'+c.id+'">Gestionar</button></div></td></tr>';
+        }).join("") + '</tbody></table>';
+      }
+
+      function renderGestiones(){
+        if(!state.gestiones.length){ el("gestionesList").innerHTML = '<div class="cob-muted">Sin gestiones registradas.</div>'; return; }
+        el("gestionesList").innerHTML = '<table class="cob-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Canal</th><th>Resultado</th><th>Compromiso</th></tr></thead><tbody>' + state.gestiones.map(function(g){
+          return '<tr><td data-label="Fecha">'+escapeHtml(g.fecha_gestion || "-")+'</td><td data-label="Cliente">'+escapeHtml(g.cliente_nombre || "-")+'</td><td data-label="Canal">'+escapeHtml(g.canal || "-")+'</td><td data-label="Resultado">'+status(g.resultado)+'</td><td data-label="Compromiso">'+fmtMoney.format(g.valor_compromiso || 0)+'</td></tr>';
+        }).join("") + '</tbody></table>';
+      }
+
+      function renderCampanas(){
+        el("campanasList").innerHTML = state.campanas.length ? '<table class="cob-table"><thead><tr><th>Campana</th><th>Canal</th><th>Estado</th><th>Meta</th></tr></thead><tbody>' + state.campanas.map(function(c){
+          return '<tr><td data-label="Campana">'+escapeHtml(c.nombre)+'</td><td data-label="Canal">'+escapeHtml(c.canal_principal)+'</td><td data-label="Estado">'+status(c.estado_campana)+'</td><td data-label="Meta">'+fmtMoney.format(c.meta_recaudo || 0)+'</td></tr>';
+        }).join("") + '</tbody></table>' : '<div class="cob-muted">Sin campanas.</div>';
+      }
+
+      function renderPlantillas(){
+        el("plantillasList").innerHTML = state.plantillas.length ? '<table class="cob-table"><thead><tr><th>Plantilla</th><th>Canal</th><th>Mora</th><th>Prioridad</th></tr></thead><tbody>' + state.plantillas.map(function(p){
+          return '<tr><td data-label="Plantilla">'+escapeHtml(p.nombre)+'</td><td data-label="Canal">'+escapeHtml(p.canal)+'</td><td data-label="Mora">'+(p.dias_mora_desde || 0)+'-'+(p.dias_mora_hasta || 0)+'</td><td data-label="Prioridad">'+(p.prioridad || 1)+'</td></tr>';
+        }).join("") + '</tbody></table>' : '<div class="cob-muted">Sin plantillas.</div>';
+      }
+
+      function renderPromesas(){
+        el("promesasList").innerHTML = state.promesas.length ? '<table class="cob-table"><thead><tr><th>Cliente</th><th>Fecha</th><th>Valor</th><th>Estado</th><th></th></tr></thead><tbody>' + state.promesas.map(function(p){
+          return '<tr><td data-label="Cliente">'+escapeHtml(p.cliente_nombre || "-")+'</td><td data-label="Fecha">'+escapeHtml(p.fecha_promesa || "-")+'</td><td data-label="Valor">'+fmtMoney.format(p.valor_prometido || 0)+'</td><td data-label="Estado">'+status(p.estado_promesa)+'</td><td data-label="Acciones"><div class="cob-list-actions"><button class="btn secondary btn-small" data-promesa="'+p.id+'" data-estado="cumplida" type="button">Cumplida</button><button class="btn secondary btn-small" data-promesa="'+p.id+'" data-estado="incumplida" type="button">Incumplida</button></div></td></tr>';
+        }).join("") + '</tbody></table>' : '<div class="cob-muted">Sin promesas.</div>';
+      }
+
+      function selectCuenta(id){
+        var c = state.cuentas.find(function(x){ return String(x.id) === String(id); });
+        if(!c) return;
+        state.selectedCuenta = c;
+        el("cuenta_id").value = c.id;
+        el("cliente_nombre").value = c.cliente_nombre || "";
+        el("documento_codigo").value = c.documento_codigo || c.codigo || "";
+        el("valor_compromiso").value = c.saldo || 0;
+        el("mensaje").value = "Gestion de cobranza para " + (c.documento_codigo || c.codigo) + " con saldo " + fmtMoney.format(c.saldo || 0) + ".";
+        setMsg("Cuenta seleccionada: " + (c.cliente_nombre || c.codigo), true);
+      }
+
+      function gestionPayload(){
+        return {
+          cuenta_id: Number(value("cuenta_id") || 0),
+          cliente_nombre: value("cliente_nombre"),
+          documento_codigo: value("documento_codigo"),
+          canal: value("canal"),
+          resultado: value("resultado"),
+          fecha_proximo_contacto: value("fecha_proximo_contacto"),
+          valor_compromiso: num("valor_compromiso"),
+          promesa_fecha: value("promesa_fecha"),
+          contacto: value("contacto"),
+          mensaje: value("mensaje"),
+          observaciones: value("observaciones")
+        };
+      }
+
+      function exportCsv(){
+        var rows = [["Cliente","Documento","Vencimiento","Dias mora","Saldo","Estado"]].concat(state.cuentas.map(function(c){ return [c.cliente_nombre,c.documento_codigo,c.fecha_vencimiento,c.dias_mora,c.saldo,c.estado_cartera]; }));
+        var csv = rows.map(function(r){ return r.map(function(v){ return '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"'; }).join(","); }).join("\n");
+        var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = "gestion_cobranza.csv"; a.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }
+
+      document.addEventListener("click", function(ev){
+        var selectBtn = ev.target.closest("[data-select-cuenta]");
+        if(selectBtn){ selectCuenta(selectBtn.getAttribute("data-select-cuenta")); return; }
+        var promesaBtn = ev.target.closest("[data-promesa]");
+        if(promesaBtn){
+          api("marcar_promesa", {method:"POST", body:JSON.stringify({id:Number(promesaBtn.getAttribute("data-promesa")), estado:promesaBtn.getAttribute("data-estado")})}).then(loadAll).catch(function(err){ setMsg(err.message, false); });
+          return;
+        }
+        var tab = ev.target.closest("[data-tab]");
+        if(tab){
+          document.querySelectorAll(".cob-tab").forEach(function(b){ b.classList.toggle("active", b === tab); });
+          el("tabCampanas").classList.toggle("cob-hidden", tab.dataset.tab !== "campanas");
+          el("tabPlantillas").classList.toggle("cob-hidden", tab.dataset.tab !== "plantillas");
+          el("tabPromesas").classList.toggle("cob-hidden", tab.dataset.tab !== "promesas");
+        }
+      });
+
+      el("btnRefrescar").addEventListener("click", loadAll);
+      el("btnFiltrar").addEventListener("click", loadAll);
+      el("btnExportar").addEventListener("click", exportCsv);
+      el("btnDemo").addEventListener("click", function(){ api("seed_demo", {method:"POST", body:"{}"}).then(loadAll).catch(function(err){ setMsg(err.message, false); }); });
+      el("btnSimularEnvio").addEventListener("click", function(){
+        api("simular_envio", {method:"POST", body:JSON.stringify(gestionPayload())}).then(function(res){ el("resultadoOutput").textContent = JSON.stringify(res, null, 2); return loadAll(); }).catch(function(err){ setMsg(err.message, false); });
+      });
+      el("gestionForm").addEventListener("submit", function(ev){
+        ev.preventDefault();
+        api("gestion", {method:"POST", body:JSON.stringify(gestionPayload())}).then(function(res){ el("resultadoOutput").textContent = JSON.stringify(res, null, 2); setMsg("Gestion registrada", true); return loadAll(); }).catch(function(err){ setMsg(err.message, false); });
+      });
+      el("campanaForm").addEventListener("submit", function(ev){
+        ev.preventDefault();
+        api("campana", {method:"POST", body:JSON.stringify({nombre:value("campana_nombre"), tipo:value("campana_tipo"), canal_principal:value("campana_canal"), estado_campana:value("campana_estado"), segmento:value("campana_segmento"), meta_recaudo:num("campana_meta"), fecha_inicio:value("campana_inicio"), fecha_fin:value("campana_fin")})}).then(loadAll).catch(function(err){ setMsg(err.message, false); });
+      });
+      el("plantillaForm").addEventListener("submit", function(ev){
+        ev.preventDefault();
+        api("plantilla", {method:"POST", body:JSON.stringify({nombre:value("plantilla_nombre"), canal:value("plantilla_canal"), asunto:value("plantilla_asunto"), cuerpo:value("plantilla_cuerpo"), dias_mora_desde:num("plantilla_desde"), dias_mora_hasta:num("plantilla_hasta"), prioridad:num("plantilla_prioridad"), activa:true})}).then(loadAll).catch(function(err){ setMsg(err.message, false); });
+      });
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

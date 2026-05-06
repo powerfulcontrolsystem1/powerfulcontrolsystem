@@ -1,12 +1,12 @@
 {
   "status": "running",
   "hostname": "NITRO",
-  "process_id": 19852,
+  "process_id": 21272,
   "listen_addr": ":8080",
-  "last_start_at": "2026-05-06 09:54:22",
+  "last_start_at": "2026-05-06 11:30:18",
   "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=6904 previo_inicio=2026-05-06 09:50:46 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: codex_calipso_aiu_test_recaptcha_bypass. Ultimo indicio en server.err: 2026/05/06 09:54:22 STARTUP TRACE: after_error_monitor",
+  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=16832 previo_inicio=2026-05-06 11:17:58 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: inicio_script_iniciar_servidor. Ultimo indicio en server.err: 2026/05/06 11:27:13 INFO: preconfiguraciones por tipo verificadas: tipos=16 creadas=0 omitidas=16 errores=0",
   "last_unexpected_restart": true,
-  "last_known_server_err": "2026/05/06 09:54:22 STARTUP TRACE: after_error_monitor",
-  "last_event_id": 9485
+  "last_known_server_err": "2026/05/06 11:27:13 INFO: preconfiguraciones por tipo verificadas: tipos=16 creadas=0 omitidas=16 errores=0",
+  "last_event_id": 9488
 }

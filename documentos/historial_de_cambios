@@ -1,3 +1,8 @@
+- 2026-05-06: QA transversal de modulos y profesionalizacion operativa.
+    - Archivos: `backend/db/cobranza.go`, `backend/db/portal_contador.go`, `backend/db/soportes_compras_ia.go`, `web/js/administrar_empresa.js`, `web/administrar_empresa/soportes_compras_ia.html`, `web/index.html`, `documentos/reporte_qa_modulos_2026-05-06.md`, `documentos/README.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `CHANGELOG.md`, `RESUMEN_DEL_PROYECTO.md`.
+    - Descripcion: se revisan los modulos recientes y paginas principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrige la evaluacion local de permisos para `administrador_total`, se optimizan dashboards de Cobranza/Portal contador/Captura IA y se valida el enlace dinamico de archivos en Captura IA. La portada publica actualiza la descripcion de modulos para Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
+    - Verificacion: `go test ./... -count=1`, `git diff --check`, auditoria estatica de enlaces/botones/IDs y pruebas HTTP autenticadas con paginas/API 200.
+
 - 2026-05-05: documentacion integral del proyecto, portal index y publicacion Motel Calipso.
     - Archivos: `web/index.html`, `backend/utils/utils.go`, `backend/utils/auth_middleware_test.go`, `backend/tmp_tools/seed_motel_calipso_publicacion/main.go`, `documentos/README.md`, `RESUMEN_DEL_PROYECTO.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `documentos/carta_publica_productos.md`, `documentos/domicilios_profesional.md`, `documentos/taxi_system_profesional.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`.
     - Descripcion: se actualiza la documentacion central para reflejar las descripciones nuevas del portal publico, los modulos verticales recientes, la carta publica con QR, la publicacion operativa de Motel Calipso, red social comercial y la liberacion de `visualizar_productos_y_precios_publico.html` como vista publica de solo lectura.
@@ -18748,3 +18753,24 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_menu.html
 - web/js/administrar_empresa.js
+
+2026-05-06: Captura inteligente de compras y gastos con OCR/IA
+PushStatus: Pendiente
+Archivos modificados:
+- backend/db/soportes_compras_ia.go
+- backend/db/soportes_compras_ia_test.go
+- backend/handlers/soportes_compras_ia.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- web/administrar_empresa/soportes_compras_ia.html
+- web/administrar_empresa/compras_menu.html
+- web/js/administrar_empresa.js
+- documentos/soportes_compras_ia.md
+- documentos/README.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- RESUMEN_DEL_PROYECTO.md
+- CHANGELOG.md

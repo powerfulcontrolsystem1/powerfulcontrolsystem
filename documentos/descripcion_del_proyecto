@@ -1,9 +1,11 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-05-05
+Actualizacion: 2026-05-06
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
+
+Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrigio coherencia de permisos locales para `administrador_total`, se optimizaron dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y se documento el resultado en `documentos/reporte_qa_modulos_2026-05-06.md`. La portada publica `web/index.html` tambien queda actualizada para describir Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
 
 ## Objetivo funcional
 
@@ -13,7 +15,7 @@ Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orient
 - Preparar configuracion fiscal y de impresion para facturacion.
 - Permitir desde el panel super la descarga consolidada de la informacion de cada empresa en formatos profesionales y de interoperabilidad (`PDF`, `XLS`, `CSV`, `JSON`, `TXT`).
 - Permitir que cada empresa configure sus propias credenciales de Wompi y Epayco para vender desde su pagina de venta publica, con activacion o desactivacion independiente por empresa.
-- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi y carnets empresariales.
+- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi, carnets empresariales, cobranza, portal contador, captura IA/OCR, AIU construccion, parqueaderos y apartamentos turisticos.
 
 ## Stack y tecnologia
 
@@ -59,6 +61,8 @@ Actualizacion operativa 2026-05-05:
 - Motel Calipso queda como empresa de referencia publicada con slug `motel-calipso`, venta publica, carta publica de productos y precios, items de ejemplo, publicaciones de red social y rutas productivas `/{slug}/venta_publica.html` y `/{slug}/visualizar_productos_y_precios_publico.html`.
 - La carta publica de productos es una pagina externa de solo lectura; el QR se genera desde Administrar empresa y se exporta en PNG, SVG, PDF o impresion directa.
 - La contabilidad Colombia queda ampliada con una suite avanzada por empresa para informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales, enlazada al nucleo de PUC, terceros, impuestos y comprobantes.
+- Gestion de cobranza se agrega al Centro financiero y contable como modulo profesional propio para recuperar cartera sin duplicar cuentas por cobrar: dashboard, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio, datos demo y exportacion CSV por empresa.
+- Portal contador se agrega al Centro financiero y contable como oficina virtual para contadores y firmas contables, con clientes contables, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, tablero de vencimientos y permisos por modulo/licencia.
 - La navegacion empresarial se organiza por dominios: Finanzas operativas, Contabilidad Colombia y Suite contable Colombia se agrupan bajo `Centro financiero y contable` sin eliminar rutas internas ni duplicar codigo.
 - La ayuda administrativa principal queda reservada para `super_administrador`; el nuevo rol `control_super_administrador` supervisa administradores, seguridad, errores, metricas y reportes globales con alcance limitado.
 
@@ -245,6 +249,7 @@ Regla general de tablas:
 - `AuthMiddleware` mantiene publicas sin sesion las rutas de disponibilidad y checkout de licencias (`/api/public/licencias/payment_methods`, `/wompi/*`, `/epayco/*`) para que el portal pueda consultar estado y reanudar pagos al volver desde la pasarela.
 - API de impresoras por empresa: `/api/empresa/impresoras`.
 - API de resolucion de impresora: `/api/empresa/impresoras/resolver`.
+- API de captura inteligente de compras y gastos: `/api/empresa/soportes_compras_ia`.
 - Panel empresa: `/administrar_empresa.html` y subpaginas de modulo.
 
 ## Scripts operativos
@@ -279,3 +284,7 @@ Regla general de tablas:
 Se actualiza el alcance operativo del proyecto para reflejar la reparacion del flujo estaciones -> carrito -> pago -> estaciones. El carrito asociado a una estacion debe cargar su cargo automatico cuando exista tarifa activa, permitir el pago y cerrar la sesion operativa regresando al mapa de estaciones. El panel empresarial prioriza `USD / COP` como primer indicador de mercado. La configuracion de estaciones incorpora el tamano `Se adapta al texto`, que calcula la altura necesaria y aplica la misma medida a todas las tarjetas para evitar recortes visuales.
 
 Estado general: plataforma implementada con multiples modulos operativos. No se declara ausencia absoluta de errores en todos los modulos porque existen dependencias externas y fisicas: impresoras, RFID/NFC, cerraduras, pasarelas, facturacion oficial, GPS, SMTP, Nextcloud, OnlyOffice e IA.
+
+## Actualizacion operativa 2026-05-06
+
+Se agrega el modulo `Captura inteligente de compras y gastos` en Compras. Permite cargar foto, PDF o XML de soportes, ejecutar OCR/IA con el modelo `openai:gpt-5.5`, normalizar datos de proveedor/documento/impuestos/totales, detectar duplicados, exigir revision humana, aprobar o rechazar y contabilizar como cuenta por pagar. El modulo queda aislado por `empresa_id`, con permiso/licencia `soportes_compras_ia` y documentacion tecnica en `documentos/soportes_compras_ia.md`.

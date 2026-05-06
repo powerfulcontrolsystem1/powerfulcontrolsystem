@@ -1,3 +1,12 @@
+2026-05-06: QA transversal y profesionalizacion de modulos
+- Modulos afectados: `administrar_empresa`, `cobranza`, `portal_contador`, `soportes_compras_ia`, `roles/licencias`, `configuracion`, `taxi_system`, `domicilios`, `odontologia`, `parqueadero`, `apartamentos_turisticos` y `aiu_construccion`.
+- Cambio funcional: se revisan accesos principales, enlaces, botones declarativos y dashboards con sesion super administradora sobre Motel Calipso (`empresa_id=7`).
+- Portal publico: `web/index.html` actualiza la descripcion comercial de modulos y las tarjetas fallback para incluir Cobranza, Portal contador, Captura IA/OCR de compras y gastos, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
+- Backend: los dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia` reutilizan consultas internas luego de validar esquema una sola vez por peticion.
+- Seguridad: `administrador_total` queda reconocido en la evaluacion local de permisos del menu con el mismo acceso total que backend ya concede; los enlaces dinamicos de archivos en Captura IA se validan antes de renderizarse.
+- QA: `go test ./... -count=1`, `git diff --check`, auditoria estatica de enlaces/botones/IDs y pruebas HTTP 200 de paginas/API principales.
+- Documentacion: se agrega `documentos/reporte_qa_modulos_2026-05-06.md`.
+
 2026-05-06: CRM y ventas avanzadas
 - Modulos afectados: `clientes`, `crm`, `ventas`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se amplia el CRM existente sin duplicar clientes ni ventas, agregando metas comerciales, forecast, scoring de leads, agenda y conversion de lead a cotizacion.
@@ -43,6 +52,24 @@
 - Seguridad: se mantiene la licencia y wrapper de `contabilidad_colombia_avanzada`; no se crea modulo duplicado.
 - Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` agrega pestaña `Activos avanzado`.
 - Documentacion: se agrega `documentos/activos_fijos_avanzado.md`.
+
+2026-05-06: Portal contador
+- Modulos afectados: `portal_contador`, `contabilidad_colombia`, `finanzas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega una oficina virtual para contadores y firmas contables con portafolio de clientes, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, dashboard de vencimientos y exportacion CSV.
+- Backend: nueva API `/api/empresa/portal_contador` con acciones `dashboard`, `clientes`, `obligaciones`, `solicitudes`, `comunicaciones`, `cliente`, `obligacion`, `solicitud`, `comunicacion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_portal_contador_clientes`, `empresa_portal_contador_obligaciones`, `empresa_portal_contador_solicitudes` y `empresa_portal_contador_comunicaciones`, todas con `empresa_id`.
+- Seguridad: modulo independiente `portal_contador`, paginas `linkPortalContador`/`linkPortalContadorMenu`, wrapper `WithEmpresaPortalContadorPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/portal_contador.html` queda enlazada desde `web/administrar_empresa/finanzas_menu.html`.
+- Documentacion: se agrega `documentos/portal_contador.md`.
+
+2026-05-06: Gestion de cobranza
+- Modulos afectados: `cobranza`, `finanzas`, `cartera`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Gestion de cobranza` dentro del Centro financiero y contable para recuperar cartera con dashboard, cuentas priorizadas, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio y exportacion CSV.
+- Backend: nueva API `/api/empresa/cobranza` con acciones `dashboard`, `cuentas`, `plantillas`, `campanas`, `gestiones`, `promesas`, `plantilla`, `campana`, `gestion`, `promesa`, `marcar_promesa`, `simular_envio` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_cobranza_plantillas`, `empresa_cobranza_campanas`, `empresa_cobranza_gestiones` y `empresa_cobranza_promesas`, todas con `empresa_id`; la cartera fuente se reutiliza desde `empresa_cuentas_por_cobrar`.
+- Seguridad: modulo independiente `cobranza`, paginas `linkCobranza`/`linkCobranzaMenu`, wrapper `WithEmpresaCobranzaPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/cobranza.html` queda enlazada desde `web/administrar_empresa/finanzas_menu.html`.
+- Documentacion: se agrega `documentos/cobranza.md`.
 
 2026-05-06: Nomina Colombia avanzada
 - Modulos afectados: `nomina_sueldos`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
@@ -1558,3 +1585,6 @@ Referencia compacta: `documentos/reporte_estado_modulos_2026-05-03.md`.
 Cambios documentados: estaciones operativas con tarjetas adaptables al texto, carrito reparado desde estacion, pago con retorno automatico a estaciones, panel empresarial con `USD / COP` primero, configuracion de estaciones ampliada y despliegue VPS validado. Los modulos principales se clasifican como operativos, implementados o integrados segun su madurez real. Los modulos que usan hardware o servicios externos quedan sujetos a validacion en sitio y credenciales productivas.
 Parqueadero y tickets QR
 - Modulo empresarial por empresa_id para registrar ingreso de vehiculos, emitir ticket, generar QR de salida, calcular cobros automaticamente por tiempo/fracciones/tolerancia y cerrar la salida con recibo imprimible.
+
+Captura inteligente de compras y gastos
+- Modulo por empresa para radicar fotos, PDF o XML de compras/gastos, extraer datos con OCR/IA usando `openai:gpt-5.5`, detectar duplicados, exigir revision humana por confianza, aprobar/rechazar y convertir soportes aprobados en cuentas por pagar.

@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-06
-Estado: vigente, actualizado con CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
+Estado: vigente, actualizado con CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,9 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-06: actualizado `web/index.html` para describir los modulos recientes en la portada publica: Cobranza, Portal contador, Captura IA/OCR de compras y gastos, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos, tanto en la seccion fija de modulos como en tarjetas fallback.
+- 2026-05-06: agregado `documentos/reporte_qa_modulos_2026-05-06.md` con revision transversal autenticada de Motel Calipso, paginas/API 200, auditoria estatica de enlaces/botones, optimizacion de dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y nota de limitacion del navegador embebido por bloqueo local de Node.
+- 2026-05-06: agregado modulo `Captura inteligente de compras y gastos` con API `/api/empresa/soportes_compras_ia`, foto/PDF/XML, extraccion OCR/IA con `openai:gpt-5.5`, aprobacion, contabilizacion CxP, permisos/licencia `soportes_compras_ia`, pantalla `web/administrar_empresa/soportes_compras_ia.html` y documento `documentos/soportes_compras_ia.md`.
 - 2026-05-06: ampliado `CRM comercial` con capa `CRM y ventas avanzadas`: metas comerciales, dashboard de pipeline/forecast, scoring de leads, agenda y conversion a cotizacion, API `/api/empresa/crm_avanzado`, pantalla `web/administrar_empresa/crm_ventas_avanzadas.html` y documento `documentos/crm_ventas_avanzadas.md`.
 - 2026-05-06: ampliado `Inventario` con inventario avanzado sin duplicar modulo: lotes, seriales, reservas, vencimientos y valorizacion por bodega, API `/api/empresa/inventario_avanzado`, pantalla `web/administrar_empresa/inventario_avanzado.html` y documento `documentos/inventario_avanzado.md`.
 - 2026-05-06: ampliado `Compras` con compras avanzadas sin duplicar modulo: requisiciones, cotizaciones, aprobaciones, recepcion parcial/total, API `/api/empresa/compras_avanzadas`, pantalla `web/administrar_empresa/compras_avanzadas.html` y documento `documentos/compras_avanzadas.md`.
@@ -66,6 +69,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Activos fijos avanzado: `documentos/activos_fijos_avanzado.md`
 - Importaciones y costeo: `documentos/importaciones_costeo.md`
 - Compras avanzadas: `documentos/compras_avanzadas.md`
+- Captura inteligente de compras/gastos: `documentos/soportes_compras_ia.md`
+- QA transversal de modulos 2026-05-06: `documentos/reporte_qa_modulos_2026-05-06.md`
 - Inventario avanzado: `documentos/inventario_avanzado.md`
 - CRM y ventas avanzadas: `documentos/crm_ventas_avanzadas.md`
 - Reporte de estado integral vigente: `documentos/reporte_estado_modulos_2026-05-05.md`

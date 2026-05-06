@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Portal contador</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .pc-page{max-width:1380px;margin:0 auto;padding:22px}
+    .pc-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .pc-header h1{margin:0;font-size:clamp(1.7rem,3vw,2.35rem)}
+    .pc-subtitle{margin:6px 0 0;color:var(--muted);max-width:900px}
+    .pc-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .pc-kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+    .pc-kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;min-height:92px}
+    .pc-kpi span{display:block;color:var(--muted);font-size:.84rem}
+    .pc-kpi strong{display:block;margin-top:8px;font-size:1.18rem;line-height:1.15}
+    .pc-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);gap:14px;align-items:start}
+    .pc-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+    .pc-panel h2{margin:0 0 12px;font-size:1.1rem}
+    .pc-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+    .pc-toolbar .form-col{min-width:180px;flex:1}
+    .pc-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .pc-form-grid .wide{grid-column:span 2}
+    .pc-form-grid .full{grid-column:1/-1}
+    .pc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .pc-tab{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer}
+    .pc-tab.active{background:var(--primary);border-color:var(--primary);color:var(--primary-contrast,#fff)}
+    .pc-table{width:100%;border-collapse:collapse}
+    .pc-table th,.pc-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .pc-table th{color:var(--muted);font-size:.84rem}
+    .pc-table td:last-child{text-align:right}
+    .pc-status{display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border-radius:999px;border:1px solid var(--border);font-size:.82rem;text-transform:capitalize}
+    .pc-status.alta,.pc-status.critica,.pc-status.vencida{background:rgba(239,68,68,.16)}
+    .pc-status.media,.pc-status.pendiente,.pc-status.abierta,.pc-status.en_revision{background:rgba(245,158,11,.18)}
+    .pc-status.activo,.pc-status.presentada,.pc-status.resuelta,.pc-status.pagada{background:rgba(34,197,94,.18)}
+    .pc-alerts{display:grid;gap:8px}
+    .pc-alert{border:1px solid var(--border);border-radius:8px;padding:10px;background:rgba(245,158,11,.12)}
+    .pc-muted{color:var(--muted)}
+    .pc-hidden{display:none!important}
+    .pc-list-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .pc-result{white-space:pre-wrap;max-height:160px;overflow:auto}
+    @media (max-width:1180px){.pc-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.pc-grid{grid-template-columns:1fr}.pc-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:720px){.pc-page{padding:14px}.pc-header{display:block}.pc-actions{justify-content:flex-start;margin-top:12px}.pc-kpis{grid-template-columns:1fr}.pc-form-grid{grid-template-columns:1fr}.pc-form-grid .wide{grid-column:auto}.pc-table thead{display:none}.pc-table,.pc-table tbody,.pc-table tr,.pc-table td{display:block;width:100%}.pc-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.pc-table td{border:0;text-align:left!important}.pc-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}.pc-list-actions{justify-content:flex-start}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <main class="pc-page">
+    <header class="pc-header">
+      <div>
+        <h1>Portal contador</h1>
+        <p class="pc-subtitle">Oficina virtual para firmas contables: clientes, obligaciones DIAN, solicitudes de documentos, cierres y comunicaciones por empresa.</p>
+      </div>
+      <div class="pc-actions">
+        <button class="btn secondary" type="button" id="btnDemo">Demo</button>
+        <button class="btn secondary" type="button" id="btnExportar">Exportar CSV</button>
+        <button class="btn" type="button" id="btnRefrescar">Actualizar</button>
+      </div>
+    </header>
+
+    <section class="pc-kpis" aria-label="Indicadores portal contador">
+      <div class="pc-kpi"><span>Clientes activos</span><strong id="kpiClientes">0</strong></div>
+      <div class="pc-kpi"><span>Riesgo alto</span><strong id="kpiRiesgo">0</strong></div>
+      <div class="pc-kpi"><span>Obligaciones</span><strong id="kpiObligaciones">0</strong></div>
+      <div class="pc-kpi"><span>Vencen 7 dias</span><strong id="kpiVencen">0</strong></div>
+      <div class="pc-kpi"><span>Solicitudes</span><strong id="kpiSolicitudes">0</strong></div>
+      <div class="pc-kpi"><span>Comunicaciones mes</span><strong id="kpiComunicaciones">0</strong></div>
+    </section>
+
+    <div class="pc-grid">
+      <div>
+        <section class="pc-panel">
+          <h2>Clientes contables</h2>
+          <div class="pc-toolbar">
+            <div class="form-col"><label class="form-label" for="filtro_q">Buscar</label><input id="filtro_q" class="form-input" placeholder="Razon social, NIT, responsable"></div>
+            <button class="btn secondary" type="button" id="btnFiltrar">Filtrar</button>
+          </div>
+          <div id="clientesList" class="table-wrap">Cargando...</div>
+        </section>
+
+        <section class="pc-panel">
+          <h2>Ficha del cliente</h2>
+          <form id="clienteForm" class="form">
+            <input type="hidden" id="cliente_id">
+            <div class="pc-form-grid">
+              <div class="wide"><label class="form-label" for="razon_social">Razon social</label><input id="razon_social" class="form-input" required></div>
+              <div><label class="form-label" for="nit">NIT</label><input id="nit" class="form-input"></div>
+              <div><label class="form-label" for="regimen">Regimen</label><select id="regimen" class="form-input"><option value="responsable_iva">Responsable IVA</option><option value="no_responsable_iva">No responsable IVA</option><option value="simple">Simple</option><option value="gran_contribuyente">Gran contribuyente</option><option value="persona_natural">Persona natural</option></select></div>
+              <div><label class="form-label" for="periodicidad">Periodicidad</label><select id="periodicidad" class="form-input"><option value="mensual">Mensual</option><option value="bimestral">Bimestral</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option></select></div>
+              <div><label class="form-label" for="riesgo_nivel">Riesgo</label><select id="riesgo_nivel" class="form-input"><option value="baja">Bajo</option><option value="media">Medio</option><option value="alta">Alto</option><option value="critica">Critico</option></select></div>
+              <div><label class="form-label" for="responsable">Contador responsable</label><input id="responsable" class="form-input"></div>
+              <div><label class="form-label" for="contacto_nombre">Contacto</label><input id="contacto_nombre" class="form-input"></div>
+              <div><label class="form-label" for="contacto_email">Email</label><input id="contacto_email" type="email" class="form-input"></div>
+              <div><label class="form-label" for="contacto_telefono">Telefono</label><input id="contacto_telefono" class="form-input"></div>
+              <div><label class="form-label" for="fecha_inicio">Inicio</label><input id="fecha_inicio" type="date" class="form-input"></div>
+              <div><label class="form-label" for="cierre_mensual_dia">Dia cierre</label><input id="cierre_mensual_dia" type="number" min="1" max="31" class="form-input" value="10"></div>
+              <div><label class="form-label" for="estado_cliente">Estado</label><select id="estado_cliente" class="form-input"><option value="activo">Activo</option><option value="pausado">Pausado</option><option value="en_revision">En revision</option><option value="retirado">Retirado</option></select></div>
+              <div class="full"><label class="form-label" for="observaciones_cliente">Observaciones</label><textarea id="observaciones_cliente" class="form-textarea"></textarea></div>
+            </div>
+            <div class="form-actions"><button class="btn" type="submit">Guardar cliente</button><button class="btn secondary" type="button" id="btnNuevoCliente">Nuevo</button></div>
+            <div id="msg" class="form-help"></div>
+          </form>
+        </section>
+      </div>
+
+      <aside>
+        <section class="pc-panel">
+          <h2>Alertas</h2>
+          <div id="alertasList" class="pc-alerts"></div>
+        </section>
+
+        <section class="pc-panel">
+          <div class="pc-tabs">
+            <button class="pc-tab active" type="button" data-tab="obligaciones">Obligaciones</button>
+            <button class="pc-tab" type="button" data-tab="solicitudes">Solicitudes</button>
+            <button class="pc-tab" type="button" data-tab="comunicaciones">Comunicaciones</button>
+          </div>
+
+          <div id="tabObligaciones">
+            <form id="obligacionForm" class="form">
+              <div class="pc-form-grid">
+                <div><label class="form-label" for="ob_cliente">Cliente</label><select id="ob_cliente" class="form-input"></select></div>
+                <div><label class="form-label" for="ob_tipo">Tipo</label><select id="ob_tipo" class="form-input"><option value="iva">IVA</option><option value="retencion_fuente">Retencion fuente</option><option value="ica">ICA</option><option value="renta">Renta</option><option value="exogena">Exogena</option><option value="nomina_electronica">Nomina electronica</option><option value="cierre_contable">Cierre contable</option></select></div>
+                <div><label class="form-label" for="ob_periodo">Periodo</label><input id="ob_periodo" class="form-input" placeholder="2026-05"></div>
+                <div><label class="form-label" for="ob_vence">Vence</label><input id="ob_vence" type="date" class="form-input"></div>
+                <div><label class="form-label" for="ob_prioridad">Prioridad</label><select id="ob_prioridad" class="form-input"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="baja">Baja</option></select></div>
+                <div><label class="form-label" for="ob_valor">Valor estimado</label><input id="ob_valor" type="number" step="0.01" class="form-input" value="0"></div>
+              </div>
+              <div class="form-actions"><button class="btn secondary" type="submit">Agregar obligacion</button></div>
+            </form>
+            <div id="obligacionesList" class="table-wrap"></div>
+          </div>
+
+          <div id="tabSolicitudes" class="pc-hidden">
+            <form id="solicitudForm" class="form">
+              <div class="pc-form-grid">
+                <div><label class="form-label" for="sol_cliente">Cliente</label><select id="sol_cliente" class="form-input"></select></div>
+                <div class="wide"><label class="form-label" for="sol_titulo">Titulo</label><input id="sol_titulo" class="form-input" placeholder="Enviar extractos bancarios"></div>
+                <div><label class="form-label" for="sol_categoria">Categoria</label><select id="sol_categoria" class="form-input"><option value="soportes">Soportes</option><option value="extractos">Extractos</option><option value="facturas">Facturas</option><option value="nomina">Nomina</option><option value="impuestos">Impuestos</option><option value="contratos">Contratos</option></select></div>
+                <div><label class="form-label" for="sol_limite">Fecha limite</label><input id="sol_limite" type="date" class="form-input"></div>
+                <div><label class="form-label" for="sol_prioridad">Prioridad</label><select id="sol_prioridad" class="form-input"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="baja">Baja</option></select></div>
+              </div>
+              <div class="form-actions"><button class="btn secondary" type="submit">Crear solicitud</button></div>
+            </form>
+            <div id="solicitudesList" class="table-wrap"></div>
+          </div>
+
+          <div id="tabComunicaciones" class="pc-hidden">
+            <form id="comunicacionForm" class="form">
+              <div class="pc-form-grid">
+                <div><label class="form-label" for="com_cliente">Cliente</label><select id="com_cliente" class="form-input"></select></div>
+                <div><label class="form-label" for="com_canal">Canal</label><select id="com_canal" class="form-input"><option value="interno">Interno</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="llamada">Llamada</option><option value="reunion">Reunion</option></select></div>
+                <div class="wide"><label class="form-label" for="com_asunto">Asunto</label><input id="com_asunto" class="form-input"></div>
+                <div class="full"><label class="form-label" for="com_mensaje">Mensaje</label><textarea id="com_mensaje" class="form-textarea"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="btn secondary" type="submit">Registrar comunicacion</button></div>
+            </form>
+            <div id="comunicacionesList" class="table-wrap"></div>
+          </div>
+        </section>
+        <section class="pc-panel"><h2>Salida</h2><pre id="resultadoOutput" class="pc-result"></pre></section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    (function(){
+      var state = { empresaId: resolveEmpresaId(), dashboard:null, clientes:[], obligaciones:[], solicitudes:[], comunicaciones:[] };
+      var money = new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0});
+      function el(id){ return document.getElementById(id); }
+      function value(id){ return (el(id) && el(id).value || "").trim(); }
+      function num(id){ return Number(value(id) || 0); }
+      function esc(text){ return String(text == null ? "" : text).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]; }); }
+      function setMsg(text, ok){ var n=el("msg"); if(n){ n.textContent=text||""; n.style.color=ok ? "var(--success,#16a34a)" : "var(--danger,#dc2626)"; } }
+      function resolveEmpresaId(){ var sources=[location.search]; try{ if(window.parent&&window.parent!==window) sources.push(window.parent.location.search); }catch(_){} for(var i=0;i<sources.length;i++){ var id=new URLSearchParams(sources[i]).get("empresa_id"); if(id) return id; } try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||"";}catch(_){return "";} }
+      function api(action, options){ if(!state.empresaId) return Promise.reject(new Error("empresa_id no disponible")); var extra=""; if(String(action).indexOf("&")>=0){ var parts=String(action).split("&"); action=parts.shift(); extra="&"+parts.join("&"); } var url="/api/empresa/portal_contador?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+extra; return fetch(url,Object.assign({headers:{"Content-Type":"application/json"},credentials:"same-origin"},options||{})).then(function(res){ if(!res.ok) return res.text().then(function(t){ throw new Error(t||res.statusText); }); return res.json(); }); }
+      function status(v){ return '<span class="pc-status '+esc(v||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>'; }
+      function loadAll(){ return Promise.all([api("dashboard"),api("clientes&q="+encodeURIComponent(value("filtro_q"))),api("obligaciones"),api("solicitudes"),api("comunicaciones")]).then(function(rows){ state.dashboard=rows[0]||{}; state.clientes=rows[1]||[]; state.obligaciones=rows[2]||[]; state.solicitudes=rows[3]||[]; state.comunicaciones=rows[4]||[]; render(); }).catch(function(err){ setMsg(err.message,false); el("clientesList").textContent=err.message; }); }
+      function render(){ var d=state.dashboard||{}; el("kpiClientes").textContent=d.clientes_activos||0; el("kpiRiesgo").textContent=d.clientes_riesgo_alto||0; el("kpiObligaciones").textContent=d.obligaciones_pendientes||0; el("kpiVencen").textContent=d.obligaciones_vencen_7_dias||0; el("kpiSolicitudes").textContent=d.solicitudes_abiertas||0; el("kpiComunicaciones").textContent=d.comunicaciones_mes||0; renderAlertas(d.alertas||[]); renderClientes(); renderSelects(); renderObligaciones(); renderSolicitudes(); renderComunicaciones(); }
+      function renderAlertas(rows){ el("alertasList").innerHTML = rows.length ? rows.map(function(a){return '<div class="pc-alert">'+esc(a)+'</div>';}).join("") : '<div class="pc-muted">Sin alertas activas.</div>'; }
+      function renderClientes(){ if(!state.clientes.length){ el("clientesList").innerHTML='<div class="pc-muted">Sin clientes contables.</div>'; return; } el("clientesList").innerHTML='<table class="pc-table"><thead><tr><th>Cliente</th><th>NIT</th><th>Responsable</th><th>Riesgo</th><th>Pendientes</th><th></th></tr></thead><tbody>'+state.clientes.map(function(c){ return '<tr><td data-label="Cliente">'+esc(c.razon_social)+'</td><td data-label="NIT">'+esc(c.nit||"-")+'</td><td data-label="Responsable">'+esc(c.responsable||"-")+'</td><td data-label="Riesgo">'+status(c.riesgo_nivel)+'</td><td data-label="Pendientes">'+(c.obligaciones_abiertas||0)+' obl. / '+(c.solicitudes_abiertas||0)+' sol.</td><td data-label="Acciones"><button class="btn secondary btn-small" type="button" data-select-cliente="'+c.id+'">Editar</button></td></tr>'; }).join("")+'</tbody></table>'; }
+      function renderSelects(){ var html=state.clientes.map(function(c){return '<option value="'+c.id+'">'+esc(c.razon_social)+'</option>';}).join(""); ["ob_cliente","sol_cliente","com_cliente"].forEach(function(id){ el(id).innerHTML=html; }); }
+      function renderObligaciones(){ el("obligacionesList").innerHTML=state.obligaciones.length?'<table class="pc-table"><thead><tr><th>Cliente</th><th>Tipo</th><th>Periodo</th><th>Vence</th><th>Estado</th><th>Valor</th></tr></thead><tbody>'+state.obligaciones.map(function(o){return '<tr><td data-label="Cliente">'+esc(o.cliente_nombre)+'</td><td data-label="Tipo">'+esc(o.tipo)+'</td><td data-label="Periodo">'+esc(o.periodo||"-")+'</td><td data-label="Vence">'+esc(o.fecha_vencimiento||"-")+' ('+(o.dias_para_vencer||0)+' d)</td><td data-label="Estado">'+status(o.estado_obligacion)+'</td><td data-label="Valor">'+money.format(o.valor_estimado||0)+'</td></tr>';}).join("")+'</tbody></table>':'<div class="pc-muted">Sin obligaciones.</div>'; }
+      function renderSolicitudes(){ el("solicitudesList").innerHTML=state.solicitudes.length?'<table class="pc-table"><thead><tr><th>Cliente</th><th>Solicitud</th><th>Limite</th><th>Prioridad</th><th>Estado</th></tr></thead><tbody>'+state.solicitudes.map(function(s){return '<tr><td data-label="Cliente">'+esc(s.cliente_nombre)+'</td><td data-label="Solicitud">'+esc(s.titulo)+'</td><td data-label="Limite">'+esc(s.fecha_limite||"-")+' ('+(s.dias_para_vencer||0)+' d)</td><td data-label="Prioridad">'+status(s.prioridad)+'</td><td data-label="Estado">'+status(s.estado_solicitud)+'</td></tr>';}).join("")+'</tbody></table>':'<div class="pc-muted">Sin solicitudes.</div>'; }
+      function renderComunicaciones(){ el("comunicacionesList").innerHTML=state.comunicaciones.length?'<table class="pc-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Canal</th><th>Asunto</th></tr></thead><tbody>'+state.comunicaciones.map(function(m){return '<tr><td data-label="Fecha">'+esc(m.fecha_mensaje||"-")+'</td><td data-label="Cliente">'+esc(m.cliente_nombre||"-")+'</td><td data-label="Canal">'+esc(m.canal)+'</td><td data-label="Asunto">'+esc(m.asunto||m.mensaje||"-")+'</td></tr>';}).join("")+'</tbody></table>':'<div class="pc-muted">Sin comunicaciones.</div>'; }
+      function selectCliente(id){ var c=state.clientes.find(function(x){return String(x.id)===String(id);}); if(!c) return; el("cliente_id").value=c.id; ["razon_social","nit","regimen","periodicidad","riesgo_nivel","responsable","contacto_nombre","contacto_email","contacto_telefono","fecha_inicio","cierre_mensual_dia","estado_cliente"].forEach(function(id){ if(el(id)) el(id).value=c[id]||c[id.replace("riesgo_nivel","riesgo_nivel")]||""; }); el("observaciones_cliente").value=c.observaciones||""; setMsg("Cliente seleccionado",true); }
+      document.addEventListener("click",function(ev){ var btn=ev.target.closest("[data-select-cliente]"); if(btn){ selectCliente(btn.getAttribute("data-select-cliente")); return; } var tab=ev.target.closest("[data-tab]"); if(tab){ document.querySelectorAll(".pc-tab").forEach(function(b){b.classList.toggle("active",b===tab);}); el("tabObligaciones").classList.toggle("pc-hidden",tab.dataset.tab!=="obligaciones"); el("tabSolicitudes").classList.toggle("pc-hidden",tab.dataset.tab!=="solicitudes"); el("tabComunicaciones").classList.toggle("pc-hidden",tab.dataset.tab!=="comunicaciones"); } });
+      el("btnRefrescar").addEventListener("click",loadAll); el("btnFiltrar").addEventListener("click",loadAll); el("btnDemo").addEventListener("click",function(){ api("seed_demo",{method:"POST",body:"{}"}).then(loadAll).catch(function(err){setMsg(err.message,false);}); });
+      el("btnNuevoCliente").addEventListener("click",function(){ el("clienteForm").reset(); el("cliente_id").value=""; });
+      el("btnExportar").addEventListener("click",function(){ var csv=[["Cliente","NIT","Responsable","Riesgo","Estado"]].concat(state.clientes.map(function(c){return [c.razon_social,c.nit,c.responsable,c.riesgo_nivel,c.estado_cliente];})).map(function(r){return r.map(function(v){return '"'+String(v||"").replace(/"/g,'""')+'"';}).join(",");}).join("\n"); var blob=new Blob([csv],{type:"text/csv;charset=utf-8"}); var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download="portal_contador_clientes.csv"; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000); });
+      el("clienteForm").addEventListener("submit",function(ev){ ev.preventDefault(); api("cliente",{method:"POST",body:JSON.stringify({id:Number(value("cliente_id")||0),razon_social:value("razon_social"),nit:value("nit"),regimen:value("regimen"),periodicidad:value("periodicidad"),riesgo_nivel:value("riesgo_nivel"),responsable:value("responsable"),contacto_nombre:value("contacto_nombre"),contacto_email:value("contacto_email"),contacto_telefono:value("contacto_telefono"),fecha_inicio:value("fecha_inicio"),cierre_mensual_dia:num("cierre_mensual_dia"),estado_cliente:value("estado_cliente"),observaciones:value("observaciones_cliente")})}).then(function(res){el("resultadoOutput").textContent=JSON.stringify(res,null,2); setMsg("Cliente guardado",true); return loadAll();}).catch(function(err){setMsg(err.message,false);}); });
+      el("obligacionForm").addEventListener("submit",function(ev){ ev.preventDefault(); api("obligacion",{method:"POST",body:JSON.stringify({cliente_id:num("ob_cliente"),tipo:value("ob_tipo"),periodo:value("ob_periodo"),fecha_vencimiento:value("ob_vence"),prioridad:value("ob_prioridad"),valor_estimado:num("ob_valor")})}).then(loadAll).catch(function(err){setMsg(err.message,false);}); });
+      el("solicitudForm").addEventListener("submit",function(ev){ ev.preventDefault(); api("solicitud",{method:"POST",body:JSON.stringify({cliente_id:num("sol_cliente"),titulo:value("sol_titulo"),categoria:value("sol_categoria"),fecha_limite:value("sol_limite"),prioridad:value("sol_prioridad")})}).then(loadAll).catch(function(err){setMsg(err.message,false);}); });
+      el("comunicacionForm").addEventListener("submit",function(ev){ ev.preventDefault(); api("comunicacion",{method:"POST",body:JSON.stringify({cliente_id:num("com_cliente"),canal:value("com_canal"),asunto:value("com_asunto"),mensaje:value("com_mensaje")})}).then(loadAll).catch(function(err){setMsg(err.message,false);}); });
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

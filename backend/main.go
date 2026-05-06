@@ -736,6 +736,15 @@ func main() {
 	if err := dbpkg.EnsureEmpresaAIUConstruccionSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure AIU construccion schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaCobranzaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure cobranza schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaPortalContadorSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure portal contador schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaSoportesComprasIASchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure soportes compras IA schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
 	}
@@ -911,6 +920,7 @@ func main() {
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos/comprobante", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentoComprobanteUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras_avanzadas", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasAvanzadasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/soportes_compras_ia", handlers.WithEmpresaSoportesComprasIAPermissions(dbEmpresas, dbSuper, handlers.EmpresaSoportesComprasIAHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/aiu_construccion", handlers.WithEmpresaAIUConstruccionPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIUConstruccionHandler(dbEmpresas)))
@@ -1004,6 +1014,8 @@ func main() {
 	http.HandleFunc("/api/empresa/tesoreria_presupuesto", handlers.WithEmpresaTesoreriaPresupuestoPermissions(dbEmpresas, dbSuper, handlers.EmpresaTesoreriaPresupuestoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/cobranza", handlers.WithEmpresaCobranzaPermissions(dbEmpresas, dbSuper, handlers.EmpresaCobranzaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/portal_contador", handlers.WithEmpresaPortalContadorPermissions(dbEmpresas, dbSuper, handlers.EmpresaPortalContadorHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
