@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Importaciones y costeo</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .imp-page{min-height:100vh;background:var(--bg);color:var(--text)}
+    .imp-shell{display:grid;gap:14px;padding:18px}
+    .imp-hero,.imp-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 12px 28px rgba(15,23,42,.08)}
+    .imp-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:14px}
+    .imp-kicker{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:var(--accent)}
+    .imp-hero h1{margin:5px 0 8px;font-size:1.75rem;color:var(--text)}
+    .imp-hero p{color:var(--muted);line-height:1.5;margin:0}
+    .imp-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .imp-kpi{background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:10px}
+    .imp-kpi span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:850}
+    .imp-kpi strong{display:block;margin-top:4px;font-size:1.18rem}
+    .imp-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px}
+    .imp-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .imp-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .imp-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .imp-table{width:100%;min-width:820px;border-collapse:collapse}
+    .imp-table th,.imp-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .imp-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .imp-msg{min-height:22px;color:var(--muted)}.imp-msg.success{color:var(--success)}.imp-msg.error{color:var(--danger)}
+    @media(max-width:980px){.imp-hero,.imp-grid{grid-template-columns:1fr}.imp-row,.imp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.imp-shell{padding:12px}.imp-row,.imp-kpis{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="empresa-subpage imp-page">
+  <main class="container imp-shell">
+    <section class="imp-hero">
+      <div>
+        <div class="imp-kicker">Compras internacionales</div>
+        <h1>Importaciones y costeo de nacionalizacion</h1>
+        <p>Controla embarques, incoterms, TRM, fletes, seguros, aduana, aranceles y costo aterrizado por producto dentro de cada empresa.</p>
+        <div class="imp-actions" style="margin-top:12px">
+          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
+          <button id="btnDistribuir" class="btn" type="button">Distribuir costos</button>
+        </div>
+      </div>
+      <div class="imp-kpis">
+        <div class="imp-kpi"><span>Abiertas</span><strong id="kpiAbiertas">0</strong></div>
+        <div class="imp-kpi"><span>Cerradas</span><strong id="kpiCerradas">0</strong></div>
+        <div class="imp-kpi"><span>Nacionalizacion</span><strong id="kpiNacionalizacion">$0</strong></div>
+        <div class="imp-kpi"><span>Costo total</span><strong id="kpiTotal">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="imp-grid">
+      <article class="imp-card">
+        <h2>Importacion</h2>
+        <div class="imp-row"><div><label class="form-label" for="impCodigo">Codigo</label><input id="impCodigo" class="form-input"></div><div><label class="form-label" for="impProveedor">Proveedor</label><input id="impProveedor" class="form-input"></div><div><label class="form-label" for="impPais">Pais origen</label><input id="impPais" class="form-input"></div><div><label class="form-label" for="impIncoterm">Incoterm</label><input id="impIncoterm" class="form-input" value="FOB"></div></div>
+        <div class="imp-row"><div><label class="form-label" for="impMoneda">Moneda</label><input id="impMoneda" class="form-input" value="USD"></div><div><label class="form-label" for="impTRM">TRM</label><input id="impTRM" class="form-input" type="number" value="3900"></div><div><label class="form-label" for="impFecha">Fecha</label><input id="impFecha" class="form-input" type="date"></div><div><label class="form-label" for="impRef">Referencia</label><input id="impRef" class="form-input"></div></div>
+        <button id="btnSaveImportacion" class="btn" type="button">Guardar importacion</button>
+        <hr>
+        <h3>Item</h3>
+        <div class="imp-row"><div><label class="form-label" for="itemImpID">Importacion ID</label><input id="itemImpID" class="form-input" type="number"></div><div><label class="form-label" for="itemNombre">Producto</label><input id="itemNombre" class="form-input"></div><div><label class="form-label" for="itemSKU">SKU</label><input id="itemSKU" class="form-input"></div><div><label class="form-label" for="itemCantidad">Cantidad</label><input id="itemCantidad" class="form-input" type="number"></div></div>
+        <div class="imp-row"><div><label class="form-label" for="itemCosto">Costo unit. origen</label><input id="itemCosto" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="itemPeso">Peso kg</label><input id="itemPeso" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="itemVol">Volumen m3</label><input id="itemVol" class="form-input" type="number" step=".01"></div><div><button id="btnSaveItem" class="btn secondary" type="button" style="margin-top:24px">Agregar item</button></div></div>
+        <h3>Costo de nacionalizacion</h3>
+        <div class="imp-row"><div><label class="form-label" for="costImpID">Importacion ID</label><input id="costImpID" class="form-input" type="number"></div><div><label class="form-label" for="costTipo">Tipo</label><input id="costTipo" class="form-input" value="arancel"></div><div><label class="form-label" for="costConcepto">Concepto</label><input id="costConcepto" class="form-input"></div><div><label class="form-label" for="costBase">Base</label><select id="costBase" class="form-input"><option value="valor">Valor</option><option value="peso">Peso</option><option value="volumen">Volumen</option><option value="cantidad">Cantidad</option></select></div></div>
+        <div class="imp-row"><div><label class="form-label" for="costValor">Valor COP</label><input id="costValor" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="costCuenta">Cuenta</label><input id="costCuenta" class="form-input"></div><div><label class="form-label" for="distribuirID">ID a distribuir</label><input id="distribuirID" class="form-input" type="number"></div><div><button id="btnSaveCosto" class="btn secondary" type="button" style="margin-top:24px">Agregar costo</button></div></div>
+      </article>
+      <article class="imp-card">
+        <h2>Importaciones</h2>
+        <div class="imp-table-wrap"><table class="imp-table"><thead><tr><th>ID</th><th>Codigo</th><th>Proveedor</th><th>Incoterm</th><th>Subtotal</th><th>Nacionalizacion</th><th>Total</th><th>Estado</th></tr></thead><tbody id="importacionesBody"></tbody></table></div>
+      </article>
+      <article class="imp-card"><h2>Items costeados</h2><div class="imp-table-wrap"><table class="imp-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Base COP</th><th>Distribuido</th><th>Unitario final</th></tr></thead><tbody id="itemsBody"></tbody></table></div></article>
+      <article class="imp-card"><h2>Costos</h2><div class="imp-table-wrap"><table class="imp-table"><thead><tr><th>Tipo</th><th>Concepto</th><th>Base</th><th>Valor</th><th>Cuenta</th></tr></thead><tbody id="costosBody"></tbody></table></div></article>
+    </section>
+    <div id="msg" class="imp-msg"></div>
+  </main>
+  <script src="/js/importaciones_costeo.js"></script>
+</body>
+</html>

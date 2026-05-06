@@ -40,3 +40,37 @@ func TestFormatEmpresaDocumentoElectronicoRef(t *testing.T) {
 		t.Fatalf("referencia incorrecta: got %q", got)
 	}
 }
+
+func TestCalcularEmpresaActivoDepreciacionPeriodoLineaRecta(t *testing.T) {
+	activo := EmpresaActivoFijo{
+		ID:                      11,
+		EmpresaID:               7,
+		Codigo:                  "AF-001",
+		Nombre:                  "Equipo QA",
+		FechaCompra:             "2026-01-15",
+		FechaInicioDepreciacion: "2026-01-15",
+		Costo:                   1200000,
+		ValorResidual:           120000,
+		VidaUtilMeses:           12,
+		MetodoDepreciacion:      "linea_recta",
+	}
+	row := calcularEmpresaActivoDepreciacionPeriodo(activo, "2026-03", "2026-03-28", "qa")
+	if row.DepreciacionPeriodo != 90000 {
+		t.Fatalf("depreciacion periodo = %v", row.DepreciacionPeriodo)
+	}
+	if row.DepreciacionAcumulada != 270000 {
+		t.Fatalf("depreciacion acumulada = %v", row.DepreciacionAcumulada)
+	}
+	if row.ValorLibros != 930000 {
+		t.Fatalf("valor libros = %v", row.ValorLibros)
+	}
+}
+
+func TestNormalizeActivoEventoTipo(t *testing.T) {
+	if got := normalizeActivoEventoTipo(" TRASLADO "); got != "traslado" {
+		t.Fatalf("tipo evento = %q", got)
+	}
+	if got := normalizeActivoEventoTipo("desconocido"); got != "mantenimiento" {
+		t.Fatalf("tipo evento por defecto = %q", got)
+	}
+}

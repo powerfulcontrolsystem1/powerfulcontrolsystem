@@ -1,7 +1,7 @@
 {
   "empresa_id": 7,
-  "run_id": "20260505-194023",
-  "started_at": "2026-05-05T19:40:23-05:00",
+  "run_id": "20260505-223809",
+  "started_at": "2026-05-05T22:38:09-05:00",
   "steps": [
     {
       "module": "schema",
@@ -12,13 +12,13 @@
       "module": "contabilidad_colombia",
       "action": "crear_tercero_qa",
       "ok": true,
-      "id": 6
+      "id": 17
     },
     {
       "module": "contabilidad_colombia",
       "action": "crear_comprobante_balanceado",
       "ok": true,
-      "id": 6,
+      "id": 17,
       "meta": {
         "periodo": "2026-05"
       }
@@ -32,7 +32,7 @@
       "module": "contabilidad_avanzada",
       "action": "crear_registro_exogena",
       "ok": true,
-      "id": 48,
+      "id": 422,
       "meta": {
         "formato": "1001"
       }
@@ -42,39 +42,63 @@
       "action": "generar_exogena_desde_asientos",
       "ok": true,
       "meta": {
-        "registros_generados": 18
+        "registros_generados": 51
       }
     },
     {
       "module": "contabilidad_avanzada",
       "action": "crear_nomina_electronica",
       "ok": true,
-      "id": 5
+      "id": 16
     },
     {
       "module": "contabilidad_avanzada",
       "action": "crear_documento_soporte",
       "ok": true,
-      "id": 5
+      "id": 16
     },
     {
       "module": "contabilidad_avanzada",
       "action": "crear_activo_fijo",
       "ok": true,
-      "id": 5
+      "id": 16
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "generar_depreciacion_activos",
+      "ok": true,
+      "meta": {
+        "depreciaciones": 16
+      }
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "registrar_evento_activo",
+      "ok": true,
+      "id": 6
+    },
+    {
+      "module": "contabilidad_avanzada",
+      "action": "dashboard_activos_avanzado",
+      "ok": true,
+      "meta": {
+        "activos": 16,
+        "depreciacion_periodo": 733333.125,
+        "eventos": 6
+      }
     },
     {
       "module": "contabilidad_avanzada",
       "action": "crear_cartera_cxc",
       "ok": true,
-      "id": 5
+      "id": 16
     },
     {
       "module": "contabilidad_avanzada",
       "action": "validar_libro_mayor",
       "ok": true,
       "meta": {
-        "lineas": 18
+        "lineas": 51
       }
     },
     {
@@ -82,8 +106,8 @@
       "action": "dashboard",
       "ok": true,
       "meta": {
-        "activos": 5,
-        "exogena": 66,
+        "activos": 16,
+        "exogena": 473,
         "formatos": 7
       }
     },
@@ -91,23 +115,23 @@
       "module": "domicilios",
       "action": "flujo_restaurante_domiciliario_pedido",
       "ok": true,
-      "id": 5
+      "id": 16
     },
     {
       "module": "domicilios",
       "action": "dashboard",
       "ok": true,
       "meta": {
-        "domiciliarios_online": 4,
+        "domiciliarios_online": 15,
         "pedidos_ruta": 0,
-        "restaurantes": 5
+        "restaurantes": 16
       }
     },
     {
       "module": "parqueadero",
       "action": "ticket_qr_y_cobro",
       "ok": true,
-      "id": 4
+      "id": 15
     },
     {
       "module": "parqueadero",
@@ -115,31 +139,31 @@
       "ok": true,
       "meta": {
         "abiertos": 0,
-        "ingresos_hoy": 112000,
-        "salidos_hoy": 4
+        "ingresos_hoy": 420000,
+        "salidos_hoy": 15
       }
     },
     {
       "module": "apartamentos_turisticos",
       "action": "unidad_reserva_checkout_limpieza",
       "ok": true,
-      "id": 3
+      "id": 14
     },
     {
       "module": "apartamentos_turisticos",
       "action": "dashboard",
       "ok": true,
       "meta": {
-        "limpieza": 3,
+        "limpieza": 14,
         "reservas_activas": 0,
-        "unidades": 4
+        "unidades": 15
       }
     },
     {
       "module": "carnets",
       "action": "plantilla_carnet_impresion",
       "ok": true,
-      "id": 3
+      "id": 14
     },
     {
       "module": "carnets",
@@ -147,23 +171,136 @@
       "ok": true,
       "meta": {
         "plantillas": 1,
-        "vigentes": 3
+        "vigentes": 14
       }
     },
     {
       "module": "taxi_system",
       "action": "servicio_con_gps_y_mapa",
       "ok": true,
-      "id": 2
+      "id": 13
     },
     {
       "module": "taxi_system",
       "action": "dashboard",
       "ok": true,
       "meta": {
-        "conductores_online": 2,
+        "conductores_online": 13,
         "servicios_activos": 0,
-        "solicitudes": 2
+        "solicitudes": 13
+      }
+    },
+    {
+      "module": "produccion_mrp",
+      "action": "receta_orden_consumo_calidad_mrp",
+      "ok": true,
+      "id": 11
+    },
+    {
+      "module": "produccion_mrp",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "ordenes_abiertas": 1,
+        "ordenes_cerradas": 10,
+        "plan": 65,
+        "recetas_activas": 11
+      }
+    },
+    {
+      "module": "inventario_avanzado",
+      "action": "lote_serial_reserva_valorizacion",
+      "ok": true,
+      "id": 2
+    },
+    {
+      "module": "inventario_avanzado",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "lotes": 2,
+        "reservas": 0,
+        "valor": 629000
+      }
+    },
+    {
+      "module": "crm_ventas_avanzadas",
+      "action": "lead_meta_scoring_cotizacion_forecast",
+      "ok": true,
+      "id": 6
+    },
+    {
+      "module": "crm_ventas_avanzadas",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "cotizaciones": 4,
+        "forecast": 1477500,
+        "leads_activos": 6
+      }
+    },
+    {
+      "module": "tesoreria_presupuesto",
+      "action": "cuentas_presupuesto_flujo",
+      "ok": true,
+      "id": 9
+    },
+    {
+      "module": "tesoreria_presupuesto",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "cuentas": 9,
+        "flujo_neto": 432900000,
+        "presupuestos": 9
+      }
+    },
+    {
+      "module": "importaciones_costeo",
+      "action": "embarque_items_costos_distribucion",
+      "ok": true,
+      "id": 4
+    },
+    {
+      "module": "importaciones_costeo",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "abiertas": 4,
+        "cerradas": 0,
+        "costo_total": 31974720
+      }
+    },
+    {
+      "module": "compras_avanzadas",
+      "action": "requisicion_cotizacion_aprobacion_recepcion",
+      "ok": true,
+      "id": 3
+    },
+    {
+      "module": "compras_avanzadas",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "abiertas": 0,
+        "cotizaciones": 0,
+        "pendientes": 0
+      }
+    },
+    {
+      "module": "nomina_colombia_avanzada",
+      "action": "empleado_conceptos_novedades_liquidacion_pila",
+      "ok": true,
+      "id": 8
+    },
+    {
+      "module": "nomina_colombia_avanzada",
+      "action": "dashboard",
+      "ok": true,
+      "meta": {
+        "conceptos_activos": 12,
+        "novedades_pendientes": 0,
+        "total_pila": 0
       }
     },
     {
@@ -171,12 +308,21 @@
       "action": "conteos_empresa_7",
       "ok": true,
       "meta": {
-        "apartamentos_reservas": 3,
-        "carnets": 3,
-        "contabilidad_comprobantes": 6,
-        "domicilios_orders": 4,
-        "parqueadero_tickets": 4,
-        "taxi_requests": 2
+        "activos_depreciacion": 16,
+        "activos_eventos": 6,
+        "apartamentos_reservas": 14,
+        "carnets": 14,
+        "compras_requisiciones": 3,
+        "contabilidad_comprobantes": 17,
+        "crm_metas_comerciales": 1,
+        "domicilios_orders": 15,
+        "importaciones_costeo": 4,
+        "inventario_lotes_av": 2,
+        "nomina_colombia_pila": 7,
+        "parqueadero_tickets": 15,
+        "produccion_ordenes": 11,
+        "taxi_requests": 13,
+        "tesoreria_flujo": 27
       }
     }
   ],

@@ -114,7 +114,11 @@ try {
     document.getElementById("linkEstaciones"),
     document.getElementById("linkVentaDirecta"),
     document.getElementById("linkProductos"),
+    document.getElementById("linkInventarioAvanzado"),
     document.getElementById("linkCompras"),
+    document.getElementById("linkComprasAvanzadas"),
+    document.getElementById("linkImportacionesCosteo"),
+    document.getElementById("linkProduccionMRP"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
     document.getElementById("linkParqueadero"),
@@ -136,6 +140,7 @@ try {
     document.getElementById("linkFinanzasMain"),
     document.getElementById("linkContabilidadColombia"),
     document.getElementById("linkContabilidadColombiaAvanzada"),
+    document.getElementById("linkTesoreriaPresupuesto"),
     document.getElementById("linkBackups"),
     document.getElementById("linkSoporteRemoto"),
     document.getElementById("linkUbicacionGPS"),
@@ -161,6 +166,7 @@ try {
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
     document.getElementById("linkCRMComercial"),
+    document.getElementById("linkCRMAvanzado"),
     document.getElementById("linkVentaPublica"),
     document.getElementById("linkRedSocialComercial"),
     document.getElementById("linkDocumentosOnlyOffice"),
@@ -192,6 +198,8 @@ try {
   var permModuleFinanzas = "finanzas";
   var permModuleContabilidadCO = "contabilidad_colombia";
   var permModuleContabilidadCOAv = "contabilidad_colombia_avanzada";
+  var permModuleTesoreria = "tesoreria_presupuesto";
+  var permModuleImportaciones = "importaciones_costeo";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
   var permModuleSeguridad = "seguridad";
@@ -206,16 +214,21 @@ try {
   var permModuleTurnos = "turnos_atencion";
   var permModuleControlElectrico = "control_electrico";
   var permModuleCarnets = "carnets";
+  var permModuleProduccionMRP = "produccion_mrp";
 
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
+    linkInventarioAvanzado: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
     linkCartaProductosPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
+    linkComprasAvanzadas: { module: permModuleCompras, action: permActionCreate },
+    linkImportacionesCosteo: { module: permModuleImportaciones, action: permActionCreate },
+    linkProduccionMRP: { module: permModuleProduccionMRP, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionImpresora: { module: permModuleSeguridad, action: permActionUpdate },
@@ -236,6 +249,7 @@ try {
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
     linkCRMComercial: { module: permModuleClientes, action: permActionCreate },
+    linkCRMAvanzado: { module: permModuleClientes, action: permActionCreate },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
     linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
     linkTaxiSystem: { module: permModuleTaxiSystem, action: permActionCreate },
@@ -255,6 +269,7 @@ try {
     linkFinanzasMain: { module: permModuleFinanzas, action: permActionCreate },
     linkContabilidadColombia: { module: permModuleContabilidadCO, action: permActionCreate },
     linkContabilidadColombiaAvanzada: { module: permModuleContabilidadCOAv, action: permActionCreate },
+    linkTesoreriaPresupuesto: { module: permModuleTesoreria, action: permActionCreate },
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
@@ -743,6 +758,7 @@ try {
       case permModuleFinanzas:
       case permModuleContabilidadCO:
       case permModuleContabilidadCOAv:
+      case permModuleTesoreria:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
@@ -795,6 +811,14 @@ try {
         }
         if (normalizedAction === "D") {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
+        }
+        break;
+
+      case permModuleProduccionMRP:
+      case permModuleImportaciones:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario", "compras"]);
         }
         break;
 

@@ -1,3 +1,76 @@
+2026-05-06: CRM y ventas avanzadas
+- Modulos afectados: `clientes`, `crm`, `ventas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia el CRM existente sin duplicar clientes ni ventas, agregando metas comerciales, forecast, scoring de leads, agenda y conversion de lead a cotizacion.
+- Backend: nueva API `/api/empresa/crm_avanzado` con acciones `dashboard`, `metas`, `scores`, `meta`, `cotizacion_desde_lead` y `seed_demo`.
+- Base de datos: nueva tabla `empresa_crm_metas_comerciales`; se reutilizan `crm_leads`, `crm_interacciones`, `crm_campanas`, `empresa_cotizaciones_venta` y `empresa_pedidos_venta`.
+- Seguridad: se reutiliza la licencia y permiso `clientes`; la pagina `linkCRMAvanzado` queda protegida por `WithEmpresaClientesPermissions`.
+- Frontend: `web/administrar_empresa/crm_ventas_avanzadas.html` queda enlazada en el bloque de Ventas, clientes y caja.
+- Documentacion: se agrega `documentos/crm_ventas_avanzadas.md`.
+
+2026-05-06: Inventario avanzado
+- Modulos afectados: `inventario`, `productos`, `bodegas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia `Inventario` sin crear un modulo paralelo, agregando lotes, seriales, reservas, vencimientos y valorizacion por producto/bodega.
+- Backend: nueva API `/api/empresa/inventario_avanzado` con acciones `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva`, `confirmar_reserva` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_inventario_lotes_avanzados`, `empresa_inventario_seriales_avanzados` y `empresa_inventario_reservas_avanzadas`, todas con `empresa_id`.
+- Integracion: la entrada de lote alimenta `inventario_existencias` e `inventario_movimientos`, para conservar kardex, reportes y reposicion.
+- Seguridad: se reutiliza la licencia y permiso `inventario`; la pagina `linkInventarioAvanzado` queda protegida por `WithEmpresaInventarioPermissions`.
+- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html`.
+- Documentacion: se agrega `documentos/inventario_avanzado.md`.
+
+2026-05-06: Compras avanzadas
+- Modulos afectados: `compras`, `proveedores`, `inventario`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia `Compras` sin duplicar modulo, agregando requisiciones internas, cotizaciones por proveedor, aprobaciones con monto autorizado y recepcion parcial/total.
+- Backend: nueva API `/api/empresa/compras_avanzadas` con acciones `dashboard`, `requisiciones`, `detalle`, `cotizaciones`, `aprobaciones`, `recepciones`, `requisicion`, `cotizacion`, `aprobar`, `recepcion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_compras_requisiciones`, `empresa_compras_requisicion_items`, `empresa_compras_cotizaciones`, `empresa_compras_aprobaciones`, `empresa_compras_recepciones_avanzadas` y `empresa_compras_recepcion_items_avanzadas`, todas con `empresa_id`.
+- Seguridad: se reutiliza la licencia y permiso `compras`; la pagina `linkComprasAvanzadas` queda protegida por `WithEmpresaComprasPermissions`.
+- Frontend: `web/administrar_empresa/compras_avanzadas.html` queda enlazada desde el submenu `web/administrar_empresa/compras_menu.html`.
+- Documentacion: se agrega `documentos/compras_avanzadas.md`.
+
+2026-05-06: Importaciones y costeo de nacionalizacion
+- Modulos afectados: `importaciones_costeo`, `compras`, `inventario`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega control de importaciones internacionales con proveedor, pais, incoterm, moneda, TRM, items, costos de nacionalizacion y costo aterrizado por producto.
+- Backend: nueva API `/api/empresa/importaciones_costeo` con acciones `dashboard`, `importaciones`, `detalle`, `importacion`, `item`, `costo`, `distribuir` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_importaciones_costeo`, `empresa_importaciones_costeo_items` y `empresa_importaciones_costeo_costos`, todas con `empresa_id`.
+- Seguridad: modulo independiente `importaciones_costeo`, pagina `linkImportacionesCosteo`, wrapper `WithEmpresaImportacionesCosteoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/importaciones_costeo.html` permite crear embarques, agregar items, cargar costos y distribuirlos por valor, peso, volumen o cantidad.
+- Documentacion: se agrega `documentos/importaciones_costeo.md`.
+
+2026-05-06: Activos fijos avanzado
+- Modulos afectados: `contabilidad_colombia_avanzada`, `activos_fijos`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia el submodulo existente de activos fijos con depreciacion por periodo, mantenimiento, traslados, bajas, eventos y resumen gerencial por empresa.
+- Backend: `/api/empresa/contabilidad_colombia_avanzada` agrega acciones `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento`.
+- Base de datos: se enriquecen `empresa_contabilidad_activos_fijos` y se agregan `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`, todas con `empresa_id`.
+- Seguridad: se mantiene la licencia y wrapper de `contabilidad_colombia_avanzada`; no se crea modulo duplicado.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` agrega pestaña `Activos avanzado`.
+- Documentacion: se agrega `documentos/activos_fijos_avanzado.md`.
+
+2026-05-06: Nomina Colombia avanzada
+- Modulos afectados: `nomina_sueldos`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia la nomina existente sin crear un modulo duplicado, agregando conceptos legales Colombia, novedades aprobables, resumen PILA y dashboard operativo por empresa.
+- Backend: la API existente `/api/empresa/nomina` incorpora acciones `conceptos_colombia`, `novedades_colombia`, `pila_colombia`, `dashboard_colombia`, `concepto_colombia`, `novedad_colombia`, `generar_pila` y `seed_colombia`.
+- Base de datos: nuevas tablas `empresa_nomina_colombia_conceptos`, `empresa_nomina_colombia_novedades` y `empresa_nomina_colombia_pila_resumen`, todas con `empresa_id`.
+- Seguridad: se reutiliza la cobertura de nomina/finanzas para evitar duplicar roles, rutas o licencias; la activacion sigue pasando por el modulo financiero y los permisos de la pagina `linkNominaSueldos`.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega seccion Colombia con KPIs, conceptos, novedades y PILA adaptable a las apariencias centralizadas.
+- Documentacion: se agrega `documentos/nomina_colombia_avanzada.md`.
+
+2026-05-06: Tesoreria y presupuesto
+- Modulos afectados: `tesoreria_presupuesto`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Tesoreria y presupuesto` dentro del Centro financiero y contable para manejar cuentas banco/caja, presupuestos, partidas, ejecucion y flujo de caja proyectado por empresa.
+- Backend: nueva API `/api/empresa/tesoreria_presupuesto` con acciones `dashboard`, `config`, `cuentas`, `presupuestos`, `partidas`, `flujo`, `generar_flujo` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_tesoreria_config`, `empresa_tesoreria_cuentas`, `empresa_tesoreria_presupuestos`, `empresa_tesoreria_partidas` y `empresa_tesoreria_flujo_caja`, todas con `empresa_id`.
+- Seguridad: modulo independiente `tesoreria_presupuesto`, pagina `linkTesoreriaPresupuesto`, wrapper `WithEmpresaTesoreriaPresupuestoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/tesoreria_presupuesto.html` incluye cuentas, presupuesto, partidas, flujo y configuracion con apariencia adaptable.
+- Documentacion: se agrega `documentos/tesoreria_presupuesto.md`.
+
+2026-05-06: Produccion / MRP empresarial
+- Modulos afectados: `produccion_mrp`, `inventario`, `compras`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Produccion / MRP` en Administrar empresa > Inventario y compras para controlar recetas/BOM, componentes, ordenes de produccion, consumos, calidad y requerimientos de materiales por empresa.
+- Backend: nueva API `/api/empresa/produccion_mrp` con acciones `dashboard`, `config`, `recetas`, `componentes`, `ordenes`, `orden_estado`, `consumos`, `calidad`, `mrp_plan`, `generar_mrp` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_produccion_mrp_config`, `empresa_produccion_recetas`, `empresa_produccion_receta_componentes`, `empresa_produccion_ordenes`, `empresa_produccion_consumos`, `empresa_produccion_calidad` y `empresa_produccion_mrp_plan`, todas con `empresa_id`.
+- Seguridad: modulo independiente `produccion_mrp`, pagina `linkProduccionMRP`, wrapper `WithEmpresaProduccionMRPPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/produccion_mrp.html` incluye dashboard, tabs de recetas, ordenes, consumos/calidad, plan MRP y configuracion con apariencia adaptable.
+- Documentacion: se agrega `documentos/produccion_mrp.md`.
+
 2026-05-05: Reportes colombianos avanzados
 - Modulos afectados: `reportes`, `ventas`, `inventario`, `compras`, `finanzas`, `contabilidad`, `cartera`.
 - Cambio funcional: el catalogo central de `/api/empresa/reportes` incorpora reportes frecuentes en software colombiano como Siigo/Alegra/World Office/Helisa: `ventas_diarias_metodos_pago`, `ventas_rentabilidad_productos`, `inventario_kardex_valorizado`, `compras_proveedores_detalle`, `contable_balance_prueba`, `contable_libro_auxiliar`, `contable_libro_mayor`, `fiscal_impuestos_retenciones`, `fiscal_informacion_exogena_base`, `cartera_edades_cuentas_por_cobrar` y `cartera_edades_cuentas_por_pagar`.

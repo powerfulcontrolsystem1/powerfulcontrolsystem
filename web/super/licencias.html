@@ -189,6 +189,9 @@
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="gimnasio"><span class="lic-coverage-h">Gimnasio</span><span class="lic-coverage-d">Membresías, accesos, clases y dispositivos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="taxi_system"><span class="lic-coverage-h">Taxi system</span><span class="lic-coverage-d">Despacho tipo Uber, mapa, GPS y conductores.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="domicilios"><span class="lic-coverage-h">Domicilios</span><span class="lic-coverage-d">Restaurantes, domiciliarios, pedidos y tracking.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="produccion_mrp"><span class="lic-coverage-h">Producción / MRP</span><span class="lic-coverage-d">Recetas, órdenes de producción, consumos, calidad y planeación de materiales.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="importaciones_costeo"><span class="lic-coverage-h">Importaciones y costeo</span><span class="lic-coverage-d">Embarques, aduana, fletes, aranceles y costo aterrizado por producto.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="tesoreria_presupuesto"><span class="lic-coverage-h">Tesorería y presupuesto</span><span class="lic-coverage-d">Cuentas, bancos, presupuesto, ejecución y flujo de caja proyectado.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="parqueadero"><span class="lic-coverage-h">Parqueadero</span><span class="lic-coverage-d">Tickets de ingreso, QR de salida y cobro automatico.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="apartamentos_turisticos"><span class="lic-coverage-h">Apartamentos turísticos</span><span class="lic-coverage-d">Reservas, tarifas, huéspedes, disponibilidad y limpieza.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="alquileres"><span class="lic-coverage-h">Alquileres</span><span class="lic-coverage-d">Activos, contratos, tarifas y mantenimiento.</span></label>
@@ -263,6 +266,9 @@
         gimnasio: 'Gimnasio',
         taxi_system: 'Taxi system',
         domicilios: 'Domicilios',
+        produccion_mrp: 'Producción / MRP',
+        importaciones_costeo: 'Importaciones y costeo',
+        tesoreria_presupuesto: 'Tesorería y presupuesto',
         parqueadero: 'Parqueadero',
         apartamentos_turisticos: 'Apartamentos turísticos',
         alquileres: 'Alquileres',
@@ -273,10 +279,10 @@
       };
       const modulePresets = {
         all: '',
-        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos',
+        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos,produccion_mrp,importaciones_costeo',
         financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,facturacion',
         comercial: 'ventas,venta_publica,clientes,compras,domicilios',
-        enterprise: 'ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,clientes,compras,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,alquileres,odontologia,turnos_atencion,control_electrico,carnets'
+        enterprise: 'ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,tesoreria_presupuesto,clientes,compras,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,alquileres,odontologia,turnos_atencion,control_electrico,carnets,produccion_mrp,importaciones_costeo'
       };
 
       function parseTruthy(v){

@@ -727,6 +727,15 @@ func main() {
 		log.Fatalf("failed to ensure contabilidad colombia avanzada schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_contabilidad_colombia_avanzada_schema")
+	if err := dbpkg.EnsureEmpresaTesoreriaPresupuestoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure tesoreria presupuesto schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaImportacionesCosteoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure importaciones costeo schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
 	}
@@ -750,11 +759,20 @@ func main() {
 	if err := dbpkg.EnsureEmpresaApartamentosTuristicosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure apartamentos turisticos empresa schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaProduccionMRPSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure produccion mrp empresa schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
 	}
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa productos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaInventarioAvanzadoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure inventario avanzado schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaCRMVentasAvanzadasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure crm ventas avanzadas schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_sensor_puertas_schema")
 	if runtimePostgres {
@@ -883,12 +901,16 @@ func main() {
 	http.HandleFunc("/api/empresa/inventario/transferir", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioTransferHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/ajustar", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAjusteHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/cambiar_producto", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioCambioProductoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/inventario_avanzado", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAvanzadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/emitir_orden", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/actualizar_estado", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos/comprobante", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentoComprobanteUploadHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/compras_avanzadas", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasAvanzadasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/produccion_mrp", handlers.WithEmpresaProduccionMRPPermissions(dbEmpresas, dbSuper, handlers.EmpresaProduccionMRPHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
@@ -915,6 +937,7 @@ func main() {
 	http.HandleFunc("/api/public/market_symbol", handlers.PublicMarketSymbolHandler())
 	http.HandleFunc("/api/public/publicaciones/", handlers.PublicRedSocialInteraccionesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/crm_avanzado", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaCRMVentasAvanzadasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentaPublicaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
@@ -974,6 +997,7 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/tesoreria_presupuesto", handlers.WithEmpresaTesoreriaPresupuestoPermissions(dbEmpresas, dbSuper, handlers.EmpresaTesoreriaPresupuestoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))

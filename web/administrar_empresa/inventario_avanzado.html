@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inventario avanzado</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .iav-page{min-height:100vh;background:var(--bg);color:var(--text)}
+    .iav-shell{display:grid;gap:14px;padding:18px}
+    .iav-hero,.iav-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 12px 28px rgba(15,23,42,.08)}
+    .iav-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.85fr);gap:14px}
+    .iav-kicker{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:var(--accent)}
+    .iav-hero h1{margin:5px 0 8px;font-size:1.75rem;color:var(--text)}
+    .iav-hero p{color:var(--muted);line-height:1.5;margin:0}
+    .iav-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .iav-kpi{background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:10px}
+    .iav-kpi span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:850}
+    .iav-kpi strong{display:block;margin-top:4px;font-size:1.18rem}
+    .iav-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px}
+    .iav-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .iav-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .iav-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+    .iav-tab{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:8px 10px;cursor:pointer}
+    .iav-tab.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast,#fff)}
+    .iav-panel{display:none}.iav-panel.is-active{display:block}
+    .iav-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .iav-table{width:100%;min-width:860px;border-collapse:collapse}
+    .iav-table th,.iav-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .iav-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .iav-msg{min-height:22px;color:var(--muted)}.iav-msg.success{color:var(--success)}.iav-msg.error{color:var(--danger)}
+    @media(max-width:980px){.iav-hero,.iav-grid{grid-template-columns:1fr}.iav-row,.iav-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.iav-shell{padding:12px}.iav-row,.iav-kpis{grid-template-columns:1fr}.iav-hero h1{font-size:1.45rem}}
+  </style>
+</head>
+<body class="empresa-subpage iav-page">
+  <main class="container iav-shell">
+    <section class="iav-hero">
+      <div>
+        <div class="iav-kicker">Almacen profesional</div>
+        <h1>Lotes, seriales, reservas y valorizacion</h1>
+        <p>Controla inventario trazable por lote, vencimiento, serial, calidad, reservas comerciales y valor disponible por bodega.</p>
+        <div class="iav-actions" style="margin-top:12px">
+          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
+        </div>
+      </div>
+      <div class="iav-kpis">
+        <div class="iav-kpi"><span>Lotes activos</span><strong id="kpiLotes">0</strong></div>
+        <div class="iav-kpi"><span>Reservas</span><strong id="kpiReservas">0</strong></div>
+        <div class="iav-kpi"><span>Por vencer</span><strong id="kpiVencer">0</strong></div>
+        <div class="iav-kpi"><span>Valorizado</span><strong id="kpiValor">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="iav-grid">
+      <article class="iav-card">
+        <h2>Operacion</h2>
+        <div class="iav-tabs" role="tablist">
+          <button class="iav-tab is-active" type="button" data-panel="panelLote">Lote</button>
+          <button class="iav-tab" type="button" data-panel="panelSerial">Serial</button>
+          <button class="iav-tab" type="button" data-panel="panelReserva">Reserva</button>
+        </div>
+
+        <div id="panelLote" class="iav-panel is-active">
+          <div class="iav-row">
+            <div><label class="form-label" for="loteProducto">Producto ID</label><input id="loteProducto" class="form-input" type="number"></div>
+            <div><label class="form-label" for="loteBodega">Bodega ID</label><input id="loteBodega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="loteCodigo">Lote</label><input id="loteCodigo" class="form-input"></div>
+            <div><label class="form-label" for="loteCantidad">Cantidad</label><input id="loteCantidad" class="form-input" type="number" step=".01"></div>
+          </div>
+          <div class="iav-row">
+            <div><label class="form-label" for="loteCosto">Costo unitario</label><input id="loteCosto" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="loteFabricacion">Fabricacion</label><input id="loteFabricacion" class="form-input" type="date"></div>
+            <div><label class="form-label" for="loteVence">Vencimiento</label><input id="loteVence" class="form-input" type="date"></div>
+            <div><label class="form-label" for="loteCalidad">Calidad</label><select id="loteCalidad" class="form-input"><option>liberado</option><option>cuarentena</option><option>bloqueado</option><option>rechazado</option></select></div>
+          </div>
+          <div class="iav-row">
+            <div><label class="form-label" for="loteProveedor">Proveedor</label><input id="loteProveedor" class="form-input"></div>
+            <div><label class="form-label" for="loteDocumento">Documento</label><input id="loteDocumento" class="form-input"></div>
+            <div><label class="form-label" for="loteUbicacion">Ubicacion interna</label><input id="loteUbicacion" class="form-input"></div>
+            <div><button id="btnSaveLote" class="btn" type="button" style="margin-top:24px">Guardar lote</button></div>
+          </div>
+        </div>
+
+        <div id="panelSerial" class="iav-panel">
+          <div class="iav-row">
+            <div><label class="form-label" for="serialLote">Lote ID</label><input id="serialLote" class="form-input" type="number"></div>
+            <div><label class="form-label" for="serialProducto">Producto ID</label><input id="serialProducto" class="form-input" type="number"></div>
+            <div><label class="form-label" for="serialBodega">Bodega ID</label><input id="serialBodega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="serialCodigo">Serial</label><input id="serialCodigo" class="form-input"></div>
+          </div>
+          <div class="iav-row">
+            <div><label class="form-label" for="serialEstado">Estado</label><select id="serialEstado" class="form-input"><option>disponible</option><option>reservado</option><option>mantenimiento</option><option>bloqueado</option></select></div>
+            <div><label class="form-label" for="serialIngreso">Ingreso</label><input id="serialIngreso" class="form-input" type="date"></div>
+            <div><label class="form-label" for="serialGarantia">Garantia</label><input id="serialGarantia" class="form-input" type="date"></div>
+            <div><button id="btnSaveSerial" class="btn" type="button" style="margin-top:24px">Guardar serial</button></div>
+          </div>
+        </div>
+
+        <div id="panelReserva" class="iav-panel">
+          <div class="iav-row">
+            <div><label class="form-label" for="resProducto">Producto ID</label><input id="resProducto" class="form-input" type="number"></div>
+            <div><label class="form-label" for="resBodega">Bodega ID</label><input id="resBodega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="resLote">Lote ID</label><input id="resLote" class="form-input" type="number"></div>
+            <div><label class="form-label" for="resSerial">Serial ID</label><input id="resSerial" class="form-input" type="number"></div>
+          </div>
+          <div class="iav-row">
+            <div><label class="form-label" for="resCantidad">Cantidad</label><input id="resCantidad" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="resModulo">Origen</label><input id="resModulo" class="form-input" value="venta"></div>
+            <div><label class="form-label" for="resRef">Referencia</label><input id="resRef" class="form-input"></div>
+            <div><label class="form-label" for="resCliente">Cliente</label><input id="resCliente" class="form-input"></div>
+          </div>
+          <div class="iav-row">
+            <div><label class="form-label" for="resExpira">Expira</label><input id="resExpira" class="form-input" type="date"></div>
+            <div><label class="form-label" for="confirmReservaID">Reserva a confirmar</label><input id="confirmReservaID" class="form-input" type="number"></div>
+            <div><button id="btnSaveReserva" class="btn" type="button" style="margin-top:24px">Crear reserva</button></div>
+            <div><button id="btnConfirmReserva" class="btn secondary" type="button" style="margin-top:24px">Confirmar salida</button></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="iav-card">
+        <h2>Lotes</h2>
+        <div class="iav-table-wrap"><table class="iav-table"><thead><tr><th>ID</th><th>Producto</th><th>Bodega</th><th>Lote</th><th>Disponible</th><th>Reservado</th><th>Vence</th><th>Valor</th><th>Accion</th></tr></thead><tbody id="lotesBody"></tbody></table></div>
+      </article>
+      <article class="iav-card"><h2>Reservas</h2><div class="iav-table-wrap"><table class="iav-table"><thead><tr><th>ID</th><th>Producto</th><th>Lote</th><th>Serial</th><th>Cantidad</th><th>Cliente</th><th>Estado</th></tr></thead><tbody id="reservasBody"></tbody></table></div></article>
+      <article class="iav-card"><h2>Valorizacion</h2><div class="iav-table-wrap"><table class="iav-table"><thead><tr><th>Producto</th><th>Bodega</th><th>Disponible</th><th>Reservado</th><th>Libre</th><th>Costo prom.</th><th>Valor</th></tr></thead><tbody id="valorBody"></tbody></table></div><div id="msg" class="iav-msg"></div></article>
+    </section>
+  </main>
+  <script src="/js/inventario_avanzado.js"></script>
+</body>
+</html>

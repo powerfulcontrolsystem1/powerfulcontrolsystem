@@ -120,10 +120,16 @@ func main() {
 	mustStep("contabilidad_avanzada", "crear_documento_soporte", docID, nil, err)
 	activoID, err := dbpkg.CreateEmpresaActivoFijo(db, dbpkg.EmpresaActivoFijo{
 		EmpresaID: *empresaID, Codigo: "QA-AF-" + runID, Nombre: "Controlador electrico QA Calipso", Categoria: "equipo",
-		FechaCompra: today, Costo: 2400000, ValorResidual: 200000, VidaUtilMeses: 48, CuentaActivo: "1528", CuentaDepreciacion: "1592", CuentaGasto: "5160",
-		Ubicacion: "Recepcion Motel Calipso", Responsable: "QA Administracion", Estado: "activo", UsuarioCreador: *usuario,
+		Serial: "SER-" + short(runID), Placa: "PL-AF-" + short(runID), FechaCompra: today, Costo: 2400000, ValorResidual: 200000, VidaUtilMeses: 48, MetodoDepreciacion: "linea_recta", CuentaActivo: "1528", CuentaDepreciacion: "1592", CuentaGasto: "5160",
+		Ubicacion: "Recepcion Motel Calipso", Responsable: "QA Administracion", CentroCosto: "Operaciones", Proveedor: "Proveedor activos QA", MantenimientoCadaDias: 90, Estado: "activo", UsuarioCreador: *usuario,
 	})
 	mustStep("contabilidad_avanzada", "crear_activo_fijo", activoID, nil, err)
+	depsAct, err := dbpkg.GenerarEmpresaActivosDepreciacion(db, *empresaID, periodo, *usuario)
+	mustStep("contabilidad_avanzada", "generar_depreciacion_activos", 0, map[string]interface{}{"depreciaciones": len(depsAct)}, err)
+	eventoActID, err := dbpkg.RegistrarEmpresaActivoEvento(db, dbpkg.EmpresaActivoEvento{EmpresaID: *empresaID, ActivoID: activoID, Tipo: "mantenimiento", FechaEvento: today, Valor: 185000, Detalle: "Mantenimiento QA activo fijo Calipso " + runID, UsuarioCreador: *usuario})
+	mustStep("contabilidad_avanzada", "registrar_evento_activo", eventoActID, nil, err)
+	actResumen, err := dbpkg.BuildEmpresaActivosFijosAvanzadoResumen(db, *empresaID, periodo)
+	mustStep("contabilidad_avanzada", "dashboard_activos_avanzado", 0, map[string]interface{}{"activos": actResumen.ActivosActivos, "depreciacion_periodo": actResumen.DepreciacionPeriodoTotal, "eventos": len(actResumen.UltimosEventos)}, err)
 	carteraID, err := dbpkg.CreateEmpresaCarteraCXP(db, dbpkg.EmpresaCarteraCXP{
 		EmpresaID: *empresaID, Tipo: "cxc", TerceroID: terceroID, TerceroNombre: "Cliente QA Calipso " + runID,
 		Documento: "QA-CXC-AV-" + runID, FechaEmision: today, FechaVencimiento: time.Now().AddDate(0, 0, 15).Format("2006-01-02"),
@@ -164,6 +170,41 @@ func main() {
 	taxiDash, err := dbpkg.BuildEmpresaTaxiDashboard(db, *empresaID)
 	mustStep("taxi_system", "dashboard", 0, map[string]interface{}{"conductores_online": taxiDash.ConductoresOnline, "servicios_activos": taxiDash.ServiciosActivos, "solicitudes": len(taxiDash.Requests)}, err)
 
+	prodID, err := runProduccionMRP(db, *empresaID, runID, *usuario)
+	mustStep("produccion_mrp", "receta_orden_consumo_calidad_mrp", prodID, nil, err)
+	prodDash, err := dbpkg.BuildEmpresaProduccionMRPDashboard(db, *empresaID)
+	mustStep("produccion_mrp", "dashboard", 0, map[string]interface{}{"recetas_activas": prodDash.RecetasActivas, "ordenes_abiertas": prodDash.OrdenesAbiertas, "ordenes_cerradas": prodDash.OrdenesCerradas, "plan": len(prodDash.Plan)}, err)
+
+	invID, err := runInventarioAvanzado(db, *empresaID, runID, *usuario)
+	mustStep("inventario_avanzado", "lote_serial_reserva_valorizacion", invID, nil, err)
+	invDash, err := dbpkg.BuildEmpresaInventarioAvanzadoDashboard(db, *empresaID)
+	mustStep("inventario_avanzado", "dashboard", 0, map[string]interface{}{"lotes": invDash.LotesActivos, "reservas": invDash.ReservasActivas, "valor": invDash.ValorDisponible}, err)
+
+	crmID, err := runCRMVentasAvanzadas(db, *empresaID, runID, *usuario)
+	mustStep("crm_ventas_avanzadas", "lead_meta_scoring_cotizacion_forecast", crmID, nil, err)
+	crmDash, err := dbpkg.BuildEmpresaCRMVentasAvanzadasDashboard(db, *empresaID, periodo)
+	mustStep("crm_ventas_avanzadas", "dashboard", 0, map[string]interface{}{"leads_activos": crmDash.LeadsActivos, "forecast": crmDash.ForecastPonderado, "cotizaciones": crmDash.CotizacionesAbiertas}, err)
+
+	tesID, err := runTesoreriaPresupuesto(db, *empresaID, runID, *usuario)
+	mustStep("tesoreria_presupuesto", "cuentas_presupuesto_flujo", tesID, nil, err)
+	tesDash, err := dbpkg.BuildEmpresaTesoreriaDashboard(db, *empresaID)
+	mustStep("tesoreria_presupuesto", "dashboard", 0, map[string]interface{}{"cuentas": tesDash.CuentasActivas, "presupuestos": tesDash.PresupuestosActivos, "flujo_neto": tesDash.FlujoNeto}, err)
+
+	impID, err := runImportacionesCosteo(db, *empresaID, runID, *usuario)
+	mustStep("importaciones_costeo", "embarque_items_costos_distribucion", impID, nil, err)
+	impDash, err := dbpkg.BuildEmpresaImportacionesCosteoDashboard(db, *empresaID)
+	mustStep("importaciones_costeo", "dashboard", 0, map[string]interface{}{"abiertas": impDash.ImportacionesAbiertas, "cerradas": impDash.ImportacionesCerradas, "costo_total": impDash.CostoTotalCOP}, err)
+
+	compraID, err := runComprasAvanzadas(db, *empresaID, runID, *usuario)
+	mustStep("compras_avanzadas", "requisicion_cotizacion_aprobacion_recepcion", compraID, nil, err)
+	compraDash, err := dbpkg.BuildEmpresaComprasAvanzadasDashboard(db, *empresaID)
+	mustStep("compras_avanzadas", "dashboard", 0, map[string]interface{}{"abiertas": compraDash.RequisicionesAbiertas, "cotizaciones": compraDash.CotizacionesEnEvaluacion, "pendientes": compraDash.RecepcionesPendientes}, err)
+
+	nomID, err := runNominaColombiaAvanzada(db, *empresaID, runID, *usuario)
+	mustStep("nomina_colombia_avanzada", "empleado_conceptos_novedades_liquidacion_pila", nomID, nil, err)
+	nomDash, err := dbpkg.BuildEmpresaNominaColombiaAvanzadaDashboard(db, *empresaID, periodo)
+	mustStep("nomina_colombia_avanzada", "dashboard", 0, map[string]interface{}{"conceptos_activos": nomDash.ConceptosActivos, "novedades_pendientes": nomDash.NovedadesPendientes, "total_pila": nomDash.TotalPILA}, err)
+
 	add(step{Module: "resumen", Action: "conteos_empresa_7", OK: true, Meta: map[string]interface{}{
 		"contabilidad_comprobantes": countRows("empresa_contabilidad_colombia_comprobantes"),
 		"domicilios_orders":         countRows("empresa_domicilios_orders"),
@@ -171,6 +212,15 @@ func main() {
 		"apartamentos_reservas":     countRows("empresa_apartamentos_turisticos_reservas"),
 		"carnets":                   countRows("empresa_carnets"),
 		"taxi_requests":             countRows("empresa_taxi_requests"),
+		"produccion_ordenes":        countRows("empresa_produccion_ordenes"),
+		"tesoreria_flujo":           countRows("empresa_tesoreria_flujo_caja"),
+		"importaciones_costeo":      countRows("empresa_importaciones_costeo"),
+		"inventario_lotes_av":       countRows("empresa_inventario_lotes_avanzados"),
+		"crm_metas_comerciales":     countRows("empresa_crm_metas_comerciales"),
+		"compras_requisiciones":     countRows("empresa_compras_requisiciones"),
+		"nomina_colombia_pila":      countRows("empresa_nomina_colombia_pila_resumen"),
+		"activos_depreciacion":      countRows("empresa_contabilidad_activos_depreciacion"),
+		"activos_eventos":           countRows("empresa_contabilidad_activos_eventos"),
 	}})
 	writeReport(rep)
 	fmt.Println("RESULTADO_FINAL=OK qa_calipso_modulos_nuevos")
@@ -186,6 +236,14 @@ func ensureSchemas(db *sql.DB) error {
 		dbpkg.EnsureEmpresaApartamentosTuristicosSchema,
 		dbpkg.EnsureEmpresaCarnetsSchema,
 		dbpkg.EnsureEmpresaTaxiSystemSchema,
+		dbpkg.EnsureEmpresaProduccionMRPSchema,
+		dbpkg.EnsureEmpresaProductosSchema,
+		dbpkg.EnsureEmpresaInventarioAvanzadoSchema,
+		dbpkg.EnsureEmpresaCRMVentasAvanzadasSchema,
+		dbpkg.EnsureEmpresaTesoreriaPresupuestoSchema,
+		dbpkg.EnsureEmpresaImportacionesCosteoSchema,
+		dbpkg.EnsureEmpresaComprasAvanzadasSchema,
+		dbpkg.EnsureEmpresaNominaSchema,
 	} {
 		if err := fn(db); err != nil {
 			return err
@@ -374,6 +432,298 @@ func runTaxi(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) 
 		return 0, err
 	}
 	return req.ID, nil
+}
+
+func runProduccionMRP(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	if err := dbpkg.UpsertEmpresaProduccionMRPConfig(db, dbpkg.EmpresaProduccionMRPConfig{EmpresaID: empresaID, NombreSistema: "Produccion Calipso QA", Moneda: "COP", CosteoModo: "estandar", AprobarOrdenes: true, CerrarConCalidad: true, UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	recID, err := dbpkg.UpsertEmpresaProduccionReceta(db, dbpkg.EmpresaProduccionReceta{
+		EmpresaID: empresaID, Codigo: "BOM-QA-" + short(runID), Nombre: "Kit amenidades QA Calipso " + runID, ProductoTerminadoNombre: "Kit amenidades QA", Version: "1.0", Unidad: "kit", CantidadBase: 1, CostoEstandar: 5200, MermaPorcentaje: 2, TiempoEstimadoMin: 14, Estado: "activo", UsuarioCreador: usuario,
+		Componentes: []dbpkg.EmpresaProduccionComponente{
+			{ProductoNombre: "Shampoo QA", Unidad: "und", Cantidad: 1, CostoUnitario: 900, Etapa: "alistamiento", Obligatoria: true},
+			{ProductoNombre: "Jabon QA", Unidad: "und", Cantidad: 1, CostoUnitario: 1200, Etapa: "alistamiento", Obligatoria: true},
+			{ProductoNombre: "Empaque QA", Unidad: "und", Cantidad: 1, CostoUnitario: 500, Etapa: "empaque", Obligatoria: true},
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+	orden, err := dbpkg.CreateEmpresaProduccionOrden(db, dbpkg.EmpresaProduccionOrden{EmpresaID: empresaID, RecetaID: recID, ProductoTerminadoNombre: "Kit amenidades QA", CantidadPlanificada: 25, Estado: "programada", Prioridad: "alta", Responsable: "QA Operaciones", Observaciones: "Orden QA produccion/MRP " + runID, UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.CambiarEstadoEmpresaProduccionOrden(db, empresaID, orden.ID, "en_proceso", usuario); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.RegistrarEmpresaProduccionConsumo(db, dbpkg.EmpresaProduccionConsumo{EmpresaID: empresaID, OrdenID: orden.ID, ProductoNombre: "Shampoo QA ajuste", CantidadPlanificada: 25, CantidadConsumida: 25, CostoUnitario: 900, LoteCodigo: "LQA-" + short(runID), UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.RegistrarEmpresaProduccionCalidad(db, dbpkg.EmpresaProduccionCalidad{EmpresaID: empresaID, OrdenID: orden.ID, Resultado: "aprobado", CantidadAprobada: 25, Responsable: "QA Calidad", ChecklistJSON: `{"contenido":"ok","empaque":"ok"}`}); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.GenerarEmpresaProduccionMRPPlan(db, empresaID, time.Now().Format("2006-01"), usuario); err != nil {
+		return 0, err
+	}
+	return orden.ID, nil
+}
+
+func runTesoreriaPresupuesto(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	periodo := time.Now().Format("2006-01")
+	if err := dbpkg.UpsertEmpresaTesoreriaConfig(db, dbpkg.EmpresaTesoreriaConfig{EmpresaID: empresaID, NombreSistema: "Tesoreria Calipso QA", Moneda: "COP", PeriodoTrabajo: periodo, MetodoProyeccion: "mensual", AlertaSaldoMinimo: true, RequiereAprobacionPago: true, UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	cuentaID, err := dbpkg.UpsertEmpresaTesoreriaCuenta(db, dbpkg.EmpresaTesoreriaCuenta{EmpresaID: empresaID, Codigo: "QA-BANCO-" + short(runID), Nombre: "Banco QA Calipso " + runID, Tipo: "banco", Entidad: "Banco QA", Numero: "QA" + digits(runID), Moneda: "COP", SaldoInicial: 18000000, SaldoActual: 18000000, SaldoMinimo: 2500000, Responsable: "QA Tesoreria", Estado: "activo", UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	presID, err := dbpkg.UpsertEmpresaTesoreriaPresupuesto(db, dbpkg.EmpresaTesoreriaPresupuesto{EmpresaID: empresaID, Codigo: "QA-PRES-" + short(runID), Nombre: "Presupuesto QA Calipso " + runID, Periodo: periodo, Escenario: "base", IngresosMeta: 52000000, EgresosMeta: 31000000, SaldoInicial: 18000000, Estado: "aprobado", Responsable: "QA Gerencia", UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.UpsertEmpresaTesoreriaPartida(db, dbpkg.EmpresaTesoreriaPartida{EmpresaID: empresaID, PresupuestoID: presID, Categoria: "ventas", Tipo: "ingreso", Concepto: "Ingresos QA hospedaje y servicios", ValorPresupuestado: 52000000, ValorEjecutado: 12000000, Periodicidad: "mensual", Estado: "activo", UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.UpsertEmpresaTesoreriaPartida(db, dbpkg.EmpresaTesoreriaPartida{EmpresaID: empresaID, PresupuestoID: presID, Categoria: "proveedores", Tipo: "egreso", Concepto: "Pagos QA proveedores", ValorPresupuestado: 18000000, ValorEjecutado: 4500000, Periodicidad: "mensual", Estado: "activo", UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.GenerarEmpresaTesoreriaFlujoDesdePresupuesto(db, empresaID, presID, usuario); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.CreateEmpresaTesoreriaFlujo(db, dbpkg.EmpresaTesoreriaFlujo{EmpresaID: empresaID, CuentaID: cuentaID, PresupuestoID: presID, FechaFlujo: periodo + "-20", Periodo: periodo, Tipo: "egreso", Categoria: "impuestos", Concepto: "Reserva impuestos QA", Valor: 3900000, OrigenModulo: "qa_calipso", Estado: "programado", UsuarioCreador: usuario}); err != nil {
+		return 0, err
+	}
+	return presID, nil
+}
+
+func runImportacionesCosteo(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	impID, err := dbpkg.CreateEmpresaImportacionCosteo(db, dbpkg.EmpresaImportacionCosteo{
+		EmpresaID: empresaID, Codigo: "IMP-QA-" + short(runID), Proveedor: "Proveedor internacional QA Calipso " + runID,
+		PaisOrigen: "China", Incoterm: "FOB", MonedaOrigen: "USD", TRM: 3925, FechaDocumento: time.Now().Format("2006-01-02"),
+		DocumentoReferencia: "BL-QA-" + short(runID), Estado: "en_transito", UsuarioCreador: usuario,
+	})
+	if err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.CreateEmpresaImportacionItem(db, dbpkg.EmpresaImportacionItem{EmpresaID: empresaID, ImportacionID: impID, ProductoNombre: "Sensor puerta importado QA", SKU: "SEN-QA-" + short(runID), Cantidad: 40, Unidad: "und", PesoKG: 16, VolumenM3: 0.3, CostoUnitarioOrigen: 11.5}, 3925); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.CreateEmpresaImportacionItem(db, dbpkg.EmpresaImportacionItem{EmpresaID: empresaID, ImportacionID: impID, ProductoNombre: "Controlador relay importado QA", SKU: "REL-QA-" + short(runID), Cantidad: 18, Unidad: "und", PesoKG: 22, VolumenM3: 0.45, CostoUnitarioOrigen: 37.2}, 3925); err != nil {
+		return 0, err
+	}
+	for _, c := range []dbpkg.EmpresaImportacionCosto{
+		{EmpresaID: empresaID, ImportacionID: impID, Tipo: "flete", Concepto: "Flete internacional QA", BaseDistribucion: "peso", ValorCOP: 1720000, CuentaContable: "1435", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, ImportacionID: impID, Tipo: "arancel", Concepto: "Arancel nacionalizacion QA", BaseDistribucion: "valor", ValorCOP: 1360000, CuentaContable: "1435", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, ImportacionID: impID, Tipo: "agencia_aduanas", Concepto: "Agencia de aduanas QA", BaseDistribucion: "cantidad", ValorCOP: 480000, CuentaContable: "1435", UsuarioCreador: usuario},
+	} {
+		if _, err := dbpkg.CreateEmpresaImportacionCosto(db, c); err != nil {
+			return 0, err
+		}
+	}
+	row, err := dbpkg.DistribuirEmpresaImportacionCostos(db, empresaID, impID, usuario)
+	if err != nil {
+		return 0, err
+	}
+	if len(row.Items) == 0 || row.CostoTotalCOP <= 0 {
+		return 0, fmt.Errorf("importacion sin costeo distribuido")
+	}
+	return impID, nil
+}
+
+func runInventarioAvanzado(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	bodegas, err := dbpkg.GetBodegasByEmpresa(db, empresaID, false)
+	if err != nil {
+		return 0, err
+	}
+	var bodegaID int64
+	if len(bodegas) > 0 {
+		bodegaID = bodegas[0].ID
+	} else {
+		bodegaID, err = dbpkg.CreateBodega(db, dbpkg.Bodega{EmpresaID: empresaID, Codigo: "BOD-QA-" + short(runID), Nombre: "Bodega QA inventario " + runID, UsuarioCreador: usuario, Estado: "activo"})
+		if err != nil {
+			return 0, err
+		}
+	}
+	productoID, err := dbpkg.CreateProducto(db, dbpkg.Producto{EmpresaID: empresaID, BodegaPrincipalID: bodegaID, SKU: "INVAV-QA-" + short(runID), Nombre: "Producto QA inventario avanzado " + runID, UnidadMedida: "und", Costo: 18500, Precio: 29000, StockMinimo: 3, StockMaximo: 80, ManejaVencimiento: true, FechaVencimiento: time.Now().AddDate(0, 6, 0).Format("2006-01-02"), DiasAlertaVencimiento: 45, UsuarioCreador: usuario, Estado: "activo"}, 0, "QA inventario avanzado")
+	if err != nil {
+		return 0, err
+	}
+	loteID, err := dbpkg.CreateEmpresaInventarioLoteAvanzado(db, dbpkg.EmpresaInventarioLoteAvanzado{EmpresaID: empresaID, ProductoID: productoID, BodegaID: bodegaID, LoteCodigo: "LOT-QA-" + short(runID), FechaFabricacion: time.Now().AddDate(0, -1, 0).Format("2006-01-02"), FechaVencimiento: time.Now().AddDate(0, 3, 0).Format("2006-01-02"), CantidadInicial: 18, CostoUnitario: 18500, EstadoCalidad: "liberado", Proveedor: "Proveedor QA inventario", DocumentoRef: "DOC-INV-" + short(runID), UbicacionInterna: "Rack QA", UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	serialID, err := dbpkg.CreateEmpresaInventarioSerialAvanzado(db, dbpkg.EmpresaInventarioSerialAvanzado{EmpresaID: empresaID, LoteID: loteID, ProductoID: productoID, BodegaID: bodegaID, Serial: "SER-INV-" + short(runID), EstadoOperativo: "operativo", EstadoInventario: "disponible", FechaIngreso: time.Now().Format("2006-01-02"), GarantiaHasta: time.Now().AddDate(1, 0, 0).Format("2006-01-02"), UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	resID, err := dbpkg.CreateEmpresaInventarioReservaAvanzada(db, dbpkg.EmpresaInventarioReservaAvanzada{EmpresaID: empresaID, ProductoID: productoID, BodegaID: bodegaID, LoteID: loteID, SerialID: serialID, Cantidad: 1, OrigenModulo: "qa_calipso", OrigenRef: "RSV-INV-" + short(runID), ClienteNombre: "Cliente QA inventario", FechaReserva: time.Now().Format("2006-01-02"), FechaExpira: time.Now().AddDate(0, 0, 2).Format("2006-01-02"), UsuarioCreador: usuario})
+	if err != nil {
+		return 0, err
+	}
+	if err := dbpkg.ConfirmarEmpresaInventarioReservaAvanzada(db, empresaID, resID, usuario); err != nil {
+		return 0, err
+	}
+	val, err := dbpkg.ListEmpresaInventarioValorizacionAvanzada(db, empresaID, 50)
+	if err != nil {
+		return 0, err
+	}
+	if len(val) == 0 {
+		return 0, fmt.Errorf("inventario avanzado sin valorizacion")
+	}
+	return loteID, nil
+}
+
+func runCRMVentasAvanzadas(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	leadID, err := dbpkg.SeedEmpresaCRMVentasAvanzadasDemo(db, empresaID, usuario)
+	if err != nil {
+		return 0, err
+	}
+	scores, err := dbpkg.ListEmpresaCRMLeadScores(db, empresaID, 10)
+	if err != nil {
+		return 0, err
+	}
+	if len(scores) == 0 {
+		return 0, fmt.Errorf("crm avanzado sin scoring")
+	}
+	dash, err := dbpkg.BuildEmpresaCRMVentasAvanzadasDashboard(db, empresaID, time.Now().Format("2006-01"))
+	if err != nil {
+		return 0, err
+	}
+	if dash.ForecastPonderado <= 0 || dash.CotizacionesAbiertas <= 0 || len(dash.Agenda) == 0 {
+		return 0, fmt.Errorf("crm avanzado sin forecast/cotizaciones/agenda")
+	}
+	return leadID, nil
+}
+
+func runComprasAvanzadas(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	reqID, err := dbpkg.CreateEmpresaCompraRequisicion(db, dbpkg.EmpresaCompraRequisicion{
+		EmpresaID: empresaID, Codigo: "REQ-QA-" + short(runID), Solicitante: "QA Compras Calipso", Area: "Operaciones",
+		CentroCosto: "Motel Calipso", Prioridad: "alta", FechaSolicitud: time.Now().Format("2006-01-02"), FechaNecesidad: time.Now().AddDate(0, 0, 4).Format("2006-01-02"),
+		EstadoFlujo: "solicitada", Justificacion: "QA ciclo profesional de compras avanzadas", UsuarioCreador: usuario,
+		Items: []dbpkg.EmpresaCompraRequisicionItem{
+			{ProductoNombre: "Amenidad premium QA", CantidadSolicitada: 60, Unidad: "und", CostoEstimado: 3900, ProveedorSugerido: "Proveedor hotelero QA"},
+			{ProductoNombre: "Relay domotico QA", CantidadSolicitada: 10, Unidad: "und", CostoEstimado: 85000, ProveedorSugerido: "Proveedor electrico QA"},
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+	cotID, err := dbpkg.CreateEmpresaCompraCotizacion(db, dbpkg.EmpresaCompraCotizacion{
+		EmpresaID: empresaID, RequisicionID: reqID, ProveedorNombre: "Proveedor Compras QA Calipso", Numero: "COT-QA-" + short(runID),
+		FechaCotizacion: time.Now().Format("2006-01-02"), ValidezHasta: time.Now().AddDate(0, 0, 12).Format("2006-01-02"),
+		TiempoEntregaDias: 2, Subtotal: 1084000, Impuestos: 205960, CondicionesPago: "Credito 15 dias", Estado: "evaluacion", UsuarioCreador: usuario,
+	})
+	if err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.ResolverEmpresaCompraAprobacion(db, dbpkg.EmpresaCompraAprobacion{EmpresaID: empresaID, RequisicionID: reqID, CotizacionID: cotID, Nivel: 1, Aprobador: usuario, Decision: "aprobada", Comentario: "QA aprobacion compra avanzada", MontoAutorizado: 1289960}); err != nil {
+		return 0, err
+	}
+	items, err := dbpkg.ListEmpresaCompraRequisicionItems(db, empresaID, reqID)
+	if err != nil {
+		return 0, err
+	}
+	recItems := make([]dbpkg.EmpresaCompraRecepcionItem, 0, len(items))
+	for _, item := range items {
+		recItems = append(recItems, dbpkg.EmpresaCompraRecepcionItem{
+			RequisicionItemID: item.ID, ProductoNombre: item.ProductoNombre, CantidadOrdenada: item.CantidadSolicitada,
+			CantidadRecibida: item.CantidadSolicitada, CostoUnitario: item.CostoEstimado, Lote: "QA-" + short(runID), EstadoCalidad: "aprobado",
+		})
+	}
+	if _, err := dbpkg.CreateEmpresaCompraRecepcion(db, dbpkg.EmpresaCompraRecepcion{EmpresaID: empresaID, RequisicionID: reqID, CotizacionID: cotID, ProveedorNombre: "Proveedor Compras QA Calipso", Documento: "REM-QA-" + short(runID), FechaRecepcion: time.Now().Format("2006-01-02"), EstadoRecepcion: "total", Responsable: usuario, UsuarioCreador: usuario, Items: recItems}); err != nil {
+		return 0, err
+	}
+	row, err := dbpkg.GetEmpresaCompraRequisicion(db, empresaID, reqID)
+	if err != nil {
+		return 0, err
+	}
+	if row.EstadoFlujo != "recibida_total" || len(row.Cotizaciones) == 0 || len(row.Recepciones) == 0 {
+		return 0, fmt.Errorf("flujo compras avanzadas incompleto")
+	}
+	return reqID, nil
+}
+
+func runNominaColombiaAvanzada(db *sql.DB, empresaID int64, runID, usuario string) (int64, error) {
+	periodo := time.Now().Format("2006-01")
+	desde := periodo + "-01"
+	hasta := periodo + "-28"
+	if err := dbpkg.SeedEmpresaNominaColombiaAvanzadaDemo(db, empresaID, usuario); err != nil {
+		return 0, err
+	}
+	empleadoID, err := dbpkg.CreateEmpresaNominaEmpleado(db, dbpkg.EmpresaNominaEmpleado{
+		EmpresaID:                empresaID,
+		EmpleadoCodigo:           "NOM-QA-" + short(runID),
+		EmpleadoNombre:           "Empleado Nomina QA Calipso " + runID,
+		EmpleadoDocumento:        "QA" + digits(runID),
+		Cargo:                    "Auxiliar operativo QA",
+		TipoContrato:             "indefinido",
+		FechaIngreso:             desde,
+		SalarioBasicoMensual:     2500000,
+		AuxilioTransporteMensual: 162000,
+		BonificacionFijaMensual:  180000,
+		DeduccionFijaMensual:     40000,
+		JornadaHorasDia:          8,
+		IncluirAuxilioTransporte: true,
+		UsuarioCreador:           usuario,
+		Estado:                   "activo",
+		Observaciones:            "QA nomina Colombia avanzada " + runID,
+	})
+	if err != nil {
+		return 0, err
+	}
+	conceptoID, err := dbpkg.UpsertEmpresaNominaConceptoColombia(db, dbpkg.EmpresaNominaConceptoColombia{
+		EmpresaID:               empresaID,
+		Codigo:                  "BONOQA" + short(runID),
+		Nombre:                  "Bono QA no salarial " + runID,
+		Tipo:                    "devengado",
+		BaseCotizacion:          false,
+		AfectaPILA:              false,
+		AfectaNominaElectronica: true,
+		ValorFijo:               85000,
+		CuentaContable:          "510548",
+		Estado:                  "activo",
+		UsuarioCreador:          usuario,
+	})
+	if err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.CreateEmpresaNominaNovedadColombia(db, dbpkg.EmpresaNominaNovedadColombia{
+		EmpresaID:        empresaID,
+		EmpleadoNominaID: empleadoID,
+		PeriodoDesde:     desde,
+		PeriodoHasta:     hasta,
+		FechaNovedad:     desde,
+		Tipo:             "devengado",
+		ConceptoID:       conceptoID,
+		Descripcion:      "Novedad QA bono no salarial " + runID,
+		Cantidad:         1,
+		ValorUnitario:    85000,
+		AfectaIBC:        false,
+		EstadoAprobacion: "aprobado",
+		Estado:           "activo",
+		UsuarioCreador:   usuario,
+	}); err != nil {
+		return 0, err
+	}
+	if _, err := dbpkg.GenerateEmpresaNominaLiquidaciones(db, dbpkg.EmpresaNominaCalculoRequest{
+		EmpresaID:        empresaID,
+		PeriodoDesde:     desde,
+		PeriodoHasta:     hasta,
+		EmpleadoNominaID: empleadoID,
+		Overwrite:        true,
+		UsuarioCreador:   usuario,
+		Observaciones:    "QA liquidacion nomina Colombia avanzada " + runID,
+	}); err != nil {
+		return 0, err
+	}
+	rows, err := dbpkg.GenerarEmpresaNominaPILAResumenColombia(db, empresaID, desde, hasta, usuario)
+	if err != nil {
+		return 0, err
+	}
+	if len(rows) == 0 {
+		return 0, fmt.Errorf("no se genero resumen PILA")
+	}
+	return empleadoID, nil
 }
 
 func writeReport(rep report) {

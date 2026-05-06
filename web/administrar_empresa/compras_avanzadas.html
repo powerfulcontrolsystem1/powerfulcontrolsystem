@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Compras avanzadas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .cav-page{min-height:100vh;background:var(--bg);color:var(--text)}
+    .cav-shell{display:grid;gap:14px;padding:18px}
+    .cav-hero,.cav-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 12px 28px rgba(15,23,42,.08)}
+    .cav-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.85fr);gap:14px}
+    .cav-kicker{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:var(--accent)}
+    .cav-hero h1{margin:5px 0 8px;font-size:1.75rem;color:var(--text)}
+    .cav-hero p{color:var(--muted);line-height:1.5;margin:0}
+    .cav-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .cav-kpi{background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:10px}
+    .cav-kpi span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:850}
+    .cav-kpi strong{display:block;margin-top:4px;font-size:1.18rem}
+    .cav-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px}
+    .cav-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .cav-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .cav-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .cav-table{width:100%;min-width:820px;border-collapse:collapse}
+    .cav-table th,.cav-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .cav-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .cav-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+    .cav-tab{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:8px 10px;cursor:pointer}
+    .cav-tab.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast,#fff)}
+    .cav-panel{display:none}.cav-panel.is-active{display:block}
+    .cav-msg{min-height:22px;color:var(--muted)}.cav-msg.success{color:var(--success)}.cav-msg.error{color:var(--danger)}
+    @media(max-width:980px){.cav-hero,.cav-grid{grid-template-columns:1fr}.cav-row,.cav-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.cav-shell{padding:12px}.cav-row,.cav-kpis{grid-template-columns:1fr}.cav-hero h1{font-size:1.45rem}}
+  </style>
+</head>
+<body class="empresa-subpage cav-page">
+  <main class="container cav-shell">
+    <section class="cav-hero">
+      <div>
+        <div class="cav-kicker">Compras empresariales</div>
+        <h1>Requisiciones, cotizaciones y recepcion</h1>
+        <p>Control profesional del ciclo de compra por empresa: solicitud interna, evaluacion de proveedores, aprobacion y entrada parcial o total.</p>
+        <div class="cav-actions" style="margin-top:12px">
+          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
+        </div>
+      </div>
+      <div class="cav-kpis">
+        <div class="cav-kpi"><span>Abiertas</span><strong id="kpiAbiertas">0</strong></div>
+        <div class="cav-kpi"><span>Pend. aprobacion</span><strong id="kpiAprobacion">0</strong></div>
+        <div class="cav-kpi"><span>Cotizaciones</span><strong id="kpiCotizaciones">0</strong></div>
+        <div class="cav-kpi"><span>Valor pendiente</span><strong id="kpiValor">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="cav-grid">
+      <article class="cav-card">
+        <h2>Nuevo flujo</h2>
+        <div class="cav-tabs" role="tablist">
+          <button class="cav-tab is-active" type="button" data-panel="panelReq">Requisicion</button>
+          <button class="cav-tab" type="button" data-panel="panelCot">Cotizacion</button>
+          <button class="cav-tab" type="button" data-panel="panelApr">Aprobar</button>
+          <button class="cav-tab" type="button" data-panel="panelRec">Recepcion</button>
+        </div>
+
+        <div id="panelReq" class="cav-panel is-active">
+          <div class="cav-row">
+            <div><label class="form-label" for="reqCodigo">Codigo</label><input id="reqCodigo" class="form-input" placeholder="REQ-001"></div>
+            <div><label class="form-label" for="reqSolicitante">Solicitante</label><input id="reqSolicitante" class="form-input"></div>
+            <div><label class="form-label" for="reqArea">Area</label><input id="reqArea" class="form-input"></div>
+            <div><label class="form-label" for="reqPrioridad">Prioridad</label><select id="reqPrioridad" class="form-input"><option>media</option><option>alta</option><option>urgente</option><option>baja</option></select></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="reqCentroCosto">Centro costo</label><input id="reqCentroCosto" class="form-input"></div>
+            <div><label class="form-label" for="reqFecha">Fecha solicitud</label><input id="reqFecha" class="form-input" type="date"></div>
+            <div><label class="form-label" for="reqNecesidad">Fecha necesidad</label><input id="reqNecesidad" class="form-input" type="date"></div>
+            <div><label class="form-label" for="reqEstado">Estado</label><select id="reqEstado" class="form-input"><option>solicitada</option><option>borrador</option><option>cotizando</option></select></div>
+          </div>
+          <div><label class="form-label" for="reqJustificacion">Justificacion</label><textarea id="reqJustificacion" class="form-input" rows="2"></textarea></div>
+          <h3>Items</h3>
+          <div class="cav-row">
+            <div><label class="form-label" for="itemNombre1">Producto 1</label><input id="itemNombre1" class="form-input"></div>
+            <div><label class="form-label" for="itemCant1">Cantidad</label><input id="itemCant1" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="itemCosto1">Costo unitario</label><input id="itemCosto1" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="itemProv1">Proveedor sugerido</label><input id="itemProv1" class="form-input"></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="itemNombre2">Producto 2</label><input id="itemNombre2" class="form-input"></div>
+            <div><label class="form-label" for="itemCant2">Cantidad</label><input id="itemCant2" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="itemCosto2">Costo unitario</label><input id="itemCosto2" class="form-input" type="number" step=".01"></div>
+            <div><button id="btnSaveReq" class="btn" type="button" style="margin-top:24px">Guardar requisicion</button></div>
+          </div>
+        </div>
+
+        <div id="panelCot" class="cav-panel">
+          <div class="cav-row">
+            <div><label class="form-label" for="cotReqID">Requisicion ID</label><input id="cotReqID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="cotProveedor">Proveedor</label><input id="cotProveedor" class="form-input"></div>
+            <div><label class="form-label" for="cotNumero">Numero</label><input id="cotNumero" class="form-input"></div>
+            <div><label class="form-label" for="cotFecha">Fecha</label><input id="cotFecha" class="form-input" type="date"></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="cotSubtotal">Subtotal</label><input id="cotSubtotal" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="cotImpuestos">Impuestos</label><input id="cotImpuestos" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="cotEntrega">Entrega dias</label><input id="cotEntrega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="cotValidez">Validez</label><input id="cotValidez" class="form-input" type="date"></div>
+          </div>
+          <div><label class="form-label" for="cotCondiciones">Condiciones</label><input id="cotCondiciones" class="form-input"></div>
+          <button id="btnSaveCot" class="btn" type="button">Guardar cotizacion</button>
+        </div>
+
+        <div id="panelApr" class="cav-panel">
+          <div class="cav-row">
+            <div><label class="form-label" for="aprReqID">Requisicion ID</label><input id="aprReqID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="aprCotID">Cotizacion ID</label><input id="aprCotID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="aprDecision">Decision</label><select id="aprDecision" class="form-input"><option>aprobada</option><option>rechazada</option><option>pendiente</option></select></div>
+            <div><label class="form-label" for="aprMonto">Monto autorizado</label><input id="aprMonto" class="form-input" type="number" step=".01"></div>
+          </div>
+          <div><label class="form-label" for="aprComentario">Comentario</label><textarea id="aprComentario" class="form-input" rows="2"></textarea></div>
+          <button id="btnSaveApr" class="btn" type="button">Registrar decision</button>
+        </div>
+
+        <div id="panelRec" class="cav-panel">
+          <div class="cav-row">
+            <div><label class="form-label" for="recReqID">Requisicion ID</label><input id="recReqID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="recCotID">Cotizacion ID</label><input id="recCotID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="recDocumento">Documento</label><input id="recDocumento" class="form-input"></div>
+            <div><label class="form-label" for="recEstado">Tipo</label><select id="recEstado" class="form-input"><option>parcial</option><option>total</option></select></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="recProveedor">Proveedor</label><input id="recProveedor" class="form-input"></div>
+            <div><label class="form-label" for="recFecha">Fecha</label><input id="recFecha" class="form-input" type="date"></div>
+            <div><label class="form-label" for="recProducto">Producto</label><input id="recProducto" class="form-input"></div>
+            <div><label class="form-label" for="recItemID">Item req. ID</label><input id="recItemID" class="form-input" type="number"></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="recOrdenada">Ordenada</label><input id="recOrdenada" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="recRecibida">Recibida</label><input id="recRecibida" class="form-input" type="number" step=".01"></div>
+            <div><label class="form-label" for="recCosto">Costo unitario</label><input id="recCosto" class="form-input" type="number" step=".01"></div>
+            <div><button id="btnSaveRec" class="btn" type="button" style="margin-top:24px">Guardar recepcion</button></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="cav-card">
+        <h2>Requisiciones</h2>
+        <div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>ID</th><th>Codigo</th><th>Area</th><th>Prioridad</th><th>Total</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="reqBody"></tbody></table></div>
+      </article>
+      <article class="cav-card"><h2>Detalle</h2><div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>Tipo</th><th>Referencia</th><th>Proveedor/Producto</th><th>Cantidad</th><th>Valor</th><th>Estado</th></tr></thead><tbody id="detailBody"></tbody></table></div></article>
+      <article class="cav-card"><h2>Bitacora</h2><div id="msg" class="cav-msg"></div></article>
+    </section>
+  </main>
+  <script src="/js/compras_avanzadas.js"></script>
+</body>
+</html>

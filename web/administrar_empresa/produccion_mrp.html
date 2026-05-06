@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Producción / MRP</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body.prod-page { margin:0; background:var(--page-bg,#f6f7fb); color:var(--text,#172033); font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    [data-theme="dark"] body.prod-page, body.dark.prod-page { background:#0f1724; color:#e8eef7; }
+    .prod-shell { padding:18px; display:grid; gap:14px; }
+    .prod-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent); padding-bottom:12px; }
+    .prod-title h1 { margin:0; font-size:22px; line-height:1.2; letter-spacing:0; }
+    .prod-title p { margin:5px 0 0; color:var(--muted,#65758b); max-width:780px; }
+    .prod-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .prod-btn { border:1px solid color-mix(in srgb,currentColor 16%,transparent); background:var(--button-bg,#fff); color:inherit; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:650; min-height:38px; }
+    .prod-btn.primary { background:#1769e0; color:#fff; border-color:#1769e0; }
+    .prod-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+    .prod-kpi { background:var(--card-bg,#fff); border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:12px; min-height:72px; }
+    .prod-kpi span { display:block; color:var(--muted,#65758b); font-size:12px; }
+    .prod-kpi strong { display:block; margin-top:6px; font-size:21px; }
+    .prod-tabs { display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent); }
+    .prod-tab { border:0; border-bottom:3px solid transparent; background:transparent; color:inherit; padding:10px 11px; cursor:pointer; font-weight:650; }
+    .prod-tab.is-active { border-color:#1769e0; color:#1769e0; }
+    .prod-panel { display:none; }
+    .prod-panel.is-active { display:grid; gap:12px; }
+    .prod-two { display:grid; grid-template-columns:minmax(320px,0.85fr) minmax(360px,1.15fr); gap:12px; align-items:start; }
+    .prod-box { background:var(--card-bg,#fff); border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:14px; }
+    .prod-box h2 { margin:0 0 10px; font-size:16px; }
+    .prod-form { display:grid; gap:9px; }
+    .prod-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .prod-field { display:grid; gap:4px; }
+    .prod-field label { font-size:12px; color:var(--muted,#65758b); }
+    .prod-field input, .prod-field select, .prod-field textarea { width:100%; box-sizing:border-box; border:1px solid color-mix(in srgb,currentColor 18%,transparent); background:var(--input-bg,#fff); color:inherit; border-radius:8px; padding:9px 10px; min-height:38px; }
+    .prod-field textarea { resize:vertical; min-height:70px; }
+    .prod-list { display:grid; gap:8px; max-height:520px; overflow:auto; padding-right:2px; }
+    .prod-item { border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:10px; display:grid; gap:6px; background:color-mix(in srgb,var(--card-bg,#fff) 92%,currentColor 2%); }
+    .prod-item-top { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .prod-item strong { font-size:14px; }
+    .prod-muted { color:var(--muted,#65758b); font-size:12px; }
+    .prod-chip { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; background:color-mix(in srgb,#1769e0 12%,transparent); color:#1769e0; font-size:12px; font-weight:700; }
+    .prod-table-wrap { overflow:auto; border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; }
+    .prod-table { width:100%; border-collapse:collapse; min-width:720px; background:var(--card-bg,#fff); }
+    .prod-table th, .prod-table td { text-align:left; border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent); padding:9px; font-size:13px; }
+    .prod-table th { color:var(--muted,#65758b); font-weight:700; }
+    .prod-msg { min-height:24px; color:var(--muted,#65758b); }
+    .prod-msg.is-error { color:#c43737; }
+    @media (max-width: 980px) { .prod-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .prod-two { grid-template-columns:1fr; } .prod-head { display:grid; } .prod-actions { justify-content:flex-start; } }
+    @media (max-width: 620px) { .prod-shell { padding:12px; } .prod-grid { grid-template-columns:1fr; } .prod-row { grid-template-columns:1fr; } .prod-tab { flex:1 1 42%; } }
+  </style>
+</head>
+<body class="prod-page">
+  <main class="prod-shell">
+    <header class="prod-head">
+      <div class="prod-title">
+        <h1>Producción / MRP</h1>
+        <p>Planea recetas, componentes, órdenes de producción, consumos, calidad y requerimientos de materiales por empresa.</p>
+      </div>
+      <div class="prod-actions">
+        <button class="prod-btn" id="prodRefresh" type="button">Actualizar</button>
+        <button class="prod-btn" id="prodSeed" type="button">Cargar demo</button>
+        <button class="prod-btn primary" id="prodGenerateMRP" type="button">Generar MRP</button>
+      </div>
+    </header>
+
+    <section class="prod-grid" aria-label="Indicadores">
+      <article class="prod-kpi"><span>Recetas activas</span><strong id="kpiRecetas">0</strong></article>
+      <article class="prod-kpi"><span>Órdenes abiertas</span><strong id="kpiAbiertas">0</strong></article>
+      <article class="prod-kpi"><span>En calidad</span><strong id="kpiCalidad">0</strong></article>
+      <article class="prod-kpi"><span>Cerradas</span><strong id="kpiCerradas">0</strong></article>
+      <article class="prod-kpi"><span>Costo abierto</span><strong id="kpiCostoAbierto">$0</strong></article>
+      <article class="prod-kpi"><span>Costo real mes</span><strong id="kpiCostoMes">$0</strong></article>
+    </section>
+
+    <nav class="prod-tabs" aria-label="Secciones de producción">
+      <button class="prod-tab is-active" data-tab="recetas" type="button">Recetas</button>
+      <button class="prod-tab" data-tab="ordenes" type="button">Órdenes</button>
+      <button class="prod-tab" data-tab="consumos" type="button">Consumos y calidad</button>
+      <button class="prod-tab" data-tab="mrp" type="button">Plan MRP</button>
+      <button class="prod-tab" data-tab="config" type="button">Configuración</button>
+    </nav>
+
+    <div id="prodMsg" class="prod-msg"></div>
+
+    <section id="tab-recetas" class="prod-panel is-active">
+      <div class="prod-two">
+        <form id="recetaForm" class="prod-box prod-form">
+          <h2>Receta / BOM</h2>
+          <div class="prod-row"><div class="prod-field"><label>Código</label><input id="recCodigo" required></div><div class="prod-field"><label>Versión</label><input id="recVersion" value="1.0"></div></div>
+          <div class="prod-field"><label>Nombre</label><input id="recNombre" required></div>
+          <div class="prod-field"><label>Producto terminado</label><input id="recProducto" required></div>
+          <div class="prod-row"><div class="prod-field"><label>Unidad</label><input id="recUnidad" value="und"></div><div class="prod-field"><label>Cantidad base</label><input id="recCantidad" type="number" step="0.0001" value="1"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Costo estándar</label><input id="recCosto" type="number" step="0.01" value="0"></div><div class="prod-field"><label>Merma %</label><input id="recMerma" type="number" step="0.01" value="0"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Tiempo min</label><input id="recTiempo" type="number" value="0"></div><div class="prod-field"><label>Estado</label><select id="recEstado"><option value="activo">Activo</option><option value="borrador">Borrador</option><option value="inactivo">Inactivo</option></select></div></div>
+          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo</label><textarea id="recComponentes">Materia prima principal|1|und|0</textarea></div>
+          <button class="prod-btn primary" type="submit">Guardar receta</button>
+        </form>
+        <div class="prod-box"><h2>Recetas registradas</h2><div id="recetasList" class="prod-list"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-ordenes" class="prod-panel">
+      <div class="prod-two">
+        <form id="ordenForm" class="prod-box prod-form">
+          <h2>Orden de producción</h2>
+          <div class="prod-row"><div class="prod-field"><label>Receta</label><select id="ordReceta"></select></div><div class="prod-field"><label>Cantidad</label><input id="ordCantidad" type="number" step="0.0001" value="1"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Prioridad</label><select id="ordPrioridad"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option><option value="baja">Baja</option></select></div><div class="prod-field"><label>Fecha programada</label><input id="ordFecha" type="date"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Responsable</label><input id="ordResponsable"></div><div class="prod-field"><label>Estado inicial</label><select id="ordEstado"><option value="programada">Programada</option><option value="borrador">Borrador</option><option value="en_proceso">En proceso</option></select></div></div>
+          <div class="prod-field"><label>Observaciones</label><textarea id="ordObs"></textarea></div>
+          <button class="prod-btn primary" type="submit">Crear orden</button>
+        </form>
+        <div class="prod-box"><h2>Órdenes</h2><div id="ordenesList" class="prod-list"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-consumos" class="prod-panel">
+      <div class="prod-two">
+        <form id="consumoForm" class="prod-box prod-form">
+          <h2>Registrar consumo</h2>
+          <div class="prod-field"><label>Orden</label><select id="consOrden"></select></div>
+          <div class="prod-row"><div class="prod-field"><label>Producto</label><input id="consProducto" required></div><div class="prod-field"><label>Lote</label><input id="consLote"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Cantidad consumida</label><input id="consCantidad" type="number" step="0.0001" value="1"></div><div class="prod-field"><label>Costo unitario</label><input id="consCosto" type="number" step="0.01" value="0"></div></div>
+          <button class="prod-btn primary" type="submit">Guardar consumo</button>
+        </form>
+        <form id="calidadForm" class="prod-box prod-form">
+          <h2>Control de calidad</h2>
+          <div class="prod-row"><div class="prod-field"><label>Orden</label><select id="calOrden"></select></div><div class="prod-field"><label>Resultado</label><select id="calResultado"><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="rechazado">Rechazado</option><option value="reproceso">Reproceso</option></select></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Cantidad aprobada</label><input id="calAprobada" type="number" step="0.0001" value="0"></div><div class="prod-field"><label>Cantidad rechazada</label><input id="calRechazada" type="number" step="0.0001" value="0"></div></div>
+          <div class="prod-field"><label>Responsable</label><input id="calResponsable"></div>
+          <div class="prod-field"><label>Observaciones</label><textarea id="calObs"></textarea></div>
+          <button class="prod-btn primary" type="submit">Guardar calidad</button>
+        </form>
+      </div>
+      <div class="prod-box"><h2>Movimientos recientes</h2><div id="movimientosTable" class="prod-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-mrp" class="prod-panel">
+      <div class="prod-box"><h2>Requerimientos de materiales</h2><div id="mrpTable" class="prod-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-config" class="prod-panel">
+      <form id="configForm" class="prod-box prod-form">
+        <h2>Configuración</h2>
+        <div class="prod-row"><div class="prod-field"><label>Nombre del módulo</label><input id="cfgNombre"></div><div class="prod-field"><label>Moneda</label><input id="cfgMoneda" value="COP"></div></div>
+        <div class="prod-field"><label>Costeo</label><select id="cfgCosteo"><option value="estandar">Estándar</option><option value="promedio">Promedio</option><option value="real">Real</option></select></div>
+        <label><input id="cfgAprobar" type="checkbox"> Requerir aprobación de órdenes</label>
+        <label><input id="cfgConsumir" type="checkbox"> Consumir inventario al iniciar orden</label>
+        <label><input id="cfgCalidad" type="checkbox"> Cerrar órdenes con control de calidad</label>
+        <button class="prod-btn primary" type="submit">Guardar configuración</button>
+      </form>
+    </section>
+  </main>
+  <script src="/js/produccion_mrp.js"></script>
+</body>
+</html>

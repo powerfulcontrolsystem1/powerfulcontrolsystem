@@ -15,41 +15,41 @@ const (
 
 // EmpresaNominaConfiguracion representa la parametrizacion legal y operativa de nomina por empresa.
 type EmpresaNominaConfiguracion struct {
-	ID                                   int64   `json:"id"`
-	EmpresaID                            int64   `json:"empresa_id"`
-	PaisCodigo                           string  `json:"pais_codigo"`
-	Moneda                               string  `json:"moneda"`
-	HorasOrdinariasSemana                float64 `json:"horas_ordinarias_semana"`
-	HorasOrdinariasDia                   float64 `json:"horas_ordinarias_dia"`
-	DiasNominaMes                        int     `json:"dias_nomina_mes"`
-	DivisorHoraOrdinaria                 float64 `json:"divisor_hora_ordinaria"`
-	HoraNocturnaDesde                    string  `json:"hora_nocturna_desde"`
-	HoraNocturnaHasta                    string  `json:"hora_nocturna_hasta"`
-	RecargoNocturnoPorcentaje            float64 `json:"recargo_nocturno_porcentaje"`
-	HoraExtraDiurnaPorcentaje            float64 `json:"hora_extra_diurna_porcentaje"`
-	HoraExtraNocturnaPorcentaje          float64 `json:"hora_extra_nocturna_porcentaje"`
-	RecargoDominicalDiurnoPorcentaje     float64 `json:"recargo_dominical_diurno_porcentaje"`
-	RecargoDominicalNocturnoPorcentaje   float64 `json:"recargo_dominical_nocturno_porcentaje"`
-	HoraExtraDominicalDiurnaPorcentaje   float64 `json:"hora_extra_dominical_diurna_porcentaje"`
-	HoraExtraDominicalNocturnaPorcentaje float64 `json:"hora_extra_dominical_nocturna_porcentaje"`
-	DeduccionSaludPorcentaje             float64 `json:"deduccion_salud_porcentaje"`
-	DeduccionPensionPorcentaje           float64 `json:"deduccion_pension_porcentaje"`
-	DeduccionFondoSolidaridadPorcentaje  float64 `json:"deduccion_fondo_solidaridad_porcentaje"`
-	AporteSaludEmpleadorPorcentaje       float64 `json:"aporte_salud_empleador_porcentaje"`
-	AportePensionEmpleadorPorcentaje     float64 `json:"aporte_pension_empleador_porcentaje"`
-	AporteARLPorcentaje                  float64 `json:"aporte_arl_porcentaje"`
-	AporteCajaCompensacionPorcentaje     float64 `json:"aporte_caja_compensacion_porcentaje"`
-	AporteICBFPorcentaje                 float64 `json:"aporte_icbf_porcentaje"`
-	AporteSENAPorcentaje                 float64 `json:"aporte_sena_porcentaje"`
-	ProvisionCesantiasPorcentaje         float64 `json:"provision_cesantias_porcentaje"`
+	ID                                    int64   `json:"id"`
+	EmpresaID                             int64   `json:"empresa_id"`
+	PaisCodigo                            string  `json:"pais_codigo"`
+	Moneda                                string  `json:"moneda"`
+	HorasOrdinariasSemana                 float64 `json:"horas_ordinarias_semana"`
+	HorasOrdinariasDia                    float64 `json:"horas_ordinarias_dia"`
+	DiasNominaMes                         int     `json:"dias_nomina_mes"`
+	DivisorHoraOrdinaria                  float64 `json:"divisor_hora_ordinaria"`
+	HoraNocturnaDesde                     string  `json:"hora_nocturna_desde"`
+	HoraNocturnaHasta                     string  `json:"hora_nocturna_hasta"`
+	RecargoNocturnoPorcentaje             float64 `json:"recargo_nocturno_porcentaje"`
+	HoraExtraDiurnaPorcentaje             float64 `json:"hora_extra_diurna_porcentaje"`
+	HoraExtraNocturnaPorcentaje           float64 `json:"hora_extra_nocturna_porcentaje"`
+	RecargoDominicalDiurnoPorcentaje      float64 `json:"recargo_dominical_diurno_porcentaje"`
+	RecargoDominicalNocturnoPorcentaje    float64 `json:"recargo_dominical_nocturno_porcentaje"`
+	HoraExtraDominicalDiurnaPorcentaje    float64 `json:"hora_extra_dominical_diurna_porcentaje"`
+	HoraExtraDominicalNocturnaPorcentaje  float64 `json:"hora_extra_dominical_nocturna_porcentaje"`
+	DeduccionSaludPorcentaje              float64 `json:"deduccion_salud_porcentaje"`
+	DeduccionPensionPorcentaje            float64 `json:"deduccion_pension_porcentaje"`
+	DeduccionFondoSolidaridadPorcentaje   float64 `json:"deduccion_fondo_solidaridad_porcentaje"`
+	AporteSaludEmpleadorPorcentaje        float64 `json:"aporte_salud_empleador_porcentaje"`
+	AportePensionEmpleadorPorcentaje      float64 `json:"aporte_pension_empleador_porcentaje"`
+	AporteARLPorcentaje                   float64 `json:"aporte_arl_porcentaje"`
+	AporteCajaCompensacionPorcentaje      float64 `json:"aporte_caja_compensacion_porcentaje"`
+	AporteICBFPorcentaje                  float64 `json:"aporte_icbf_porcentaje"`
+	AporteSENAPorcentaje                  float64 `json:"aporte_sena_porcentaje"`
+	ProvisionCesantiasPorcentaje          float64 `json:"provision_cesantias_porcentaje"`
 	ProvisionInteresesCesantiasPorcentaje float64 `json:"provision_intereses_cesantias_porcentaje"`
-	ProvisionPrimaPorcentaje             float64 `json:"provision_prima_porcentaje"`
-	ProvisionVacacionesPorcentaje        float64 `json:"provision_vacaciones_porcentaje"`
-	FechaCreacion                        string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion                   string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador                       string  `json:"usuario_creador,omitempty"`
-	Estado                               string  `json:"estado,omitempty"`
-	Observaciones                        string  `json:"observaciones,omitempty"`
+	ProvisionPrimaPorcentaje              float64 `json:"provision_prima_porcentaje"`
+	ProvisionVacacionesPorcentaje         float64 `json:"provision_vacaciones_porcentaje"`
+	FechaCreacion                         string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion                    string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                        string  `json:"usuario_creador,omitempty"`
+	Estado                                string  `json:"estado,omitempty"`
+	Observaciones                         string  `json:"observaciones,omitempty"`
 }
 
 // EmpresaNominaEmpleado representa la ficha salarial de un empleado para nomina.
@@ -156,27 +156,27 @@ type EmpresaNominaLiquidacionFilter struct {
 }
 
 type EmpresaNominaPago struct {
-	ID                  int64   `json:"id"`
-	EmpresaID           int64   `json:"empresa_id"`
-	LiquidacionID       int64   `json:"liquidacion_id"`
-	EmpleadoNominaID    int64   `json:"empleado_nomina_id"`
-	EmpleadoNombre      string  `json:"empleado_nombre"`
-	EmpleadoDocumento   string  `json:"empleado_documento,omitempty"`
-	PeriodoDesde        string  `json:"periodo_desde"`
-	PeriodoHasta        string  `json:"periodo_hasta"`
-	FechaPago           string  `json:"fecha_pago"`
-	MetodoPago          string  `json:"metodo_pago"`
-	CuentaBancaria      string  `json:"cuenta_bancaria,omitempty"`
-	ReferenciaPago      string  `json:"referencia_pago,omitempty"`
-	DevengadoTotal      float64 `json:"devengado_total"`
-	DeduccionTotal      float64 `json:"deduccion_total"`
-	NetoPagado          float64 `json:"neto_pagado"`
-	EstadoPago          string  `json:"estado_pago"`
-	FechaCreacion       string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion  string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador      string  `json:"usuario_creador,omitempty"`
-	Estado              string  `json:"estado,omitempty"`
-	Observaciones       string  `json:"observaciones,omitempty"`
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	LiquidacionID      int64   `json:"liquidacion_id"`
+	EmpleadoNominaID   int64   `json:"empleado_nomina_id"`
+	EmpleadoNombre     string  `json:"empleado_nombre"`
+	EmpleadoDocumento  string  `json:"empleado_documento,omitempty"`
+	PeriodoDesde       string  `json:"periodo_desde"`
+	PeriodoHasta       string  `json:"periodo_hasta"`
+	FechaPago          string  `json:"fecha_pago"`
+	MetodoPago         string  `json:"metodo_pago"`
+	CuentaBancaria     string  `json:"cuenta_bancaria,omitempty"`
+	ReferenciaPago     string  `json:"referencia_pago,omitempty"`
+	DevengadoTotal     float64 `json:"devengado_total"`
+	DeduccionTotal     float64 `json:"deduccion_total"`
+	NetoPagado         float64 `json:"neto_pagado"`
+	EstadoPago         string  `json:"estado_pago"`
+	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	Estado             string  `json:"estado,omitempty"`
+	Observaciones      string  `json:"observaciones,omitempty"`
 }
 
 type EmpresaNominaPagoFilter struct {
@@ -590,41 +590,44 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "otras_deducciones", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn); err != nil {
+		return err
+	}
 	return nil
 }
 
 func defaultEmpresaNominaConfiguracion(empresaID int64) EmpresaNominaConfiguracion {
 	cfg := EmpresaNominaConfiguracion{
-		EmpresaID:                            empresaID,
-		PaisCodigo:                           "CO",
-		Moneda:                               "COP",
-		HorasOrdinariasSemana:                44,
-		HorasOrdinariasDia:                   8,
-		DiasNominaMes:                        30,
-		DivisorHoraOrdinaria:                 220,
-		HoraNocturnaDesde:                    "21:00:00",
-		HoraNocturnaHasta:                    "06:00:00",
-		RecargoNocturnoPorcentaje:            35,
-		HoraExtraDiurnaPorcentaje:            25,
-		HoraExtraNocturnaPorcentaje:          75,
-		RecargoDominicalDiurnoPorcentaje:     75,
-		RecargoDominicalNocturnoPorcentaje:   110,
-		HoraExtraDominicalDiurnaPorcentaje:   100,
-		HoraExtraDominicalNocturnaPorcentaje: 150,
-		DeduccionSaludPorcentaje:             4,
-		DeduccionPensionPorcentaje:           4,
-		DeduccionFondoSolidaridadPorcentaje:  0,
-		AporteSaludEmpleadorPorcentaje:       8.5,
-		AportePensionEmpleadorPorcentaje:     12,
-		AporteARLPorcentaje:                  0.522,
-		AporteCajaCompensacionPorcentaje:     4,
-		AporteICBFPorcentaje:                 3,
-		AporteSENAPorcentaje:                 2,
-		ProvisionCesantiasPorcentaje:         8.33,
+		EmpresaID:                             empresaID,
+		PaisCodigo:                            "CO",
+		Moneda:                                "COP",
+		HorasOrdinariasSemana:                 44,
+		HorasOrdinariasDia:                    8,
+		DiasNominaMes:                         30,
+		DivisorHoraOrdinaria:                  220,
+		HoraNocturnaDesde:                     "21:00:00",
+		HoraNocturnaHasta:                     "06:00:00",
+		RecargoNocturnoPorcentaje:             35,
+		HoraExtraDiurnaPorcentaje:             25,
+		HoraExtraNocturnaPorcentaje:           75,
+		RecargoDominicalDiurnoPorcentaje:      75,
+		RecargoDominicalNocturnoPorcentaje:    110,
+		HoraExtraDominicalDiurnaPorcentaje:    100,
+		HoraExtraDominicalNocturnaPorcentaje:  150,
+		DeduccionSaludPorcentaje:              4,
+		DeduccionPensionPorcentaje:            4,
+		DeduccionFondoSolidaridadPorcentaje:   0,
+		AporteSaludEmpleadorPorcentaje:        8.5,
+		AportePensionEmpleadorPorcentaje:      12,
+		AporteARLPorcentaje:                   0.522,
+		AporteCajaCompensacionPorcentaje:      4,
+		AporteICBFPorcentaje:                  3,
+		AporteSENAPorcentaje:                  2,
+		ProvisionCesantiasPorcentaje:          8.33,
 		ProvisionInteresesCesantiasPorcentaje: 1,
-		ProvisionPrimaPorcentaje:             8.33,
-		ProvisionVacacionesPorcentaje:        4.17,
-		Estado:                               nominaEstadoActivo,
+		ProvisionPrimaPorcentaje:              8.33,
+		ProvisionVacacionesPorcentaje:         4.17,
+		Estado:                                nominaEstadoActivo,
 	}
 	cfg.DivisorHoraOrdinaria = recommendedNominaHourDivisor(cfg.HorasOrdinariasSemana)
 	return cfg
@@ -939,7 +942,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_nomina_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_configuracion (
 		empresa_id,
 		pais_codigo,
 		moneda,
@@ -1011,7 +1014,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // CreateEmpresaNominaEmpleado crea una ficha de empleado para nomina.
@@ -1046,7 +1049,7 @@ func CreateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		payload.FechaIngreso = date
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_nomina_empleados (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_empleados (
 		empresa_id,
 		empleado_id,
 		empleado_codigo,
@@ -1088,7 +1091,7 @@ func CreateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // UpdateEmpresaNominaEmpleado actualiza una ficha de empleado de nomina.
@@ -1321,7 +1324,7 @@ func CreateEmpresaNominaFestivo(dbConn *sql.DB, payload EmpresaNominaFestivo) (i
 	payload.FechaFestivo = date
 	payload.Estado = normalizeNominaEstado(payload.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_nomina_festivos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_festivos (
 		empresa_id,
 		fecha_festivo,
 		descripcion,
@@ -1344,7 +1347,7 @@ func CreateEmpresaNominaFestivo(dbConn *sql.DB, payload EmpresaNominaFestivo) (i
 		}
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // DeleteEmpresaNominaFestivo elimina un festivo por empresa.
@@ -1980,7 +1983,7 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_nomina_liquidaciones (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_liquidaciones (
 		empresa_id,
 		empleado_nomina_id,
 		empleado_id,
@@ -2084,7 +2087,7 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaNominaLiquidaciones lista liquidaciones por empresa y filtros.

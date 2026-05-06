@@ -71,6 +71,7 @@
       <button class="coadv-tab" data-panel="nomina" type="button">Nómina electrónica</button>
       <button class="coadv-tab" data-panel="soporte" type="button">Documento soporte</button>
       <button class="coadv-tab" data-panel="activos" type="button">Activos fijos</button>
+      <button class="coadv-tab" data-panel="activos_avanzado" type="button">Activos avanzado</button>
       <button class="coadv-tab" data-panel="cartera" type="button">Cartera y CxP</button>
       <button class="coadv-tab" data-panel="libros" type="button">Libros oficiales</button>
     </nav>
@@ -125,6 +126,32 @@
         <button id="btnSaveActivo" class="btn" type="button">Guardar activo</button>
       </article>
       <article class="coadv-card"><h2>Depreciación y control</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Código</th><th>Activo</th><th>Costo</th><th>Dep. mensual</th><th>Valor libros</th><th>Estado</th></tr></thead><tbody id="activosBody"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-activos_avanzado" class="coadv-panel coadv-grid-2" hidden>
+      <article class="coadv-card">
+        <h2>Operacion avanzada de activos</h2>
+        <div class="coadv-inline">
+          <div><label class="form-label" for="actAvPeriodo">Periodo</label><input id="actAvPeriodo" class="form-input" placeholder="2026-05"></div>
+          <div><label class="form-label" for="actAvEventoID">Activo ID</label><input id="actAvEventoID" class="form-input" type="number"></div>
+          <div><label class="form-label" for="actAvEventoTipo">Evento</label><select id="actAvEventoTipo" class="form-input"><option value="mantenimiento">Mantenimiento</option><option value="traslado">Traslado</option><option value="baja">Baja</option><option value="venta">Venta</option><option value="ajuste">Ajuste valor libros</option></select></div>
+          <div><label class="form-label" for="actAvEventoValor">Valor</label><input id="actAvEventoValor" class="form-input" type="number" step=".01"></div>
+        </div>
+        <div class="coadv-inline">
+          <div><label class="form-label" for="actAvDestino">Ubicacion destino</label><input id="actAvDestino" class="form-input"></div>
+          <div><label class="form-label" for="actAvResponsable">Responsable destino</label><input id="actAvResponsable" class="form-input"></div>
+          <div><label class="form-label" for="actAvDetalle">Detalle</label><input id="actAvDetalle" class="form-input"></div>
+          <div class="coadv-actions" style="align-items:end"><button id="btnActAvDep" class="btn secondary" type="button">Generar depreciacion</button><button id="btnActAvEvento" class="btn" type="button">Registrar evento</button></div>
+        </div>
+        <div class="coadv-kpis" style="margin-top:10px">
+          <div class="coadv-kpi"><span>Costo activo</span><strong id="actAvKpiCosto">$0</strong></div>
+          <div class="coadv-kpi"><span>Valor libros</span><strong id="actAvKpiLibros">$0</strong></div>
+          <div class="coadv-kpi"><span>Dep. periodo</span><strong id="actAvKpiDep">$0</strong></div>
+        </div>
+      </article>
+      <article class="coadv-card"><h2>Depreciaciones generadas</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Periodo</th><th>Activo</th><th>Metodo</th><th>Dep. periodo</th><th>Acumulada</th><th>Valor libros</th></tr></thead><tbody id="actAvDepBody"></tbody></table></div></article>
+      <article class="coadv-card"><h2>Eventos y mantenimiento</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Fecha</th><th>Activo</th><th>Tipo</th><th>Destino</th><th>Valor</th><th>Detalle</th></tr></thead><tbody id="actAvEventosBody"></tbody></table></div></article>
+      <article class="coadv-card"><h2>Inventario gerencial</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>ID</th><th>Codigo</th><th>Activo</th><th>Costo</th><th>Valor libros</th><th>Prox. mant.</th><th>Estado</th></tr></thead><tbody id="actAvInventarioBody"></tbody></table></div></article>
     </section>
 
     <section id="panel-cartera" class="coadv-panel coadv-grid-2" hidden>
@@ -187,6 +214,36 @@
     els.btnSaveCartera.onclick=function(){post("cartera_cxp",{tipo:els.cxTipo.value,documento:els.cxDoc.value,tercero_nombre:els.cxTercero.value,cuenta_codigo:els.cxCuenta.value,concepto:els.cxConcepto.value,fecha_emision:els.cxEmision.value,fecha_vencimiento:els.cxVence.value,valor_original:Number(els.cxValor.value||0),valor_pagado:Number(els.cxPagado.value||0)}).then(function(){msg("Obligación guardada.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnLoadLibro.onclick=function(){req(api("libros","&tipo="+encodeURIComponent(els.libTipo.value)+"&periodo="+encodeURIComponent(els.libPeriodo.value))).then(function(rows){state.libro=rows||[];els.libroBody.innerHTML=state.libro.map(function(x){return "<tr><td>"+esc(x.fecha_comprobante)+"</td><td>"+esc(x.codigo)+"</td><td>"+esc(x.cuenta_codigo+" "+x.cuenta_nombre)+"</td><td>"+esc(x.tercero_nombre)+"</td><td>"+esc(x.detalle||x.concepto)+"</td><td>"+money(x.debito)+"</td><td>"+money(x.credito)+"</td><td>"+money(x.saldo)+"</td></tr>";}).join("")||'<tr><td colspan="8"><div class="coadv-empty">Sin movimientos para el filtro.</div></td></tr>';msg("Libro generado.","success");}).catch(function(e){msg(e.message,"error");});};
     load().catch(function(e){msg(e.message,"error");});
+  })();
+  </script>
+  <script>
+  (function(){
+    var ids="actAvPeriodo actAvEventoID actAvEventoTipo actAvEventoValor actAvDestino actAvResponsable actAvDetalle btnActAvDep btnActAvEvento actAvKpiCosto actAvKpiLibros actAvKpiDep actAvDepBody actAvEventosBody actAvInventarioBody msg".split(" ");
+    var els={};ids.forEach(function(id){els[id]=document.getElementById(id);});
+    function getEmpresaID(){try{var p=new URLSearchParams(location.search||"");var id=p.get("empresa_id")||p.get("id");if(id)return id;}catch(e){}try{if(parent&&parent.__resolveEmpresaIdContext)return String(parent.__resolveEmpresaIdContext()||"");}catch(e){}return "";}
+    var empresaID=getEmpresaID();
+    function period(){return new Date().toISOString().slice(0,7);}
+    function api(action, extra){return "/api/empresa/contabilidad_colombia_avanzada?empresa_id="+encodeURIComponent(empresaID)+"&action="+encodeURIComponent(action)+(extra||"");}
+    async function req(url,opt){var res=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));var text=await res.text();var data={};try{data=text?JSON.parse(text):{};}catch(e){data={error:text};}if(!res.ok)throw new Error(data.error||text||("HTTP "+res.status));return data;}
+    function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+    function money(v){try{return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v||0));}catch(e){return "$"+Number(v||0).toFixed(0);}}
+    function msg(t,c){if(!els.msg)return;els.msg.textContent=t||"";els.msg.className="coadv-msg "+(c||"");}
+    async function loadAv(){
+      if(!empresaID)return;
+      els.actAvPeriodo.value=els.actAvPeriodo.value||period();
+      var per=encodeURIComponent(els.actAvPeriodo.value||period());
+      var all=await Promise.all([req(api("activos_resumen","&periodo="+per)),req(api("activos_fijos")),req(api("activos_depreciaciones","&periodo="+per)),req(api("activos_eventos"))]);
+      var r=all[0]||{}, activos=all[1]||[], deps=all[2]||[], eventos=all[3]||[];
+      els.actAvKpiCosto.textContent=money(r.costo_total||0);
+      els.actAvKpiLibros.textContent=money(r.valor_libros_total||0);
+      els.actAvKpiDep.textContent=money(r.depreciacion_periodo_total||0);
+      els.actAvInventarioBody.innerHTML=activos.map(function(x){return "<tr><td>"+esc(x.id)+"</td><td><strong>"+esc(x.codigo)+"</strong></td><td>"+esc(x.nombre)+"<br><span class='form-help'>"+esc(x.ubicacion||"")+"</span></td><td>"+money(x.costo)+"</td><td>"+money(x.valor_libros)+"</td><td>"+esc(x.proximo_mantenimiento||"-")+"</td><td>"+esc(x.estado)+"</td></tr>";}).join("")||'<tr><td colspan="7"><div class="coadv-empty">Sin activos para mostrar.</div></td></tr>';
+      els.actAvDepBody.innerHTML=deps.map(function(x){return "<tr><td>"+esc(x.periodo)+"</td><td>"+esc(x.activo_codigo+" "+x.activo_nombre)+"</td><td>"+esc(x.metodo)+"</td><td>"+money(x.depreciacion_periodo)+"</td><td>"+money(x.depreciacion_acumulada)+"</td><td>"+money(x.valor_libros)+"</td></tr>";}).join("")||'<tr><td colspan="6"><div class="coadv-empty">Sin depreciaciones generadas.</div></td></tr>';
+      els.actAvEventosBody.innerHTML=eventos.map(function(x){return "<tr><td>"+esc(x.fecha_evento)+"</td><td>"+esc(x.activo_codigo+" "+x.activo_nombre)+"</td><td>"+esc(x.tipo)+"</td><td>"+esc(x.ubicacion_destino||x.responsable_destino||"-")+"</td><td>"+money(x.valor)+"</td><td>"+esc(x.detalle||"")+"</td></tr>";}).join("")||'<tr><td colspan="6"><div class="coadv-empty">Sin eventos registrados.</div></td></tr>';
+    }
+    if(els.btnActAvDep){els.btnActAvDep.onclick=function(){req(api("generar_depreciacion_activos"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({periodo:els.actAvPeriodo.value||period()})}).then(function(){return loadAv();}).then(function(){msg("Depreciacion generada.","success");}).catch(function(e){msg(e.message,"error");});};}
+    if(els.btnActAvEvento){els.btnActAvEvento.onclick=function(){req(api("activo_evento"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({activo_id:Number(els.actAvEventoID.value||0),tipo:els.actAvEventoTipo.value,ubicacion_destino:els.actAvDestino.value,responsable_destino:els.actAvResponsable.value,valor:Number(els.actAvEventoValor.value||0),detalle:els.actAvDetalle.value})}).then(function(){return loadAv();}).then(function(){msg("Evento registrado.","success");}).catch(function(e){msg(e.message,"error");});};}
+    loadAv().catch(function(e){msg(e.message,"error");});
   })();
   </script>
 </body>

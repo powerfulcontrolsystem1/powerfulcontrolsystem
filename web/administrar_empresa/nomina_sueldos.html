@@ -550,6 +550,88 @@
           </table>
         </div>
       </section>
+
+      <section class="card empresa-section" id="nominaColombiaAvanzadaSection">
+        <div class="empresa-section-header">
+          <div>
+            <h2>Nomina Colombia avanzada</h2>
+            <p class="form-help" style="margin:4px 0 0;">Conceptos legales, novedades, PILA y trazabilidad para nomina electronica.</p>
+          </div>
+          <div class="form-actions" style="margin:0;">
+            <button id="nomCoRefreshBtn" type="button" class="btn secondary">Actualizar</button>
+            <button id="nomCoSeedBtn" type="button" class="btn secondary">Cargar parametros demo</button>
+            <button id="nomCoPilaBtn" type="button" class="btn">Generar PILA</button>
+          </div>
+        </div>
+        <div class="kpi-grid nomina-kpi-grid">
+          <div class="kpi-box">
+            <span class="kpi-label">Conceptos activos</span>
+            <strong id="nomCoConceptos">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Novedades pendientes</span>
+            <strong id="nomCoPendientes">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Novedades aprobadas</span>
+            <strong id="nomCoAprobadas">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Total PILA</span>
+            <strong id="nomCoPilaTotal">$0</strong>
+          </div>
+        </div>
+        <div id="nomCoMsg" class="form-help"></div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Tipo</th>
+                <th>Base</th>
+                <th>PILA</th>
+                <th>Cuenta</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoConceptosBody">
+              <tr><td colspan="5">Sin conceptos Colombia para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Novedad</th>
+                <th>Empleado</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoNovedadesBody">
+              <tr><td colspan="5">Sin novedades Colombia para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Periodo</th>
+                <th>IBC</th>
+                <th>Aportes empleado</th>
+                <th>Aportes empleador</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoPilaBody">
+              <tr><td colspan="6">Sin resumen PILA generado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1580,6 +1662,179 @@
       }
 
       bootstrap();
+    })();
+  </script>
+  <script>
+    (function () {
+      const state = { empresaID: 0, moneda: 'COP' };
+
+      function qp(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+
+      function txt(value) {
+        return String(value == null ? '' : value).trim();
+      }
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function money(value) {
+        const n = Number(value || 0);
+        try {
+          return n.toLocaleString('es-CO', { style: 'currency', currency: state.moneda || 'COP' });
+        } catch (_) {
+          return (state.moneda || 'COP') + ' ' + n.toFixed(2);
+        }
+      }
+
+      async function requestJSON(url, options) {
+        const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const raw = await resp.text();
+        let body = raw;
+        if (raw) {
+          try { body = JSON.parse(raw); } catch (_) {}
+        }
+        if (!resp.ok) {
+          throw new Error(typeof body === 'string' ? body : ((body && (body.error || body.message)) || ('HTTP ' + resp.status)));
+        }
+        return body;
+      }
+
+      function msg(text, kind) {
+        const el = document.getElementById('nomCoMsg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = kind === 'error' ? 'error' : (kind === 'success' ? 'success' : 'form-help');
+      }
+
+      function periodo() {
+        return {
+          desde: txt(document.getElementById('calcDesde') && document.getElementById('calcDesde').value),
+          hasta: txt(document.getElementById('calcHasta') && document.getElementById('calcHasta').value)
+        };
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function renderConceptos(rows) {
+        const body = document.getElementById('nomCoConceptosBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="5">Sin conceptos Colombia para mostrar.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.codigo) + '</strong><br><span class="form-help">' + esc(item.nombre) + '</span></td>' +
+            '<td>' + esc(item.tipo) + '</td>' +
+            '<td>' + (item.base_cotizacion ? 'Si' : 'No') + '</td>' +
+            '<td>' + (item.afecta_pila ? 'Si' : 'No') + '</td>' +
+            '<td>' + esc(item.cuenta_contable || '-') + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function renderNovedades(rows) {
+        const body = document.getElementById('nomCoNovedadesBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="5">Sin novedades Colombia para mostrar.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.codigo_concepto || item.tipo) + '</strong><br><span class="form-help">' + esc(item.descripcion) + '</span></td>' +
+            '<td>' + esc(item.empleado_nombre || ('Empleado #' + item.empleado_nomina_id)) + '</td>' +
+            '<td>' + esc(item.periodo_desde) + ' / ' + esc(item.periodo_hasta) + '</td>' +
+            '<td>' + esc(item.estado_aprobacion) + '</td>' +
+            '<td>' + money(item.valor_total) + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function renderPila(rows) {
+        const body = document.getElementById('nomCoPilaBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="6">Sin resumen PILA generado.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          const empleado = Number(item.salud_empleado || 0) + Number(item.pension_empleado || 0);
+          const empleador = Number(item.salud_empleador || 0) + Number(item.pension_empleador || 0) + Number(item.arl || 0) + Number(item.caja_compensacion || 0) + Number(item.icbf || 0) + Number(item.sena || 0);
+          return '<tr>' +
+            '<td>' + esc(item.empleado_nombre) + '<br><span class="form-help">' + esc(item.empleado_documento || '') + '</span></td>' +
+            '<td>' + esc(item.periodo) + '</td>' +
+            '<td>' + money(item.ibc) + '</td>' +
+            '<td>' + money(empleado) + '</td>' +
+            '<td>' + money(empleador) + '</td>' +
+            '<td><strong>' + money(item.total_aportes) + '</strong></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      async function loadDashboard(silent) {
+        if (!state.empresaID) return;
+        const p = periodo();
+        const periodoParam = (p.desde || '').slice(0, 7);
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'dashboard_colombia' });
+        if (periodoParam) params.set('periodo', periodoParam);
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        setText('nomCoConceptos', String(Number(data.conceptos_activos || 0)));
+        setText('nomCoPendientes', String(Number(data.novedades_pendientes || 0)));
+        setText('nomCoAprobadas', String(Number(data.novedades_aprobadas || 0)));
+        setText('nomCoPilaTotal', money(data.total_pila || 0));
+        renderConceptos(data.conceptos);
+        renderNovedades(data.novedades);
+        renderPila(data.pila);
+        if (!silent) msg('Nomina Colombia avanzada actualizada.', 'success');
+      }
+
+      async function seedParametros() {
+        await requestJSON('/api/empresa/nomina?action=seed_colombia&empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        await loadDashboard(true);
+        msg('Parametros demo de nomina Colombia cargados.', 'success');
+      }
+
+      async function generarPila() {
+        const p = periodo();
+        if (!p.desde || !p.hasta) {
+          throw new Error('Debes indicar periodo desde y hasta para generar PILA.');
+        }
+        await requestJSON('/api/empresa/nomina?action=generar_pila', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, periodo_desde: p.desde, periodo_hasta: p.hasta })
+        });
+        await loadDashboard(true);
+        msg('Resumen PILA generado para el periodo seleccionado.', 'success');
+      }
+
+      function bind() {
+        const refresh = document.getElementById('nomCoRefreshBtn');
+        const seed = document.getElementById('nomCoSeedBtn');
+        const pila = document.getElementById('nomCoPilaBtn');
+        if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
+        if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
+        if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
+      }
+
+      state.empresaID = Number(qp('empresa_id') || 0);
+      bind();
+      loadDashboard(true).catch(function (err) { msg(err.message || 'No se pudo cargar nomina Colombia avanzada.', 'error'); });
     })();
   </script>
 </body>

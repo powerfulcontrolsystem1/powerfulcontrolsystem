@@ -75,6 +75,30 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "activos_resumen":
+				row, err := dbpkg.BuildEmpresaActivosFijosAvanzadoResumen(dbEmp, empresaID, r.URL.Query().Get("periodo"))
+				if err != nil {
+					http.Error(w, "No se pudo consultar resumen avanzado de activos", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, row)
+				return
+			case "activos_depreciaciones":
+				rows, err := dbpkg.ListEmpresaActivosDepreciacion(dbEmp, empresaID, r.URL.Query().Get("periodo"), 1000)
+				if err != nil {
+					http.Error(w, "No se pudieron listar depreciaciones", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			case "activos_eventos":
+				rows, err := dbpkg.ListEmpresaActivosEventos(dbEmp, empresaID, int64Query(r, "activo_id"), 500)
+				if err != nil {
+					http.Error(w, "No se pudieron listar eventos de activos", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
 			case "cartera_cxp":
 				rows, err := dbpkg.ListEmpresaCarteraCXP(dbEmp, empresaID, r.URL.Query().Get("tipo"), r.URL.Query().Get("estado"))
 				if err != nil {
@@ -198,6 +222,37 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = usuario
 				id, err := dbpkg.CreateEmpresaActivoFijo(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "generar_depreciacion_activos":
+				var payload struct {
+					Periodo string `json:"periodo"`
+				}
+				_ = json.NewDecoder(r.Body).Decode(&payload)
+				periodo := strings.TrimSpace(payload.Periodo)
+				if periodo == "" {
+					periodo = strings.TrimSpace(r.URL.Query().Get("periodo"))
+				}
+				rows, err := dbpkg.GenerarEmpresaActivosDepreciacion(dbEmp, empresaID, periodo, usuario)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "depreciaciones": rows})
+				return
+			case "activo_evento":
+				var payload dbpkg.EmpresaActivoEvento
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = usuario
+				id, err := dbpkg.RegistrarEmpresaActivoEvento(dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return

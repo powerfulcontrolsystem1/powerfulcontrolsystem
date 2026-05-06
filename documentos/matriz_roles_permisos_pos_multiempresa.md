@@ -1,3 +1,52 @@
+2026-05-06: Nota operativa para `crm_ventas_avanzadas`
+- Se agrega la pagina `linkCRMAvanzado` bajo el modulo/licencia existente `clientes`; no se duplican clientes ni ventas.
+- El endpoint `/api/empresa/crm_avanzado` reutiliza `WithEmpresaClientesPermissions`.
+- Roles base: lectura para roles comerciales autorizados por clientes; crear/actualizar para `admin_empresa`, `supervisor_sucursal` y roles con permiso de clientes.
+- Las metas, forecast, scoring, agenda y conversiones se calculan por `empresa_id`.
+
+2026-05-06: Nota operativa para `inventario_avanzado`
+- Se agrega la pagina `linkInventarioAvanzado` bajo el modulo/licencia existente `inventario`; no se crea un inventario paralelo.
+- El endpoint `/api/empresa/inventario_avanzado` reutiliza `WithEmpresaInventarioPermissions`.
+- Roles base: lectura para roles operativos autorizados por inventario; crear/actualizar para `admin_empresa`, `supervisor_sucursal` e `inventario`.
+- Los lotes, seriales, reservas y valorizaciones se calculan siempre por `empresa_id`.
+
+2026-05-06: Nota operativa para `compras_avanzadas`
+- Se agrega la pagina `linkComprasAvanzadas` bajo el modulo/licencia existente `compras`; no se crea un modulo paralelo.
+- El endpoint `/api/empresa/compras_avanzadas` reutiliza `WithEmpresaComprasPermissions`.
+- Roles base: lectura para roles operativos autorizados por compras; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y `compras`.
+- Las requisiciones, items, cotizaciones, aprobaciones y recepciones guardan `empresa_id`, manteniendo aislamiento multiempresa.
+
+2026-05-06: Nota operativa para `importaciones_costeo`
+- Se agrega clave independiente `importaciones_costeo`, activable por licencia mediante `licencias.modulos_habilitados`.
+- La pagina `linkImportacionesCosteo` queda registrada en el catalogo de paginas y se muestra en Administrar empresa > Inventario y compras.
+- El endpoint `/api/empresa/importaciones_costeo` usa `WithEmpresaImportacionesCosteoPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `compras` e `inventario`, porque el costo aterrizado cruza compra internacional e inventario.
+- Todas las importaciones, items y costos incluyen `empresa_id`; no se mezclan embarques ni costos entre empresas.
+
+2026-05-06: Nota operativa para `activos_fijos` avanzado
+- Los activos fijos avanzados viven dentro de `contabilidad_colombia_avanzada`; no se crea clave de licencia ni wrapper nuevo.
+- Las acciones `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento` quedan bajo `/api/empresa/contabilidad_colombia_avanzada` y heredan el mismo control financiero/contable.
+- Las tablas `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos` usan `empresa_id` y no comparten eventos, depreciaciones ni mantenimientos entre empresas.
+
+2026-05-06: Nota operativa para `nomina_sueldos` y Nomina Colombia avanzada
+- La capa Colombia de nomina se implementa dentro del modulo existente `nomina_sueldos`; no crea licencia, wrapper ni pagina duplicada para evitar fragmentar el control financiero.
+- Las acciones `conceptos_colombia`, `novedades_colombia`, `pila_colombia`, `dashboard_colombia`, `concepto_colombia`, `novedad_colombia`, `generar_pila` y `seed_colombia` siguen bajo `/api/empresa/nomina` y heredan el mismo alcance por `empresa_id` de la nomina actual.
+- Las nuevas tablas `empresa_nomina_colombia_conceptos`, `empresa_nomina_colombia_novedades` y `empresa_nomina_colombia_pila_resumen` son multiempresa y se consultan solo desde el contexto empresarial autorizado.
+
+2026-05-06: Nota operativa para `tesoreria_presupuesto`
+- Se agrega clave independiente `tesoreria_presupuesto`, activable por licencia mediante `licencias.modulos_habilitados`.
+- La pagina `linkTesoreriaPresupuesto` queda registrada en el catalogo de paginas y se muestra dentro de Centro financiero y contable.
+- El endpoint `/api/empresa/tesoreria_presupuesto` usa `WithEmpresaTesoreriaPresupuestoPermissions`; no abre rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa` y `contabilidad`; eliminacion queda alineada con la politica financiera existente.
+- Todas las cuentas, presupuestos, partidas y flujos tienen `empresa_id`; no se mezclan bancos ni presupuestos entre empresas.
+
+2026-05-06: Nota operativa para `produccion_mrp`
+- Se agrega clave de modulo independiente `produccion_mrp`, activable por licencia mediante `licencias.modulos_habilitados`.
+- La pagina `linkProduccionMRP` queda registrada en el catalogo de paginas y se muestra en Administrar empresa > Inventario y compras.
+- El endpoint `/api/empresa/produccion_mrp` usa `WithEmpresaProduccionMRPPermissions`; no comparte wrappers genericos ni expone rutas publicas.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar/eliminar para `admin_empresa`, `supervisor_sucursal`, `inventario` y `compras`, porque el flujo cruza produccion, componentes y planeacion de abastecimiento.
+- Todas las tablas del modulo incluyen `empresa_id`; los consumos y planes MRP de una empresa no se mezclan con recetas u ordenes de otra.
+
 2026-05-05: Auditoria de enlaces por empresa y no duplicidad de modulos
 - El menu principal de `web/administrar_empresa.html` queda alineado con `permissionPagesCatalogOrdered` y `web/js/administrar_empresa.js`: no hay enlaces visibles sin regla de pagina ni sin regla frontend.
 - Las claves de modulo del backend (`empresa_permisos.go`), licencias (`web/super/licencias.html`) y menu empresa (`web/js/administrar_empresa.js`) coinciden para modulos base y verticales.

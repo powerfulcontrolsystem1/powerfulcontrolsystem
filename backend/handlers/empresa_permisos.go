@@ -45,6 +45,9 @@ const (
 	permModuleTurnos           = "turnos_atencion"
 	permModuleControlElectrico = "control_electrico"
 	permModuleCarnets          = "carnets"
+	permModuleProduccionMRP    = "produccion_mrp"
+	permModuleTesoreria        = "tesoreria_presupuesto"
+	permModuleImportaciones    = "importaciones_costeo"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -165,6 +168,9 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleTurnos,
 	permModuleControlElectrico,
 	permModuleCarnets,
+	permModuleProduccionMRP,
+	permModuleTesoreria,
+	permModuleImportaciones,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -206,6 +212,9 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleTurnos:           "Turnos de atencion",
 	permModuleControlElectrico: "Control electrico e IoT",
 	permModuleCarnets:          "Carnets empresariales",
+	permModuleProduccionMRP:    "Produccion / MRP",
+	permModuleTesoreria:        "Tesoreria y presupuesto",
+	permModuleImportaciones:    "Importaciones y costeo",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -245,11 +254,15 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Clientes"},
 	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación y venta"},
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkInventarioAvanzado", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Inventario avanzado", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y catálogo"},
+	{PaginaClave: "linkProduccionMRP", Modulo: permModuleProduccionMRP, Accion: permActionCreate, Titulo: "Produccion / MRP", Grupo: "Inventario y catalogo"},
 	{PaginaClave: "linkCartaProductosPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Carta publica de productos", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de códigos de barras", Grupo: "Inventario y catálogo"},
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación y venta"},
 	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Compras"},
+	{PaginaClave: "linkComprasAvanzadas", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras avanzadas", Grupo: "Compras"},
+	{PaginaClave: "linkImportacionesCosteo", Modulo: permModuleImportaciones, Accion: permActionCreate, Titulo: "Importaciones y costeo", Grupo: "Compras"},
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkConfiguracionGuiada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración guiada con IA", Grupo: "Seguridad e integración"},
@@ -266,6 +279,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operación y venta"},
 	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Clientes"},
 	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM comercial y embudo", Grupo: "Clientes"},
+	{PaginaClave: "linkCRMAvanzado", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM y ventas avanzadas", Grupo: "Clientes"},
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Facturación DIAN"},
@@ -275,6 +289,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkContabilidadColombia", Modulo: permModuleContabilidadCO, Accion: permActionCreate, Titulo: "Contabilidad Colombia NIIF/DIAN", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkContabilidadColombiaAvanzada", Modulo: permModuleContabilidadCOAv, Accion: permActionCreate, Titulo: "Suite contable Colombia avanzada", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkTesoreriaPresupuesto", Modulo: permModuleTesoreria, Accion: permActionCreate, Titulo: "Tesoreria y presupuesto", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Finanzas y reportes"},
@@ -674,6 +689,21 @@ func WithEmpresaControlElectricoPermissions(dbEmp, dbSuper *sql.DB, next http.Ha
 // WithEmpresaCarnetsPermissions aplica permisos independientes para carnets empresariales.
 func WithEmpresaCarnetsPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCarnets, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaProduccionMRPPermissions aplica permisos independientes para produccion y planeacion MRP.
+func WithEmpresaProduccionMRPPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleProduccionMRP, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaTesoreriaPresupuestoPermissions aplica permisos para tesoreria, bancos y presupuesto.
+func WithEmpresaTesoreriaPresupuestoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleTesoreria, resolveFinanzasPermissionAction, next)
+}
+
+// WithEmpresaImportacionesCosteoPermissions aplica permisos para importaciones, nacionalizacion y costo aterrizado.
+func WithEmpresaImportacionesCosteoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleImportaciones, resolveComprasPermissionAction, next)
 }
 
 // WithEmpresaPublicScope aplica validacion minima de alcance por empresa para endpoints publicos
@@ -1505,7 +1535,15 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario")
 		}
 
-	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv:
+	case permModuleProduccionMRP, permModuleImportaciones:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "compras")
+		}
+
+	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleTesoreria:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2102,6 +2140,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	switch {
 	case strings.HasPrefix(path, "/api/empresa/crm/"):
 		return "linkCRMComercial"
+	case path == "/api/empresa/crm_avanzado":
+		return "linkCRMAvanzado"
 	case path == "/api/empresa/clientes":
 		return "linkClientes"
 	case strings.HasPrefix(path, "/api/empresa/chat_tareas"):
@@ -2189,6 +2229,16 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTurnosAtencion"
 	case path == "/api/empresa/control_electrico":
 		return "linkControlElectrico"
+	case path == "/api/empresa/produccion_mrp":
+		return "linkProduccionMRP"
+	case path == "/api/empresa/inventario_avanzado":
+		return "linkInventarioAvanzado"
+	case path == "/api/empresa/importaciones_costeo":
+		return "linkImportacionesCosteo"
+	case path == "/api/empresa/compras_avanzadas":
+		return "linkComprasAvanzadas"
+	case path == "/api/empresa/tesoreria_presupuesto":
+		return "linkTesoreriaPresupuesto"
 	case path == "/api/empresa/documentos":
 		return "linkDocumentosOnlyOffice"
 	case path == "/api/empresa/nextcloud":

@@ -230,6 +230,49 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, result)
 				return
 
+			case "conceptos_colombia", "conceptos":
+				rows, err := dbpkg.ListEmpresaNominaConceptosColombia(dbEmp, empresaID, strings.TrimSpace(r.URL.Query().Get("tipo")), 500)
+				if err != nil {
+					http.Error(w, "No se pudieron listar conceptos Colombia", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "novedades_colombia", "novedades":
+				rows, err := dbpkg.ListEmpresaNominaNovedadesColombia(
+					dbEmp,
+					empresaID,
+					strings.TrimSpace(r.URL.Query().Get("periodo_desde")),
+					strings.TrimSpace(r.URL.Query().Get("periodo_hasta")),
+					strings.TrimSpace(r.URL.Query().Get("estado_aprobacion")),
+					500,
+				)
+				if err != nil {
+					http.Error(w, "No se pudieron listar novedades Colombia", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "pila_colombia", "pila":
+				rows, err := dbpkg.ListEmpresaNominaPILAResumenColombia(dbEmp, empresaID, strings.TrimSpace(r.URL.Query().Get("periodo")), 1000)
+				if err != nil {
+					http.Error(w, "No se pudo listar resumen PILA", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "dashboard_colombia", "colombia_avanzada":
+				ds, err := dbpkg.BuildEmpresaNominaColombiaAvanzadaDashboard(dbEmp, empresaID, strings.TrimSpace(r.URL.Query().Get("periodo")))
+				if err != nil {
+					http.Error(w, "No se pudo consultar nomina Colombia avanzada", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, ds)
+				return
+
 			default:
 				http.Error(w, "action invalida. Use: config, empleados, festivos o liquidaciones", http.StatusBadRequest)
 				return
@@ -423,6 +466,91 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, result)
+				return
+
+			case "concepto_colombia", "conceptos_colombia":
+				var payload dbpkg.EmpresaNominaConceptoColombia
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaNominaConceptoColombia(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+
+			case "novedad_colombia", "novedades_colombia":
+				var payload dbpkg.EmpresaNominaNovedadColombia
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.CreateEmpresaNominaNovedadColombia(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+
+			case "generar_pila_colombia", "generar_pila":
+				var payload struct {
+					EmpresaID    int64  `json:"empresa_id"`
+					PeriodoDesde string `json:"periodo_desde"`
+					PeriodoHasta string `json:"periodo_hasta"`
+				}
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if strings.TrimSpace(payload.PeriodoDesde) == "" {
+					payload.PeriodoDesde = strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				}
+				if strings.TrimSpace(payload.PeriodoHasta) == "" {
+					payload.PeriodoHasta = strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				rows, err := dbpkg.GenerarEmpresaNominaPILAResumenColombia(dbEmp, payload.EmpresaID, payload.PeriodoDesde, payload.PeriodoHasta, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "seed_colombia", "seed_colombia_avanzada":
+				empresaID, err := parseInt64QueryOptional(r, "empresa_id")
+				if err != nil || empresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SeedEmpresaNominaColombiaAvanzadaDemo(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 
 			default:

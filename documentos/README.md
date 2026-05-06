@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-05
-Estado: vigente, actualizado con reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
+Fecha: 2026-05-06
+Estado: vigente, actualizado con CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional y carta publica de productos 2026-05-05
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,14 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-06: ampliado `CRM comercial` con capa `CRM y ventas avanzadas`: metas comerciales, dashboard de pipeline/forecast, scoring de leads, agenda y conversion a cotizacion, API `/api/empresa/crm_avanzado`, pantalla `web/administrar_empresa/crm_ventas_avanzadas.html` y documento `documentos/crm_ventas_avanzadas.md`.
+- 2026-05-06: ampliado `Inventario` con inventario avanzado sin duplicar modulo: lotes, seriales, reservas, vencimientos y valorizacion por bodega, API `/api/empresa/inventario_avanzado`, pantalla `web/administrar_empresa/inventario_avanzado.html` y documento `documentos/inventario_avanzado.md`.
+- 2026-05-06: ampliado `Compras` con compras avanzadas sin duplicar modulo: requisiciones, cotizaciones, aprobaciones, recepcion parcial/total, API `/api/empresa/compras_avanzadas`, pantalla `web/administrar_empresa/compras_avanzadas.html` y documento `documentos/compras_avanzadas.md`.
+- 2026-05-06: agregado modulo `Importaciones y costeo` con API `/api/empresa/importaciones_costeo`, embarques, items, costos de nacionalizacion, distribucion por base y costo aterrizado, permisos/licencia `importaciones_costeo`, pantalla administrativa y documento `documentos/importaciones_costeo.md`.
+- 2026-05-06: ampliado `Activos fijos` dentro de `contabilidad_colombia_avanzada` con depreciacion por periodo, mantenimiento, traslados, bajas, eventos, resumen gerencial y documento `documentos/activos_fijos_avanzado.md`.
+- 2026-05-06: ampliado `Nomina de sueldos` con capa `Nomina Colombia avanzada` para conceptos legales, novedades aprobables, resumen PILA, dashboard, seccion administrativa y documento `documentos/nomina_colombia_avanzada.md`.
+- 2026-05-06: agregado modulo `Produccion / MRP` con API `/api/empresa/produccion_mrp`, recetas/BOM, componentes, ordenes, consumos, calidad, plan MRP, permisos/licencia `produccion_mrp`, pantalla administrativa y documento `documentos/produccion_mrp.md`.
+- 2026-05-06: agregado modulo `Tesoreria y presupuesto` con API `/api/empresa/tesoreria_presupuesto`, cuentas banco/caja, presupuestos, partidas, flujo de caja proyectado, permisos/licencia `tesoreria_presupuesto`, pantalla administrativa y documento `documentos/tesoreria_presupuesto.md`.
 - 2026-05-05: reorganizado el menu empresarial para fusionar Finanzas, Contabilidad Colombia y Suite contable bajo `Centro financiero y contable`; la ayuda administrativa principal queda restringida a `super_administrador` y se agrega el rol `control_super_administrador` para supervision limitada del panel super.
 - 2026-05-05: agregado paquete de reportes avanzados comparables con software colombiano conocido: ventas diarias POS, rentabilidad, Kardex valorizado, compras por proveedor, balance de prueba, libros contables, impuestos/retenciones, exogena base y edades de cartera CxC/CxP.
 - 2026-05-05: agregado modulo `Contabilidad Colombia avanzada` con informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP, libros oficiales, API `/api/empresa/contabilidad_colombia_avanzada`, pagina administrativa y control por licencia `contabilidad_colombia_avanzada`.
@@ -52,6 +60,14 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
 - Suite contable Colombia avanzada: `documentos/contabilidad_colombia_avanzada.md`
 - Carnets empresariales: `documentos/carnets_empresariales.md`
+- Produccion / MRP: `documentos/produccion_mrp.md`
+- Tesoreria y presupuesto: `documentos/tesoreria_presupuesto.md`
+- Nomina Colombia avanzada: `documentos/nomina_colombia_avanzada.md`
+- Activos fijos avanzado: `documentos/activos_fijos_avanzado.md`
+- Importaciones y costeo: `documentos/importaciones_costeo.md`
+- Compras avanzadas: `documentos/compras_avanzadas.md`
+- Inventario avanzado: `documentos/inventario_avanzado.md`
+- CRM y ventas avanzadas: `documentos/crm_ventas_avanzadas.md`
 - Reporte de estado integral vigente: `documentos/reporte_estado_modulos_2026-05-05.md`
 - Taxi System profesional y GPS: `documentos/taxi_system_profesional.md`
 - Domicilios profesional: `documentos/domicilios_profesional.md`
