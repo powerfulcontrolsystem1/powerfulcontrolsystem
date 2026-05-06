@@ -4060,3 +4060,23 @@ Archivos modificados:
 - web/js/super_administrador.js
 - web/menu.js
 - web/super/administradores.html
+
+2026-05-05 19:46:26 - Mensaje: QA Motel Calipso y compatibilidad modulos nuevos; Commit: c9236a8b; PushStatus: OK
+Archivos modificados:
+- backend/db/contabilidad_colombia_avanzada.go
+- backend/db/domicilios.go
+- backend/db/taxi_system.go
+- backend/handlers/reportes.go
+- backend/handlers/reportes_catalogo_test.go
+- backend/tmp_tools/qa_calipso_modulos_nuevos/main.go
+- backend/tmp_tools/qa_calipso_modulos_nuevos/reporte_calipso_modulos_nuevos.json
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- web/administrar_empresa.html
+- web/administrar_empresa/reportes_menu.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/super/licencias_resumen.html
