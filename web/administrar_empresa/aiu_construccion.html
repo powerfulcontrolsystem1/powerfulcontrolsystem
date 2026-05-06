@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AIU construccion</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .aiu-page{max-width:1380px;margin:0 auto;padding:22px}
+    .aiu-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .aiu-header h1{margin:0;font-size:clamp(1.7rem,3vw,2.4rem)}
+    .aiu-subtitle{margin:6px 0 0;color:var(--muted);max-width:860px}
+    .aiu-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .aiu-kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+    .aiu-kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;min-height:92px}
+    .aiu-kpi span{display:block;color:var(--muted);font-size:.84rem}
+    .aiu-kpi strong{display:block;margin-top:8px;font-size:1.25rem;line-height:1.15}
+    .aiu-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:14px;align-items:start}
+    .aiu-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+    .aiu-panel h2{margin:0 0 12px;font-size:1.1rem}
+    .aiu-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+    .aiu-toolbar .form-col{min-width:180px;flex:1}
+    .aiu-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .aiu-form-grid .wide{grid-column:span 2}
+    .aiu-form-grid .full{grid-column:1 / -1}
+    .aiu-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .aiu-summary div{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(127,127,127,.06)}
+    .aiu-summary strong{text-align:right}
+    .aiu-status{display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border-radius:999px;border:1px solid var(--border);font-size:.82rem;text-transform:capitalize}
+    .aiu-status.borrador{background:rgba(148,163,184,.16)}
+    .aiu-status.cotizado,.aiu-status.aprobado{background:rgba(59,130,246,.18)}
+    .aiu-status.en_ejecucion{background:rgba(16,185,129,.18)}
+    .aiu-status.suspendido{background:rgba(245,158,11,.2)}
+    .aiu-status.facturado,.aiu-status.cerrado{background:rgba(34,197,94,.2)}
+    .aiu-status.anulado{background:rgba(239,68,68,.18)}
+    .aiu-list-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .aiu-alerts{display:grid;gap:8px}
+    .aiu-alert{border:1px solid var(--border);border-radius:8px;padding:10px;background:rgba(245,158,11,.12)}
+    .aiu-table{width:100%;border-collapse:collapse}
+    .aiu-table th,.aiu-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .aiu-table th{color:var(--muted);font-size:.84rem}
+    .aiu-table td:last-child{text-align:right}
+    .aiu-muted{color:var(--muted)}
+    .aiu-result{white-space:pre-wrap;max-height:220px;overflow:auto}
+    @media (max-width:1180px){.aiu-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.aiu-grid{grid-template-columns:1fr}.aiu-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:720px){.aiu-page{padding:14px}.aiu-header{display:block}.aiu-actions{justify-content:flex-start;margin-top:12px}.aiu-kpis{grid-template-columns:1fr}.aiu-form-grid{grid-template-columns:1fr}.aiu-form-grid .wide{grid-column:auto}.aiu-summary{grid-template-columns:1fr}.aiu-table thead{display:none}.aiu-table,.aiu-table tbody,.aiu-table tr,.aiu-table td{display:block;width:100%}.aiu-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.aiu-table td{border:0;text-align:left!important}.aiu-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <main class="aiu-page">
+    <header class="aiu-header">
+      <div>
+        <h1>AIU construccion</h1>
+        <p class="aiu-subtitle">Contratos de obra, costos directos, administracion, imprevistos, utilidad, IVA, retenciones, anticipo, garantia, facturacion electronica y control de estado por empresa.</p>
+      </div>
+      <div class="aiu-actions">
+        <button class="btn secondary" type="button" id="btnNuevo">Nuevo</button>
+        <button class="btn secondary" type="button" id="btnDemo">Demo</button>
+        <button class="btn secondary" type="button" id="btnExportar">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="aiu-kpis" aria-label="Indicadores AIU">
+      <div class="aiu-kpi"><span>Activos</span><strong id="kpiActivos">0</strong></div>
+      <div class="aiu-kpi"><span>Costo directo</span><strong id="kpiCosto">$0</strong></div>
+      <div class="aiu-kpi"><span>AIU</span><strong id="kpiAIU">$0</strong></div>
+      <div class="aiu-kpi"><span>IVA</span><strong id="kpiIVA">$0</strong></div>
+      <div class="aiu-kpi"><span>Facturado</span><strong id="kpiFacturado">$0</strong></div>
+      <div class="aiu-kpi"><span>Neto a cobrar</span><strong id="kpiNeto">$0</strong></div>
+    </section>
+
+    <div class="aiu-grid">
+      <div>
+        <section class="aiu-panel">
+          <h2>Contratos</h2>
+          <div class="aiu-toolbar">
+            <div class="form-col">
+              <label class="form-label" for="filtro_q">Buscar</label>
+              <input id="filtro_q" class="form-input" placeholder="Codigo, cliente, centro de costo">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="filtro_estado">Estado</label>
+              <select id="filtro_estado" class="form-input">
+                <option value="">Todos</option>
+                <option value="borrador">Borrador</option>
+                <option value="cotizado">Cotizado</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="en_ejecucion">En ejecucion</option>
+                <option value="suspendido">Suspendido</option>
+                <option value="facturado">Facturado</option>
+                <option value="cerrado">Cerrado</option>
+                <option value="anulado">Anulado</option>
+              </select>
+            </div>
+            <button class="btn secondary" type="button" id="btnFiltrar">Filtrar</button>
+          </div>
+          <div id="contratosList" class="table-wrap">Cargando...</div>
+        </section>
+
+        <section class="aiu-panel">
+          <h2>Contrato de obra</h2>
+          <form id="contratoForm" class="form">
+            <input type="hidden" id="contrato_id">
+            <div class="aiu-form-grid">
+              <div><label class="form-label" for="codigo">Codigo</label><input id="codigo" class="form-input" placeholder="OBRA-001" required></div>
+              <div class="wide"><label class="form-label" for="nombre">Nombre</label><input id="nombre" class="form-input" placeholder="Remodelacion / contrato de obra" required></div>
+              <div><label class="form-label" for="estado">Estado</label><select id="estado" class="form-input"><option value="borrador">Borrador</option><option value="cotizado">Cotizado</option><option value="aprobado">Aprobado</option><option value="en_ejecucion">En ejecucion</option><option value="suspendido">Suspendido</option><option value="facturado">Facturado</option><option value="cerrado">Cerrado</option><option value="anulado">Anulado</option></select></div>
+              <div><label class="form-label" for="cliente_nombre">Cliente</label><input id="cliente_nombre" class="form-input" placeholder="Contratante"></div>
+              <div><label class="form-label" for="responsable">Responsable</label><input id="responsable" class="form-input" placeholder="Director de obra"></div>
+              <div><label class="form-label" for="centro_costo">Centro de costo</label><input id="centro_costo" class="form-input" placeholder="OBRA-2026"></div>
+              <div><label class="form-label" for="riesgo_nivel">Riesgo</label><select id="riesgo_nivel" class="form-input"><option value="bajo">Bajo</option><option value="medio">Medio</option><option value="alto">Alto</option><option value="critico">Critico</option></select></div>
+              <div><label class="form-label" for="tipo_obra">Tipo de obra</label><select id="tipo_obra" class="form-input"><option value="obra_civil">Obra civil</option><option value="arquitectura">Arquitectura</option><option value="remodelacion">Remodelacion</option><option value="mantenimiento">Mantenimiento</option><option value="contrato_servicios">Servicios</option></select></div>
+              <div><label class="form-label" for="modalidad_contrato">Modalidad</label><select id="modalidad_contrato" class="form-input"><option value="precio_global">Precio global</option><option value="administracion_delegada">Administracion delegada</option><option value="costos_reembolsables">Costos reembolsables</option><option value="obra_por_unidad">Obra por unidad</option><option value="mantenimiento">Mantenimiento</option></select></div>
+              <div><label class="form-label" for="modelo_aiu">Modelo AIU</label><select id="modelo_aiu" class="form-input"><option value="base_aiu_no_sumada">AIU no sumado</option><option value="base_aiu_sumada">AIU sumado al total</option></select></div>
+              <div><label class="form-label" for="base_iva_modo">Base IVA</label><select id="base_iva_modo" class="form-input"><option value="utilidad">Utilidad</option><option value="aiu_total">AIU total</option><option value="costo_mas_aiu">Costo + AIU</option></select></div>
+              <div><label class="form-label" for="fecha_inicio">Inicio</label><input id="fecha_inicio" type="date" class="form-input"></div>
+              <div><label class="form-label" for="fecha_fin">Fin</label><input id="fecha_fin" type="date" class="form-input"></div>
+              <div><label class="form-label" for="avance_porcentaje">% Avance</label><input id="avance_porcentaje" type="number" step="0.01" min="0" max="100" class="form-input" value="0"></div>
+              <div><label class="form-label" for="porcentaje_admin">% A</label><input id="porcentaje_admin" type="number" step="0.01" class="form-input" value="10"></div>
+              <div><label class="form-label" for="porcentaje_imprevistos">% I</label><input id="porcentaje_imprevistos" type="number" step="0.01" class="form-input" value="5"></div>
+              <div><label class="form-label" for="porcentaje_utilidad">% U</label><input id="porcentaje_utilidad" type="number" step="0.01" class="form-input" value="10"></div>
+              <div><label class="form-label" for="porcentaje_iva">% IVA</label><input id="porcentaje_iva" type="number" step="0.01" class="form-input" value="19"></div>
+              <div><label class="form-label" for="porcentaje_retencion_fuente">% Ret. fuente</label><input id="porcentaje_retencion_fuente" type="number" step="0.001" class="form-input" value="0"></div>
+              <div><label class="form-label" for="porcentaje_retencion_ica">% Ret. ICA</label><input id="porcentaje_retencion_ica" type="number" step="0.001" class="form-input" value="0"></div>
+              <div><label class="form-label" for="porcentaje_retencion_iva">% Ret. IVA</label><input id="porcentaje_retencion_iva" type="number" step="0.001" class="form-input" value="0"></div>
+              <div><label class="form-label" for="porcentaje_anticipo">% Anticipo</label><input id="porcentaje_anticipo" type="number" step="0.01" class="form-input" value="0"></div>
+              <div><label class="form-label" for="porcentaje_garantia">% Garantia</label><input id="porcentaje_garantia" type="number" step="0.01" class="form-input" value="0"></div>
+              <div class="full"><label class="form-label" for="observaciones">Observaciones</label><textarea id="observaciones" class="form-textarea" placeholder="Alcance, polizas, retenciones pactadas, actas, centro de costo o notas internas"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Guardar</button>
+              <button class="btn secondary" type="button" id="btnCalcular">Calcular</button>
+              <button class="btn secondary" type="button" data-next-state="cotizado">Cotizar</button>
+              <button class="btn secondary" type="button" data-next-state="aprobado">Aprobar</button>
+              <button class="btn secondary" type="button" data-next-state="en_ejecucion">Iniciar</button>
+              <button class="btn secondary" type="button" data-next-state="suspendido">Suspender</button>
+              <button class="btn secondary" type="button" data-next-state="cerrado">Cerrar</button>
+              <button class="btn secondary" type="button" data-next-state="anulado">Anular</button>
+            </div>
+            <div id="msg" class="form-help"></div>
+          </form>
+        </section>
+
+        <section class="aiu-panel">
+          <h2>Capitulos y conceptos</h2>
+          <form id="itemForm" class="form">
+            <div class="aiu-form-grid">
+              <div><label class="form-label" for="item_capitulo">Capitulo</label><input id="item_capitulo" class="form-input" placeholder="Preliminares"></div>
+              <div class="wide"><label class="form-label" for="item_descripcion">Descripcion</label><input id="item_descripcion" class="form-input" placeholder="Actividad de obra"></div>
+              <div><label class="form-label" for="item_unidad">Unidad</label><input id="item_unidad" class="form-input" value="und"></div>
+              <div><label class="form-label" for="item_cantidad">Cantidad</label><input id="item_cantidad" type="number" step="0.01" class="form-input" value="1"></div>
+              <div><label class="form-label" for="item_valor_unitario">Valor unitario</label><input id="item_valor_unitario" type="number" step="0.01" class="form-input" value="0"></div>
+            </div>
+            <div class="form-actions"><button class="btn secondary" type="submit">Agregar concepto</button></div>
+          </form>
+          <div id="itemsList" class="table-wrap">Sin contrato seleccionado.</div>
+        </section>
+      </div>
+
+      <aside>
+        <section class="aiu-panel">
+          <h2>Resumen financiero</h2>
+          <div id="resultadoAIU" class="aiu-summary"></div>
+        </section>
+
+        <section class="aiu-panel">
+          <h2>Factura AIU</h2>
+          <div class="aiu-form-grid">
+            <div class="wide"><label class="form-label" for="factura_documento_codigo">Documento</label><input id="factura_documento_codigo" class="form-input" placeholder="FE-AIU-001"></div>
+            <div class="wide"><label class="form-label" for="factura_periodo">Periodo</label><input id="factura_periodo" class="form-input" placeholder="2026-05"></div>
+          </div>
+          <div class="form-actions"><button class="btn" type="button" id="btnGenerarFactura">Generar factura electronica</button></div>
+          <pre id="facturaResult" class="form-help aiu-result"></pre>
+        </section>
+
+        <section class="aiu-panel">
+          <h2>Facturas recientes</h2>
+          <div id="facturasList" class="table-wrap">Sin facturas.</div>
+        </section>
+
+        <section class="aiu-panel">
+          <h2>Alertas</h2>
+          <div id="alertasList" class="aiu-alerts">Sin alertas.</div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+  <script>
+    (function(){
+      const empresaID = window.__resolveEmpresaIdContext ? window.__resolveEmpresaIdContext() : new URLSearchParams(location.search).get("empresa_id");
+      let currentContrato = null;
+      let contratosCache = [];
+      const fmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+      const pct = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
+      const fields = ["codigo","nombre","cliente_nombre","responsable","centro_costo","modalidad_contrato","tipo_obra","modelo_aiu","base_iva_modo","porcentaje_admin","porcentaje_imprevistos","porcentaje_utilidad","porcentaje_iva","porcentaje_retencion_fuente","porcentaje_retencion_ica","porcentaje_retencion_iva","porcentaje_anticipo","porcentaje_garantia","avance_porcentaje","fecha_inicio","fecha_fin","estado","riesgo_nivel","observaciones"];
+      function el(id){ return document.getElementById(id); }
+      function money(v){ return fmt.format(Number(v || 0)); }
+      function html(v){ return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+      function num(id){ const n = Number(el(id).value || 0); return Number.isFinite(n) ? n : 0; }
+      function txt(id){ return String(el(id).value || "").trim(); }
+      function api(action){ return "/api/empresa/aiu_construccion?empresa_id=" + encodeURIComponent(empresaID) + "&action=" + encodeURIComponent(action); }
+      async function read(res){ const text = await res.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch(e){ data = { error: text }; } if(!res.ok) throw new Error(data.error || data.message || text || "Error"); return data; }
+      function setMsg(message, bad){ el("msg").textContent = message || ""; el("msg").classList.toggle("error", !!bad); }
+      function contratoPayload(){
+        return {
+          codigo: txt("codigo"), nombre: txt("nombre"), cliente_nombre: txt("cliente_nombre"), responsable: txt("responsable"),
+          centro_costo: txt("centro_costo"), modalidad_contrato: txt("modalidad_contrato"), tipo_obra: txt("tipo_obra"),
+          modelo_aiu: txt("modelo_aiu"), base_iva_modo: txt("base_iva_modo"), porcentaje_admin: num("porcentaje_admin"),
+          porcentaje_imprevistos: num("porcentaje_imprevistos"), porcentaje_utilidad: num("porcentaje_utilidad"), porcentaje_iva: num("porcentaje_iva"),
+          porcentaje_retencion_fuente: num("porcentaje_retencion_fuente"), porcentaje_retencion_ica: num("porcentaje_retencion_ica"),
+          porcentaje_retencion_iva: num("porcentaje_retencion_iva"), porcentaje_anticipo: num("porcentaje_anticipo"),
+          porcentaje_garantia: num("porcentaje_garantia"), avance_porcentaje: num("avance_porcentaje"), fecha_inicio: txt("fecha_inicio"),
+          fecha_fin: txt("fecha_fin"), estado: txt("estado"), riesgo_nivel: txt("riesgo_nivel"), observaciones: txt("observaciones")
+        };
+      }
+      function renderResumen(row){
+        const r = row || {};
+        const retenciones = Number(r.valor_retencion_fuente || 0) + Number(r.valor_retencion_ica || 0) + Number(r.valor_retencion_iva || 0);
+        const lines = [
+          ["Costo directo", money(r.costo_directo)],
+          ["Administracion", money(r.valor_administracion)],
+          ["Imprevistos", money(r.valor_imprevistos)],
+          ["Utilidad", money(r.valor_utilidad)],
+          ["Total AIU", money(r.aiu_total)],
+          ["Base IVA", money(r.base_iva)],
+          ["IVA", money(r.valor_iva)],
+          ["Total factura", money(r.total_factura)],
+          ["Retenciones", money(retenciones)],
+          ["Anticipo", money(r.valor_anticipo)],
+          ["Garantia", money(r.valor_garantia)],
+          ["Neto a cobrar", money(r.neto_cobrar)]
+        ];
+        el("resultadoAIU").innerHTML = lines.map(x => `<div><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join("");
+      }
+      function fillForm(row){
+        currentContrato = row;
+        fields.forEach(k => { if(el(k)) el(k).value = row[k] == null ? "" : row[k]; });
+        el("contrato_id").value = row.id || "";
+        if(!el("factura_documento_codigo").value) el("factura_documento_codigo").value = "FE-AIU-" + (row.codigo || "OBRA");
+        if(!el("factura_periodo").value) el("factura_periodo").value = new Date().toISOString().slice(0,7);
+        renderResumen(row);
+        renderItems(row.items || []);
+        renderFacturas(row.facturas || []);
+      }
+      function clearForm(){
+        currentContrato = null;
+        fields.forEach(k => { if(el(k)) el(k).value = ""; });
+        el("estado").value = "borrador"; el("riesgo_nivel").value = "medio"; el("modalidad_contrato").value = "precio_global"; el("tipo_obra").value = "obra_civil";
+        el("modelo_aiu").value = "base_aiu_sumada"; el("base_iva_modo").value = "utilidad"; el("porcentaje_admin").value = "10"; el("porcentaje_imprevistos").value = "5"; el("porcentaje_utilidad").value = "10"; el("porcentaje_iva").value = "19"; el("avance_porcentaje").value = "0";
+        ["porcentaje_retencion_fuente","porcentaje_retencion_ica","porcentaje_retencion_iva","porcentaje_anticipo","porcentaje_garantia"].forEach(k => el(k).value = "0");
+        el("contrato_id").value = ""; el("factura_documento_codigo").value = ""; el("facturaResult").textContent = "";
+        renderResumen(null); renderItems([]); renderFacturas([]);
+      }
+      function statusBadge(status){ return `<span class="aiu-status ${html(status)}">${html(String(status || "").replace(/_/g," "))}</span>`; }
+      function renderItems(items){
+        if(!items.length){ el("itemsList").innerHTML = "Sin conceptos registrados."; return; }
+        el("itemsList").innerHTML = '<table class="aiu-table"><thead><tr><th>Capitulo</th><th>Descripcion</th><th>Unidad</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>' +
+          items.map(x => `<tr><td data-label="Capitulo">${html(x.capitulo)}</td><td data-label="Descripcion">${html(x.descripcion)}</td><td data-label="Unidad">${html(x.unidad)}</td><td data-label="Cantidad">${pct.format(x.cantidad || 0)}</td><td data-label="Total">${money(x.valor_total)}</td></tr>`).join("") +
+          '</tbody></table>';
+      }
+      function renderFacturas(rows){
+        if(!rows.length){ el("facturasList").innerHTML = "Sin facturas."; return; }
+        el("facturasList").innerHTML = '<table class="aiu-table"><thead><tr><th>Documento</th><th>Periodo</th><th>Total</th><th>Neto</th></tr></thead><tbody>' +
+          rows.map(x => `<tr><td data-label="Documento">${html(x.documento_codigo)}</td><td data-label="Periodo">${html(x.periodo_contable)}</td><td data-label="Total">${money(x.total_factura)}</td><td data-label="Neto">${money(x.neto_cobrar)}</td></tr>`).join("") +
+          '</tbody></table>';
+      }
+      function renderContratos(rows){
+        contratosCache = rows || [];
+        if(!contratosCache.length){ el("contratosList").innerHTML = "Sin contratos AIU."; return; }
+        el("contratosList").innerHTML = '<table class="aiu-table"><thead><tr><th>Codigo</th><th>Contrato</th><th>Cliente</th><th>Estado</th><th>Avance</th><th>Total</th><th>Neto</th><th></th></tr></thead><tbody>' +
+          contratosCache.map(x => `<tr><td data-label="Codigo">${html(x.codigo)}</td><td data-label="Contrato">${html(x.nombre)}<div class="aiu-muted">${html(x.centro_costo || "")}</div></td><td data-label="Cliente">${html(x.cliente_nombre || "")}</td><td data-label="Estado">${statusBadge(x.estado)}</td><td data-label="Avance">${pct.format(x.avance_porcentaje || 0)}%</td><td data-label="Total">${money(x.total_factura)}</td><td data-label="Neto">${money(x.neto_cobrar)}</td><td data-label="Acciones"><button class="btn secondary load-aiu" type="button" data-id="${x.id}">Abrir</button></td></tr>`).join("") +
+          '</tbody></table>';
+        document.querySelectorAll(".load-aiu").forEach(btn => btn.addEventListener("click", () => loadDetalle(btn.dataset.id)));
+      }
+      function renderAlertas(alertas){
+        el("alertasList").innerHTML = alertas && alertas.length ? alertas.map(a => `<div class="aiu-alert">${html(a)}</div>`).join("") : "Sin alertas.";
+      }
+      async function loadDashboard(){
+        const data = await read(await fetch(api("dashboard")));
+        el("kpiActivos").textContent = data.contratos_activos || 0;
+        el("kpiCosto").textContent = money(data.costo_directo_total);
+        el("kpiAIU").textContent = money(data.aiu_total);
+        el("kpiIVA").textContent = money(data.valor_iva_total);
+        el("kpiFacturado").textContent = money(data.total_facturado);
+        el("kpiNeto").textContent = money(data.neto_cobrar_total);
+        renderContratos(data.ultimos_contratos || []);
+        renderAlertas(data.alertas || []);
+        renderFacturas(data.ultimas_facturas || []);
+      }
+      async function loadContratos(){
+        const params = new URLSearchParams({ empresa_id: empresaID, action: "contratos", q: txt("filtro_q"), estado: txt("filtro_estado") });
+        renderContratos(await read(await fetch("/api/empresa/aiu_construccion?" + params.toString())));
+      }
+      async function loadDetalle(id){ fillForm(await read(await fetch(api("detalle") + "&id=" + encodeURIComponent(id)))); }
+      async function saveContrato(){
+        const data = await read(await fetch(api("contrato"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(contratoPayload()) }));
+        fillForm(data.contrato); await loadDashboard(); setMsg("Contrato AIU guardado.", false);
+      }
+      async function changeState(next){
+        const contratoID = Number(el("contrato_id").value || 0);
+        if(!contratoID){ setMsg("Selecciona o guarda un contrato primero.", true); return; }
+        const data = await read(await fetch(api("estado"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contrato_id: contratoID, estado: next, observacion: "Cambio de estado desde panel AIU" }) }));
+        fillForm(data.contrato); await loadDashboard(); setMsg("Estado actualizado.", false);
+      }
+      function exportCSV(){
+        const header = ["codigo","nombre","cliente","estado","avance","costo_directo","aiu_total","iva","total_factura","neto_cobrar"];
+        const lines = [header.join(",")].concat(contratosCache.map(x => header.map(k => JSON.stringify(k === "cliente" ? (x.cliente_nombre || "") : (x[k] == null ? "" : x[k]))).join(",")));
+        const blob = new Blob([lines.join("\\n")], { type:"text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "reporte_aiu.csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      el("contratoForm").addEventListener("submit", e => { e.preventDefault(); saveContrato().catch(err => setMsg(err.message, true)); });
+      el("btnCalcular").addEventListener("click", async () => { try { renderResumen(await read(await fetch(api("calcular"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(contratoPayload()) }))); } catch(err){ setMsg(err.message, true); } });
+      el("itemForm").addEventListener("submit", async e => {
+        e.preventDefault();
+        const contratoID = Number(el("contrato_id").value || 0);
+        if(!contratoID){ setMsg("Selecciona o guarda un contrato primero.", true); return; }
+        try {
+          const data = await read(await fetch(api("item"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contrato_id: contratoID, capitulo: txt("item_capitulo"), descripcion: txt("item_descripcion"), unidad: txt("item_unidad"), cantidad: num("item_cantidad"), valor_unitario: num("item_valor_unitario") }) }));
+          fillForm(data.contrato); await loadDashboard(); setMsg("Concepto agregado.", false);
+        } catch(err){ setMsg(err.message, true); }
+      });
+      el("btnGenerarFactura").addEventListener("click", async () => {
+        const contratoID = Number(el("contrato_id").value || 0);
+        if(!contratoID){ setMsg("Selecciona un contrato.", true); return; }
+        try {
+          const data = await read(await fetch(api("generar_factura"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contrato_id: contratoID, documento_codigo: txt("factura_documento_codigo"), periodo_contable: txt("factura_periodo"), cliente_nombre: txt("cliente_nombre") }) }));
+          el("facturaResult").textContent = JSON.stringify(data, null, 2);
+          await loadDetalle(contratoID); await loadDashboard(); setMsg("Factura electronica AIU registrada.", false);
+        } catch(err){ setMsg(err.message, true); }
+      });
+      document.querySelectorAll("[data-next-state]").forEach(btn => btn.addEventListener("click", () => changeState(btn.dataset.nextState).catch(err => setMsg(err.message, true))));
+      el("btnFiltrar").addEventListener("click", () => loadContratos().catch(err => setMsg(err.message, true)));
+      el("filtro_q").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); loadContratos().catch(err => setMsg(err.message, true)); } });
+      el("btnNuevo").addEventListener("click", clearForm);
+      el("btnExportar").addEventListener("click", exportCSV);
+      el("btnDemo").addEventListener("click", async () => { try { await read(await fetch(api("seed_demo"), { method:"POST" })); await loadDashboard(); setMsg("Demo AIU cargado.", false); } catch(err){ setMsg(err.message, true); } });
+      clearForm();
+      loadDashboard().catch(err => setMsg(err.message, true));
+    })();
+  </script>
+</body>
+</html>

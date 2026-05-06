@@ -354,6 +354,17 @@
           <input id="op_documento_codigo" class="form-input" placeholder="FAC-1001">
         </div>
         <div class="form-col">
+          <label class="form-label">Tipo documento electronico</label>
+          <select id="op_tipo_documento" class="form-input">
+            <option value="factura_electronica">Factura electronica de venta</option>
+            <option value="nota_credito">Nota credito electronica</option>
+            <option value="nota_debito">Nota debito electronica</option>
+            <option value="documento_soporte">Documento soporte electronico</option>
+            <option value="nomina_electronica">Nomina electronica</option>
+            <option value="documento_equivalente_pos">Documento equivalente POS electronico</option>
+          </select>
+        </div>
+        <div class="form-col">
           <label class="form-label">Estado actual</label>
           <select id="op_estado_actual" class="form-input">
             <option value="borrador">borrador</option>
@@ -392,9 +403,15 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" id="btnEmitirFactura" class="btn">Emitir factura</button>
-        <button type="button" id="btnAnularFactura" class="btn secondary">Anular factura</button>
+        <button type="button" id="btnEmitirDocumento" class="btn">Emitir documento</button>
+        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular documento</button>
+        <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
+        <button type="button" id="btnAnularFactura" class="btn secondary is-hidden">Anular factura</button>
         <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota crédito</button>
+        <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
+        <button type="button" id="btnEmitirSoporte" class="btn secondary">Emitir soporte</button>
+        <button type="button" id="btnEmitirNominaElectronica" class="btn secondary">Emitir nomina</button>
+        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary">Emitir POS electronico</button>
       </div>
       <div id="op_msg" class="form-help"></div>
       <pre id="op_resultado" class="form-help pre-output"></pre>
@@ -1394,6 +1411,7 @@
         cliente_email: txt(document.getElementById("op_cliente_email").value),
         cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
         pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
+        tipo_documento: txt(document.getElementById("op_tipo_documento").value) || "factura_electronica",
         documento_codigo: txt(document.getElementById("op_documento_codigo").value),
         estado_actual: txt(document.getElementById("op_estado_actual").value),
         monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
@@ -1516,7 +1534,21 @@
     async function preflightDianOfflineForOperation(action, payload) {
       const code = txt(payload && payload.pais_codigo).toUpperCase();
       const normalizedAction = txt(action).toLowerCase();
-      if (code !== "CO" || ["emitir", "anular", "nota_credito", "emitir_nota_credito"].indexOf(normalizedAction) === -1) {
+      const accionesElectronicas = [
+        "emitir",
+        "anular",
+        "nota_credito",
+        "emitir_nota_credito",
+        "nota_debito",
+        "emitir_nota_debito",
+        "documento_soporte",
+        "emitir_documento_soporte",
+        "nomina_electronica",
+        "emitir_nomina_electronica",
+        "documento_equivalente_pos",
+        "emitir_documento_equivalente_pos"
+      ];
+      if (code !== "CO" || accionesElectronicas.indexOf(normalizedAction) === -1) {
         return {};
       }
       const status = await checkDianConnection(false);
@@ -1729,7 +1761,21 @@
       });
     });
 
+    function setTipoDocumentoOperacion(tipo) {
+      var sel = document.getElementById("op_tipo_documento");
+      if (sel) sel.value = tipo;
+    }
+
+    document.getElementById("btnEmitirDocumento").addEventListener("click", function() {
+      ejecutarOperacionFacturacion("emitir");
+    });
+
+    document.getElementById("btnAnularDocumento").addEventListener("click", function() {
+      ejecutarOperacionFacturacion("anular");
+    });
+
     document.getElementById("btnEmitirFactura").addEventListener("click", function() {
+      setTipoDocumentoOperacion("factura_electronica");
       ejecutarOperacionFacturacion("emitir");
     });
 
@@ -1738,7 +1784,28 @@
     });
 
     document.getElementById("btnEmitirNC").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_credito");
       ejecutarOperacionFacturacion("nota_credito");
+    });
+
+    document.getElementById("btnEmitirND").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_debito");
+      ejecutarOperacionFacturacion("nota_debito");
+    });
+
+    document.getElementById("btnEmitirSoporte").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_soporte");
+      ejecutarOperacionFacturacion("documento_soporte");
+    });
+
+    document.getElementById("btnEmitirNominaElectronica").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nomina_electronica");
+      ejecutarOperacionFacturacion("nomina_electronica");
+    });
+
+    document.getElementById("btnEmitirPOSElectronico").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_equivalente_pos");
+      ejecutarOperacionFacturacion("documento_equivalente_pos");
     });
 
     document.getElementById("btnDianDiagnostico").addEventListener("click", function() {

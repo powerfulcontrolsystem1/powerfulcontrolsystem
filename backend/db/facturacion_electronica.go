@@ -493,6 +493,8 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 		fields["moneda_referencia"] = "VES"
 	default:
 		fields["integracion"] = "dian_ubl_2_1"
+		fields["documentos_soportados"] = []string{"factura_electronica", "nota_credito", "nota_debito", "documento_soporte", "nomina_electronica", "documento_equivalente_pos"}
+		fields["documentos_siigo_referencia"] = []string{"documento_soporte", "nota_credito_ventas", "nota_debito_ventas", "nomina_electronica", "pos_electronico"}
 		fields["modo_offline_dian_activo"] = false
 		fields["modo_offline_preguntar"] = true
 		fields["modo_offline_auto_reintentar"] = true

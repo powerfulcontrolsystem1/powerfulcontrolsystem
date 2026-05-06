@@ -22,17 +22,25 @@ type documentoTransitionRule struct {
 }
 
 func resolveFacturacionTransition(actionRaw, estadoActualRaw string) (documentoTransition, error) {
+	return resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, "factura_electronica")
+}
+
+func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDocumentoRaw string) (documentoTransition, error) {
+	tipoDocumento := normalizeFacturacionDocumentoElectronicoTipo(tipoDocumentoRaw)
+	if tipoDocumento == "" {
+		tipoDocumento = "factura_electronica"
+	}
 	rules := map[string]documentoTransitionRule{
 		"emitir": {
 			AccionCanonica: "emitir",
-			Evento:         "factura_emitida",
+			Evento:         facturacionDocumentoEvento(tipoDocumento, "emitida"),
 			EstadoNuevo:    "emitida",
 			EstadoDefault:  "borrador",
 			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
 		},
 		"anular": {
 			AccionCanonica: "anular",
-			Evento:         "factura_anulada",
+			Evento:         facturacionDocumentoEvento(tipoDocumento, "anulada"),
 			EstadoNuevo:    "anulada",
 			EstadoDefault:  "emitida",
 			EstadosPrevios: toAllowedSet("emitida"),
@@ -51,8 +59,74 @@ func resolveFacturacionTransition(actionRaw, estadoActualRaw string) (documentoT
 			EstadoDefault:  "emitida",
 			EstadosPrevios: toAllowedSet("emitida"),
 		},
+		"nota_debito": {
+			AccionCanonica: "nota_debito",
+			Evento:         "nota_debito_emitida",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision", "emitida"),
+		},
+		"emitir_nota_debito": {
+			AccionCanonica: "nota_debito",
+			Evento:         "nota_debito_emitida",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision", "emitida"),
+		},
+		"documento_soporte": {
+			AccionCanonica: "documento_soporte",
+			Evento:         "documento_soporte_emitido",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
+		"emitir_documento_soporte": {
+			AccionCanonica: "documento_soporte",
+			Evento:         "documento_soporte_emitido",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
+		"nomina_electronica": {
+			AccionCanonica: "nomina_electronica",
+			Evento:         "nomina_electronica_emitida",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
+		"emitir_nomina_electronica": {
+			AccionCanonica: "nomina_electronica",
+			Evento:         "nomina_electronica_emitida",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
+		"documento_equivalente_pos": {
+			AccionCanonica: "documento_equivalente_pos",
+			Evento:         "documento_equivalente_pos_emitido",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
+		"emitir_documento_equivalente_pos": {
+			AccionCanonica: "documento_equivalente_pos",
+			Evento:         "documento_equivalente_pos_emitido",
+			EstadoNuevo:    "emitida",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+		},
 	}
 	return resolveDocumentoTransition("facturacion", actionRaw, estadoActualRaw, rules)
+}
+
+func facturacionDocumentoEvento(tipoDocumento, sufijo string) string {
+	base := normalizeFacturacionDocumentoElectronicoTipo(tipoDocumento)
+	if base == "" {
+		base = "factura_electronica"
+	}
+	base = strings.TrimSuffix(base, "_electronica")
+	base = strings.TrimSuffix(base, "_electronico")
+	return base + "_" + normalizeDocumentoState(sufijo)
 }
 
 func resolveComprasTransition(actionRaw, estadoActualRaw string) (documentoTransition, error) {

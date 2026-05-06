@@ -63,6 +63,22 @@
 	- DescripciÃ³n: se quitÃ³ el blanco forzado del tÃ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÃºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
+## 2026-05-06
+- AIU construccion: mejora profesional del modulo de contratos de obra.
+	- Archivos: `backend/db/aiu_construccion.go`, `backend/handlers/aiu_construccion.go`, `web/administrar_empresa/aiu_construccion.html`, pruebas y documentacion.
+	- Descripcion: se agregan responsable, centro de costo, modalidad contractual, riesgo, avance, retenciones, anticipo, garantia, neto a cobrar, flujo validado de estados/aprobacion, reporte, facturas recientes, alertas y exportacion CSV. El calculo AIU ahora separa total de factura y neto operativo a cobrar.
+	- Verificacion: `go test ./db -run Test.*AIU -count=1` y `go test ./...`.
+
+- AIU construccion: modulo profesional para arquitectos, constructoras y contratos de obra.
+	- Archivos: `backend/db/aiu_construccion.go`, `backend/handlers/aiu_construccion.go`, `web/administrar_empresa/aiu_construccion.html`, menu de facturacion, permisos, pruebas y documentacion.
+	- Descripcion: se agrega gestion de contratos AIU por empresa, capitulos/conceptos de obra, calculo de Administracion/Imprevistos/Utilidad, modelos de base AIU no sumada o sumada al total, base IVA configurable y generacion de factura electronica AIU enlazada a `empresa_facturacion_documentos`.
+	- Verificacion: `go test ./db -run Test.*AIU -count=1` y `go test ./...`.
+
+- Facturacion electronica Colombia: se amplian los documentos electronicos del ciclo DIAN/proveedor para cubrir brechas frente a Siigo y al ecosistema DIAN.
+	- Archivos: `backend/handlers/facturacion_electronica.go`, `backend/handlers/documentos_lifecycle.go`, `backend/db/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`, pruebas y documentacion.
+	- Descripcion: el mismo modulo por empresa ahora permite emitir/anular o registrar en cola fiscal factura electronica, nota credito, nota debito, documento soporte, nomina electronica y documento equivalente POS electronico. Se agrega selector operativo en la UI, botones rapidos para cada documento y normalizacion de aliases usados por Siigo/DIAN.
+	- Verificacion: `go test ./handlers -run "TestNormalizeFacturacionDocumentoElectronicoTipo|TestResolveFacturacionTransitionForDocumentosElectronicosNuevos"` y `go test ./db -run TestDefaultFacturacionConfigPaisAplicaProveedorYCampos`.
+
 ## 2026-05-04
 - Asesor comercial: configuracion profesional de transferencias y pagos de comisiones por venta de licencias.
 	- Archivos: `backend/db/asesor_comercial.go`, `backend/handlers/asesor_comercial.go`, `web/super/asesor_comercial.html`, documentacion relacionada.

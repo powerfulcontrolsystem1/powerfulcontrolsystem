@@ -438,7 +438,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				})
 				return
 			}
-			if action == "emitir" || action == "anular" || action == "nota_credito" || action == "emitir_nota_credito" {
+			if facturacionActionRequiresFiscalIntegration(action) {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {
 					_ = json.NewDecoder(r.Body).Decode(&payload)
@@ -471,12 +471,16 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					payload.EntidadID = payload.ClienteID
 				}
 
-				documentoTipo := "factura_electronica"
-				entidad := "factura_electronica"
+				documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(payload.TipoDocumento)
+				entidad := facturacionDocumentoEntidad(documentoTipo)
 				actionNormalized := normalizeDocumentoState(action)
-				if actionNormalized == "nota_credito" || actionNormalized == "emitir_nota_credito" {
-					documentoTipo = "nota_credito"
-					entidad = "nota_credito"
+				if fromAction := facturacionDocumentoTipoFromAction(actionNormalized); fromAction != "" {
+					documentoTipo = fromAction
+					entidad = facturacionDocumentoEntidad(documentoTipo)
+				}
+				if !facturacionDocumentoElectronicoPermitido(documentoTipo) {
+					http.Error(w, "tipo_documento electronico no soportado", http.StatusBadRequest)
+					return
 				}
 
 				docExistente, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
@@ -488,7 +492,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					payload.EstadoActual = docExistente.EstadoDocumento
 				}
 
-				transition, err := resolveFacturacionTransition(action, payload.EstadoActual)
+				transition, err := resolveFacturacionTransitionForDocument(action, payload.EstadoActual, documentoTipo)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
@@ -596,7 +600,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				}
 				var retryRegistro *dbpkg.FacturacionElectronicaRetryItem
 
-				if transition.Accion == "emitir" || transition.Accion == "anular" || transition.Accion == "nota_credito" {
+				if facturacionActionRequiresFiscalIntegration(transition.Accion) {
 					resultadoIntegracion, retryItem, integErr := processFacturacionIntegracionForDocumento(
 						dbEmp,
 						payload,
@@ -1022,6 +1026,80 @@ func facturacionFirstNonBlank(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func normalizeFacturacionDocumentoElectronicoTipo(raw string) string {
+	v := normalizeDocumentoState(raw)
+	switch v {
+	case "", "factura", "factura_venta", "factura_de_venta", "factura_electronica_venta", "factura_electronica":
+		return "factura_electronica"
+	case "nota_credito", "nota_credito_ventas", "nota_credito_venta", "credit_note":
+		return "nota_credito"
+	case "nota_debito", "nota_debito_ventas", "nota_debito_venta", "debit_note":
+		return "nota_debito"
+	case "documento_soporte", "documento_soporte_electronico", "documento_soporte_adquisicion", "documento_soporte_adquisiciones", "soporte_compras":
+		return "documento_soporte"
+	case "nomina", "nomina_electronica", "documento_soporte_nomina", "documento_soporte_pago_nomina", "documento_soporte_de_pago_nomina", "documento_soporte_pago_nomina_electronica", "documento_soporte_de_pago_nomina_electronica":
+		return "nomina_electronica"
+	case "pos", "pos_electronico", "tiquete_pos", "tiquete_maquina_registradora_pos", "tiquete_de_maquina_registradora_pos", "documento_equivalente", "documento_equivalente_pos", "documento_equivalente_electronico_pos":
+		return "documento_equivalente_pos"
+	default:
+		return v
+	}
+}
+
+func facturacionDocumentoElectronicoPermitido(tipo string) bool {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
+	case "factura_electronica", "nota_credito", "nota_debito", "documento_soporte", "nomina_electronica", "documento_equivalente_pos":
+		return true
+	default:
+		return false
+	}
+}
+
+func facturacionDocumentoTipoFromAction(actionRaw string) string {
+	switch normalizeDocumentoState(actionRaw) {
+	case "nota_credito", "emitir_nota_credito":
+		return "nota_credito"
+	case "nota_debito", "emitir_nota_debito":
+		return "nota_debito"
+	case "documento_soporte", "emitir_documento_soporte":
+		return "documento_soporte"
+	case "nomina_electronica", "emitir_nomina_electronica":
+		return "nomina_electronica"
+	case "documento_equivalente_pos", "emitir_documento_equivalente_pos":
+		return "documento_equivalente_pos"
+	default:
+		return ""
+	}
+}
+
+func facturacionDocumentoEntidad(tipo string) string {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
+	case "factura_electronica":
+		return "factura_electronica"
+	case "nota_credito":
+		return "nota_credito"
+	case "nota_debito":
+		return "nota_debito"
+	case "documento_soporte":
+		return "documento_soporte"
+	case "nomina_electronica":
+		return "nomina_electronica"
+	case "documento_equivalente_pos":
+		return "documento_equivalente_pos"
+	default:
+		return "documento_electronico"
+	}
+}
+
+func facturacionActionRequiresFiscalIntegration(action string) bool {
+	switch normalizeDocumentoState(action) {
+	case "emitir", "anular", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito", "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica", "documento_equivalente_pos", "emitir_documento_equivalente_pos":
+		return true
+	default:
+		return false
+	}
 }
 
 func facturacionTryParseJSONMap(raw string) map[string]interface{} {
@@ -1693,8 +1771,17 @@ func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFac
 func facturacionDeriveAccionByDocumento(doc dbpkg.EmpresaDocumentoFacturacion) string {
 	tipo := strings.ToLower(strings.TrimSpace(doc.TipoDocumento))
 	estado := strings.ToLower(strings.TrimSpace(doc.EstadoDocumento))
-	if tipo == "nota_credito" {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
+	case "nota_credito":
 		return "nota_credito"
+	case "nota_debito":
+		return "nota_debito"
+	case "documento_soporte":
+		return "documento_soporte"
+	case "nomina_electronica":
+		return "nomina_electronica"
+	case "documento_equivalente_pos":
+		return "documento_equivalente_pos"
 	}
 	if estado == "anulada" {
 		return "anular"
@@ -1959,7 +2046,7 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 	for _, doc := range documentos {
 		tipo := strings.ToLower(strings.TrimSpace(doc.TipoDocumento))
 		estadoDocumento := strings.ToLower(strings.TrimSpace(doc.EstadoDocumento))
-		if tipo != "factura_electronica" && tipo != "nota_credito" {
+		if !facturacionDocumentoElectronicoPermitido(tipo) {
 			continue
 		}
 		if estadoDocumento != "emitida" && estadoDocumento != "anulada" {

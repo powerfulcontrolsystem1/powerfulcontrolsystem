@@ -48,6 +48,7 @@ const (
 	permModuleProduccionMRP    = "produccion_mrp"
 	permModuleTesoreria        = "tesoreria_presupuesto"
 	permModuleImportaciones    = "importaciones_costeo"
+	permModuleAIUConstruccion  = "aiu_construccion"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -171,6 +172,7 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleProduccionMRP,
 	permModuleTesoreria,
 	permModuleImportaciones,
+	permModuleAIUConstruccion,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -215,6 +217,7 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleProduccionMRP:    "Produccion / MRP",
 	permModuleTesoreria:        "Tesoreria y presupuesto",
 	permModuleImportaciones:    "Importaciones y costeo",
+	permModuleAIUConstruccion:  "AIU construccion y contratos de obra",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -282,6 +285,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCRMAvanzado", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM y ventas avanzadas", Grupo: "Clientes"},
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación DIAN"},
+	{PaginaClave: "linkAIUConstruccion", Modulo: permModuleAIUConstruccion, Accion: permActionCreate, Titulo: "AIU construcción y contratos de obra", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Facturación DIAN"},
 	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación y venta"},
@@ -629,6 +633,11 @@ func WithEmpresaComprasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc
 // WithEmpresaFacturacionPermissions aplica control de alcance por empresa y permisos por rol para facturacion.
 func WithEmpresaFacturacionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacion, resolveFacturacionPermissionAction, next)
+}
+
+// WithEmpresaAIUConstruccionPermissions aplica permisos independientes para contratos de obra y AIU.
+func WithEmpresaAIUConstruccionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAIUConstruccion, resolveAIUConstruccionPermissionAction, next)
 }
 
 // WithEmpresaSeguridadPermissions aplica control de alcance por empresa y permisos por rol para seguridad/usuarios.
@@ -1424,6 +1433,20 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	return defaultPermissionActionFromMethod(r.Method)
 }
 
+func resolveAIUConstruccionPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "dashboard", "contratos", "detalle", "facturas", "reporte":
+		return permActionRead
+	case "generar_factura", "aprobar", "cerrar", "facturar", "estado":
+		return permActionApprove
+	case "anular", "eliminar":
+		return permActionDelete
+	default:
+		return defaultPermissionActionFromMethod(r.Method)
+	}
+}
+
 func resolveSeguridadPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
@@ -1581,6 +1604,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "cajero")
 		case permActionDelete:
 			return false
+		}
+
+	case permModuleAIUConstruccion:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "contabilidad", "supervisor_sucursal")
+		case permActionDelete:
+			return roleIn(role, "admin_empresa", "contabilidad")
 		}
 
 	case permModuleSeguridad:
@@ -2155,6 +2188,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 			return "linkFacturacionElectronica"
 		}
 		return "linkFacturasElectronicas"
+	case path == "/api/empresa/aiu_construccion":
+		return "linkAIUConstruccion"
 	case path == "/api/empresa/corte_caja":
 		return "linkCorteCaja"
 	case strings.HasPrefix(path, "/api/empresa/finanzas/"):

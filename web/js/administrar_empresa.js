@@ -135,6 +135,7 @@ try {
     document.getElementById("linkConfiguracionCarritoEmpresa"),
     document.getElementById("linkCarritoCompras"),
     document.getElementById("linkFacturacionElectronica"),
+    document.getElementById("linkAIUConstruccion"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
     document.getElementById("linkFinanzasMain"),
@@ -200,6 +201,7 @@ try {
   var permModuleContabilidadCOAv = "contabilidad_colombia_avanzada";
   var permModuleTesoreria = "tesoreria_presupuesto";
   var permModuleImportaciones = "importaciones_costeo";
+  var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
   var permModuleSeguridad = "seguridad";
@@ -263,6 +265,7 @@ try {
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
     linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
+    linkAIUConstruccion: { module: permModuleAIUConstruccion, action: permActionCreate },
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
@@ -785,6 +788,16 @@ try {
         }
         if (normalizedAction === "D") {
           return false;
+        }
+        break;
+
+      case permModuleAIUConstruccion:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "contabilidad", "supervisor_sucursal"]);
+        }
+        if (normalizedAction === "D") {
+          return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
         }
         break;
 

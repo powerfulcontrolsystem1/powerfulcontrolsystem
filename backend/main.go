@@ -733,6 +733,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaImportacionesCosteoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure importaciones costeo schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaAIUConstruccionSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure AIU construccion schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
 	}
@@ -910,6 +913,7 @@ func main() {
 	http.HandleFunc("/api/empresa/compras_avanzadas", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasAvanzadasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/aiu_construccion", handlers.WithEmpresaAIUConstruccionPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIUConstruccionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/produccion_mrp", handlers.WithEmpresaProduccionMRPPermissions(dbEmpresas, dbSuper, handlers.EmpresaProduccionMRPHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
