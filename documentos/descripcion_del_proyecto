@@ -59,6 +59,8 @@ Actualizacion operativa 2026-05-05:
 - Motel Calipso queda como empresa de referencia publicada con slug `motel-calipso`, venta publica, carta publica de productos y precios, items de ejemplo, publicaciones de red social y rutas productivas `/{slug}/venta_publica.html` y `/{slug}/visualizar_productos_y_precios_publico.html`.
 - La carta publica de productos es una pagina externa de solo lectura; el QR se genera desde Administrar empresa y se exporta en PNG, SVG, PDF o impresion directa.
 - La contabilidad Colombia queda ampliada con una suite avanzada por empresa para informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales, enlazada al nucleo de PUC, terceros, impuestos y comprobantes.
+- La navegacion empresarial se organiza por dominios: Finanzas operativas, Contabilidad Colombia y Suite contable Colombia se agrupan bajo `Centro financiero y contable` sin eliminar rutas internas ni duplicar codigo.
+- La ayuda administrativa principal queda reservada para `super_administrador`; el nuevo rol `control_super_administrador` supervisa administradores, seguridad, errores, metricas y reportes globales con alcance limitado.
 
 1) Autenticacion y sesiones
 - Login Google para administradores.

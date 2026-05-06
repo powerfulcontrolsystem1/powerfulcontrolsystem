@@ -1,3 +1,11 @@
+2026-05-05: Organizacion profesional de modulos y rol contralor super
+- Modulos afectados: `administrar_empresa`, `finanzas`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `ayuda`, `super_administrador`, `roles`.
+- Cambio funcional: el menu principal fusiona las entradas repetidas de finanzas/contabilidad bajo `Centro financiero y contable`; las rutas internas se conservan para compatibilidad, permisos, favoritos y enlaces existentes.
+- Navegacion: `web/administrar_empresa/finanzas_menu.html` concentra Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos/cartera, nomina y ERP extendido.
+- Seguridad: `web/ayuda/ayuda.html` deja de ser ayuda publica y queda protegida para el rol `super_administrador`; las ayudas publicas especificas, como login, se mantienen disponibles.
+- Nuevo rol administrativo: `control_super_administrador` permite supervision limitada del panel super sobre administradores, seguridad, errores, metricas y reportes globales sin abrir configuracion de pagos/licencias ni parametros sensibles.
+- Salvaguarda: el rol contralor no puede eliminar ni desactivar el super administrador principal ni administrar otros contralores super.
+
 2026-05-05: Contabilidad Colombia NIIF/DIAN
 - Modulos afectados: `contabilidad_colombia`, `finanzas`, `facturacion`, `roles/licencias`, `administrar_empresa`
 - Cambio funcional: se agrega el modulo `Contabilidad Colombia` en Administrar empresa > Finanzas y cumplimiento como capa contable/legal independiente de finanzas operativas.

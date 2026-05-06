@@ -79,6 +79,9 @@ func resolveRequesterAdminScope(dbSuper *sql.DB, r *http.Request) (*dbpkg.Admin,
 		}
 		return nil, "", err
 	}
+	if strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") || strings.EqualFold(strings.TrimSpace(admin.Role), "control_super_administrador") {
+		return admin, "", nil
+	}
 	principalEmail, err := dbpkg.ResolveAdminPrincipalEmail(dbSuper, requesterEmail)
 	if err != nil {
 		return nil, "", err

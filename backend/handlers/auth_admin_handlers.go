@@ -58,7 +58,7 @@ func resolveAdminPostLoginRedirect(admin *dbpkg.Admin) string {
 	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
 		return googlePasswordSetupPagePath
 	}
-	if strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") {
+	if utils.IsSuperPanelRole(admin.Role) {
 		return "/super_administrador.html"
 	}
 	return "/seleccionar_empresa.html"
@@ -1083,8 +1083,8 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
 				return
 			}
-			if requesterAdmin == nil || !strings.EqualFold(strings.TrimSpace(requesterAdmin.Role), "super_administrador") {
-				http.Error(w, "solo el super administrador puede agregar administradores", http.StatusForbidden)
+			if requesterAdmin == nil || !utils.IsSuperPanelRole(requesterAdmin.Role) {
+				http.Error(w, "solo el super administrador o el contralor super puede agregar administradores", http.StatusForbidden)
 				return
 			}
 			var payload struct{ Email, Name, Role, Photo string }
@@ -1103,8 +1103,12 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if payload.Role == "" {
 				payload.Role = "administrador"
 			}
-			if payload.Role != "administrador" && payload.Role != "super_administrador" {
+			if payload.Role != "administrador" && payload.Role != "super_administrador" && payload.Role != utils.SuperControlRole {
 				http.Error(w, "rol invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.Role == utils.SuperControlRole && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede crear contralores super", http.StatusForbidden)
 				return
 			}
 			if existing, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email); err != nil {
@@ -1138,21 +1142,29 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
 			}
-			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 			if err != nil {
 				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
 				return
 			}
-			if principalEmail != "" {
-				targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
-				if err != nil {
-					if err == sql.ErrNoRows {
-						http.Error(w, "administrador not found", http.StatusNotFound)
-						return
-					}
-					http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					http.Error(w, "administrador not found", http.StatusNotFound)
 					return
 				}
+				http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+				return
+			}
+			if requesterAdmin != nil && utils.AdminShouldUseSuperRole(targetAdmin.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+				http.Error(w, "no se permite cambiar el estado del super administrador principal", http.StatusForbidden)
+				return
+			}
+			if requesterAdmin != nil && utils.IsSuperControlRole(targetAdmin.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede cambiar el estado de contralores super", http.StatusForbidden)
+				return
+			}
+			if principalEmail != "" {
 				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
 				if err != nil {
 					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
@@ -1199,20 +1211,28 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
 				return
 			}
-			if requesterAdmin == nil || !strings.EqualFold(strings.TrimSpace(requesterAdmin.Role), "super_administrador") {
-				http.Error(w, "solo el super administrador puede eliminar administradores", http.StatusForbidden)
+			if requesterAdmin == nil || !utils.IsSuperPanelRole(requesterAdmin.Role) {
+				http.Error(w, "solo el super administrador o el contralor super puede eliminar administradores", http.StatusForbidden)
+				return
+			}
+			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					http.Error(w, "administrador not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+				return
+			}
+			if utils.AdminShouldUseSuperRole(targetAdmin.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+				http.Error(w, "no se permite eliminar el super administrador principal", http.StatusForbidden)
+				return
+			}
+			if utils.IsSuperControlRole(targetAdmin.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede eliminar contralores super", http.StatusForbidden)
 				return
 			}
 			if principalEmail != "" {
-				targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
-				if err != nil {
-					if err == sql.ErrNoRows {
-						http.Error(w, "administrador not found", http.StatusNotFound)
-						return
-					}
-					http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
-					return
-				}
 				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
 				if err != nil {
 					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)

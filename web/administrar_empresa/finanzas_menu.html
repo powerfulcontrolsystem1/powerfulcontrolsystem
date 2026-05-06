@@ -3,30 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Finanzas - Menú</title>
+  <title>Centro financiero y contable</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
-      <h2>Finanzas</h2>
+      <h2>Centro financiero y contable</h2>
+      <p class="admin-sidebar-kicker">Finanzas, contabilidad y cumplimiento</p>
       <ul class="nav" id="finanzasSidebarNav">
-        <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
+        <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas operativas</a></li>
+        <li><a id="linkContabilidadColombia" href="/administrar_empresa/contabilidad_colombia.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Contabilidad Colombia</a></li>
+        <li><a id="linkContabilidadColombiaAvanzada" href="/administrar_empresa/contabilidad_colombia_avanzada.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Suite contable Colombia</a></li>
         <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de caja</a></li>
-        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Créditos y cartera</a></li>
-        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nómina de sueldos</a></li>
+        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Creditos y cartera</a></li>
+        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nomina de sueldos</a></li>
         <li><a id="linkERPExtendidoMenu" href="/administrar_empresa/modulos_erp_extendido.html" target="finanzasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">ERP extendido</a></li>
         <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
-            <span class="admin-menu-visibility-label">Ocultar menú</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
           </button>
         </li>
       </ul>
     </aside>
 
     <main class="admin-content">
-      <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido de finanzas" class="admin-empresa-frame"></iframe>
+      <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido financiero y contable" class="admin-empresa-frame"></iframe>
     </main>
   </div>
   <script src="/js/empresa_submenu_context.js"></script>

@@ -68,10 +68,23 @@ const (
 	authMiddlewareSessionCacheTTL     = 30 * time.Second
 	authMiddlewareAdminCacheTTL       = 30 * time.Second
 	authMiddlewareMaintenanceCacheTTL = 30 * time.Second
+	SuperControlRole                  = "control_super_administrador"
 )
 
 func AdminShouldUseSuperRole(email string) bool {
 	return strings.EqualFold(strings.TrimSpace(email), reservedSuperAdminEmail)
+}
+
+func IsSuperAdministradorRole(role string) bool {
+	return strings.EqualFold(strings.TrimSpace(role), "super_administrador")
+}
+
+func IsSuperControlRole(role string) bool {
+	return strings.EqualFold(strings.TrimSpace(role), SuperControlRole)
+}
+
+func IsSuperPanelRole(role string) bool {
+	return IsSuperAdministradorRole(role) || IsSuperControlRole(role)
 }
 
 func ManagedAdminRole(email, currentRole string) string {
@@ -558,6 +571,38 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 	}
 }
 
+func allowSuperControlRoute(path, method, role string) bool {
+	_ = method
+	if !IsSuperControlRole(role) {
+		return false
+	}
+	switch strings.TrimSpace(path) {
+	case "/super/licencias_resumen.html",
+		"/super/administradores.html",
+		"/super/seguridad.html",
+		"/super/errores.html",
+		"/super/reportes_globales.html",
+		"/super/api/administradores",
+		"/super/administradores",
+		"/super/sesiones",
+		"/super/api/reportes_globales",
+		"/super/api/errores",
+		"/super/api/metrics/current",
+		"/super/api/metrics/history",
+		"/super/api/security/ports",
+		"/super/api/security/processes",
+		"/super/api/security/vps/config",
+		"/super/api/security/vps/run",
+		"/super/api/security/vps/status",
+		"/super/api/security/vps/history",
+		"/super/api/security/vps/report",
+		"/super/api/security/vps/compare":
+		return true
+	default:
+		return false
+	}
+}
+
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
 // Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
 // exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
@@ -677,8 +722,12 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/descargas/", "/emulador/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/uploads/", "/descargas/", "/emulador/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
+		if strings.HasPrefix(path, "/ayuda/") && path != "/ayuda/ayuda.html" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {
 				next.ServeHTTP(w, r)
@@ -717,9 +766,18 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			}
 		}
 
+		if path == "/ayuda/ayuda.html" && !IsSuperAdministradorRole(admin.Role) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		if path == "/super_administrador.html" && !IsSuperPanelRole(admin.Role) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+
 		// Rutas /super/ requieren rol super_administrador, excepto lecturas puntuales
 		// necesarias para el selector de empresas del rol administrador.
-		if strings.HasPrefix(path, "/super/") && !strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") && !allowAdminLimitedSuperRoute(path, r.Method, admin.Role) {
+		if strings.HasPrefix(path, "/super/") && !IsSuperAdministradorRole(admin.Role) && !allowSuperControlRoute(path, r.Method, admin.Role) && !allowAdminLimitedSuperRoute(path, r.Method, admin.Role) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}

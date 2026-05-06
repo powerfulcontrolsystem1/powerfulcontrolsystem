@@ -128,7 +128,7 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para administrar empresas, vender, controlar inventario, facturar electronicamente, usar IA, gestionar licencias y resolver bloqueos frecuentes sin romper el flujo diario.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA y resuelve bloqueos frecuentes sin romper el flujo diario.</p>
       </div>
       <div class="help-search-row">
         <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
@@ -148,6 +148,7 @@
         <a href="#roles">Roles y acceso <span>seguridad</span></a>
         <a href="#super">Super administrador <span>plataforma</span></a>
         <a href="#empresa">Administrar empresa <span>operacion</span></a>
+        <a href="#modulos-organizados">Modulos organizados <span>estructura</span></a>
         <a href="#productos">Productos e inventario <span>stock</span></a>
         <a href="#ventas">Estaciones, carrito y caja <span>POS</span></a>
         <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
@@ -182,6 +183,10 @@
               <h3>Principio de seguridad</h3>
               <p>Si falta configuracion critica, el sistema debe explicar el requisito antes de continuar: bodega, formato de factura, cliente, pasarela, licencia o permisos.</p>
             </article>
+            <article class="help-mini-card">
+              <h3>Acceso a esta ayuda</h3>
+              <p>La ayuda administrativa completa es privada y solo debe estar disponible para el rol <code>super_administrador</code>. Los usuarios operativos usan ayudas contextuales o manuales de login.</p>
+            </article>
           </div>
         </section>
 
@@ -192,6 +197,11 @@
               <h3>Super administrador</h3>
               <p>Administra plataforma, licencias, tipos de empresa, pagos, integraciones, IA, voz, auditoria, configuracion avanzada y metricas globales.</p>
               <span class="help-route">Ruta: /super_administrador.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Contralor super administrador</h3>
+              <p>Rol de supervision para controlar administradores, revisar seguridad, errores, metricas y reportes globales sin abrir toda la configuracion comercial o tecnica de la plataforma.</p>
+              <span class="help-route">Rol: control_super_administrador</span>
             </article>
             <article class="help-mini-card">
               <h3>Administrador de empresa</h3>
@@ -231,6 +241,25 @@
             <article class="help-mini-card">
               <h3>Favoritos</h3>
               <p>Las paginas de administrar empresa pueden agregarse a favoritos para aparecer debajo de clima e indicadores en el panel.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="modulos-organizados" class="card empresa-section help-section" data-help="modulos organizados fusion finanzas contabilidad centro financiero estructura">
+          <h2>Organizacion profesional de modulos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Centro financiero y contable</h3>
+              <p>Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos, cartera, nomina y ERP extendido se administran desde un unico centro para evitar duplicidad visual.</p>
+              <span class="help-route">Ruta: /administrar_empresa/finanzas_menu.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compatibilidad</h3>
+              <p>Las rutas internas no se eliminan: se mantienen vivas para permisos, favoritos, enlaces antiguos y pruebas. La fusion es de navegacion y estructura, no de datos ni APIs.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Criterio de separacion</h3>
+              <p>Un modulo se separa cuando tiene permisos, licencia o datos propios. Si solo es una vista de trabajo del mismo dominio, se agrupa bajo un menu padre.</p>
             </article>
           </div>
         </section>

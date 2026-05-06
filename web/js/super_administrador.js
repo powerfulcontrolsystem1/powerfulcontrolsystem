@@ -67,6 +67,39 @@
     if (found) found.classList.add("active");
   }
 
+  function applySuperRoleNavigation(role) {
+    role = String(role || "").trim().toLowerCase();
+    if (role !== "control_super_administrador") {
+      if (role && role !== "super_administrador") {
+        window.location.href = "/seleccionar_empresa.html";
+      }
+      return;
+    }
+    var allowed = {
+      "/super/licencias_resumen.html": true,
+      "/super/administradores.html": true,
+      "/super/seguridad.html": true,
+      "/super/errores.html": true,
+      "/super/reportes_globales.html": true
+    };
+    links.forEach(function (a) {
+      var normalized = normalizeHref(a.getAttribute("href")).split("?")[0];
+      var visible = !!allowed[normalized] || a.classList.contains("select-company");
+      var item = a.closest ? a.closest("li") : null;
+      if (item) item.hidden = !visible;
+    });
+    document.querySelectorAll(".admin-nav-group").forEach(function (group) {
+      var visibleLinks = group.querySelectorAll("li:not([hidden]) a").length;
+      group.hidden = visibleLinks === 0;
+    });
+    var current = normalizeHref(iframe ? iframe.getAttribute("src") : "");
+    if (!allowed[current.split("?")[0]] && iframe) {
+      iframe.setAttribute("src", "/super/licencias_resumen.html");
+      persistLastPage("/super/licencias_resumen.html");
+      setActiveByHref("/super/licencias_resumen.html");
+    }
+  }
+
   links.forEach(function (a) {
     a.addEventListener("click", function (e) {
       var targetAttr = a.getAttribute("target");
@@ -110,4 +143,16 @@
       }
     });
   }
+
+  fetch("/me", { credentials: "same-origin" })
+    .then(function (res) {
+      if (!res.ok) throw new Error("no-auth");
+      return res.json();
+    })
+    .then(function (admin) {
+      applySuperRoleNavigation(admin && admin.role);
+    })
+    .catch(function () {
+      window.location.href = "/login.html";
+    });
 })();

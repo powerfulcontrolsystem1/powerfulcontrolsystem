@@ -29,6 +29,7 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/emulador/",
 		"/emulador/emulator/data/loader.js",
 		"/emulador/api/roms",
+		"/ayuda/login_administradores.html",
 	}
 	for _, path := range publicPaths {
 		path := path
@@ -50,6 +51,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/super/api/licencias",
 		"/super/api/config/epayco",
 		"/super/api/reportes_globales",
+		"/ayuda/ayuda.html",
+		"/super_administrador.html",
 	}
 	for _, path := range protectedPaths {
 		path := path
@@ -64,5 +67,33 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 				t.Fatalf("expected protected route %s to require session, got status %d", path, rec.Code)
 			}
 		})
+	}
+}
+
+func TestSuperControlRouteAllowList(t *testing.T) {
+	t.Parallel()
+
+	allowed := []string{
+		"/super/licencias_resumen.html",
+		"/super/administradores.html",
+		"/super/api/administradores",
+		"/super/api/security/vps/status",
+	}
+	for _, path := range allowed {
+		if !allowSuperControlRoute(path, http.MethodGet, SuperControlRole) {
+			t.Fatalf("expected control role to access %s", path)
+		}
+	}
+
+	blocked := []string{
+		"/super/licencias.html",
+		"/super/configuracion_avanzada.html",
+		"/super/api/config/epayco",
+		"/super/api/licencias",
+	}
+	for _, path := range blocked {
+		if allowSuperControlRoute(path, http.MethodGet, SuperControlRole) {
+			t.Fatalf("expected control role to be blocked from %s", path)
+		}
 	}
 }
