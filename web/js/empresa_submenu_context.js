@@ -1,6 +1,49 @@
 (function() {
   'use strict';
 
+  function normalizeTheme(value) {
+    const allowed = {
+      light: true,
+      'light-rose': true,
+      'light-gold': true,
+      dark: true,
+      'dark-violet': true,
+      'dark-emerald': true
+    };
+    let theme = String(value || '').trim().toLowerCase();
+    if (theme === 'dark-protect') theme = 'dark';
+    return allowed[theme] ? theme : 'light';
+  }
+
+  function readCookieTheme() {
+    const match = String(document.cookie || '').match(/(?:^|;\s*)pcs_theme=([^;]+)/);
+    return match ? decodeURIComponent(match[1] || '') : '';
+  }
+
+  function resolveTheme() {
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentTheme = window.parent.document.documentElement.getAttribute('data-theme') || '';
+        if (parentTheme) return normalizeTheme(parentTheme);
+      }
+    } catch (_) {}
+    try {
+      return normalizeTheme(window.localStorage.getItem('theme') || readCookieTheme());
+    } catch (_) {
+      return normalizeTheme(readCookieTheme());
+    }
+  }
+
+  function applyThemeContext() {
+    const theme = resolveTheme();
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    root.classList.toggle('theme-light', theme.indexOf('light') === 0);
+    root.classList.toggle('theme-dark', theme.indexOf('light') !== 0);
+  }
+
+  applyThemeContext();
+
   function parsePositiveInt(raw) {
     const n = Number(String(raw || '').trim());
     if (!Number.isFinite(n)) return 0;
@@ -81,8 +124,15 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyEmpresaContext);
+    document.addEventListener('DOMContentLoaded', function() {
+      applyThemeContext();
+      applyEmpresaContext();
+    });
   } else {
+    applyThemeContext();
     applyEmpresaContext();
   }
+
+  window.addEventListener('storage', applyThemeContext);
+  window.addEventListener('pageshow', applyThemeContext);
 })();

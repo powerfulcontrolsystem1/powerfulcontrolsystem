@@ -69,6 +69,7 @@
     <section id="tab-asambleas" class="tab-panel ph-card"><div class="ph-grid"><form id="asambleaForm" class="ph-card ph-form"><h2>Asamblea</h2><input id="aTitulo" class="form-input" placeholder="Titulo"><div class="ph-row"><select id="aTipo" class="form-input"><option value="ordinaria">Ordinaria</option><option value="extraordinaria">Extraordinaria</option><option value="consejo">Consejo</option></select><input id="aFecha" class="form-input" type="date"></div><div class="ph-row"><input id="aQuorum" class="form-input" type="number" value="51"><input id="aActual" class="form-input" type="number" value="0"></div><input id="aActa" class="form-input" placeholder="URL acta"><button class="btn" type="submit">Guardar asamblea</button></form><div class="ph-table-wrap" id="asambleasBox"></div></div></section>
   </main>
 
+  <script src="/js/empresa_submenu_context.js"></script>
   <script>
     const params=new URLSearchParams(location.search); const empresaId=params.get("empresa_id")||params.get("id")||localStorage.getItem("empresa_id")||"";
     const apiBase="/api/empresa/propiedad_horizontal?empresa_id="+encodeURIComponent(empresaId);
