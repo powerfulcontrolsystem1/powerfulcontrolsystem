@@ -18609,3 +18609,22 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/ai_chat_drawer.js
 - web/super/licencias.html
+
+2026-05-05: Organizacion de modulos y control super
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- web/administrar_empresa.html
+- web/administrar_empresa/finanzas_menu.html
+- web/ayuda/ayuda.html
+- web/js/administrar_empresa.js
+- web/js/super_administrador.js
+- web/menu.js
+- web/super/administradores.html
