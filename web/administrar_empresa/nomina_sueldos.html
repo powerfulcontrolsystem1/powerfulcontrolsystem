@@ -508,6 +508,33 @@
         <div class="empresa-section-header">
           <h2>Pagos de nómina</h2>
         </div>
+        <div id="controlContablePanel" class="nomina-control-card estado-pendiente">
+          <div class="nomina-control-header">
+            <div>
+              <span class="empresa-module-kicker">Control contable</span>
+              <h3>Validacion previa al pago</h3>
+            </div>
+            <strong id="controlEstado" class="nomina-control-badge">Pendiente</strong>
+          </div>
+          <div class="nomina-control-grid">
+            <div><span>Liquidaciones</span><strong id="controlLiquidaciones">0</strong></div>
+            <div><span>Pendientes de pago</span><strong id="controlPendientes">0</strong></div>
+            <div><span>Neto liquidado</span><strong id="controlNeto">$0</strong></div>
+            <div><span>Pagado</span><strong id="controlPagado">$0</strong></div>
+            <div><span>Saldo</span><strong id="controlSaldo">$0</strong></div>
+            <div><span>Costo empresa</span><strong id="controlCosto">$0</strong></div>
+          </div>
+          <div id="controlAlertas" class="nomina-control-alerts">
+            <div class="form-help">Ejecuta la validacion contable antes de generar pagos.</div>
+          </div>
+          <label id="payConfirmControlWrap" class="nomina-control-confirm" hidden>
+            <input id="payConfirmControl" type="checkbox">
+            <span>Confirmo que revise las advertencias contables y autorizo continuar con el pago.</span>
+          </label>
+          <div class="form-actions">
+            <button id="controlValidarBtn" type="button" class="btn secondary">Validar control contable</button>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="payMetodo">Método de pago</label>
@@ -646,7 +673,8 @@
         liquidaciones: [],
         pagos: [],
         dashboard: null,
-        provisiones: null
+        provisiones: null,
+        controlContable: null
       };
 
       function getQueryParam(name) {
@@ -708,7 +736,10 @@
         }
         if (!resp.ok) {
           const msg = typeof data === 'string' ? data : (data && (data.error || data.message)) || ('HTTP ' + resp.status);
-          throw new Error(msg);
+          const err = new Error(msg);
+          err.status = resp.status;
+          err.data = data;
+          throw err;
         }
         return data;
       }
@@ -1326,6 +1357,75 @@
         updateKpis();
       }
 
+      function controlEstadoLabel(estado) {
+        const value = normalize(estado).toLowerCase();
+        if (value === 'listo') return 'Listo';
+        if (value === 'advertencia') return 'Con advertencias';
+        if (value === 'bloqueado') return 'Bloqueado';
+        return 'Pendiente';
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function renderControlContable(control) {
+        state.controlContable = control || null;
+        const panel = document.getElementById('controlContablePanel');
+        const confirmWrap = document.getElementById('payConfirmControlWrap');
+        const confirmInput = document.getElementById('payConfirmControl');
+        const estado = normalize(control && control.estado).toLowerCase() || 'pendiente';
+        if (panel) {
+          panel.classList.remove('estado-pendiente', 'estado-listo', 'estado-advertencia', 'estado-bloqueado');
+          panel.classList.add('estado-' + estado);
+        }
+        setText('controlEstado', controlEstadoLabel(estado));
+        setText('controlLiquidaciones', String(Number(control && control.liquidaciones || 0)));
+        setText('controlPendientes', String(Number(control && control.pendientes_pago || 0)));
+        setText('controlNeto', money(control && control.total_neto || 0));
+        setText('controlPagado', money(control && control.total_pagado || 0));
+        setText('controlSaldo', money(control && control.saldo_pendiente || 0));
+        setText('controlCosto', money(control && control.costo_empresa_estimado || 0));
+
+        const bloqueos = Array.isArray(control && control.bloqueos) ? control.bloqueos : [];
+        const alertas = Array.isArray(control && control.alertas) ? control.alertas : [];
+        const conceptos = Array.isArray(control && control.conceptos_sin_cuenta) ? control.conceptos_sin_cuenta : [];
+        const items = [];
+        bloqueos.forEach(function (item) { items.push({ kind: 'bloqueo', text: item }); });
+        alertas.forEach(function (item) { items.push({ kind: 'alerta', text: item }); });
+        if (conceptos.length) {
+          items.push({ kind: 'alerta', text: 'Conceptos sin cuenta: ' + conceptos.slice(0, 6).join(', ') + (conceptos.length > 6 ? '...' : '') });
+        }
+
+        const box = document.getElementById('controlAlertas');
+        if (box) {
+          box.innerHTML = items.length
+            ? items.map(function (item) {
+                return '<div class="nomina-control-alert ' + esc(item.kind) + '">' + esc(item.text) + '</div>';
+              }).join('')
+            : '<div class="nomina-control-ok">Control contable listo para generar pagos.</div>';
+        }
+        if (confirmWrap && confirmInput) {
+          const needsConfirm = !!(control && control.requiere_confirmacion);
+          confirmWrap.hidden = !needsConfirm;
+          if (!needsConfirm) confirmInput.checked = false;
+        }
+      }
+
+      async function loadControlContable() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'control_contable');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const control = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderControlContable(control);
+        return control;
+      }
+
       function renderDashboard(data) {
         state.dashboard = data || null;
         const alerts = Array.isArray(data && data.alertas) ? data.alertas : [];
@@ -1334,6 +1434,9 @@
           : '<div class="form-help">Sin alertas críticas para el período actual.</div>';
         if (data && data.provisiones) {
           renderProvisiones(data.provisiones);
+        }
+        if (data && data.control_contable) {
+          renderControlContable(data.control_contable);
         }
         updateKpis();
       }
@@ -1381,19 +1484,37 @@
         if (!current.desde || !current.hasta) {
           throw new Error('Debes indicar período desde y hasta para generar pagos.');
         }
+        const control = await loadControlContable();
+        if (!control || control.puede_generar_pagos === false) {
+          throw new Error('El control contable no permite generar pagos. Revisa los bloqueos del panel.');
+        }
+        const confirmInput = document.getElementById('payConfirmControl');
+        const confirmarAdvertencias = !!(control.requiere_confirmacion && confirmInput && confirmInput.checked);
+        if (control.requiere_confirmacion && !confirmarAdvertencias) {
+          throw new Error('Debes confirmar la revision de advertencias contables antes de generar pagos.');
+        }
         const payload = {
           empresa_id: Number(state.empresaID),
           periodo_desde: current.desde,
           periodo_hasta: current.hasta,
           empleado_nomina_id: current.empleadoNominaID > 0 ? current.empleadoNominaID : 0,
           metodo_pago: normalize(document.getElementById('payMetodo').value),
-          cuenta_bancaria: normalize(document.getElementById('payCuenta').value)
+          cuenta_bancaria: normalize(document.getElementById('payCuenta').value),
+          confirmar_advertencias: confirmarAdvertencias
         };
-        const result = await requestJSON('/api/empresa/nomina?action=generar_pagos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        let result;
+        try {
+          result = await requestJSON('/api/empresa/nomina?action=generar_pagos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (err) {
+          if (err && err.data && err.data.control_contable) {
+            renderControlContable(err.data.control_contable);
+          }
+          throw err;
+        }
         state.pagos = Array.isArray(result && result.pagos) ? result.pagos : [];
         renderPagos(state.pagos, 'Pagos generados: ' + Number(result && result.generados || 0) + ' | Omitidos: ' + Number(result && result.omitidos || 0) + ' | Total pagado: ' + money(result && result.total_neto_pagado || 0));
         await loadDashboard();
@@ -1614,6 +1735,17 @@
           }).catch(function (err) {
             setMessage('payMsg', err.message || 'No se pudieron consultar las provisiones.', 'error');
           });
+        });
+
+        document.getElementById('controlValidarBtn').addEventListener('click', function () {
+          loadControlContable()
+            .then(function (control) {
+              const estado = controlEstadoLabel(control && control.estado).toLowerCase();
+              setMessage('payMsg', 'Control contable ' + estado + '.', control && control.estado === 'bloqueado' ? 'error' : 'success');
+            })
+            .catch(function (err) {
+              setMessage('payMsg', err.message || 'No se pudo validar el control contable.', 'error');
+            });
         });
 
         document.getElementById('liqTableBody').addEventListener('click', function (ev) {

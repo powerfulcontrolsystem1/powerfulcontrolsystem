@@ -504,7 +504,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveEpaycoBtn" class="btn" style="display:none;">Guardar Epayco</button>
+        <button id="saveEpaycoBtn" type="button" class="btn">Guardar cambios</button>
         <button id="editEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testEpaycoBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Epayco</button>
@@ -593,7 +593,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveWompiBtn" class="btn" style="display:none;">Guardar Wompi</button>
+        <button id="saveWompiBtn" type="button" class="btn">Guardar cambios</button>
         <button id="editWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testWompiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Nequi</button>
@@ -1750,6 +1750,7 @@
               if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = '';
               document.getElementById('cancelWompiBtn').style.display = 'none';
+              document.getElementById('saveWompiBtn').style.display = '';
               document.getElementById('saveWompiBtn').disabled = false;
             } else {
               document.getElementById('wompiPublicKey').disabled = false;
@@ -1758,6 +1759,7 @@
               if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = 'none';
               document.getElementById('cancelWompiBtn').style.display = 'none';
+              document.getElementById('saveWompiBtn').style.display = '';
               document.getElementById('saveWompiBtn').disabled = false;
             }
           } else {
@@ -2520,11 +2522,7 @@
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
         const enabled = !!document.getElementById('wompiEnabledToggle').checked;
 
-        if (!pub && !prv && !integrity) {
-          if (!confirm('No ingresaste llaves nuevas. ¿Deseas guardar solo el estado de activación y/o el modo de Wompi?')) return;
-        }
-
-        const payload = { encrypt, mode, enabled };
+        const payload = { encrypt, mode, enabled, country_overrides: readPaymentCountryOverrides('wompi') };
         if (pub) payload.public_key = pub;
         if (prv) payload.private_key = prv;
         if (integrity) payload.integrity_key = integrity;
@@ -2550,7 +2548,7 @@
         } catch (err) {
           document.getElementById('wompiMsg').innerText = 'Error: ' + (err.message || err);
         }
-        btn.disabled = false; btn.innerText = 'Guardar Wompi';
+        btn.disabled = false; btn.innerText = 'Guardar cambios';
       }
 
       function enableEditWompi(){
@@ -2629,7 +2627,7 @@
         const hasEpaycoConfig = !!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set || cfg.checkout_key_set);
           document.getElementById('editEpaycoBtn').style.display = hasEpaycoConfig ? '' : 'none';
           document.getElementById('cancelEpaycoBtn').style.display = 'none';
-          document.getElementById('saveEpaycoBtn').style.display = hasEpaycoConfig ? 'none' : '';
+          document.getElementById('saveEpaycoBtn').style.display = '';
           document.getElementById('saveEpaycoBtn').disabled = false;
         } catch (err) {
           statusPublic.innerText = 'Error cargando Epayco: ' + (err.message || err);
@@ -2649,10 +2647,6 @@
         const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
         const checkoutKey = (document.getElementById('epaycoCheckoutKey').value || '').trim();
         const enabled = !!document.getElementById('epaycoEnabledToggle').checked;
-
-	      if (!publicKey && !customerId && !privateKey && !checkoutKey) {
-          if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
-        }
 
         const payload = { encrypt: true, enabled: enabled, country_overrides: readPaymentCountryOverrides('epayco') };
 	      if (publicKey) payload.public_key = publicKey;
@@ -2677,7 +2671,7 @@
         } catch (err) {
           msg.innerText = 'Error guardando Epayco: ' + (err.message || err);
         } finally {
-          btn.disabled = false; btn.innerText = 'Guardar Epayco';
+          btn.disabled = false; btn.innerText = 'Guardar cambios';
         }
       }
 

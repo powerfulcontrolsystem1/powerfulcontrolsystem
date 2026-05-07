@@ -17,8 +17,9 @@
         <div id="epaycoSuccessSummary" class="form-help epayco-success-summary"></div>
         <div class="form-actions epayco-success-actions">
           <a class="btn" href="/seleccionar_empresa.html">Ir a seleccionar empresa</a>
-          <a class="btn secondary" id="epaycoSuccessPaymentLink" href="/pagar_licencia.html">Ver detalle del pago</a>
+          <a class="btn secondary" id="epaycoSuccessPaymentLink" href="#detalle-pago">Ver detalle del pago</a>
         </div>
+        <div id="epaycoSuccessPaymentDetail" class="form-help epayco-success-summary" hidden></div>
       </div>
     </div>
   </div>
@@ -28,16 +29,43 @@
       var params = new URLSearchParams(window.location.search);
       var summary = document.getElementById('epaycoSuccessSummary');
       var detailLink = document.getElementById('epaycoSuccessPaymentLink');
+      var detailBox = document.getElementById('epaycoSuccessPaymentDetail');
       var parts = [];
+      var provider = normalizeProvider(params.get('provider') || 'epayco');
       var empresaId = String(params.get('empresa_id') || '').trim();
       var licenciaId = String(params.get('licencia_id') || '').trim();
       var reference = String(params.get('reference') || '').trim();
       var transactionId = String(params.get('transaction_id') || '').trim();
 
-      if (empresaId) parts.push('<div><strong>Empresa:</strong> #' + empresaId + '</div>');
-      if (licenciaId) parts.push('<div><strong>Licencia:</strong> #' + licenciaId + '</div>');
-      if (reference) parts.push('<div><strong>Referencia:</strong> ' + reference + '</div>');
-      if (transactionId) parts.push('<div><strong>Transacción:</strong> ' + transactionId + '</div>');
+      function normalizeProvider(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'wompi' || value === 'nequi') return 'wompi';
+        return 'epayco';
+      }
+
+      function providerLabel(value) {
+        return normalizeProvider(value) === 'wompi' ? 'Wompi' : 'Epayco';
+      }
+
+      function escapeHtml(raw) {
+        return String(raw == null ? '' : raw).replace(/[&<>"']/g, function (ch) {
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+        });
+      }
+
+      function statusLabel(raw) {
+        var value = String(raw || '').trim().toUpperCase();
+        if (!value) return 'Sin estado';
+        if (value === 'APPROVED' || value === 'SUCCESS' || value === 'OK') return 'Aprobado';
+        if (value === 'PENDING') return 'Pendiente';
+        if (value === 'DECLINED' || value === 'REJECTED' || value === 'FAILED' || value === 'ERROR') return 'No aprobado';
+        return value;
+      }
+
+      if (empresaId) parts.push('<div><strong>Empresa:</strong> #' + escapeHtml(empresaId) + '</div>');
+      if (licenciaId) parts.push('<div><strong>Licencia:</strong> #' + escapeHtml(licenciaId) + '</div>');
+      if (reference) parts.push('<div><strong>Referencia:</strong> ' + escapeHtml(reference) + '</div>');
+      if (transactionId) parts.push('<div><strong>Transaccion:</strong> ' + escapeHtml(transactionId) + '</div>');
 
       if (summary) {
         if (parts.length) {
@@ -48,14 +76,57 @@
       }
 
       if (detailLink) {
-        var target = new URL('/pagar_licencia.html', window.location.origin);
-        target.searchParams.set('provider', 'epayco');
-        target.searchParams.set('status', 'approved');
-        if (empresaId) target.searchParams.set('empresa_id', empresaId);
-        if (licenciaId) target.searchParams.set('licencia_id', licenciaId);
-        if (reference) target.searchParams.set('reference', reference);
-        if (transactionId) target.searchParams.set('transaction_id', transactionId);
-        detailLink.href = target.toString();
+        detailLink.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          showPaymentDetail();
+        });
+      }
+
+      async function showPaymentDetail() {
+        if (!detailBox) return;
+        detailBox.hidden = false;
+        detailBox.innerHTML = '<div><strong>Consultando detalle del pago...</strong></div>';
+
+        try {
+          var search = new URLSearchParams();
+          if (transactionId) search.set('id', transactionId);
+          if (reference) search.set('reference', reference);
+          if (licenciaId) search.set('licencia_id', licenciaId);
+          if (empresaId) search.set('empresa_id', empresaId);
+          if (!search.get('id') && !search.get('reference')) {
+            throw new Error('No hay referencia suficiente para consultar el pago.');
+          }
+
+          var endpoint = provider === 'wompi' ? '/wompi/transaction_status?' : '/epayco/transaction_status?';
+          var response = await fetch(endpoint + search.toString(), { credentials: 'same-origin' });
+          var raw = await response.text();
+          var data = null;
+          try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+          if (!response.ok) {
+            throw new Error((data && data.error) || raw || ('HTTP ' + response.status));
+          }
+
+          var tx = String((data && (data.transaction_id || data.id)) || transactionId || '').trim();
+          var ref = String((data && (data.reference || data.ref)) || reference || '').trim();
+          var status = String((data && data.status) || '').trim();
+          var activated = data && Object.prototype.hasOwnProperty.call(data, 'activated')
+            ? (data.activated ? 'Si' : 'No')
+            : 'No informado';
+          var licencia = String((data && data.licencia_id) || licenciaId || '').trim();
+          var empresa = String((data && data.empresa_id) || empresaId || '').trim();
+
+          detailBox.innerHTML = [
+            '<div><strong>Proveedor:</strong> ' + escapeHtml(providerLabel((data && data.provider) || provider)) + '</div>',
+            '<div><strong>Estado:</strong> ' + escapeHtml(statusLabel(status)) + '</div>',
+            empresa ? '<div><strong>Empresa:</strong> #' + escapeHtml(empresa) + '</div>' : '',
+            licencia ? '<div><strong>Licencia:</strong> #' + escapeHtml(licencia) + '</div>' : '',
+            ref ? '<div><strong>Referencia:</strong> ' + escapeHtml(ref) + '</div>' : '',
+            tx ? '<div><strong>Transaccion:</strong> ' + escapeHtml(tx) + '</div>' : '',
+            '<div><strong>Licencia activada:</strong> ' + escapeHtml(activated) + '</div>'
+          ].filter(Boolean).join('');
+        } catch (err) {
+          detailBox.innerHTML = '<div class="error"><strong>No se pudo consultar el detalle.</strong><div>' + escapeHtml(err && err.message ? err.message : String(err)) + '</div></div>';
+        }
       }
     })();
   </script>
