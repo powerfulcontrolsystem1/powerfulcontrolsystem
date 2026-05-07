@@ -19036,3 +19036,17 @@ Archivos modificados:
 - web/uploads/red_social/empresa_7/post_1778115143744742500.png
 - web/vendor/qrcode.min.js
 - web/venta_publica.html
+
+2026-05-07: Checkout licencias: activar Wompi Web Checkout y selector de pasarelas
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md
+- documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md
+- web/estilos.css
+- web/pagar_licencia.html
