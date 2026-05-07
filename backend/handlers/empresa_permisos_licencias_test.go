@@ -87,3 +87,24 @@ func TestValidateEmpresaIDConsistencyAllowsMatchingSources(t *testing.T) {
 		t.Fatalf("expected matching empresa_id sources to pass, got %v", err)
 	}
 }
+
+func TestResolvePermissionPageKeyForDirectSaleCart(t *testing.T) {
+	cases := []string{
+		"/api/empresa/carritos_compra?empresa_id=7&modo=venta_directa",
+		"/api/empresa/carritos_compra?empresa_id=7&carrito_codigo=VENTA-DIRECTA-7",
+		"/api/empresa/carritos_compra?empresa_id=7&perm_page=linkVentaDirecta",
+	}
+	for _, rawURL := range cases {
+		r := httptest.NewRequest(http.MethodGet, rawURL, nil)
+		if got := resolvePermissionPageKeyForRequest(r); got != "linkVentaDirecta" {
+			t.Fatalf("resolvePermissionPageKeyForRequest(%q)=%q, want linkVentaDirecta", rawURL, got)
+		}
+	}
+}
+
+func TestResolvePermissionPageKeyForRegularCart(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=7", nil)
+	if got := resolvePermissionPageKeyForRequest(r); got != "linkCarritoCompras" {
+		t.Fatalf("resolvePermissionPageKeyForRequest regular cart=%q, want linkCarritoCompras", got)
+	}
+}

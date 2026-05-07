@@ -1109,7 +1109,8 @@
       const cfg = normalizeUnifiedCartUIConfig(ui);
       const showPayButton = Boolean(cfg.mostrar_boton_pagar);
       const showPaymentMeans = Boolean(cfg.mostrar_tarjetas_pago);
-      const showPaymentAmounts = showPaymentMeans && Boolean(cfg.mostrar_tarjeta_valores_pago) && state.stationMode && Boolean(getSelectedCarrito());
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const showPaymentAmounts = showPaymentMeans && Boolean(cfg.mostrar_tarjeta_valores_pago) && focusedSaleMode && Boolean(getSelectedCarrito());
       const stationPayBtn = document.getElementById('btnPagarCarrito');
       const stationPaymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
       const stationPaymentAmountsRow = document.getElementById('stationPaymentAmountsRow');
@@ -1215,12 +1216,13 @@
       setPaymentCheckoutVisibility(ui);
 
       setCardVisibility('scannerPanel', Boolean(ui.mostrar_tarjeta_lector_codigo) && Boolean(ui.mostrar_lector_codigo_barras));
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
       setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && state.stationMode && Boolean(getSelectedCarrito()));
       if (!state.stationMode) {
         setCardVisibility('carritoGrid', Boolean(ui.mostrar_tarjeta_items_carrito));
       }
       setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
-      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && state.stationMode && Boolean(getSelectedCarrito()));
+      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && focusedSaleMode && Boolean(getSelectedCarrito()));
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
@@ -2493,7 +2495,8 @@
       const commissionCard = document.getElementById('stationWorkerCommissionCard');
       const paymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
       const stationItemsPanel = document.getElementById('stationCartSplitRow');
-      if (!state.stationMode || !carrito) {
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      if (!focusedSaleMode || !carrito) {
         const btnPay = document.getElementById('btnPagarCarrito');
         if (btnPay) {
           btnPay.style.display = 'none';
@@ -2545,14 +2548,16 @@
       const selectedActive = isCarritoOperativoActivo(carrito);
       setPaymentCheckoutVisibility(stationUI);
       if (actionsCard) {
-        actionsCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_acciones_carrito);
-        actionsCard.hidden = !stationUI.mostrar_tarjeta_acciones_carrito;
-        actionsCard.style.display = stationUI.mostrar_tarjeta_acciones_carrito ? '' : 'none';
+        const showActionsCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_acciones_carrito;
+        actionsCard.classList.toggle('is-hidden', !showActionsCard);
+        actionsCard.hidden = !showActionsCard;
+        actionsCard.style.display = showActionsCard ? '' : 'none';
       }
       if (vipCard) {
-        vipCard.classList.toggle('is-hidden', !stationUI.mostrar_tarjeta_vip_cliente);
-        vipCard.hidden = !stationUI.mostrar_tarjeta_vip_cliente;
-        vipCard.style.display = stationUI.mostrar_tarjeta_vip_cliente ? '' : 'none';
+        const showVipCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_vip_cliente;
+        vipCard.classList.toggle('is-hidden', !showVipCard);
+        vipCard.hidden = !showVipCard;
+        vipCard.style.display = showVipCard ? '' : 'none';
         updateCarritoSideColumnVisibility();
       }
 
@@ -2707,7 +2712,7 @@
       } else if (pay.mixedMessage) {
         setStationPaymentMessage(pay.mixedMessage, true);
       } else       if (!selectedActive) {
-        setStationPaymentMessage('Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
+        setStationPaymentMessage(state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
       } else {
         setStationPaymentMessage('', false);
       }
@@ -2729,6 +2734,9 @@
       try {
         const action = normalize(actionName) || 'activar_estacion';
         let endpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=' + encodeURIComponent(action);
+        if (state.directSaleMode) {
+          endpoint += '&modo=venta_directa&perm_page=linkVentaDirecta';
+        }
         if (action === 'activar_estacion') {
           endpoint += '&reset_items=' + (resetItems ? '1' : '0');
         }
@@ -2738,6 +2746,8 @@
         await ensureOk(res);
         if (action === 'recuperar_interrumpido') {
           setStationPaymentMessage('Carrito interrumpido recuperado sin perder items.', false);
+        } else if (state.directSaleMode) {
+          setStationPaymentMessage('Venta directa lista para una nueva venta.', false);
         } else {
           setStationPaymentMessage('Carrito de estación activado.', false);
         }
@@ -2745,7 +2755,7 @@
         await loadItems();
       } catch (err) {
         const lower = normalize(err && err.message).toLowerCase();
-        let friendly = err && err.message ? err.message : 'No se pudo activar o recuperar el carrito de estación.';
+        let friendly = err && err.message ? err.message : (state.directSaleMode ? 'No se pudo abrir la venta directa.' : 'No se pudo activar o recuperar el carrito de estación.');
         if (lower.includes('no se puede cancelar este carrito porque tiene productos') ||
             lower.includes('primero devuelve los productos o servicios agregados')) {
           friendly = 'Esta estación todavía tiene productos, servicios o valores cargados. Cobra o limpia la cuenta actual antes de iniciar una nueva sesión.';
@@ -2808,7 +2818,11 @@
       const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
 
       try {
-        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion', {
+        let payEndpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion';
+        if (state.directSaleMode) {
+          payEndpoint += '&modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(normalize(selected.codigo) || ('VENTA-DIRECTA-' + state.empresaID));
+        }
+        const res = await fetch(payEndpoint, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2877,6 +2891,15 @@
             });
           }
         } catch (_) {}
+        if (state.directSaleMode) {
+          await loadCarritos();
+          const paid = getSelectedCarrito();
+          if (paid) {
+            await activateStationSession(true, 'activar_estacion');
+          }
+          setStationPaymentMessage(successMsg + ' Venta directa lista para el siguiente cliente.', false);
+          return;
+        }
         window.location.assign(buildStationsURL());
       } catch (err) {
         if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
@@ -3449,11 +3472,11 @@
     function renderCarritos() {
       const box = document.getElementById('carritosList');
 
-      if (state.stationMode) {
+      if (state.stationMode || state.directSaleMode) {
         box.style.display = 'none';
         const selected = getSelectedCarrito();
         if (!selected) {
-          box.textContent = 'No se encontró el carrito asociado a esta estación.';
+          box.textContent = state.directSaleMode ? 'No se encontró el carrito de venta directa.' : 'No se encontró el carrito asociado a esta estación.';
           renderStationPaymentPanel(null);
           renderScannerPanel();
           return;
@@ -4491,6 +4514,13 @@
       if (state.stationMode && state.stationID > 0) {
         url.searchParams.set('estacion_id', String(state.stationID));
       }
+      if (state.directSaleMode) {
+        url.searchParams.set('modo', 'venta_directa');
+        url.searchParams.set('perm_page', 'linkVentaDirecta');
+        if (state.selectedCarritoCode) {
+          url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
+        }
+      }
       if (state.qCarrito) url.searchParams.set('q', state.qCarrito);
 
       const res = await fetchWithTimeout(url.pathname + url.search, {
@@ -4521,9 +4551,10 @@
 
     function applyStationModeUI() {
       const stationMode = state.stationMode;
-      document.getElementById('addCarritoBtn').style.display = stationMode ? 'none' : '';
-      document.getElementById('carritoForm').style.display = stationMode ? 'none' : document.getElementById('carritoForm').style.display;
-      document.getElementById('carritoSearchBlock').style.display = stationMode ? 'none' : '';
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      document.getElementById('addCarritoBtn').style.display = focusedSaleMode ? 'none' : '';
+      document.getElementById('carritoForm').style.display = focusedSaleMode ? 'none' : document.getElementById('carritoForm').style.display;
+      document.getElementById('carritoSearchBlock').style.display = focusedSaleMode ? 'none' : '';
       const carritoGrid = document.getElementById('carritoGrid');
       if (carritoGrid) {
         const ui = getCurrentStationCartUIConfig();
@@ -4536,8 +4567,13 @@
       }
       const moduleHelp = document.getElementById('moduleHelp');
       if (moduleHelp) {
-        moduleHelp.textContent = '';
-        moduleHelp.hidden = true;
+        if (state.directSaleMode) {
+          moduleHelp.textContent = 'Venta directa usa una sola caja abierta para agregar productos, cobrar y facturar sin pasar por estaciones.';
+          moduleHelp.hidden = false;
+        } else {
+          moduleHelp.textContent = '';
+          moduleHelp.hidden = true;
+        }
       }
       applyStationCartUIConfig();
     }
@@ -4607,6 +4643,11 @@
       if (selected) {
         state.selectedCarritoID = Number(selected.id || 0);
         state.selectedCarritoCode = '';
+        if (isCarritoPagado(selected)) {
+          await activateStationSession(true, 'activar_estacion');
+        } else if (!isCarritoOperativoActivo(selected)) {
+          await activateStationSession(false, 'recuperar_interrumpido');
+        }
         return;
       }
 
@@ -4619,7 +4660,7 @@
         referencia_externa: 'CAJA_DIRECTA',
         observaciones: 'Carrito automatico de venta directa'
       };
-      const createRes = await fetch('/api/empresa/carritos_compra', {
+      const createRes = await fetch('/api/empresa/carritos_compra?modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(state.selectedCarritoCode), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createPayload)
@@ -4629,6 +4670,10 @@
       state.selectedCarritoID = Number((body && body.id) || 0);
       state.selectedCarritoCode = '';
       await loadCarritos();
+      const created = getSelectedCarrito();
+      if (created && !isCarritoOperativoActivo(created)) {
+        await activateStationSession(false, 'activar_estacion');
+      }
     }
 
     async function loadItems() {

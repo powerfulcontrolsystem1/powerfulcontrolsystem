@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Venta directa</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
 </head>
-<body class="super-page form-bg-dark">
+<body class="empresa-subpage">
   <div class="container">
     <div class="page-header">
       <h1>Venta directa</h1>
-      <p class="form-help">Carrito rapido para vender por mostrador sin depender de una estacion.</p>
+      <p class="form-help">Caja rapida para vender por mostrador sin depender de una estacion.</p>
     </div>
     <div class="card">
       <p class="form-help">Abriendo el carrito de venta directa...</p>
@@ -20,8 +21,15 @@
     (function () {
       var params = new URLSearchParams(window.location.search || "");
       params.set("modo", "venta_directa");
+      params.set("perm_page", "linkVentaDirecta");
       if (!params.get("carrito_codigo")) {
         var empresaID = String(params.get("empresa_id") || params.get("id") || "").trim();
+        if (!empresaID && typeof window.__resolveEmpresaIdContext === "function") {
+          empresaID = String(window.__resolveEmpresaIdContext() || "").trim();
+        }
+        if (empresaID && !params.get("empresa_id")) {
+          params.set("empresa_id", empresaID);
+        }
         params.set("carrito_codigo", empresaID ? ("VENTA-DIRECTA-" + empresaID) : "VENTA_DIRECTA");
       }
       window.location.replace("/administrar_empresa/carrito_de_compras.html?" + params.toString());

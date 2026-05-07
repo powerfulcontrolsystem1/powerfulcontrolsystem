@@ -293,8 +293,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación y venta"},
-	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos de compra", Grupo: "Operación y venta"},
-	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa", Grupo: "Operación y venta"},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Operación y venta"},
+	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estación", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atención y fila", Grupo: "Operación y venta"},
 	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Operación y venta"},
 	{PaginaClave: "linkTaxiSystem", Modulo: permModuleTaxiSystem, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Operación y venta"},
@@ -2547,6 +2547,12 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		}
 		return "linkVentaPublica"
 	case path == "/api/empresa/carritos_compra":
+		modo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("modo")))
+		carritoCodigo := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("carrito_codigo")))
+		permPage := strings.TrimSpace(r.URL.Query().Get("perm_page"))
+		if strings.EqualFold(permPage, "linkVentaDirecta") || modo == "venta_directa" || strings.HasPrefix(carritoCodigo, "VENTA-DIRECTA") || strings.HasPrefix(carritoCodigo, "VENTA_DIRECTA") {
+			return "linkVentaDirecta"
+		}
 		if strings.Contains(action, "estacion") || strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
 			return "linkEstaciones"
 		}
