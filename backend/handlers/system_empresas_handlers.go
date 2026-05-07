@@ -748,6 +748,9 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 				var payload struct {
 					ConfirmacionNombre string `json:"confirmacion_nombre"`
+					ConfirmacionAccion string `json:"confirmacion_accion"`
+					ConfirmacionRiesgo bool   `json:"confirmacion_riesgo"`
+					DescargaOfrecida   bool   `json:"descarga_ofrecida"`
 				}
 				if r.Body != nil {
 					defer r.Body.Close()
@@ -760,8 +763,16 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "confirmacion_nombre required", http.StatusBadRequest)
 					return
 				}
-				if !strings.EqualFold(strings.TrimSpace(payload.ConfirmacionNombre), strings.TrimSpace(empresa.Nombre)) {
-					http.Error(w, "la confirmacion no coincide con el nombre de la empresa", http.StatusConflict)
+				if strings.TrimSpace(payload.ConfirmacionNombre) != strings.TrimSpace(empresa.Nombre) {
+					http.Error(w, "la confirmacion debe coincidir exactamente con el nombre de la empresa", http.StatusConflict)
+					return
+				}
+				if strings.ToUpper(strings.TrimSpace(payload.ConfirmacionAccion)) != "ELIMINAR" {
+					http.Error(w, "confirmacion_accion debe ser ELIMINAR", http.StatusBadRequest)
+					return
+				}
+				if !payload.ConfirmacionRiesgo {
+					http.Error(w, "confirmacion_riesgo required", http.StatusBadRequest)
 					return
 				}
 
@@ -775,7 +786,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if len(fileCleanup.Errores) > 0 {
 					log.Printf("DELETE /super/api/empresas action=%s id=%d file cleanup warnings: %v", action, id, fileCleanup.Errores)
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result, "archivos": fileCleanup})
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result, "archivos": fileCleanup, "descarga_ofrecida": payload.DescargaOfrecida})
 				return
 			}
 			http.Error(w, "la eliminacion simple fue deshabilitada; usa action=eliminar_total con confirmacion_nombre", http.StatusPreconditionRequired)

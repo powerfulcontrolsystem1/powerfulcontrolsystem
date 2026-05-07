@@ -156,6 +156,11 @@
           <input id="duracion_dias" type="number" class="form-input" />
         </div>
         <div class="form-col">
+          <label class="form-label">Documentos/ventas mensuales</label>
+          <input id="max_documentos_mensuales" type="number" min="0" step="1" class="form-input" placeholder="0 = ilimitado" />
+          <p class="form-help">Las licencias de prueba usan 500. Al superar el límite mensual se desactiva la licencia.</p>
+        </div>
+        <div class="form-col">
           <label class="form-label">Estado de la licencia</label>
           <label class="lic-superrol-item"><input id="licencia_activa" type="checkbox" checked> Licencia activa y disponible para uso/venta.</label>
           <p class="form-help">Si desactivas esta opción, la licencia queda guardada pero no aplica a empresas ni aparece como vigente.</p>
@@ -524,6 +529,7 @@
         document.getElementById('descripcion').value='';
         document.getElementById('valor').value='';
         document.getElementById('duracion_dias').value='';
+        document.getElementById('max_documentos_mensuales').value='';
         document.getElementById('tipo_id').value='';
         document.getElementById('pais_codigo').value='CO';
         document.getElementById('licencia_activa').checked = true;
@@ -577,6 +583,12 @@
       function formatMoney(value){
         const num = Number(value || 0);
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+      }
+
+      function renderDocumentLimit(value){
+        const limit = Number(value || 0);
+        if (!Number.isFinite(limit) || limit <= 0) return 'Ilimitado';
+        return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(limit) + ' docs/ventas mes';
       }
 
       function getDaysRemaining(fechaFin){
@@ -780,7 +792,7 @@
           tr.innerHTML = '' +
             '<td><div class="lic-plan-name">#' + escapeHTML(i.id) + ' · ' + escapeHTML(i.nombre || 'Licencia') + '</div><div class="lic-plan-sub">' + escapeHTML(i.descripcion || 'Sin descripción comercial') + '</div></td>' +
             '<td><span class="lic-badge">' + escapeHTML(i.tipo_nombre || 'Tipo general') + '</span><div class="lic-plan-sub">País: <strong>' + escapeHTML(i.pais_codigo || 'CO') + '</strong></div><div class="lic-plan-sub">' + escapeHTML(classLabel) + '</div></td>' +
-            '<td><strong>' + escapeHTML(renderMoney(i.valor)) + '</strong><div class="lic-plan-sub">' + escapeHTML(String(i.duracion_dias || 0)) + ' días de vigencia</div></td>' +
+            '<td><strong>' + escapeHTML(renderMoney(i.valor)) + '</strong><div class="lic-plan-sub">' + escapeHTML(String(i.duracion_dias || 0)) + ' días de vigencia</div><div class="lic-plan-sub">Límite: ' + escapeHTML(renderDocumentLimit(i.max_documentos_mensuales)) + '</div></td>' +
             '<td>' + moduleChips(i.modulos_habilitados || '') + '<div class="lic-plan-sub">Super rol: ' + (Number(i.super_rol_habilitado || 0) === 1 ? 'habilitado' : 'no') + '</div></td>' +
             '<td><span class="lic-badge ' + (assigned ? 'warn' : '') + '">' + (assigned ? 'Asignada' : 'Catálogo') + '</span><div class="lic-plan-sub">' + escapeHTML(i.empresa_nombre || (assigned ? ('Empresa #' + i.empresa_id) : 'Disponible para venta')) + '</div></td>' +
             '<td><span class="lic-badge ' + statusClass + '">' + statusLabel + '</span><div class="lic-plan-sub">Creada: ' + escapeHTML(formatDate(i.fecha_creacion)) + '</div></td>' +
@@ -804,6 +816,7 @@
             document.getElementById('nombre').value = item.nombre || '';
             document.getElementById('valor').value = fieldNumberValue(item.valor);
             document.getElementById('duracion_dias').value = fieldNumberValue(item.duracion_dias);
+            document.getElementById('max_documentos_mensuales').value = fieldNumberValue(item.max_documentos_mensuales);
             document.getElementById('descripcion').value = item.descripcion || '';
             document.getElementById('licencia_activa').checked = isActiveLic(item);
             setSelectedLicenciaModulos(item.modulos_habilitados || '');
@@ -918,6 +931,7 @@
           descripcion: document.getElementById('descripcion').value.trim(),
           valor: parseFloat(document.getElementById('valor').value || 0),
           duracion_dias: parseInt(document.getElementById('duracion_dias').value || 0, 10),
+          max_documentos_mensuales: parseInt(document.getElementById('max_documentos_mensuales').value || 0, 10),
           modulos_habilitados: getSelectedLicenciaModulos(),
           activo: document.getElementById('licencia_activa').checked ? 1 : 0,
           super_rol_habilitado: document.getElementById('super_rol_habilitado').checked ? 1 : 0,

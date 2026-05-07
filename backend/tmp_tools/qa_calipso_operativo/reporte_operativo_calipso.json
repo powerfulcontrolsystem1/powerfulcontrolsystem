@@ -1,6 +1,6 @@
 {
   "empresa_id": 7,
-  "started_at": "2026-05-06T21:23:05-05:00",
+  "started_at": "2026-05-07T13:42:54-05:00",
   "users_prepared": [
     {
       "Role": "admin_empresa",
@@ -52,7 +52,7 @@
       "status": 200,
       "ok": true,
       "expected": true,
-      "body_sample": "[{\"id\":567,\"empresa_id\":7,\"email\":\"qa.auditor.calipso@powerfulcontrolsystem.local\",\"nombre\":\"QA Auditor Calipso\",\"documento_identidad\":\"QA-AUD-7\",\"acepta_contrato\":1,\"contrato_version_aceptada\":1,\"fecha_acepta_contrato\":\"2026-05-07 02:22:58"
+      "body_sample": "[{\"id\":567,\"empresa_id\":7,\"email\":\"qa.auditor.calipso@powerfulcontrolsystem.local\",\"nombre\":\"QA Auditor Calipso\",\"documento_identidad\":\"QA-AUD-7\",\"acepta_contrato\":1,\"contrato_version_aceptada\":1,\"fecha_acepta_contrato\":\"2026-05-07 18:42:51"
     },
     {
       "role": "admin_empresa",
@@ -212,7 +212,7 @@
       "status": 200,
       "ok": true,
       "expected": true,
-      "body_sample": "{\"empresa_id\":7,\"solicitudes_pendientes\":0,\"servicios_activos\":0,\"conductores_online\":13,\"conductores_disponibles\":13,\"clientes_registrados\":13,\"requests\":[{\"id\":13,\"empresa_id\":7,\"customer_id\":13,\"conductor_id\":14,\"codigo_servicio\":\"TX-260"
+      "body_sample": "{\"empresa_id\":7,\"solicitudes_pendientes\":0,\"servicios_activos\":0,\"conductores_online\":14,\"conductores_disponibles\":14,\"clientes_registrados\":14,\"requests\":[{\"id\":13,\"empresa_id\":7,\"customer_id\":13,\"conductor_id\":14,\"codigo_servicio\":\"TX-260"
     },
     {
       "role": "admin_empresa",
@@ -222,7 +222,7 @@
       "status": 200,
       "ok": true,
       "expected": true,
-      "body_sample": "{\"empresa_id\":7,\"fecha\":\"2026-05-06\",\"esperando\":0,\"llamando\":0,\"en_atencion\":0,\"completados\":0,\"cancelados\":0,\"tiempo_espera_prom_min\":0,\"tiempo_atencion_prom_min\":0,\"servicios\":[],\"puestos\":[],\"llamados_recientes\":[]}"
+      "body_sample": "{\"empresa_id\":7,\"fecha\":\"2026-05-07\",\"esperando\":0,\"llamando\":0,\"en_atencion\":0,\"completados\":0,\"cancelados\":0,\"tiempo_espera_prom_min\":0,\"tiempo_atencion_prom_min\":0,\"servicios\":[],\"puestos\":[],\"llamados_recientes\":[]}"
     },
     {
       "role": "admin_empresa",
@@ -272,7 +272,7 @@
       "status": 200,
       "ok": true,
       "expected": true,
-      "body_sample": "[{\"id\":17033,\"empresa_id\":7,\"modulo\":\"seguridad\",\"accion\":\"leer\",\"recurso\":\"vehiculos_registro\",\"recurso_id\":0,\"metodo_http\":\"GET\",\"endpoint\":\"/api/empresa/vehiculos_registro\",\"resultado\":\"ok\",\"codigo_http\":200,\"request_id\":\"req-17781207257"
+      "body_sample": "[{\"id\":17134,\"empresa_id\":7,\"modulo\":\"seguridad\",\"accion\":\"leer\",\"recurso\":\"vehiculos_registro\",\"recurso_id\":0,\"metodo_http\":\"GET\",\"endpoint\":\"/api/empresa/vehiculos_registro\",\"resultado\":\"ok\",\"codigo_http\":200,\"request_id\":\"req-17781795236"
     },
     {
       "role": "admin_empresa",
@@ -312,7 +312,7 @@
       "status": 200,
       "ok": true,
       "expected": true,
-      "body_sample": "{\"empresa_id\":7,\"desde\":\"\",\"hasta\":\"\",\"generado_en\":\"2026-05-06 21:26:08\",\"tablero\":{\"empresa_id\":7,\"desde\":\"\",\"hasta\":\"\",\"generado_en\":\"2026-05-06 21:26:03\",\"operativo\":{\"ventas_cerradas\":4,\"ventas_hoy\":0,\"ingresos_ventas\":0,\"ticket_promed"
+      "body_sample": "{\"empresa_id\":7,\"desde\":\"\",\"hasta\":\"\",\"generado_en\":\"2026-05-07 13:46:03\",\"tablero\":{\"empresa_id\":7,\"desde\":\"\",\"hasta\":\"\",\"generado_en\":\"2026-05-07 13:45:58\",\"operativo\":{\"ventas_cerradas\":4,\"ventas_hoy\":0,\"ingresos_ventas\":0,\"ticket_promed"
     },
     {
       "role": "cajero",

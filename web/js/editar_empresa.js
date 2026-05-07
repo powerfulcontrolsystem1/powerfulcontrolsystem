@@ -11,6 +11,7 @@
       principal_email: "",
     },
     deleteDownloadOffered: false,
+    deleting: false,
   };
 
   function $(id) {
@@ -74,6 +75,43 @@
     node.textContent = text || "";
     node.classList.toggle("error", !!isError);
     node.classList.toggle("success", !isError && !!text);
+  }
+
+  function setNodeState(id, ok, text) {
+    var node = $(id);
+    if (!node) return;
+    node.textContent = text || "";
+    node.classList.toggle("is-ok", !!ok);
+    node.classList.toggle("is-pending", !ok);
+  }
+
+  function updateDeleteChecklist() {
+    if (!state.empresa) return;
+    var expectedName = String(state.empresa.nombre || "").trim();
+    var nameOk = String($("empresaDeleteConfirm") && $("empresaDeleteConfirm").value || "").trim() === expectedName && expectedName !== "";
+    var phraseOk = String($("empresaDeletePhrase") && $("empresaDeletePhrase").value || "").trim().toUpperCase() === "ELIMINAR";
+    var riskOk = !!($("empresaDeleteAcknowledge") && $("empresaDeleteAcknowledge").checked);
+    setNodeState("empresaDeleteNameCheck", nameOk, nameOk ? "Nombre exacto validado" : "Nombre exacto pendiente");
+    setNodeState("empresaDeletePhraseCheck", phraseOk, phraseOk ? "Frase ELIMINAR validada" : "Frase de seguridad pendiente");
+    setNodeState("empresaDeleteRiskCheck", riskOk, riskOk ? "Riesgo aceptado conscientemente" : "Aceptacion de riesgo pendiente");
+  }
+
+  function setDeleteBusy(busy, text) {
+    state.deleting = !!busy;
+    var btn = $("empresaDeleteBtn");
+    var progress = $("empresaDeleteProgress");
+    var progressText = $("empresaDeleteProgressText");
+    var controls = ["empresaDeleteConfirm", "empresaDeletePhrase", "empresaDeleteAcknowledge", "empresaDownloadBeforeDeleteBtn"];
+    if (btn) {
+      btn.disabled = !!busy || isSharedEmpresa();
+      btn.textContent = busy ? "Eliminando empresa..." : "Eliminar empresa definitivamente";
+    }
+    if (progress) progress.hidden = !busy;
+    if (progressText && text) progressText.textContent = text;
+    controls.forEach(function (id) {
+      var el = $(id);
+      if (el) el.disabled = !!busy || isSharedEmpresa();
+    });
   }
 
   function escapeHtml(value) {
@@ -180,6 +218,14 @@
     $("empresaNombre").disabled = !!isShared;
     $("empresaObservaciones").disabled = !!isShared;
     $("empresaDeleteConfirm").disabled = !!isShared;
+    if ($("empresaDeletePhrase")) {
+      $("empresaDeletePhrase").disabled = !!isShared;
+      $("empresaDeletePhrase").value = "";
+    }
+    if ($("empresaDeleteAcknowledge")) {
+      $("empresaDeleteAcknowledge").disabled = !!isShared;
+      $("empresaDeleteAcknowledge").checked = false;
+    }
     if (saveButton) {
       saveButton.disabled = !!isShared;
     }
@@ -410,6 +456,7 @@
           + '</article>';
       }).join("");
     }
+    updateDeleteChecklist();
   }
 
   async function loadLicencias() {
@@ -488,8 +535,11 @@
   }
 
   async function deleteEmpresa() {
-    if (!state.empresa) return;
+    if (!state.empresa || state.deleting) return;
     var confirmacion = $("empresaDeleteConfirm").value.trim();
+    var phrase = $("empresaDeletePhrase") ? $("empresaDeletePhrase").value.trim().toUpperCase() : "";
+    var riskAccepted = !!($("empresaDeleteAcknowledge") && $("empresaDeleteAcknowledge").checked);
+    updateDeleteChecklist();
     if (!confirmacion) {
       setMessage("empresaDeleteMessage", "Debes escribir el nombre de la empresa.", true);
       return;
@@ -498,25 +548,32 @@
       setMessage("empresaDeleteMessage", "El nombre digitado no coincide exactamente.", true);
       return;
     }
-    if (!state.deleteDownloadOffered) {
-      var wantsDownload = window.confirm("Antes de eliminar, puedes descargar toda la informacion de la empresa. Aceptar abre la descarga y detiene la eliminacion por ahora. Cancelar continua con la eliminacion sin descargar.");
-      state.deleteDownloadOffered = true;
-      if (wantsDownload) {
-        openEmpresaDownload();
-        return;
-      }
+    if (phrase !== "ELIMINAR") {
+      setMessage("empresaDeleteMessage", "Debes escribir ELIMINAR para confirmar el borrado irreversible.", true);
+      return;
     }
-    if (!window.confirm("Esta accion eliminara TODO rastro de la empresa: registros, auditoria, archivos, documentos, respaldos y accesos asociados. Esta accion no se puede deshacer. Deseas continuar?")) {
+    if (!riskAccepted) {
+      setMessage("empresaDeleteMessage", "Marca la aceptacion de riesgo antes de eliminar la empresa.", true);
       return;
     }
     try {
+      setDeleteBusy(true, "Actualizando impacto operativo antes de eliminar...");
+      var impactoData = await fetchJSON("/super/api/empresas?id=" + encodeURIComponent(state.empresa.id) + "&action=impacto_desactivacion", { credentials: "same-origin" });
+      state.impacto = impactoData && impactoData.impacto ? impactoData.impacto : state.impacto;
+      renderSummary();
+      setDeleteBusy(true, "Eliminando registros, accesos y archivos asociados...");
       var data = await fetchJSON(
         "/super/api/empresas?id=" + encodeURIComponent(state.empresa.id) + "&action=eliminar_total",
         {
           method: "DELETE",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ confirmacion_nombre: confirmacion }),
+          body: JSON.stringify({
+            confirmacion_nombre: confirmacion,
+            confirmacion_accion: "ELIMINAR",
+            confirmacion_riesgo: true,
+            descarga_ofrecida: !!state.deleteDownloadOffered
+          }),
         }
       );
       var result = data && data.result ? data.result : null;
@@ -530,10 +587,12 @@
         message += " Advertencias al limpiar archivos: " + erroresArchivos + ".";
       }
       setMessage("empresaDeleteMessage", message, false);
+      setDeleteBusy(true, "Empresa eliminada. Redirigiendo al selector...");
       window.setTimeout(function () {
         redirectToSeleccionarEmpresa();
       }, 900);
     } catch (err) {
+      setDeleteBusy(false);
       setMessage("empresaDeleteMessage", err.message || "No se pudo eliminar la empresa.", true);
     }
   }
@@ -618,6 +677,11 @@
     if (downloadBtn) {
       downloadBtn.addEventListener("click", openEmpresaDownload);
     }
+    ["empresaDeleteConfirm", "empresaDeletePhrase", "empresaDeleteAcknowledge"].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener(el.type === "checkbox" ? "change" : "input", updateDeleteChecklist);
+    });
     var shareForm = $("empresaShareForm");
     if (shareForm) {
       shareForm.addEventListener("submit", inviteAdmin);

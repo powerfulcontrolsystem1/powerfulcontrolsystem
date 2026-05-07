@@ -374,7 +374,7 @@
           } catch (e) {}
 
           // fetch licencias and empresas (to show company name)
-          const licURL = '/super/api/licencias?pais_codigo=' + encodeURIComponent(paisCodigo);
+          const licURL = '/super/api/licencias?activo=1&pais_codigo=' + encodeURIComponent(paisCodigo);
           const [licRes, empRes] = await Promise.all([fetch(licURL), fetch('/super/api/empresas')]);
           const licencias = licRes.ok ? await licRes.json() : [];
           const empresas = empRes.ok ? await empRes.json() : [];
@@ -396,6 +396,8 @@
           // filter by tipo_id or tipo_nombre
           const filtered = (licencias||[]).filter(function(l){
             try{
+              if (Number(l.empresa_id || l.EmpresaID || 0) > 0) return false;
+              if (Number(l.es_adicional || l.EsAdicional || 0) === 1) return false;
               if (tipoId && l.tipo_id != null) return String(l.tipo_id) === String(tipoId);
               if (tipoNombre && (l.tipo_nombre || l.tipoNombre)) return String((l.tipo_nombre||l.tipoNombre)).toLowerCase() === String(tipoNombre).toLowerCase();
               return false;

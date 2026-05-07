@@ -169,6 +169,7 @@ func DeleteEmpresaCascade(dbEmp, dbSuper *sql.DB, empresaID int64) (*EmpresaDele
 	if err := txEmp.Commit(); err != nil {
 		return nil, err
 	}
+	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
 
 	return &EmpresaDeleteCascadeResult{
 		EmpresaID:           empresaID,

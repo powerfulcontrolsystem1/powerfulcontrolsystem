@@ -250,6 +250,92 @@
       overflow-wrap: anywhere;
     }
 
+    .empresa-weather-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      min-width: 0;
+    }
+
+    .empresa-weather-control {
+      appearance: none;
+      border: 1px solid var(--panel-glass-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-glass-bg) 78%, var(--panel-text) 8%);
+      color: var(--panel-text);
+      cursor: pointer;
+      font: inherit;
+      font-size: .82rem;
+      font-weight: 850;
+      line-height: 1.1;
+      min-height: 36px;
+      padding: 8px 10px;
+      transition: border-color .18s ease, transform .18s ease, background .18s ease;
+    }
+
+    .empresa-weather-control.primary {
+      background: var(--panel-icon-bg);
+      border-color: var(--panel-icon-border);
+      color: var(--panel-icon-text);
+    }
+
+    .empresa-weather-control:hover,
+    .empresa-weather-control:focus-visible {
+      border-color: color-mix(in srgb, var(--panel-icon-text) 55%, var(--panel-glass-border));
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .empresa-weather-control:disabled {
+      cursor: wait;
+      opacity: .68;
+      transform: none;
+    }
+
+    .empresa-weather-location-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      margin-top: 8px;
+      min-width: 0;
+    }
+
+    .empresa-weather-location-form[hidden] {
+      display: none;
+    }
+
+    .empresa-weather-location-form input {
+      min-width: 0;
+      width: 100%;
+      border: 1px solid var(--panel-glass-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-glass-bg) 82%, var(--panel-text) 5%);
+      color: var(--panel-text);
+      font: inherit;
+      font-size: .86rem;
+      min-height: 36px;
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .empresa-weather-location-form input::placeholder {
+      color: var(--panel-muted);
+    }
+
+    .empresa-weather-location-form input:focus {
+      border-color: color-mix(in srgb, var(--panel-icon-text) 58%, var(--panel-glass-border));
+    }
+
+    .empresa-weather-hint {
+      margin: 8px 0 0;
+      color: var(--panel-muted);
+      font-size: .78rem;
+      font-weight: 700;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
     .empresa-weather-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1017,6 +1103,15 @@
           <div>
             <p id="weatherTemp" class="empresa-weather-temp">--°</p>
             <p id="weatherDesc" class="empresa-weather-desc">Conectando con el servicio del clima.</p>
+            <div class="empresa-weather-actions" aria-label="Ajustar ubicacion del clima">
+              <button id="weatherGpsBtn" class="empresa-weather-control primary" type="button">Usar GPS</button>
+              <button id="weatherManualToggle" class="empresa-weather-control" type="button">Cambiar ciudad</button>
+            </div>
+            <form id="weatherManualForm" class="empresa-weather-location-form" hidden>
+              <input id="weatherManualInput" type="text" autocomplete="address-level2" placeholder="Ciudad, pais">
+              <button class="empresa-weather-control" type="submit">Aplicar</button>
+            </form>
+            <p id="weatherLocationHint" class="empresa-weather-hint">Si la ciudad no coincide, activa GPS o escribe tu ciudad.</p>
           </div>
 
           <div class="empresa-weather-grid">
@@ -1085,6 +1180,11 @@
       var marketGridEl = document.getElementById("marketGrid");
       var favoritesListEl = document.getElementById("empresaFavoritesList");
       var favoritesCountEl = document.getElementById("empresaFavoritesCount");
+      var weatherGpsBtn = document.getElementById("weatherGpsBtn");
+      var weatherManualToggle = document.getElementById("weatherManualToggle");
+      var weatherManualForm = document.getElementById("weatherManualForm");
+      var weatherManualInput = document.getElementById("weatherManualInput");
+      var weatherLocationHint = document.getElementById("weatherLocationHint");
       var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
       var detectedLocation = null;
       var weatherCodeMap = {
@@ -1198,6 +1298,17 @@
         if (!statusEl) return;
         statusEl.textContent = message || "";
         statusEl.classList.toggle("error", !!isError);
+      }
+
+      function setWeatherHint(message) {
+        if (!weatherLocationHint) return;
+        weatherLocationHint.textContent = message || "";
+      }
+
+      function setWeatherGPSBusy(isBusy) {
+        if (!weatherGpsBtn) return;
+        weatherGpsBtn.disabled = !!isBusy;
+        weatherGpsBtn.textContent = isBusy ? "Solicitando GPS..." : "Usar GPS";
       }
 
       function applyEmpresaLinks() {
@@ -1462,6 +1573,17 @@
         return ciudad.length >= 2 && pais.length >= 2;
       }
 
+      function getGeolocationPermissionState() {
+        if (!navigator.permissions || !navigator.permissions.query) {
+          return Promise.resolve("");
+        }
+        return navigator.permissions.query({ name: "geolocation" }).then(function (permission) {
+          return permission && permission.state ? String(permission.state) : "";
+        }).catch(function () {
+          return "";
+        });
+      }
+
       function getBrowserLocation() {
         return new Promise(function (resolve, reject) {
           if (!navigator.geolocation) {
@@ -1469,9 +1591,9 @@
             return;
           }
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 10000,
-            maximumAge: 300000
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 600000
           });
         });
       }
@@ -1490,7 +1612,7 @@
 
       function saveCachedLocation(location) {
         if (!location || (!location.city && !location.displayName)) return;
-        if (location.source === "ip") return;
+        if (location.source === "ip" || location.source === "navegador" || location.source === "perfil") return;
         try {
           window.localStorage.setItem(weatherLocationCacheKey(), JSON.stringify({
             city: location.city,
@@ -1578,31 +1700,49 @@
       }
 
       function detectLocationByBrowser() {
-        var cached = readCachedLocation();
-        if (cached) {
-          cached.source = cached.source || "navegador";
-          return Promise.resolve(cached);
-        }
-        try {
-          return Promise.resolve(detectLocationByTimezone());
-        } catch (e) {
-          return detectLocationByIP().catch(function () {
+        return detectLocationByIP().catch(function () {
+          try {
+            return Promise.resolve(detectLocationByTimezone());
+          } catch (e) {
             throw new Error("browser location unavailable");
-          });
-        }
+          }
+        });
+      }
+
+      function isTrustedCachedLocation(location) {
+        var source = text(location && location.source);
+        return source === "gps" || source === "manual";
       }
 
       function detectLocation(admin, empresa) {
         var profileLocation = registeredLocationProfile(admin, empresa);
-        return detectLocationByGPS()
-          .then(function (location) {
-            return acceptAutomaticLocation(location, profileLocation, "gps");
-          })
-          .catch(function () {
-            return detectLocationByBrowser();
-          })
-          .then(function (location) {
-            return acceptAutomaticLocation(location, profileLocation, "navegador");
+        var cached = readCachedLocation();
+        if (isTrustedCachedLocation(cached)) {
+          detectedLocation = cached;
+          setWeatherHint(cached.source === "gps"
+            ? "Usando la ubicacion GPS guardada. Puedes actualizarla cuando cambies de ciudad."
+            : "Usando la ciudad guardada manualmente. Puedes cambiarla cuando lo necesites.");
+          return Promise.resolve(cached);
+        }
+        return getGeolocationPermissionState()
+          .then(function (state) {
+            if (state === "granted") {
+              return detectLocationByGPS().then(function (location) {
+                setWeatherHint("GPS autorizado por el navegador.");
+                return acceptAutomaticLocation(location, profileLocation, "gps");
+              });
+            }
+            if (state === "denied") {
+              setWeatherHint("GPS bloqueado en el navegador. Activalo para esta pagina o escribe tu ciudad.");
+            } else {
+              setWeatherHint("Activa GPS para mostrar el clima exacto de tu ciudad, o escribe la ciudad manualmente.");
+            }
+            if (hasRegisteredLocation(profileLocation)) {
+              return fallbackLocationFromAdmin(profileLocation);
+            }
+            return detectLocationByBrowser().then(function (location) {
+              return acceptAutomaticLocation(location, profileLocation, "navegador");
+            });
           })
           .catch(function () {
             if (hasRegisteredLocation(profileLocation)) return fallbackLocationFromAdmin(profileLocation);
@@ -1651,6 +1791,7 @@
         source = text(source);
         if (source === "perfil") return "Clima basado en la ciudad registrada en tu perfil.";
         if (source === "gps") return "Clima basado en la ubicacion autorizada por el navegador.";
+        if (source === "manual") return "Clima basado en la ciudad seleccionada manualmente.";
         if (source === "navegador" || source === "ip") return "Clima basado en deteccion automatica del navegador.";
         return "Clima actualizado desde internet con Open-Meteo.";
       }
@@ -1685,6 +1826,15 @@
             var item = geo && Array.isArray(geo.results) ? geo.results[0] : null;
             if (!item) throw new Error("ubicacion no encontrada");
             var place = [item.name, item.admin1, item.country].filter(Boolean).join(", ");
+            loc.latitude = Number(item.latitude || 0);
+            loc.longitude = Number(item.longitude || 0);
+            loc.city = item.name || loc.city;
+            loc.region = item.admin1 || loc.region;
+            loc.country = item.country || loc.country;
+            loc.countryCode = item.country_code || loc.countryCode;
+            loc.displayName = place || locationName;
+            loc.currency = currencyForCountry(loc.countryCode, loc.currency);
+            saveCachedLocation(loc);
             return forecastByCoords(item.latitude, item.longitude, place || locationName, loc.source);
           })
           .catch(function () {
@@ -1878,10 +2028,70 @@
           : "Bienvenido al centro operativo de " + empresaName + ".";
       }
 
+      function refreshWeatherLocation(location) {
+        detectedLocation = location;
+        saveCachedLocation(location);
+        loadMarketIndicators(location);
+        return loadWeather(location);
+      }
+
+      function requestGPSWeather() {
+        setWeatherGPSBusy(true);
+        setStatus("Solicitando permiso GPS del navegador.", false);
+        setWeatherHint("Acepta el permiso de ubicacion del navegador para usar tu ciudad exacta.");
+        return detectLocationByGPS()
+          .then(function (location) {
+            location.source = "gps";
+            setWeatherHint("GPS actualizado correctamente.");
+            return refreshWeatherLocation(location);
+          })
+          .catch(function () {
+            setWeatherHint("No se pudo leer el GPS. Revisa el permiso del navegador o escribe tu ciudad.");
+            setStatus("No se pudo obtener GPS del navegador.", true);
+          })
+          .then(function () {
+            setWeatherGPSBusy(false);
+          });
+      }
+
+      function setupWeatherControls() {
+        if (weatherGpsBtn) {
+          weatherGpsBtn.addEventListener("click", function () {
+            requestGPSWeather();
+          });
+        }
+        if (weatherManualToggle && weatherManualForm) {
+          weatherManualToggle.addEventListener("click", function () {
+            var willShow = !!weatherManualForm.hidden;
+            weatherManualForm.hidden = !willShow;
+            weatherManualToggle.textContent = willShow ? "Ocultar ciudad" : "Cambiar ciudad";
+            if (willShow && weatherManualInput) weatherManualInput.focus();
+          });
+        }
+        if (weatherManualForm) {
+          weatherManualForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var raw = text(weatherManualInput && weatherManualInput.value);
+            if (!raw) {
+              setWeatherHint("Escribe la ciudad y el pais para mejorar la precision.");
+              return;
+            }
+            var location = buildLocation({
+              city: raw.split(",")[0],
+              displayName: raw,
+              source: "manual"
+            });
+            setWeatherHint("Actualizando clima para " + raw + ".");
+            refreshWeatherLocation(location);
+          });
+        }
+      }
+
       function init() {
         setDateText();
         applyEmpresaLinks();
         renderFavorites();
+        setupWeatherControls();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var empresaPromise = empresaId
           ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).then(function (data) {

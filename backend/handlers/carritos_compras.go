@@ -695,6 +695,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo cerrar el carrito por pago", http.StatusInternalServerError)
 					return
 				}
+				if desactivadas, err := dbpkg.EnforceLicenciaDocumentosMensualesPorEmpresa(dbEmp, dbSuper, empresaID); err != nil {
+					log.Printf("[licencias] limite mensual documentos empresa_id=%d error despues de pago carrito=%d: %v", empresaID, id, err)
+				} else if desactivadas > 0 {
+					log.Printf("[licencias] empresa_id=%d licencia desactivada por limite mensual despues de pago carrito=%d", empresaID, id)
+				}
 				montoEvento := totalPagado
 				if montoEvento <= 0 {
 					montoEvento = totalEsperadoConPropina

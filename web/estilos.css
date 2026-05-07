@@ -3967,6 +3967,62 @@ body.has-floating-menu .header .form-actions{
 }
 .empresa-edit-card{
   padding:24px;
+  color:var(--text);
+}
+.empresa-edit-card h2,
+.empresa-edit-card h3{
+  color:var(--text);
+}
+.empresa-edit-card .form-input,
+.empresa-edit-card .form-textarea,
+.empresa-edit-card input.form-input,
+.empresa-edit-card textarea.form-input{
+  background:var(--empresa-edit-input-bg, var(--form-input-bg));
+  border-color:var(--empresa-edit-input-border, var(--form-border));
+  color:var(--empresa-edit-input-text, var(--text));
+  caret-color:var(--empresa-edit-input-text, var(--text));
+}
+.empresa-edit-card .form-input::placeholder,
+.empresa-edit-card .form-textarea::placeholder,
+.empresa-edit-card input.form-input::placeholder,
+.empresa-edit-card textarea.form-input::placeholder{
+  color:var(--empresa-edit-input-placeholder, color-mix(in srgb, var(--muted) 72%, transparent));
+}
+.empresa-edit-card .form-input:focus,
+.empresa-edit-card .form-textarea:focus,
+.empresa-edit-card input.form-input:focus,
+.empresa-edit-card textarea.form-input:focus{
+  background:var(--empresa-edit-input-focus-bg, var(--empresa-edit-input-bg, var(--form-input-bg)));
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+html.theme-light .empresa-edit-card,
+html[data-theme^="light"] .empresa-edit-card{
+  --empresa-edit-input-bg:#ffffff;
+  --empresa-edit-input-focus-bg:#ffffff;
+  --empresa-edit-input-border:rgba(15,35,64,0.18);
+  --empresa-edit-input-text:#10243f;
+  --empresa-edit-input-placeholder:rgba(82,98,122,0.78);
+  --empresa-edit-soft-bg:linear-gradient(180deg, rgba(255,255,255,.9), rgba(249,252,255,.98));
+  --empresa-edit-soft-border:rgba(15,35,64,.12);
+  --empresa-delete-bg:linear-gradient(180deg, rgba(255,245,242,.96), rgba(255,255,255,.98));
+  --empresa-delete-border:rgba(170,56,38,.2);
+  --empresa-delete-box-bg:rgba(255,255,255,.76);
+  --empresa-delete-box-border:rgba(170,56,38,.32);
+}
+html.theme-dark .empresa-edit-card,
+html[data-theme^="dark"] .empresa-edit-card{
+  --empresa-edit-input-bg:color-mix(in srgb, var(--surface) 92%, #ffffff 8%);
+  --empresa-edit-input-focus-bg:color-mix(in srgb, var(--surface) 86%, var(--accent) 14%);
+  --empresa-edit-input-border:color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+  --empresa-edit-input-text:var(--text);
+  --empresa-edit-input-placeholder:color-mix(in srgb, var(--muted) 82%, transparent);
+  --empresa-edit-soft-bg:color-mix(in srgb, var(--surface) 88%, #ffffff 4%);
+  --empresa-edit-soft-border:color-mix(in srgb, var(--border) 82%, #ffffff 8%);
+  --empresa-delete-bg:linear-gradient(180deg, color-mix(in srgb, var(--surface) 86%, #ef4444 14%), color-mix(in srgb, var(--surface) 94%, #111827 6%));
+  --empresa-delete-border:color-mix(in srgb, var(--danger) 40%, var(--border));
+  --empresa-delete-box-bg:color-mix(in srgb, var(--surface) 90%, #ef4444 10%);
+  --empresa-delete-box-border:color-mix(in srgb, var(--danger) 46%, var(--border));
 }
 .empresa-edit-panel-copy{
   margin:8px 0 0;
@@ -3980,10 +4036,10 @@ body.has-floating-menu .header .form-actions{
 }
 .empresa-edit-meta-item,
 .empresa-edit-delete-chip{
-  border:1px solid rgba(24,49,83,.08);
+  border:1px solid var(--empresa-edit-soft-border, rgba(24,49,83,.08));
   border-radius:12px;
   padding:12px 14px;
-  background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,250,242,.96));
+  background:var(--empresa-edit-soft-bg, linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,250,242,.96)));
 }
 .empresa-edit-meta-item span,
 .empresa-edit-delete-chip span{
@@ -4047,15 +4103,15 @@ body.has-floating-menu .header .form-actions{
   border-radius:10px;
 }
 .empresa-edit-danger{
-  border:1px solid rgba(170,56,38,.18);
-  background:linear-gradient(180deg, rgba(255,245,242,.96), rgba(255,255,255,.98));
+  border:1px solid var(--empresa-delete-border, rgba(170,56,38,.18));
+  background:var(--empresa-delete-bg, linear-gradient(180deg, rgba(255,245,242,.96), rgba(255,255,255,.98)));
 }
 .empresa-edit-danger-box{
   margin-top:16px;
   padding:18px;
   border-radius:16px;
-  border:1px dashed rgba(170,56,38,.32);
-  background:rgba(255,255,255,.72);
+  border:1px dashed var(--empresa-delete-box-border, rgba(170,56,38,.32));
+  background:var(--empresa-delete-box-bg, rgba(255,255,255,.72));
 }
 .empresa-delete-warning{
   margin-top:0;
@@ -4063,6 +4119,83 @@ body.has-floating-menu .header .form-actions{
 }
 .empresa-delete-download-actions{
   margin-bottom:14px;
+}
+.empresa-delete-checklist{
+  display:grid;
+  gap:8px;
+  margin:12px 0 14px;
+}
+.empresa-delete-check-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:34px;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid var(--empresa-edit-soft-border, rgba(24,49,83,.08));
+  background:var(--empresa-edit-soft-bg, rgba(255,255,255,.78));
+  color:var(--muted);
+  font-size:.88rem;
+  font-weight:800;
+}
+.empresa-delete-check-item::before{
+  content:"";
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background:var(--status-warning);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--status-warning) 18%, transparent);
+  flex:0 0 auto;
+}
+.empresa-delete-check-item.is-ok{
+  color:var(--status-success);
+}
+.empresa-delete-check-item.is-ok::before{
+  background:var(--status-success);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--status-success) 18%, transparent);
+}
+.empresa-delete-ack{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  margin:12px 0;
+  padding:12px;
+  border:1px solid var(--empresa-delete-box-border, rgba(170,56,38,.22));
+  border-radius:12px;
+  background:var(--empresa-edit-soft-bg, rgba(255,255,255,.7));
+  color:var(--text);
+  font-weight:700;
+  line-height:1.45;
+}
+.empresa-delete-ack input{
+  width:18px;
+  height:18px;
+  margin-top:2px;
+  accent-color:var(--danger);
+  flex:0 0 auto;
+}
+.empresa-delete-progress{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:12px 0;
+  padding:12px;
+  border-radius:12px;
+  background:color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  color:var(--text);
+  font-weight:800;
+}
+.empresa-delete-spinner{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  border:3px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-top-color:var(--accent);
+  animation:empresa-delete-spin .8s linear infinite;
+}
+@keyframes empresa-delete-spin{
+  to{transform:rotate(360deg)}
 }
 .selector-share-notice{
   margin:0 0 14px;
@@ -4105,8 +4238,8 @@ body.has-floating-menu .header .form-actions{
   gap:12px;
   padding:14px;
   border-radius:16px;
-  background:rgba(255,255,255,.72);
-  border:1px solid rgba(18,48,71,.08);
+  background:var(--empresa-edit-soft-bg, rgba(255,255,255,.72));
+  border:1px solid var(--empresa-edit-soft-border, rgba(18,48,71,.08));
 }
 .empresa-share-item-actions{
   display:flex;
@@ -10091,12 +10224,31 @@ html.theme-light .task-item{
   line-height:1.15 !important;
 }
 
+.empresas-grid .portal-card.empresa-card .empresa-license-action{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  padding:8px 8px !important;
+  cursor:pointer !important;
+  white-space:normal !important;
+  text-align:center !important;
+  font-size:0.75rem !important;
+  line-height:1.08 !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-license-action span{
+  display:block;
+  overflow-wrap:anywhere;
+}
+
 .empresas-grid .portal-card.empresa-card .download-data,
+.empresas-grid .portal-card.empresa-card .edit-empresa,
 .empresas-grid .portal-card.empresa-card .card-download .license-indicator{
   width:36px !important;
   height:36px !important;
   min-width:36px !important;
   min-height:36px !important;
+  padding:0 !important;
 }
 
 .empresas-grid .portal-card.empresa-card.empresa-card--license-inactive .license-indicator.inactive{

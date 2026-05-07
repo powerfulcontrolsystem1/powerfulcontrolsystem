@@ -629,12 +629,28 @@
       window.location.href = adminURL;
       return;
     }
+    navigateToLicenciasEmpresa(empresa);
+  }
+
+  function buildLicenciasEmpresaURL(empresa) {
     var params = new URLSearchParams();
-    params.set("empresa_id", empresa.id);
-    params.set("id", empresa.id);
-    if (empresa.tipo_id) params.set("tipo_id", empresa.tipo_id);
-    if (empresa.tipo_nombre) params.set("tipo_nombre", empresa.tipo_nombre);
-    window.location.href = "/elegir_licencia.html?" + params.toString();
+    if (empresa && empresa.id) {
+      params.set("empresa_id", empresa.id);
+      params.set("id", empresa.id);
+    }
+    if (empresa && empresa.tipo_id) params.set("tipo_id", empresa.tipo_id);
+    if (empresa && empresa.tipo_nombre) params.set("tipo_nombre", empresa.tipo_nombre);
+    return "/elegir_licencia.html?" + params.toString();
+  }
+
+  function navigateToLicenciasEmpresa(empresa) {
+    var empresaId = empresa && empresa.id ? empresa.id : "";
+    if (!empresaId) {
+      window.alert("No se encontro la empresa para elegir licencia.");
+      return;
+    }
+    persistEmpresaContext(empresaId);
+    window.location.href = buildLicenciasEmpresaURL(empresa);
   }
 
   function buildEmpresaShareButton(empresa) {
@@ -841,7 +857,7 @@
     cardLink.setAttribute("role", "button");
     cardLink.setAttribute("aria-label", (hasLicense ? "Administrar " : "Elegir licencia para ") + String(empresa.nombre || "empresa"));
     cardLink.addEventListener("click", function (evt) {
-      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data')) {
+      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data, .empresa-license-action, .edit-empresa')) {
         return;
       }
       try {
@@ -868,9 +884,16 @@
     var div = document.createElement("div");
     div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone + (hasLicense ? " empresa-card--license-active" : " empresa-card--license-inactive");
     div.setAttribute('data-tone', visual.tone || 'generic');
-    var licenseCellHTML = hasLicense
-      ? '<span class="empresa-card-footer-license-spacer" aria-hidden="true"></span>'
-      : '<span class="empresa-card-footer-license-spacer" aria-hidden="true"></span>';
+    var licenseLabel = hasLicense ? "Elegir otra licencia" : "Elegir licencia";
+    var licenseTitle = hasLicense
+      ? "Elegir otra licencia para " + String(empresa.nombre || "esta empresa")
+      : "Elegir licencia para " + String(empresa.nombre || "esta empresa");
+    var licenseCellHTML =
+      '<button type="button" class="license-indicator empresa-license-action ' + (hasLicense ? "active" : "inactive") + '" ' +
+      'data-empresa-id="' + escapeHtml(String(empresa.id || "")) + '" ' +
+      'aria-label="' + escapeHtml(licenseTitle) + '" title="' + escapeHtml(licenseTitle) + '">' +
+      '<span>' + escapeHtml(licenseLabel) + '</span>' +
+      '</button>';
     div.innerHTML =
       '<span class="empresa-card-badge">' +
       escapeHtml(visual.label || "Empresa") +
@@ -911,6 +934,15 @@
     var dlCell = div.querySelector(".empresa-card-footer-bar__cell--download");
     if (dlCell) {
       dlCell.appendChild(dlBtn);
+    }
+
+    var licenseBtn = div.querySelector(".empresa-license-action");
+    if (licenseBtn) {
+      licenseBtn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        navigateToLicenciasEmpresa(empresa);
+      });
     }
 
     var editBtn = document.createElement("button");

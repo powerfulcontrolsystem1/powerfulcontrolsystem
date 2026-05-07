@@ -117,7 +117,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				modulos := "" // vacío = sin restricciones de módulos
 				superRol := 0
 
-				licID, err := dbpkg.CreateLicencia(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, superRol)
+				licID, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, 0, "", superRol, 500)
 				if err != nil {
 					http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -179,17 +179,18 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			var payload struct {
-				TipoID        int64   `json:"tipo_id"`
-				PaisCodigo    string  `json:"pais_codigo"`
-				Nombre        string  `json:"nombre"`
-				Descripcion   string  `json:"descripcion"`
-				Valor         float64 `json:"valor"`
-				DuracionDias  int     `json:"duracion_dias"`
-				ModulosHab    string  `json:"modulos_habilitados"`
-				EsAdicional   int     `json:"es_adicional"`
-				CodigoFuncion string  `json:"codigo_funcion"`
-				SuperRol      int     `json:"super_rol_habilitado"`
-				Activo        *int    `json:"activo"`
+				TipoID                 int64   `json:"tipo_id"`
+				PaisCodigo             string  `json:"pais_codigo"`
+				Nombre                 string  `json:"nombre"`
+				Descripcion            string  `json:"descripcion"`
+				Valor                  float64 `json:"valor"`
+				DuracionDias           int     `json:"duracion_dias"`
+				MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+				ModulosHab             string  `json:"modulos_habilitados"`
+				EsAdicional            int     `json:"es_adicional"`
+				CodigoFuncion          string  `json:"codigo_funcion"`
+				SuperRol               int     `json:"super_rol_habilitado"`
+				Activo                 *int    `json:"activo"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -214,7 +215,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
-			id, err := dbpkg.CreateLicenciaAdvanced(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol)
+			id, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol, payload.MaxDocumentosMensuales)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
@@ -264,17 +265,18 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			// actualización normal (payload JSON)
 			var payloadUpdate struct {
-				TipoID        int64   `json:"tipo_id"`
-				PaisCodigo    string  `json:"pais_codigo"`
-				Nombre        string  `json:"nombre"`
-				Descripcion   string  `json:"descripcion"`
-				Valor         float64 `json:"valor"`
-				DuracionDias  int     `json:"duracion_dias"`
-				ModulosHab    string  `json:"modulos_habilitados"`
-				EsAdicional   int     `json:"es_adicional"`
-				CodigoFuncion string  `json:"codigo_funcion"`
-				SuperRol      int     `json:"super_rol_habilitado"`
-				Activo        *int    `json:"activo"`
+				TipoID                 int64   `json:"tipo_id"`
+				PaisCodigo             string  `json:"pais_codigo"`
+				Nombre                 string  `json:"nombre"`
+				Descripcion            string  `json:"descripcion"`
+				Valor                  float64 `json:"valor"`
+				DuracionDias           int     `json:"duracion_dias"`
+				MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+				ModulosHab             string  `json:"modulos_habilitados"`
+				EsAdicional            int     `json:"es_adicional"`
+				CodigoFuncion          string  `json:"codigo_funcion"`
+				SuperRol               int     `json:"super_rol_habilitado"`
+				Activo                 *int    `json:"activo"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -285,7 +287,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "pais_codigo required", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicenciaAdvanced(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.EsAdicional, payloadUpdate.CodigoFuncion, payloadUpdate.SuperRol); err != nil {
+			if err := dbpkg.UpdateLicenciaAdvancedWithLimits(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.EsAdicional, payloadUpdate.CodigoFuncion, payloadUpdate.SuperRol, payloadUpdate.MaxDocumentosMensuales); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return

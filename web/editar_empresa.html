@@ -139,7 +139,22 @@
             <button id="empresaDownloadBeforeDeleteBtn" type="button" class="btn secondary">Descargar información antes de eliminar</button>
           </div>
           <label class="form-label" for="empresaDeleteConfirm">Escribe el nombre exacto de la empresa para confirmar</label>
+          <div class="empresa-delete-checklist" aria-label="Confirmaciones de eliminacion">
+            <div class="empresa-delete-check-item" id="empresaDeleteNameCheck">Nombre exacto pendiente</div>
+            <div class="empresa-delete-check-item" id="empresaDeletePhraseCheck">Frase de seguridad pendiente</div>
+            <div class="empresa-delete-check-item" id="empresaDeleteRiskCheck">Aceptacion de riesgo pendiente</div>
+          </div>
           <input id="empresaDeleteConfirm" class="form-input" autocomplete="off">
+          <label class="form-label" for="empresaDeletePhrase">Escribe ELIMINAR para autorizar el borrado irreversible</label>
+          <input id="empresaDeletePhrase" class="form-input" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <label class="empresa-delete-ack" for="empresaDeleteAcknowledge">
+            <input id="empresaDeleteAcknowledge" type="checkbox">
+            <span>Entiendo que se eliminaran registros, archivos, licencias, accesos compartidos y respaldos asociados a esta empresa.</span>
+          </label>
+          <div id="empresaDeleteProgress" class="empresa-delete-progress" hidden>
+            <span class="empresa-delete-spinner" aria-hidden="true"></span>
+            <span id="empresaDeleteProgressText">Preparando eliminacion segura...</span>
+          </div>
           <div class="form-actions">
             <button id="empresaDeleteBtn" type="button" class="btn danger">Eliminar empresa definitivamente</button>
           </div>
