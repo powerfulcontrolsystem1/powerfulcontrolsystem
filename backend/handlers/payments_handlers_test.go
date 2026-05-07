@@ -199,6 +199,49 @@ func TestBuildEpaycoSmartCheckoutSessionPayloadMatchesOfficialV2Shape(t *testing
 	}
 }
 
+func TestBuildWompiIntegritySignatureUsesOfficialWebCheckoutFormula(t *testing.T) {
+	reference := "WOMPI-LIC-1-EMP-2"
+	amountInCents := int64(1234500)
+	currency := "COP"
+	integrityKey := "test_integrity_secret"
+
+	expected := fmt.Sprintf("%x", sha256.Sum256([]byte(reference+"1234500"+currency+integrityKey)))
+	if got := buildWompiIntegritySignature(reference, amountInCents, currency, integrityKey); got != expected {
+		t.Fatalf("expected Wompi integrity signature %q, got %q", expected, got)
+	}
+}
+
+func TestBuildWompiWebCheckoutFormUsesOfficialFields(t *testing.T) {
+	form := buildWompiWebCheckoutForm(
+		"pub_test_123",
+		"test_integrity_secret",
+		"WOMPI-LIC-9",
+		"https://powerfulcontrolsystem.com/pagar_licencia.html?provider=wompi",
+		"cliente@example.com",
+		9900000,
+	)
+
+	if form.Method != "GET" {
+		t.Fatalf("expected Wompi Web Checkout GET form, got %q", form.Method)
+	}
+	if form.Action != "https://checkout.wompi.co/p/" {
+		t.Fatalf("expected Wompi hosted checkout action, got %q", form.Action)
+	}
+	fields := form.Fields
+	if fields["public-key"] != "pub_test_123" || fields["currency"] != "COP" || fields["amount-in-cents"] != "9900000" || fields["reference"] != "WOMPI-LIC-9" {
+		t.Fatalf("unexpected Wompi checkout required fields: %#v", fields)
+	}
+	if fields["redirect-url"] == "" || fields["customer-data:email"] != "cliente@example.com" {
+		t.Fatalf("expected Wompi optional redirect/email fields, got %#v", fields)
+	}
+	if fields["signature:integrity"] == "" {
+		t.Fatal("expected Wompi integrity signature")
+	}
+	if _, ok := fields["private-key"]; ok {
+		t.Fatal("Wompi Web Checkout must not expose private key")
+	}
+}
+
 func TestVerifyEpaycoConfirmationSignatureUsesOfficialSha256Formula(t *testing.T) {
 	payload := map[string]interface{}{
 		"x_ref_payco":      "123456789",

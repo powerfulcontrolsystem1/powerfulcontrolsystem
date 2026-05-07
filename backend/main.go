@@ -1158,6 +1158,7 @@ func main() {
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
+	http.HandleFunc("/wompi/create_checkout", handlers.WompiCreateCheckoutHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper, dbEmpresas))

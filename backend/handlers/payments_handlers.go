@@ -2116,15 +2116,12 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 	if err != nil {
 		return nil, err
 	}
-	wompiPrivateKey, err := getConfigEntryTrimmed(dbSuper, "wompi.private_key")
-	if err != nil {
-		return nil, err
-	}
 	wompiIntegrityKey, err := getConfigEntryTrimmed(dbSuper, "wompi.integrity_key")
 	if err != nil {
 		return nil, err
 	}
-	wompiConfigured := wompiPublicKey != "" && wompiPrivateKey != "" && wompiIntegrityKey != ""
+	wompiWebCheckoutConfigured := wompiPublicKey != "" && wompiIntegrityKey != ""
+	wompiConfigured := wompiWebCheckoutConfigured
 	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", wompiConfigured)
 	if err != nil {
 		return nil, err
@@ -2149,7 +2146,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 		{
 			ID:          "wompi",
 			Nombre:      "Wompi",
-			Descripcion: "Nequi / Tarjeta",
+			Descripcion: "Web Checkout: Nequi, PSE y tarjetas",
 			Enabled:     wompiEnabled,
 			Configured:  wompiConfigured,
 			Available:   wompiEnabled && wompiConfigured,
@@ -2440,6 +2437,14 @@ type epaycoClassicCheckoutForm struct {
 	Fields map[string]string `json:"fields"`
 }
 
+const wompiWebCheckoutActionURL = "https://checkout.wompi.co/p/"
+
+type wompiWebCheckoutForm struct {
+	Method string            `json:"method"`
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields"`
+}
+
 type epaycoClassicCheckoutPayload struct {
 	ScriptURL string                 `json:"script_url"`
 	Config    map[string]interface{} `json:"config"`
@@ -2448,6 +2453,34 @@ type epaycoClassicCheckoutPayload struct {
 
 func formatEpaycoClassicAmount(amount float64) string {
 	return strconv.FormatFloat(roundLicenciaCheckoutAmount(amount), 'f', 2, 64)
+}
+
+func buildWompiIntegritySignature(reference string, amountInCents int64, currency, integrityKey string) string {
+	source := fmt.Sprintf("%s%d%s%s", strings.TrimSpace(reference), amountInCents, strings.ToUpper(strings.TrimSpace(currency)), strings.TrimSpace(integrityKey))
+	sum := sha256.Sum256([]byte(source))
+	return hex.EncodeToString(sum[:])
+}
+
+func buildWompiWebCheckoutForm(publicKey, integrityKey, reference, redirectURL, customerEmail string, amountInCents int64) wompiWebCheckoutForm {
+	currency := "COP"
+	fields := map[string]string{
+		"public-key":          strings.TrimSpace(publicKey),
+		"currency":            currency,
+		"amount-in-cents":     strconv.FormatInt(amountInCents, 10),
+		"reference":           strings.TrimSpace(reference),
+		"signature:integrity": buildWompiIntegritySignature(reference, amountInCents, currency, integrityKey),
+	}
+	if strings.TrimSpace(redirectURL) != "" {
+		fields["redirect-url"] = strings.TrimSpace(redirectURL)
+	}
+	if strings.TrimSpace(customerEmail) != "" {
+		fields["customer-data:email"] = strings.TrimSpace(customerEmail)
+	}
+	return wompiWebCheckoutForm{
+		Method: "GET",
+		Action: wompiWebCheckoutActionURL,
+		Fields: fields,
+	}
 }
 
 func buildEpaycoSmartCheckoutSessionPayload(baseURL, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail string) map[string]interface{} {
@@ -3427,7 +3460,7 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"provider":                    "wompi",
-			"payment_method":              "NEQUI",
+			"payment_method":              "WEB_CHECKOUT",
 			"mode":                        mode,
 			"mode_source":                 modeSource,
 			"api_base_url":                baseURL,
@@ -3436,6 +3469,185 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"sandbox_phone_approved":      "3991111111",
 			"sandbox_phone_declined":      "3992222222",
 			"sandbox_phone_error_example": "3993333333",
+		})
+	}
+}
+
+// WompiCreateCheckoutHandler prepara Web Checkout hospedado de Wompi para licencias.
+func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			LicenciaID       int64   `json:"licencia_id"`
+			EmpresaID        int64   `json:"empresa_id,omitempty"`
+			CustomerEmail    string  `json:"customer_email,omitempty"`
+			DiscountCode     string  `json:"discount_code,omitempty"`
+			AsesorID         string  `json:"asesor_id,omitempty"`
+			CheckoutMode     string  `json:"checkout_mode,omitempty"`
+			AddonLicenciaIDs []int64 `json:"addon_licencia_ids,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if payload.LicenciaID <= 0 {
+			http.Error(w, "licencia_id invalido", http.StatusBadRequest)
+			return
+		}
+
+		status, err := getLicenciaPaymentMethodStatus(dbSuper, "wompi")
+		if err != nil {
+			http.Error(w, "failed to read wompi availability: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !status.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi no esta activo en configuracion avanzada", "provider": "wompi"})
+			return
+		}
+		if !status.Configured {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi requiere Public Key e Integrity Key para Web Checkout", "provider": "wompi"})
+			return
+		}
+
+		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		privateKey, _ := getDecryptedConfigValue(dbSuper, "wompi.private_key")
+		integrityKey, err := getDecryptedConfigValue(dbSuper, "wompi.integrity_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(integrityKey) == "" {
+			http.Error(w, "Wompi no configurado: faltan wompi.public_key o wompi.integrity_key", http.StatusInternalServerError)
+			return
+		}
+
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
+			payload.EmpresaID = lic.EmpresaID
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id requerido para crear el checkout", http.StatusBadRequest)
+			return
+		}
+
+		payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
+		if payload.AsesorID != "" {
+			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
+			if aerr != nil {
+				http.Error(w, "no se pudo validar el codigo de asesor", http.StatusInternalServerError)
+				return
+			}
+			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
+				http.Error(w, "codigo de asesor invalido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
+				return
+			}
+		}
+
+		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
+		if err != nil {
+			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.IsZeroTotal {
+			statusCode := http.StatusConflict
+			if !summary.ZeroTotalBlocked {
+				statusCode = http.StatusPreconditionFailed
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(statusCode)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "requires_manual_activation": true, "summary": summary})
+			return
+		}
+
+		amountInCents := int64(math.Round(summary.TotalValue * 100))
+		if amountInCents <= 0 {
+			http.Error(w, "valor de licencia invalido para Wompi", http.StatusBadRequest)
+			return
+		}
+		paymentBaseURL, err := resolvePaymentBaseURL(r, dbSuper)
+		if err != nil {
+			http.Error(w, "failed to resolve public base URL for Wompi: "+err.Error(), http.StatusPreconditionFailed)
+			return
+		}
+
+		email := strings.TrimSpace(payload.CustomerEmail)
+		if email == "" {
+			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
+		}
+		reference := fmt.Sprintf("WOMPI-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		redirectURL := buildLicenciaReturnURL(paymentBaseURL, "wompi", "pending", reference, payload.LicenciaID, payload.EmpresaID)
+		form := buildWompiWebCheckoutForm(publicKey, integrityKey, reference, redirectURL, email, amountInCents)
+		mode, modeSource := resolveWompiMode(dbSuper, publicKey, privateKey)
+
+		rawMap := map[string]interface{}{
+			"provider":             "wompi",
+			"mode":                 mode,
+			"mode_source":          modeSource,
+			"payment_method":       "WEB_CHECKOUT",
+			"payment_base_url":     paymentBaseURL,
+			"checkout_action":      wompiWebCheckoutActionURL,
+			"redirect_url":         redirectURL,
+			"amount_in_cents":      amountInCents,
+			"currency":             "COP",
+			"valor_pagado":         summary.TotalValue,
+			"discount_code":        payload.DiscountCode,
+			"asesor_id":            payload.AsesorID,
+			"licencia_id":          payload.LicenciaID,
+			"empresa_id":           payload.EmpresaID,
+			"checkout_mode":        normalizeLicenciaCheckoutMode(payload.CheckoutMode),
+			"addon_licencia_ids":   payload.AddonLicenciaIDs,
+			"bundle":               bundle,
+			"summary":              summary,
+			"customer_email_set":   email != "",
+			"created_at":           time.Now().Format(time.RFC3339),
+			"integration_flow":     "wompi_web_checkout",
+			"integrity_signature":  form.Fields["signature:integrity"],
+			"public_key_masked":    maskConfigValue(publicKey, 10, 6),
+			"integrity_key_masked": maskConfigValue(integrityKey, 12, 6),
+		}
+		rawBytes, _ := json.Marshal(rawMap)
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+			log.Println("warning: failed to record Wompi checkout in DB:", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":            "wompi",
+			"payment_method":      "WEB_CHECKOUT",
+			"mode":                mode,
+			"mode_source":         modeSource,
+			"transaction_id":      "",
+			"reference":           reference,
+			"status":              "PENDING",
+			"asesor_id":           payload.AsesorID,
+			"amount_in_cents":     amountInCents,
+			"currency":            "COP",
+			"checkout_type":       "web_checkout",
+			"checkout_form":       form,
+			"checkout_action_url": wompiWebCheckoutActionURL,
+			"customer_email":      email,
+			"data": map[string]interface{}{
+				"id":            reference,
+				"reference":     reference,
+				"type":          "web_checkout",
+				"checkout_form": form,
+			},
 		})
 	}
 }
@@ -3512,8 +3724,17 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to read wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(privateKey) == "" || strings.TrimSpace(integrityKey) == "" {
-			http.Error(w, "Wompi no configurado: faltan llaves (public/private/integrity)", http.StatusInternalServerError)
+		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(integrityKey) == "" {
+			http.Error(w, "Wompi no configurado: faltan llaves (public/integrity)", http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(privateKey) == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Wompi Nequi directo requiere wompi.private_key; usa /wompi/create_checkout para Web Checkout hospedado",
+				"provider": "wompi",
+			})
 			return
 		}
 
@@ -3605,9 +3826,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		reference := fmt.Sprintf("WOMPI-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
-		signatureSource := fmt.Sprintf("%s%dCOP%s", reference, amountInCents, integrityKey)
-		signatureHash := sha256.Sum256([]byte(signatureSource))
-		signature := hex.EncodeToString(signatureHash[:])
+		signature := buildWompiIntegritySignature(reference, amountInCents, "COP", integrityKey)
 
 		paymentBaseURL, err := resolvePaymentBaseURL(r, dbSuper)
 		if err != nil {
@@ -3936,6 +4155,36 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		if transactionID == "" {
+			if reference != "" {
+				rec, lookupErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+				if lookupErr != nil {
+					http.Error(w, "failed to resolve wompi reference: "+lookupErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				if rec != nil {
+					licenciaID := int64(0)
+					empresaID := int64(0)
+					if rec.LicenciaID.Valid {
+						licenciaID = rec.LicenciaID.Int64
+					}
+					if rec.EmpresaID.Valid {
+						empresaID = rec.EmpresaID.Int64
+					}
+					status := "PENDING"
+					if rec.Status.Valid && strings.TrimSpace(rec.Status.String) != "" {
+						status = strings.ToUpper(strings.TrimSpace(rec.Status.String))
+					}
+					if hasExpectedContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusConflict)
+						json.NewEncoder(w).Encode(map[string]interface{}{"error": "El pago consultado no corresponde a la empresa o licencia abierta en esta pagina.", "provider": "wompi", "reference": reference, "status": status, "context_found": true, "context_mismatch": true, "licencia_id": licenciaID, "empresa_id": empresaID, "expected_licencia_id": expectedLicenciaID, "expected_empresa_id": expectedEmpresaID})
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					json.NewEncoder(w).Encode(map[string]interface{}{"provider": "wompi", "mode": "unknown", "transaction_id": "", "reference": reference, "status": status, "context_found": true, "licencia_id": licenciaID, "empresa_id": empresaID, "activated": false})
+					return
+				}
+			}
 			http.Error(w, "id o reference requerido", http.StatusBadRequest)
 			return
 		}
@@ -4005,6 +4254,11 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, string(respBody)); err != nil {
 			log.Println("warning: failed to update Wompi payment record:", err)
 		}
+		if strings.TrimSpace(reference) != "" {
+			if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, reference, status, string(respBody)); err != nil {
+				log.Println("warning: failed to update Wompi payment record by reference:", err)
+			}
+		}
 
 		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetWompiPaymentContext(dbSuper, transactionID, reference)
 		if ctxErr != nil {
@@ -4041,7 +4295,17 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if isApprovedPaymentStatus(status) {
 					checkoutMode := ""
 					var addonLicenciaIDs []int64
-					if payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payErr == nil && payRec != nil && payRec.RawPayload.Valid {
+					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+					if payErr != nil {
+						log.Println("warning: failed to reload Wompi payment by transaction for checkout context:", payErr)
+					}
+					if payRec == nil && strings.TrimSpace(reference) != "" {
+						payRec, payErr = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+						if payErr != nil {
+							log.Println("warning: failed to reload Wompi payment by reference for checkout context:", payErr)
+						}
+					}
+					if payRec != nil && payRec.RawPayload.Valid {
 						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
 					}
 					act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
@@ -4049,27 +4313,33 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						log.Println("warning: failed to activate licencia from Wompi:", actErr)
 					} else {
 						activated = act
-						if payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payErr != nil {
-							log.Println("warning: failed to reload Wompi payment for activation email:", payErr)
-						} else if payRec == nil && strings.TrimSpace(reference) != "" {
+						payRecForEmail := payRec
+						if payRecForEmail == nil {
+							if payRecByTx, payTxErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payTxErr != nil {
+								log.Println("warning: failed to reload Wompi payment for activation email:", payTxErr)
+							} else {
+								payRecForEmail = payRecByTx
+							}
+						}
+						if payRecForEmail == nil && strings.TrimSpace(reference) != "" {
 							if payRecByRef, payRefErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference); payRefErr != nil {
 								log.Println("warning: failed to reload Wompi payment by reference for activation email:", payRefErr)
 							} else {
-								payRec = payRecByRef
+								payRecForEmail = payRecByRef
 							}
-							if payRec != nil {
-								if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
-									log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
-								}
+						}
+						if payRecForEmail != nil {
+							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRecForEmail, "wompi", reference); mailErr != nil {
+								log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
 							}
 						}
 					}
 
 					go func(txID string, licID, empID int64) {
-						if txID == "" {
+						if txID == "" && reference == "" {
 							return
 						}
-						recordAsesorComercialComision(dbSuper, "wompi", txID, "", licID, empID)
+						recordAsesorComercialComision(dbSuper, "wompi", txID, reference, licID, empID)
 					}(transactionID, licenciaID, empresaID)
 				} else if isRejectedPaymentStatus(status) {
 					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)

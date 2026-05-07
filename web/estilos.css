@@ -5627,7 +5627,7 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   margin-top:8px;
 }
 .payment-method-selector-licenses{
-  grid-template-columns:minmax(0, 1fr);
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
 }
 .payment-method-card{
   border:1px solid transparent;
@@ -5769,6 +5769,10 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   color:#ecfff4;
 }
 .payment-method-panel-wompi{
+  max-width:420px;
+  width:100%;
+  margin:6px auto 0;
+  padding:18px 18px 16px;
   border-color:#30a46c;
   background:linear-gradient(135deg, rgba(10,61,44,.96), rgba(29,147,95,.88));
   color:#ecfff4;

@@ -11,12 +11,15 @@ Para Epayco, el flujo preferido es Smart Checkout v2. Si Smart Checkout no devue
 
 Las credenciales no son intercambiables: Smart Checkout v2 usa `PUBLIC_KEY` + `PRIVATE_KEY` API de Apify, mientras que el checkout estandar usa `P_CUST_ID_CLIENTE` + `P_KEY`. El backend no debe tratar una `P_KEY` clasica como `private_key` API.
 
+Para Wompi en pago de licencias, el flujo preferido es Web Checkout hospedado mediante formulario GET a `https://checkout.wompi.co/p/`, con referencia unica, monto en centavos, moneda `COP` y `signature:integrity` SHA256 construida como `reference + amount_in_cents + currency + integrity_key`. El flujo directo Nequi se conserva como compatibilidad, pero la pantalla publica de licencia debe presentar Wompi como checkout general para que el cliente elija Nequi, PSE o tarjeta dentro de Wompi.
+
 ## Rutas implicadas
 
 - `GET /api/public/licencias/payment_methods`
 - `POST /epayco/create_transaction`
 - `GET /epayco/transaction_status`
 - `POST /epayco/webhook`
+- `POST /wompi/create_checkout`
 - `POST /wompi/create_transaction_nequi`
 - `GET /wompi/transaction_status`
 - `POST /wompi/webhook`
@@ -83,6 +86,8 @@ El frontend debe crear un formulario temporal y enviarlo por POST. No debe abrir
 8. Los logs o `raw_payload` no deben persistir `p_key` sin enmascarar.
 9. El modo del fallback clasico debe resolverse con las credenciales clasicas (`customer_id` + `P_KEY`) y no heredar automaticamente el modo de Smart Checkout; en produccion debe emitir `p_test_request=FALSE` y en pruebas `p_test_request=TRUE`.
 10. Smart Checkout solo se considera listo cuando existe `public_key` y una `private_key` API valida. El checkout estandar solo se considera listo cuando existe `customer_id` y `checkout_key`/`p_key`.
+11. Wompi Web Checkout solo se considera listo cuando existen `wompi.public_key` y `wompi.integrity_key`; `wompi.private_key` queda reservada para API directa o consultas que la requieran.
+12. El frontend no debe pedir celular Nequi en el checkout publico de licencia; Wompi debe abrirse como checkout hospedado para que el cliente seleccione el medio de pago.
 
 ## Side effects
 

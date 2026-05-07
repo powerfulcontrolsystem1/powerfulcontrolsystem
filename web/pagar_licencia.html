@@ -66,7 +66,7 @@
         return 'la pasarela';
       }
       function originalButtonLabel(provider){
-        return provider === 'epayco' ? 'Pagar con Epayco' : 'Pagar con Wompi (Nequi)';
+        return provider === 'epayco' ? 'Pagar con Epayco' : 'Pagar con Wompi';
       }
       function isSuccessStatus(status){ return normalizeStatus(status) === 'APPROVED'; }
       function isFinalStatus(status){
@@ -301,6 +301,37 @@
         form.submit();
         return true;
       }
+      function isSafeWompiCheckoutAction(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          return parsed.protocol === 'https:' &&
+            parsed.hostname.toLowerCase() === 'checkout.wompi.co' &&
+            parsed.pathname.replace(/\/+$/, '') === '/p';
+        } catch (err) {
+          return false;
+        }
+      }
+      function submitWompiCheckoutForm(formSpec){
+        const spec = formSpec && typeof formSpec === 'object' ? formSpec : null;
+        if (!spec || !spec.action || !spec.fields || typeof spec.fields !== 'object') return false;
+        if (!isSafeWompiCheckoutAction(spec.action)) return false;
+
+        const form = document.createElement('form');
+        form.method = String(spec.method || 'GET').trim().toUpperCase() === 'POST' ? 'POST' : 'GET';
+        form.action = String(spec.action || '').trim();
+        form.style.display = 'none';
+        Object.keys(spec.fields).forEach(function(key){
+          if (!Object.prototype.hasOwnProperty.call(spec.fields, key)) return;
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(spec.fields[key] == null ? '' : spec.fields[key]);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return true;
+      }
       async function fetchProviderStatus(provider, context, licenciaId, empresaId){
         const normalizedProvider = normalizeProvider(provider);
         if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
@@ -433,7 +464,7 @@
           }
           if (wompiProvider && !wompiProvider.available) {
             unavailableMessages.push(wompiProvider.enabled
-              ? 'Wompi está activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
+              ? 'Wompi está activado, pero le faltan credenciales obligatorias para Web Checkout (Public Key e Integrity Key).'
               : 'Wompi está desactivado en configuración avanzada.');
           }
 
@@ -455,7 +486,7 @@
               '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
               '<span class="payment-method-badge">' + escapeHtml(wompiBadge) + '</span>'+
               '<span class="method-name">Wompi</span>'+
-              '<span class="method-desc">Nequi / Tarjeta</span>'+
+              '<span class="method-desc">Nequi, PSE y tarjetas</span>'+
               '</button>'
             );
           }
@@ -603,12 +634,10 @@
             ((wompiProvider && wompiProvider.available)
               ? '<div id="wompiPanel" class="payment-method-panel payment-method-panel-wompi" style="display:none;">'+
                 '<div class="method-panel-heading">Wompi</div>'+
-                '<label for="wompiPhone" class="muted small">Celular Nequi (10 dígitos):</label>'+
-                '<input id="wompiPhone" class="payment-method-input" type="text" inputmode="numeric" maxlength="10" placeholder="3991111111">'+
-                '<div id="wompiSandboxHint" class="small payment-method-hint">En sandbox: 3991111111 aprueba, 3992222222 declina.</div>'+
-                '<label class="small payment-method-check"><input id="wompiTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
+                '<div id="wompiCheckoutHint" class="small payment-method-hint">Abre el Web Checkout seguro de Wompi para elegir Nequi, PSE o tarjeta. Al volver, esta página retoma la verificación con la referencia guardada.</div>'+
+                '<label class="small payment-method-check"><input id="wompiTermsChk" type="checkbox"> Acepto continuar al checkout seguro de Wompi</label>'+
                 '<div id="wompiTermsLinks" class="small payment-method-links"></div>'+
-                '<button id="payWompiBtn" class="btn secondary payment-btn-wompi" type="button">Pagar con Wompi (Nequi)</button>'+
+                '<button id="payWompiBtn" class="btn secondary payment-btn-wompi" type="button">Pagar con Wompi</button>'+
                 '<div id="wompiStatus" class="small payment-method-status"></div>'+
                 '</div>'
               : '')+
@@ -622,11 +651,10 @@
             wompiPanel: document.getElementById('wompiPanel'),
             epaycoPanel: document.getElementById('epaycoPanel'),
             payWompiBtn: document.getElementById('payWompiBtn'),
-            wompiPhoneInput: document.getElementById('wompiPhone'),
             wompiTermsChk: document.getElementById('wompiTermsChk'),
             wompiStatus: document.getElementById('wompiStatus'),
             wompiTermsLinks: document.getElementById('wompiTermsLinks'),
-            wompiSandboxHint: document.getElementById('wompiSandboxHint'),
+            wompiCheckoutHint: document.getElementById('wompiCheckoutHint'),
             payEpaycoBtn: document.getElementById('payEpaycoBtn'),
             epaycoTermsChk: document.getElementById('epaycoTermsChk'),
             epaycoStatus: document.getElementById('epaycoStatus'),
@@ -1034,12 +1062,10 @@
                 const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
                 if (ui.wompiTermsLinks) ui.wompiTermsLinks.innerHTML = linkA + ' · ' + linkB;
                 const wompiMode = String(terms.mode || '').toLowerCase();
-                if (wompiMode.indexOf('sandbox') >= 0) {
-                  if (terms.sandbox_phone_approved && terms.sandbox_phone_declined && ui.wompiSandboxHint) {
-                    ui.wompiSandboxHint.textContent = 'Sandbox activo: ' + terms.sandbox_phone_approved + ' aprueba, ' + terms.sandbox_phone_declined + ' declina.';
-                  }
-                } else if (ui.wompiSandboxHint) {
-                  ui.wompiSandboxHint.textContent = 'Modo producción activo para Nequi.';
+                if (ui.wompiCheckoutHint) {
+                  ui.wompiCheckoutHint.textContent = wompiMode.indexOf('sandbox') >= 0
+                    ? 'Wompi está en sandbox. El checkout hospedado permite elegir Nequi, PSE o tarjeta con datos de prueba.'
+                    : 'Wompi está en producción. El checkout hospedado permite elegir Nequi, PSE o tarjeta.';
                 }
               } else if (ui.wompiTermsLinks) {
                 ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
@@ -1050,13 +1076,8 @@
           }
 
           if (ui.payWompiBtn) ui.payWompiBtn.addEventListener('click', async function(){
-            const phone = String((ui.wompiPhoneInput && ui.wompiPhoneInput.value) || '').trim();
-            if (!/^3\d{9}$/.test(phone)) {
-              syncStatusText(ui.wompiStatus, 'Ingresa un celular válido de Nequi (10 dígitos, inicia por 3).');
-              return;
-            }
             if (!ui.wompiTermsChk || !ui.wompiTermsChk.checked) {
-              syncStatusText(ui.wompiStatus, 'Debes aceptar términos y autorización de datos para pagar con Nequi.');
+              syncStatusText(ui.wompiStatus, 'Debes aceptar continuar al checkout seguro de Wompi.');
               return;
             }
 
@@ -1064,9 +1085,7 @@
             syncStatusText(ui.wompiStatus, '');
             try {
               const payload = {
-                licencia_id: Number(licenciaId),
-                phone_number: phone,
-                accept_terms: true
+                licencia_id: Number(licenciaId)
               };
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
@@ -1075,7 +1094,7 @@
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
-              const wompiRes = await fetch('/wompi/create_transaction_nequi', {
+              const wompiRes = await fetch('/wompi/create_checkout', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
                 body: JSON.stringify(payload)
@@ -1087,16 +1106,13 @@
               if (!wompiRes.ok) {
                 const msg = data && data.error ? data.error : raw;
                 syncStatusText(ui.wompiStatus, 'Error Wompi: ' + msg);
-                if (data && data.acceptance_permalink && data.personal_data_permalink && ui.wompiTermsLinks) {
-                  ui.wompiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a> · <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
-                }
                 resetProvider('wompi');
                 return;
               }
 
               const context = extractResponseContext(data, { provider: 'wompi' });
-              if (!context.transactionId) {
-                syncStatusText(ui.wompiStatus, 'No se recibió transaction_id de Wompi.');
+              if (!context.reference) {
+                syncStatusText(ui.wompiStatus, 'No se recibió una referencia válida de Wompi.');
                 resetProvider('wompi');
                 return;
               }
@@ -1112,8 +1128,22 @@
                 status: context.status || 'PENDING',
                 createdAt: Date.now()
               });
-              updateUrlState({ provider: 'wompi', status: 'pending', transaction_id: context.transactionId, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
-              renderFeedback(ui.feedback, 'muted', 'Solicitud enviada a Wompi', 'Revisa tu app de Nequi y confirma el pago. Mantendremos esta pantalla verificando el estado automáticamente.');
+              updateUrlState({ provider: 'wompi', status: 'pending', transaction_id: context.transactionId || null, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
+
+              const checkoutForm = data && (data.checkout_form || (data.data && data.data.checkout_form));
+              if (checkoutForm) {
+                setProviderBusy('wompi', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Wompi', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.wompiStatus, 'Enviando formulario seguro de Wompi...');
+                if (submitWompiCheckoutForm(checkoutForm)) {
+                  return;
+                }
+                syncStatusText(ui.wompiStatus, 'No se pudo abrir el checkout seguro de Wompi. Revisa la configuración de la pasarela.');
+                resetProvider('wompi');
+                return;
+              }
+
+              renderFeedback(ui.feedback, 'muted', 'Checkout Wompi iniciado', 'No se recibió formulario directo del checkout. Mantendremos esta pantalla verificando el estado del pago.');
               syncStatusText(ui.wompiStatus, 'Estado Wompi: ' + (context.status || 'PENDING'));
               startPolling('wompi', context, 30);
             } catch (err) {
