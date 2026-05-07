@@ -189,6 +189,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				EsAdicional   int     `json:"es_adicional"`
 				CodigoFuncion string  `json:"codigo_funcion"`
 				SuperRol      int     `json:"super_rol_habilitado"`
+				Activo        *int    `json:"activo"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -205,11 +206,26 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "pais_codigo required", http.StatusBadRequest)
 				return
 			}
+			activoOverride := 1
+			if payload.Activo != nil {
+				activoOverride = *payload.Activo
+				if activoOverride != 0 && activoOverride != 1 {
+					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+			}
 			id, err := dbpkg.CreateLicenciaAdvanced(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
 				return
+			}
+			if payload.Activo != nil && activoOverride != 1 {
+				if err := dbpkg.SetLicenciaActivo(dbSuper, id, activoOverride); err != nil {
+					log.Println("POST /super/api/licencias set activo error:", err)
+					http.Error(w, "failed to set activo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
@@ -258,6 +274,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				EsAdicional   int     `json:"es_adicional"`
 				CodigoFuncion string  `json:"codigo_funcion"`
 				SuperRol      int     `json:"super_rol_habilitado"`
+				Activo        *int    `json:"activo"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -272,6 +289,18 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return
+			}
+			if payloadUpdate.Activo != nil {
+				act := *payloadUpdate.Activo
+				if act != 0 && act != 1 {
+					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {
+					log.Println("PUT /super/api/licencias set activo error:", err)
+					http.Error(w, "failed to set activo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 			w.WriteHeader(http.StatusNoContent)
 			return

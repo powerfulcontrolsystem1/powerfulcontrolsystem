@@ -155,6 +155,11 @@
           <label class="form-label">Duración (días)</label>
           <input id="duracion_dias" type="number" class="form-input" />
         </div>
+        <div class="form-col">
+          <label class="form-label">Estado de la licencia</label>
+          <label class="lic-superrol-item"><input id="licencia_activa" type="checkbox" checked> Licencia activa y disponible para uso/venta.</label>
+          <p class="form-help">Si desactivas esta opción, la licencia queda guardada pero no aplica a empresas ni aparece como vigente.</p>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -186,8 +191,14 @@
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="declaraciones_tributarias"><span class="lic-coverage-h">Declaraciones tributarias</span><span class="lic-coverage-d">Motor Colombia para IVA, retenciones, ICA, renta, calendario, saldos y soportes.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="activos_fijos_niif_fiscal"><span class="lic-coverage-h">Activos fijos NIIF/Fiscal</span><span class="lic-coverage-d">PPE, intangibles, deterioro, depreciacion, vida fiscal, seguros y mantenimientos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="portal_terceros_certificados"><span class="lic-coverage-h">Portal terceros tributario</span><span class="lic-coverage-d">Certificados de retención, ingresos, enlaces públicos y bitácora.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="bancos_pagos"><span class="lic-coverage-h">Bancos y pagos masivos</span><span class="lic-coverage-d">Conciliación, extractos, lotes de pago y aprobaciones bancarias.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="cumplimiento_kyc"><span class="lic-coverage-h">KYC/KYB y LAFT</span><span class="lic-coverage-d">Debida diligencia, matriz de riesgo, alertas y evidencia.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="calidad_procesos"><span class="lic-coverage-h">Calidad y procesos</span><span class="lic-coverage-d">Auditorías, no conformidades, acciones correctivas y seguimiento.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="clientes"><span class="lic-coverage-h">Clientes y cartera</span><span class="lic-coverage-d">CRM básico y seguimiento comercial.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="compras"><span class="lic-coverage-h">Compras y proveedores</span><span class="lic-coverage-d">Órdenes y abastecimiento.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="gestion_documental"><span class="lic-coverage-h">Gestión documental</span><span class="lic-coverage-d">Expedientes, versiones, vencimientos, aprobaciones y retención.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="contratos_obligaciones"><span class="lic-coverage-h">Contratos y obligaciones</span><span class="lic-coverage-d">Contratos, pólizas, hitos, renovaciones y firma externa.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="helpdesk"><span class="lic-coverage-h">Helpdesk</span><span class="lic-coverage-d">Tickets, SLA, responsables, evidencias y bitácora de soporte.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">Facturación electrónica (DIAN)</span><span class="lic-coverage-d">Emisión y consulta de documentos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Seguridad e integración</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditoría, ERP.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="venta_publica"><span class="lic-coverage-h">Venta pública y carta</span><span class="lic-coverage-d">E-commerce, catálogo público, QR y precios.</span></label>
@@ -270,8 +281,14 @@
         declaraciones_tributarias: 'Declaraciones tributarias',
         activos_fijos_niif_fiscal: 'Activos fijos NIIF/Fiscal',
         portal_terceros_certificados: 'Portal terceros tributario',
+        bancos_pagos: 'Bancos y pagos masivos',
+        cumplimiento_kyc: 'KYC/KYB y LAFT',
+        calidad_procesos: 'Calidad y procesos',
         clientes: 'Clientes',
         compras: 'Compras',
+        gestion_documental: 'Gestión documental',
+        contratos_obligaciones: 'Contratos y obligaciones',
+        helpdesk: 'Helpdesk',
         facturacion: 'Facturación',
         seguridad: 'Seguridad',
         venta_publica: 'Venta pública y carta',
@@ -293,10 +310,10 @@
       };
       const modulePresets = {
         all: '',
-        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,produccion_mrp,logistica_wms,importaciones_costeo',
-        financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,facturacion',
+        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,helpdesk,calidad_procesos',
+        financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,facturacion',
         comercial: 'ventas,venta_publica,clientes,compras,domicilios',
-        enterprise: 'ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,clientes,compras,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,produccion_mrp,logistica_wms,importaciones_costeo'
+        enterprise: 'ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,compras,gestion_documental,contratos_obligaciones,helpdesk,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,produccion_mrp,logistica_wms,importaciones_costeo'
       };
 
       function parseTruthy(v){
@@ -509,6 +526,7 @@
         document.getElementById('duracion_dias').value='';
         document.getElementById('tipo_id').value='';
         document.getElementById('pais_codigo').value='CO';
+        document.getElementById('licencia_activa').checked = true;
         document.getElementById('super_rol_habilitado').checked = false;
         document.getElementById('es_adicional').checked = false;
         document.getElementById('codigo_funcion').value = '';
@@ -787,6 +805,7 @@
             document.getElementById('valor').value = fieldNumberValue(item.valor);
             document.getElementById('duracion_dias').value = fieldNumberValue(item.duracion_dias);
             document.getElementById('descripcion').value = item.descripcion || '';
+            document.getElementById('licencia_activa').checked = isActiveLic(item);
             setSelectedLicenciaModulos(item.modulos_habilitados || '');
             document.getElementById('super_rol_habilitado').checked = Number(item.super_rol_habilitado || 0) === 1;
             document.getElementById('es_adicional').checked = Number(item.es_adicional || 0) === 1;
@@ -900,6 +919,7 @@
           valor: parseFloat(document.getElementById('valor').value || 0),
           duracion_dias: parseInt(document.getElementById('duracion_dias').value || 0, 10),
           modulos_habilitados: getSelectedLicenciaModulos(),
+          activo: document.getElementById('licencia_activa').checked ? 1 : 0,
           super_rol_habilitado: document.getElementById('super_rol_habilitado').checked ? 1 : 0,
           es_adicional: document.getElementById('es_adicional').checked ? 1 : 0,
           codigo_funcion: document.getElementById('codigo_funcion').value.trim()

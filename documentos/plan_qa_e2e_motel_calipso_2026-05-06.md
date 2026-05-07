@@ -122,3 +122,32 @@ Probar directamente en navegador las funciones criticas del sistema usando Motel
 5. Prueba de verticales.
 6. Prueba publica sin sesion.
 7. Reporte de defectos y correcciones.
+
+## Ejecucion 2026-05-07
+
+Ambiente:
+- Base URL local: `http://127.0.0.1:8080`.
+- Empresa: Motel Calipso, `empresa_id=7`.
+- Usuario: super administrador autorizado.
+
+Evidencias generadas:
+- `backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso_full_final_report.json`: regresion escritorio de 60 modulos, botones seguros y trials controlados.
+- `backend/tmp_tools/qa_calipso_operativo/deep_flows_calipso_report.json`: flujos reales con datos QA, 6/6 pasos OK.
+- `backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso_mobile_modules_final_report.json`: pasada movil completa inicial y hallazgos.
+- `backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso_mobile_overlay_fix_report.json`: validacion movil dirigida posterior, 2/2 modulos OK.
+
+Flujos reales cubiertos:
+- Parqueadero: emision de ticket, token QR publico, calculo automatico, cobro/cierre y anulacion controlada de ticket QA.
+- WMS: ubicacion, orden, item, avance de picking/packing y despacho.
+- Centros de costo: centro, presupuesto, regla de imputacion y dashboard.
+- Activos fijos NIIF/fiscal: alta de activo, depreciacion y evento.
+- Red social: carga de imagen local y publicacion empresarial.
+- Integraciones verificables: carta publica, venta publica, QR publico, Taxi System/mapa/GPS visible.
+
+Correcciones derivadas:
+- Ajustes defensivos en activos fijos, auditoria, red social y graficos/estadisticas.
+- Robot/secretaria y radio flotante compactados en movil para no interceptar botones.
+- Runner QA con limpieza de overlays y viewport configurable.
+
+Pendiente externo:
+- Impresora fisica, sensores electricos reales, GPS real, DIAN y pasarelas en produccion deben validarse con hardware/credenciales reales.

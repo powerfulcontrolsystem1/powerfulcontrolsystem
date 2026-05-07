@@ -1,3 +1,10 @@
+2026-05-06: Nota operativa para modulos empresariales Colombia
+- Se agregan claves independientes: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos`, activables por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkBancosPagos`, `linkGestionDocumental`, `linkCumplimientoKYC`, `linkContratosObligaciones`, `linkHelpdesk` y `linkCalidadProcesos` quedan registradas en el catalogo de paginas y en el menu de Administrar empresa.
+- Cada endpoint usa wrapper propio `WithEmpresa*Permissions` y mantiene alcance estricto por `empresa_id`.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `contabilidad` y `auditor`; eliminar para `admin_empresa`.
+- Se comparte un nucleo tecnico para evitar duplicar formularios, dashboards, bitacoras o tablas por modulo.
+
 2026-05-06: Nota operativa para `logistica_wms`
 - Se agrega clave independiente `logistica_wms`, activable por licencia mediante `licencias.modulos_habilitados`.
 - La pagina `linkLogisticaWMS` queda registrada en el catalogo de paginas y se muestra en Administrar empresa > Inventario y compras.

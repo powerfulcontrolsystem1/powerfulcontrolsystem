@@ -62,6 +62,12 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaCobranzaPermissions(",
 		"WithEmpresaPortalContadorPermissions(",
 		"WithEmpresaPortalTercerosPermissions(",
+		"WithEmpresaBancosPagosPermissions(",
+		"WithEmpresaGestionDocumentalPermissions(",
+		"WithEmpresaCumplimientoKYCPermissions(",
+		"WithEmpresaContratosObligacionesPermissions(",
+		"WithEmpresaHelpdeskPermissions(",
+		"WithEmpresaCalidadProcesosPermissions(",
 		"WithEmpresaPublicScope(",
 	}
 	allowedPublicPaths := map[string]bool{

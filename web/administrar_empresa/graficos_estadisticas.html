@@ -1094,7 +1094,7 @@
           setMsg("Panel actualizado correctamente.", "ok");
         }
       } catch (err) {
-        console.error(err);
+        console.warn(err);
         setMsg(err && err.message ? err.message : "Error al cargar graficos y estadisticas.", "error");
       }
     }
@@ -1167,7 +1167,6 @@
   </script>
 </body>
 </html>
-
 
 
 

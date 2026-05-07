@@ -1,0 +1,142 @@
+{
+  "empresa_id": 7,
+  "base_url": "http://127.0.0.1:8080",
+  "started_at": "2026-05-06T23:32:28.865Z",
+  "login": {
+    "password_toggle_ok": true,
+    "final_url": "http://127.0.0.1:8080/super_administrador.html",
+    "ok": true
+  },
+  "shell": {
+    "desktop": {
+      "url": "http://127.0.0.1:8080/administrar_empresa.html?id=7",
+      "title": "Administrar Empresa",
+      "group_count": 9,
+      "group_clicks": [
+        {
+          "label": "Inicio",
+          "before": "true",
+          "after": "false",
+          "ok": true
+        },
+        {
+          "label": "Operación por tipo",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Ventas, clientes y caja",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Inventario y compras",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Finanzas y cumplimiento",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Personas y activos",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Análisis y control",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Documentos, nube y soporte",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        },
+        {
+          "label": "Administración",
+          "before": "false",
+          "after": "true",
+          "ok": true
+        }
+      ],
+      "menu_visibility": {
+        "before": "true",
+        "after": "true",
+        "toggled": false,
+        "visible": false
+      },
+      "radio_visible": true,
+      "ai_visible": false,
+      "robot_send_button_box": {
+        "x": 1133,
+        "y": 804,
+        "width": 64,
+        "height": 34
+      },
+      "robot_input_box": {
+        "x": 886,
+        "y": 802.40625,
+        "width": 148,
+        "height": 35.59375
+      },
+      "robot_send_trial_ok": true,
+      "all_module_links": 60,
+      "visible_module_links": 1,
+      "filtered_module_links": 1
+    },
+    "mobile": {
+      "skipped": "Omitida por QA_SKIP_MOBILE=1."
+    }
+  },
+  "modules": [
+    {
+      "id": "linkControlElectrico",
+      "text": "Control eléctrico",
+      "href": "/administrar_empresa/control_electrico.html",
+      "started_at": "2026-05-06T23:32:38.518Z",
+      "navigation": "direct_frame_src_hidden_menu_link",
+      "frame_url": "http://127.0.0.1:8080/administrar_empresa/control_electrico.html?empresa_id=7",
+      "title": "Control electrico",
+      "body_sample": "AUTOMATIZACION RASPBERRY PI Control electrico Empresa: cargando... Ejecutar agenda Sincronizar Actualizar Cargando control electrico... Modulo -- Raspberry Pi 0 Estaciones activas 0 Reles configurados 0 Ultimo evento -- Control global y Raspberry Pi Servidor G",
+      "button_count": 6,
+      "buttons": [
+        {
+          "index": 0,
+          "label": "Ejecutar agenda",
+          "decision": "click",
+          "reason": "",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "finished_at": "2026-05-06T23:35:15.855Z"
+    }
+  ],
+  "events": [],
+  "network_errors": [],
+  "console_errors": [],
+  "page_errors": [],
+  "skipped": [],
+  "summary": {
+    "modules_total": 1,
+    "modules_ok": 1,
+    "modules_failed": 0,
+    "buttons_clicked": 1,
+    "buttons_trial": 0,
+    "buttons_failed": 0,
+    "console_errors": 0,
+    "network_errors": 0,
+    "page_errors": 0,
+    "skipped": 0
+  },
+  "finished_at": "2026-05-06T23:35:15.855Z"
+}

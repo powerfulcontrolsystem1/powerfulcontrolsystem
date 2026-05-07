@@ -1,3 +1,8 @@
+- 2026-05-07: QA E2E Motel Calipso, robot/radio movil y pruebas profundas.
+    - Archivos: `backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso.mjs`, `backend/tmp_tools/qa_calipso_operativo/deep_flows_calipso.mjs`, `web/estilos.css`, `web/js/ai_chat_drawer.js`, `web/administrar_empresa/activos_fijos_niif_fiscal.html`, `web/administrar_empresa/auditoria.html`, `web/administrar_empresa/publicar_red_social.html`, `web/administrar_empresa/graficos_estadisticas.html`, `documentos/plan_qa_e2e_motel_calipso_2026-05-06.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`.
+    - Descripcion: se ejecutan pruebas con Motel Calipso (`empresa_id=7`) en escritorio, flujos reales con datos QA, cargas de archivos, QR/carta/venta publica y validacion movil. Se corrige el robot/secretaria para que no tape botones, se compacta la radio flotante en celular y se protegen estados de carga en modulos financieros/auditoria/red social.
+    - Verificacion: regresion de 60 modulos, `deep_flows_calipso` 6/6 OK, validacion movil dirigida de venta publica y asistencia de empleados 2/2 OK, sin errores de consola/red/pagina en los reportes finales dirigidos.
+
 - 2026-05-06: Portal de Terceros y Certificados Tributarios.
     - Se agrego modulo `portal_terceros_certificados` con API administrativa, API publica por token, maestro de terceros, certificados tributarios, bitacora de descargas, pantalla administrativa, pagina publica, permisos/licencias y documentacion.
     - Pruebas: `cd backend; go test ./... -count=1`.
@@ -18928,3 +18933,22 @@ Archivos modificados:
 - web/administrar_empresa/portal_terceros_certificados.html
 - web/administrar_empresa/propiedad_horizontal.html
 - web/js/empresa_submenu_context.js
+2026-05-06: Modulos empresariales Colombia
+- Se agregan bancos y pagos masivos, gestion documental, KYC/KYB y LAFT, contratos/obligaciones, helpdesk y calidad/procesos sobre tablas compartidas por `empresa_id`.
+- Se registran APIs, paginas, permisos, licencias y datos demo sin duplicar codigo de dashboard, formularios ni bitacora.
+- Se continua la fase con plantillas dinamicas por modulo, seguimiento, cambio de estado auditado, filtro por estado y UI compartida mas profesional.
+- 2026-05-06: fase de reportes ejecutivos para los modulos empresariales Colombia. Se agrega accion `reporte`, analitica por estado/tipo/categoria/prioridad, control de vencimientos, criticidad, responsables faltantes, valor pendiente y recomendaciones automaticas desde una sola implementacion compartida.
+- 2026-05-06: fase de importacion masiva para modulos empresariales Colombia. Se agrega boton CSV, accion `importar_registros`, limite de 1000 filas por lote, validacion parcial y bitacora por empresa/modulo.
+- 2026-05-06: fase de evidencias para modulos empresariales Colombia. Se agrega tabla compartida de soportes, acciones `evidencia/evidencias`, validacion por empresa/modulo/registro y bitacora automatica `evidencia_agregada`.
+- 2026-05-06: fase de aprobaciones para modulos empresariales Colombia. Se agrega tabla compartida de aprobaciones, acciones `aprobaciones`, `aprobacion_solicitar` y `aprobacion_decidir`, con nivel, destinatario, vencimiento, decisor y bitacora.
+- 2026-05-06: fase de tareas para modulos empresariales Colombia. Se agrega tabla compartida de compromisos, acciones `tareas`, `tarea` y `tarea_estado`, con responsable, prioridad, vencimiento, estados y bitacora.
+- 2026-05-06: fase de expediente 360 para modulos empresariales Colombia. Se agrega accion `expediente`, vista consolidada de trazabilidad y recomendacion operativa por registro.
+- 2026-05-06: fase de agenda para modulos empresariales Colombia. Se agrega accion `agenda`, alertas por vencidos/proximos vencimientos/tareas/aprobaciones, severidad y enlace al expediente.
+- 2026-05-06: fase de cierre controlado para modulos empresariales Colombia. Se agrega accion `cierre_controlado`, validando evidencias, aprobaciones pendientes y tareas abiertas antes de cerrar.
+- 2026-05-06: fase de plan de accion para modulos empresariales Colombia. Se agrega accion `generar_plan_accion`, creando tareas desde alertas de agenda con prioridad y control de duplicados.
+- 2026-05-06: fase de responsables para modulos empresariales Colombia. Se agrega accion `responsables`, tablero de carga por responsable y recomendaciones operativas.
+- 2026-05-06: fase de SLA para modulos empresariales Colombia. Se agrega accion `sla`, cumplimiento, semaforo, buckets de vencimiento y recomendaciones.
+- 2026-05-06: fase de riesgo operativo para modulos empresariales Colombia. Se agrega accion `riesgo`, score 0-100, nivel, factores ponderados y recomendaciones.
+- 2026-05-06: fase de exportacion de auditoria para modulos empresariales Colombia. Se agrega accion `exportacion` y boton `Exportar auditoria CSV` con resumen, agenda, SLA, riesgo, responsables, tareas, aprobaciones, evidencias y bitacora.
+- 2026-05-06: fase de busqueda avanzada para modulos empresariales Colombia. Se agrega accion `buscar` y barra de filtros por texto, estado, tipo, categoria, prioridad, responsable, vencidos y proximos vencimientos.
+- 2026-05-06: fase de acciones masivas para modulos empresariales Colombia. Se agrega accion `accion_masiva`, seleccion de registros y actualizacion controlada de estado, prioridad y responsable con bitacora individual.

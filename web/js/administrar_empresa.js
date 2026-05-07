@@ -145,10 +145,12 @@ try {
     document.getElementById("linkContabilidadColombia"),
     document.getElementById("linkContabilidadColombiaAvanzada"),
     document.getElementById("linkCentrosCosto"),
+    document.getElementById("linkBancosPagos"),
     document.getElementById("linkCierreFiscal"),
     document.getElementById("linkActivosFijosNIIF"),
     document.getElementById("linkDeclaracionesTributarias"),
     document.getElementById("linkPortalTercerosCertificados"),
+    document.getElementById("linkCumplimientoKYC"),
     document.getElementById("linkTesoreriaPresupuesto"),
     document.getElementById("linkBackups"),
     document.getElementById("linkSoporteRemoto"),
@@ -172,6 +174,7 @@ try {
     document.getElementById("linkVehiculosRegistro"),
     document.getElementById("linkHojaVidaOperativa"),
     document.getElementById("linkAuditoria"),
+    document.getElementById("linkCalidadProcesos"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
     document.getElementById("linkCRMComercial"),
@@ -179,6 +182,9 @@ try {
     document.getElementById("linkVentaPublica"),
     document.getElementById("linkRedSocialComercial"),
     document.getElementById("linkDocumentosOnlyOffice"),
+    document.getElementById("linkGestionDocumental"),
+    document.getElementById("linkContratosObligaciones"),
+    document.getElementById("linkHelpdesk"),
     document.getElementById("linkRadioOnline"),
     document.getElementById("linkImpuestos"),
     document.getElementById("linkEgresosIngresos"),
@@ -225,6 +231,12 @@ try {
   var permModulePortalContador = "portal_contador";
   var permModulePortalTerceros = "portal_terceros_certificados";
   var permModuleSoportesComprasIA = "soportes_compras_ia";
+  var permModuleBancosPagos = "bancos_pagos";
+  var permModuleGestionDocumental = "gestion_documental";
+  var permModuleCumplimientoKYC = "cumplimiento_kyc";
+  var permModuleContratosObligaciones = "contratos_obligaciones";
+  var permModuleHelpdesk = "helpdesk";
+  var permModuleCalidadProcesos = "calidad_procesos";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
@@ -256,6 +268,9 @@ try {
     linkComprasAvanzadas: { module: permModuleCompras, action: permActionCreate },
     linkSoportesComprasIA: { module: permModuleSoportesComprasIA, action: permActionCreate },
     linkSoportesComprasIAMenu: { module: permModuleSoportesComprasIA, action: permActionCreate },
+    linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
+    linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
+    linkHelpdesk: { module: permModuleHelpdesk, action: permActionCreate },
     linkImportacionesCosteo: { module: permModuleImportaciones, action: permActionCreate },
     linkProduccionMRP: { module: permModuleProduccionMRP, action: permActionCreate },
     linkLogisticaWMS: { module: permModuleLogisticaWMS, action: permActionCreate },
@@ -303,6 +318,7 @@ try {
     linkContabilidadColombiaAvanzada: { module: permModuleContabilidadCOAv, action: permActionCreate },
     linkCentrosCosto: { module: permModuleCentrosCosto, action: permActionCreate },
     linkCentrosCostoMenu: { module: permModuleCentrosCosto, action: permActionCreate },
+    linkBancosPagos: { module: permModuleBancosPagos, action: permActionCreate },
     linkCierreFiscal: { module: permModuleCierreFiscal, action: permActionApprove },
     linkCierreFiscalMenu: { module: permModuleCierreFiscal, action: permActionApprove },
     linkActivosFijosNIIF: { module: permModuleActivosFijosNIIF, action: permActionCreate },
@@ -319,6 +335,8 @@ try {
     linkPortalContadorMenu: { module: permModulePortalContador, action: permActionCreate },
     linkPortalTercerosCertificados: { module: permModulePortalTerceros, action: permActionCreate },
     linkPortalTercerosCertificadosMenu: { module: permModulePortalTerceros, action: permActionCreate },
+    linkCumplimientoKYC: { module: permModuleCumplimientoKYC, action: permActionApprove },
+    linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
     linkNominaMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },

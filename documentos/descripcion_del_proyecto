@@ -3,7 +3,7 @@
 
 Actualizacion: 2026-05-06
 
-Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
+Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 
 Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrigio coherencia de permisos locales para `administrador_total`, se optimizaron dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y se documento el resultado en `documentos/reporte_qa_modulos_2026-05-06.md`. La portada publica `web/index.html` tambien queda actualizada para describir Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
 
@@ -15,7 +15,7 @@ Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super
 - Preparar configuracion fiscal y de impresion para facturacion.
 - Permitir desde el panel super la descarga consolidada de la informacion de cada empresa en formatos profesionales y de interoperabilidad (`PDF`, `XLS`, `CSV`, `JSON`, `TXT`).
 - Permitir que cada empresa configure sus propias credenciales de Wompi y Epayco para vender desde su pagina de venta publica, con activacion o desactivacion independiente por empresa.
-- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi, carnets empresariales, activos fijos NIIF/Fiscal, certificados tributarios de terceros, cobranza, portal contador, captura IA/OCR, AIU construccion, parqueaderos y apartamentos turisticos.
+- Permitir que el portal publico explique los modulos reales del sistema en `index.html`, incluyendo verticales nuevos y canales publicos como carta de productos, QR, red social comercial, domicilios, taxi, carnets empresariales, bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk, calidad/procesos, activos fijos NIIF/Fiscal, certificados tributarios de terceros, cobranza, portal contador, captura IA/OCR, AIU construccion, parqueaderos y apartamentos turisticos.
 
 ## Stack y tecnologia
 

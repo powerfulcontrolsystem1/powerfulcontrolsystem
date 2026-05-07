@@ -48,6 +48,27 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 	if absBackendDir, err := filepath.Abs(backendDir); err == nil {
 		backendDir = absBackendDir
 	}
+	if parseEmpresaUsuarioBool(os.Getenv("PCS_SKIP_SERVER_STARTUP_EVENT"), false) {
+		statePath := filepath.Join(backendDir, "logs", "server_runtime_state.json")
+		nowText := time.Now().Format("2006-01-02 15:04:05")
+		_ = saveServerRuntimeState(statePath, serverRuntimeState{
+			Status:          "running",
+			ProcessID:       os.Getpid(),
+			ListenAddr:      strings.TrimSpace(opts.ListenAddr),
+			LastStartAt:     nowText,
+			LastStartReason: "startup_event_skipped",
+		})
+		return func(reason string) {
+			_ = saveServerRuntimeState(statePath, serverRuntimeState{
+				Status:         "stopped",
+				ProcessID:      os.Getpid(),
+				ListenAddr:     strings.TrimSpace(opts.ListenAddr),
+				LastStartAt:    nowText,
+				LastStopAt:     time.Now().Format("2006-01-02 15:04:05"),
+				LastStopReason: strings.TrimSpace(reason),
+			})
+		}, nil
+	}
 
 	statePath := filepath.Join(backendDir, "logs", "server_runtime_state.json")
 	logPath := filepath.Join(backendDir, "logs", "server_reinicio.log")

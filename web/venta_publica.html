@@ -445,6 +445,11 @@
 
     async function loadCatalog(reset){
       try{
+        if(!state.slug && !state.data){
+          grid.innerHTML='<div class="empty">Selecciona una tienda pública válida para ver el catálogo.</div>';
+          feedSentinel.hidden=true;
+          return;
+        }
         if(state.paging.loading) return;
         if(reset){
           state.paging.offset=0; state.paging.done=false;

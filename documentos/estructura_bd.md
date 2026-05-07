@@ -20,6 +20,14 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-06 (modulos empresariales Colombia)
+- `empresa_modulos_colombia_registros`: registro transversal por `empresa_id` y `modulo` para bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad. Incluye tipo, codigo, nombre, tercero, responsable, categoria, referencia, prioridad, estado, fechas, valor, metadata JSON y auditoria.
+- `empresa_modulos_colombia_eventos`: bitacora por `empresa_id`, modulo y registro, con evento, cambio de estado, detalle, usuario y fecha.
+- `empresa_modulos_colombia_evidencias`: soportes por `empresa_id`, modulo y registro. Incluye tipo, nombre, URL/ruta, descripcion, usuario y fecha.
+- `empresa_modulos_colombia_aprobaciones`: flujo de aprobaciones por `empresa_id`, modulo y registro. Incluye nivel, destinatario, solicitante, estado, comentario, decisor, vencimiento y fechas.
+- `empresa_modulos_colombia_tareas`: compromisos por `empresa_id`, modulo y registro. Incluye titulo, responsable, prioridad, estado, vencimiento, comentario, creador y fechas.
+- La restriccion unica `empresa_id + modulo + codigo` evita duplicados dentro de cada empresa sin mezclar modulos ni companias.
+
 Actualizacion 2026-05-06 (portal de terceros y certificados tributarios)
 - `empresa_portal_terceros`: maestro de terceros por `empresa_id`, tipo, documento, DV, razon social, contacto, regimen, estado, token y auditoria.
 - `empresa_certificados_tributarios`: certificados por tercero y empresa, tipo de certificado, periodo, base, retenciones, total, estado, firma, token publico y fechas de emision/envio/anulacion.

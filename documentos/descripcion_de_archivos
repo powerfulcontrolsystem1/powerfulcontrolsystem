@@ -8803,3 +8803,8 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- `backend/db/asesor_comercial.go` : amplia `asesores_comerciales` con datos de transferencia/pago y `asesor_comercial_comisiones` con estado, referencia, fecha programada y soporte de liquidacion.
 	- `backend/handlers/asesor_comercial.go` : acepta la nueva configuracion en altas/ediciones de asesores y registra detalles de liquidacion al gestionar comisiones.
 	- `web/super/asesor_comercial.html` : agrega formulario profesional de datos bancarios/contacto/politica de pago, resumen de comisiones y tabla con gestion de estado de pago.
+2026-05-06: Modulos empresariales Colombia compartidos
+- `backend/db/modulos_empresariales_colombia.go`: esquema, normalizacion, dashboard, CRUD, bitacora y datos demo para bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad.
+- `backend/handlers/modulos_empresariales_colombia.go`: handler parametrizado para las seis APIs privadas por empresa.
+- `web/js/modulo_colombia_admin.js`: UI compartida de dashboard, formulario, tabla, bitacora, datos demo y exportacion CSV.
+- `web/administrar_empresa/bancos_pagos.html`, `gestion_documental.html`, `cumplimiento_kyc.html`, `contratos_obligaciones.html`, `helpdesk.html`, `calidad_procesos.html`: paginas livianas que reutilizan el mismo nucleo frontend.

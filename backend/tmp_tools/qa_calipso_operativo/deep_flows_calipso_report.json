@@ -1,0 +1,83 @@
+{
+  "empresa_id": 7,
+  "base_url": "http://127.0.0.1:8080",
+  "qa_prefix": "QA20260507005015",
+  "started_at": "2026-05-07T00:50:15.361Z",
+  "login": {
+    "ok": true,
+    "final_url": "http://127.0.0.1:8080/super_administrador.html"
+  },
+  "steps": [
+    {
+      "name": "parqueadero_ticket_qr_cobro_anulacion",
+      "ok": true,
+      "ticket_id": 18,
+      "ticket_anulado_id": 19,
+      "total": 0
+    },
+    {
+      "name": "wms_ubicacion_orden_item_avance_despacho",
+      "ok": true,
+      "ubicacion": "QA-WMS-005015",
+      "orden_id": 11,
+      "item_id": 19,
+      "despacho_id": 11
+    },
+    {
+      "name": "centros_costo_centro_presupuesto_regla_dashboard",
+      "ok": true,
+      "centro_id": 43,
+      "presupuesto_id": 43,
+      "regla_id": 27,
+      "codigo": "CC-QA-005015"
+    },
+    {
+      "name": "activos_fijos_alta_depreciacion_evento",
+      "ok": true,
+      "activo_id": 22,
+      "codigo": "AF-QA-005015"
+    },
+    {
+      "name": "dialog",
+      "ok": true,
+      "scope": "deep",
+      "dialog_type": "alert",
+      "message": "Foto subida correctamente."
+    },
+    {
+      "name": "red_social_upload_imagen_y_publicacion",
+      "ok": true,
+      "uploaded_url": "/uploads/red_social/empresa_7/post_1778115143744742500.png"
+    },
+    {
+      "name": "dialog",
+      "ok": true,
+      "scope": "deep",
+      "dialog_type": "alert",
+      "message": "Publicado con éxito."
+    },
+    {
+      "name": "integraciones_publicas_qr_mapa_riesgos",
+      "ok": true,
+      "catalog_status": 200,
+      "venta_status": 200,
+      "qr_invalido_status": 404
+    }
+  ],
+  "console_errors": [],
+  "page_errors": [],
+  "network_errors": [],
+  "residual_risks": [
+    "No se valido hardware fisico de impresora, sensores electricos, GPS real ni pasarelas/DIAN en produccion porque requieren credenciales/dispositivos externos."
+  ],
+  "summary": {
+    "steps_total": 6,
+    "steps_ok": 6,
+    "steps_failed": 0,
+    "console_errors": 0,
+    "page_errors": 0,
+    "network_errors": 0,
+    "residual_risks": 1
+  },
+  "finished_at": "2026-05-07T00:52:32.098Z"
+}

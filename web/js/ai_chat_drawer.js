@@ -4291,6 +4291,7 @@
     if (minibar) minibar.hidden = true;
     toggle.classList.remove('is-drawer-open');
     toggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('ai-chat-drawer-open');
     setChatBackdropVisible(false);
     setChatBodyScrollLock(false);
   }
@@ -4306,6 +4307,7 @@
     drawer.classList.add('open');
     toggle.classList.add('is-drawer-open');
     toggle.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('ai-chat-drawer-open');
     setChatBackdropVisible(true);
     setChatBodyScrollLock(true);
     window.setTimeout(function () {
@@ -4328,6 +4330,7 @@
     if (minibar) minibar.hidden = false;
     toggle.classList.remove('is-drawer-open');
     toggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('ai-chat-drawer-open');
     setChatBackdropVisible(false);
     setChatBodyScrollLock(false);
   }

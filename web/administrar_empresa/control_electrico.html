@@ -711,7 +711,7 @@
 
       function relayPhotoMarkup(data) {
         if (data.imagen_url) {
-          return '<img class="relay-device-photo relay-photo-preview" src="' + sanitize(data.imagen_url) + '" alt="Foto dispositivo">';
+          return '<img class="relay-device-photo relay-photo-preview" src="' + sanitize(data.imagen_url) + '" alt="Foto dispositivo" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'relay-device-photo relay-photo-preview empty\',textContent:\'Sin foto\'}));">';
         }
         return '<div class="relay-device-photo relay-photo-preview empty">Sin foto</div>';
       }

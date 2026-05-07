@@ -59,6 +59,12 @@ const (
 	permModulePortalContador      = "portal_contador"
 	permModulePortalTerceros      = "portal_terceros_certificados"
 	permModuleSoportesComprasIA   = "soportes_compras_ia"
+	permModuleBancosPagos         = "bancos_pagos"
+	permModuleGestionDocumental   = "gestion_documental"
+	permModuleCumplimientoKYC     = "cumplimiento_kyc"
+	permModuleContratosOblig      = "contratos_obligaciones"
+	permModuleHelpdesk            = "helpdesk"
+	permModuleCalidadProcesos     = "calidad_procesos"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -193,6 +199,12 @@ var permissionModulesCatalogOrdered = []string{
 	permModulePortalContador,
 	permModulePortalTerceros,
 	permModuleSoportesComprasIA,
+	permModuleBancosPagos,
+	permModuleGestionDocumental,
+	permModuleCumplimientoKYC,
+	permModuleContratosOblig,
+	permModuleHelpdesk,
+	permModuleCalidadProcesos,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -248,6 +260,12 @@ var permissionModuleDisplayNames = map[string]string{
 	permModulePortalContador:      "Portal contador",
 	permModulePortalTerceros:      "Portal de terceros y certificados tributarios",
 	permModuleSoportesComprasIA:   "Captura inteligente de compras y gastos",
+	permModuleBancosPagos:         "Bancos y pagos masivos Colombia",
+	permModuleGestionDocumental:   "Gestion documental y aprobaciones",
+	permModuleCumplimientoKYC:     "Cumplimiento KYC/KYB y riesgo LAFT",
+	permModuleContratosOblig:      "Contratos, obligaciones y firma electronica",
+	permModuleHelpdesk:            "Mesa de ayuda / Helpdesk",
+	permModuleCalidadProcesos:     "Calidad, procesos y no conformidades",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -299,6 +317,9 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkComprasAvanzadas", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras avanzadas", Grupo: "Compras"},
 	{PaginaClave: "linkSoportesComprasIA", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Compras"},
 	{PaginaClave: "linkSoportesComprasIAMenu", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Compras"},
+	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkHelpdesk", Modulo: permModuleHelpdesk, Accion: permActionCreate, Titulo: "Mesa de ayuda / Helpdesk", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkImportacionesCosteo", Modulo: permModuleImportaciones, Accion: permActionCreate, Titulo: "Importaciones y costeo", Grupo: "Compras"},
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Seguridad e integración"},
@@ -335,6 +356,9 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkActivosFijosNIIFMenu", Modulo: permModuleActivosFijosNIIF, Accion: permActionCreate, Titulo: "Activos fijos e intangibles NIIF/Fiscal", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkDeclaracionesTributarias", Modulo: permModuleDeclaracionesTrib, Accion: permActionCreate, Titulo: "Declaraciones tributarias Colombia", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkDeclaracionesTributariasMenu", Modulo: permModuleDeclaracionesTrib, Accion: permActionCreate, Titulo: "Declaraciones tributarias Colombia", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkBancosPagos", Modulo: permModuleBancosPagos, Accion: permActionCreate, Titulo: "Bancos y pagos masivos", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCumplimientoKYC", Modulo: permModuleCumplimientoKYC, Accion: permActionApprove, Titulo: "Cumplimiento KYC/KYB y LAFT", Grupo: "Finanzas y reportes"},
+	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
 	{PaginaClave: "linkTesoreriaPresupuesto", Modulo: permModuleTesoreria, Accion: permActionCreate, Titulo: "Tesoreria y presupuesto", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Finanzas y reportes"},
@@ -811,6 +835,36 @@ func WithEmpresaTesoreriaPresupuestoPermissions(dbEmp, dbSuper *sql.DB, next htt
 // WithEmpresaImportacionesCosteoPermissions aplica permisos para importaciones, nacionalizacion y costo aterrizado.
 func WithEmpresaImportacionesCosteoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleImportaciones, resolveComprasPermissionAction, next)
+}
+
+// WithEmpresaBancosPagosPermissions aplica permisos para conciliacion bancaria y pagos masivos.
+func WithEmpresaBancosPagosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleBancosPagos, resolveFinanzasPermissionAction, next)
+}
+
+// WithEmpresaGestionDocumentalPermissions aplica permisos para expedientes y aprobaciones documentales.
+func WithEmpresaGestionDocumentalPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleGestionDocumental, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaCumplimientoKYCPermissions aplica permisos para debida diligencia y riesgo LAFT.
+func WithEmpresaCumplimientoKYCPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCumplimientoKYC, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaContratosObligacionesPermissions aplica permisos para contratos, polizas y vencimientos.
+func WithEmpresaContratosObligacionesPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleContratosOblig, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaHelpdeskPermissions aplica permisos para tickets, SLA y soporte empresarial.
+func WithEmpresaHelpdeskPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleHelpdesk, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaCalidadProcesosPermissions aplica permisos para auditorias, procesos y no conformidades.
+func WithEmpresaCalidadProcesosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCalidadProcesos, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaPublicScope aplica validacion minima de alcance por empresa para endpoints publicos
@@ -1807,6 +1861,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "contabilidad", "auditor")
+		case permActionDelete:
+			return roleIn(role, "admin_empresa")
+		}
+
 	case permModuleClientes:
 		switch action {
 		case permActionRead:
@@ -2453,6 +2517,18 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkPortalContador"
 	case path == "/api/empresa/portal_terceros_certificados":
 		return "linkPortalTercerosCertificados"
+	case path == "/api/empresa/bancos_pagos":
+		return "linkBancosPagos"
+	case path == "/api/empresa/gestion_documental":
+		return "linkGestionDocumental"
+	case path == "/api/empresa/cumplimiento_kyc":
+		return "linkCumplimientoKYC"
+	case path == "/api/empresa/contratos_obligaciones":
+		return "linkContratosObligaciones"
+	case path == "/api/empresa/helpdesk":
+		return "linkHelpdesk"
+	case path == "/api/empresa/calidad_procesos":
+		return "linkCalidadProcesos"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):

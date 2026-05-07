@@ -1,7 +1,7 @@
 # Plan de modulos importantes faltantes
 
 Fecha: 2026-05-06
-Estado: plan de trabajo
+Estado: implementado como nucleo compartido inicial
 
 ## Criterio
 
@@ -45,6 +45,28 @@ El sistema ya cubre POS, inventario, compras, produccion/MRP, logistica WMS, con
 - Indicadores de calidad, hallazgos y seguimiento.
 
 ## Fases de implementacion
+
+Implementacion 2026-05-06:
+- Se creo un nucleo comun para los seis modulos en `backend/db/modulos_empresariales_colombia.go`, evitando duplicar tablas, handlers y UI.
+- Se agregaron APIs privadas por empresa: `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones`, `/api/empresa/helpdesk` y `/api/empresa/calidad_procesos`.
+- Se agregaron pantallas administrativas, permisos, licencias, menu empresarial, datos demo y documentacion.
+- Todas las entidades quedan aisladas por `empresa_id` y discriminadas por `modulo`.
+- Continuacion de fases: se agregan plantillas por modulo, seguimiento profesional, cambio rapido de estado, bitacora enriquecida y filtros por estado, todo sobre el mismo nucleo compartido.
+- Continuacion de fases: se agrega reporte ejecutivo compartido con vencimientos, criticidad, responsables, valor pendiente y recomendaciones automaticas por empresa.
+- Continuacion de fases: se agrega importacion masiva CSV/JSON de registros con validacion y bitacora de importacion.
+- Continuacion de fases: se agrega gestion compartida de evidencias y soportes por registro, con validacion por empresa/modulo y bitacora automatica.
+- Continuacion de fases: se agrega flujo compartido de aprobaciones por nivel, responsable y decision, con actualizacion de estado y bitacora.
+- Continuacion de fases: se agrega gestion compartida de tareas y compromisos por registro, con responsable, prioridad, vencimiento y estados operativos.
+- Continuacion de fases: se agrega expediente 360 por registro, consolidando eventos, evidencias, aprobaciones y tareas con resumen y recomendacion operativa.
+- Continuacion de fases: se agrega agenda compartida de vencimientos y alertas, con severidad y enlace directo al expediente.
+- Continuacion de fases: se agrega cierre controlado de registros, bloqueando cierre sin evidencias, con aprobaciones pendientes o tareas abiertas.
+- Continuacion de fases: se agrega generador de plan de accion que convierte alertas de agenda en tareas, evitando duplicados abiertos.
+- Continuacion de fases: se agrega tablero de responsables y carga, con registros, tareas, aprobaciones y recomendaciones por responsable.
+- Continuacion de fases: se agrega medicion SLA y cumplimiento con semaforo, buckets de vencimiento y recomendaciones.
+- Continuacion de fases: se agrega matriz de riesgo operativo con score, factores ponderados y recomendaciones.
+- Continuacion de fases: se agrega exportacion profesional de auditoria en CSV multi-seccion con resumen, agenda, SLA, riesgo, responsables, tareas, aprobaciones, evidencias y bitacora.
+- Continuacion de fases: se agrega busqueda avanzada compartida desde backend por texto, estado, tipo, categoria, prioridad, responsable, vencidos y proximos vencimientos.
+- Continuacion de fases: se agregan acciones masivas controladas para cambiar estado, prioridad y responsable con bitacora por registro.
 
 Fase 1: Bancos y pagos masivos
 - Crear tablas por `empresa_id`.

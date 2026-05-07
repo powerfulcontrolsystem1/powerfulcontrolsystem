@@ -1,3 +1,28 @@
+2026-05-06: Modulos empresariales Colombia faltantes
+- Modulos afectados: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk`, `calidad_procesos`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega una familia profesional de modulos empresariales para bancos/pagos masivos, gestion documental, KYC/KYB y LAFT, contratos/obligaciones, mesa de ayuda y calidad/procesos.
+- Backend: APIs `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones`, `/api/empresa/helpdesk` y `/api/empresa/calidad_procesos`, todas sobre handler comun.
+- Base de datos: tablas compartidas `empresa_modulos_colombia_registros` y `empresa_modulos_colombia_eventos`, aisladas por `empresa_id` y discriminadas por `modulo`.
+- Frontend: pantallas livianas en `web/administrar_empresa/` usando `web/js/modulo_colombia_admin.js` y estilos centrales.
+- Continuacion: se agregan plantillas por modulo, filtro por estado, seguimiento profesional, cambio rapido de estado y bitacora de eventos sin duplicar UI ni tablas.
+- Reportes: cada modulo incluye reporte ejecutivo por estado, tipo, categoria y prioridad, con vencimientos, criticos abiertos, responsables faltantes, valor pendiente y recomendaciones automaticas.
+- Importacion: cada pantalla permite importar CSV con el mismo formato exportado; el backend guarda por lote, valida filas y deja bitacora de importacion.
+- Evidencias: cada registro permite adjuntar soportes por URL/ruta, tipo y descripcion; el backend valida empresa/modulo/registro y registra bitacora automatica.
+- Aprobaciones: cada registro puede solicitar aprobacion por nivel y destinatario; la decision aprueba/rechaza, registra usuario/fecha y actualiza estado cuando corresponde.
+- Tareas: cada registro puede generar compromisos con responsable, prioridad, vencimiento y estado pendiente/en proceso/cumplida/cancelada.
+- Expediente 360: cada registro tiene vista consolidada con eventos, evidencias, aprobaciones, tareas, resumen y recomendacion operativa.
+- Agenda: cada modulo presenta alertas de vencidos, proximos vencimientos, tareas y aprobaciones pendientes con severidad y acceso al expediente.
+- Cierre controlado: el cierre de un registro exige evidencia y bloquea aprobaciones pendientes o tareas abiertas, dejando bitacora.
+- Plan de accion: la agenda puede generar tareas automaticas por alerta, con prioridad segun severidad y control de duplicados abiertos.
+- Responsables: tablero de carga por responsable con registros, tareas, aprobaciones pendientes, vencidos y recomendaciones.
+- SLA: tablero de cumplimiento con semaforo, vencidos, proximos 7 dias, tareas vencidas y buckets de antiguedad.
+- Riesgo operativo: matriz con score 0-100, nivel bajo/medio/alto, factores ponderados y recomendaciones.
+- Exportacion de auditoria: CSV multi-seccion con resumen, registros, agenda, SLA, riesgo, responsables, tareas, aprobaciones, evidencias y bitacora.
+- Busqueda avanzada: filtros de backend por texto, estado, tipo, categoria, prioridad, responsable, vencidos y proximos vencimientos.
+- Acciones masivas: actualizacion controlada de estado, prioridad y responsable sobre registros seleccionados, con bitacora individual por registro.
+- Seguridad: permisos/licencias independientes por modulo, enlaces de menu y wrappers `WithEmpresa*Permissions`.
+- Documentacion: se agrega `documentos/modulos_empresariales_colombia.md`.
+
 2026-05-06: Logistica avanzada / WMS de bodega, picking, packing y despachos
 - Modulos afectados: `logistica_wms`, `inventario`, `compras`, `produccion_mrp`, `importaciones_costeo`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se agrega modulo profesional de bodega para ubicaciones internas, picking, packing, despachos, rutas, avance por item, conteos y bitacora sin duplicar inventario.

@@ -183,8 +183,7 @@
           `;
         });
       } catch (e) {
-        console.error(e);
-        document.getElementById('misPublicaciones').innerHTML = 'Error cargando publicaciones.';
+        document.getElementById('misPublicaciones').innerHTML = (e && e.message) ? 'No se pudieron cargar publicaciones: ' + e.message : 'Error cargando publicaciones.';
       }
     }
 
@@ -308,4 +307,3 @@
   </script>
 </body>
 </html>
-

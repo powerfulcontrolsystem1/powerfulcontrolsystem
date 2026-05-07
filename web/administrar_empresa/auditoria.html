@@ -425,6 +425,7 @@
 
     async function loadEmpresaInfo() {
       const info = document.getElementById('empresaInfo');
+      if (!info) return;
       if (!state.empresaId) {
         info.textContent = 'Empresa no definida.';
         return;
