@@ -4506,3 +4506,12 @@ Archivos modificados:
 - web/administrar_empresa/ventas.html
 - web/estilos.css
 - web/js/empresa_submenu_context.js
+
+2026-05-07 17:22:04 - Mensaje: Separa carritos y venta directa sin estacion; Commit: 4e6b118b; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/venta_directa.html
