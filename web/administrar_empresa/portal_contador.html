@@ -43,6 +43,7 @@
     @media (max-width:1180px){.pc-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.pc-grid{grid-template-columns:1fr}.pc-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:720px){.pc-page{padding:14px}.pc-header{display:block}.pc-actions{justify-content:flex-start;margin-top:12px}.pc-kpis{grid-template-columns:1fr}.pc-form-grid{grid-template-columns:1fr}.pc-form-grid .wide{grid-column:auto}.pc-table thead{display:none}.pc-table,.pc-table tbody,.pc-table tr,.pc-table td{display:block;width:100%}.pc-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.pc-table td{border:0;text-align:left!important}.pc-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}.pc-list-actions{justify-content:flex-start}}
   </style>
+  <script src="/js/empresa_submenu_context.js"></script>
 </head>
 <body class="super-page form-bg-dark">
   <main class="pc-page">
@@ -162,8 +163,6 @@
       </aside>
     </div>
   </main>
-
-  <script src="/js/empresa_submenu_context.js"></script>
   <script>
     (function(){
       var state = { empresaId: resolveEmpresaId(), dashboard:null, clientes:[], obligaciones:[], solicitudes:[], comunicaciones:[] };

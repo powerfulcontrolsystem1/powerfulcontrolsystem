@@ -15530,6 +15530,113 @@ html[data-theme] :is(.status.error, .is-error, .message.error, .form-help.is-err
 html[data-theme] :is(.status.ok, .is-success, .message.success, .form-help.is-success){
   color:var(--success);
 }
+
+.empresa-context-warning{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 16px;
+  padding:16px;
+  border:1px solid color-mix(in srgb, var(--warning, #f59e0b) 45%, transparent);
+  border-radius:8px;
+  background:color-mix(in srgb, var(--warning, #f59e0b) 10%, var(--surface, #fff));
+  color:var(--text, #172033);
+  box-shadow:var(--shadow-sm, 0 8px 22px rgba(15,23,42,.08));
+}
+
+.empresa-context-warning h2{
+  margin:4px 0 6px;
+  font-size:1.15rem;
+  line-height:1.25;
+  letter-spacing:0;
+}
+
+.empresa-context-warning p{
+  margin:0;
+  color:var(--muted, #667085);
+  max-width:760px;
+}
+
+.empresa-context-warning-kicker{
+  display:block;
+  color:var(--warning, #b45309);
+  font-size:.72rem;
+  font-weight:850;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.empresa-context-warning-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.empresa-runtime-alert{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:10030;
+  width:min(420px, calc(100vw - 28px));
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px;
+  border:1px solid color-mix(in srgb, var(--danger, #dc2626) 42%, transparent);
+  border-radius:8px;
+  background:var(--surface, #fff);
+  color:var(--text, #172033);
+  box-shadow:0 18px 44px rgba(15,23,42,.22);
+}
+
+.empresa-runtime-alert strong{
+  display:block;
+  margin:0 0 4px;
+  font-size:.95rem;
+}
+
+.empresa-runtime-alert p{
+  margin:0;
+  color:var(--muted, #667085);
+  font-size:.86rem;
+  line-height:1.35;
+}
+
+.empresa-runtime-alert-actions{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+.empresa-runtime-close{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--border, rgba(15,23,42,.14));
+  border-radius:8px;
+  background:var(--surface-soft, #f8fafc);
+  color:var(--text, #172033);
+  cursor:pointer;
+  font-size:1.1rem;
+  line-height:1;
+}
+
+@media(max-width:680px){
+  .empresa-context-warning,
+  .empresa-runtime-alert{
+    flex-direction:column;
+  }
+
+  .empresa-context-warning-actions,
+  .empresa-runtime-alert-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
 /* Modulos empresariales Colombia: bancos, documentos, cumplimiento, contratos, helpdesk y calidad */
 body.modulo-colombia-page {
   margin: 0;

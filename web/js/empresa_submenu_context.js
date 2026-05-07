@@ -100,6 +100,104 @@
 
   window.__resolveEmpresaIdContext = window.__resolveEmpresaIdContext || resolveEmpresaId;
 
+  function isEmpresaModulePage() {
+    const body = document.body;
+    if (!body) return false;
+    return body.classList.contains('empresa-subpage')
+      || body.classList.contains('modulo-colombia-page')
+      || body.classList.contains('admin-subpage');
+  }
+
+  function safeMessage(raw) {
+    const text = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    return text.length > 220 ? text.slice(0, 217) + '...' : text;
+  }
+
+  function findModuleMount() {
+    return document.getElementById('moduloColombiaApp')
+      || document.querySelector('main.container')
+      || document.querySelector('main')
+      || document.querySelector('.container')
+      || document.body;
+  }
+
+  function renderMissingEmpresaContext() {
+    if (!isEmpresaModulePage() || resolveEmpresaId() > 0) return;
+    if (document.getElementById('empresaContextWarning')) return;
+    const mount = findModuleMount();
+    if (!mount) return;
+
+    const warning = document.createElement('section');
+    warning.id = 'empresaContextWarning';
+    warning.className = 'empresa-context-warning';
+    warning.setAttribute('role', 'status');
+    warning.innerHTML = [
+      '<div>',
+      '<span class="empresa-context-warning-kicker">Contexto requerido</span>',
+      '<h2>Selecciona una empresa para continuar</h2>',
+      '<p>Este modulo necesita una empresa activa para cargar permisos, datos y operaciones sin inconsistencias.</p>',
+      '</div>',
+      '<div class="empresa-context-warning-actions">',
+      '<a class="btn primary" href="/seleccionar_empresa.html" target="_top">Seleccionar empresa</a>',
+      '<button class="btn secondary" type="button" data-empresa-context-retry>Reintentar</button>',
+      '</div>'
+    ].join('');
+    const retry = warning.querySelector('[data-empresa-context-retry]');
+    if (retry) {
+      retry.addEventListener('click', function() {
+        window.location.reload();
+      });
+    }
+    mount.insertBefore(warning, mount.firstChild || null);
+  }
+
+  function showRuntimeAlert(title, detail) {
+    if (!isEmpresaModulePage()) return;
+    const old = document.getElementById('empresaRuntimeAlert');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    const alert = document.createElement('aside');
+    alert.id = 'empresaRuntimeAlert';
+    alert.className = 'empresa-runtime-alert';
+    alert.setAttribute('role', 'alert');
+    alert.innerHTML = [
+      '<div>',
+      '<strong></strong>',
+      '<p></p>',
+      '</div>',
+      '<div class="empresa-runtime-alert-actions">',
+      '<button class="btn secondary small" type="button" data-runtime-retry>Reintentar</button>',
+      '<button class="empresa-runtime-close" type="button" aria-label="Cerrar aviso" data-runtime-close>&times;</button>',
+      '</div>'
+    ].join('');
+    const strong = alert.querySelector('strong');
+    const paragraph = alert.querySelector('p');
+    if (strong) strong.textContent = safeMessage(title) || 'No se pudo completar la operacion';
+    if (paragraph) paragraph.textContent = safeMessage(detail) || 'Revisa la conexion o intenta recargar este modulo.';
+    const close = alert.querySelector('[data-runtime-close]');
+    const retry = alert.querySelector('[data-runtime-retry]');
+    if (close) {
+      close.addEventListener('click', function() {
+        if (alert.parentNode) alert.parentNode.removeChild(alert);
+      });
+    }
+    if (retry) {
+      retry.addEventListener('click', function() {
+        window.location.reload();
+      });
+    }
+    document.body.appendChild(alert);
+  }
+
+  window.__empresaModuleGuard = window.__empresaModuleGuard || {
+    resolveEmpresaId: resolveEmpresaId,
+    withEmpresa: withEmpresa,
+    applyThemeContext: applyThemeContext,
+    applyEmpresaContext: applyEmpresaContext,
+    showRuntimeAlert: showRuntimeAlert
+  };
+
   function withEmpresa(rawUrl) {
     const empresaId = resolveEmpresaId();
     if (!empresaId) return rawUrl;
@@ -115,7 +213,7 @@
   }
 
   function applyEmpresaContext() {
-    document.querySelectorAll('a[target$="ContentFrame"][href^="/administrar_empresa/"]').forEach(function(link) {
+    document.querySelectorAll('a[href^="/administrar_empresa/"]').forEach(function(link) {
       link.setAttribute('href', withEmpresa(link.getAttribute('href') || ''));
     });
     document.querySelectorAll('iframe.admin-empresa-frame[src^="/administrar_empresa/"]').forEach(function(frame) {
@@ -123,16 +221,29 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      applyThemeContext();
-      applyEmpresaContext();
-    });
-  } else {
+  function bootModuleGuard() {
     applyThemeContext();
     applyEmpresaContext();
+    renderMissingEmpresaContext();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      bootModuleGuard();
+    });
+  } else {
+    bootModuleGuard();
   }
 
   window.addEventListener('storage', applyThemeContext);
   window.addEventListener('pageshow', applyThemeContext);
+  window.addEventListener('error', function(event) {
+    const message = event && (event.message || (event.error && event.error.message));
+    showRuntimeAlert('Error inesperado en el modulo', message);
+  });
+  window.addEventListener('unhandledrejection', function(event) {
+    const reason = event && event.reason;
+    const message = reason && (reason.message || reason.statusText || reason.toString && reason.toString());
+    showRuntimeAlert('Operacion incompleta', message);
+  });
 })();
