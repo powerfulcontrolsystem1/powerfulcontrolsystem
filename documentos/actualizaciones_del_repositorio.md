@@ -4411,3 +4411,13 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/super/configuracion_avanzada.html
 - web/super/licencias.html
+
+2026-05-07 15:36:28 - Mensaje: Robustece selector, pagos, configuracion avanzada y nomina contable; Commit: 64c77235; PushStatus: OK
+Archivos modificados:
+- backend/handlers/nomina_sueldos.go
+- backend/handlers/nomina_sueldos_test.go
+- web/administrar_empresa/nomina_sueldos.html
+- web/epayco/pago_exitoso.html
+- web/estilos.css
+- web/js/seleccionar_empresa.js
+- web/super/configuracion_avanzada.html
