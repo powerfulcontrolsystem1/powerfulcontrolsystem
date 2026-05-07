@@ -4515,3 +4515,7 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/venta_directa.html
+
+2026-05-07 18:54:25 - Mensaje: Elimina tarjeta resumen del super administrador; Commit: d75462ef; PushStatus: OK
+Archivos modificados:
+- web/super_administrador.html
