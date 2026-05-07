@@ -19050,3 +19050,27 @@ Archivos modificados:
 - documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md
 - web/estilos.css
 - web/pagar_licencia.html
+
+2026-05-07: Corrige licencias, pagos, selector de empresas y configuracion avanzada
+PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/db/empresas_delete.go
+- backend/db/licencias_estado_empresas.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso_after_wompi_desktop_report.json
+- backend/tmp_tools/qa_calipso_operativo/reporte_operativo_calipso.json
+- web/administrar_empresa/panel.html
+- web/ayuda/ayuda.html
+- web/editar_empresa.html
+- web/elegir_licencia.html
+- web/estilos.css
+- web/js/editar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/super/configuracion_avanzada.html
+- web/super/licencias.html
