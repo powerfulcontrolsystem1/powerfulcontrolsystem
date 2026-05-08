@@ -4525,3 +4525,10 @@ Archivos modificados:
 - backend/handlers/empresa_permisos.go
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion_menu.html
+
+2026-05-07 19:25:03 - Mensaje: Mejora perfil publico desde red social empresarial; Commit: 377c79c5; PushStatus: OK
+Archivos modificados:
+- backend/db/red_social.go
+- web/administrar_empresa/publicar_red_social.html
+- web/administrar_empresa/venta_publica.html
+- web/red_social_comercial.html
