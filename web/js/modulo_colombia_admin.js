@@ -108,6 +108,20 @@
     renderEvidencias(state.evidencias || []);
     renderAprobaciones(state.aprobaciones || []);
     renderTareas(state.tareas || []);
+    scrollToRequestedSection();
+  }
+
+  function scrollToRequestedSection() {
+    var hash = "";
+    try { hash = window.location.hash || ""; } catch (_) { hash = ""; }
+    if (!hash || hash.length < 2) return;
+    var id = "";
+    try { id = decodeURIComponent(hash.slice(1)); } catch (_) { id = hash.slice(1); }
+    var target = document.getElementById(id);
+    if (!target) return;
+    window.setTimeout(function () {
+      try { target.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { target.scrollIntoView(); }
+    }, 80);
   }
 
   function optionList(values, selected) {
@@ -694,6 +708,7 @@
     state.titulo = document.body.getAttribute("data-title") || "Modulo empresarial";
     state.lead = document.body.getAttribute("data-lead") || "";
     renderShell();
+    scrollToRequestedSection();
     api("plantilla").then(function (plantilla) {
       state.plantilla = plantilla || {};
       applyPlantilla();
