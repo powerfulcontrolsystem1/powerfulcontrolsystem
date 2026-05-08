@@ -25,6 +25,10 @@
     .vp-muted{color:var(--muted);font-size:.92rem}
     .vp-price{font-weight:900}
     .vp-public-url{word-break:break-all}
+    .vp-profile-link-panel{border:1px solid var(--border);border-radius:16px;background:var(--surface-soft);padding:12px;display:grid;gap:8px}
+    .vp-link-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+    .vp-link-row input{min-width:0;background:var(--input-bg-soft);border:1px solid var(--border);border-radius:12px;padding:10px 12px;color:var(--text)}
+    .vp-field-note{margin-top:5px;color:var(--muted);font-size:.84rem;line-height:1.35}
     .vp-profile{position:relative;overflow:hidden;padding:0}
     .vp-cover{min-height:180px;padding:20px;display:flex;align-items:flex-end;background:linear-gradient(135deg,var(--vp-primary,#0f4c81),color-mix(in srgb,var(--vp-primary,#0f4c81) 28%,#ffffff 72%));color:#fff}
     .vp-cover-overlay{width:100%;display:flex;justify-content:space-between;gap:18px;align-items:flex-end;flex-wrap:wrap}
@@ -77,12 +81,14 @@
             <input id="storeCurrency" class="form-input" value="COP">
           </div>
           <div>
-            <label class="form-label" for="storeLogo">Logo URL</label>
-            <input id="storeLogo" class="form-input" placeholder="https://.../logo.jpg">
+            <label class="form-label" for="storeLogo">Foto de perfil / logo</label>
+            <input id="storeLogo" class="form-input" placeholder="https://.../foto-perfil.jpg">
+            <div class="vp-field-note">Imagen cuadrada recomendada. Se mostrará como foto principal del perfil público.</div>
           </div>
           <div>
-            <label class="form-label" for="storeBanner">Portada URL</label>
-            <input id="storeBanner" class="form-input" placeholder="https://.../banner.jpg">
+            <label class="form-label" for="storeBanner">Foto de portada</label>
+            <input id="storeBanner" class="form-input" placeholder="https://.../portada.jpg">
+            <div class="vp-field-note">Imagen horizontal recomendada para la cabecera del perfil.</div>
           </div>
           <div>
             <label class="form-label" for="storeColor">Color principal</label>
@@ -157,6 +163,13 @@
           <div class="vp-preview-actions">
             <button id="openProfilePreviewBtn" class="btn" type="button">Abrir perfil</button>
             <button id="openSelectedPageBtn" class="btn secondary" type="button">Abrir página seleccionada</button>
+          </div>
+          <div class="vp-profile-link-panel">
+            <label class="form-label" for="profilePublicLink">Enlace del perfil público</label>
+            <div class="vp-link-row">
+              <input id="profilePublicLink" readonly value="">
+              <button id="copyProfileLinkBtn" class="btn secondary" type="button">Copiar</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -344,6 +357,9 @@
       profilePages.innerHTML = state.pages.length
         ? state.pages.slice(0,8).map(p=>'<span class="vp-chip">'+esc(p.nombre)+'</span>').join('')
         : '<span class="vp-chip">Sin páginas todavía</span>';
+      if (typeof profilePublicLink !== 'undefined' && profilePublicLink) {
+        profilePublicLink.value = pageUrl(null);
+      }
     }
     async function loadConfig(){ const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config'); fillConfig(data.config||{}); }
     async function saveConfig(){ setMsg('Guardando perfil público...',false); const data=await api('/api/empresa/venta_publica?empresa_id='+state.empresaId+'&action=config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(configPayload())}); fillConfig(data.config||configPayload()); setMsg('Perfil público guardado.',false); }
@@ -478,6 +494,7 @@
     previewPublicBtn.onclick=()=>{ window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
     openProfilePreviewBtn.onclick=()=>{ window.open(pageUrl(null), '_blank', 'noopener,noreferrer'); };
     openSelectedPageBtn.onclick=()=>{ if(!state.selectedPage){ setMsg('Selecciona una página para abrirla.',true); return; } window.open(pageUrl(state.selectedPage), '_blank', 'noopener,noreferrer'); };
+    copyProfileLinkBtn.onclick=()=>{ const value=profilePublicLink.value||pageUrl(null); navigator.clipboard.writeText(value).then(()=>setMsg('Enlace del perfil copiado.',false)).catch(()=>setMsg('No se pudo copiar el enlace automáticamente.',true)); };
     reloadOrdersBtn.onclick=()=>loadOrders().catch(e=>setMsg(e.message,true));
     [storeName,storeSlug,storeDesc,storeLogo,storeBanner,storeColor,storeCurrency].forEach(el=>el.addEventListener('input', renderProfilePreview));
     init().then(()=>loadOrders()).catch(()=>{});

@@ -16,7 +16,7 @@
     .listado{margin-top:26px}.pub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
     .pub-item{padding:14px;display:flex;flex-direction:column;gap:10px}.pub-item small{color:var(--muted);white-space:pre-wrap}.pub-delete-btn{align-self:flex-start;background:var(--danger);color:#fff;border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:800}
     .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:8px}
-    .page-head h2{margin:0}.page-head p{margin:6px 0 0}.visit-btn{text-decoration:none;white-space:nowrap}
+    .page-head h2{margin:0}.page-head p{margin:6px 0 0}.visit-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.visit-btn{text-decoration:none;white-space:nowrap}
     @media(max-width:760px){body{padding:12px}.composer{grid-template-columns:1fr}.panel{padding:16px}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -28,7 +28,10 @@
         <h2>Publicar en Red Social Comercial</h2>
         <p class="form-help">Publica texto, fotos desde celular o PC, y videos de YouTube. El feed público carga por desplazamiento continuo, con una experiencia más comercial y ordenada.</p>
       </div>
-      <a id="visitSocialBtn" class="btn visit-btn" href="/red_social_comercial.html" target="_blank" rel="noopener">Visitar red social</a>
+      <div class="visit-actions">
+        <a id="visitBusinessProfileBtn" class="btn visit-btn" href="/administrar_empresa/venta_publica.html" target="_blank" rel="noopener">Ver perfil de la empresa</a>
+        <a id="visitSocialBtn" class="btn secondary visit-btn" href="/red_social_comercial.html" target="_blank" rel="noopener">Visitar red social</a>
+      </div>
     </div>
     <div class="composer">
       <div>
@@ -123,9 +126,34 @@
       return url.pathname + url.search;
     }
 
+    function publicProfileURLFromConfig(cfg) {
+      cfg = cfg || {};
+      var slug = String(cfg.empresa_slug || '').trim();
+      if (slug) return '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
+      var setup = new URL('/administrar_empresa/venta_publica.html', window.location.origin);
+      if (empresaId > 0) setup.searchParams.set('empresa_id', String(empresaId));
+      return setup.pathname + setup.search;
+    }
+
+    async function refreshBusinessProfileButton() {
+      var btn = document.getElementById('visitBusinessProfileBtn');
+      if (!btn) return;
+      btn.href = publicProfileURLFromConfig(null);
+      if (!empresaId) return;
+      try {
+        var res = await fetch(empresaApiURL('/api/empresa/venta_publica', { action: 'config' }), { credentials: 'same-origin' });
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : {};
+        if (res.ok && data && data.config) {
+          btn.href = publicProfileURLFromConfig(data.config);
+        }
+      } catch (e) {}
+    }
+
     (function initVisitButton(){
       var btn = document.getElementById('visitSocialBtn');
       if (btn) btn.href = socialPublicURL();
+      refreshBusinessProfileButton();
     })();
 
     function empresaApiURL(path, extra) {

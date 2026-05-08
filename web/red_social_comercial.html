@@ -36,6 +36,7 @@
     .post-chip{font-size:.82rem;color:var(--muted)}
     .btn-contact{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);border:none;padding:9px 14px;border-radius:8px;text-decoration:none;font-weight:800;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 22%,transparent)}
     .btn-private{background:var(--surface-soft);color:var(--text);border:1px solid var(--border);padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:800;cursor:pointer}
+    .btn-profile{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:850}
     .empty-state{width:min(100%,560px);box-sizing:border-box;text-align:center;color:var(--muted);padding:32px;border:1px dashed var(--border);border-radius:8px;background:var(--surface)}
     .load-more{width:min(100%,560px);box-sizing:border-box;color:var(--muted);text-align:center;padding:12px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);margin:14px auto 0}
     .react-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:7px 0}
@@ -139,6 +140,12 @@
       return top.map(k => reaccionLabel(k) + ' ' + Number(resumen[k]||0)).join(' · ') + (Object.keys(resumen).length>2 ? ' · +' : '');
     }
 
+    function empresaProfileUrl(p) {
+      var slug = String((p && p.empresa_slug) || '').trim();
+      if (slug) return '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
+      return '';
+    }
+
     function renderPost(p) {
       const img = String(p.foto_url || '').trim();
       const empresa = p.empresa_nombre || ('Empresa #' + p.empresa_id);
@@ -150,6 +157,7 @@
       const userReaction = String(p.user_reaction || '').trim();
       const reaccionesResumen = p.reacciones_resumen || null;
       const comentariosTotal = Number(p.comentarios_total || 0);
+      const profileUrl = empresaProfileUrl(p);
       return `
         <article class="post-card">
           ${mediaHtml || `<div class="post-cover" ${cover}>${img ? '' : 'Publicación empresarial'}</div>`}
@@ -178,6 +186,7 @@
             <div class="post-actions">
               <span class="post-chip">Post empresarial</span>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                ${profileUrl ? `<a class="btn-profile" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener">Ver perfil</a>` : ''}
                 <button class="btn-private" type="button" data-empresa-id="${escapeHtml(p.empresa_id)}" data-post-nombre="${escapeHtml(p.nombre||'')}">Mensaje privado</button>
                 <a href="https://api.whatsapp.com/send?text=${encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || ''))}" target="_blank" rel="noopener" class="btn-contact">WhatsApp</a>
               </div>

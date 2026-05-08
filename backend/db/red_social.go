@@ -11,6 +11,7 @@ type PublicacionRedSocial struct {
 	ID            int       `json:"id"`
 	EmpresaID     int       `json:"empresa_id"`
 	EmpresaNombre string    `json:"empresa_nombre,omitempty"`
+	EmpresaSlug   string    `json:"empresa_slug,omitempty"`
 	Nombre        string    `json:"nombre"`
 	Descripcion   string    `json:"descripcion"`
 	FotoURL       string    `json:"foto_url"`
@@ -192,9 +193,10 @@ func GetPublicacionesRedSocialActivas(db *sql.DB, limit, offset int) ([]Publicac
 	if offset < 0 {
 		offset = 0
 	}
-	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), COALESCE(p.youtube_url,''), p.fecha_creacion, p.estado 
+	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), COALESCE(vpc.empresa_slug, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), COALESCE(p.youtube_url,''), p.fecha_creacion, p.estado
 	          FROM empresa_publicaciones_red_social p
 	          LEFT JOIN empresas e ON e.id = p.empresa_id OR COALESCE(e.empresa_id, 0) = p.empresa_id
+	          LEFT JOIN empresa_venta_publica_configuracion vpc ON vpc.empresa_id = p.empresa_id AND COALESCE(vpc.estado, 'activo') <> 'inactivo'
 	          WHERE p.estado = 'activo' ORDER BY p.fecha_creacion DESC LIMIT ? OFFSET ?`
 	rows, err := querySQLCompat(db, query, limit, offset)
 	if err != nil {
@@ -206,7 +208,7 @@ func GetPublicacionesRedSocialActivas(db *sql.DB, limit, offset int) ([]Publicac
 	for rows.Next() {
 		var p PublicacionRedSocial
 		var youtube string
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.Nombre, &p.Descripcion, &p.FotoURL, &youtube, &p.FechaCreacion, &p.Estado); err != nil {
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.EmpresaSlug, &p.Nombre, &p.Descripcion, &p.FotoURL, &youtube, &p.FechaCreacion, &p.Estado); err != nil {
 			return nil, err
 		}
 		p.YoutubeURL = youtube
@@ -228,9 +230,10 @@ func GetPublicacionesRedSocialByEmpresa(db *sql.DB, empresaID int, limit, offset
 	if offset < 0 {
 		offset = 0
 	}
-	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), COALESCE(p.youtube_url,''), p.fecha_creacion, p.estado 
+	query := `SELECT p.id, p.empresa_id, COALESCE(e.nombre, ''), COALESCE(vpc.empresa_slug, ''), p.nombre, p.descripcion, COALESCE(p.foto_url,''), COALESCE(p.youtube_url,''), p.fecha_creacion, p.estado
 	          FROM empresa_publicaciones_red_social p
 	          LEFT JOIN empresas e ON e.id = p.empresa_id OR COALESCE(e.empresa_id, 0) = p.empresa_id
+	          LEFT JOIN empresa_venta_publica_configuracion vpc ON vpc.empresa_id = p.empresa_id AND COALESCE(vpc.estado, 'activo') <> 'inactivo'
 	          WHERE p.empresa_id = ? ORDER BY p.fecha_creacion DESC LIMIT ? OFFSET ?`
 	rows, err := querySQLCompat(db, query, empresaID, limit, offset)
 	if err != nil {
@@ -242,7 +245,7 @@ func GetPublicacionesRedSocialByEmpresa(db *sql.DB, empresaID int, limit, offset
 	for rows.Next() {
 		var p PublicacionRedSocial
 		var youtube string
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.Nombre, &p.Descripcion, &p.FotoURL, &youtube, &p.FechaCreacion, &p.Estado); err != nil {
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.EmpresaNombre, &p.EmpresaSlug, &p.Nombre, &p.Descripcion, &p.FotoURL, &youtube, &p.FechaCreacion, &p.Estado); err != nil {
 			return nil, err
 		}
 		p.YoutubeURL = youtube
