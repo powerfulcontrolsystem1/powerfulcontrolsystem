@@ -4387,6 +4387,9 @@ html[data-theme^="dark"] .empresa-edit-card{
   color:var(--text);
   font-weight:800;
 }
+.empresa-delete-progress[hidden]{
+  display:none !important;
+}
 .empresa-delete-spinner{
   width:18px;
   height:18px;
@@ -4540,6 +4543,9 @@ html[data-theme^="dark"] .empresa-edit-card{
   background:color-mix(in srgb, var(--accent) 10%, var(--surface));
   color:var(--text);
   font-weight:800;
+}
+.selector-delete-progress[hidden]{
+  display:none !important;
 }
 .selector-delete-actions{
   display:flex;

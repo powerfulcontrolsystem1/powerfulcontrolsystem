@@ -85,12 +85,29 @@
     node.classList.toggle("is-pending", !ok);
   }
 
-  function updateDeleteChecklist() {
-    if (!state.empresa) return;
-    var expectedName = String(state.empresa.nombre || "").trim();
+  function getDeleteValidationState() {
+    var expectedName = String(state.empresa && state.empresa.nombre || "").trim();
     var nameOk = String($("empresaDeleteConfirm") && $("empresaDeleteConfirm").value || "").trim() === expectedName && expectedName !== "";
     var phraseOk = String($("empresaDeletePhrase") && $("empresaDeletePhrase").value || "").trim().toUpperCase() === "ELIMINAR";
     var riskOk = !!($("empresaDeleteAcknowledge") && $("empresaDeleteAcknowledge").checked);
+    return {
+      nameOk: nameOk,
+      phraseOk: phraseOk,
+      riskOk: riskOk,
+      ready: nameOk && phraseOk && riskOk && !isSharedEmpresa()
+    };
+  }
+
+  function updateDeleteChecklist() {
+    if (!state.empresa) return;
+    var validation = getDeleteValidationState();
+    var nameOk = validation.nameOk;
+    var phraseOk = validation.phraseOk;
+    var riskOk = validation.riskOk;
+    var btn = $("empresaDeleteBtn");
+    if (btn) {
+      btn.disabled = state.deleting || !validation.ready;
+    }
     setNodeState("empresaDeleteNameCheck", nameOk, nameOk ? "Nombre exacto validado" : "Nombre exacto pendiente");
     setNodeState("empresaDeletePhraseCheck", phraseOk, phraseOk ? "Frase ELIMINAR validada" : "Frase de seguridad pendiente");
     setNodeState("empresaDeleteRiskCheck", riskOk, riskOk ? "Riesgo aceptado conscientemente" : "Aceptacion de riesgo pendiente");
@@ -112,6 +129,9 @@
       var el = $(id);
       if (el) el.disabled = !!busy || isSharedEmpresa();
     });
+    if (!busy) {
+      updateDeleteChecklist();
+    }
   }
 
   function escapeHtml(value) {
@@ -230,7 +250,7 @@
       saveButton.disabled = !!isShared;
     }
     if ($("empresaDeleteBtn")) {
-      $("empresaDeleteBtn").disabled = !!isShared;
+      $("empresaDeleteBtn").disabled = true;
     }
     if ($("empresaDownloadBeforeDeleteBtn")) {
       $("empresaDownloadBeforeDeleteBtn").disabled = !!isShared;
@@ -262,6 +282,7 @@
     $("empresaEditReservas").textContent = impacto.reservas_vigentes != null ? String(impacto.reservas_vigentes) : "0";
     $("empresaEditLicencias").textContent = impacto.licencias_activas != null ? String(impacto.licencias_activas) : "0";
     $("empresaEditImpacto").textContent = buildImpactoTexto(impacto);
+    updateDeleteChecklist();
   }
 
   function normalizeInviteStatus(item) {
