@@ -108,3 +108,74 @@ func TestResolvePermissionPageKeyForRegularCart(t *testing.T) {
 		t.Fatalf("resolvePermissionPageKeyForRequest regular cart=%q, want linkCarritoCompras", got)
 	}
 }
+
+func TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups(t *testing.T) {
+	moduleRows := make([]permissionModuleMatrixRow, 0, len(permissionModulesCatalogOrdered))
+	for _, module := range permissionModulesCatalogOrdered {
+		actions := make(map[string]bool, len(permissionActionsCatalogOrdered))
+		for _, action := range permissionActionsCatalogOrdered {
+			actions[action] = true
+		}
+		moduleRows = append(moduleRows, permissionModuleMatrixRow{
+			Modulo:   module,
+			Acciones: actions,
+		})
+	}
+
+	rows := buildPermissionPagesCatalogFromModuleRows(moduleRows, nil)
+	if len(rows) == 0 {
+		t.Fatal("expected permission page catalog rows")
+	}
+
+	legacyGroups := map[string]bool{
+		"Operación diaria y ventas":                true,
+		"Operación y venta":                        true,
+		"Verticales de negocio":                    true,
+		"Inventario y compras":                     true,
+		"Inventario y catálogo":                    true,
+		"Compras":                                  true,
+		"Centro financiero y contable":             true,
+		"Finanzas y reportes":                      true,
+		"Finanzas y nómina":                        true,
+		"Administración y configuración":           true,
+		"Seguridad e integración":                  true,
+		"Configuración":                            true,
+		"Facturación electrónica":                  true,
+		"Facturación DIAN":                         true,
+		"Gestión de Relaciones con Clientes (CRM)": true,
+		"Clientes":                                 true,
+		"Personas y activos":                       true,
+		"Análisis y control":                       true,
+		"Analisis y control":                       true,
+		"Documentos, nube y soporte":               true,
+	}
+
+	for _, row := range rows {
+		if legacyGroups[row.Grupo] {
+			t.Fatalf("permission page %s leaked legacy group %q", row.PaginaClave, row.Grupo)
+		}
+		if row.Grupo != "Acceso general" && row.Grupo != "Otras" && !strings.Contains(strings.ToLower(row.Grupo), "universal") {
+			t.Fatalf("permission page %s group %q should be universal", row.PaginaClave, row.Grupo)
+		}
+	}
+}
+
+func TestPermissionModuleDisplayNamesExposeUniversalCoreLabels(t *testing.T) {
+	labels := PermissionModuleDisplayNameMap()
+
+	cases := map[string]string{
+		permModuleVentas:      "Ventas universales",
+		permModuleInventario:  "Inventario universal",
+		permModuleFinanzas:    "Finanzas universales",
+		permModuleClientes:    "CRM universal",
+		permModuleCompras:     "Compras universales",
+		permModuleFacturacion: "Facturación electrónica universal",
+		permModuleSeguridad:   "Administración universal",
+		permModuleAlquileres:  "Alquiler universal",
+	}
+	for module, want := range cases {
+		if got := labels[module]; !strings.Contains(got, want) {
+			t.Fatalf("module %s label=%q, want it to contain %q", module, got, want)
+		}
+	}
+}

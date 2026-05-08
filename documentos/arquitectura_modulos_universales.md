@@ -27,6 +27,23 @@ Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los ti
 - CRM universal cubre clientes, embudos, seguimiento, cartera comercial y comunicaciones.
 - Personas y activos cubre usuarios, empleados, carnets, asistencia, vehiculos, equipos e historial operativo.
 
+## Bloques canonicos del sistema
+
+- Acceso general: inicio y panel principal.
+- Soluciones universales por negocio: plantillas y capacidades especializadas activadas por licencia.
+- Operacion universal y ventas: puntos de venta, carritos, estaciones, reservas, turnos y canales publicos.
+- CRM universal y clientes: clientes, embudos, comunicaciones y cartera comercial.
+- Inventario y compras universales: productos, servicios, compras, bodegas, logistica, produccion y costeo.
+- Finanzas universales y cumplimiento: caja, bancos, cartera, contabilidad, impuestos, facturacion y reportes.
+- Personas y activos universales: usuarios, empleados, asistencia, carnets, vehiculos, equipos e historial.
+- Analisis universal y control: auditoria, calidad, procesos, indicadores, backups y control ejecutivo.
+- Documentos universales, nube y soporte: documentos, contratos, aprobaciones, nube, soporte remoto y helpdesk.
+- Administracion universal: configuracion, seguridad, integraciones, sensores, tarifas y reglas operativas.
+
+## Regla de integridad tecnica
+
+La capa interna puede conservar claves historicas para no romper rutas, permisos ni licencias. La capa visible y las respuestas de API deben exponer los bloques canonicos universales. Las pruebas de backend deben fallar si un bloque legacy vuelve a salir como grupo visible de permisos.
+
 ## Lo que no se debe hacer
 
 - No crear modulos duplicados por cada tipo de empresa si el flujo puede vivir en un nucleo universal.
