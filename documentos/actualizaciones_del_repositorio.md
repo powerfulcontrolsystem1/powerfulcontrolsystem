@@ -4549,3 +4549,10 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion_menu.html
 - web/js/radio_player.js
+
+2026-05-07 19:48:37 - Mensaje: Agregar envio automatico de factura electronica por correo; Commit: 2b3645e2; PushStatus: OK
+Archivos modificados:
+- backend/db/facturacion_electronica.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/facturacion_electronica.go
+- web/administrar_empresa/facturacion_electronica.html
