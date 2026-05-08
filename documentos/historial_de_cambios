@@ -22346,3 +22346,28 @@ Archivos modificados:
 - web/administrar_empresa/administrar_productos.html
 - web/super/licencias.html
 - web/super/preconfiguracion_tipos_empresa.html
+
+2026-05-07: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/aiu_construccion.go
+- backend/db/aiu_construccion_test.go
+- backend/db/contabilidad_colombia.go
+- backend/db/contabilidad_colombia_test.go
+- backend/handlers/aiu_construccion.go
+- backend/handlers/contabilidad_colombia.go
+- backend/handlers/empresa_permisos.go
+- backend/logs/server_runtime_state.json
+- web/administrar_empresa/aiu_construccion.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/contabilidad_colombia.html
+- web/administrar_empresa/egresos.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/ingresos.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css
+- web/js/egresos_ingresos.js
+- web/js/print_documents.js
+- web/js/seleccionar_empresa.js
