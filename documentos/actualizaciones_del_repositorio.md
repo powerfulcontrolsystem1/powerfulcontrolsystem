@@ -7832,3 +7832,15 @@ Archivos modificados:
 - web/js/soportes_compras_ia.js
 - web/login_usuario.html
 - web/menu.js
+
+2026-05-08 13:53:14 - Mensaje: Mejorar submenus profesionales de modulos empresariales; Commit: c933df40; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/administrar_empresa/auditoria.html
+- web/administrar_empresa/backups.html
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/administrar_empresa/documentos_onlyoffice_menu.html
+- web/administrar_empresa/gestion_documental.html
+- web/administrar_empresa/gestion_documental_menu.html
+- web/administrar_empresa/modulo_menu.html
+- web/js/personas_activos_submenu.js
