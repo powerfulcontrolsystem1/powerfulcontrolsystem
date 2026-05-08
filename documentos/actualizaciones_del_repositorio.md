@@ -4542,3 +4542,10 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/empresa_permisos.go
 - web/administrar_empresa.html
+
+2026-05-07 19:42:54 - Mensaje: Ocultar radio apagada y mover configuracion; Commit: 7eb7251f; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_menu.html
+- web/js/radio_player.js

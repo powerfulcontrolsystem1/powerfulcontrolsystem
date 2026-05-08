@@ -19213,3 +19213,11 @@ PushStatus: OK
 Archivos modificados:
 - backend/handlers/empresa_permisos.go
 - web/administrar_empresa.html
+
+2026-05-07: Ocultar radio apagada y mover configuracion
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_menu.html
+- web/js/radio_player.js
