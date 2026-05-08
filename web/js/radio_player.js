@@ -59,6 +59,9 @@
 
   function setDrawerOpen(open) {
     if (!drawer || !openBtn) return;
+    if (open && !state.enabled) {
+      open = false;
+    }
     drawer.classList.toggle("is-open", !!open);
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
     openBtn.setAttribute("aria-expanded", open ? "true" : "false");
@@ -152,16 +155,19 @@
       window.localStorage.setItem(ENABLED_KEY, state.enabled ? "1" : "0");
     } catch (_) {}
     if (!state.enabled) {
+      setDrawerOpen(false);
       stopPlayback();
     }
     if (enabledToggle) enabledToggle.checked = state.enabled;
     if (enabledStatus) enabledStatus.textContent = state.enabled ? "Lista para reproducir" : "Reproductor apagado";
     if (openBtn) {
+      openBtn.hidden = !state.enabled;
       openBtn.classList.toggle("is-disabled", !state.enabled);
+      openBtn.setAttribute("aria-hidden", state.enabled ? "false" : "true");
       openBtn.setAttribute("aria-pressed", state.enabled ? "true" : "false");
-      openBtn.setAttribute("title", state.enabled ? "Abrir radio online" : "Radio apagada. Abrir para activarla.");
+      openBtn.setAttribute("title", "Abrir radio online");
       var label = openBtn.querySelector(".ai-chat-toggle-label");
-      if (label) label.textContent = state.enabled ? "Radio online" : "Radio apagada";
+      if (label) label.textContent = "Radio online";
     }
     renderGrid();
     updateMiniPlayer();
@@ -185,6 +191,8 @@
 
   function wireEvents() {
     if (openBtn) openBtn.addEventListener("click", function () {
+      if (!drawer) return;
+      if (!state.enabled) return;
       setDrawerOpen(!drawer.classList.contains("is-open"));
     });
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });

@@ -373,7 +373,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Seguridad e integración"},
 	{PaginaClave: "linkNextcloud", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Nextcloud", Grupo: "Seguridad e integración"},
-	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Seguridad e integración"},
+	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Configuración"},
 	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Finanzas y reportes"},
 	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Inventario y catálogo"},
