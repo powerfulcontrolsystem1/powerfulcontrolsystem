@@ -891,7 +891,7 @@
     cardLink.setAttribute("role", "button");
     cardLink.setAttribute("aria-label", (hasLicense ? "Administrar " : "Elegir licencia para ") + String(empresa.nombre || "empresa"));
     cardLink.addEventListener("click", function (evt) {
-      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data, .empresa-license-action, .edit-empresa, .delete-empresa')) {
+      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data, .empresa-license-action, .edit-empresa')) {
         return;
       }
       try {
@@ -1002,23 +1002,6 @@
     });
     if (dlCell) {
       dlCell.appendChild(editBtn);
-    }
-
-    var deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "license-indicator delete-empresa";
-    deleteBtn.setAttribute("data-empresa-id", String(empresa.id || ""));
-    deleteBtn.setAttribute("aria-label", "Eliminar empresa " + String(empresa.nombre || ""));
-    deleteBtn.setAttribute("title", isSharedEmpresa(empresa) ? "Solo el propietario puede eliminar la empresa" : "Eliminar empresa");
-    deleteBtn.disabled = isSharedEmpresa(empresa);
-    deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9h8V9h2v11H7V9z"/></svg>';
-    deleteBtn.addEventListener("click", function (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      openSelectorDeleteModal(empresa);
-    });
-    if (dlCell) {
-      dlCell.appendChild(deleteBtn);
     }
 
     cardLink.appendChild(div);

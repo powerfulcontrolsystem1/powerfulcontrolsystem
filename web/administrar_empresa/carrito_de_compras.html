@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Carrito de compras</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/print_documents.js"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -476,7 +477,7 @@
             <h3 class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
             <div class="carrito-summary-pay-actions">
-              <button type="button" id="btnPagarCarrito" class="btn w-full">Pagar y cerrar carrito</button>
+              <button type="button" id="btnPagarCarrito" class="btn w-full" disabled title="El carrito se esta cargando.">Pagar y cerrar carrito</button>
             </div>
           </aside>
         </div>
@@ -546,7 +547,8 @@
           { metodo: 'tarjeta_debito', monto: 0, referencia: '' },
           { metodo: 'tarjeta_credito', monto: 0, referencia: '' }
         ]
-      }
+      },
+      paymentInProgress: false
     };
 
     let itemSearchDebounceTimer = null;
@@ -2112,6 +2114,36 @@
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
       const printFormat = normalize(printerTarget && printerTarget.formato_impresion).toLowerCase() === 'carta' ? 'carta' : 'pos';
 
+      if (window.PCSPrint) {
+        const win = window.PCSPrint.openDocument({
+          title: 'Orden de servicio',
+          kind: 'orden',
+          format: printFormat,
+          company: 'Empresa #' + String(state.empresaID || ''),
+          subtitle: 'Destino: ' + area + ' | Carrito: ' + ((carrito && carrito.nombre) || 'Sin nombre'),
+          badge: printFormat.toUpperCase(),
+          meta: [
+            { label: 'Codigo carrito', value: (carrito && carrito.codigo) || '' },
+            { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
+            { label: 'Fecha', value: now.toLocaleString() },
+            { label: 'Copias', value: String(copias) }
+          ],
+          tableHeaders: ['Item', 'Cant.', 'P.U.', 'Total'],
+          rows: [[
+            itemPayload.descripcion,
+            String(cantidad) + ' ' + (itemPayload.unidad_medida || 'unidad'),
+            formatAmount(precio, (carrito && carrito.moneda) || 'COP'),
+            formatAmount(totalLinea, (carrito && carrito.moneda) || 'COP')
+          ]],
+          totalLabel: 'Total linea',
+          totalValue: formatAmount(totalLinea, (carrito && carrito.moneda) || 'COP'),
+          note: nota,
+          signatures: false
+        });
+        if (!win) setMessage('itemMsg', 'El navegador bloqueó la impresión automática de la orden de servicio.', true);
+        return;
+      }
+
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Orden de servicio</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}p{margin:4px 0}hr{margin:10px 0}.muted{color:#666;font-size:12px}</style>' +
         '</head><body>' +
@@ -2222,6 +2254,30 @@
       const now = new Date();
       const amount = pay && Number(pay.totalPagarFinal || 0) > 0 ? formatAmount(pay.totalPagarFinal, (carrito && carrito.moneda) || 'COP') : '';
 
+      if (window.PCSPrint) {
+        const win = window.PCSPrint.openDocument({
+          title: 'Apertura cajon monedero',
+          kind: 'comprobante',
+          format: 'pos',
+          company: drawer.name + (drawer.code ? (' / ' + drawer.code) : ''),
+          subtitle: 'Pulso: ' + drawer.command,
+          badge: 'Caja',
+          meta: [
+            { label: 'Carrito', value: (carrito && (carrito.nombre || carrito.codigo)) || '' },
+            { label: 'Total', value: amount },
+            { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
+            { label: 'Fecha', value: now.toLocaleString() }
+          ],
+          note: 'Documento tecnico de apertura de cajon monedero.',
+          signatures: false
+        });
+        if (!win) {
+          setStationPaymentMessage('Pago registrado, pero el navegador bloqueo la apertura automatica del cajon. Permite ventanas emergentes o abre el cajon manualmente.', true);
+          return false;
+        }
+        return true;
+      }
+
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Apertura cajon monedero</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:10px;color:#111;font-size:12px}h1{font-size:14px;margin:0 0 6px}.muted{color:#666}</style>' +
         '</head><body>' +
@@ -2271,6 +2327,43 @@
         const line = qty * pu;
         rowsHtml += '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(line, moneda)) + '</td></tr>';
       });
+
+      if (window.PCSPrint) {
+        const printRows = (Array.isArray(items) ? items : []).filter(function(it) {
+          return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
+        }).map(function(it) {
+          const qty = Number(it.cantidad || 0);
+          const pu = Number(it.precio_unitario || 0);
+          return [
+            normalize(it.descripcion) || 'Item',
+            String(qty),
+            formatAmount(pu, moneda),
+            formatAmount(qty * pu, moneda)
+          ];
+        });
+        const win = window.PCSPrint.openDocument({
+          title: 'Recibo de cobro',
+          kind: 'recibo',
+          format: printFormat,
+          company: 'Empresa #' + String(state.empresaID || ''),
+          subtitle: 'Carrito: ' + ((carrito && carrito.nombre) || '') + ' | Codigo: ' + ((carrito && carrito.codigo) || ''),
+          badge: printFormat.toUpperCase(),
+          meta: [
+            { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') },
+            { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
+            { label: 'Fecha', value: now.toLocaleString() },
+            { label: 'Copias', value: String(copias) }
+          ],
+          tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
+          rows: printRows,
+          totalLabel: 'Total a pagar',
+          totalValue: formatAmount(pay.totalPagarFinal, moneda),
+          footer: 'Gracias por su compra.',
+          signatures: false
+        });
+        if (!win) setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
+        return;
+      }
 
       const pageStyle = printFormat === 'pos'
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
@@ -2332,6 +2425,45 @@
         const total = qty * pu;
         return '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(total, moneda)) + '</td></tr>';
       }).join('');
+      const now = new Date();
+
+      if (window.PCSPrint) {
+        const printRows = (Array.isArray(items) ? items : []).filter(function(it) {
+          return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
+        }).map(function(it) {
+          const qty = Number(it.cantidad || 0);
+          const pu = Number(it.precio_unitario || 0);
+          return [
+            normalize(it.descripcion) || 'Item',
+            String(qty),
+            formatAmount(pu, moneda),
+            formatAmount(qty * pu, moneda)
+          ];
+        });
+        const win = window.PCSPrint.openDocument({
+          title: 'Factura electronica',
+          kind: 'factura',
+          format: formato,
+          company: empresaLabel,
+          subtitle: 'Numero: ' + (normalize(doc.numero_legal || doc.documento_codigo || 'Pendiente')) + ' | Ambiente: ' + normalize(doc.ambiente_fe || ''),
+          badge: formato.toUpperCase(),
+          meta: [
+            { label: 'Codigo', value: normalize(doc.documento_codigo || '') },
+            { label: 'Fecha', value: now.toLocaleString() },
+            { label: 'Validacion', value: normalize(doc.codigo_validacion || '') },
+            { label: 'Moneda', value: moneda }
+          ],
+          tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
+          rows: printRows,
+          totalLabel: 'Total documento',
+          totalValue: formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda),
+          note: [notas, pie].filter(Boolean).join('\n'),
+          footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
+          signatures: false
+        });
+        if (!win) setStationPaymentMessage('La factura se emitio, pero el navegador bloqueo la impresion automatica.', true);
+        return;
+      }
 
       const pageStyle = formato === 'pos'
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
@@ -2339,7 +2471,6 @@
       const bodyStyle = formato === 'pos'
         ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}'
         : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}';
-      const now = new Date();
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electr?nica')) + '</title>' +
         '<style>' + pageStyle + bodyStyle + '</style></head><body>' +
         (logoUrl && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
@@ -2376,6 +2507,17 @@
 
     function setStationPaymentMessage(text, isError) {
       setMessage('stationPaymentMsg', text, isError);
+    }
+
+    function setStationPayButtonState(options) {
+      const btn = document.getElementById('btnPagarCarrito');
+      if (!btn) return;
+      const opts = options || {};
+      const loading = Boolean(opts.loading);
+      btn.disabled = Boolean(opts.disabled) || loading;
+      btn.textContent = opts.label || (loading ? 'Registrando pago...' : 'Pagar y cerrar carrito');
+      btn.title = opts.title || '';
+      btn.setAttribute('aria-busy', loading ? 'true' : 'false');
     }
 
     function buildBusinessGuideText(payload, fallback) {
@@ -2501,6 +2643,10 @@
         if (btnPay) {
           btnPay.style.display = 'none';
         }
+        setStationPayButtonState({
+          disabled: true,
+          title: focusedSaleMode ? 'El carrito de la estacion todavia se esta preparando.' : 'Selecciona un carrito para poder pagar.'
+        });
         panel.style.display = 'none';
         panel.hidden = true;
         panel.classList.add('is-hidden');
@@ -2697,7 +2843,16 @@
       }
 
       const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
-      btnPay.disabled = !selectedActive || hasBlockingError;
+      const payDisabledReason = !selectedActive
+        ? (state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.')
+        : (!hasAllowedPaymentMethods
+          ? 'No hay metodos de pago habilitados para este rol.'
+          : (pay.operativaMessage || pay.discountCodeMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : '')));
+      setStationPayButtonState({
+        disabled: !selectedActive || hasBlockingError || state.paymentInProgress,
+        loading: state.paymentInProgress,
+        title: payDisabledReason
+      });
 
       if (!hasAllowedPaymentMethods) {
         setStationPaymentMessage('No hay métodos de pago habilitados para este rol en la configuración operativa.', true);
@@ -2769,8 +2924,27 @@
     }
 
     async function payStationSession() {
+      if (state.paymentInProgress) return;
       const selected = getSelectedCarrito();
-      if (!selected) return;
+      if (!selected) {
+        setStationPaymentMessage(state.stationMode
+          ? 'El carrito de esta estacion todavia se esta preparando. Espera unos segundos y vuelve a intentar.'
+          : 'Selecciona un carrito antes de pagar.', true);
+        try {
+          if (state.stationMode) {
+            await ensureStationCarritoLifecycle();
+            await loadCarritos();
+            const recovered = getSelectedCarrito();
+            if (recovered) {
+              renderStationPaymentPanel(recovered);
+              setStationPaymentMessage('Carrito de estacion listo. Ya puedes pagar.', false);
+            }
+          }
+        } catch (err) {
+          setStationPaymentMessage(err.message || 'No se pudo preparar el carrito para pago.', true);
+        }
+        return;
+      }
       if (!isCarritoOperativoActivo(selected)) {
         setStationPaymentMessage('El carrito ya está inactivo.', true);
         return;
@@ -2813,17 +2987,24 @@
         return;
       }
 
-      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagarFinal, selected.moneda) + '?')) return;
+      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagarFinal, selected.moneda) + '?')) {
+        setStationPaymentMessage('Pago cancelado. El carrito sigue abierto.', false);
+        return;
+      }
 
       const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
 
       try {
+        state.paymentInProgress = true;
+        setStationPayButtonState({ loading: true });
+        setStationPaymentMessage('Registrando pago y cerrando carrito...', false);
         let payEndpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion';
         if (state.directSaleMode) {
           payEndpoint += '&modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(normalize(selected.codigo) || ('VENTA-DIRECTA-' + state.empresaID));
         }
-        const res = await fetch(payEndpoint, {
+        const res = await fetchWithTimeout(payEndpoint, {
           method: 'PUT',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             metodo_pago: pay.paymentMethod,
@@ -2904,6 +3085,13 @@
       } catch (err) {
         if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
           setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
+        }
+      } finally {
+        state.paymentInProgress = false;
+        if (state.directSaleMode || state.stationMode) {
+          renderStationPaymentPanel(getSelectedCarrito());
+        } else {
+          setStationPayButtonState({ disabled: !getSelectedCarrito() });
         }
       }
     }
@@ -5024,7 +5212,14 @@
     }
 
     document.getElementById('btnPagarCarrito').addEventListener('click', async function() {
-      await payStationSession();
+      try {
+        await payStationSession();
+      } catch (err) {
+        state.paymentInProgress = false;
+        setStationPayButtonState({ disabled: false });
+        setStationPaymentMessage(err.message || 'No se pudo procesar el pago del carrito.', true);
+        console.error(err);
+      }
     });
 
     document.getElementById('btnActivarSesionCarrito').addEventListener('click', async function() {

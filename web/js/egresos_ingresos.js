@@ -459,6 +459,25 @@
     const format = normalizePrintFormat(finanzasConfig.formato_impresion);
     const title = tipoMovimiento === 'egreso' ? 'Comprobante de egreso' : 'Comprobante de ingreso';
     const badge = format === 'pos' ? 'POS' : 'Carta';
+    if (window.PCSPrint) {
+      const rowsForPrint = printableRows(item).map(row => [row[0], { value: row[1], number: false }]);
+      const totalValue = formatMoney(item.total_neto || item.total || item.monto, item.moneda);
+      return window.PCSPrint.buildDocument({
+        title,
+        kind: 'comprobante',
+        format,
+        company: empresaNombre || ('Empresa #' + empresaId),
+        subtitle: 'Generado: ' + formatDateTime(new Date().toISOString()),
+        badge,
+        tableHeaders: ['Campo', 'Detalle'],
+        rows: rowsForPrint,
+        totalLabel: 'Total neto',
+        totalValue,
+        note: [normalize(item.descripcion), normalize(item.observaciones), normalize(item.comprobante_url) ? ('Comprobante adjunto: ' + normalize(item.comprobante_url)) : 'Sin archivo comprobante adjunto.'].filter(Boolean).join('\n'),
+        signatures: format === 'carta',
+        closeAfterPrint: false
+      });
+    }
     const rows = printableRows(item).map(row => (
       '<tr><th>' + escapeHTML(row[0]) + '</th><td>' + escapeHTML(row[1]) + '</td></tr>'
     )).join('');

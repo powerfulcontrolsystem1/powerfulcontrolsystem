@@ -59,6 +59,7 @@ type EmpresaAIUContrato struct {
 	Observaciones         string              `json:"observaciones,omitempty"`
 	Items                 []EmpresaAIUItem    `json:"items,omitempty"`
 	Facturas              []EmpresaAIUFactura `json:"facturas,omitempty"`
+	Eventos               []EmpresaAIUEvento  `json:"eventos,omitempty"`
 }
 
 type EmpresaAIUItem struct {
@@ -98,6 +99,18 @@ type EmpresaAIUFactura struct {
 	Observaciones    string  `json:"observaciones,omitempty"`
 }
 
+type EmpresaAIUEvento struct {
+	ID             int64  `json:"id"`
+	EmpresaID      int64  `json:"empresa_id"`
+	ContratoID     int64  `json:"contrato_id"`
+	Tipo           string `json:"tipo"`
+	EstadoAnterior string `json:"estado_anterior,omitempty"`
+	EstadoNuevo    string `json:"estado_nuevo,omitempty"`
+	Usuario        string `json:"usuario,omitempty"`
+	Detalle        string `json:"detalle,omitempty"`
+	FechaCreacion  string `json:"fecha_creacion,omitempty"`
+}
+
 type EmpresaAIUDashboard struct {
 	EmpresaID          int64                `json:"empresa_id"`
 	ContratosActivos   int                  `json:"contratos_activos"`
@@ -114,6 +127,7 @@ type EmpresaAIUDashboard struct {
 	Alertas            []string             `json:"alertas"`
 	UltimosContratos   []EmpresaAIUContrato `json:"ultimos_contratos"`
 	UltimasFacturas    []EmpresaAIUFactura  `json:"ultimas_facturas"`
+	UltimosEventos     []EmpresaAIUEvento   `json:"ultimos_eventos"`
 }
 
 func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
@@ -207,6 +221,18 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id, documento_codigo)
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_aiu_facturas_contrato ON empresa_aiu_facturas(empresa_id, contrato_id)`,
+		`CREATE TABLE IF NOT EXISTS empresa_aiu_eventos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			contrato_id INTEGER NOT NULL,
+			tipo TEXT NOT NULL,
+			estado_anterior TEXT,
+			estado_nuevo TEXT,
+			usuario TEXT,
+			detalle TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_aiu_eventos_contrato ON empresa_aiu_eventos(empresa_id, contrato_id, id DESC)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
@@ -260,6 +286,10 @@ func UpsertEmpresaAIUContrato(dbConn *sql.DB, item EmpresaAIUContrato) (int64, e
 	if item.EmpresaID <= 0 || item.Codigo == "" || item.Nombre == "" {
 		return 0, errors.New("empresa_id, codigo y nombre son obligatorios")
 	}
+	if err := ValidateEmpresaAIUContrato(item); err != nil {
+		return 0, err
+	}
+	previous, previousErr := GetEmpresaAIUContratoByCodigo(dbConn, item.EmpresaID, item.Codigo)
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_aiu_contratos
 		(empresa_id,codigo,nombre,cliente_id,cliente_nombre,responsable,centro_costo,modalidad_contrato,tipo_obra,modelo_aiu,base_iva_modo,porcentaje_admin,porcentaje_imprevistos,porcentaje_utilidad,porcentaje_iva,porcentaje_retencion_fuente,porcentaje_retencion_ica,porcentaje_retencion_iva,porcentaje_anticipo,porcentaje_garantia,avance_porcentaje,fecha_inicio,fecha_fin,estado,riesgo_nivel,observaciones,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -284,6 +314,13 @@ func UpsertEmpresaAIUContrato(dbConn *sql.DB, item EmpresaAIUContrato) (int64, e
 	if err != nil {
 		return id, err
 	}
+	eventType := "contrato_creado"
+	previousEstado := ""
+	if previousErr == nil && previous.ID > 0 {
+		eventType = "contrato_actualizado"
+		previousEstado = previous.Estado
+	}
+	_ = RegistrarEmpresaAIUEvento(dbConn, item.EmpresaID, row.ID, eventType, previousEstado, row.Estado, item.UsuarioCreador, "Contrato AIU guardado")
 	return row.ID, RecalcularEmpresaAIUContrato(dbConn, item.EmpresaID, row.ID)
 }
 
@@ -295,6 +332,9 @@ func CreateEmpresaAIUItem(dbConn *sql.DB, item EmpresaAIUItem) (int64, error) {
 	if item.EmpresaID <= 0 || item.ContratoID <= 0 || item.Descripcion == "" {
 		return 0, errors.New("contrato y descripcion son obligatorios")
 	}
+	if item.Cantidad <= 0 || item.ValorUnitario <= 0 {
+		return 0, errors.New("cantidad y valor unitario deben ser mayores que cero")
+	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_aiu_items
 		(empresa_id,contrato_id,capitulo,descripcion,unidad,cantidad,valor_unitario,valor_total,estado)
 		VALUES (?,?,?,?,?,?,?,?,?)`,
@@ -302,6 +342,7 @@ func CreateEmpresaAIUItem(dbConn *sql.DB, item EmpresaAIUItem) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	_ = RegistrarEmpresaAIUEvento(dbConn, item.EmpresaID, item.ContratoID, "concepto_agregado", "", "", "", fmt.Sprintf("%s: %.2f x %.2f", item.Descripcion, item.Cantidad, item.ValorUnitario))
 	return id, RecalcularEmpresaAIUContrato(dbConn, item.EmpresaID, item.ContratoID)
 }
 
@@ -339,6 +380,7 @@ func GetEmpresaAIUContratoByCodigo(dbConn *sql.DB, empresaID int64, codigo strin
 		if row.Codigo == codigo {
 			row.Items, _ = ListEmpresaAIUItems(dbConn, empresaID, row.ID)
 			row.Facturas, _ = ListEmpresaAIUFacturas(dbConn, empresaID, row.ID, 100)
+			row.Eventos, _ = ListEmpresaAIUEventos(dbConn, empresaID, row.ID, 100)
 			return row, nil
 		}
 	}
@@ -354,6 +396,7 @@ func GetEmpresaAIUContrato(dbConn *sql.DB, empresaID, id int64) (EmpresaAIUContr
 		if row.ID == id {
 			row.Items, _ = ListEmpresaAIUItems(dbConn, empresaID, id)
 			row.Facturas, _ = ListEmpresaAIUFacturas(dbConn, empresaID, id, 100)
+			row.Eventos, _ = ListEmpresaAIUEventos(dbConn, empresaID, id, 100)
 			return row, nil
 		}
 	}
@@ -449,12 +492,66 @@ func ListEmpresaAIUFacturas(dbConn *sql.DB, empresaID, contratoID int64, limit i
 	return out, rows.Err()
 }
 
+func RegistrarEmpresaAIUEvento(dbConn *sql.DB, empresaID, contratoID int64, tipo, estadoAnterior, estadoNuevo, usuario, detalle string) error {
+	if empresaID <= 0 || contratoID <= 0 {
+		return nil
+	}
+	tipo = normalizeAIUText(tipo, "evento")
+	estadoAnterior = strings.TrimSpace(estadoAnterior)
+	estadoNuevo = strings.TrimSpace(estadoNuevo)
+	usuario = strings.TrimSpace(usuario)
+	detalle = strings.TrimSpace(detalle)
+	_, err := ExecCompat(dbConn, `INSERT INTO empresa_aiu_eventos
+		(empresa_id,contrato_id,tipo,estado_anterior,estado_nuevo,usuario,detalle)
+		VALUES (?,?,?,?,?,?,?)`,
+		empresaID, contratoID, tipo, estadoAnterior, estadoNuevo, usuario, detalle)
+	return err
+}
+
+func ListEmpresaAIUEventos(dbConn *sql.DB, empresaID, contratoID int64, limit int) ([]EmpresaAIUEvento, error) {
+	if err := EnsureEmpresaAIUConstruccionSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	args := []interface{}{empresaID}
+	where := "empresa_id=?"
+	if contratoID > 0 {
+		where += " AND contrato_id=?"
+		args = append(args, contratoID)
+	}
+	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,contrato_id,COALESCE(tipo,''),COALESCE(estado_anterior,''),COALESCE(estado_nuevo,''),COALESCE(usuario,''),COALESCE(detalle,''),COALESCE(fecha_creacion,'') FROM empresa_aiu_eventos WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaAIUEvento{}
+	for rows.Next() {
+		var x EmpresaAIUEvento
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ContratoID, &x.Tipo, &x.EstadoAnterior, &x.EstadoNuevo, &x.Usuario, &x.Detalle, &x.FechaCreacion); err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 func RegistrarEmpresaAIUFactura(dbConn *sql.DB, empresaID, contratoID int64, documentoCodigo, periodo, usuario string) (EmpresaAIUFactura, error) {
 	row, err := GetEmpresaAIUContrato(dbConn, empresaID, contratoID)
 	if err != nil {
 		return EmpresaAIUFactura{}, err
 	}
+	if !aiuContratoPuedeFacturarse(row.Estado) {
+		return EmpresaAIUFactura{}, fmt.Errorf("contrato AIU no facturable en estado %s; debe estar aprobado o en ejecucion", row.Estado)
+	}
+	if len(row.Items) == 0 && row.CostoDirecto <= 0 {
+		return EmpresaAIUFactura{}, errors.New("contrato AIU sin costo directo ni conceptos de obra")
+	}
 	row = CalculateEmpresaAIUContrato(row)
+	if row.TotalFactura <= 0 || row.NetoCobrar <= 0 {
+		return EmpresaAIUFactura{}, errors.New("contrato AIU sin valor neto positivo para facturar")
+	}
 	documentoCodigo = strings.ToUpper(strings.TrimSpace(documentoCodigo))
 	if documentoCodigo == "" {
 		documentoCodigo = fmt.Sprintf("AIU-%s-%d", row.Codigo, time.Now().Unix())
@@ -479,6 +576,7 @@ func RegistrarEmpresaAIUFactura(dbConn *sql.DB, empresaID, contratoID int64, doc
 		return EmpresaAIUFactura{}, err
 	}
 	_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET documento_codigo=?, estado='facturado', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, documentoCodigo, empresaID, contratoID)
+	_ = RegistrarEmpresaAIUEvento(dbConn, empresaID, contratoID, "factura_generada", row.Estado, "facturado", usuario, fmt.Sprintf("Documento %s por %.2f neto %.2f", documentoCodigo, row.TotalFactura, row.NetoCobrar))
 	facturas, err := ListEmpresaAIUFacturas(dbConn, empresaID, contratoID, 1)
 	if err != nil || len(facturas) == 0 {
 		return EmpresaAIUFactura{}, err
@@ -491,6 +589,7 @@ func BuildEmpresaAIUDashboard(dbConn *sql.DB, empresaID int64) (EmpresaAIUDashbo
 	if err != nil {
 		return EmpresaAIUDashboard{}, err
 	}
+	eventos, _ := ListEmpresaAIUEventos(dbConn, empresaID, 0, 20)
 	facturas, err := ListEmpresaAIUFacturas(dbConn, empresaID, 0, 500)
 	if err != nil {
 		return EmpresaAIUDashboard{}, err
@@ -508,6 +607,7 @@ func BuildEmpresaAIUDashboard(dbConn *sql.DB, empresaID int64) (EmpresaAIUDashbo
 		ContratosPorEstado: map[string]int{},
 		UltimosContratos:   ultimosContratos,
 		UltimasFacturas:    ultimasFacturas,
+		UltimosEventos:     eventos,
 	}
 	for _, c := range contratos {
 		out.ContratosPorEstado[c.Estado] += 1
@@ -528,6 +628,17 @@ func BuildEmpresaAIUDashboard(dbConn *sql.DB, empresaID int64) (EmpresaAIUDashbo
 		}
 		if c.TotalFactura > 0 && c.NetoCobrar < 0 {
 			out.Alertas = append(out.Alertas, fmt.Sprintf("%s tiene neto a cobrar negativo por retenciones/anticipos.", c.Codigo))
+		}
+		if c.Estado == "borrador" && c.CostoDirecto > 0 {
+			out.Alertas = append(out.Alertas, fmt.Sprintf("%s tiene costos cargados pero sigue en borrador.", c.Codigo))
+		}
+		if c.RiesgoNivel == "critico" || c.RiesgoNivel == "alto" {
+			out.Alertas = append(out.Alertas, fmt.Sprintf("%s esta marcado con riesgo %s.", c.Codigo, c.RiesgoNivel))
+		}
+		if strings.TrimSpace(c.FechaFin) != "" && c.Estado != "facturado" && c.Estado != "cerrado" && c.Estado != "anulado" {
+			if end, err := time.Parse("2006-01-02", c.FechaFin); err == nil && end.Before(time.Now().AddDate(0, 0, -1)) {
+				out.Alertas = append(out.Alertas, fmt.Sprintf("%s tiene fecha fin vencida y aun no esta cerrado.", c.Codigo))
+			}
 		}
 	}
 	for _, f := range facturas {
@@ -631,6 +742,33 @@ func NormalizeEmpresaAIUContrato(x EmpresaAIUContrato) EmpresaAIUContrato {
 	return x
 }
 
+func ValidateEmpresaAIUContrato(x EmpresaAIUContrato) error {
+	if strings.TrimSpace(x.FechaInicio) != "" {
+		if _, err := time.Parse("2006-01-02", strings.TrimSpace(x.FechaInicio)); err != nil {
+			return errors.New("fecha_inicio debe tener formato YYYY-MM-DD")
+		}
+	}
+	if strings.TrimSpace(x.FechaFin) != "" {
+		if _, err := time.Parse("2006-01-02", strings.TrimSpace(x.FechaFin)); err != nil {
+			return errors.New("fecha_fin debe tener formato YYYY-MM-DD")
+		}
+	}
+	if strings.TrimSpace(x.FechaInicio) != "" && strings.TrimSpace(x.FechaFin) != "" {
+		inicio, _ := time.Parse("2006-01-02", strings.TrimSpace(x.FechaInicio))
+		fin, _ := time.Parse("2006-01-02", strings.TrimSpace(x.FechaFin))
+		if fin.Before(inicio) {
+			return errors.New("fecha_fin no puede ser anterior a fecha_inicio")
+		}
+	}
+	if x.Estado == "aprobado" && strings.TrimSpace(x.Responsable) == "" {
+		return errors.New("un contrato aprobado requiere responsable de obra")
+	}
+	if (x.Estado == "en_ejecucion" || x.Estado == "facturado" || x.Estado == "cerrado") && strings.TrimSpace(x.CentroCosto) == "" {
+		return errors.New("contratos en ejecucion, facturados o cerrados requieren centro de costo")
+	}
+	return nil
+}
+
 func UpdateEmpresaAIUContratoEstado(dbConn *sql.DB, empresaID, contratoID int64, estado, usuario, observacion string) (EmpresaAIUContrato, error) {
 	if err := EnsureEmpresaAIUConstruccionSchema(dbConn); err != nil {
 		return EmpresaAIUContrato{}, err
@@ -642,6 +780,21 @@ func UpdateEmpresaAIUContratoEstado(dbConn *sql.DB, empresaID, contratoID int64,
 	next := normalizeEmpresaAIUEstado(estado)
 	if !aiuEstadoTransitionAllowed(row.Estado, next) {
 		return EmpresaAIUContrato{}, fmt.Errorf("transicion AIU no permitida: %s -> %s", row.Estado, next)
+	}
+	if next == "aprobado" && strings.TrimSpace(row.Responsable) == "" {
+		return EmpresaAIUContrato{}, errors.New("para aprobar debes asignar responsable de obra")
+	}
+	if next == "en_ejecucion" && strings.TrimSpace(row.CentroCosto) == "" {
+		return EmpresaAIUContrato{}, errors.New("para iniciar debes asignar centro de costo")
+	}
+	if next == "facturado" {
+		return EmpresaAIUContrato{}, errors.New("usa Generar factura para cambiar un contrato a facturado con documento electronico")
+	}
+	if next == "cerrado" && row.Estado != "facturado" {
+		return EmpresaAIUContrato{}, errors.New("solo puedes cerrar contratos facturados")
+	}
+	if next == "cerrado" && row.AvancePorcentaje < 100 {
+		return EmpresaAIUContrato{}, errors.New("para cerrar el avance debe estar en 100%")
 	}
 	observacion = strings.TrimSpace(observacion)
 	if observacion != "" {
@@ -660,6 +813,7 @@ func UpdateEmpresaAIUContratoEstado(dbConn *sql.DB, empresaID, contratoID int64,
 		next, aprobadoPor, fechaAprobacion, row.Observaciones, empresaID, contratoID); err != nil {
 		return EmpresaAIUContrato{}, err
 	}
+	_ = RegistrarEmpresaAIUEvento(dbConn, empresaID, contratoID, "cambio_estado", row.Estado, next, usuario, observacion)
 	return GetEmpresaAIUContrato(dbConn, empresaID, contratoID)
 }
 
@@ -757,6 +911,15 @@ func aiuEstadoTransitionAllowed(current, next string) bool {
 		}
 	}
 	return false
+}
+
+func aiuContratoPuedeFacturarse(estado string) bool {
+	switch normalizeEmpresaAIUEstado(estado) {
+	case "aprobado", "en_ejecucion":
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizeAIUText(v, fallback string) string {

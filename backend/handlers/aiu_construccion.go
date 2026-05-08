@@ -54,6 +54,14 @@ func EmpresaAIUConstruccionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "eventos":
+				rows, err := dbpkg.ListEmpresaAIUEventos(dbEmp, empresaID, int64Query(r, "contrato_id"), 300)
+				if err != nil {
+					http.Error(w, "No se pudo listar historial AIU", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
 			case "detalle":
 				row, err := dbpkg.GetEmpresaAIUContrato(dbEmp, empresaID, int64Query(r, "id"))
 				if err != nil {
@@ -90,6 +98,11 @@ func EmpresaAIUConstruccionHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID = empresaID
+				payload = dbpkg.NormalizeEmpresaAIUContrato(payload)
+				if err := dbpkg.ValidateEmpresaAIUContrato(payload); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 				writeJSON(w, http.StatusOK, dbpkg.CalculateEmpresaAIUContrato(payload))
 				return
 			case "contrato":

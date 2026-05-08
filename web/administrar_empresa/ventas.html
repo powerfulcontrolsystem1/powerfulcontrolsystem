@@ -6,6 +6,7 @@
   <title>Reporte de ventas</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/print_documents.js"></script>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -441,6 +442,28 @@
           var notas = norm(cfg.notas_legales);
           var pie = norm(cfg.pie_factura);
           var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
+          if (window.PCSPrint) {
+            return window.PCSPrint.buildDocument({
+              title: "Recibo de venta",
+              kind: norm(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "recibo",
+              format: "pos",
+              company: lines[0] || "Empresa",
+              subtitle: lines.slice(1).join(" | "),
+              badge: "POS",
+              meta: [
+                { label: "Codigo", value: item && item.documento_codigo },
+                { label: "Numero legal", value: numeroLegal },
+                { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) },
+                { label: "Cliente", value: norm(item && item.cliente_nombre) || norm(item && item.cliente_email) },
+                { label: "Estado", value: item && item.estado_documento }
+              ],
+              totalLabel: "Total",
+              totalValue: formatMoney(item && item.monto_total, (item && item.moneda) || "COP"),
+              note: [notas, pie].filter(Boolean).join("\n"),
+              signatures: false,
+              closeAfterPrint: false
+            });
+          }
           return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>'+esc((item && item.documento_codigo) || "Tiquete")+'</title>' +
             '<style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}</style>' +

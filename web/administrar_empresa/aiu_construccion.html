@@ -36,6 +36,10 @@
     .aiu-list-actions{display:flex;gap:6px;flex-wrap:wrap}
     .aiu-alerts{display:grid;gap:8px}
     .aiu-alert{border:1px solid var(--border);border-radius:8px;padding:10px;background:rgba(245,158,11,.12)}
+    .aiu-timeline{display:grid;gap:8px}
+    .aiu-event{border:1px solid var(--border);border-radius:8px;padding:10px;background:rgba(127,127,127,.06)}
+    .aiu-event strong{display:block;margin-bottom:4px}
+    .aiu-event span{display:block;color:var(--muted);font-size:.82rem}
     .aiu-table{width:100%;border-collapse:collapse}
     .aiu-table th,.aiu-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
     .aiu-table th{color:var(--muted);font-size:.84rem}
@@ -182,6 +186,11 @@
           <h2>Alertas</h2>
           <div id="alertasList" class="aiu-alerts">Sin alertas.</div>
         </section>
+
+        <section class="aiu-panel">
+          <h2>Historial y auditoria</h2>
+          <div id="eventosList" class="aiu-timeline">Sin eventos.</div>
+        </section>
       </aside>
     </div>
   </main>
@@ -216,6 +225,13 @@
           fecha_fin: txt("fecha_fin"), estado: txt("estado"), riesgo_nivel: txt("riesgo_nivel"), observaciones: txt("observaciones")
         };
       }
+      function validateContratoPayload(payload){
+        if(!payload.codigo || !payload.nombre) return "Codigo y nombre son obligatorios.";
+        if(payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) return "La fecha fin no puede ser anterior a la fecha inicio.";
+        if(payload.estado === "aprobado" && !payload.responsable) return "Para aprobar debes asignar responsable de obra.";
+        if((payload.estado === "en_ejecucion" || payload.estado === "facturado" || payload.estado === "cerrado") && !payload.centro_costo) return "Para ejecucion, facturacion o cierre debes asignar centro de costo.";
+        return "";
+      }
       function renderResumen(row){
         const r = row || {};
         const retenciones = Number(r.valor_retencion_fuente || 0) + Number(r.valor_retencion_ica || 0) + Number(r.valor_retencion_iva || 0);
@@ -244,6 +260,7 @@
         renderResumen(row);
         renderItems(row.items || []);
         renderFacturas(row.facturas || []);
+        renderEventos(row.eventos || []);
       }
       function clearForm(){
         currentContrato = null;
@@ -252,7 +269,7 @@
         el("modelo_aiu").value = "base_aiu_sumada"; el("base_iva_modo").value = "utilidad"; el("porcentaje_admin").value = "10"; el("porcentaje_imprevistos").value = "5"; el("porcentaje_utilidad").value = "10"; el("porcentaje_iva").value = "19"; el("avance_porcentaje").value = "0";
         ["porcentaje_retencion_fuente","porcentaje_retencion_ica","porcentaje_retencion_iva","porcentaje_anticipo","porcentaje_garantia"].forEach(k => el(k).value = "0");
         el("contrato_id").value = ""; el("factura_documento_codigo").value = ""; el("facturaResult").textContent = "";
-        renderResumen(null); renderItems([]); renderFacturas([]);
+        renderResumen(null); renderItems([]); renderFacturas([]); renderEventos([]);
       }
       function statusBadge(status){ return `<span class="aiu-status ${html(status)}">${html(String(status || "").replace(/_/g," "))}</span>`; }
       function renderItems(items){
@@ -278,6 +295,13 @@
       function renderAlertas(alertas){
         el("alertasList").innerHTML = alertas && alertas.length ? alertas.map(a => `<div class="aiu-alert">${html(a)}</div>`).join("") : "Sin alertas.";
       }
+      function renderEventos(rows){
+        const eventos = rows || [];
+        el("eventosList").innerHTML = eventos.length ? eventos.slice(0, 12).map(x => {
+          const estado = x.estado_nuevo ? `${html(x.estado_anterior || "-")} -> ${html(x.estado_nuevo)}` : "";
+          return `<div class="aiu-event"><strong>${html(String(x.tipo || "").replace(/_/g," "))}</strong><span>${html(x.fecha_creacion || "")} ${estado}</span><span>${html(x.detalle || "")}</span></div>`;
+        }).join("") : "Sin eventos.";
+      }
       async function loadDashboard(){
         const data = await read(await fetch(api("dashboard")));
         el("kpiActivos").textContent = data.contratos_activos || 0;
@@ -289,6 +313,7 @@
         renderContratos(data.ultimos_contratos || []);
         renderAlertas(data.alertas || []);
         renderFacturas(data.ultimas_facturas || []);
+        renderEventos(data.ultimos_eventos || []);
       }
       async function loadContratos(){
         const params = new URLSearchParams({ empresa_id: empresaID, action: "contratos", q: txt("filtro_q"), estado: txt("filtro_estado") });
@@ -296,7 +321,10 @@
       }
       async function loadDetalle(id){ fillForm(await read(await fetch(api("detalle") + "&id=" + encodeURIComponent(id)))); }
       async function saveContrato(){
-        const data = await read(await fetch(api("contrato"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(contratoPayload()) }));
+        const payload = contratoPayload();
+        const validation = validateContratoPayload(payload);
+        if(validation){ setMsg(validation, true); return; }
+        const data = await read(await fetch(api("contrato"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) }));
         fillForm(data.contrato); await loadDashboard(); setMsg("Contrato AIU guardado.", false);
       }
       async function changeState(next){
@@ -316,7 +344,7 @@
         URL.revokeObjectURL(a.href);
       }
       el("contratoForm").addEventListener("submit", e => { e.preventDefault(); saveContrato().catch(err => setMsg(err.message, true)); });
-      el("btnCalcular").addEventListener("click", async () => { try { renderResumen(await read(await fetch(api("calcular"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(contratoPayload()) }))); } catch(err){ setMsg(err.message, true); } });
+      el("btnCalcular").addEventListener("click", async () => { try { const payload = contratoPayload(); const validation = validateContratoPayload(payload); if(validation){ setMsg(validation, true); return; } renderResumen(await read(await fetch(api("calcular"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) }))); } catch(err){ setMsg(err.message, true); } });
       el("itemForm").addEventListener("submit", async e => {
         e.preventDefault();
         const contratoID = Number(el("contrato_id").value || 0);
@@ -329,6 +357,10 @@
       el("btnGenerarFactura").addEventListener("click", async () => {
         const contratoID = Number(el("contrato_id").value || 0);
         if(!contratoID){ setMsg("Selecciona un contrato.", true); return; }
+        if(currentContrato && !["aprobado","en_ejecucion"].includes(String(currentContrato.estado || ""))){
+          setMsg("Solo puedes facturar contratos aprobados o en ejecucion.", true);
+          return;
+        }
         try {
           const data = await read(await fetch(api("generar_factura"), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contrato_id: contratoID, documento_codigo: txt("factura_documento_codigo"), periodo_contable: txt("factura_periodo"), cliente_nombre: txt("cliente_nombre") }) }));
           el("facturaResult").textContent = JSON.stringify(data, null, 2);

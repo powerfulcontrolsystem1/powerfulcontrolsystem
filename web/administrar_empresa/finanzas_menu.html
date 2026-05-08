@@ -5,6 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Centro financiero y contable</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .fin-center{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%;min-height:0}
+    .fin-center-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .fin-center-title{display:grid;gap:4px}
+    .fin-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
+    .fin-center-title p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.35}
+    .fin-center-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .fin-center-chip{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:8px 10px;font-weight:800;cursor:pointer}
+    .fin-center-chip.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .fin-center-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 12px;background:var(--surface)}
+    .fin-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
+    .fin-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
+    .fin-center-metric strong{display:block;color:var(--text);font-size:1rem;margin-top:4px}
+    .fin-center-frame-wrap{position:relative;min-height:0}
+    .fin-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
+    .fin-center-loading.is-visible{display:block}
+    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-actions{justify-content:flex-start}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}.fin-center-chip{flex:1 1 130px}}
+  </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
 <body class="admin-empresa-shell">
@@ -41,10 +60,67 @@
     </aside>
 
     <main class="admin-content">
-      <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido financiero y contable" class="admin-empresa-frame"></iframe>
+      <section class="fin-center">
+        <div>
+          <div class="fin-center-overview">
+            <div class="fin-center-title">
+              <h1>Centro financiero y contable</h1>
+              <p id="finCenterSubtitle">Operación financiera, contabilidad legal, impuestos, cartera, tesorería y cierres por empresa.</p>
+            </div>
+            <div class="fin-center-actions" aria-label="Accesos financieros principales">
+              <button class="fin-center-chip is-active" type="button" data-frame="/administrar_empresa/finanzas.html">Operación</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/contabilidad_colombia.html">Contabilidad</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/declaraciones_tributarias.html">Tributario</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/tesoreria_presupuesto.html">Tesorería</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/portal_contador.html">Contador</button>
+            </div>
+          </div>
+          <div class="fin-center-health" aria-label="Estado del centro financiero">
+            <div class="fin-center-metric"><span>Base</span><strong>Multiempresa</strong></div>
+            <div class="fin-center-metric"><span>Control</span><strong>Permisos por rol</strong></div>
+            <div class="fin-center-metric"><span>Cierre</span><strong>Fiscal y contable</strong></div>
+            <div class="fin-center-metric"><span>Auditoría</span><strong>Eventos críticos</strong></div>
+          </div>
+        </div>
+        <div class="fin-center-frame-wrap">
+          <div id="finCenterLoading" class="fin-center-loading">Cargando módulo...</div>
+          <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido financiero y contable" class="admin-empresa-frame"></iframe>
+        </div>
+      </section>
     </main>
   </div>
   <script src="/js/administrar_empresa.js"></script>
   <script src="/menu.js"></script>
+  <script>
+    (function(){
+      var frame=document.getElementById("finanzasContentFrame");
+      var loading=document.getElementById("finCenterLoading");
+      var subtitle=document.getElementById("finCenterSubtitle");
+      var copy={
+        "/administrar_empresa/finanzas.html":"Operación financiera, ingresos, egresos, caja y reportes base.",
+        "/administrar_empresa/contabilidad_colombia.html":"PUC, terceros, impuestos, comprobantes, auditoría y cierres.",
+        "/administrar_empresa/declaraciones_tributarias.html":"Declaraciones tributarias y control de cumplimiento.",
+        "/administrar_empresa/tesoreria_presupuesto.html":"Tesorería, presupuesto y seguimiento de caja proyectada.",
+        "/administrar_empresa/portal_contador.html":"Portal de contador con revisión documental y soporte contable."
+      };
+      function withEmpresa(url){
+        try{
+          var id=(parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext())||new URLSearchParams(location.search).get("empresa_id")||"";
+          if(!id)return url;
+          return url+(url.indexOf("?")>=0?"&":"?")+"empresa_id="+encodeURIComponent(id);
+        }catch(e){return url;}
+      }
+      document.querySelectorAll(".fin-center-chip").forEach(function(btn){
+        btn.addEventListener("click",function(){
+          document.querySelectorAll(".fin-center-chip").forEach(function(x){x.classList.toggle("is-active",x===btn);});
+          var target=btn.getAttribute("data-frame");
+          subtitle.textContent=copy[target]||"Centro financiero y contable por empresa.";
+          loading.classList.add("is-visible");
+          frame.src=withEmpresa(target);
+        });
+      });
+      frame.addEventListener("load",function(){loading.classList.remove("is-visible");});
+    })();
+  </script>
 </body>
 </html>

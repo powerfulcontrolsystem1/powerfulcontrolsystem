@@ -1684,6 +1684,8 @@ func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 func resolveContabilidadColombiaPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
+	case "dashboard", "comprobante", "periodos", "eventos":
+		return permActionRead
 	case "cerrar_periodo", "reabrir_periodo", "seed":
 		return permActionApprove
 	case "anular_comprobante":
@@ -1786,7 +1788,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 func resolveAIUConstruccionPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "dashboard", "contratos", "detalle", "facturas", "reporte":
+	case "dashboard", "contratos", "detalle", "facturas", "eventos", "reporte":
 		return permActionRead
 	case "generar_factura", "aprobar", "cerrar", "facturar", "estado":
 		return permActionApprove

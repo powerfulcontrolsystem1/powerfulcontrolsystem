@@ -94,6 +94,14 @@ func EmpresaContabilidadColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "eventos":
+				rows, err := dbpkg.ListEmpresaContabilidadEventos(dbEmp, empresaID, int64Query(r, "comprobante_id"), 300)
+				if err != nil {
+					http.Error(w, "No se pudo listar historial contable", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
 			}
 		case http.MethodPost, http.MethodPut:
 			switch action {

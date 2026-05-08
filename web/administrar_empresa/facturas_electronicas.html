@@ -6,6 +6,7 @@
   <title>Facturas electrónicas y comprobantes</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/print_documents.js"></script>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -499,6 +500,29 @@
           var notas = normalize(cfg.notas_legales);
           var pie = normalize(cfg.pie_factura);
           var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
+          if (window.PCSPrint) {
+            return window.PCSPrint.buildDocument({
+              title: getPrintableDocumentMeta(item).title,
+              kind: normalize(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "comprobante",
+              format: "pos",
+              company: lines[0] || "Empresa",
+              subtitle: lines.slice(1).join(" | "),
+              badge: "POS",
+              meta: [
+                { label: "Codigo", value: item && item.documento_codigo },
+                { label: "Numero legal", value: numeroLegal },
+                { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) },
+                { label: "Estado", value: item && item.estado_documento },
+                { label: "Cliente", value: normalize(item && item.cliente_nombre) || normalize(item && item.cliente_email) },
+                { label: "Ambiente", value: item && item.ambiente_fe }
+              ],
+              totalLabel: "Total documento",
+              totalValue: formatMoney(item && item.monto_total, (item && item.moneda) || "COP"),
+              note: [notas, pie, normalize(item && item.codigo_validacion) ? ("Validacion: " + normalize(item && item.codigo_validacion)) : ""].filter(Boolean).join("\n"),
+              signatures: false,
+              closeAfterPrint: false
+            });
+          }
           return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
             '<meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>' + escapeHtml((item && item.documento_codigo) || "Recibo") + '</title>' +

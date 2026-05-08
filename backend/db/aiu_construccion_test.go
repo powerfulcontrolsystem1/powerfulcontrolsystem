@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCalculateEmpresaAIUContratoModeloNoSumado(t *testing.T) {
 	got := CalculateEmpresaAIUContrato(EmpresaAIUContrato{
@@ -80,5 +83,55 @@ func TestAIUEstadoTransitionAllowed(t *testing.T) {
 	}
 	if aiuEstadoTransitionAllowed("cerrado", "en_ejecucion") {
 		t.Fatal("cerrado no debe reabrirse desde AIU")
+	}
+}
+
+func TestValidateEmpresaAIUContratoProfessionalRules(t *testing.T) {
+	got := NormalizeEmpresaAIUContrato(EmpresaAIUContrato{
+		Codigo:      "OBRA-2",
+		Nombre:      "Contrato obra",
+		Estado:      "aprobado",
+		FechaInicio: "2026-05-10",
+		FechaFin:    "2026-05-01",
+	})
+	if err := ValidateEmpresaAIUContrato(got); err == nil || !strings.Contains(err.Error(), "fecha_fin") {
+		t.Fatalf("expected fecha_fin validation error, got %v", err)
+	}
+
+	got.FechaFin = "2026-05-30"
+	if err := ValidateEmpresaAIUContrato(got); err == nil || !strings.Contains(err.Error(), "responsable") {
+		t.Fatalf("expected responsable validation error, got %v", err)
+	}
+
+	got.Responsable = "Director de obra"
+	got.Estado = "en_ejecucion"
+	if err := ValidateEmpresaAIUContrato(got); err == nil || !strings.Contains(err.Error(), "centro de costo") {
+		t.Fatalf("expected centro de costo validation error, got %v", err)
+	}
+}
+
+func TestAIUContratoPuedeFacturarseOnlyApprovedOrInProgress(t *testing.T) {
+	blocked := []string{"borrador", "cotizado", "suspendido", "facturado", "cerrado", "anulado"}
+	for _, estado := range blocked {
+		if aiuContratoPuedeFacturarse(estado) {
+			t.Fatalf("state %s should not be invoiceable", estado)
+		}
+	}
+	for _, estado := range []string{"aprobado", "en_ejecucion"} {
+		if !aiuContratoPuedeFacturarse(estado) {
+			t.Fatalf("state %s should be invoiceable", estado)
+		}
+	}
+}
+
+func TestNormalizeEmpresaAIUItemRequiresRealValueAfterNormalization(t *testing.T) {
+	got := normalizeEmpresaAIUItem(EmpresaAIUItem{
+		Descripcion:   "Campamento",
+		Unidad:        "global",
+		Cantidad:      -1,
+		ValorUnitario: -2500,
+	})
+	if got.Cantidad != 0 || got.ValorUnitario != 0 || got.ValorTotal != 0 {
+		t.Fatalf("expected negative values to normalize to zero, got %#v", got)
 	}
 }

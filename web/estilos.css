@@ -6308,6 +6308,26 @@ html[data-theme="light-gold"] .pp-image-preview-wrap{
   background:var(--bg);
   color:var(--text);
 }
+.estaciones-page{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
+    radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+  color:var(--text);
+}
+.estaciones-page .empresa-module{
+  min-height:calc(100vh - (var(--page-gutter) * 2));
+}
+.estaciones-page .empresa-section{
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 82%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
+  border-color:color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+  box-shadow:0 18px 42px color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.estaciones-page #estacionesStatus{
+  color:var(--muted);
+}
 .empresa-loading-status{
   margin:0 0 12px;
   text-align:center;

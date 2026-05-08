@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/mail"
 	"strings"
 	"time"
 )
@@ -128,6 +129,19 @@ type EmpresaContabilidadPeriodo struct {
 	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
 }
 
+type EmpresaContabilidadEvento struct {
+	ID             int64  `json:"id"`
+	EmpresaID      int64  `json:"empresa_id"`
+	ComprobanteID  int64  `json:"comprobante_id,omitempty"`
+	Tipo           string `json:"tipo"`
+	Referencia     string `json:"referencia,omitempty"`
+	EstadoAnterior string `json:"estado_anterior,omitempty"`
+	EstadoNuevo    string `json:"estado_nuevo,omitempty"`
+	Usuario        string `json:"usuario,omitempty"`
+	Detalle        string `json:"detalle,omitempty"`
+	FechaCreacion  string `json:"fecha_creacion,omitempty"`
+}
+
 type EmpresaContabilidadDashboard struct {
 	EmpresaID            int64                            `json:"empresa_id"`
 	Config               EmpresaContabilidadConfig        `json:"config"`
@@ -136,11 +150,15 @@ type EmpresaContabilidadDashboard struct {
 	Impuestos            int                              `json:"impuestos"`
 	ComprobantesMes      int                              `json:"comprobantes_mes"`
 	ComprobantesBorrador int                              `json:"comprobantes_borrador"`
+	ComprobantesAnulados int                              `json:"comprobantes_anulados"`
+	PeriodosCerrados     int                              `json:"periodos_cerrados"`
 	TotalDebitoMes       float64                          `json:"total_debito_mes"`
 	TotalCreditoMes      float64                          `json:"total_credito_mes"`
 	DiferenciaMes        float64                          `json:"diferencia_mes"`
+	Alertas              []string                         `json:"alertas"`
 	UltimosComprobantes  []EmpresaContabilidadComprobante `json:"ultimos_comprobantes"`
 	Periodos             []EmpresaContabilidadPeriodo     `json:"periodos"`
+	UltimosEventos       []EmpresaContabilidadEvento      `json:"ultimos_eventos"`
 }
 
 func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
@@ -258,6 +276,20 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT,
 			UNIQUE(empresa_id,periodo)
 		)`,
+		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_eventos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			comprobante_id INTEGER DEFAULT 0,
+			tipo TEXT NOT NULL,
+			referencia TEXT,
+			estado_anterior TEXT,
+			estado_nuevo TEXT,
+			usuario TEXT,
+			detalle TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_contabilidad_eventos_empresa ON empresa_contabilidad_colombia_eventos(empresa_id, id DESC)`,
+		`CREATE INDEX IF NOT EXISTS ix_contabilidad_eventos_comprobante ON empresa_contabilidad_colombia_eventos(empresa_id, comprobante_id, id DESC)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
@@ -271,10 +303,13 @@ func SeedEmpresaContabilidadColombiaBase(dbConn *sql.DB, empresaID int64, usuari
 	if err := EnsureEmpresaContabilidadColombiaSchema(dbConn); err != nil {
 		return err
 	}
-	cfg := defaultContabilidadConfig(empresaID)
-	cfg.UsuarioCreador = usuario
-	_ = UpsertEmpresaContabilidadConfig(dbConn, cfg)
 	var count int
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_config WHERE empresa_id=?`, empresaID).Scan(&count)
+	if count == 0 {
+		cfg := defaultContabilidadConfig(empresaID)
+		cfg.UsuarioCreador = usuario
+		_ = UpsertEmpresaContabilidadConfig(dbConn, cfg)
+	}
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_cuentas WHERE empresa_id=?`, empresaID).Scan(&count)
 	if count == 0 {
 		for _, c := range defaultPUCCuentas(empresaID, usuario) {
@@ -317,7 +352,13 @@ func GetEmpresaContabilidadConfig(dbConn *sql.DB, empresaID int64) (EmpresaConta
 
 func UpsertEmpresaContabilidadConfig(dbConn *sql.DB, cfg EmpresaContabilidadConfig) error {
 	cfg = normalizeContabilidadConfig(cfg)
+	if err := ValidateEmpresaContabilidadConfig(cfg); err != nil {
+		return err
+	}
 	_, err := ExecCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_config (empresa_id,nombre_sistema,moneda,periodo_actual,puc_version,base_niif,bloquear_cierre,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?) ON CONFLICT (empresa_id) DO UPDATE SET nombre_sistema=EXCLUDED.nombre_sistema, moneda=EXCLUDED.moneda, periodo_actual=EXCLUDED.periodo_actual, puc_version=EXCLUDED.puc_version, base_niif=EXCLUDED.base_niif, bloquear_cierre=EXCLUDED.bloquear_cierre, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=EXCLUDED.usuario_creador`, cfg.EmpresaID, cfg.NombreSistema, cfg.Moneda, cfg.PeriodoActual, cfg.PUCVersion, cfg.BaseNIIF, boolInt(cfg.BloquearCierre), cfg.UsuarioCreador)
+	if err == nil {
+		_ = RegistrarEmpresaContabilidadEvento(dbConn, cfg.EmpresaID, 0, "configuracion_actualizada", "", "", "", cfg.UsuarioCreador, fmt.Sprintf("Periodo %s, moneda %s", cfg.PeriodoActual, cfg.Moneda))
+	}
 	return err
 }
 
@@ -330,7 +371,17 @@ func CreateEmpresaContabilidadCuenta(dbConn *sql.DB, x EmpresaContabilidadCuenta
 	x.Naturaleza = firstContabilidadValue(x.Naturaleza, "debito")
 	x.TipoCuenta = firstContabilidadValue(x.TipoCuenta, "auxiliar")
 	x.Estado = firstContabilidadValue(x.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_cuentas (empresa_id,codigo,nombre,naturaleza,tipo_cuenta,cuenta_padre,acepta_movimiento,tercero_requerido,impuesto_requerido,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.Codigo, x.Nombre, x.Naturaleza, x.TipoCuenta, cleanCode(x.CuentaPadre), boolInt(x.AceptaMovimiento), boolInt(x.TerceroRequerido), boolInt(x.ImpuestoRequerido), x.Estado, x.UsuarioCreador)
+	if err := ValidateEmpresaContabilidadCuenta(x); err != nil {
+		return 0, err
+	}
+	if x.TipoCuenta == "mayor" {
+		x.AceptaMovimiento = false
+	}
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_cuentas (empresa_id,codigo,nombre,naturaleza,tipo_cuenta,cuenta_padre,acepta_movimiento,tercero_requerido,impuesto_requerido,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.Codigo, x.Nombre, x.Naturaleza, x.TipoCuenta, cleanCode(x.CuentaPadre), boolInt(x.AceptaMovimiento), boolInt(x.TerceroRequerido), boolInt(x.ImpuestoRequerido), x.Estado, x.UsuarioCreador)
+	if err == nil {
+		_ = RegistrarEmpresaContabilidadEvento(dbConn, x.EmpresaID, 0, "cuenta_creada", x.Codigo, "", x.Estado, x.UsuarioCreador, x.Nombre)
+	}
+	return id, err
 }
 
 func ListEmpresaContabilidadCuentas(dbConn *sql.DB, empresaID int64, q string) ([]EmpresaContabilidadCuenta, error) {
@@ -363,7 +414,7 @@ func ListEmpresaContabilidadCuentas(dbConn *sql.DB, empresaID int64, q string) (
 }
 
 func CreateEmpresaContabilidadTercero(dbConn *sql.DB, x EmpresaContabilidadTercero) (int64, error) {
-	x.Documento = strings.TrimSpace(x.Documento)
+	x.Documento = strings.ReplaceAll(strings.TrimSpace(x.Documento), " ", "")
 	x.Nombre = strings.TrimSpace(x.Nombre)
 	if x.EmpresaID <= 0 || x.Documento == "" || x.Nombre == "" {
 		return 0, errors.New("documento y nombre del tercero son obligatorios")
@@ -372,7 +423,14 @@ func CreateEmpresaContabilidadTercero(dbConn *sql.DB, x EmpresaContabilidadTerce
 	x.TipoTercero = firstContabilidadValue(x.TipoTercero, "cliente_proveedor")
 	x.RegimenFiscal = firstContabilidadValue(x.RegimenFiscal, "responsable_iva")
 	x.Estado = firstContabilidadValue(x.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_terceros (empresa_id,tipo_documento,documento,digito_verificacion,nombre,tipo_tercero,regimen_fiscal,responsabilidades,email,telefono,direccion,municipio,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.TipoDocumento, x.Documento, strings.TrimSpace(x.DigitoVerificacion), x.Nombre, x.TipoTercero, x.RegimenFiscal, strings.TrimSpace(x.Responsabilidades), strings.TrimSpace(x.Email), strings.TrimSpace(x.Telefono), strings.TrimSpace(x.Direccion), strings.TrimSpace(x.Municipio), x.Estado, x.UsuarioCreador)
+	if err := ValidateEmpresaContabilidadTercero(x); err != nil {
+		return 0, err
+	}
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_terceros (empresa_id,tipo_documento,documento,digito_verificacion,nombre,tipo_tercero,regimen_fiscal,responsabilidades,email,telefono,direccion,municipio,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.TipoDocumento, x.Documento, strings.TrimSpace(x.DigitoVerificacion), x.Nombre, x.TipoTercero, x.RegimenFiscal, strings.TrimSpace(x.Responsabilidades), strings.TrimSpace(x.Email), strings.TrimSpace(x.Telefono), strings.TrimSpace(x.Direccion), strings.TrimSpace(x.Municipio), x.Estado, x.UsuarioCreador)
+	if err == nil {
+		_ = RegistrarEmpresaContabilidadEvento(dbConn, x.EmpresaID, 0, "tercero_creado", x.Documento, "", x.Estado, x.UsuarioCreador, x.Nombre)
+	}
+	return id, err
 }
 
 func ListEmpresaContabilidadTerceros(dbConn *sql.DB, empresaID int64, q string) ([]EmpresaContabilidadTercero, error) {
@@ -410,7 +468,14 @@ func CreateEmpresaContabilidadImpuesto(dbConn *sql.DB, x EmpresaContabilidadImpu
 	}
 	x.Tipo = firstContabilidadValue(x.Tipo, "iva")
 	x.Estado = firstContabilidadValue(x.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_impuestos (empresa_id,codigo,nombre,tipo,porcentaje,cuenta_debito,cuenta_credito,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.Codigo, x.Nombre, x.Tipo, x.Porcentaje, cleanCode(x.CuentaDebito), cleanCode(x.CuentaCredito), x.Estado, x.UsuarioCreador)
+	if err := ValidateEmpresaContabilidadImpuesto(x); err != nil {
+		return 0, err
+	}
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_impuestos (empresa_id,codigo,nombre,tipo,porcentaje,cuenta_debito,cuenta_credito,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, x.Codigo, x.Nombre, x.Tipo, x.Porcentaje, cleanCode(x.CuentaDebito), cleanCode(x.CuentaCredito), x.Estado, x.UsuarioCreador)
+	if err == nil {
+		_ = RegistrarEmpresaContabilidadEvento(dbConn, x.EmpresaID, 0, "impuesto_creado", x.Codigo, "", x.Estado, x.UsuarioCreador, fmt.Sprintf("%s %.3f%%", x.Tipo, x.Porcentaje))
+	}
+	return id, err
 }
 
 func ListEmpresaContabilidadImpuestos(dbConn *sql.DB, empresaID int64) ([]EmpresaContabilidadImpuesto, error) {
@@ -434,6 +499,9 @@ func ListEmpresaContabilidadImpuestos(dbConn *sql.DB, empresaID int64) ([]Empres
 }
 
 func CreateEmpresaContabilidadComprobante(dbConn *sql.DB, x EmpresaContabilidadComprobante) (int64, error) {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
 	if err := SeedEmpresaContabilidadColombiaBase(dbConn, x.EmpresaID, x.UsuarioCreador); err != nil {
 		return 0, err
 	}
@@ -448,36 +516,40 @@ func CreateEmpresaContabilidadComprobante(dbConn *sql.DB, x EmpresaContabilidadC
 	x.PeriodoContable = firstContabilidadValue(x.PeriodoContable, periodFromDate(x.FechaComprobante))
 	x.Estado = firstContabilidadValue(x.Estado, "contabilizado")
 	x.OrigenModulo = firstContabilidadValue(x.OrigenModulo, "manual")
+	if err := ValidateEmpresaContabilidadComprobante(x); err != nil {
+		return 0, err
+	}
 	if err := assertContabilidadPeriodoAbierto(dbConn, x.EmpresaID, x.PeriodoContable); err != nil {
 		return 0, err
 	}
-	var deb, cred float64
-	for _, line := range x.Lineas {
-		if cleanCode(line.CuentaCodigo) == "" {
-			return 0, errors.New("todas las lineas requieren cuenta contable")
-		}
-		deb += line.Debito
-		cred += line.Credito
+	deb, cred, err := validateEmpresaContabilidadLineas(dbConn, x)
+	if err != nil {
+		return 0, err
 	}
-	deb, cred = roundContabilidad(deb), roundContabilidad(cred)
 	diff := roundContabilidad(deb - cred)
-	if math.Abs(diff) > 0.009 {
-		return 0, fmt.Errorf("comprobante descuadrado: debito %.2f credito %.2f", deb, cred)
-	}
 	code, err := nextContabilidadComprobanteCode(dbConn, x.EmpresaID, x.TipoComprobante)
 	if err != nil {
 		return 0, err
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_comprobantes (empresa_id,codigo,tipo_comprobante,fecha_comprobante,periodo_contable,tercero_id,concepto,origen_modulo,referencia_externa,estado,total_debito,total_credito,diferencia,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, code, x.TipoComprobante, x.FechaComprobante, x.PeriodoContable, x.TerceroID, strings.TrimSpace(x.Concepto), x.OrigenModulo, strings.TrimSpace(x.ReferenciaExterna), x.Estado, deb, cred, diff, strings.TrimSpace(x.Observaciones), x.UsuarioCreador)
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_contabilidad_colombia_comprobantes (empresa_id,codigo,tipo_comprobante,fecha_comprobante,periodo_contable,tercero_id,concepto,origen_modulo,referencia_externa,estado,total_debito,total_credito,diferencia,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, x.EmpresaID, code, x.TipoComprobante, x.FechaComprobante, x.PeriodoContable, x.TerceroID, strings.TrimSpace(x.Concepto), x.OrigenModulo, strings.TrimSpace(x.ReferenciaExterna), x.Estado, deb, cred, diff, strings.TrimSpace(x.Observaciones), x.UsuarioCreador)
 	if err != nil {
 		return 0, err
 	}
 	for _, line := range x.Lineas {
-		_, err := insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_lineas (empresa_id,comprobante_id,cuenta_codigo,tercero_id,detalle,debito,credito,base_gravable,impuesto_codigo,centro_costo) VALUES (?,?,?,?,?,?,?,?,?,?)`, x.EmpresaID, id, cleanCode(line.CuentaCodigo), line.TerceroID, strings.TrimSpace(line.Detalle), roundContabilidad(line.Debito), roundContabilidad(line.Credito), roundContabilidad(line.BaseGravable), strings.ToUpper(strings.TrimSpace(line.ImpuestoCodigo)), strings.TrimSpace(line.CentroCosto))
+		_, err := insertTxSQLCompat(tx, `INSERT INTO empresa_contabilidad_colombia_lineas (empresa_id,comprobante_id,cuenta_codigo,tercero_id,detalle,debito,credito,base_gravable,impuesto_codigo,centro_costo) VALUES (?,?,?,?,?,?,?,?,?,?)`, x.EmpresaID, id, cleanCode(line.CuentaCodigo), line.TerceroID, strings.TrimSpace(line.Detalle), roundContabilidad(line.Debito), roundContabilidad(line.Credito), roundContabilidad(line.BaseGravable), strings.ToUpper(strings.TrimSpace(line.ImpuestoCodigo)), strings.TrimSpace(line.CentroCosto))
 		if err != nil {
 			return 0, err
 		}
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	_ = RegistrarEmpresaContabilidadEvento(dbConn, x.EmpresaID, id, "comprobante_contabilizado", code, "", x.Estado, x.UsuarioCreador, fmt.Sprintf("%s por %.2f", x.Concepto, deb))
 	return id, nil
 }
 
@@ -545,8 +617,62 @@ func GetEmpresaContabilidadComprobante(dbConn *sql.DB, empresaID, id int64) (Emp
 	return out, lineRows.Err()
 }
 
+func RegistrarEmpresaContabilidadEvento(dbConn *sql.DB, empresaID, comprobanteID int64, tipo, referencia, estadoAnterior, estadoNuevo, usuario, detalle string) error {
+	if empresaID <= 0 {
+		return nil
+	}
+	tipo = normalizeContabilidadEventoTipo(tipo)
+	_, err := ExecCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_eventos
+		(empresa_id,comprobante_id,tipo,referencia,estado_anterior,estado_nuevo,usuario,detalle)
+		VALUES (?,?,?,?,?,?,?,?)`,
+		empresaID, comprobanteID, tipo, strings.TrimSpace(referencia), strings.TrimSpace(estadoAnterior), strings.TrimSpace(estadoNuevo), strings.TrimSpace(usuario), strings.TrimSpace(detalle))
+	return err
+}
+
+func ListEmpresaContabilidadEventos(dbConn *sql.DB, empresaID, comprobanteID int64, limit int) ([]EmpresaContabilidadEvento, error) {
+	if err := EnsureEmpresaContabilidadColombiaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	where := "empresa_id=?"
+	args := []interface{}{empresaID}
+	if comprobanteID > 0 {
+		where += " AND comprobante_id=?"
+		args = append(args, comprobanteID)
+	}
+	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,COALESCE(comprobante_id,0),COALESCE(tipo,''),COALESCE(referencia,''),COALESCE(estado_anterior,''),COALESCE(estado_nuevo,''),COALESCE(usuario,''),COALESCE(detalle,''),COALESCE(fecha_creacion,'') FROM empresa_contabilidad_colombia_eventos WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []EmpresaContabilidadEvento
+	for rows.Next() {
+		var x EmpresaContabilidadEvento
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ComprobanteID, &x.Tipo, &x.Referencia, &x.EstadoAnterior, &x.EstadoNuevo, &x.Usuario, &x.Detalle, &x.FechaCreacion); err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 func CambiarEstadoEmpresaContabilidadComprobante(dbConn *sql.DB, empresaID, id int64, estado, usuario string) error {
 	estado = firstContabilidadValue(estado, "anulado")
+	if estado != "anulado" {
+		return errors.New("estado contable no permitido")
+	}
+	row, err := GetEmpresaContabilidadComprobante(dbConn, empresaID, id)
+	if err != nil {
+		return err
+	}
+	if row.Estado == "anulado" {
+		return errors.New("el comprobante ya esta anulado")
+	}
+	if err := assertContabilidadPeriodoAbierto(dbConn, empresaID, row.PeriodoContable); err != nil {
+		return err
+	}
 	res, err := ExecCompat(dbConn, `UPDATE empresa_contabilidad_colombia_comprobantes SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=COALESCE(NULLIF(?,''),usuario_creador) WHERE empresa_id=? AND id=?`, estado, usuario, empresaID, id)
 	if err != nil {
 		return err
@@ -554,13 +680,22 @@ func CambiarEstadoEmpresaContabilidadComprobante(dbConn *sql.DB, empresaID, id i
 	if n, _ := res.RowsAffected(); n == 0 {
 		return sql.ErrNoRows
 	}
+	_ = RegistrarEmpresaContabilidadEvento(dbConn, empresaID, id, "comprobante_anulado", row.Codigo, row.Estado, estado, usuario, row.Concepto)
 	return nil
 }
 
 func CerrarEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, usuario, observaciones string) error {
 	periodo = strings.TrimSpace(periodo)
-	if periodo == "" {
-		return errors.New("periodo es obligatorio")
+	if err := validateContabilidadPeriodo(periodo); err != nil {
+		return err
+	}
+	cfg, _ := GetEmpresaContabilidadConfig(dbConn, empresaID)
+	if cfg.BloquearCierre {
+		var borradores int
+		_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_comprobantes WHERE empresa_id=? AND periodo_contable=? AND estado='borrador'`, empresaID, periodo).Scan(&borradores)
+		if borradores > 0 {
+			return fmt.Errorf("no se puede cerrar: existen %d comprobantes en borrador", borradores)
+		}
 	}
 	var deb, cred float64
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(total_debito),0), COALESCE(SUM(total_credito),0) FROM empresa_contabilidad_colombia_comprobantes WHERE empresa_id=? AND periodo_contable=? AND estado='contabilizado'`, empresaID, periodo).Scan(&deb, &cred)
@@ -572,6 +707,7 @@ func CerrarEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, 
 	if err != nil {
 		return err
 	}
+	_ = RegistrarEmpresaContabilidadEvento(dbConn, empresaID, 0, "periodo_cerrado", periodo, "abierto", "cerrado", usuario, strings.TrimSpace(observaciones))
 	t, _ := time.Parse("2006-01", periodo)
 	_, _ = UpsertEmpresaCierreFiscalPeriodo(dbConn, EmpresaCierreFiscalPeriodo{
 		EmpresaID:           empresaID,
@@ -596,10 +732,15 @@ func CerrarEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, 
 }
 
 func ReabrirEmpresaContabilidadPeriodo(dbConn *sql.DB, empresaID int64, periodo, usuario, observaciones string) error {
+	periodo = strings.TrimSpace(periodo)
+	if err := validateContabilidadPeriodo(periodo); err != nil {
+		return err
+	}
 	_, err := ExecCompat(dbConn, `UPDATE empresa_contabilidad_colombia_periodos SET estado='abierto', observaciones=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=COALESCE(NULLIF(?,''),usuario_creador) WHERE empresa_id=? AND periodo=?`, strings.TrimSpace(observaciones), usuario, empresaID, strings.TrimSpace(periodo))
 	if err != nil {
 		return err
 	}
+	_ = RegistrarEmpresaContabilidadEvento(dbConn, empresaID, 0, "periodo_reabierto", periodo, "cerrado", "abierto", usuario, strings.TrimSpace(observaciones))
 	fiscales, _ := ListEmpresaCierreFiscalPeriodos(dbConn, empresaID, "", 240)
 	for _, p := range fiscales {
 		if p.Periodo == strings.TrimSpace(periodo) {
@@ -624,9 +765,13 @@ func BuildEmpresaContabilidadDashboard(dbConn *sql.DB, empresaID int64) (Empresa
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_impuestos WHERE empresa_id=?`, empresaID).Scan(&out.Impuestos)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*), COALESCE(SUM(total_debito),0), COALESCE(SUM(total_credito),0) FROM empresa_contabilidad_colombia_comprobantes WHERE empresa_id=? AND periodo_contable=? AND estado='contabilizado'`, empresaID, cfg.PeriodoActual).Scan(&out.ComprobantesMes, &out.TotalDebitoMes, &out.TotalCreditoMes)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_comprobantes WHERE empresa_id=? AND estado='borrador'`, empresaID).Scan(&out.ComprobantesBorrador)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_comprobantes WHERE empresa_id=? AND estado='anulado'`, empresaID).Scan(&out.ComprobantesAnulados)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_periodos WHERE empresa_id=? AND estado='cerrado'`, empresaID).Scan(&out.PeriodosCerrados)
 	out.DiferenciaMes = roundContabilidad(out.TotalDebitoMes - out.TotalCreditoMes)
 	out.UltimosComprobantes, _ = ListEmpresaContabilidadComprobantes(dbConn, empresaID, "", "", 12)
 	out.Periodos, _ = ListEmpresaContabilidadPeriodos(dbConn, empresaID)
+	out.UltimosEventos, _ = ListEmpresaContabilidadEventos(dbConn, empresaID, 0, 20)
+	out.Alertas = buildEmpresaContabilidadAlertas(dbConn, out)
 	return out, nil
 }
 
@@ -672,6 +817,233 @@ func normalizeContabilidadConfig(cfg EmpresaContabilidadConfig) EmpresaContabili
 	cfg.PUCVersion = firstContabilidadValue(cfg.PUCVersion, "PUC Colombia base")
 	cfg.BaseNIIF = firstContabilidadValue(cfg.BaseNIIF, "NIIF pymes")
 	return cfg
+}
+
+func ValidateEmpresaContabilidadConfig(cfg EmpresaContabilidadConfig) error {
+	if cfg.EmpresaID <= 0 {
+		return errors.New("empresa_id es obligatorio")
+	}
+	if len(cfg.Moneda) != 3 {
+		return errors.New("moneda debe tener codigo ISO de 3 letras")
+	}
+	return validateContabilidadPeriodo(cfg.PeriodoActual)
+}
+
+func ValidateEmpresaContabilidadCuenta(x EmpresaContabilidadCuenta) error {
+	if !isContabilidadCode(x.Codigo) {
+		return errors.New("codigo PUC invalido")
+	}
+	if x.CuentaPadre != "" && !isContabilidadCode(cleanCode(x.CuentaPadre)) {
+		return errors.New("cuenta padre invalida")
+	}
+	if cleanCode(x.CuentaPadre) == x.Codigo {
+		return errors.New("la cuenta padre no puede ser la misma cuenta")
+	}
+	if !contabilidadValueAllowed(x.Naturaleza, "debito", "credito") {
+		return errors.New("naturaleza contable invalida")
+	}
+	if !contabilidadValueAllowed(x.TipoCuenta, "auxiliar", "mayor") {
+		return errors.New("tipo de cuenta invalido")
+	}
+	if !contabilidadValueAllowed(x.Estado, "activo", "inactivo") {
+		return errors.New("estado de cuenta invalido")
+	}
+	return nil
+}
+
+func ValidateEmpresaContabilidadTercero(x EmpresaContabilidadTercero) error {
+	if len(x.Documento) < 4 {
+		return errors.New("documento del tercero demasiado corto")
+	}
+	if strings.TrimSpace(x.Email) != "" {
+		if _, err := mail.ParseAddress(strings.TrimSpace(x.Email)); err != nil {
+			return errors.New("email del tercero invalido")
+		}
+	}
+	if !contabilidadValueAllowed(x.Estado, "activo", "inactivo") {
+		return errors.New("estado del tercero invalido")
+	}
+	return nil
+}
+
+func ValidateEmpresaContabilidadImpuesto(x EmpresaContabilidadImpuesto) error {
+	if x.Porcentaje < 0 || x.Porcentaje > 100 {
+		return errors.New("porcentaje de impuesto fuera de rango")
+	}
+	if x.Porcentaje > 0 && (cleanCode(x.CuentaDebito) == "" || cleanCode(x.CuentaCredito) == "") {
+		return errors.New("impuesto con porcentaje requiere cuentas debito y credito")
+	}
+	if !contabilidadValueAllowed(x.Estado, "activo", "inactivo") {
+		return errors.New("estado del impuesto invalido")
+	}
+	return nil
+}
+
+func ValidateEmpresaContabilidadComprobante(x EmpresaContabilidadComprobante) error {
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(x.FechaComprobante)); err != nil {
+		return errors.New("fecha de comprobante invalida")
+	}
+	if err := validateContabilidadPeriodo(x.PeriodoContable); err != nil {
+		return err
+	}
+	if !strings.HasPrefix(x.FechaComprobante, x.PeriodoContable) {
+		return errors.New("periodo contable no coincide con la fecha del comprobante")
+	}
+	if !contabilidadValueAllowed(x.Estado, "borrador", "contabilizado") {
+		return errors.New("estado de comprobante invalido")
+	}
+	if len(x.Lineas) < 2 {
+		return errors.New("un comprobante contable requiere minimo dos lineas")
+	}
+	return nil
+}
+
+func validateEmpresaContabilidadLineas(dbConn *sql.DB, x EmpresaContabilidadComprobante) (float64, float64, error) {
+	var deb, cred float64
+	if x.TerceroID > 0 {
+		if err := assertContabilidadTerceroActivo(dbConn, x.EmpresaID, x.TerceroID); err != nil {
+			return 0, 0, err
+		}
+	}
+	for i, line := range x.Lineas {
+		idx := i + 1
+		cuenta := cleanCode(line.CuentaCodigo)
+		if cuenta == "" {
+			return 0, 0, fmt.Errorf("linea %d requiere cuenta contable", idx)
+		}
+		line.Debito = roundContabilidad(line.Debito)
+		line.Credito = roundContabilidad(line.Credito)
+		if line.Debito < 0 || line.Credito < 0 {
+			return 0, 0, fmt.Errorf("linea %d no permite valores negativos", idx)
+		}
+		if line.Debito > 0 && line.Credito > 0 {
+			return 0, 0, fmt.Errorf("linea %d no puede tener debito y credito al mismo tiempo", idx)
+		}
+		if line.Debito == 0 && line.Credito == 0 {
+			return 0, 0, fmt.Errorf("linea %d requiere debito o credito", idx)
+		}
+		var aceptaMovimiento, terceroRequerido, impuestoRequerido int
+		var estado string
+		err := QueryRowCompat(dbConn, `SELECT COALESCE(acepta_movimiento,0),COALESCE(tercero_requerido,0),COALESCE(impuesto_requerido,0),COALESCE(estado,'activo') FROM empresa_contabilidad_colombia_cuentas WHERE empresa_id=? AND codigo=?`, x.EmpresaID, cuenta).Scan(&aceptaMovimiento, &terceroRequerido, &impuestoRequerido, &estado)
+		if err != nil {
+			return 0, 0, fmt.Errorf("cuenta contable %s no existe", cuenta)
+		}
+		if strings.ToLower(estado) != "activo" || aceptaMovimiento == 0 {
+			return 0, 0, fmt.Errorf("cuenta contable %s no acepta movimiento", cuenta)
+		}
+		if terceroRequerido > 0 && line.TerceroID <= 0 && x.TerceroID <= 0 {
+			return 0, 0, fmt.Errorf("cuenta %s requiere tercero", cuenta)
+		}
+		if line.TerceroID > 0 {
+			if err := assertContabilidadTerceroActivo(dbConn, x.EmpresaID, line.TerceroID); err != nil {
+				return 0, 0, err
+			}
+		}
+		impuesto := strings.ToUpper(strings.TrimSpace(line.ImpuestoCodigo))
+		if impuestoRequerido > 0 && impuesto == "" {
+			return 0, 0, fmt.Errorf("cuenta %s requiere impuesto", cuenta)
+		}
+		if impuesto != "" {
+			if err := assertContabilidadImpuestoActivo(dbConn, x.EmpresaID, impuesto); err != nil {
+				return 0, 0, err
+			}
+		}
+		deb += line.Debito
+		cred += line.Credito
+	}
+	deb, cred = roundContabilidad(deb), roundContabilidad(cred)
+	if math.Abs(roundContabilidad(deb-cred)) > 0.009 {
+		return 0, 0, fmt.Errorf("comprobante descuadrado: debito %.2f credito %.2f", deb, cred)
+	}
+	return deb, cred, nil
+}
+
+func assertContabilidadTerceroActivo(dbConn *sql.DB, empresaID, terceroID int64) error {
+	var estado string
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(estado,'activo') FROM empresa_contabilidad_colombia_terceros WHERE empresa_id=? AND id=?`, empresaID, terceroID).Scan(&estado); err != nil {
+		return errors.New("tercero contable no existe")
+	}
+	if strings.ToLower(estado) != "activo" {
+		return errors.New("tercero contable inactivo")
+	}
+	return nil
+}
+
+func assertContabilidadImpuestoActivo(dbConn *sql.DB, empresaID int64, codigo string) error {
+	var estado string
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(estado,'activo') FROM empresa_contabilidad_colombia_impuestos WHERE empresa_id=? AND codigo=?`, empresaID, strings.ToUpper(strings.TrimSpace(codigo))).Scan(&estado); err != nil {
+		return fmt.Errorf("impuesto %s no existe", codigo)
+	}
+	if strings.ToLower(estado) != "activo" {
+		return fmt.Errorf("impuesto %s inactivo", codigo)
+	}
+	return nil
+}
+
+func buildEmpresaContabilidadAlertas(dbConn *sql.DB, d EmpresaContabilidadDashboard) []string {
+	alertas := []string{}
+	if math.Abs(d.DiferenciaMes) > 0.009 {
+		alertas = append(alertas, fmt.Sprintf("El periodo %s tiene diferencia contable de %.2f.", d.Config.PeriodoActual, d.DiferenciaMes))
+	}
+	if d.ComprobantesBorrador > 0 {
+		alertas = append(alertas, fmt.Sprintf("Hay %d comprobantes en borrador pendientes por revisar.", d.ComprobantesBorrador))
+	}
+	if d.Cuentas < 10 {
+		alertas = append(alertas, "El PUC parece incompleto; carga o revisa el plan de cuentas base.")
+	}
+	if d.Terceros == 0 {
+		alertas = append(alertas, "No hay terceros contables registrados.")
+	}
+	var cerrado int
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_periodos WHERE empresa_id=? AND periodo=? AND estado='cerrado'`, d.EmpresaID, d.Config.PeriodoActual).Scan(&cerrado)
+	if cerrado > 0 {
+		alertas = append(alertas, fmt.Sprintf("El periodo actual %s esta cerrado para nuevos movimientos.", d.Config.PeriodoActual))
+	}
+	return alertas
+}
+
+func validateContabilidadPeriodo(periodo string) error {
+	periodo = strings.TrimSpace(periodo)
+	if periodo == "" {
+		return errors.New("periodo es obligatorio")
+	}
+	if _, err := time.Parse("2006-01", periodo); err != nil {
+		return errors.New("periodo contable invalido, usa YYYY-MM")
+	}
+	return nil
+}
+
+func isContabilidadCode(v string) bool {
+	v = cleanCode(v)
+	if len(v) < 2 || len(v) > 20 {
+		return false
+	}
+	for _, r := range v {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func contabilidadValueAllowed(v string, allowed ...string) bool {
+	v = strings.ToLower(strings.TrimSpace(v))
+	for _, item := range allowed {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeContabilidadEventoTipo(v string) string {
+	v = strings.ToLower(strings.TrimSpace(v))
+	switch v {
+	case "configuracion_actualizada", "cuenta_creada", "tercero_creado", "impuesto_creado", "comprobante_contabilizado", "comprobante_anulado", "periodo_cerrado", "periodo_reabierto":
+		return v
+	default:
+		return "evento_contable"
+	}
 }
 
 func defaultPUCCuentas(empresaID int64, usuario string) []EmpresaContabilidadCuenta {
