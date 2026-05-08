@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Propiedad Horizontal</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <script src="/menu.js"></script>
   <style>
     body{margin:0;padding:18px;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
@@ -79,6 +80,9 @@
     async function api(action, method, body){const res=await fetch(apiBase+"&action="+action,{method:method||"GET",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"}); const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch(e){} if(!res.ok) throw new Error((data&&data.error)||txt||"Error"); return data;}
     function table(cols, rows){return '<table class="ph-table"><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';}
     function options(items, includeEmpty){return (includeEmpty?'<option value="0">Sin unidad</option>':'')+items.map(u=>'<option value="'+Number(u.id)+'">'+esc(u.codigo)+' '+esc(u.torre||"")+'</option>').join('');}
+    function validTab(tab){return tabDefs.some(t=>t[0]===tab)?tab:"dashboard";}
+    function initialTab(){return validTab(params.get("tab")||params.get("view")||"dashboard");}
+    function activateTab(tab){tab=validTab(tab);document.querySelectorAll(".ph-tabs button").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active"));const panel=document.getElementById("tab-"+tab);if(panel)panel.classList.add("active");}
     function render(d){
       state=d; const c=d.config||{};
       cfgNombre.value=c.nombre_copropiedad||""; cfgNit.value=c.nit||""; cfgTipo.value=c.tipo_copropiedad||"conjunto_residencial"; cfgDireccion.value=c.direccion||""; cfgCiudad.value=c.ciudad||""; cfgAdmin.value=c.administrador||""; cfgTel.value=c.telefono||""; cfgEmail.value=c.email||""; cfgMora.value=c.interes_mora_mensual||2; cfgGracia.value=c.dias_gracia||5; cfgFE.checked=!!c.facturacion_electronica; cfgPortal.checked=!!c.permitir_portal_residente;
@@ -93,7 +97,7 @@
       asambleasBox.innerHTML=table(["Titulo","Fecha","Quorum","Estado","Acta"],(d.asambleas||[]).map(x=>'<tr><td>'+esc(x.titulo)+'</td><td>'+esc(x.fecha)+'</td><td>'+Number(x.quorum_actual||0).toFixed(2)+'% / '+Number(x.quorum_objetivo||0).toFixed(2)+'%</td><td>'+esc(x.estado)+'</td><td>'+esc(x.acta_url)+'</td></tr>'));
     }
     async function load(){render(await api("dashboard"))}
-    tabDefs.forEach((t,i)=>{const b=document.createElement("button"); b.textContent=t[1]; b.className=i?"":"active"; b.onclick=()=>{document.querySelectorAll(".ph-tabs button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active")); document.getElementById("tab-"+t[0]).classList.add("active")}; document.getElementById("tabs").appendChild(b)});
+    tabDefs.forEach((t)=>{const b=document.createElement("button"); b.textContent=t[1]; b.dataset.tab=t[0]; b.onclick=()=>activateTab(t[0]); document.getElementById("tabs").appendChild(b)}); activateTab(initialTab());
     configForm.onsubmit=async e=>{e.preventDefault(); await api("config","POST",{nombre_copropiedad:val("cfgNombre"),nit:val("cfgNit"),tipo_copropiedad:val("cfgTipo"),direccion:val("cfgDireccion"),ciudad:val("cfgCiudad"),administrador:val("cfgAdmin"),telefono:val("cfgTel"),email:val("cfgEmail"),interes_mora_mensual:Number(val("cfgMora")||0),dias_gracia:Number(val("cfgGracia")||0),facturacion_electronica:cfgFE.checked,permitir_portal_residente:cfgPortal.checked}); configMsg.textContent="Configuracion guardada"; load()};
     unidadForm.onsubmit=async e=>{e.preventDefault(); await api("unidad","POST",{codigo:val("uCodigo"),torre:val("uTorre"),piso:val("uPiso"),tipo_unidad:val("uTipo"),area_m2:Number(val("uArea")||0),coeficiente:Number(val("uCoef")||0),cuota_base:Number(val("uCuota")||0),parqueadero:val("uParq"),deposito:val("uDep"),estado:val("uEstado")}); unidadForm.reset(); load()};
     personaForm.onsubmit=async e=>{e.preventDefault(); await api("persona","POST",{unidad_id:Number(val("pUnidad")||0),tipo_relacion:val("pRelacion"),nombre:val("pNombre"),documento:val("pDoc"),telefono:val("pTel"),email:val("pEmail")}); personaForm.reset(); load()};

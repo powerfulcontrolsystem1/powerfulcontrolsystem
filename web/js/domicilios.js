@@ -14,12 +14,15 @@
 
   function msg(text,bad){var el=document.getElementById("domMsg");el.textContent=text||"";el.classList.toggle("is-error",!!bad)}
   function setTab(tab){
+    var allowedTabs={central:1,restaurantes:1,domiciliarios:1,menu:1,config:1};
+    if(!allowedTabs[tab])tab="central";
     document.querySelectorAll("[data-tab]").forEach(function(b){b.classList.toggle("is-active",b.dataset.tab===tab)});
     document.querySelectorAll(".dom-panel").forEach(function(p){p.hidden=p.id!=="panel-"+tab});
     var titles={central:["Central","Monitorea pedidos y ubicación de domiciliarios en tiempo real."],restaurantes:["Restaurantes","Administra aliados, acceso y tiempos de preparación."],domiciliarios:["Domiciliarios","Registra flota, PIN móvil y disponibilidad."],menu:["Menú","Publica productos por restaurante para el portal cliente."],config:["Configuración","Define tarifas, radios, comisiones y seguridad."]};
     document.getElementById("sectionTitle").textContent=titles[tab][0];document.getElementById("sectionSummary").textContent=titles[tab][1];
     if(tab==="central")setTimeout(function(){map.invalidateSize();drawMap()},80);
   }
+  function initialTabFromURL(){var tab=q("tab")||q("view")||q("section");return {central:1,restaurantes:1,domiciliarios:1,menu:1,config:1}[tab]?tab:"central"}
   function fillConfig(c){state.cfg=c||{};document.getElementById("cfgNombreSistema").value=state.cfg.nombre_sistema||"Domicilios";document.getElementById("cfgNombrePortal").value=state.cfg.nombre_portal||"Pide a domicilio";document.getElementById("cfgMoneda").value=state.cfg.moneda||"COP";document.getElementById("cfgCobertura").value=state.cfg.radio_cobertura_km||8;document.getElementById("cfgAsignacion").value=state.cfg.radio_asignacion_km||6;document.getElementById("cfgRonda").value=state.cfg.domiciliarios_por_ronda||5;document.getElementById("cfgTarifaBase").value=state.cfg.tarifa_base||0;document.getElementById("cfgTarifaKm").value=state.cfg.tarifa_km||0;document.getElementById("cfgComision").value=state.cfg.comision_porcentaje||0;document.getElementById("cfgAuto").checked=!!state.cfg.auto_asignar;document.getElementById("cfgPublico").checked=!!state.cfg.permitir_pedidos_publicos;document.getElementById("cfgCodigo").checked=!!state.cfg.exigir_codigo_entrega}
   function fillKpis(d){document.getElementById("kpiPendientes").textContent=d.pedidos_pendientes||0;document.getElementById("kpiPreparacion").textContent=d.pedidos_preparacion||0;document.getElementById("kpiRuta").textContent=d.pedidos_ruta||0;document.getElementById("kpiOnline").textContent=d.domiciliarios_online||0;document.getElementById("kpiDisponibles").textContent=d.domiciliarios_disponibles||0;document.getElementById("kpiVentas").textContent=money(d.ventas_hoy||0)}
   function renderRestaurants(){document.getElementById("restaurantsList").innerHTML=state.restaurants.map(function(r){return '<article class="dom-item"><strong>'+esc(r.nombre)+' <span class="dom-badge">'+esc(r.estado)+'</span></strong><small>'+esc(r.categoria||"Restaurante")+' | '+esc(r.codigo)+' | PIN configurado | '+(r.acepta_pedidos?"Acepta pedidos":"Pausado")+'</small><div class="dom-actions" style="margin-top:8px"><button class="btn secondary" data-edit-rest="'+r.id+'">Editar</button></div></article>'}).join("")||'<div class="dom-item">Sin restaurantes.</div>';var sel=document.getElementById("menuRestaurant");sel.innerHTML=state.restaurants.map(function(r){return '<option value="'+r.id+'">'+esc(r.nombre)+'</option>'}).join("")}
@@ -41,5 +44,6 @@
   document.getElementById("courierNew").onclick=function(){courierForm.reset();courierId.value=""};
   document.getElementById("menuNew").onclick=function(){menuForm.reset();menuId.value="";menuDisponible.checked=true};
   ["openCustomerPortal","openRestaurantPortal","openCourierPortal"].forEach(function(id){var el=document.getElementById(id);var page=id==="openCustomerPortal"?"/domicilios.html":id==="openRestaurantPortal"?"/domicilios_restaurante.html":"/domicilios_domiciliario.html";el.href=page+"?empresa_id="+encodeURIComponent(empresaId)});
+  setTab(initialTabFromURL());
   load();setInterval(load,15000);
 })();

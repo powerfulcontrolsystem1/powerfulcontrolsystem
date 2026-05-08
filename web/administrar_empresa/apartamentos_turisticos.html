@@ -282,8 +282,17 @@
       function setMsg(text,type){ els.aptMsg.textContent = text || ""; els.aptMsg.className = "apt-msg " + (type || ""); }
       function badge(text,type){ return '<span class="apt-badge ' + (type || '') + '">' + escapeHtml(text || '-') + '</span>'; }
       function showPanel(name){
+        var allowed = { dashboard:1, apartamentos:1, reservas:1, tarifas:1, tareas:1, config:1 };
+        if (!allowed[name]) name = "dashboard";
         document.querySelectorAll(".apt-tab").forEach(function(btn){ btn.classList.toggle("is-active", btn.dataset.panel === name); });
         document.querySelectorAll(".apt-panel").forEach(function(panel){ panel.hidden = panel.id !== "panel-" + name; });
+      }
+      function initialPanelFromURL(){
+        try {
+          var params = new URLSearchParams(location.search || "");
+          var panel = params.get("panel") || params.get("tab") || params.get("view") || "";
+          return ({ dashboard:1, apartamentos:1, reservas:1, tarifas:1, tareas:1, config:1 })[panel] ? panel : "dashboard";
+        } catch(e) { return "dashboard"; }
       }
       async function load(){
         if (!state.empresaID) { setMsg("Falta empresa_id en la URL.", "error"); return; }
@@ -426,6 +435,7 @@
       els.btnSaveConfig.addEventListener("click", function(){ saveConfig().catch(function(err){ setMsg(err.message, "error"); }); });
       els.btnSaveState.addEventListener("click", function(){ saveState().catch(function(err){ setMsg(err.message, "error"); }); });
       load().catch(function(err){ setMsg(err.message || "No se pudo cargar apartamentos turísticos.", "error"); });
+      showPanel(initialPanelFromURL());
     })();
   </script>
 </body>

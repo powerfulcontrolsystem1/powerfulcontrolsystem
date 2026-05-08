@@ -607,6 +607,198 @@
       color: var(--accent-yellow, #fbbf24);
       text-shadow: 0 1px 8px color-mix(in srgb, #020617 34%, transparent);
     }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .portal-header,
+    .portal-main,
+    .portal-grid,
+    .home-offer-card,
+    .home-offer-body {
+      min-width: 0;
+    }
+
+    .portal-header {
+      flex-wrap: wrap;
+      gap: 12px 16px;
+    }
+
+    .portal-header .brand-logo {
+      flex: 1 1 360px;
+      min-width: 0;
+    }
+
+    .portal-header .brand-logo img {
+      flex: 0 0 auto;
+    }
+
+    .brand-logo .brand-title-wrap {
+      min-width: 0;
+    }
+
+    .brand-logo .brand-title-wrap span {
+      overflow-wrap: anywhere;
+    }
+
+    .nav-actions {
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .portal-main.container {
+      width: min(100% - 24px, 1200px);
+      margin-inline: auto;
+      overflow-x: hidden;
+    }
+
+    .portal-grid {
+      width: 100%;
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+      box-sizing: border-box;
+      padding-inline: clamp(10px, 3vw, 20px);
+    }
+
+    .portal-home-grid .home-offer-card .home-offer-head .card-logo {
+      width: 36px !important;
+      height: 36px !important;
+      min-width: 36px !important;
+      min-height: 36px !important;
+      flex: 0 0 36px !important;
+    }
+
+    .home-offer-head,
+    .home-offer-head h3,
+    .home-offer-card p,
+    .home-offer-btn {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .home-offer-card p {
+      text-align: left;
+      hyphens: auto;
+    }
+
+    .home-offer-btn {
+      box-sizing: border-box;
+      white-space: normal;
+    }
+
+    .whatsapp-floating-cta,
+    .ai-chat-toggle-button {
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 640px) {
+      .portal-header {
+        align-items: flex-start;
+        padding: 12px 14px;
+      }
+
+      .portal-header .brand-logo {
+        flex-basis: 100%;
+        font-size: clamp(1.05rem, 5vw, 1.3rem);
+      }
+
+      .portal-header .brand-logo img {
+        width: 30px;
+        height: 30px;
+      }
+
+      .brand-logo .brand-subtitle {
+        font-size: 0.9rem;
+      }
+
+      .nav-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .nav-actions .btn,
+      .header-dropdown-toggle {
+        width: 100%;
+        min-height: 42px;
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 0.88rem;
+      }
+
+      .header-dropdown {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .header-dropdown-menu {
+        right: 0;
+        max-width: calc(100vw - 28px);
+      }
+
+      .portal-main.container {
+        width: 100%;
+        margin: 0;
+        padding: 14px 0 88px;
+      }
+
+      .portal-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        padding-inline: 14px;
+      }
+
+      .home-offer-card {
+        border-radius: 10px;
+        padding: 20px 14px !important;
+      }
+
+      .home-offer-card-banner {
+        padding: 0 !important;
+      }
+
+      .home-offer-head {
+        align-items: flex-start;
+        gap: 8px;
+        min-height: auto;
+      }
+
+      .home-offer-head h3,
+      .portal-home-grid[data-text-size="grande"] .home-offer-card h3 {
+        font-size: 1.08rem !important;
+        line-height: 1.24;
+        max-height: none;
+        overflow: visible;
+      }
+
+      .home-offer-card p,
+      .portal-home-grid[data-text-size="grande"] .home-offer-card p {
+        font-size: 0.92rem !important;
+        line-height: 1.45;
+      }
+
+      .home-offer-figure {
+        height: 158px;
+        overflow: hidden;
+      }
+
+      .whatsapp-floating-cta,
+      .ai-chat-toggle-button {
+        right: 12px !important;
+        left: auto !important;
+        bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 12px)) !important;
+        transform: none !important;
+      }
+    }
+    @media (max-width: 360px) {
+      .nav-actions {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 

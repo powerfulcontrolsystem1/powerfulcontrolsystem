@@ -99,6 +99,7 @@
 
   function setTab(tab) {
     var meta = tabMeta[tab] || tabMeta.configuracion;
+    tab = tabMeta[tab] ? tab : "configuracion";
     document.querySelectorAll("[data-turnos-tab]").forEach(function (button) {
       var active = button.getAttribute("data-turnos-tab") === tab;
       button.classList.toggle("is-active", active);
@@ -111,6 +112,11 @@
     var summaryEl = document.getElementById("turnosSectionSummary");
     if (titleEl) titleEl.textContent = meta.title;
     if (summaryEl) summaryEl.textContent = meta.summary;
+  }
+
+  function initialTabFromURL() {
+    var requested = q("tab") || q("view") || q("section");
+    return tabMeta[requested] ? requested : "configuracion";
   }
 
   async function loadConfig() {
@@ -331,7 +337,7 @@
   }
 
   wireActions();
-  setTab("configuracion");
+  setTab(initialTabFromURL());
   setPageMsg("Listo para configurar servicios, emitir tickets y operar la cola.");
   refreshAll().catch(function (e) {
     setMsg(els.emitMsg, e.message, true);

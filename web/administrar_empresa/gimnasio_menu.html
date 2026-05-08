@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gimnasio - Menu</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell empresa-submenu-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Gimnasio</h2>
+      <ul class="nav" id="gimnasioSidebarNav">
+        <li><a id="linkGimnasioDashboard" href="/administrar_empresa/gimnasio.html?tab=dashboard&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Dashboard</a></li>
+        <li><a id="linkGimnasioSocios" href="/administrar_empresa/gimnasio.html?tab=socios&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/customer.svg" alt="">Socios</a></li>
+        <li><a id="linkGimnasioPlanes" href="/administrar_empresa/gimnasio.html?tab=planes&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Planes</a></li>
+        <li><a id="linkGimnasioEntrenadores" href="/administrar_empresa/gimnasio.html?tab=entrenadores&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Entrenadores</a></li>
+        <li><a id="linkGimnasioClases" href="/administrar_empresa/gimnasio.html?tab=clases&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Clases</a></li>
+        <li><a id="linkGimnasioInscripciones" href="/administrar_empresa/gimnasio.html?tab=inscripciones&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/tags-color.svg" alt="">Inscripciones</a></li>
+        <li><a id="linkGimnasioAsistencias" href="/administrar_empresa/gimnasio.html?tab=asistencias&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencias</a></li>
+        <li><a id="linkGimnasioPagos" href="/administrar_empresa/gimnasio.html?tab=pagos&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/money.svg" alt="">Pagos</a></li>
+        <li><a id="linkGimnasioAcceso" href="/administrar_empresa/gimnasio.html?tab=acceso&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/gps.svg" alt="">Control de acceso</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="gimnasioSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe name="gimnasioContentFrame" id="gimnasioContentFrame" src="/administrar_empresa/gimnasio.html?tab=dashboard&submenu=1" title="Contenido de gimnasio" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var VERSION = "20260508-gimnasio-submenu";
+      var activeLink = null;
+
+      function parsePositiveInt(raw) {
+        var n = Number(String(raw || "").trim());
+        if (!Number.isFinite(n)) return 0;
+        n = Math.trunc(n);
+        return n > 0 ? n : 0;
+      }
+
+      window.__resolveEmpresaIdContext = function () {
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          var own = parsePositiveInt(params.get("empresa_id") || params.get("id"));
+          if (own > 0) return own;
+        } catch (_) {}
+        try {
+          if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === "function") {
+            var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+        } catch (_) {}
+        try {
+          var candidates = [
+            sessionStorage.getItem("active_empresa_id"),
+            sessionStorage.getItem("empresa_id"),
+            localStorage.getItem("active_empresa_id"),
+            localStorage.getItem("empresa_id")
+          ];
+          for (var i = 0; i < candidates.length; i += 1) {
+            var parsed = parsePositiveInt(candidates[i]);
+            if (parsed > 0) return parsed;
+          }
+        } catch (_) {}
+        return 0;
+      };
+
+      function withEmpresaAndVersion(rawUrl) {
+        try {
+          var url = new URL(rawUrl, window.location.origin);
+          var empresaId = window.__resolveEmpresaIdContext();
+          if (empresaId > 0) url.searchParams.set("empresa_id", String(empresaId));
+          url.searchParams.set("submenu", "1");
+          if (!url.searchParams.get("v")) url.searchParams.set("v", VERSION);
+          return url.pathname + url.search + url.hash;
+        } catch (_) {
+          return rawUrl;
+        }
+      }
+
+      function markActive(link) {
+        if (activeLink) activeLink.classList.remove("active");
+        activeLink = link || null;
+        if (activeLink) activeLink.classList.add("active");
+      }
+
+      var links = Array.prototype.slice.call(document.querySelectorAll("#gimnasioSidebarNav a[href]"));
+      links.forEach(function (link, index) {
+        link.setAttribute("href", withEmpresaAndVersion(link.getAttribute("href")));
+        link.addEventListener("click", function () { markActive(link); });
+        if (index === 0) markActive(link);
+      });
+
+      var frame = document.getElementById("gimnasioContentFrame");
+      if (frame) {
+        frame.setAttribute("src", withEmpresaAndVersion(frame.getAttribute("src") || "/administrar_empresa/gimnasio.html?tab=dashboard&submenu=1"));
+      }
+    })();
+  </script>
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>

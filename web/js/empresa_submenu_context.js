@@ -8,7 +8,9 @@
       'light-gold': true,
       dark: true,
       'dark-violet': true,
-      'dark-emerald': true
+      'dark-emerald': true,
+      'dark-neon': true,
+      'light-wood': true
     };
     let theme = String(value || '').trim().toLowerCase();
     if (theme === 'dark-protect') theme = 'dark';
@@ -42,6 +44,16 @@
     root.classList.toggle('theme-dark', theme.indexOf('light') !== 0);
   }
 
+  function applySubmenuModeContext() {
+    let submenu = false;
+    try {
+      submenu = (new URLSearchParams(window.location.search || '')).get('submenu') === '1';
+    } catch (_) {}
+    document.documentElement.classList.toggle('empresa-module-submenu-content', submenu);
+    if (document.body) document.body.classList.toggle('empresa-module-submenu-content', submenu);
+  }
+
+  applySubmenuModeContext();
   applyThemeContext();
 
   function parsePositiveInt(raw) {
@@ -222,6 +234,7 @@
   }
 
   function bootModuleGuard() {
+    applySubmenuModeContext();
     applyThemeContext();
     applyEmpresaContext();
     renderMissingEmpresaContext();

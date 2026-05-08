@@ -66,6 +66,7 @@
 
   function setTab(tab) {
     var meta = tabMeta[tab] || tabMeta.configuracion;
+    tab = tabMeta[tab] ? tab : "configuracion";
     document.querySelectorAll("[data-taxi-tab]").forEach(function (button) {
       var active = button.getAttribute("data-taxi-tab") === tab;
       button.classList.toggle("is-active", active);
@@ -84,6 +85,11 @@
         drawMap();
       }, 80);
     }
+  }
+
+  function initialTabFromURL() {
+    var requested = q("tab") || q("view") || q("section");
+    return tabMeta[requested] ? requested : "configuracion";
   }
 
   function fillKpis(d) {
@@ -434,7 +440,7 @@
     navigator.geolocation.getCurrentPosition(function (pos) {
       document.getElementById("cfgLatBase").value = pos.coords.latitude.toFixed(8);
       document.getElementById("cfgLngBase").value = pos.coords.longitude.toFixed(8);
-      setTab("configuracion");
+      setTab(initialTabFromURL());
       setMsg("configMsg", "Ubicacion cargada. Guarda la configuracion para fijarla como base.");
     }, function () {
       setMsg("mapMsg", "No se pudo obtener la ubicacion del navegador.", true);

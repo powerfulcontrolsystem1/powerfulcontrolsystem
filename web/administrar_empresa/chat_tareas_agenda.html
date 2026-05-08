@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Agenda - Chat y tareas</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <script>
     (function () {
       try {
@@ -13,7 +14,7 @@
         try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
         if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
         t = String(t || "").trim().toLowerCase();
-        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
         if (!ok[t]) t = "dark";
         document.documentElement.setAttribute("data-theme", t);
         document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);

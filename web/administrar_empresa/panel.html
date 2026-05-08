@@ -1260,6 +1260,10 @@
           });
       }
 
+      function weatherConfigURL() {
+        return "/api/empresa/configuracion_general?empresa_id=" + encodeURIComponent(String(empresaId || ""));
+      }
+
       function text(value) {
         return String(value == null ? "" : value).trim();
       }
@@ -1451,6 +1455,66 @@
         };
       }
 
+      function locationFromSavedWeatherConfig(rawConfig) {
+        var cfg = rawConfig && rawConfig.clima && typeof rawConfig.clima === "object" ? rawConfig.clima : rawConfig;
+        if (!cfg || typeof cfg !== "object") return null;
+        var latitude = Number(cfg.latitud || cfg.latitude || cfg.clima_latitud || 0);
+        var longitude = Number(cfg.longitud || cfg.longitude || cfg.clima_longitud || 0);
+        var displayName = text(cfg.nombre || cfg.displayName || cfg.display_name || cfg.clima_nombre);
+        var city = text(cfg.ciudad || cfg.city || cfg.clima_ciudad);
+        var country = text(cfg.pais || cfg.country || cfg.clima_pais);
+        if (!city && !displayName && (!latitude || !longitude)) return null;
+        return buildLocation({
+          city: city,
+          region: cfg.region || cfg.clima_region,
+          country: country,
+          countryCode: cfg.pais_codigo || cfg.countryCode || cfg.country_code || cfg.clima_pais_codigo,
+          currency: cfg.moneda || cfg.currency || cfg.clima_moneda,
+          latitude: latitude,
+          longitude: longitude,
+          displayName: displayName || [city, country].filter(Boolean).join(", "),
+          source: cfg.fuente || cfg.source || cfg.clima_fuente || "manual"
+        });
+      }
+
+      function loadSavedWeatherLocation() {
+        if (!empresaId) return Promise.resolve(null);
+        return fetchJSON(weatherConfigURL()).then(function (data) {
+          return locationFromSavedWeatherConfig((data && data.configuracion) || data || {});
+        }).catch(function () {
+          return null;
+        });
+      }
+
+      function saveWeatherLocationToServer(location) {
+        if (!empresaId || !isTrustedCachedLocation(location)) return Promise.resolve(false);
+        var payload = {
+          empresa_id: Number(empresaId) || empresaId,
+          clima: {
+            ciudad: text(location.city),
+            region: text(location.region),
+            pais: text(location.country),
+            pais_codigo: normalizeCode(location.countryCode),
+            moneda: normalizeCurrency(location.currency),
+            latitud: Number(location.latitude || 0),
+            longitud: Number(location.longitude || 0),
+            nombre: text(location.displayName) || [text(location.city), text(location.country)].filter(Boolean).join(", "),
+            fuente: text(location.source) || "manual"
+          }
+        };
+        return fetch(weatherConfigURL(), {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        }).then(function () {
+          return true;
+        });
+      }
+
       function pickBigDataCloudCity(data) {
         if (!data) return "";
         var direct = text(data.city) || text(data.locality);
@@ -1629,6 +1693,21 @@
         } catch (e) {}
       }
 
+      function persistTrustedWeatherLocation(location) {
+        saveCachedLocation(location);
+        return saveWeatherLocationToServer(location).then(function (saved) {
+          if (saved) {
+            setWeatherHint(location.source === "gps"
+              ? "Ubicacion GPS guardada para esta empresa."
+              : "Ciudad del clima guardada para esta empresa.");
+          }
+          return saved;
+        }).catch(function () {
+          setWeatherHint("El clima se actualizo, pero no se pudo guardar la ubicacion en la base de datos.");
+          return false;
+        });
+      }
+
       function reverseGeocodeLocation(latitude, longitude) {
         var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
           encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude) + "&localityLanguage=es";
@@ -1714,8 +1793,16 @@
         return source === "gps" || source === "manual";
       }
 
-      function detectLocation(admin, empresa) {
+      function detectLocation(admin, empresa, savedLocation) {
         var profileLocation = registeredLocationProfile(admin, empresa);
+        if (isTrustedCachedLocation(savedLocation)) {
+          detectedLocation = savedLocation;
+          saveCachedLocation(savedLocation);
+          setWeatherHint(savedLocation.source === "gps"
+            ? "Usando la ubicacion GPS guardada en la base de datos."
+            : "Usando la ciudad guardada en la base de datos.");
+          return Promise.resolve(savedLocation);
+        }
         var cached = readCachedLocation();
         if (isTrustedCachedLocation(cached)) {
           detectedLocation = cached;
@@ -1835,6 +1922,7 @@
             loc.displayName = place || locationName;
             loc.currency = currencyForCountry(loc.countryCode, loc.currency);
             saveCachedLocation(loc);
+            saveWeatherLocationToServer(loc).catch(function () {});
             return forecastByCoords(item.latitude, item.longitude, place || locationName, loc.source);
           })
           .catch(function () {
@@ -2030,7 +2118,7 @@
 
       function refreshWeatherLocation(location) {
         detectedLocation = location;
-        saveCachedLocation(location);
+        persistTrustedWeatherLocation(location);
         loadMarketIndicators(location);
         return loadWeather(location);
       }
@@ -2102,11 +2190,13 @@
               };
             }).catch(function () { return {}; })
           : Promise.resolve({});
-        Promise.all([adminPromise, empresaPromise]).then(function (values) {
+        var weatherConfigPromise = loadSavedWeatherLocation();
+        Promise.all([adminPromise, empresaPromise, weatherConfigPromise]).then(function (values) {
           var admin = values[0] || {};
           var empresa = values[1] || {};
+          var savedLocation = values[2] || null;
           renderWelcome(admin, empresa);
-          return detectLocation(admin, empresa).then(function (location) {
+          return detectLocation(admin, empresa, savedLocation).then(function (location) {
             loadMarketIndicators(location);
             return loadWeather(location);
           });

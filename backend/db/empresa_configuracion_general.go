@@ -7,35 +7,44 @@ import (
 )
 
 type EmpresaConfiguracionGeneral struct {
-	ID                                  int64  `json:"id"`
-	EmpresaID                           int64  `json:"empresa_id"`
-	ImprimirOrdenServicio               bool   `json:"imprimir_orden_servicio"`
-	AreaDespacho                        string `json:"area_despacho,omitempty"`
-	CopiasOrdenServicio                 int64  `json:"copias_orden_servicio,omitempty"`
-	NotaOrdenServicio                   string `json:"nota_orden_servicio,omitempty"`
-	DescuentosHabilitados               bool   `json:"descuentos_habilitados"`
-	PermitirDescuentoPorcentaje         bool   `json:"permitir_descuento_porcentaje"`
-	PermitirDescuentoCodigo             bool   `json:"permitir_descuento_codigo"`
-	PermitirDescuentoValor              bool   `json:"permitir_descuento_valor"`
-	CodigosDescuento                    string `json:"codigos_descuento,omitempty"`
-	LectorCodigoBarrasHabilitado        bool   `json:"lector_codigo_barras_habilitado"`
-	LectorCodigoBarrasAutofoco          bool   `json:"lector_codigo_barras_autofoco"`
-	LectorCodigoBarrasAcumular          bool   `json:"lector_codigo_barras_acumular"`
-	CajaNombre                          string `json:"caja_nombre,omitempty"`
-	CajaCodigo                          string `json:"caja_codigo,omitempty"`
-	CajaActiva                          bool   `json:"caja_activa"`
-	CajonMonederoHabilitado             bool   `json:"cajon_monedero_habilitado"`
-	AbrirCajonAlPagarCarrito            bool   `json:"abrir_cajon_al_pagar_carrito"`
-	AbrirCajonAlCerrarTransaccion       bool   `json:"abrir_cajon_al_cerrar_transaccion"`
-	CajonMonederoMetodo                 string `json:"cajon_monedero_metodo,omitempty"`
-	CajonMonederoImpresoraFuncionalidad string `json:"cajon_monedero_impresora_funcionalidad,omitempty"`
-	CajonMonederoComando                string `json:"cajon_monedero_comando,omitempty"`
-	CajaObservaciones                   string `json:"caja_observaciones,omitempty"`
-	FechaCreacion                       string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion                  string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador                      string `json:"usuario_creador,omitempty"`
-	Estado                              string `json:"estado,omitempty"`
-	Observaciones                       string `json:"observaciones,omitempty"`
+	ID                                  int64   `json:"id"`
+	EmpresaID                           int64   `json:"empresa_id"`
+	ImprimirOrdenServicio               bool    `json:"imprimir_orden_servicio"`
+	AreaDespacho                        string  `json:"area_despacho,omitempty"`
+	CopiasOrdenServicio                 int64   `json:"copias_orden_servicio,omitempty"`
+	NotaOrdenServicio                   string  `json:"nota_orden_servicio,omitempty"`
+	DescuentosHabilitados               bool    `json:"descuentos_habilitados"`
+	PermitirDescuentoPorcentaje         bool    `json:"permitir_descuento_porcentaje"`
+	PermitirDescuentoCodigo             bool    `json:"permitir_descuento_codigo"`
+	PermitirDescuentoValor              bool    `json:"permitir_descuento_valor"`
+	CodigosDescuento                    string  `json:"codigos_descuento,omitempty"`
+	LectorCodigoBarrasHabilitado        bool    `json:"lector_codigo_barras_habilitado"`
+	LectorCodigoBarrasAutofoco          bool    `json:"lector_codigo_barras_autofoco"`
+	LectorCodigoBarrasAcumular          bool    `json:"lector_codigo_barras_acumular"`
+	CajaNombre                          string  `json:"caja_nombre,omitempty"`
+	CajaCodigo                          string  `json:"caja_codigo,omitempty"`
+	CajaActiva                          bool    `json:"caja_activa"`
+	CajonMonederoHabilitado             bool    `json:"cajon_monedero_habilitado"`
+	AbrirCajonAlPagarCarrito            bool    `json:"abrir_cajon_al_pagar_carrito"`
+	AbrirCajonAlCerrarTransaccion       bool    `json:"abrir_cajon_al_cerrar_transaccion"`
+	CajonMonederoMetodo                 string  `json:"cajon_monedero_metodo,omitempty"`
+	CajonMonederoImpresoraFuncionalidad string  `json:"cajon_monedero_impresora_funcionalidad,omitempty"`
+	CajonMonederoComando                string  `json:"cajon_monedero_comando,omitempty"`
+	CajaObservaciones                   string  `json:"caja_observaciones,omitempty"`
+	ClimaCiudad                         string  `json:"clima_ciudad,omitempty"`
+	ClimaRegion                         string  `json:"clima_region,omitempty"`
+	ClimaPais                           string  `json:"clima_pais,omitempty"`
+	ClimaPaisCodigo                     string  `json:"clima_pais_codigo,omitempty"`
+	ClimaMoneda                         string  `json:"clima_moneda,omitempty"`
+	ClimaLatitud                        float64 `json:"clima_latitud,omitempty"`
+	ClimaLongitud                       float64 `json:"clima_longitud,omitempty"`
+	ClimaNombre                         string  `json:"clima_nombre,omitempty"`
+	ClimaFuente                         string  `json:"clima_fuente,omitempty"`
+	FechaCreacion                       string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion                  string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                      string  `json:"usuario_creador,omitempty"`
+	Estado                              string  `json:"estado,omitempty"`
+	Observaciones                       string  `json:"observaciones,omitempty"`
 }
 
 func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
@@ -69,6 +78,15 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 			cajon_monedero_impresora_funcionalidad TEXT DEFAULT 'cajon_monedero',
 			cajon_monedero_comando TEXT DEFAULT 'escpos_pulse',
 			caja_observaciones TEXT,
+			clima_ciudad TEXT,
+			clima_region TEXT,
+			clima_pais TEXT,
+			clima_pais_codigo TEXT,
+			clima_moneda TEXT,
+			clima_latitud REAL DEFAULT 0,
+			clima_longitud REAL DEFAULT 0,
+			clima_nombre TEXT,
+			clima_fuente TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -150,6 +168,33 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_ciudad", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_region", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_pais", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_pais_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_moneda", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_latitud", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_longitud", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_fuente", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -202,6 +247,15 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		COALESCE(cajon_monedero_impresora_funcionalidad, 'cajon_monedero'),
 		COALESCE(cajon_monedero_comando, 'escpos_pulse'),
 		COALESCE(caja_observaciones, ''),
+		COALESCE(clima_ciudad, ''),
+		COALESCE(clima_region, ''),
+		COALESCE(clima_pais, ''),
+		COALESCE(clima_pais_codigo, ''),
+		COALESCE(clima_moneda, ''),
+		COALESCE(clima_latitud, 0),
+		COALESCE(clima_longitud, 0),
+		COALESCE(clima_nombre, ''),
+		COALESCE(clima_fuente, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -249,6 +303,15 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		&out.CajonMonederoImpresoraFuncionalidad,
 		&out.CajonMonederoComando,
 		&out.CajaObservaciones,
+		&out.ClimaCiudad,
+		&out.ClimaRegion,
+		&out.ClimaPais,
+		&out.ClimaPaisCodigo,
+		&out.ClimaMoneda,
+		&out.ClimaLatitud,
+		&out.ClimaLongitud,
+		&out.ClimaNombre,
+		&out.ClimaFuente,
 		&out.FechaCreacion,
 		&out.FechaActualizacion,
 		&out.UsuarioCreador,
@@ -329,6 +392,15 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			cajon_monedero_impresora_funcionalidad,
 			cajon_monedero_comando,
 			caja_observaciones,
+			clima_ciudad,
+			clima_region,
+			clima_pais,
+			clima_pais_codigo,
+			clima_moneda,
+			clima_latitud,
+			clima_longitud,
+			clima_nombre,
+			clima_fuente,
 			fecha_creacion,
 			fecha_actualizacion,
 			usuario_creador,
@@ -337,6 +409,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?,
 			datetime('now','localtime'),
 			datetime('now','localtime'),
 			?, ?, ?
@@ -364,6 +437,15 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			cfg.CajonMonederoImpresoraFuncionalidad,
 			cfg.CajonMonederoComando,
 			cfg.CajaObservaciones,
+			cfg.ClimaCiudad,
+			cfg.ClimaRegion,
+			cfg.ClimaPais,
+			cfg.ClimaPaisCodigo,
+			cfg.ClimaMoneda,
+			cfg.ClimaLatitud,
+			cfg.ClimaLongitud,
+			cfg.ClimaNombre,
+			cfg.ClimaFuente,
 			cfg.UsuarioCreador,
 			cfg.Estado,
 			cfg.Observaciones,
@@ -397,6 +479,15 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		cajon_monedero_impresora_funcionalidad = ?,
 		cajon_monedero_comando = ?,
 		caja_observaciones = ?,
+		clima_ciudad = ?,
+		clima_region = ?,
+		clima_pais = ?,
+		clima_pais_codigo = ?,
+		clima_moneda = ?,
+		clima_latitud = ?,
+		clima_longitud = ?,
+		clima_nombre = ?,
+		clima_fuente = ?,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = ?,
 		estado = ?,
@@ -424,6 +515,15 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		cfg.CajonMonederoImpresoraFuncionalidad,
 		cfg.CajonMonederoComando,
 		cfg.CajaObservaciones,
+		cfg.ClimaCiudad,
+		cfg.ClimaRegion,
+		cfg.ClimaPais,
+		cfg.ClimaPaisCodigo,
+		cfg.ClimaMoneda,
+		cfg.ClimaLatitud,
+		cfg.ClimaLongitud,
+		cfg.ClimaNombre,
+		cfg.ClimaFuente,
 		cfg.UsuarioCreador,
 		cfg.Estado,
 		cfg.Observaciones,
@@ -501,6 +601,36 @@ func normalizeEmpresaConfiguracionGeneral(cfg EmpresaConfiguracionGeneral) Empre
 	cfg.CajaObservaciones = strings.TrimSpace(cfg.CajaObservaciones)
 	if len(cfg.CajaObservaciones) > 800 {
 		cfg.CajaObservaciones = cfg.CajaObservaciones[:800]
+	}
+	cfg.ClimaCiudad = strings.TrimSpace(cfg.ClimaCiudad)
+	if len(cfg.ClimaCiudad) > 120 {
+		cfg.ClimaCiudad = cfg.ClimaCiudad[:120]
+	}
+	cfg.ClimaRegion = strings.TrimSpace(cfg.ClimaRegion)
+	if len(cfg.ClimaRegion) > 120 {
+		cfg.ClimaRegion = cfg.ClimaRegion[:120]
+	}
+	cfg.ClimaPais = strings.TrimSpace(cfg.ClimaPais)
+	if len(cfg.ClimaPais) > 120 {
+		cfg.ClimaPais = cfg.ClimaPais[:120]
+	}
+	cfg.ClimaPaisCodigo = strings.ToUpper(strings.TrimSpace(cfg.ClimaPaisCodigo))
+	if len(cfg.ClimaPaisCodigo) > 2 {
+		cfg.ClimaPaisCodigo = cfg.ClimaPaisCodigo[:2]
+	}
+	cfg.ClimaMoneda = strings.ToUpper(strings.TrimSpace(cfg.ClimaMoneda))
+	if len(cfg.ClimaMoneda) > 3 {
+		cfg.ClimaMoneda = cfg.ClimaMoneda[:3]
+	}
+	cfg.ClimaNombre = strings.TrimSpace(cfg.ClimaNombre)
+	if len(cfg.ClimaNombre) > 240 {
+		cfg.ClimaNombre = cfg.ClimaNombre[:240]
+	}
+	cfg.ClimaFuente = strings.ToLower(strings.TrimSpace(cfg.ClimaFuente))
+	switch cfg.ClimaFuente {
+	case "", "gps", "manual", "perfil", "navegador", "ip", "fallback":
+	default:
+		cfg.ClimaFuente = "manual"
 	}
 	cfg.Estado = strings.TrimSpace(cfg.Estado)
 	if cfg.Estado == "" {

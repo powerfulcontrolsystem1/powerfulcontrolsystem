@@ -402,11 +402,22 @@
   }
 
   function setTab(tab) {
+    if (["dashboard", "config", "activos", "tarifas", "contratos", "mantenimientos", "mapa"].indexOf(tab) < 0) tab = "dashboard";
     state.tab = tab;
     Array.prototype.slice.call(document.querySelectorAll(".rental-tab")).forEach(function (section) {
       section.hidden = section.id !== ("rentalTab-" + tab);
     });
     if (tab === "mapa") setTimeout(renderMap, 120);
+  }
+
+  function initialTabFromURL() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      var requested = params.get("tab") || params.get("view") || params.get("section") || "";
+      return ["dashboard", "config", "activos", "tarifas", "contratos", "mantenimientos", "mapa"].indexOf(requested) >= 0 ? requested : "dashboard";
+    } catch (_) {
+      return "dashboard";
+    }
   }
 
   function wireEvents() {
@@ -476,6 +487,7 @@
     }
     ensureUniversalRentalTypeOptions();
     wireEvents();
+    setTab(initialTabFromURL());
     refreshAll().catch(showError);
   }
 

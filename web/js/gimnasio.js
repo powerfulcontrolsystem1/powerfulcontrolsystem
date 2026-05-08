@@ -127,6 +127,16 @@
     if (byId("gymSectionSummary")) byId("gymSectionSummary").textContent = meta.summary;
   }
 
+  function initialTabFromURL() {
+    var raw = "";
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      raw = params.get("tab") || params.get("view") || "";
+    } catch (_) {}
+    raw = String(raw || "").trim().toLowerCase();
+    return gymTabMeta[raw] ? raw : "dashboard";
+  }
+
   function populateSelect(selectId, items, valueKey, labelBuilder, includeBlank) {
     var select = byId(selectId); if (!select) return;
     var currentValue = String(select.value || "");
@@ -382,6 +392,7 @@
   function init() {
     state.empresaID = resolveEmpresaID();
     if (!state.empresaID) { setMessage("No se encontró la empresa activa para el módulo de gimnasio.", true); return; }
+    setTab(initialTabFromURL());
     bindForms(); bindStaticEvents(); refreshAll().catch(showError);
   }
 

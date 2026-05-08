@@ -39,10 +39,23 @@ type empresaConfiguracionGeneralCajaPayload struct {
 	CajaObservaciones                   string `json:"caja_observaciones"`
 }
 
+type empresaConfiguracionGeneralClimaPayload struct {
+	Ciudad     string  `json:"ciudad"`
+	Region     string  `json:"region"`
+	Pais       string  `json:"pais"`
+	PaisCodigo string  `json:"pais_codigo"`
+	Moneda     string  `json:"moneda"`
+	Latitud    float64 `json:"latitud"`
+	Longitud   float64 `json:"longitud"`
+	Nombre     string  `json:"nombre"`
+	Fuente     string  `json:"fuente"`
+}
+
 type empresaConfiguracionGeneralPayload struct {
 	EmpresaID     int64                                        `json:"empresa_id"`
 	Productos     *empresaConfiguracionGeneralProductosPayload `json:"productos,omitempty"`
 	Caja          *empresaConfiguracionGeneralCajaPayload      `json:"caja,omitempty"`
+	Clima         *empresaConfiguracionGeneralClimaPayload     `json:"clima,omitempty"`
 	Estado        string                                       `json:"estado,omitempty"`
 	Observaciones string                                       `json:"observaciones,omitempty"`
 }
@@ -127,6 +140,17 @@ func EmpresaConfiguracionGeneralHandler(dbEmp *sql.DB) http.HandlerFunc {
 				cfg.CajonMonederoComando = payload.Caja.CajonMonederoComando
 				cfg.CajaObservaciones = payload.Caja.CajaObservaciones
 			}
+			if payload.Clima != nil {
+				cfg.ClimaCiudad = payload.Clima.Ciudad
+				cfg.ClimaRegion = payload.Clima.Region
+				cfg.ClimaPais = payload.Clima.Pais
+				cfg.ClimaPaisCodigo = payload.Clima.PaisCodigo
+				cfg.ClimaMoneda = payload.Clima.Moneda
+				cfg.ClimaLatitud = payload.Clima.Latitud
+				cfg.ClimaLongitud = payload.Clima.Longitud
+				cfg.ClimaNombre = payload.Clima.Nombre
+				cfg.ClimaFuente = payload.Clima.Fuente
+			}
 			id, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, *cfg)
 			if err != nil {
 				log.Printf("[empresa_config_general] upsert empresa_id=%d error: %v", payload.EmpresaID, err)
@@ -159,6 +183,7 @@ func empresaConfiguracionGeneralResponse(cfg *dbpkg.EmpresaConfiguracionGeneral)
 			"empresa_id": 0,
 			"productos":  map[string]interface{}{},
 			"caja":       map[string]interface{}{},
+			"clima":      map[string]interface{}{},
 		}
 	}
 	return map[string]interface{}{
@@ -191,6 +216,17 @@ func empresaConfiguracionGeneralResponse(cfg *dbpkg.EmpresaConfiguracionGeneral)
 			"cajon_monedero_impresora_funcionalidad": cfg.CajonMonederoImpresoraFuncionalidad,
 			"cajon_monedero_comando":                 cfg.CajonMonederoComando,
 			"caja_observaciones":                     cfg.CajaObservaciones,
+		},
+		"clima": map[string]interface{}{
+			"ciudad":      cfg.ClimaCiudad,
+			"region":      cfg.ClimaRegion,
+			"pais":        cfg.ClimaPais,
+			"pais_codigo": cfg.ClimaPaisCodigo,
+			"moneda":      cfg.ClimaMoneda,
+			"latitud":     cfg.ClimaLatitud,
+			"longitud":    cfg.ClimaLongitud,
+			"nombre":      cfg.ClimaNombre,
+			"fuente":      cfg.ClimaFuente,
 		},
 	}
 }

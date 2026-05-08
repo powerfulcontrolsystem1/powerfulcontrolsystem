@@ -7,6 +7,13 @@
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="gym-module-body">
+  <script>
+    try {
+      if (new URLSearchParams(window.location.search || "").get("submenu") === "1") {
+        document.body.classList.add("gym-submenu-content");
+      }
+    } catch (error) {}
+  </script>
   <div class="page-shell gym-module-shell">
     <section class="gym-hero-card">
       <div class="gym-hero-copy">

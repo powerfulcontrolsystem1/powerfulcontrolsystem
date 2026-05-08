@@ -331,8 +331,17 @@
       function escapeHtml(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
       function setMsg(text, type){ els.parkingMsg.textContent = text || ""; els.parkingMsg.className = "form-message " + (type || ""); }
       function showPanel(name){
+        var allowed = { operacion:1, salida:1, config:1, recibo:1 };
+        if (!allowed[name]) name = "operacion";
         document.querySelectorAll(".parking-tab").forEach(function(btn){ btn.classList.toggle("is-active", btn.dataset.panel === name); });
         document.querySelectorAll(".parking-panel").forEach(function(panel){ panel.hidden = panel.id !== "panel-" + name; });
+      }
+      function initialPanelFromURL(){
+        try {
+          var params = new URLSearchParams(location.search || "");
+          var panel = params.get("panel") || params.get("tab") || params.get("view") || "";
+          return ({ operacion:1, salida:1, config:1, recibo:1 })[panel] ? panel : "operacion";
+        } catch(e) { return "operacion"; }
       }
       async function load(){
         if (!state.empresaID) { setMsg("Falta empresa_id en la URL.", "error"); return; }
@@ -507,6 +516,7 @@
       els.btnCobrarQR.addEventListener("click", cobrarQR);
       els.btnGuardarConfig.addEventListener("click", guardarConfig);
       els.btnImprimirRecibo.addEventListener("click", function(){ window.print(); });
+      showPanel(initialPanelFromURL());
       load().catch(function(err){ setMsg(err.message || "No se pudo cargar parqueadero.", "error"); });
     })();
   </script>

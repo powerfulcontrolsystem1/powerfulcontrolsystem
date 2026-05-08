@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Modulo - Menu</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell empresa-submenu-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <p class="admin-sidebar-kicker" id="moduleKicker">Modulo</p>
+      <h2 id="moduleTitle">Modulo</h2>
+      <p class="admin-sidebar-summary" id="moduleSummary"></p>
+      <ul class="nav" id="moduleSidebarNav"></ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe
+        name="moduleContentFrame"
+        id="moduleContentFrame"
+        title="Contenido del modulo"
+        class="admin-empresa-frame"
+        data-submenu-frame></iframe>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var modules = {
+        taxi: {
+          title: "Taxi system",
+          summary: "Despacho, conductores, GPS y seguimiento operativo.",
+          defaultUrl: "/administrar_empresa/taxi_system.html?tab=configuracion",
+          items: [
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/taxi_system.html?tab=configuracion"],
+            ["Conductores", "/img/customer.svg", "/administrar_empresa/taxi_system.html?tab=conductores"],
+            ["GPS y telemetria", "/img/gps.svg", "/administrar_empresa/taxi_system.html?tab=gps"],
+            ["Despacho", "/img/network-color.svg", "/administrar_empresa/taxi_system.html?tab=despacho"],
+            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=seguimiento"]
+          ]
+        },
+        domicilios: {
+          title: "Domicilios",
+          summary: "Pedidos, restaurantes, domiciliarios, menu y reglas de entrega.",
+          defaultUrl: "/administrar_empresa/domicilios.html?tab=central",
+          items: [
+            ["Central", "/img/analytics-color.svg", "/administrar_empresa/domicilios.html?tab=central"],
+            ["Restaurantes", "/img/ecommerce.svg", "/administrar_empresa/domicilios.html?tab=restaurantes"],
+            ["Domiciliarios", "/img/gps.svg", "/administrar_empresa/domicilios.html?tab=domiciliarios"],
+            ["Menu", "/img/tags-color.svg", "/administrar_empresa/domicilios.html?tab=menu"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/domicilios.html?tab=config"]
+          ]
+        },
+        parqueadero: {
+          title: "Parqueadero",
+          summary: "Tickets, salidas, tarifas, QR y recibos.",
+          defaultUrl: "/administrar_empresa/parqueadero.html?panel=operacion",
+          items: [
+            ["Operacion", "/img/vehiculos-flotas-logo.svg", "/administrar_empresa/parqueadero.html?panel=operacion"],
+            ["Salida y cobro", "/img/money.svg", "/administrar_empresa/parqueadero.html?panel=salida"],
+            ["Tarifas y reglas", "/img/settings-color.svg", "/administrar_empresa/parqueadero.html?panel=config"],
+            ["Recibo", "/img/report.svg", "/administrar_empresa/parqueadero.html?panel=recibo"]
+          ]
+        },
+        apartamentos_turisticos: {
+          title: "Apartamentos turisticos",
+          summary: "Unidades, reservas, tarifas, tareas y configuracion.",
+          defaultUrl: "/administrar_empresa/apartamentos_turisticos.html?panel=dashboard",
+          items: [
+            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=dashboard"],
+            ["Apartamentos", "/img/hotel-logo.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=apartamentos"],
+            ["Reservas", "/img/report.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=reservas"],
+            ["Tarifas", "/img/tags-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=tarifas"],
+            ["Tareas", "/img/network-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=tareas"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=config"]
+          ]
+        },
+        propiedad_horizontal: {
+          title: "Propiedad horizontal",
+          summary: "Copropiedad, unidades, residentes, cartera y asambleas.",
+          defaultUrl: "/administrar_empresa/propiedad_horizontal.html?tab=dashboard",
+          items: [
+            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=dashboard"],
+            ["Unidades", "/img/company-briefcase-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=unidades"],
+            ["Personas", "/img/customer.svg", "/administrar_empresa/propiedad_horizontal.html?tab=personas"],
+            ["Cartera", "/img/money.svg", "/administrar_empresa/propiedad_horizontal.html?tab=cartera"],
+            ["Recaudos", "/img/report.svg", "/administrar_empresa/propiedad_horizontal.html?tab=recaudos"],
+            ["PQR", "/img/network-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=pqrs"],
+            ["Asambleas", "/img/shield-license-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=asambleas"]
+          ]
+        },
+        alquileres: {
+          title: "Alquiler universal",
+          summary: "Activos, tarifas, contratos, mantenimientos y mapa.",
+          defaultUrl: "/administrar_empresa/alquileres.html?tab=dashboard",
+          items: [
+            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/alquileres.html?tab=dashboard"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/alquileres.html?tab=config"],
+            ["Activos", "/img/tags-color.svg", "/administrar_empresa/alquileres.html?tab=activos"],
+            ["Tarifas", "/img/money.svg", "/administrar_empresa/alquileres.html?tab=tarifas"],
+            ["Contratos", "/img/report.svg", "/administrar_empresa/alquileres.html?tab=contratos"],
+            ["Mantenimientos", "/img/network-color.svg", "/administrar_empresa/alquileres.html?tab=mantenimientos"],
+            ["Mapa", "/img/gps.svg", "/administrar_empresa/alquileres.html?tab=mapa"]
+          ]
+        },
+        turnos: {
+          title: "Turnos de atencion",
+          summary: "Configuracion, catalogo, emision y seguimiento de filas.",
+          defaultUrl: "/administrar_empresa/turnos_atencion.html?tab=configuracion",
+          items: [
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/turnos_atencion.html?tab=configuracion"],
+            ["Servicios y puestos", "/img/tags-color.svg", "/administrar_empresa/turnos_atencion.html?tab=catalogo"],
+            ["Emision y llamado", "/img/network-color.svg", "/administrar_empresa/turnos_atencion.html?tab=operacion"],
+            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=seguimiento"]
+          ]
+        },
+        chat_tareas: {
+          title: "Chat y tareas",
+          summary: "Conversaciones, usuarios, asignaciones y agenda compartida.",
+          defaultUrl: "/administrar_empresa/chat_tareas_chats.html",
+          items: [
+            ["Chat", "/img/network-color.svg", "/administrar_empresa/chat_tareas_chats.html"],
+            ["Chat usuarios", "/img/customer.svg", "/administrar_empresa/chat_tareas_chat_usuarios.html"],
+            ["Tareas", "/img/report.svg", "/administrar_empresa/chat_tareas_tareas.html"],
+            ["Agenda", "/img/analytics-color.svg", "/administrar_empresa/chat_tareas_agenda.html"]
+          ]
+        }
+      };
+
+      function param(name) {
+        try { return (new URLSearchParams(location.search || "")).get(name) || ""; } catch (_) { return ""; }
+      }
+
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
+          return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char];
+        });
+      }
+
+      var key = param("module") || param("modulo") || "";
+      var cfg = modules[key] || modules.taxi;
+      document.title = cfg.title + " - Menu";
+      document.getElementById("moduleKicker").textContent = "Modulo";
+      document.getElementById("moduleTitle").textContent = cfg.title;
+      document.getElementById("moduleSummary").textContent = cfg.summary;
+      document.getElementById("moduleSidebarNav").innerHTML = cfg.items.map(function (item) {
+        return '<li><a href="' + esc(item[2]) + '" target="moduleContentFrame" data-submenu-link><img class="icon" src="' + esc(item[1]) + '" alt=""> ' + esc(item[0]) + '</a></li>';
+      }).join("") + '<li class="admin-menu-visibility-item"><button type="button" class="admin-menu-visibility-toggle" aria-controls="moduleSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu"><span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span><span class="admin-menu-visibility-label">Ocultar menu</span></button></li>';
+      document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
+    })();
+  </script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260508-modulo-menu"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>
