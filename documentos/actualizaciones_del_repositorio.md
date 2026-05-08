@@ -7663,3 +7663,11 @@ Archivos modificados:
 - web/administrar_empresa/finanzas_menu.html
 - web/js/administrar_empresa.js
 - web/js/alquileres.js
+
+2026-05-07 20:53:31 - Mensaje: Reforzar bloques universales del sistema; Commit: af52cfda; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos_licencias_test.go
+- documentos/arquitectura_modulos_universales.md
+- web/administrar_empresa/administrar_productos.html
+- web/super/licencias.html
+- web/super/preconfiguracion_tipos_empresa.html
