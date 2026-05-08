@@ -4532,3 +4532,8 @@ Archivos modificados:
 - web/administrar_empresa/publicar_red_social.html
 - web/administrar_empresa/venta_publica.html
 - web/red_social_comercial.html
+
+2026-05-07 19:31:14 - Mensaje: Agrega apariencias neon y madera; Commit: 01161d29; PushStatus: OK
+Archivos modificados:
+- web/estilos.css
+- web/menu.js

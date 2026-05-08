@@ -19201,3 +19201,9 @@ Archivos modificados:
 - web/administrar_empresa/publicar_red_social.html
 - web/administrar_empresa/venta_publica.html
 - web/red_social_comercial.html
+
+2026-05-07: Agrega apariencias neon y madera
+PushStatus: OK
+Archivos modificados:
+- web/estilos.css
+- web/menu.js
