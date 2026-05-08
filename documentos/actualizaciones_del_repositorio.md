@@ -7726,3 +7726,11 @@ Archivos modificados:
 - web/js/gimnasio.js
 - web/js/taxi_system.js
 - web/js/turnos_atencion.js
+
+2026-05-08 01:02:12 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 412ce165; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/administrar_empresa/gimnasio_menu.html
+- web/administrar_empresa/modulo_menu.html
+- web/estilos.css
+- web/js/modulo_colombia_admin.js
