@@ -22422,3 +22422,32 @@ Archivos modificados:
 - web/administrar_empresa/modulo_menu.html
 - web/js/administrar_empresa.js
 - web/js/consultorio_odontologico.js
+
+2026-05-08: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/horarios_trabajadores.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/horarios_trabajadores.go
+- backend/handlers/usuarios_empresa.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- web/administrar_empresa.html
+- web/administrar_empresa/aiu_construccion.html
+- web/administrar_empresa/asistencia_empleados.html
+- web/administrar_empresa/carnets.html
+- web/administrar_empresa/documentos_onlyoffice.html
+- web/administrar_empresa/hoja_vida_operativa.html
+- web/administrar_empresa/horarios_trabajadores.html
+- web/administrar_empresa/mi_horario.html
+- web/administrar_empresa/modulo_menu.html
+- web/administrar_empresa/nextcloud.html
+- web/administrar_empresa/ubicacion_gps.html
+- web/administrar_empresa/vehiculos_registro.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/horarios_trabajadores.js
+- web/js/login_usuario.js
+- web/js/mi_horario.js
+- web/js/personas_activos_submenu.js
+- web/login_usuario.html
