@@ -4537,3 +4537,8 @@ Archivos modificados:
 Archivos modificados:
 - web/estilos.css
 - web/menu.js
+
+2026-05-07 19:37:37 - Mensaje: Agrupa paginas CRM en seccion propia; Commit: ee05abfe; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html

@@ -19207,3 +19207,9 @@ PushStatus: OK
 Archivos modificados:
 - web/estilos.css
 - web/menu.js
+
+2026-05-07: Agrupa paginas CRM en seccion propia
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
