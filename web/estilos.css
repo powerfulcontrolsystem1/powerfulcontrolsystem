@@ -475,6 +475,32 @@ html[data-theme="dark-emerald"] {
   --ambient-glow: rgba(36,210,154,0.2);
 }
 
+/* Tema Oscuro Neon (alto contraste con acentos electricos) */
+html[data-theme="dark-neon"] {
+  --bg: #050712;
+  --bg-alt: #090d22;
+  --surface: #0d132b;
+  --surface-soft: #111a38;
+  --card: #141f42;
+  --input-bg: #070b1a;
+  --input-bg-soft: #0b1126;
+  --muted: #a9b6e8;
+  --text: #f4f7ff;
+  --accent: #00e5ff;
+  --accent-2: #ff2bd6;
+  --danger: #ff4d7d;
+  --success: #39ff88;
+  --border: rgba(0,229,255,0.24);
+  --focus: rgba(255,43,214,0.32);
+  --accent-yellow: #faff00;
+  --accent-yellow-light: #fcff91;
+  --form-surface-top: #111c3e;
+  --form-surface-bottom: #16144a;
+  --form-border: rgba(0,229,255,0.42);
+  --form-input-bg: #06091a;
+  --ambient-glow: rgba(0,229,255,0.2);
+}
+
 /* Robot IA/secretaria: zona segura para no bloquear botones de las paginas. */
 .robot-inline-visible .ai-chat-toggle-button.is-robot-avatar,
 .robot-inline-visible .ai-chat-toggle-button.is-robot-avatar #robotAvatarGraphic,
@@ -794,9 +820,36 @@ html[data-theme="light-gold"] {
   --ambient-glow: rgba(224,196,97,0.22);
 }
 
+/* Tema Claro Madera (calido, legible y con veta suave) */
+html[data-theme="light-wood"] {
+  --bg: #f3e4cf;
+  --bg-alt: #fff5e6;
+  --surface: #fff8ed;
+  --surface-soft: #f4dfbf;
+  --card: #fffaf2;
+  --input-bg: #fffdf8;
+  --input-bg-soft: #f9ead5;
+  --muted: #715b3e;
+  --text: #352312;
+  --accent: #8f5a24;
+  --accent-2: #b9792d;
+  --danger: #b83d2f;
+  --success: #2f7d46;
+  --border: rgba(93,58,24,0.22);
+  --focus: rgba(185,121,45,0.26);
+  --accent-yellow: #9d6425;
+  --accent-yellow-light: #d9a867;
+  --form-surface-top: #fff0da;
+  --form-surface-bottom: #eecb9c;
+  --form-border: rgba(121,78,34,0.28);
+  --form-input-bg: #fffaf2;
+  --ambient-glow: rgba(166,105,45,0.2);
+}
+
 html[data-theme="dark"],
 html[data-theme="dark-violet"],
-html[data-theme="dark-emerald"] {
+html[data-theme="dark-emerald"],
+html[data-theme="dark-neon"] {
   --btn-primary-top: #2a9af7;
   --btn-primary-text: #f7fbff;
   --btn-primary-border: rgba(11,73,133,0.45);
@@ -897,7 +950,8 @@ html[data-theme="dark-emerald"] {
 
 html[data-theme="light"],
 html[data-theme="light-rose"],
-html[data-theme="light-gold"] {
+html[data-theme="light-gold"],
+html[data-theme="light-wood"] {
   --btn-primary-top: #3e9ef0;
   --btn-primary-text: #ffffff;
   --btn-primary-border: rgba(15,111,203,0.32);
@@ -1006,6 +1060,48 @@ html,body{
     linear-gradient(180deg, var(--bg-alt), var(--bg));
   color:var(--text);
   font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif;
+}
+
+html[data-theme="dark-neon"] body{
+  background:
+    radial-gradient(circle at 8% 8%, rgba(0,229,255,0.2), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(255,43,214,0.18), transparent 30%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+}
+
+html[data-theme="dark-neon"] .card,
+html[data-theme="dark-neon"] .admin-sidebar,
+html[data-theme="dark-neon"] .floating-menu .fm-panel{
+  box-shadow:0 18px 42px rgba(0,0,0,0.34), 0 0 24px rgba(0,229,255,0.08);
+}
+
+html[data-theme="dark-neon"] .btn,
+html[data-theme="dark-neon"] .admin-sidebar .nav a.active{
+  text-shadow:0 0 10px rgba(244,247,255,0.38);
+  box-shadow:0 10px 24px rgba(0,229,255,0.18), 0 0 18px rgba(255,43,214,0.1);
+}
+
+html[data-theme="light-wood"] body{
+  background:
+    linear-gradient(90deg, rgba(111,72,33,0.05) 0 1px, transparent 1px 18px),
+    linear-gradient(105deg, rgba(142,88,32,0.08), transparent 28%, rgba(255,255,255,0.18) 42%, transparent 62%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+}
+
+html[data-theme="light-wood"] .card,
+html[data-theme="light-wood"] .admin-sidebar,
+html[data-theme="light-wood"] .floating-menu .fm-panel{
+  background:
+    linear-gradient(120deg, rgba(132,83,36,0.08), transparent 32%, rgba(255,255,255,0.45) 54%, transparent 78%),
+    linear-gradient(180deg, var(--surface), var(--surface-soft));
+  box-shadow:0 18px 38px rgba(93,58,24,0.12);
+}
+
+html[data-theme="light-wood"] .btn.secondary,
+html[data-theme="light-wood"] .admin-sidebar .nav a,
+html[data-theme="light-wood"] .form-input,
+html[data-theme="light-wood"] .form-textarea{
+  border-color:rgba(93,58,24,0.24);
 }
 img{max-width:100%;height:auto}
 .container{max-width:none;width:calc(100% - (var(--page-gutter) * 2));margin:var(--page-gutter);padding:10px}

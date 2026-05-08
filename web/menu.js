@@ -7,9 +7,11 @@
     dark: true,
     'dark-violet': true,
     'dark-emerald': true,
+    'dark-neon': true,
     light: true,
     'light-rose': true,
-    'light-gold': true
+    'light-gold': true,
+    'light-wood': true
   };
 
   function getCookie(name){
@@ -427,10 +429,12 @@
             '<button class="theme-option" type="button" data-theme-value="dark">Azul Elegante</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-violet">Morado Midnight</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-emerald">Negro Esmeralda</button>' +
+            '<button class="theme-option" type="button" data-theme-value="dark-neon">Neon Nocturno</button>' +
             '<div class="theme-opt-group mt-1">Claros</div>' +
             '<button class="theme-option" type="button" data-theme-value="light">Blanco Corporativo</button>' +
             '<button class="theme-option" type="button" data-theme-value="light-rose">Rosa Pastel</button>' +
             '<button class="theme-option" type="button" data-theme-value="light-gold">Blanco Dorado</button>' +
+            '<button class="theme-option" type="button" data-theme-value="light-wood">Madera Clara</button>' +
           '</div>' +
         '</div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
