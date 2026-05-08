@@ -9,11 +9,16 @@
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
-    <section class="card empresa-section">
-      <h1>Auditor?a</h1>
+    <section class="card empresa-section" data-pcs-submenu-section="resumen">
+      <div class="empresa-section-header">
+        <div>
+          <h1 class="empresa-section-title">Auditoria empresarial</h1>
+          <p class="form-help">Trazabilidad forense de operaciones, usuarios, endpoints, recursos, errores y retencion de eventos por empresa.</p>
+        </div>
+      </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-pcs-submenu-section="filtros">
       <div class="empresa-section-header">
         <h2>Filtros</h2>
         <div class="empresa-inline-actions">
@@ -126,7 +131,7 @@
       <div id="filtroMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-pcs-submenu-section="retencion">
       <div class="empresa-section-header">
         <h2>Retencion y purga</h2>
       </div>
@@ -143,7 +148,7 @@
       <div id="retencionMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-pcs-submenu-section="eventos">
       <div class="empresa-section-header">
         <h2>Eventos</h2>
       </div>
@@ -178,7 +183,7 @@
       <div id="tablaMsg" class="form-help"></div>
     </section>
 
-    <section class="card empresa-section" id="detalleEventoCard" hidden>
+    <section class="card empresa-section" id="detalleEventoCard" data-pcs-submenu-section="detalle" hidden>
       <div class="empresa-section-header">
         <h2>Detalle del evento</h2>
         <button id="btnCerrarDetalle" class="btn secondary" type="button">Cerrar</button>
@@ -673,5 +678,6 @@
       await buscarAuditoria({ resetOffset: true });
     })();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>

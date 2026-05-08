@@ -15,7 +15,7 @@
     <p id="backupsContexto" class="form-help"></p>
     <p class="form-help">Genera snapshots de datos por empresa, consulta historial, exporta evidencia y restaura cuando sea necesario.</p>
 
-    <section class="form creditos-section creditos-section-first">
+    <section class="form creditos-section creditos-section-first" data-pcs-submenu-section="configuracion">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Configuración por empresa</h2>
       </div>
@@ -32,7 +32,7 @@
       <div id="configBackupMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section creditos-section-first">
+    <section class="form creditos-section creditos-section-first" data-pcs-submenu-section="snapshot">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Crear snapshot</h2>
       </div>
@@ -60,7 +60,7 @@
       <div id="crearBackupMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-pcs-submenu-section="depuracion">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Depurar información por fecha</h2>
       </div>
@@ -79,7 +79,7 @@
       <div id="purgaBackupMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-pcs-submenu-section="historial">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Historial de backups</h2>
       </div>
@@ -113,7 +113,7 @@
       <div id="listaBackupMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-pcs-submenu-section="detalle">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Detalle del backup</h2>
       </div>
@@ -695,5 +695,6 @@
       bootstrap();
     })();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>

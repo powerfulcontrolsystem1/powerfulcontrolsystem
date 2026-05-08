@@ -88,6 +88,18 @@
         </div>
       </section>
 
+      <section class="card empresa-section" data-pcs-submenu-section="subir">
+        <div class="empresa-section-header">
+          <h2 class="m-0">Subir archivos</h2>
+        </div>
+        <div class="form-help">Carga documentos compatibles con OnlyOffice para editarlos sin salir del sistema.</div>
+        <div class="empresa-inline-actions mt-10">
+          <input id="fileInputSection" class="form-input" type="file" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx">
+          <button id="btnUploadSection" class="btn secondary" type="button">Subir archivo</button>
+          <button id="btnReloadSection" class="btn" type="button">Actualizar biblioteca</button>
+        </div>
+      </section>
+
       <section class="card empresa-section" data-pcs-submenu-section="archivos">
         <div class="empresa-section-header">
           <h2 class="m-0">Archivos de esta empresa</h2>
@@ -236,8 +248,8 @@
         setMsg('Editor listo.', false);
       }
 
-      async function upload(){
-        var input = document.getElementById('fileInput');
+      async function upload(inputId){
+        var input = document.getElementById(inputId || 'fileInput');
         if(!input || !input.files || !input.files.length) throw new Error('Selecciona un archivo.');
         var f = input.files[0];
         var fd = new FormData();
@@ -274,6 +286,15 @@
       });
       document.getElementById('btnUpload').addEventListener('click', function(){
         upload().catch(function(e){ setMsg(e.message||String(e), true); });
+      });
+      var btnUploadSection = document.getElementById('btnUploadSection');
+      if (btnUploadSection) btnUploadSection.addEventListener('click', function(){
+        var sectionInput = document.getElementById('fileInputSection');
+        upload('fileInputSection').then(function(){ if (sectionInput) sectionInput.value = ''; }).catch(function(e){ setMsg(e.message||String(e), true); });
+      });
+      var btnReloadSection = document.getElementById('btnReloadSection');
+      if (btnReloadSection) btnReloadSection.addEventListener('click', function(){
+        loadList().catch(function(e){ setMsg(e.message||String(e), true); });
       });
       document.getElementById('btnNewDoc').addEventListener('click', function(){
         var sel = document.getElementById('newDocType');

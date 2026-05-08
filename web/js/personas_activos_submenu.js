@@ -41,12 +41,27 @@
       ["dispositivos", "Dispositivos"],
       ["mapa", "Mapa"]
     ],
+    "auditoria.html": [
+      ["resumen", "Resumen"],
+      ["filtros", "Filtros"],
+      ["retencion", "Retencion"],
+      ["eventos", "Eventos"],
+      ["detalle", "Detalle"]
+    ],
+    "backups.html": [
+      ["configuracion", "Configuracion"],
+      ["snapshot", "Snapshot"],
+      ["depuracion", "Depuracion"],
+      ["historial", "Historial"],
+      ["detalle", "Detalle"]
+    ],
     "mi_horario.html": [
       ["resumen", "Resumen"],
       ["turnos", "Turnos"]
     ],
     "documentos_onlyoffice.html": [
       ["crear", "Crear"],
+      ["subir", "Subir"],
       ["archivos", "Archivos"],
       ["editor", "Editor"]
     ],
