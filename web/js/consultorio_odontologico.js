@@ -66,6 +66,25 @@
     presupuestos: []
   };
 
+  function getInitialTab() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      var requested = String(params.get("tab") || params.get("panel") || "").trim();
+      return tabMeta[requested] ? requested : "pacientes";
+    } catch (e) {
+      return "pacientes";
+    }
+  }
+
+  function persistTabInUrl(name) {
+    if (!tabMeta[name]) return;
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set("tab", name);
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    } catch (e) {}
+  }
+
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>\"']/g, function (m) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[m];
@@ -316,19 +335,21 @@
 
   function showTab(name) {
     var meta = tabMeta[name] || tabMeta.pacientes;
+    var activeName = tabMeta[name] ? name : "pacientes";
     document.querySelectorAll(".odonto-tab").forEach(function (panel) {
-      panel.hidden = panel.getAttribute("data-panel") !== name;
+      panel.hidden = panel.getAttribute("data-panel") !== activeName;
     });
     document.querySelectorAll(".odonto-nav-btn[data-tab]").forEach(function (btn) {
-      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === activeName);
     });
     document.querySelectorAll('[data-tab].btn.secondary').forEach(function (btn) {
-      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === activeName);
     });
     var titleEl = document.getElementById("odontoSectionTitle");
     var summaryEl = document.getElementById("odontoSectionSummary");
     if (titleEl) titleEl.textContent = meta.title;
     if (summaryEl) summaryEl.textContent = meta.summary;
+    persistTabInUrl(activeName);
   }
 
   async function submitCreate(formId, action, successMessage) {
@@ -393,7 +414,7 @@
   submitCreate("odontoPresupuestoForm", "presupuestos", "Presupuesto guardado.");
   submitCreate("odontoPagoForm", "pagos", "Pago registrado.");
 
-  showTab("pacientes");
+  showTab(getInitialTab());
   refreshAll().catch(function (err) {
     setNotice(err.message || "No se pudo cargar el modulo", true);
   });

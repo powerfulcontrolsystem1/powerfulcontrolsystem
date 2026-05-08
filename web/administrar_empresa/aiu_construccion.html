@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AIU construccion</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <style>
     .aiu-page{max-width:1380px;margin:0 auto;padding:22px}
     .aiu-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
@@ -50,7 +51,7 @@
     @media (max-width:720px){.aiu-page{padding:14px}.aiu-header{display:block}.aiu-actions{justify-content:flex-start;margin-top:12px}.aiu-kpis{grid-template-columns:1fr}.aiu-form-grid{grid-template-columns:1fr}.aiu-form-grid .wide{grid-column:auto}.aiu-summary{grid-template-columns:1fr}.aiu-table thead{display:none}.aiu-table,.aiu-table tbody,.aiu-table tr,.aiu-table td{display:block;width:100%}.aiu-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.aiu-table td{border:0;text-align:left!important}.aiu-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}}
   </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="empresa-subpage super-page form-bg-dark">
   <main class="aiu-page">
     <header class="aiu-header">
       <div>
@@ -75,7 +76,7 @@
 
     <div class="aiu-grid">
       <div>
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuContratos">
           <h2>Contratos</h2>
           <div class="aiu-toolbar">
             <div class="form-col">
@@ -101,7 +102,7 @@
           <div id="contratosList" class="table-wrap">Cargando...</div>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuContratoForm">
           <h2>Contrato de obra</h2>
           <form id="contratoForm" class="form">
             <input type="hidden" id="contrato_id">
@@ -145,7 +146,7 @@
           </form>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuConceptos">
           <h2>Capitulos y conceptos</h2>
           <form id="itemForm" class="form">
             <div class="aiu-form-grid">
@@ -162,12 +163,12 @@
       </div>
 
       <aside>
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuResumen">
           <h2>Resumen financiero</h2>
           <div id="resultadoAIU" class="aiu-summary"></div>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuFactura">
           <h2>Factura AIU</h2>
           <div class="aiu-form-grid">
             <div class="wide"><label class="form-label" for="factura_documento_codigo">Documento</label><input id="factura_documento_codigo" class="form-input" placeholder="FE-AIU-001"></div>
@@ -177,17 +178,17 @@
           <pre id="facturaResult" class="form-help aiu-result"></pre>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuFacturas">
           <h2>Facturas recientes</h2>
           <div id="facturasList" class="table-wrap">Sin facturas.</div>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuAlertas">
           <h2>Alertas</h2>
           <div id="alertasList" class="aiu-alerts">Sin alertas.</div>
         </section>
 
-        <section class="aiu-panel">
+        <section class="aiu-panel" id="aiuAuditoria">
           <h2>Historial y auditoria</h2>
           <div id="eventosList" class="aiu-timeline">Sin eventos.</div>
         </section>
@@ -195,7 +196,6 @@
     </div>
   </main>
 
-  <script src="/js/administrar_empresa.js"></script>
   <script src="/menu.js"></script>
   <script>
     (function(){

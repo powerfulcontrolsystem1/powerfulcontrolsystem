@@ -475,6 +475,30 @@ try {
     }
   }
 
+  function menuMatchHref(href) {
+    var normalized = normalizeHref(href);
+    if (!normalized) return "";
+    try {
+      var url = new URL(normalized, window.location.origin);
+      url.searchParams.delete("empresa_id");
+      url.searchParams.delete("id");
+      var params = [];
+      url.searchParams.forEach(function (value, key) {
+        params.push([key, value]);
+      });
+      params.sort(function (a, b) {
+        if (a[0] === b[0]) return a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0);
+        return a[0] < b[0] ? -1 : 1;
+      });
+      var query = params.map(function (pair) {
+        return encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]);
+      }).join("&");
+      return url.pathname + (query ? "?" + query : "");
+    } catch (e) {
+      return normalized;
+    }
+  }
+
   function getCurrentFrameHref() {
     if (!frame) return "";
     try {
@@ -664,11 +688,11 @@ try {
   }
 
   function setActiveByHref(href) {
-    var current = normalizeHref(href).split("?")[0];
+    var current = menuMatchHref(href);
     clearActive();
     frameLinks.forEach(function (link) {
       if (!link) return;
-      var linkHref = normalizeHref(link.getAttribute("href")).split("?")[0];
+      var linkHref = menuMatchHref(link.getAttribute("href"));
       if (linkHref && linkHref === current) {
         link.classList.add("active");
         openMenuGroupForLink(link);
