@@ -1,79 +1,182 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Calculadora</title>
-  <link rel="stylesheet" href="/estilos.css">
-  <script src="/menu.js"></script>
   <script>
-    window.__pcsAutoInjectChatShell = true;
-    window.__pcsPublicChatContext = { scope: 'portal' };
+    (function(){
+      var valid = {
+        dark: true,
+        'dark-violet': true,
+        'dark-emerald': true,
+        'dark-neon': true,
+        light: true,
+        'light-rose': true,
+        'light-gold': true,
+        'light-wood': true
+      };
+      function cookie(name){
+        var match = String(document.cookie || '').match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? decodeURIComponent(match.pop()) : '';
+      }
+      var theme = '';
+      try { theme = window.localStorage.getItem('theme') || ''; } catch (error) {}
+      theme = String(theme || cookie('pcs_theme') || 'light').trim().toLowerCase();
+      if (theme === 'dark-protect') theme = 'dark';
+      if (!valid[theme]) theme = 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.toggle('theme-light', theme.indexOf('light') === 0);
+      document.documentElement.classList.toggle('theme-dark', theme.indexOf('light') !== 0);
+    })();
   </script>
+  <link rel="stylesheet" href="/estilos.css">
   <style>
-    .calc-shell{max-width:640px}
-    .calc-display{width:100%;border:1px solid var(--public-panel-soft-border);background:var(--public-panel-soft-bg);border-radius:18px;padding:16px;display:grid;gap:6px;box-sizing:border-box}
-    .calc-expr{min-height:20px;color:var(--public-panel-muted);font-weight:700;letter-spacing:.02em}
-    .calc-value{font-size:2.1rem;font-weight:900;line-height:1.05;word-break:break-word;color:var(--public-panel-text)}
-    .calc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
-    .calc-btn{border:1px solid var(--public-panel-soft-border);background:color-mix(in srgb, var(--surface) 74%, transparent);color:var(--public-panel-text);border-radius:16px;padding:14px 12px;font-weight:900;font-size:1.05rem;cursor:pointer;transition:transform .08s ease, background .15s ease, border-color .15s ease;user-select:none}
-    .calc-btn:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--public-panel-soft-border) 45%);background:color-mix(in srgb, var(--accent) 12%, var(--surface) 88%)}
-    .calc-btn:active{transform:scale(.98)}
-    .calc-btn.op{background:color-mix(in srgb, var(--accent-2) 12%, var(--surface) 88%)}
-    .calc-btn.danger{background:color-mix(in srgb, #ef5350 14%, var(--surface) 86%)}
-    .calc-btn.eq{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
-    .calc-btn.wide{grid-column:span 2}
-    @media (max-width:640px){.calc-grid{gap:8px}.calc-btn{padding:13px 10px}.calc-value{font-size:1.9rem}}
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+    }
+    body.calculator-floating-page {
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 12%, transparent) 0, transparent 32%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 88%, #000 12%), var(--surface));
+      color: var(--text);
+    }
+    .calculator-floating-shell {
+      min-height: 100vh;
+      max-width: 370px;
+      margin: 0 auto;
+      padding: 10px;
+      box-sizing: border-box;
+      display: grid;
+      place-items: center;
+    }
+    .calculator-floating-card {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid color-mix(in srgb, var(--accent) 20%, rgba(255,255,255,.14) 80%);
+      border-radius: 14px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--surface) 93%, transparent);
+      box-shadow: 0 18px 42px rgba(0,0,0,.28);
+    }
+    .calc-display {
+      width: 100%;
+      min-height: 86px;
+      border: 1px solid color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.12) 82%);
+      background: color-mix(in srgb, var(--surface-soft) 84%, #000 16%);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      box-sizing: border-box;
+    }
+    .calc-expr {
+      min-height: 18px;
+      color: color-mix(in srgb, var(--muted) 84%, var(--text) 16%);
+      font-size: .86rem;
+      font-weight: 800;
+      line-height: 1.1;
+      text-align: right;
+      word-break: break-word;
+    }
+    .calc-value {
+      color: var(--text);
+      font-size: clamp(1.72rem, 10vw, 2.1rem);
+      font-weight: 900;
+      line-height: 1.05;
+      text-align: right;
+      word-break: break-word;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 9px;
+    }
+    .calc-btn {
+      min-width: 0;
+      min-height: 44px;
+      border: 1px solid color-mix(in srgb, var(--accent) 14%, rgba(255,255,255,.14) 86%);
+      border-radius: 10px;
+      padding: 9px 6px;
+      background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+      color: var(--text);
+      font-size: .98rem;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select: none;
+    }
+    .calc-btn:hover,
+    .calc-btn:focus-visible {
+      border-color: color-mix(in srgb, var(--accent) 70%, white 30%);
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface-soft) 84%);
+      outline: none;
+    }
+    .calc-btn:active {
+      transform: scale(.97);
+    }
+    .calc-btn.op {
+      background: color-mix(in srgb, var(--accent-2) 16%, var(--surface-soft) 84%);
+    }
+    .calc-btn.danger {
+      background: color-mix(in srgb, #ef5350 17%, var(--surface-soft) 83%);
+    }
+    .calc-btn.eq {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+    }
+    .calc-btn.wide {
+      grid-column: span 2;
+    }
+    @media (max-width: 340px) {
+      .calculator-floating-shell { padding: 8px; }
+      .calculator-floating-card { padding: 8px; }
+      .calc-grid { gap: 6px; }
+      .calc-btn { min-height: 41px; font-size: .94rem; }
+      .calc-display { min-height: 78px; }
+    }
   </style>
 </head>
-<body class="public-utility-page">
-  <header class="portal-header">
-    <div class="brand"><a class="btn secondary" href="/index.html">Volver al portal</a></div>
-    <nav class="nav-actions">
-      <a class="btn dark" href="/login.html">Iniciar sesión</a>
-    </nav>
-  </header>
-
-  <main class="public-utility-shell calc-shell public-utility-stack">
-    <section class="public-utility-hero">
-      <span class="public-utility-badge">Herramienta rápida</span>
-      <h1>Calculadora lista para operaciones rápidas</h1>
-      <p>Usa esta calculadora desde cualquier dispositivo para resolver cuentas rápidas mientras trabajas en el portal o compartes la herramienta con un cliente.</p>
-    </section>
-
-    <section class="public-utility-card">
-      <h2>Calculadora</h2>
-      <p class="public-utility-copy">Puedes escribir con el teclado o usar los botones. Enter calcula el resultado y Esc limpia la operación.</p>
-
+<body class="calculator-floating-page">
+  <main class="calculator-floating-shell" aria-label="Calculadora">
+    <section class="calculator-floating-card" aria-label="Calculadora">
       <div class="calc-display" aria-live="polite">
         <div id="calcExpr" class="calc-expr"></div>
         <div id="calcValue" class="calc-value">0</div>
       </div>
 
       <div class="calc-grid" role="group" aria-label="Teclado de calculadora">
-        <button class="calc-btn danger" data-act="clear">C</button>
-        <button class="calc-btn danger" data-act="back">DEL</button>
-        <button class="calc-btn op" data-act="op" data-val="%">%</button>
-        <button class="calc-btn op" data-act="op" data-val="/">/</button>
+        <button class="calc-btn danger" data-act="clear" type="button">C</button>
+        <button class="calc-btn danger" data-act="back" type="button">DEL</button>
+        <button class="calc-btn op" data-act="op" data-val="%" type="button">%</button>
+        <button class="calc-btn op" data-act="op" data-val="/" type="button">/</button>
 
-        <button class="calc-btn" data-act="digit" data-val="7">7</button>
-        <button class="calc-btn" data-act="digit" data-val="8">8</button>
-        <button class="calc-btn" data-act="digit" data-val="9">9</button>
-        <button class="calc-btn op" data-act="op" data-val="*">x</button>
+        <button class="calc-btn" data-act="digit" data-val="7" type="button">7</button>
+        <button class="calc-btn" data-act="digit" data-val="8" type="button">8</button>
+        <button class="calc-btn" data-act="digit" data-val="9" type="button">9</button>
+        <button class="calc-btn op" data-act="op" data-val="*" type="button">x</button>
 
-        <button class="calc-btn" data-act="digit" data-val="4">4</button>
-        <button class="calc-btn" data-act="digit" data-val="5">5</button>
-        <button class="calc-btn" data-act="digit" data-val="6">6</button>
-        <button class="calc-btn op" data-act="op" data-val="-">-</button>
+        <button class="calc-btn" data-act="digit" data-val="4" type="button">4</button>
+        <button class="calc-btn" data-act="digit" data-val="5" type="button">5</button>
+        <button class="calc-btn" data-act="digit" data-val="6" type="button">6</button>
+        <button class="calc-btn op" data-act="op" data-val="-" type="button">-</button>
 
-        <button class="calc-btn" data-act="digit" data-val="1">1</button>
-        <button class="calc-btn" data-act="digit" data-val="2">2</button>
-        <button class="calc-btn" data-act="digit" data-val="3">3</button>
-        <button class="calc-btn op" data-act="op" data-val="+">+</button>
+        <button class="calc-btn" data-act="digit" data-val="1" type="button">1</button>
+        <button class="calc-btn" data-act="digit" data-val="2" type="button">2</button>
+        <button class="calc-btn" data-act="digit" data-val="3" type="button">3</button>
+        <button class="calc-btn op" data-act="op" data-val="+" type="button">+</button>
 
-        <button class="calc-btn wide" data-act="digit" data-val="0">0</button>
-        <button class="calc-btn" data-act="dot" data-val=".">.</button>
-        <button class="calc-btn eq" data-act="eq">=</button>
+        <button class="calc-btn wide" data-act="digit" data-val="0" type="button">0</button>
+        <button class="calc-btn" data-act="dot" data-val="." type="button">.</button>
+        <button class="calc-btn eq" data-act="eq" type="button">=</button>
       </div>
     </section>
   </main>
@@ -99,9 +202,12 @@
         if (s.indexOf('.') >= 0) s = n.toFixed(10).replace(/\.?0+$/,'');
         return s;
       }
+      function visibleOp(symbol){
+        return symbol === '*' ? 'x' : symbol;
+      }
       function setDisplay(){
         var expr = '';
-        if (prev != null && op) expr = formatNumber(prev) + ' ' + op;
+        if (prev != null && op) expr = formatNumber(prev) + ' ' + visibleOp(op);
         exprEl.textContent = expr;
         valueEl.textContent = current === '' ? '0' : current;
       }
@@ -113,12 +219,15 @@
         setDisplay();
       }
       function inputDigit(d){
-        if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
-        current = current === '0' ? String(d) : current + String(d);
+        if (justEvaluated) {
+          current = op ? '' : '0';
+          justEvaluated = false;
+        }
+        current = current === '0' || current === '' ? String(d) : current + String(d);
         setDisplay();
       }
       function inputDot(){
-        if (justEvaluated && !op) { current = '0'; justEvaluated = false; }
+        if (justEvaluated) { current = '0'; justEvaluated = false; }
         if (current.indexOf('.') >= 0) return;
         current += '.';
         setDisplay();
@@ -196,6 +305,5 @@
       setDisplay();
     })();
   </script>
-  <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

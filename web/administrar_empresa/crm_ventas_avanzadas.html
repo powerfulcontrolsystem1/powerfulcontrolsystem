@@ -3,85 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CRM y ventas avanzadas</title>
+  <title>CRM avanzado</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .cva-page{min-height:100vh;background:var(--bg);color:var(--text)}
-    .cva-shell{display:grid;gap:14px;padding:18px}
-    .cva-hero,.cva-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 12px 28px rgba(15,23,42,.08)}
-    .cva-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.85fr);gap:14px}
-    .cva-kicker{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:var(--accent)}
-    .cva-hero h1{margin:5px 0 8px;font-size:1.75rem;color:var(--text)}
-    .cva-hero p{color:var(--muted);line-height:1.5;margin:0}
-    .cva-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .cva-kpi{background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:10px}
-    .cva-kpi span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:850}
-    .cva-kpi strong{display:block;margin-top:4px;font-size:1.18rem}
-    .cva-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px}
-    .cva-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .cva-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .cva-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-    .cva-table{width:100%;min-width:860px;border-collapse:collapse}
-    .cva-table th,.cva-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
-    .cva-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-    .cva-msg{min-height:22px;color:var(--muted)}.cva-msg.success{color:var(--success)}.cva-msg.error{color:var(--danger)}
-    @media(max-width:980px){.cva-hero,.cva-grid{grid-template-columns:1fr}.cva-row,.cva-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:620px){.cva-shell{padding:12px}.cva-row,.cva-kpis{grid-template-columns:1fr}.cva-hero h1{font-size:1.45rem}}
-  </style>
   <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .crm-redirect {
+      width: min(720px, calc(100% - 28px));
+      margin: 42px auto;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .crm-redirect p { color: var(--muted); line-height: 1.55; }
+  </style>
 </head>
-<body class="empresa-subpage cva-page">
-  <main class="container cva-shell">
-    <section class="cva-hero">
-      <div>
-        <div class="cva-kicker">Direccion comercial</div>
-        <h1>CRM, forecast y ventas avanzadas</h1>
-        <p>Controla metas comerciales, embudo, scoring de leads, agenda de seguimiento, cotizaciones abiertas y pedidos en curso por empresa.</p>
-        <div class="cva-actions" style="margin-top:12px">
-          <label class="form-label" for="periodo">Periodo</label>
-          <input id="periodo" class="form-input" type="month" style="max-width:170px">
-          <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
-          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
-        </div>
-      </div>
-      <div class="cva-kpis">
-        <div class="cva-kpi"><span>Pipeline</span><strong id="kpiPipeline">$0</strong></div>
-        <div class="cva-kpi"><span>Forecast</span><strong id="kpiForecast">$0</strong></div>
-        <div class="cva-kpi"><span>Cotizaciones</span><strong id="kpiCotizaciones">0</strong></div>
-        <div class="cva-kpi"><span>Meta</span><strong id="kpiMeta">0%</strong></div>
-      </div>
-    </section>
-
-    <section class="cva-grid">
-      <article class="cva-card">
-        <h2>Meta comercial</h2>
-        <div class="cva-row">
-          <div><label class="form-label" for="metaPeriodo">Periodo</label><input id="metaPeriodo" class="form-input" type="month"></div>
-          <div><label class="form-label" for="metaPropietario">Responsable</label><input id="metaPropietario" class="form-input"></div>
-          <div><label class="form-label" for="metaCanal">Canal</label><input id="metaCanal" class="form-input" value="web"></div>
-          <div><label class="form-label" for="metaValor">Meta valor</label><input id="metaValor" class="form-input" type="number" step=".01"></div>
-        </div>
-        <div class="cva-row">
-          <div><label class="form-label" for="metaLeads">Meta leads</label><input id="metaLeads" class="form-input" type="number"></div>
-          <div><label class="form-label" for="metaConv">Conversion %</label><input id="metaConv" class="form-input" type="number" step=".01"></div>
-          <div><button id="btnSaveMeta" class="btn" type="button" style="margin-top:24px">Guardar meta</button></div>
-          <div><label class="form-label" for="leadConvertir">Lead a cotizar</label><input id="leadConvertir" class="form-input" type="number"></div>
-        </div>
-        <div class="cva-row">
-          <div><label class="form-label" for="cotCodigo">Codigo cotizacion</label><input id="cotCodigo" class="form-input"></div>
-          <div><button id="btnConvertLead" class="btn secondary" type="button" style="margin-top:24px">Crear cotizacion</button></div>
-        </div>
-        <div id="msg" class="cva-msg"></div>
-      </article>
-
-      <article class="cva-card">
-        <h2>Embudo</h2>
-        <div class="cva-table-wrap"><table class="cva-table"><thead><tr><th>Estado</th><th>Leads</th><th>Valor</th><th>Forecast</th><th>Prob.</th></tr></thead><tbody id="embudoBody"></tbody></table></div>
-      </article>
-      <article class="cva-card"><h2>Top leads</h2><div class="cva-table-wrap"><table class="cva-table"><thead><tr><th>ID</th><th>Lead</th><th>Estado</th><th>Valor</th><th>Score</th><th>Recomendacion</th><th>Accion</th></tr></thead><tbody id="scoresBody"></tbody></table></div></article>
-      <article class="cva-card"><h2>Agenda y metas</h2><div class="cva-table-wrap"><table class="cva-table"><thead><tr><th>Tipo</th><th>Referencia</th><th>Nombre</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr></thead><tbody id="agendaBody"></tbody></table></div><div class="cva-table-wrap" style="margin-top:12px"><table class="cva-table"><thead><tr><th>Periodo</th><th>Responsable</th><th>Canal</th><th>Meta</th><th>Leads</th><th>Conv.</th></tr></thead><tbody id="metasBody"></tbody></table></div></article>
-    </section>
+<body class="admin-subpage empresa-subpage">
+  <main class="crm-redirect">
+    <h1>CRM unificado</h1>
+    <p>CRM avanzado ahora vive dentro del modulo CRM unificado, en el submenu Forecast y metas.</p>
+    <a id="crmUnifiedLink" class="btn" href="/administrar_empresa/crm_comercial.html?tab=forecast">Abrir CRM unificado</a>
   </main>
-  <script src="/js/crm_ventas_avanzadas.js"></script>
+  <script>
+    (function () {
+      var empresaID = 0;
+      try {
+        if (typeof window.__resolveEmpresaIdContext === "function") {
+          empresaID = Number(window.__resolveEmpresaIdContext() || 0);
+        }
+      } catch (_) {}
+      var url = new URL("/administrar_empresa/crm_comercial.html", window.location.origin);
+      url.searchParams.set("tab", "forecast");
+      if (empresaID > 0) url.searchParams.set("empresa_id", String(empresaID));
+      var link = document.getElementById("crmUnifiedLink");
+      if (link) link.href = url.pathname + url.search;
+      window.setTimeout(function () {
+        window.location.replace(url.pathname + url.search);
+      }, 450);
+    })();
+  </script>
 </body>
 </html>

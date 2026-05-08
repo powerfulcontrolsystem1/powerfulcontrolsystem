@@ -1925,6 +1925,9 @@ ul{padding-left:18px}
 .login-page .login-title{font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif;font-weight:800;font-size:1.6rem;color:var(--login-title-color);margin:0 0 6px 0;letter-spacing:0.6px}
 .login-header-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:8px}
 .login-header-actions .btn{min-height:42px;white-space:nowrap}
+.login-theme-control{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-soft)}
+.login-theme-control span{font-size:.82rem;font-weight:800;color:var(--muted)}
+.login-theme-control select{min-width:132px;height:32px;padding:4px 28px 4px 10px;border-radius:6px;background:var(--form-input-bg);border-color:var(--form-border);color:var(--text);font-weight:700}
 .login-help-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--accent);font-weight:900;font-size:1.1rem;text-decoration:none;box-shadow:var(--shadow-soft);transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease}
 .login-help-icon:hover,.login-help-icon:focus-visible{transform:translateY(-1px);border-color:color-mix(in srgb,var(--accent) 55%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--text);outline:none}
 .login-page .login-help-link{color:var(--login-link-color);text-decoration:underline;font-weight:700;font-size:0.95rem;font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif}
@@ -1947,11 +1950,15 @@ ul{padding-left:18px}
 .epayco-response-copy{max-width:32rem;margin-left:auto;margin-right:auto}
 
 .login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
-.login-usuario-page{min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text)}
-.login-usuario-page .card{background:var(--card);border:1px solid var(--border);color:var(--text)}
+.login-usuario-page{min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease}
+.login-usuario-page .card{background:var(--surface);border:1px solid var(--border);color:var(--text);box-shadow:var(--shadow-soft)}
 .login-usuario-page .form-input,.login-usuario-page input,.login-usuario-page select,.login-usuario-page textarea{background:var(--form-input-bg);border-color:var(--form-border);color:var(--text)}
 .login-usuario-page .form-input::placeholder,.login-usuario-page input::placeholder,.login-usuario-page textarea::placeholder{color:color-mix(in srgb,var(--muted) 74%,transparent)}
 .login-usuario-page .form-label,.login-usuario-page h2,.login-usuario-page h3{color:var(--text)}
+.login-usuario-page .login-title{color:var(--login-title-color)}
+.login-usuario-page .login-inline-links a{color:var(--login-link-color)}
+.login-usuario-page .password-visibility-toggle{color:var(--muted);background:transparent;border-color:var(--form-border)}
+.login-usuario-page .password-visibility-toggle:hover{color:var(--text);background:var(--toggle-hover-bg)}
 .login-usuario-page .auth-message.error{color:var(--status-danger)}
 .login-usuario-page .auth-message.success{color:var(--status-success)}
 .login-usuario-page .container.login-usuario-shell{max-width:1120px}
@@ -2511,6 +2518,36 @@ html[data-theme="light-wood"] .login-usuario-page{
     radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 30%),
     linear-gradient(180deg, var(--bg-alt), var(--bg));
 }
+html[data-theme="dark"] .login-usuario-page,
+html[data-theme="dark-violet"] .login-usuario-page,
+html[data-theme="dark-emerald"] .login-usuario-page,
+html[data-theme="dark-neon"] .login-usuario-page{
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 36%),
+    radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+}
+html[data-theme="dark-neon"] .login-usuario-page{
+  background:
+    radial-gradient(circle at 12% 8%, rgba(0,245,255,.18), transparent 34%),
+    radial-gradient(circle at 92% 8%, rgba(255,43,214,.13), transparent 30%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+}
+html[data-theme="dark"] .login-usuario-page .card,
+html[data-theme="dark-violet"] .login-usuario-page .card,
+html[data-theme="dark-emerald"] .login-usuario-page .card,
+html[data-theme="dark-neon"] .login-usuario-page .card,
+html[data-theme="dark"] .login-theme-control,
+html[data-theme="dark-violet"] .login-theme-control,
+html[data-theme="dark-emerald"] .login-theme-control,
+html[data-theme="dark-neon"] .login-theme-control{
+  background:color-mix(in srgb, var(--surface) 94%, black 6%);
+  border-color:color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+}
+html[data-theme="dark-neon"] .login-usuario-page .card,
+html[data-theme="dark-neon"] .login-theme-control{
+  box-shadow:0 18px 38px rgba(0,0,0,.32),0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+}
 html[data-theme="light"] .login-usuario-eyebrow,
 html[data-theme="light-rose"] .login-usuario-eyebrow,
 html[data-theme="light-gold"] .login-usuario-eyebrow,
@@ -2555,6 +2592,21 @@ html[data-theme="light-gold"] .login-usuario-contract-version,
 html[data-theme="light-wood"] .login-usuario-contract-version{
   background:var(--public-panel-soft-bg);
   color:var(--public-panel-text);
+}
+html[data-theme="dark"] .login-usuario-contract,
+html[data-theme="dark-violet"] .login-usuario-contract,
+html[data-theme="dark-emerald"] .login-usuario-contract,
+html[data-theme="dark-neon"] .login-usuario-contract{
+  background:linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%), color-mix(in srgb, var(--surface) 96%, black 4%));
+  border-color:color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+}
+html[data-theme="dark"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-violet"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-emerald"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
+  background:var(--surface);
+  color:var(--text);
+  border-color:color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
 }
 .home-offer-card .home-offer-btn:hover,
 .nav-actions .portal-header-btn:hover,

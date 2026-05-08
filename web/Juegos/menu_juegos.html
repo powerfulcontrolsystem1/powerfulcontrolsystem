@@ -6,7 +6,7 @@
   <title>Juegos</title>
   <script>
     (function(){
-      var allowed = {dark:1,'dark-violet':1,'dark-emerald':1,light:1,'light-rose':1,'light-gold':1};
+      var allowed = {dark:1,'dark-violet':1,'dark-emerald':1,'dark-neon':1,light:1,'light-rose':1,'light-gold':1,'light-wood':1};
       function cookie(name){
         var match = String(document.cookie || '').match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
         return match ? decodeURIComponent(match.pop()) : '';
@@ -881,6 +881,14 @@
     <p class="games-note">El acceso queda publicado desde el menu flotante para conservar un punto de entrada estable.</p>
   </main>
   <script>
+    (function(){
+      var gameLinks = document.querySelectorAll('.games-featured a[href^="/Juegos/"], .games-quick-card[href^="/Juegos/"], .game-card[href^="/Juegos/"], .games-quick-card[href="/emulador/"]');
+      for (var i = 0; i < gameLinks.length; i += 1) {
+        gameLinks[i].setAttribute('target', '_blank');
+        gameLinks[i].setAttribute('rel', 'noopener');
+      }
+    })();
+
     (function(){
       function parsePositiveInt(value) {
         var parsed = parseInt(String(value || '').trim(), 10);

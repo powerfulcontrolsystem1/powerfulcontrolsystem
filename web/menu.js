@@ -415,9 +415,9 @@
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
-            '<a class="fm-item fm-subitem" href="/calculadora.html">Calculadora</a>' +
-            '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html">Juegos</a>' +
-            '<a class="fm-item fm-subitem" href="/emulador/">Emulador</a>' +
+            '<a class="fm-item fm-subitem" href="/calculadora.html?compact=1" data-open-calculator="1">Calculadora</a>' +
+            '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener">Juegos</a>' +
+            '<a class="fm-item fm-subitem" href="/emulador/" target="_blank" rel="noopener">Emulador</a>' +
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
@@ -457,6 +457,7 @@
     var themeSelectorPopup = wrapper.querySelector('#themeSelectorPopup');
     var utilitiesToggle = wrapper.querySelector('#utilitiesMenuToggle');
     var utilitiesPopup = wrapper.querySelector('#utilitiesMenuPopup');
+    var calculatorLauncher = wrapper.querySelector('[data-open-calculator]');
 
     function setPanelOpen(isOpen){
       if (!panel || !toggle) return;
@@ -480,6 +481,32 @@
       utilitiesToggle.setAttribute('aria-expanded', 'false');
       utilitiesPopup.setAttribute('aria-hidden', 'true');
       utilitiesPopup.classList.remove('show');
+    }
+
+    function openCalculatorWindow(){
+      var width = 360;
+      var height = 520;
+      var left = Math.max(0, Math.round((window.screenX || window.screenLeft || 0) + ((window.outerWidth || window.innerWidth || width) - width) / 2));
+      var top = Math.max(0, Math.round((window.screenY || window.screenTop || 0) + ((window.outerHeight || window.innerHeight || height) - height) / 2));
+      var features = [
+        'popup=yes',
+        'width=' + width,
+        'height=' + height,
+        'left=' + left,
+        'top=' + top,
+        'resizable=yes',
+        'scrollbars=no',
+        'menubar=no',
+        'toolbar=no',
+        'location=no',
+        'status=no'
+      ].join(',');
+      var win = window.open('/calculadora.html?compact=1', 'pcs_calculadora', features);
+      if (win && typeof win.focus === 'function') {
+        win.focus();
+      } else {
+        window.location.href = '/calculadora.html?compact=1';
+      }
     }
 
     function setSessionLinkAuthenticated(isAuthenticated){
@@ -553,6 +580,17 @@
         if (!isExpanded) {
           closeThemePopup();
         }
+      });
+    }
+
+    if (calculatorLauncher) {
+      calculatorLauncher.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeThemePopup();
+        closeUtilitiesPopup();
+        closePanel();
+        openCalculatorWindow();
       });
     }
 

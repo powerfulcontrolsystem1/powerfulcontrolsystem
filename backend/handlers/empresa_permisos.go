@@ -396,8 +396,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación diaria y ventas"},
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operación diaria y ventas"},
 	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
-	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM comercial y embudo", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
-	{PaginaClave: "linkCRMAvanzado", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM y ventas avanzadas", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
+	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM unificado", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación electrónica"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación electrónica"},
 	{PaginaClave: "linkAIUConstruccion", Modulo: permModuleAIUConstruccion, Accion: permActionCreate, Titulo: "AIU construcción y contratos de obra", Grupo: "Verticales de negocio"},
@@ -2582,7 +2581,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	case strings.HasPrefix(path, "/api/empresa/crm/"):
 		return "linkCRMComercial"
 	case path == "/api/empresa/crm_avanzado":
-		return "linkCRMAvanzado"
+		return "linkCRMComercial"
 	case path == "/api/empresa/clientes":
 		return "linkClientes"
 	case strings.HasPrefix(path, "/api/empresa/chat_tareas"):

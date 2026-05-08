@@ -487,6 +487,12 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo inicializar la programacion de reportes", http.StatusInternalServerError)
 			return
 		}
+		if reportesActionNeedsRuntimeSchemas(action) {
+			if err := ensureEmpresaReportesRuntimeSchemas(dbEmp); err != nil {
+				http.Error(w, "No se pudo preparar las tablas de reportes: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 
 		switch action {
 		case "catalogo", "catalog", "datasets":
@@ -692,6 +698,43 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func reportesActionNeedsRuntimeSchemas(action string) bool {
+	switch strings.ToLower(strings.TrimSpace(action)) {
+	case "catalogo", "catalog", "datasets", "plantillas", "plantilla", "programacion", "programaciones", "agenda", "agenda_envio", "ejecuciones", "historial_ejecuciones":
+		return false
+	default:
+		return true
+	}
+}
+
+func ensureEmpresaReportesRuntimeSchemas(dbEmp *sql.DB) error {
+	ensures := []struct {
+		name string
+		fn   func(*sql.DB) error
+	}{
+		{name: "carritos", fn: dbpkg.EnsureEmpresaCarritosSchema},
+		{name: "clientes", fn: dbpkg.EnsureEmpresaClientesSchema},
+		{name: "productos", fn: dbpkg.EnsureEmpresaProductosSchema},
+		{name: "finanzas", fn: dbpkg.EnsureEmpresaFinanzasSchema},
+		{name: "eventos_contables", fn: dbpkg.EnsureEmpresaEventosContablesSchema},
+		{name: "documentos_transaccionales", fn: dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema},
+		{name: "compras", fn: dbpkg.EnsureEmpresasComprasSchema},
+		{name: "facturacion_electronica", fn: dbpkg.EnsureEmpresaFacturacionElectronicaSchema},
+		{name: "modulos_comerciales", fn: dbpkg.EnsureEmpresaModulosFaltantesSchema},
+		{name: "asistencia", fn: dbpkg.EnsureEmpresaAsistenciaSchema},
+		{name: "vehiculos", fn: dbpkg.EnsureEmpresaVehiculosRegistroSchema},
+		{name: "nomina", fn: dbpkg.EnsureEmpresaNominaSchema},
+		{name: "propinas", fn: dbpkg.EnsureEmpresaPropinasSchema},
+		{name: "comisiones", fn: dbpkg.EnsureEmpresaComisionesServicioSchema},
+	}
+	for _, ensure := range ensures {
+		if err := ensure.fn(dbEmp); err != nil {
+			return fmt.Errorf("%s: %w", ensure.name, err)
+		}
+	}
+	return nil
 }
 
 func (b *reportesBuilder) buildSuite() (empresaReportesSuiteResponse, error) {

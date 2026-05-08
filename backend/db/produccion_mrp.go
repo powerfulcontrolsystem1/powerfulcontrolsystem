@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 )
 
 type EmpresaProduccionMRPConfig struct {
@@ -128,19 +129,28 @@ type EmpresaProduccionMRPPlan struct {
 }
 
 type EmpresaProduccionMRPDashboard struct {
-	EmpresaID            int64                      `json:"empresa_id"`
-	RecetasActivas       int                        `json:"recetas_activas"`
-	OrdenesAbiertas      int                        `json:"ordenes_abiertas"`
-	OrdenesCalidad       int                        `json:"ordenes_calidad"`
-	OrdenesCerradas      int                        `json:"ordenes_cerradas"`
-	CostoEstimadoAbierto float64                    `json:"costo_estimado_abierto"`
-	CostoRealMes         float64                    `json:"costo_real_mes"`
-	Config               EmpresaProduccionMRPConfig `json:"config"`
-	Recetas              []EmpresaProduccionReceta  `json:"recetas"`
-	Ordenes              []EmpresaProduccionOrden   `json:"ordenes"`
-	Plan                 []EmpresaProduccionMRPPlan `json:"plan"`
-	ConsumosRecientes    []EmpresaProduccionConsumo `json:"consumos_recientes"`
-	RevisionesCalidad    []EmpresaProduccionCalidad `json:"revisiones_calidad"`
+	EmpresaID             int64                      `json:"empresa_id"`
+	RecetasActivas        int                        `json:"recetas_activas"`
+	RecetasSinComponentes int                        `json:"recetas_sin_componentes"`
+	OrdenesAbiertas       int                        `json:"ordenes_abiertas"`
+	OrdenesBorrador       int                        `json:"ordenes_borrador"`
+	OrdenesProgramadas    int                        `json:"ordenes_programadas"`
+	OrdenesProceso        int                        `json:"ordenes_proceso"`
+	OrdenesCalidad        int                        `json:"ordenes_calidad"`
+	OrdenesCerradas       int                        `json:"ordenes_cerradas"`
+	OrdenesUrgentes       int                        `json:"ordenes_urgentes"`
+	OrdenesVencidas       int                        `json:"ordenes_vencidas"`
+	CostoEstimadoAbierto  float64                    `json:"costo_estimado_abierto"`
+	CostoRealMes          float64                    `json:"costo_real_mes"`
+	VariacionCostoAbierto float64                    `json:"variacion_costo_abierto"`
+	PlanRequerimientos    int                        `json:"plan_requerimientos"`
+	Alertas               []string                   `json:"alertas"`
+	Config                EmpresaProduccionMRPConfig `json:"config"`
+	Recetas               []EmpresaProduccionReceta  `json:"recetas"`
+	Ordenes               []EmpresaProduccionOrden   `json:"ordenes"`
+	Plan                  []EmpresaProduccionMRPPlan `json:"plan"`
+	ConsumosRecientes     []EmpresaProduccionConsumo `json:"consumos_recientes"`
+	RevisionesCalidad     []EmpresaProduccionCalidad `json:"revisiones_calidad"`
 }
 
 func EnsureEmpresaProduccionMRPSchema(dbConn *sql.DB) error {
@@ -525,6 +535,14 @@ func CambiarEstadoEmpresaProduccionOrden(dbConn *sql.DB, empresaID, ordenID int6
 	if ordenID <= 0 || estado == "" {
 		return EmpresaProduccionOrden{}, errors.New("orden_id y estado son obligatorios")
 	}
+	current, err := GetEmpresaProduccionOrdenByID(dbConn, empresaID, ordenID)
+	if err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	cfg, _ := GetEmpresaProduccionMRPConfig(dbConn, empresaID)
+	if err := validateProduccionOrdenTransition(current.Estado, estado, cfg); err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
 	extra := ""
 	args := []interface{}{estado}
 	switch estado {
@@ -536,7 +554,7 @@ func CambiarEstadoEmpresaProduccionOrden(dbConn *sql.DB, empresaID, ordenID int6
 		extra = ", fecha_inicio=COALESCE(fecha_inicio,CAST(CURRENT_TIMESTAMP AS TEXT))"
 	}
 	args = append(args, ordenID, empresaID)
-	_, err := ExecCompat(dbConn, `UPDATE empresa_produccion_ordenes SET estado=?`+extra+`, fecha_actualizacion=CURRENT_TIMESTAMP WHERE id=? AND empresa_id=?`, args...)
+	_, err = ExecCompat(dbConn, `UPDATE empresa_produccion_ordenes SET estado=?`+extra+`, fecha_actualizacion=CURRENT_TIMESTAMP WHERE id=? AND empresa_id=?`, args...)
 	if err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
@@ -632,6 +650,22 @@ func ListEmpresaProduccionCalidad(dbConn *sql.DB, empresaID, ordenID int64, limi
 	return out, rows.Err()
 }
 
+func produccionMRPDemandForReceta(dbConn *sql.DB, empresaID, recetaID int64) float64 {
+	var demand float64
+	_ = QueryRowCompat(dbConn, `
+		SELECT COALESCE(SUM(CASE
+			WHEN cantidad_planificada > COALESCE(cantidad_producida,0)
+			THEN cantidad_planificada - COALESCE(cantidad_producida,0)
+			ELSE 0
+		END),0)
+		FROM empresa_produccion_ordenes
+		WHERE empresa_id=?
+		  AND receta_id=?
+		  AND estado IN ('borrador','programada','en_proceso','calidad')
+	`, empresaID, recetaID).Scan(&demand)
+	return roundQtyProduccion(math.Max(0, demand))
+}
+
 func GenerarEmpresaProduccionMRPPlan(dbConn *sql.DB, empresaID int64, periodo, usuario string) ([]EmpresaProduccionMRPPlan, error) {
 	if err := EnsureEmpresaProduccionMRPSchema(dbConn); err != nil {
 		return nil, err
@@ -646,14 +680,37 @@ func GenerarEmpresaProduccionMRPPlan(dbConn *sql.DB, empresaID int64, periodo, u
 	}
 	_, _ = ExecCompat(dbConn, `UPDATE empresa_produccion_mrp_plan SET estado='reemplazado' WHERE empresa_id=? AND periodo=? AND estado='borrador'`, empresaID, periodo)
 	for _, rec := range recetas {
-		demanda := 10.0
-		requerido := roundQtyProduccion(demanda * rec.CantidadBase)
+		demanda := produccionMRPDemandForReceta(dbConn, empresaID, rec.ID)
+		if demanda <= 0 {
+			continue
+		}
+		base := rec.CantidadBase
+		if base <= 0 {
+			base = 1
+		}
 		stockSeguridad := roundQtyProduccion(demanda * 0.15)
-		sugerida := math.Max(0, requerido+stockSeguridad)
+		sugerida := math.Max(0, demanda+stockSeguridad)
 		_, err := ExecCompat(dbConn, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-			empresaID, rec.ProductoTerminadoID, rec.ProductoTerminadoNombre, periodo, demanda, 0, stockSeguridad, requerido, -sugerida, 0, sugerida, "recetas", "borrador", usuario)
+			empresaID, rec.ProductoTerminadoID, rec.ProductoTerminadoNombre, periodo, demanda, 0, stockSeguridad, demanda, -sugerida, 0, sugerida, "ordenes_abiertas", "borrador", usuario)
 		if err != nil {
 			return nil, err
+		}
+		componentes, compErr := ListEmpresaProduccionComponentes(dbConn, empresaID, rec.ID)
+		if compErr != nil {
+			return nil, compErr
+		}
+		for _, comp := range componentes {
+			if comp.ProductoNombre == "" || comp.Cantidad <= 0 {
+				continue
+			}
+			requerido := roundQtyProduccion((comp.Cantidad * demanda / base) * (1 + comp.MermaPorcentaje/100))
+			stockComponente := roundQtyProduccion(requerido * 0.10)
+			compra := math.Max(0, requerido+stockComponente)
+			_, err := ExecCompat(dbConn, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+				empresaID, comp.ProductoID, comp.ProductoNombre, periodo, demanda, 0, stockComponente, requerido, -compra, compra, 0, "componentes:"+rec.Codigo, "borrador", usuario)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return ListEmpresaProduccionMRPPlan(dbConn, empresaID, periodo, 300)
@@ -700,10 +757,38 @@ func BuildEmpresaProduccionMRPDashboard(dbConn *sql.DB, empresaID int64) (Empres
 	calidad, _ := ListEmpresaProduccionCalidad(dbConn, empresaID, 0, 30)
 	ds := EmpresaProduccionMRPDashboard{EmpresaID: empresaID, Config: cfg, Recetas: recetas, Ordenes: ordenes, Plan: plan, ConsumosRecientes: consumos, RevisionesCalidad: calidad}
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_recetas WHERE empresa_id=? AND estado='activo'`, empresaID).Scan(&ds.RecetasActivas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_recetas r WHERE r.empresa_id=? AND r.estado='activo' AND NOT EXISTS (SELECT 1 FROM empresa_produccion_receta_componentes c WHERE c.empresa_id=r.empresa_id AND c.receta_id=r.id)`, empresaID).Scan(&ds.RecetasSinComponentes)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*), COALESCE(SUM(costo_estimado),0) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado IN ('borrador','programada','en_proceso')`, empresaID).Scan(&ds.OrdenesAbiertas, &ds.CostoEstimadoAbierto)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='borrador'`, empresaID).Scan(&ds.OrdenesBorrador)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='programada'`, empresaID).Scan(&ds.OrdenesProgramadas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='en_proceso'`, empresaID).Scan(&ds.OrdenesProceso)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='calidad'`, empresaID).Scan(&ds.OrdenesCalidad)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='cerrada'`, empresaID).Scan(&ds.OrdenesCerradas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_ordenes WHERE empresa_id=? AND prioridad='urgente' AND estado NOT IN ('cerrada','cancelada')`, empresaID).Scan(&ds.OrdenesUrgentes)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(costo_real),0) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado='cerrada' AND substr(COALESCE(fecha_cierre,''),1,7)=substr(CAST(CURRENT_TIMESTAMP AS TEXT),1,7)`, empresaID).Scan(&ds.CostoRealMes)
+	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(costo_real-costo_estimado),0) FROM empresa_produccion_ordenes WHERE empresa_id=? AND estado IN ('programada','en_proceso','calidad')`, empresaID).Scan(&ds.VariacionCostoAbierto)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_produccion_mrp_plan WHERE empresa_id=? AND estado='borrador' AND (COALESCE(cantidad_sugerida_compra,0)>0 OR COALESCE(cantidad_sugerida_producir,0)>0 OR COALESCE(disponible_proyectado,0)<0)`, empresaID).Scan(&ds.PlanRequerimientos)
+	today := time.Now().Format("2006-01-02")
+	for _, o := range ordenes {
+		if o.FechaProgramada != "" && produccionDateKey(o.FechaProgramada) < today && o.Estado != "cerrada" && o.Estado != "cancelada" {
+			ds.OrdenesVencidas++
+		}
+	}
+	if ds.RecetasActivas == 0 {
+		ds.Alertas = append(ds.Alertas, "No hay recetas activas para crear ordenes ni generar MRP.")
+	}
+	if ds.RecetasSinComponentes > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d receta(s) activas no tienen componentes definidos.", ds.RecetasSinComponentes))
+	}
+	if ds.OrdenesVencidas > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d orden(es) superaron la fecha programada.", ds.OrdenesVencidas))
+	}
+	if ds.OrdenesUrgentes > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d orden(es) urgentes siguen abiertas.", ds.OrdenesUrgentes))
+	}
+	if ds.PlanRequerimientos > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d linea(s) del MRP requieren compra o produccion.", ds.PlanRequerimientos))
+	}
 	return ds, nil
 }
 
@@ -882,6 +967,30 @@ func normalizeProduccionEstadoOrden(v string) string {
 	return normalizeOneOfProduccion(v, "borrador", "borrador", "programada", "en_proceso", "calidad", "cerrada", "cancelada")
 }
 
+func validateProduccionOrdenTransition(current, next string, cfg EmpresaProduccionMRPConfig) error {
+	current = normalizeProduccionEstadoOrden(current)
+	next = normalizeProduccionEstadoOrden(next)
+	if current == next {
+		return nil
+	}
+	if current == "cerrada" || current == "cancelada" {
+		return fmt.Errorf("la orden ya esta %s y no permite cambios de estado", current)
+	}
+	if next == "cerrada" && cfg.CerrarConCalidad && current != "calidad" {
+		return errors.New("la configuracion exige pasar la orden por control de calidad antes de cerrarla")
+	}
+	allowed := map[string]map[string]bool{
+		"borrador":   {"programada": true, "en_proceso": true, "cancelada": true},
+		"programada": {"en_proceso": true, "cancelada": true},
+		"en_proceso": {"calidad": true, "cerrada": true, "cancelada": true},
+		"calidad":    {"en_proceso": true, "cerrada": true, "cancelada": true},
+	}
+	if allowed[current] != nil && allowed[current][next] {
+		return nil
+	}
+	return fmt.Errorf("transicion de orden no permitida: %s -> %s", current, next)
+}
+
 func normalizeOneOfProduccion(v, fallback string, allowed ...string) string {
 	s := normalizeSlugProduccion(v, fallback)
 	for _, a := range allowed {
@@ -918,6 +1027,14 @@ func roundMoneyProduccion(v float64) float64 {
 
 func roundQtyProduccion(v float64) float64 {
 	return math.Round(v*10000) / 10000
+}
+
+func produccionDateKey(v string) string {
+	v = strings.TrimSpace(v)
+	if len(v) >= 10 {
+		return v[:10]
+	}
+	return v
 }
 
 func boolIntProduccion(v bool) int {

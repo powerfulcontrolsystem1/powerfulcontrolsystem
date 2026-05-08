@@ -40,3 +40,31 @@ func TestInferWMSItemEstado(t *testing.T) {
 		t.Fatalf("estado esperado completado, got %s", got)
 	}
 }
+
+func TestValidateWMSOrdenTransitionBloqueaFinales(t *testing.T) {
+	if err := validateWMSOrdenTransitionForTotals(nil, 1, 1, "cerrada", "en_picking"); err == nil {
+		t.Fatalf("expected final order transition to be rejected")
+	}
+	if err := validateWMSOrdenTransitionForTotals(nil, 1, 0, "en_picking", "en_packing"); err != nil {
+		t.Fatalf("zero order id should not query totals: %v", err)
+	}
+}
+
+func TestValidateWMSOrdenTransitionSinItemsNoPermiteDespacho(t *testing.T) {
+	if err := validateWMSOrdenTransitionForTotals(nil, 1, 0, "en_picking", "lista_despacho"); err != nil {
+		t.Fatalf("zero order id should be ignored by transition guard: %v", err)
+	}
+}
+
+func TestNormalizeWMSDespachoEstado(t *testing.T) {
+	cases := map[string]string{
+		"EN_RUTA":   "en_ruta",
+		"entregado": "entregado",
+		"raro":      "programado",
+	}
+	for input, want := range cases {
+		if got := normalizeWMSDespachoEstado(input); got != want {
+			t.Fatalf("normalizeWMSDespachoEstado(%q) = %q, want %q", input, got, want)
+		}
+	}
+}

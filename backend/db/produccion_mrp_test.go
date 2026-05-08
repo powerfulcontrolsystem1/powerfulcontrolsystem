@@ -52,3 +52,35 @@ func TestNormalizeProduccionCalidad(t *testing.T) {
 		t.Fatalf("calidad no normalizada: %#v", got)
 	}
 }
+
+func TestValidateProduccionOrdenTransitionRespetaCalidadObligatoria(t *testing.T) {
+	cfg := EmpresaProduccionMRPConfig{CerrarConCalidad: true}
+	if err := validateProduccionOrdenTransition("en_proceso", "cerrada", cfg); err == nil {
+		t.Fatalf("expected quality gate to block direct close")
+	}
+	if err := validateProduccionOrdenTransition("en_proceso", "calidad", cfg); err != nil {
+		t.Fatalf("expected transition to quality to be valid: %v", err)
+	}
+	if err := validateProduccionOrdenTransition("calidad", "cerrada", cfg); err != nil {
+		t.Fatalf("expected close after quality to be valid: %v", err)
+	}
+}
+
+func TestValidateProduccionOrdenTransitionBloqueaEstadosFinales(t *testing.T) {
+	cfg := EmpresaProduccionMRPConfig{}
+	if err := validateProduccionOrdenTransition("cerrada", "en_proceso", cfg); err == nil {
+		t.Fatalf("expected closed orders to reject further workflow changes")
+	}
+	if err := validateProduccionOrdenTransition("programada", "cerrada", cfg); err == nil {
+		t.Fatalf("expected invalid transition to be rejected")
+	}
+}
+
+func TestProduccionDateKey(t *testing.T) {
+	if got := produccionDateKey("2026-05-08 10:30:00"); got != "2026-05-08" {
+		t.Fatalf("date key = %q", got)
+	}
+	if got := produccionDateKey("  "); got != "" {
+		t.Fatalf("empty date key = %q", got)
+	}
+}

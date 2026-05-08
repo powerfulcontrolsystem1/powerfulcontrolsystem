@@ -16,10 +16,10 @@ body {
 }
 
 .pacman-page {
-  width: min(100%, 1120px);
+  width: min(100%, 800px);
   max-width: 100%;
   margin: 0 auto;
-  padding: 54px 12px 12px;
+  padding: 52px 12px 12px;
   box-sizing: border-box;
 }
 
@@ -59,11 +59,11 @@ body {
 
 .pacman-stage {
   display: grid;
-  grid-template-columns: minmax(0, 820px) 176px;
+  grid-template-columns: minmax(0, 480px) 150px;
   justify-items: center;
   align-items: start;
   gap: 10px;
-  width: min(100%, 1030px);
+  width: min(100%, 650px);
   max-width: 100%;
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--accent-yellow) 36%, var(--border) 64%);
@@ -81,7 +81,7 @@ body {
 }
 
 .pacman-canvas-host {
-  width: min(76vw, 820px);
+  width: min(52vw, 480px);
   height: auto;
   line-height: 0;
   touch-action: none;
@@ -104,7 +104,7 @@ body {
 }
 
 .pacman-touch-controls {
-  width: 176px;
+  width: 150px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-areas:
@@ -115,7 +115,7 @@ body {
 }
 
 .arcade-key {
-  min-height: 46px;
+  min-height: 42px;
   border: 1px solid rgba(255, 223, 51, 0.34);
   border-radius: 8px;
   background: linear-gradient(180deg, #252b36, #111722);
@@ -138,7 +138,7 @@ body {
 .arcade-key-right { grid-area: right; }
 .arcade-key-pause { grid-area: pause; }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   body {
     min-height: 100dvh;
   }
@@ -189,13 +189,13 @@ body {
   }
 
   .pacman-canvas-host {
-    width: min(100%, 420px);
+    width: min(92vw, 500px);
     height: auto;
-    max-height: 520px;
+    max-height: 620px;
   }
 
   .pacman-touch-controls {
-    width: min(100%, 420px);
+    width: min(92vw, 500px);
     gap: 4px;
   }
 
@@ -207,37 +207,39 @@ body {
 
 @media (max-width: 520px) {
   .pacman-canvas-host {
-    width: min(85vw, 357px);
+    width: min(90vw, 390px);
     height: auto;
-    max-height: 442px;
+    max-height: 490px;
   }
 
   .pacman-touch-controls {
-    width: min(85vw, 357px);
+    width: min(90vw, 390px);
   }
 }
 
 @media (max-width: 420px) {
   .pacman-canvas-host {
-    width: 85vw;
+    width: 90vw;
     height: auto;
   }
 
   .pacman-touch-controls {
-    width: 85vw;
+    width: 90vw;
   }
 }
 
 html[data-theme="light"] .pacman-stage,
 html[data-theme="light-rose"] .pacman-stage,
-html[data-theme="light-gold"] .pacman-stage {
+html[data-theme="light-gold"] .pacman-stage,
+html[data-theme="light-wood"] .pacman-stage {
   background: linear-gradient(180deg, var(--surface), var(--surface-soft));
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
 }
 
 html[data-theme="light"] .arcade-key,
 html[data-theme="light-rose"] .arcade-key,
-html[data-theme="light-gold"] .arcade-key {
+html[data-theme="light-gold"] .arcade-key,
+html[data-theme="light-wood"] .arcade-key {
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 92%, white 8%), var(--surface));
   color: #3b2b0a;
 }

@@ -6,18 +6,43 @@
   <title>Logistica avanzada / WMS</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body.wms-page{margin:0;background:var(--bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-    [data-theme="dark"] body.wms-page,body.dark.wms-page{background:#0f1724;color:#e8eef7}
-    .wms-shell{max-width:1440px;margin:0 auto;padding:18px;display:grid;gap:14px}.wms-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}.wms-head h1{margin:0;font-size:23px}.wms-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:900px;line-height:1.45}.wms-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .wms-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--surface,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.wms-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}.wms-btn.small{min-height:32px;padding:6px 9px;font-size:12px}
-    .wms-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.wms-kpi,.wms-box{background:var(--surface,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.wms-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.wms-kpi strong{display:block;margin-top:6px;font-size:20px;line-height:1.1}
-    .wms-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.wms-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.wms-tab.is-active{border-color:#1769e0;color:#1769e0}.wms-panel{display:none}.wms-panel.is-active{display:grid;gap:12px}.wms-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:12px;align-items:start}.wms-box h2{margin:0 0 10px;font-size:16px}.wms-form{display:grid;gap:9px}.wms-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.wms-row.three{grid-template-columns:repeat(3,1fr)}.wms-field{display:grid;gap:4px}.wms-field label{font-size:12px;color:var(--muted,#65758b)}.wms-field input,.wms-field select,.wms-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.wms-field textarea{min-height:72px;resize:vertical}
-    .wms-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.wms-table{width:100%;min-width:900px;border-collapse:collapse;background:var(--surface,#fff)}.wms-table th,.wms-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px;vertical-align:top}.wms-table th{color:var(--muted,#65758b)}.wms-table td.num{text-align:right;font-variant-numeric:tabular-nums}.wms-muted{color:var(--muted,#65758b)}.wms-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}.wms-good{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}.wms-warn{background:color-mix(in srgb,#f59e0b 16%,transparent);color:#b45309}.wms-bad{background:color-mix(in srgb,#ef4444 14%,transparent);color:#b91c1c}.wms-alerts{display:grid;gap:8px}.wms-alert{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;background:color-mix(in srgb,#f59e0b 10%,transparent)}.wms-msg{min-height:24px;color:var(--muted,#65758b)}.wms-msg.is-error{color:#c43737}
-    @media(max-width:1120px){.wms-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.wms-grid{grid-template-columns:1fr}.wms-head{display:grid}.wms-actions{justify-content:flex-start}}@media(max-width:720px){.wms-shell{padding:12px}.wms-kpis,.wms-row,.wms-row.three{grid-template-columns:1fr}.wms-tab{flex:1 1 42%}.wms-table{min-width:760px}}
+    :root{color-scheme:light dark}
+    body.wms-page{margin:0;min-height:100vh;background:var(--bg,#f3f6fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    html[data-theme^="dark"] body.wms-page{color-scheme:dark}
+    html[data-theme^="light"] body.wms-page{color-scheme:light}
+    .wms-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .wms-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 94%,var(--accent,#1769e0) 6%),var(--surface,#fff));box-shadow:var(--shadow-sm,0 10px 24px rgba(15,23,42,.08))}
+    .wms-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0}.wms-head p{margin:6px 0 0;color:var(--muted,#65758b);max-width:900px;line-height:1.45}
+    .wms-actions,.wms-row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .wms-btn{border:1px solid var(--border,rgba(15,35,64,.16));background:var(--surface,#fff);color:var(--text,#172033);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px;box-shadow:0 1px 0 color-mix(in srgb,var(--text,#172033) 8%,transparent);transition:background .16s ease,border-color .16s ease,transform .16s ease}
+    .wms-btn:hover{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--surface-soft,#f4f7fc) 82%,var(--accent,#1769e0) 18%);transform:translateY(-1px)}
+    .wms-btn.primary{background:linear-gradient(135deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4));color:var(--on-accent,#fff);border-color:color-mix(in srgb,var(--accent,#1769e0) 82%,#fff 18%);box-shadow:0 10px 24px color-mix(in srgb,var(--accent,#1769e0) 22%,transparent)}
+    .wms-btn.small{min-height:32px;padding:6px 9px;font-size:12px}.wms-btn.danger{color:var(--danger,#c43737);border-color:color-mix(in srgb,var(--danger,#c43737) 42%,var(--border,transparent))}.wms-btn[disabled]{opacity:.58;cursor:not-allowed;transform:none}
+    .wms-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}.wms-kpi,.wms-box{background:var(--surface,#fff);border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:12px;box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.06))}
+    .wms-kpi{position:relative;overflow:hidden;min-height:74px}.wms-kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:linear-gradient(180deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .wms-kpi span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.wms-kpi strong{display:block;margin-top:7px;font-size:20px;line-height:1.1;color:var(--text,#172033)}
+    .wms-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--bg,#f3f6fb) 12%);box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.05))}
+    .wms-tab{border:1px solid transparent;background:transparent;color:var(--muted,#65758b);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px}.wms-tab:hover{color:var(--text,#172033);background:var(--surface-soft,#f4f7fc);border-color:var(--border,rgba(15,35,64,.14))}
+    .wms-tab.is-active{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--accent,#1769e0) 14%,var(--surface,#fff));color:var(--accent,#1769e0);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#1769e0) 18%,transparent)}
+    .wms-panel{display:none}.wms-panel.is-active{display:grid;gap:12px}.wms-grid{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(360px,.72fr);gap:12px;align-items:start}.wms-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:12px;align-items:start}
+    .wms-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.wms-toolbar h2,.wms-box h2{margin:0;font-size:16px;line-height:1.25;letter-spacing:0}.wms-toolbar-actions{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.wms-toolbar .wms-field{min-width:170px}
+    .wms-form{display:grid;gap:9px}.wms-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.wms-row.three{grid-template-columns:repeat(3,1fr)}.wms-field{display:grid;gap:4px}.wms-field label{font-size:12px;color:var(--muted,#65758b);font-weight:800}
+    .wms-field input,.wms-field select,.wms-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--form-border,var(--border,rgba(15,35,64,.16)));background:var(--form-input-bg,var(--input-bg,#fff));color:var(--text,#172033);border-radius:8px;padding:9px 10px;min-height:38px;outline:none}
+    .wms-field textarea{min-height:72px;resize:vertical}.wms-field input:focus,.wms-field select:focus,.wms-field textarea:focus{border-color:var(--accent,#1769e0);box-shadow:0 0 0 3px var(--focus,rgba(23,105,224,.18))}
+    .wms-table-wrap{overflow:auto;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:var(--surface,#fff)}.wms-table{width:100%;min-width:920px;border-collapse:collapse;background:var(--surface,#fff);color:var(--text,#172033)}.wms-table th,.wms-table td{text-align:left;border-bottom:1px solid var(--border,rgba(15,35,64,.12));padding:9px;font-size:13px;vertical-align:top}.wms-table th{color:var(--muted,#65758b);font-weight:800;background:var(--surface-soft,#f4f7fc)}.wms-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .wms-muted{color:var(--muted,#65758b)}.wms-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}
+    .wms-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--accent,#1769e0) 14%,transparent);color:var(--accent,#1769e0);font-size:12px;font-weight:800;white-space:nowrap}.wms-good{background:color-mix(in srgb,var(--success,#16a34a) 14%,transparent);color:var(--success,#15803d)}.wms-warn{background:color-mix(in srgb,var(--warning,#f59e0b) 16%,transparent);color:#b45309}.wms-bad{background:color-mix(in srgb,var(--danger,#ef4444) 14%,transparent);color:var(--danger,#b91c1c)}
+    .wms-alerts,.wms-stage-grid{display:grid;gap:8px}.wms-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.wms-stage{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 90%,var(--surface-soft,#f4f7fc) 10%);min-height:76px}.wms-stage span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.wms-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.wms-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
+    .wms-alert{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 42%,var(--border,transparent));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface,#fff));color:var(--text,#172033)}.wms-alert strong{display:block;font-size:13px}.wms-alert p{margin:4px 0 0;color:var(--muted,#65758b);font-size:12px}.wms-alert.is-danger{border-color:color-mix(in srgb,var(--danger,#c43737) 45%,var(--border,transparent));background:color-mix(in srgb,var(--danger,#c43737) 10%,var(--surface,#fff))}
+    .wms-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.wms-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .wms-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.wms-msg.is-error{color:var(--danger,#c43737)}
+    html[data-theme^="dark"] .wms-head,html[data-theme^="dark"] .wms-box,html[data-theme^="dark"] .wms-kpi,html[data-theme^="dark"] .wms-tabs,html[data-theme^="dark"] .wms-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
+    @media(max-width:1180px){.wms-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.wms-grid,.wms-overview{grid-template-columns:1fr}.wms-head{display:grid}.wms-actions{justify-content:flex-start}.wms-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.wms-shell{padding:12px}.wms-kpis,.wms-row,.wms-row.three,.wms-stage-grid{grid-template-columns:1fr}.wms-tab{flex:1 1 42%}.wms-table{min-width:760px}.wms-toolbar,.wms-toolbar-actions{display:grid}.wms-actions{display:grid;justify-content:stretch}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
-<body class="wms-page">
+<body class="wms-page admin-subpage">
   <main class="wms-shell">
     <header class="wms-head">
       <div>
@@ -31,129 +56,132 @@
       </div>
     </header>
 
-    <section class="wms-kpis">
+    <section class="wms-kpis" aria-label="Indicadores WMS">
       <article class="wms-kpi"><span>Ubicaciones activas</span><strong id="kpiUbicaciones">0</strong></article>
-      <article class="wms-kpi"><span>Ã“rdenes abiertas</span><strong id="kpiOrdenes">0</strong></article>
+      <article class="wms-kpi"><span>Ordenes abiertas</span><strong id="kpiOrdenes">0</strong></article>
       <article class="wms-kpi"><span>En picking</span><strong id="kpiPicking">0</strong></article>
       <article class="wms-kpi"><span>En packing</span><strong id="kpiPacking">0</strong></article>
+      <article class="wms-kpi"><span>Listas despacho</span><strong id="kpiListas">0</strong></article>
       <article class="wms-kpi"><span>Despachos en ruta</span><strong id="kpiRuta">0</strong></article>
       <article class="wms-kpi"><span>Unidades pendientes</span><strong id="kpiPendientes">0</strong></article>
+      <article class="wms-kpi"><span>Ocupacion bodega</span><strong id="kpiOcupacion">0%</strong></article>
     </section>
 
-    <nav class="wms-tabs">
-      <button class="wms-tab is-active" data-tab="dashboard" type="button">Dashboard</button>
+    <nav class="wms-tabs" aria-label="Secciones WMS">
+      <button class="wms-tab is-active" data-tab="dashboard" type="button">Tablero</button>
       <button class="wms-tab" data-tab="ubicaciones" type="button">Ubicaciones</button>
-      <button class="wms-tab" data-tab="ordenes" type="button">Ã“rdenes</button>
+      <button class="wms-tab" data-tab="ordenes" type="button">Ordenes</button>
       <button class="wms-tab" data-tab="items" type="button">Picking/Packing</button>
       <button class="wms-tab" data-tab="despachos" type="button">Despachos</button>
-      <button class="wms-tab" data-tab="eventos" type="button">BitÃ¡cora</button>
+      <button class="wms-tab" data-tab="eventos" type="button">Bitacora</button>
     </nav>
     <div id="wmsMsg" class="wms-msg"></div>
 
     <section id="tab-dashboard" class="wms-panel is-active">
-      <div class="wms-grid">
-        <div class="wms-box"><h2>Ã“rdenes recientes</h2><div id="ordenesResumen" class="wms-table-wrap"></div></div>
-        <aside class="wms-box"><h2>Alertas</h2><div id="alertasList" class="wms-alerts"></div></aside>
+      <div class="wms-overview">
+        <div class="wms-box">
+          <div class="wms-toolbar"><h2>Flujo operativo</h2></div>
+          <div id="wmsPipeline" class="wms-stage-grid"></div>
+        </div>
+        <aside class="wms-box">
+          <div class="wms-toolbar"><h2>Alertas WMS</h2></div>
+          <div id="alertasList" class="wms-alerts"></div>
+        </aside>
+      </div>
+      <div class="wms-box">
+        <div class="wms-toolbar"><h2>Ordenes recientes</h2></div>
+        <div id="ordenesResumen" class="wms-table-wrap"></div>
       </div>
     </section>
 
     <section id="tab-ubicaciones" class="wms-panel">
       <div class="wms-grid">
         <form id="ubicacionForm" class="wms-box wms-form">
-          <h2>UbicaciÃ³n de bodega</h2>
-          <div class="wms-row"><div class="wms-field"><label>CÃ³digo</label><input id="ubiCodigo" placeholder="BOD-A-P01-R01-N01"></div><div class="wms-field"><label>Bodega</label><input id="ubiBodega" value="Principal"></div></div>
+          <h2>Ubicacion de bodega</h2>
+          <div class="wms-row"><div class="wms-field"><label>Codigo</label><input id="ubiCodigo" placeholder="BOD-A-P01-R01-N01"></div><div class="wms-field"><label>Bodega</label><input id="ubiBodega" value="Principal"></div></div>
           <div class="wms-row three"><div class="wms-field"><label>Zona</label><input id="ubiZona"></div><div class="wms-field"><label>Pasillo</label><input id="ubiPasillo"></div><div class="wms-field"><label>Rack</label><input id="ubiRack"></div></div>
-          <div class="wms-row three"><div class="wms-field"><label>Nivel</label><input id="ubiNivel"></div><div class="wms-field"><label>PosiciÃ³n</label><input id="ubiPosicion"></div><div class="wms-field"><label>Tipo</label><select id="ubiTipo"><option value="almacenamiento">Almacenamiento</option><option value="picking">Picking</option><option value="packing">Packing</option><option value="recepcion">RecepciÃ³n</option><option value="despacho">Despacho</option><option value="cuarentena">Cuarentena</option><option value="conteo">Conteo</option></select></div></div>
-          <div class="wms-row three"><div class="wms-field"><label>Capacidad</label><input id="ubiCapacidad" type="number" step="0.01" value="0"></div><div class="wms-field"><label>OcupaciÃ³n</label><input id="ubiOcupacion" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Estado</label><select id="ubiEstado"><option value="activa">Activa</option><option value="inactiva">Inactiva</option></select></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Nivel</label><input id="ubiNivel"></div><div class="wms-field"><label>Posicion</label><input id="ubiPosicion"></div><div class="wms-field"><label>Tipo</label><select id="ubiTipo"><option value="almacenamiento">Almacenamiento</option><option value="picking">Picking</option><option value="packing">Packing</option><option value="recepcion">Recepcion</option><option value="despacho">Despacho</option><option value="cuarentena">Cuarentena</option><option value="conteo">Conteo</option></select></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Capacidad</label><input id="ubiCapacidad" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Ocupacion</label><input id="ubiOcupacion" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Estado</label><select id="ubiEstado"><option value="activa">Activa</option><option value="inactiva">Inactiva</option></select></div></div>
           <div class="wms-field"><label>Observaciones</label><textarea id="ubiObs"></textarea></div>
-          <button class="wms-btn primary" type="submit">Guardar ubicaciÃ³n</button>
+          <div class="wms-row-actions"><button class="wms-btn primary" type="submit">Guardar ubicacion</button><button class="wms-btn" id="ubiClear" type="button">Limpiar</button></div>
         </form>
-        <div class="wms-box"><h2>Maestro de ubicaciones</h2><div id="ubicacionesTable" class="wms-table-wrap"></div></div>
+        <div class="wms-box">
+          <div class="wms-toolbar">
+            <h2>Maestro de ubicaciones</h2>
+            <div class="wms-toolbar-actions">
+              <div class="wms-field"><label>Estado</label><select id="ubicacionFilter"><option value="">Todas</option><option value="activa">Activas</option><option value="inactiva">Inactivas</option></select></div>
+            </div>
+          </div>
+          <div id="ubicacionesTable" class="wms-table-wrap"></div>
+        </div>
       </div>
     </section>
 
     <section id="tab-ordenes" class="wms-panel">
       <div class="wms-grid">
         <form id="ordenForm" class="wms-box wms-form">
-          <h2>Orden WMS</h2>
+          <h2 id="ordenTitle">Orden WMS</h2>
           <input type="hidden" id="ordenId">
-          <div class="wms-row"><div class="wms-field"><label>CÃ³digo</label><input id="ordenCodigo" placeholder="WMS-20260506-001"></div><div class="wms-field"><label>Tipo</label><select id="ordenTipo"><option value="picking">Picking</option><option value="packing">Packing</option><option value="despacho">Despacho</option><option value="conteo">Conteo</option><option value="reabastecimiento">Reabastecimiento</option><option value="traslado">Traslado</option><option value="devolucion">DevoluciÃ³n</option></select></div></div>
+          <div class="wms-row"><div class="wms-field"><label>Codigo</label><input id="ordenCodigo" placeholder="WMS-20260506-001"></div><div class="wms-field"><label>Tipo</label><select id="ordenTipo"><option value="picking">Picking</option><option value="packing">Packing</option><option value="despacho">Despacho</option><option value="conteo">Conteo</option><option value="reabastecimiento">Reabastecimiento</option><option value="traslado">Traslado</option><option value="devolucion">Devolucion</option></select></div></div>
           <div class="wms-row"><div class="wms-field"><label>Documento origen</label><input id="ordenOrigen" placeholder="Pedido / factura / OT"></div><div class="wms-field"><label>Cliente / tercero</label><input id="ordenCliente"></div></div>
           <div class="wms-row three"><div class="wms-field"><label>Fecha compromiso</label><input id="ordenFecha" type="date"></div><div class="wms-field"><label>Prioridad</label><select id="ordenPrioridad"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option><option value="baja">Baja</option></select></div><div class="wms-field"><label>Estado</label><select id="ordenEstado"><option value="borrador">Borrador</option><option value="liberada">Liberada</option><option value="en_picking">En picking</option><option value="en_packing">En packing</option><option value="lista_despacho">Lista despacho</option><option value="despachada">Despachada</option><option value="cerrada">Cerrada</option><option value="cancelada">Cancelada</option></select></div></div>
           <div class="wms-row"><div class="wms-field"><label>Responsable</label><input id="ordenResponsable"></div><div class="wms-field"><label>Observaciones</label><input id="ordenObs"></div></div>
-          <button class="wms-btn primary" type="submit">Guardar orden</button>
+          <div class="wms-row-actions"><button class="wms-btn primary" type="submit">Guardar orden</button><button class="wms-btn" id="ordenClear" type="button">Limpiar</button></div>
         </form>
-        <div class="wms-box"><h2>Ã“rdenes</h2><div id="ordenesTable" class="wms-table-wrap"></div></div>
+        <div class="wms-box">
+          <div class="wms-toolbar">
+            <h2>Ordenes</h2>
+            <div class="wms-toolbar-actions">
+              <div class="wms-field"><label>Tipo</label><select id="ordenTipoFilter"><option value="">Todos</option><option value="picking">Picking</option><option value="packing">Packing</option><option value="despacho">Despacho</option><option value="conteo">Conteo</option><option value="reabastecimiento">Reabastecimiento</option><option value="traslado">Traslado</option><option value="devolucion">Devolucion</option></select></div>
+              <div class="wms-field"><label>Estado</label><select id="ordenEstadoFilter"><option value="">Todos</option><option value="borrador">Borrador</option><option value="liberada">Liberada</option><option value="en_picking">En picking</option><option value="en_packing">En packing</option><option value="lista_despacho">Lista despacho</option><option value="despachada">Despachada</option><option value="cerrada">Cerrada</option><option value="cancelada">Cancelada</option></select></div>
+              <div class="wms-field"><label>Buscar</label><input id="ordenSearch" placeholder="Codigo, cliente, responsable"></div>
+            </div>
+          </div>
+          <div id="ordenesTable" class="wms-table-wrap"></div>
+        </div>
       </div>
     </section>
 
     <section id="tab-items" class="wms-panel">
       <div class="wms-grid">
         <form id="itemForm" class="wms-box wms-form">
-          <h2>Ãtem de picking/packing</h2>
-          <div class="wms-row three"><div class="wms-field"><label>Orden ID</label><input id="itemOrdenId" type="number"></div><div class="wms-field"><label>Producto</label><input id="itemProducto"></div><div class="wms-field"><label>SKU</label><input id="itemSku"></div></div>
-          <div class="wms-row three"><div class="wms-field"><label>UbicaciÃ³n origen</label><input id="itemOrigen"></div><div class="wms-field"><label>UbicaciÃ³n destino</label><input id="itemDestino" value="PACK-01"></div><div class="wms-field"><label>Cantidad</label><input id="itemCantidad" type="number" step="0.01" value="1"></div></div>
-          <div class="wms-row"><div class="wms-field"><label>Lote</label><input id="itemLote"></div><div class="wms-field"><label>Serial</label><input id="itemSerial"></div></div>
-          <button class="wms-btn primary" type="submit">Agregar Ã­tem</button>
+          <h2>Item de picking/packing</h2>
+          <div class="wms-row"><div class="wms-field"><label>Orden</label><select id="itemOrdenId"></select></div><div class="wms-field"><label>Producto</label><input id="itemProducto"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>SKU</label><input id="itemSku"></div><div class="wms-field"><label>Ubicacion origen</label><input id="itemOrigen"></div><div class="wms-field"><label>Ubicacion destino</label><input id="itemDestino" value="PACK-01"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Cantidad</label><input id="itemCantidad" type="number" step="0.01" value="1"></div><div class="wms-field"><label>Lote</label><input id="itemLote"></div><div class="wms-field"><label>Serial</label><input id="itemSerial"></div></div>
+          <button class="wms-btn primary" type="submit">Agregar item</button>
         </form>
         <form id="avanceForm" class="wms-box wms-form">
           <h2>Registrar avance</h2>
-          <div class="wms-row three"><div class="wms-field"><label>Ãtem ID</label><input id="avanceItemId" type="number"></div><div class="wms-field"><label>Pickeado</label><input id="avancePick" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Empacado</label><input id="avancePack" type="number" step="0.01" value="0"></div></div>
-          <div class="wms-field"><label>Estado</label><select id="avanceEstado"><option value="pendiente">Inferir automÃ¡tico</option><option value="en_picking">En picking</option><option value="pickeado">Pickeado</option><option value="en_packing">En packing</option><option value="empacado">Empacado</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select></div>
+          <div class="wms-row three"><div class="wms-field"><label>Item ID</label><input id="avanceItemId" type="number"></div><div class="wms-field"><label>Pickeado</label><input id="avancePick" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Empacado</label><input id="avancePack" type="number" step="0.01" value="0"></div></div>
+          <div class="wms-field"><label>Estado</label><select id="avanceEstado"><option value="pendiente">Inferir automatico</option><option value="en_picking">En picking</option><option value="pickeado">Pickeado</option><option value="en_packing">En packing</option><option value="empacado">Empacado</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select></div>
           <button class="wms-btn primary" type="submit">Guardar avance</button>
         </form>
       </div>
-      <div class="wms-box"><h2>Ãtems recientes</h2><div id="itemsTable" class="wms-table-wrap"></div></div>
+      <div class="wms-box">
+        <div class="wms-toolbar"><h2>Items de la orden seleccionada</h2></div>
+        <div id="itemsTable" class="wms-table-wrap"></div>
+      </div>
     </section>
 
     <section id="tab-despachos" class="wms-panel">
       <div class="wms-grid">
         <form id="despachoForm" class="wms-box wms-form">
           <h2>Despacho</h2>
-          <div class="wms-row three"><div class="wms-field"><label>Orden ID</label><input id="desOrdenId" type="number"></div><div class="wms-field"><label>CÃ³digo</label><input id="desCodigo" placeholder="DSP-20260506-001"></div><div class="wms-field"><label>Estado</label><select id="desEstado"><option value="programado">Programado</option><option value="en_ruta">En ruta</option><option value="entregado">Entregado</option><option value="devuelto">Devuelto</option><option value="cancelado">Cancelado</option></select></div></div>
-          <div class="wms-row three"><div class="wms-field"><label>Transportadora</label><input id="desTransportadora"></div><div class="wms-field"><label>GuÃ­a</label><input id="desGuia"></div><div class="wms-field"><label>Conductor</label><input id="desConductor"></div></div>
-          <div class="wms-row three"><div class="wms-field"><label>VehÃ­culo</label><input id="desVehiculo"></div><div class="wms-field"><label>Ruta</label><input id="desRuta"></div><div class="wms-field"><label>Flete</label><input id="desFlete" type="number" step="0.01" value="0"></div></div>
-          <div class="wms-row"><div class="wms-field"><label>Salida</label><input id="desSalida" type="date"></div><div class="wms-field"><label>Entrega</label><input id="desEntrega" type="date"></div></div>
+          <div class="wms-row"><div class="wms-field"><label>Orden</label><select id="desOrdenId"></select></div><div class="wms-field"><label>Codigo</label><input id="desCodigo" placeholder="DSP-20260506-001"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Estado</label><select id="desEstado"><option value="programado">Programado</option><option value="en_ruta">En ruta</option><option value="entregado">Entregado</option><option value="devuelto">Devuelto</option><option value="cancelado">Cancelado</option></select></div><div class="wms-field"><label>Transportadora</label><input id="desTransportadora"></div><div class="wms-field"><label>Guia</label><input id="desGuia"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Conductor</label><input id="desConductor"></div><div class="wms-field"><label>Vehiculo</label><input id="desVehiculo"></div><div class="wms-field"><label>Ruta</label><input id="desRuta"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Flete</label><input id="desFlete" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Salida</label><input id="desSalida" type="date"></div><div class="wms-field"><label>Entrega</label><input id="desEntrega" type="date"></div></div>
           <button class="wms-btn primary" type="submit">Guardar despacho</button>
         </form>
-        <div class="wms-box"><h2>Despachos</h2><div id="despachosTable" class="wms-table-wrap"></div></div>
+        <div class="wms-box"><div class="wms-toolbar"><h2>Despachos</h2></div><div id="despachosTable" class="wms-table-wrap"></div></div>
       </div>
     </section>
 
     <section id="tab-eventos" class="wms-panel">
-      <div class="wms-box"><h2>BitÃ¡cora WMS</h2><div id="eventosTable" class="wms-table-wrap"></div></div>
+      <div class="wms-box"><div class="wms-toolbar"><h2>Bitacora WMS</h2></div><div id="eventosTable" class="wms-table-wrap"></div></div>
     </section>
   </main>
-  <script>
-    (function(){
-      var state={empresaId:resolveEmpresaId(),dashboard:null,selectedOrden:null};
-      function el(id){return document.getElementById(id)} function val(id){return (el(id)&&el(id).value||"").trim()} function num(id){return Number(val(id)||0)}
-      function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]})}
-      function resolveEmpresaId(){var s=[location.search];try{if(window.parent&&window.parent!==window)s.push(window.parent.location.search)}catch(_){}for(var i=0;i<s.length;i++){var id=new URLSearchParams(s[i]).get("empresa_id");if(id)return id}try{return sessionStorage.getItem("empresa_id")||localStorage.getItem("empresa_id")||""}catch(_){return ""}}
-      function api(action,options,extra){if(!state.empresaId)return Promise.reject(new Error("empresa_id no disponible"));var url="/api/empresa/logistica_wms?empresa_id="+encodeURIComponent(state.empresaId)+"&action="+encodeURIComponent(action)+(extra||"");return fetch(url,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},options||{})).then(function(res){if(!res.ok)return res.text().then(function(t){throw new Error(t||res.statusText)});return res.json()})}
-      function msg(t,e){el("wmsMsg").textContent=t||"";el("wmsMsg").classList.toggle("is-error",!!e)}
-      function chip(v,c){return '<span class="wms-chip '+(c||"")+'">'+esc(String(v||"-").replace(/_/g," "))+'</span>'}
-      function estadoClass(v){return v==="cerrada"||v==="entregado"||v==="activa"?"wms-good":(v==="cancelada"||v==="devuelto"?"wms-bad":"wms-warn")}
-      function load(){msg("Cargando...");api("dashboard").then(function(d){state.dashboard=d||{};render();msg("Actualizado")}).catch(function(e){msg(e.message,true)})}
-      function render(){var d=state.dashboard||{};el("kpiUbicaciones").textContent=d.ubicaciones_activas||0;el("kpiOrdenes").textContent=d.ordenes_abiertas||0;el("kpiPicking").textContent=d.ordenes_picking||0;el("kpiPacking").textContent=d.ordenes_packing||0;el("kpiRuta").textContent=d.despachos_en_ruta||0;el("kpiPendientes").textContent=(d.unidades_pendientes||0).toFixed(0);renderOrdenes();renderUbicaciones();renderDespachos();renderEventos();renderItems();el("alertasList").innerHTML=(d.alertas||[]).map(function(a){return '<div class="wms-alert">'+esc(a)+'</div>'}).join("")}
-      function renderOrdenes(){var rows=(state.dashboard||{}).ordenes_recientes||[];var html=rows.length?'<table class="wms-table"><thead><tr><th>ID</th><th>Orden</th><th>Tipo</th><th>Cliente</th><th>Compromiso</th><th>Items</th><th>Picking</th><th>Packing</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r.id+'</td><td><strong>'+esc(r.codigo)+'</strong><br><span class="wms-muted">'+esc(r.origen_documento||"-")+'</span></td><td>'+chip(r.tipo)+'</td><td>'+esc(r.cliente||r.tercero||"-")+'</td><td>'+esc(r.fecha_compromiso||"-")+'</td><td class="num">'+(r.total_items||0)+' / '+(r.total_unidades||0)+'</td><td>'+chip((r.progreso_picking||0).toFixed(1)+"%")+'</td><td>'+chip((r.progreso_packing||0).toFixed(1)+"%")+'</td><td>'+chip(r.estado,estadoClass(r.estado))+'</td><td><button class="wms-btn small" data-edit-orden="'+r.id+'" type="button">Editar</button></td></tr>'}).join("")+'</tbody></table>':'<div class="wms-muted" style="padding:12px">Sin Ã³rdenes.</div>';el("ordenesTable").innerHTML=html;el("ordenesResumen").innerHTML=html}
-      function renderUbicaciones(){var rows=(state.dashboard||{}).ubicaciones||[];el("ubicacionesTable").innerHTML=rows.length?'<table class="wms-table"><thead><tr><th>CÃ³digo</th><th>Bodega</th><th>PosiciÃ³n</th><th>Tipo</th><th>Capacidad</th><th>OcupaciÃ³n</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td><strong>'+esc(r.codigo)+'</strong></td><td>'+esc(r.bodega)+'</td><td>'+esc([r.zona,r.pasillo,r.rack,r.nivel,r.posicion].filter(Boolean).join(" / "))+'</td><td>'+chip(r.tipo)+'</td><td class="num">'+(r.capacidad||0)+'</td><td class="num">'+(r.ocupacion||0)+'</td><td>'+chip(r.estado,estadoClass(r.estado))+'</td><td><button class="wms-btn small" data-edit-ubi="'+esc(r.codigo)+'" type="button">Editar</button></td></tr>'}).join("")+'</tbody></table>':'<div class="wms-muted" style="padding:12px">Sin ubicaciones.</div>'}
-      function renderItems(){var rows=(state.selectedOrden&&state.selectedOrden.items)||[];if(!rows.length){el("itemsTable").innerHTML='<div class="wms-muted" style="padding:12px">Selecciona una orden con Editar para ver sus items reales, o agrega items nuevos a una orden.</div>';return}el("itemsTable").innerHTML='<table class="wms-table"><thead><tr><th>ID</th><th>Orden</th><th>Producto</th><th>Ubicaciones</th><th>Lote/Serial</th><th>Solicitado</th><th>Pickeado</th><th>Empacado</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(i){return '<tr><td>'+i.id+'</td><td>'+esc(i.orden_id)+'</td><td><strong>'+esc(i.producto_nombre)+'</strong><br><span class="wms-muted">'+esc(i.sku||"-")+'</span></td><td>'+esc((i.ubicacion_origen||"-")+" -> "+(i.ubicacion_destino||"-"))+'</td><td>'+esc([i.lote,i.serial].filter(Boolean).join(" / ")||"-")+'</td><td class="num">'+(i.cantidad_solicitada||0)+'</td><td class="num">'+(i.cantidad_pickeada||0)+'</td><td class="num">'+(i.cantidad_empacada||0)+'</td><td>'+chip(i.estado,estadoClass(i.estado))+'</td><td><button class="wms-btn small" data-avance-item="'+i.id+'" data-avance-pick="'+(i.cantidad_pickeada||0)+'" data-avance-pack="'+(i.cantidad_empacada||0)+'" type="button">Avance</button></td></tr>'}).join("")+'</tbody></table>'}
-      function loadDetalle(id){api("detalle",null,"&id="+encodeURIComponent(id)).then(function(row){state.selectedOrden=row||null;if(row){fillOrden(row);document.querySelector('[data-tab="items"]').click()}renderItems();msg("Detalle de orden cargado")}).catch(function(e){msg(e.message,true)})}
-      function renderDespachos(){var rows=(state.dashboard||{}).despachos_recientes||[];el("despachosTable").innerHTML=rows.length?'<table class="wms-table"><thead><tr><th>ID</th><th>CÃ³digo</th><th>Orden</th><th>Transportadora</th><th>GuÃ­a</th><th>Ruta</th><th>Salida</th><th>Estado</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r.id+'</td><td><strong>'+esc(r.codigo)+'</strong></td><td>'+esc(r.orden_id)+'</td><td>'+esc(r.transportadora||"-")+'</td><td>'+esc(r.guia||"-")+'</td><td>'+esc(r.ruta||"-")+'</td><td>'+esc(r.fecha_salida||"-")+'</td><td>'+chip(r.estado,estadoClass(r.estado))+'</td></tr>'}).join("")+'</tbody></table>':'<div class="wms-muted" style="padding:12px">Sin despachos.</div>'}
-      function renderEventos(){var rows=(state.dashboard||{}).eventos_recientes||[];el("eventosTable").innerHTML=rows.length?'<table class="wms-table"><thead><tr><th>Fecha</th><th>Referencia</th><th>Evento</th><th>Estado</th><th>Detalle</th><th>Usuario</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+esc(r.fecha_creacion||"-")+'</td><td>'+esc(r.referencia_tipo+" #"+r.referencia_id)+'</td><td>'+chip(r.evento)+'</td><td>'+esc([r.estado_anterior,r.estado_nuevo].filter(Boolean).join(" -> "))+'</td><td>'+esc(r.detalle||"-")+'</td><td>'+esc(r.usuario||"-")+'</td></tr>'}).join("")+'</tbody></table>':'<div class="wms-muted" style="padding:12px">Sin eventos.</div>'}
-      function fillOrden(r){el("ordenId").value=r.id||0;el("ordenCodigo").value=r.codigo||"";el("ordenTipo").value=r.tipo||"picking";el("ordenOrigen").value=r.origen_documento||"";el("ordenCliente").value=r.cliente||r.tercero||"";el("ordenFecha").value=r.fecha_compromiso||"";el("ordenPrioridad").value=r.prioridad||"normal";el("ordenEstado").value=r.estado||"borrador";el("ordenResponsable").value=r.responsable||"";el("ordenObs").value=r.observaciones||"";el("itemOrdenId").value=r.id||"";el("desOrdenId").value=r.id||""}
-      document.addEventListener("click",function(ev){var tab=ev.target.closest("[data-tab]");if(tab){document.querySelectorAll(".wms-tab").forEach(function(b){b.classList.toggle("is-active",b===tab)});document.querySelectorAll(".wms-panel").forEach(function(p){p.classList.toggle("is-active",p.id==="tab-"+tab.dataset.tab)});return}var oid=ev.target.getAttribute("data-edit-orden");if(oid){var o=((state.dashboard||{}).ordenes_recientes||[]).find(function(x){return String(x.id)===String(oid)});if(o){fillOrden(o);loadDetalle(oid)}return}var aid=ev.target.getAttribute("data-avance-item");if(aid){el("avanceItemId").value=aid;el("avancePick").value=ev.target.getAttribute("data-avance-pick")||0;el("avancePack").value=ev.target.getAttribute("data-avance-pack")||0;document.querySelector('[data-tab="items"]').click();return}var uc=ev.target.getAttribute("data-edit-ubi");if(uc){var u=((state.dashboard||{}).ubicaciones||[]).find(function(x){return x.codigo===uc});if(u){el("ubiCodigo").value=u.codigo||"";el("ubiBodega").value=u.bodega||"Principal";el("ubiZona").value=u.zona||"";el("ubiPasillo").value=u.pasillo||"";el("ubiRack").value=u.rack||"";el("ubiNivel").value=u.nivel||"";el("ubiPosicion").value=u.posicion||"";el("ubiTipo").value=u.tipo||"almacenamiento";el("ubiCapacidad").value=u.capacidad||0;el("ubiOcupacion").value=u.ocupacion||0;el("ubiEstado").value=u.estado||"activa";el("ubiObs").value=u.observaciones||""}}})
-      el("wmsRefresh").addEventListener("click",load);el("wmsSeed").addEventListener("click",function(){api("seed_demo",{method:"POST",body:"{}"}).then(load).catch(function(e){msg(e.message,true)})})
-      el("wmsExport").addEventListener("click",function(){var rows=[["ID","Orden","Tipo","Estado","Items","Unidades","Picking","Packing"]].concat(((state.dashboard||{}).ordenes_recientes||[]).map(function(r){return [r.id,r.codigo,r.tipo,r.estado,r.total_items,r.total_unidades,r.progreso_picking,r.progreso_packing]}));var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="logistica_wms_ordenes.csv";a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000)})
-      el("ubicacionForm").addEventListener("submit",function(ev){ev.preventDefault();api("ubicacion",{method:"POST",body:JSON.stringify({codigo:val("ubiCodigo"),bodega:val("ubiBodega"),zona:val("ubiZona"),pasillo:val("ubiPasillo"),rack:val("ubiRack"),nivel:val("ubiNivel"),posicion:val("ubiPosicion"),tipo:val("ubiTipo"),capacidad:num("ubiCapacidad"),ocupacion:num("ubiOcupacion"),estado:val("ubiEstado"),observaciones:val("ubiObs")})}).then(load).catch(function(e){msg(e.message,true)})})
-      el("ordenForm").addEventListener("submit",function(ev){ev.preventDefault();api("orden",{method:num("ordenId")?"PUT":"POST",body:JSON.stringify({id:num("ordenId"),codigo:val("ordenCodigo"),tipo:val("ordenTipo"),origen_documento:val("ordenOrigen"),cliente:val("ordenCliente"),tercero:val("ordenCliente"),fecha_compromiso:val("ordenFecha"),prioridad:val("ordenPrioridad"),responsable:val("ordenResponsable"),estado:val("ordenEstado"),observaciones:val("ordenObs")})}).then(load).catch(function(e){msg(e.message,true)})})
-      el("itemForm").addEventListener("submit",function(ev){ev.preventDefault();api("item",{method:"POST",body:JSON.stringify({orden_id:num("itemOrdenId"),producto_nombre:val("itemProducto"),sku:val("itemSku"),ubicacion_origen:val("itemOrigen"),ubicacion_destino:val("itemDestino"),lote:val("itemLote"),serial:val("itemSerial"),cantidad_solicitada:num("itemCantidad"),estado:"pendiente"})}).then(function(){var oid=num("itemOrdenId");load();if(oid)loadDetalle(oid)}).catch(function(e){msg(e.message,true)})})
-      el("avanceForm").addEventListener("submit",function(ev){ev.preventDefault();api("avance_item",{method:"POST",body:JSON.stringify({id:num("avanceItemId"),cantidad_pickeada:num("avancePick"),cantidad_empacada:num("avancePack"),estado:val("avanceEstado")})}).then(function(){var oid=num("itemOrdenId");load();if(oid)loadDetalle(oid)}).catch(function(e){msg(e.message,true)})})
-      el("despachoForm").addEventListener("submit",function(ev){ev.preventDefault();api("despacho",{method:"POST",body:JSON.stringify({orden_id:num("desOrdenId"),codigo:val("desCodigo"),transportadora:val("desTransportadora"),guia:val("desGuia"),conductor:val("desConductor"),vehiculo:val("desVehiculo"),ruta:val("desRuta"),estado:val("desEstado"),fecha_salida:val("desSalida"),fecha_entrega:val("desEntrega"),costo_flete:num("desFlete")})}).then(load).catch(function(e){msg(e.message,true)})})
-      load()
-    })();
-  </script>
+  <script src="/js/logistica_wms.js"></script>
 </body>
 </html>
-

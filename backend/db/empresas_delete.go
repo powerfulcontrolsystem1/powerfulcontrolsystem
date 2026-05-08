@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -20,66 +21,95 @@ type EmpresaDeleteCascadeResult struct {
 	Detalle             []EmpresaDeleteTableResult `json:"detalle,omitempty"`
 }
 
-func empresaDeleteListCandidateTables(dbConn *sql.DB, excludeTables map[string]bool) ([]string, error) {
+type empresaDeleteCandidateTable struct {
+	Name              string
+	EmpresaIDDataType string
+	EmpresaIDUDTName  string
+}
+
+func empresaDeleteListCandidateTables(dbConn *sql.DB, excludeTables map[string]bool) ([]empresaDeleteCandidateTable, error) {
 	if dbConn == nil {
 		return nil, nil
 	}
 
 	tablesQuery := `
-		SELECT table_name AS name
-		FROM information_schema.tables
-		WHERE table_schema = ANY (current_schemas(false))
-		  AND table_type = 'BASE TABLE'
-		ORDER BY table_name
+		SELECT t.table_name AS name,
+		       COALESCE(c.data_type, '') AS empresa_id_data_type,
+		       COALESCE(c.udt_name, '') AS empresa_id_udt_name
+		FROM information_schema.tables t
+		INNER JOIN information_schema.columns c
+		   ON c.table_schema = t.table_schema
+		  AND c.table_name = t.table_name
+		  AND c.column_name = 'empresa_id'
+		WHERE t.table_schema = ANY (current_schemas(false))
+		  AND t.table_type = 'BASE TABLE'
+		ORDER BY t.table_name
 	`
 
 	rows, err := dbConn.Query(tablesQuery)
 	if err != nil {
 		return nil, err
 	}
-	tableNames := make([]string, 0)
+	out := make([]empresaDeleteCandidateTable, 0)
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var item empresaDeleteCandidateTable
+		if err := rows.Scan(&item.Name, &item.EmpresaIDDataType, &item.EmpresaIDUDTName); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		tableNames = append(tableNames, name)
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return nil, err
-	}
-	rows.Close()
-
-	out := make([]string, 0)
-	for _, name := range tableNames {
-		table := strings.ToLower(strings.TrimSpace(name))
+		table := strings.ToLower(strings.TrimSpace(item.Name))
 		if table == "" || !isSafeSQLIdentifier(table) {
 			continue
 		}
 		if excludeTables != nil && excludeTables[table] {
 			continue
 		}
-		cols, colErr := empresaBackupGetTableColumns(dbConn, table)
-		if colErr != nil || !empresaBackupHasColumn(cols, "empresa_id") {
-			continue
-		}
-		out = append(out, table)
+		item.Name = table
+		item.EmpresaIDDataType = strings.ToLower(strings.TrimSpace(item.EmpresaIDDataType))
+		item.EmpresaIDUDTName = strings.ToLower(strings.TrimSpace(item.EmpresaIDUDTName))
+		out = append(out, item)
 	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
 	return out, nil
 }
 
-func empresaDeleteRowsByEmpresa(tx *sql.Tx, scope string, empresaID int64, tables []string) ([]EmpresaDeleteTableResult, int64, error) {
+func empresaDeleteEmpresaIDIsTextColumn(table empresaDeleteCandidateTable) bool {
+	dataType := strings.ToLower(strings.TrimSpace(table.EmpresaIDDataType))
+	udtName := strings.ToLower(strings.TrimSpace(table.EmpresaIDUDTName))
+	switch dataType {
+	case "text", "character varying", "character", "varchar", "char", "citext":
+		return true
+	}
+	switch udtName {
+	case "text", "varchar", "bpchar", "char", "citext":
+		return true
+	}
+	return false
+}
+
+func empresaDeleteBuildEmpresaIDPredicate(table empresaDeleteCandidateTable, empresaID int64) (string, interface{}) {
+	if empresaDeleteEmpresaIDIsTextColumn(table) {
+		return "TRIM(empresa_id) = ?", strconv.FormatInt(empresaID, 10)
+	}
+	return "empresa_id = ?", empresaID
+}
+
+func empresaDeleteRowsByEmpresa(tx *sql.Tx, scope string, empresaID int64, tables []empresaDeleteCandidateTable) ([]EmpresaDeleteTableResult, int64, error) {
 	results := make([]EmpresaDeleteTableResult, 0, len(tables))
 	var totalDeleted int64
-	for _, table := range tables {
+	for _, candidate := range tables {
+		table := strings.ToLower(strings.TrimSpace(candidate.Name))
 		if table == "" || !isSafeSQLIdentifier(table) {
 			continue
 		}
-		res, err := execTxSQLCompat(tx, "DELETE FROM "+table+" WHERE empresa_id = ?", empresaID)
+		predicate, arg := empresaDeleteBuildEmpresaIDPredicate(candidate, empresaID)
+		res, err := execTxSQLCompat(tx, "DELETE FROM "+table+" WHERE "+predicate, arg)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("%s.%s delete empresa_id=%d: %w", scope, table, empresaID, err)
 		}
 		deleted, _ := res.RowsAffected()
 		results = append(results, EmpresaDeleteTableResult{

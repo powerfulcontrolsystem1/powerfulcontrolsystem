@@ -4,6 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Login de usuarios operativos - Powerful Control System</title>
+  <script>
+    (function(){
+      var allowed = {light:1,"light-rose":1,"light-gold":1,"light-wood":1,dark:1,"dark-violet":1,"dark-emerald":1,"dark-neon":1};
+      function cookieTheme(){
+        var match = String(document.cookie || "").match(/(?:^|;\s*)pcs_theme=([^;]+)/);
+        return match ? decodeURIComponent(match[1] || "") : "";
+      }
+      function normalize(theme){
+        var value = String(theme || "").trim().toLowerCase();
+        if (value === "dark-protect") value = "dark";
+        return allowed[value] ? value : "light";
+      }
+      function storedTheme(){
+        var value = "";
+        try { value = localStorage.getItem("theme") || ""; } catch (_) {}
+        return normalize(value || cookieTheme());
+      }
+      function apply(theme){
+        var normalized = normalize(theme);
+        var root = document.documentElement;
+        root.setAttribute("data-theme", normalized);
+        root.classList.toggle("theme-light", normalized.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", normalized.indexOf("light") !== 0);
+        return normalized;
+      }
+      window.__pcsLoginTheme = { normalize: normalize, apply: apply, current: storedTheme };
+      apply(storedTheme());
+    })();
+  </script>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
@@ -12,6 +41,15 @@
     <div class="login-header">
       <h1 class="login-title">Acceso de usuarios operativos</h1>
       <div class="login-header-actions">
+        <label class="login-theme-control" for="loginThemeSelect">
+          <span>Apariencia</span>
+          <select id="loginThemeSelect" class="form-input">
+            <option value="light">Claro</option>
+            <option value="dark">Oscuro</option>
+            <option value="dark-neon">Oscuro neon</option>
+            <option value="light-wood">Claro madera</option>
+          </select>
+        </label>
         <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
       </div>
     </div>
@@ -225,6 +263,51 @@
 
   <script src="/config.js"></script>
   <script src="/js/recaptcha_helper.js?v=20260430-recaptcha-retry"></script>
+  <script>
+    (function(){
+      var select = document.getElementById("loginThemeSelect");
+      if (!select) return;
+      function normalize(theme){
+        if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.normalize === "function") {
+          return window.__pcsLoginTheme.normalize(theme);
+        }
+        return String(theme || "light").trim().toLowerCase();
+      }
+      function readCurrent(){
+        if (window.__pcsThemeManager && typeof window.__pcsThemeManager.getTheme === "function") {
+          return normalize(window.__pcsThemeManager.getTheme());
+        }
+        if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.current === "function") {
+          return normalize(window.__pcsLoginTheme.current());
+        }
+        return "light";
+      }
+      function applyTheme(theme){
+        var normalized = normalize(theme);
+        if (window.__pcsThemeManager && typeof window.__pcsThemeManager.setTheme === "function") {
+          normalized = window.__pcsThemeManager.setTheme(normalized);
+        } else {
+          try { localStorage.setItem("theme", normalized); } catch (_) {}
+          try { document.cookie = "pcs_theme=" + encodeURIComponent(normalized) + "; Path=/; Max-Age=31536000; SameSite=Lax"; } catch (_) {}
+          if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.apply === "function") {
+            window.__pcsLoginTheme.apply(normalized);
+          }
+        }
+        select.value = normalized;
+      }
+      select.value = readCurrent();
+      select.addEventListener("change", function(){ applyTheme(select.value); });
+      window.addEventListener("storage", function(event){
+        if (event && event.key === "theme" && event.newValue) {
+          select.value = normalize(event.newValue);
+        }
+      });
+      window.addEventListener("pcs:theme-changed", function(event){
+        var next = event && event.detail ? event.detail.theme : "";
+        if (next) select.value = normalize(next);
+      });
+    })();
+  </script>
   <script src="/js/login_usuario.js?v=20260508-universal-login"></script>
 </body>
 </html>

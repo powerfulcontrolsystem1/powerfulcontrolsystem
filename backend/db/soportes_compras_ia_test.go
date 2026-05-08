@@ -14,10 +14,15 @@ func TestNormalizeEmpresaSoporteComprasIA(t *testing.T) {
 	row := NormalizeEmpresaSoporteComprasIA(EmpresaSoporteComprasIA{
 		TipoSoporte:       "desconocido",
 		DocumentoTipo:     "otro",
+		ProveedorNombre:   "  Papeleria Central  ",
+		ProveedorNIT:      "  900123456-7 ",
+		DocumentoNumero:   "  FAC-100  ",
 		Subtotal:          100000,
 		ImpuestoIVA:       19000,
 		RetencionFuente:   2500,
 		RetencionICA:      700,
+		RetencionIVA:      -900,
+		Total:             -1,
 		ConfianzaIA:       1.5,
 		ImpactaInventario: true,
 	})
@@ -30,6 +35,12 @@ func TestNormalizeEmpresaSoporteComprasIA(t *testing.T) {
 	if row.Total != 115800 {
 		t.Fatalf("total calculado = %.2f", row.Total)
 	}
+	if row.RetencionIVA != 0 {
+		t.Fatalf("retencion negativa saneada = %.2f", row.RetencionIVA)
+	}
+	if row.ProveedorNombre != "Papeleria Central" || row.ProveedorNIT != "900123456-7" || row.DocumentoNumero != "FAC-100" {
+		t.Fatalf("campos de tercero/documento no saneados: %#v", row)
+	}
 	if row.Moneda != "COP" {
 		t.Fatalf("moneda default = %q", row.Moneda)
 	}
@@ -41,6 +52,19 @@ func TestNormalizeEmpresaSoporteComprasIA(t *testing.T) {
 	}
 	if row.EstadoSoporte != "radicado" {
 		t.Fatalf("estado soporte default = %q", row.EstadoSoporte)
+	}
+}
+
+func TestSoporteComprasIAEstadoAbierto(t *testing.T) {
+	for _, estado := range []string{"radicado", "extraido", "en_revision", "aprobado"} {
+		if !soporteIAEstadoAbierto(estado) {
+			t.Fatalf("estado %q debe considerarse abierto", estado)
+		}
+	}
+	for _, estado := range []string{"contabilizado", "rechazado", "duplicado"} {
+		if soporteIAEstadoAbierto(estado) {
+			t.Fatalf("estado %q no debe considerarse abierto", estado)
+		}
 	}
 }
 

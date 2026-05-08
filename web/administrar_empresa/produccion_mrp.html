@@ -3,114 +3,128 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Producción / MRP</title>
+  <title>Produccion / MRP</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    :root { color-scheme: light dark; }
-    body.prod-page { margin:0; background:var(--page-bg,#f6f7fb); color:var(--text,#172033); font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-    [data-theme="dark"] body.prod-page, body.dark.prod-page { background:#0f1724; color:#e8eef7; }
-    .prod-shell { padding:18px; display:grid; gap:14px; }
-    .prod-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent); padding-bottom:12px; }
-    .prod-title h1 { margin:0; font-size:22px; line-height:1.2; letter-spacing:0; }
-    .prod-title p { margin:5px 0 0; color:var(--muted,#65758b); max-width:780px; }
-    .prod-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-    .prod-btn { border:1px solid color-mix(in srgb,currentColor 16%,transparent); background:var(--button-bg,#fff); color:inherit; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:650; min-height:38px; }
-    .prod-btn.primary { background:#1769e0; color:#fff; border-color:#1769e0; }
-    .prod-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
-    .prod-kpi { background:var(--card-bg,#fff); border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:12px; min-height:72px; }
-    .prod-kpi span { display:block; color:var(--muted,#65758b); font-size:12px; }
-    .prod-kpi strong { display:block; margin-top:6px; font-size:21px; }
-    .prod-tabs { display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent); }
-    .prod-tab { border:0; border-bottom:3px solid transparent; background:transparent; color:inherit; padding:10px 11px; cursor:pointer; font-weight:650; }
-    .prod-tab.is-active { border-color:#1769e0; color:#1769e0; }
-    .prod-panel { display:none; }
-    .prod-panel.is-active { display:grid; gap:12px; }
-    .prod-two { display:grid; grid-template-columns:minmax(320px,0.85fr) minmax(360px,1.15fr); gap:12px; align-items:start; }
-    .prod-box { background:var(--card-bg,#fff); border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:14px; }
-    .prod-box h2 { margin:0 0 10px; font-size:16px; }
-    .prod-form { display:grid; gap:9px; }
-    .prod-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-    .prod-field { display:grid; gap:4px; }
-    .prod-field label { font-size:12px; color:var(--muted,#65758b); }
-    .prod-field input, .prod-field select, .prod-field textarea { width:100%; box-sizing:border-box; border:1px solid color-mix(in srgb,currentColor 18%,transparent); background:var(--input-bg,#fff); color:inherit; border-radius:8px; padding:9px 10px; min-height:38px; }
-    .prod-field textarea { resize:vertical; min-height:70px; }
-    .prod-list { display:grid; gap:8px; max-height:520px; overflow:auto; padding-right:2px; }
-    .prod-item { border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; padding:10px; display:grid; gap:6px; background:color-mix(in srgb,var(--card-bg,#fff) 92%,currentColor 2%); }
-    .prod-item-top { display:flex; justify-content:space-between; gap:8px; align-items:center; }
-    .prod-item strong { font-size:14px; }
-    .prod-muted { color:var(--muted,#65758b); font-size:12px; }
-    .prod-chip { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; background:color-mix(in srgb,#1769e0 12%,transparent); color:#1769e0; font-size:12px; font-weight:700; }
-    .prod-table-wrap { overflow:auto; border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; }
-    .prod-table { width:100%; border-collapse:collapse; min-width:720px; background:var(--card-bg,#fff); }
-    .prod-table th, .prod-table td { text-align:left; border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent); padding:9px; font-size:13px; }
-    .prod-table th { color:var(--muted,#65758b); font-weight:700; }
-    .prod-msg { min-height:24px; color:var(--muted,#65758b); }
-    .prod-msg.is-error { color:#c43737; }
-    @media (max-width: 980px) { .prod-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .prod-two { grid-template-columns:1fr; } .prod-head { display:grid; } .prod-actions { justify-content:flex-start; } }
-    @media (max-width: 620px) { .prod-shell { padding:12px; } .prod-grid { grid-template-columns:1fr; } .prod-row { grid-template-columns:1fr; } .prod-tab { flex:1 1 42%; } }
+    :root{color-scheme:light dark}
+    body.prod-page{margin:0;min-height:100vh;background:var(--bg,#f3f6fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    html[data-theme^="dark"] body.prod-page{color-scheme:dark}html[data-theme^="light"] body.prod-page{color-scheme:light}
+    .prod-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .prod-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 94%,var(--accent,#1769e0) 6%),var(--surface,#fff));box-shadow:var(--shadow-sm,0 10px 24px rgba(15,23,42,.08))}
+    .prod-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0}.prod-head p{margin:6px 0 0;color:var(--muted,#65758b);max-width:930px;line-height:1.45}
+    .prod-actions,.prod-row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .prod-btn{border:1px solid var(--border,rgba(15,35,64,.16));background:var(--surface,#fff);color:var(--text,#172033);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px;box-shadow:0 1px 0 color-mix(in srgb,var(--text,#172033) 8%,transparent);transition:background .16s ease,border-color .16s ease,transform .16s ease}
+    .prod-btn:hover{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--surface-soft,#f4f7fc) 82%,var(--accent,#1769e0) 18%);transform:translateY(-1px)}
+    .prod-btn.primary{background:linear-gradient(135deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4));color:var(--on-accent,#fff);border-color:color-mix(in srgb,var(--accent,#1769e0) 82%,#fff 18%);box-shadow:0 10px 24px color-mix(in srgb,var(--accent,#1769e0) 22%,transparent)}
+    .prod-btn.small{min-height:32px;padding:6px 9px;font-size:12px}.prod-btn.danger{color:var(--danger,#c43737);border-color:color-mix(in srgb,var(--danger,#c43737) 42%,var(--border,transparent))}.prod-btn[disabled]{opacity:.58;cursor:not-allowed;transform:none}
+    .prod-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}.prod-kpi,.prod-box{background:var(--surface,#fff);border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:12px;box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.06))}
+    .prod-kpi{position:relative;overflow:hidden;min-height:74px}.prod-kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:linear-gradient(180deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .prod-kpi span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-kpi strong{display:block;margin-top:7px;font-size:20px;line-height:1.1;color:var(--text,#172033)}
+    .prod-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--bg,#f3f6fb) 12%);box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.05))}
+    .prod-tab{border:1px solid transparent;background:transparent;color:var(--muted,#65758b);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px}.prod-tab:hover{color:var(--text,#172033);background:var(--surface-soft,#f4f7fc);border-color:var(--border,rgba(15,35,64,.14))}
+    .prod-tab.is-active{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--accent,#1769e0) 14%,var(--surface,#fff));color:var(--accent,#1769e0);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#1769e0) 18%,transparent)}
+    .prod-panel{display:none}.prod-panel.is-active{display:grid;gap:12px}.prod-two{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(360px,1.15fr);gap:12px;align-items:start}.prod-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:12px;align-items:start}
+    .prod-box h2{margin:0 0 10px;font-size:16px;line-height:1.25;letter-spacing:0}.prod-form{display:grid;gap:9px}.prod-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.prod-row.three{grid-template-columns:repeat(3,1fr)}.prod-field{display:grid;gap:4px}.prod-field label{font-size:12px;color:var(--muted,#65758b);font-weight:800}
+    .prod-field input,.prod-field select,.prod-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--form-border,var(--border,rgba(15,35,64,.16)));background:var(--form-input-bg,var(--input-bg,#fff));color:var(--text,#172033);border-radius:8px;padding:9px 10px;min-height:38px;outline:none}
+    .prod-field textarea{resize:vertical;min-height:72px}.prod-field input:focus,.prod-field select:focus,.prod-field textarea:focus{border-color:var(--accent,#1769e0);box-shadow:0 0 0 3px var(--focus,rgba(23,105,224,.18))}
+    .prod-list,.prod-alerts,.prod-stage-grid,.prod-detail-list{display:grid;gap:8px}.prod-list{max-height:560px;overflow:auto;padding-right:2px}.prod-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .prod-item,.prod-stage,.prod-meta{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%)}.prod-item{padding:11px;display:grid;gap:7px}.prod-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center;min-width:0}.prod-item strong{font-size:14px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+    .prod-stage{padding:10px;min-height:76px}.prod-stage span,.prod-meta span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.prod-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
+    .prod-meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.prod-meta{padding:8px;background:var(--surface,#fff)}.prod-meta strong{display:block;margin-top:3px;overflow-wrap:anywhere}
+    .prod-muted{color:var(--muted,#65758b);font-size:12px}.prod-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--accent,#1769e0) 14%,transparent);color:var(--accent,#1769e0);font-size:12px;font-weight:800;white-space:nowrap}.prod-chip[data-state="urgente"],.prod-chip[data-state="rechazado"],.prod-chip[data-state="cancelada"]{color:var(--danger,#c43737);background:color-mix(in srgb,var(--danger,#c43737) 12%,transparent)}.prod-chip[data-state="cerrada"],.prod-chip[data-state="aprobado"],.prod-chip[data-state="activo"]{color:var(--success,#1f8f54);background:color-mix(in srgb,var(--success,#1f8f54) 13%,transparent)}.prod-chip[data-state="calidad"],.prod-chip[data-state="programada"]{color:var(--accent-2,#0ea5a4);background:color-mix(in srgb,var(--accent-2,#0ea5a4) 13%,transparent)}
+    .prod-table-wrap{overflow:auto;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:var(--surface,#fff)}.prod-table{width:100%;border-collapse:collapse;min-width:760px;background:var(--surface,#fff);color:var(--text,#172033)}.prod-table th,.prod-table td{text-align:left;border-bottom:1px solid var(--border,rgba(15,35,64,.12));padding:9px;font-size:13px;vertical-align:top}.prod-table th{color:var(--muted,#65758b);font-weight:800;background:var(--surface-soft,#f4f7fc)}.prod-table td.num{text-align:right;font-variant-numeric:tabular-nums}.prod-table tr.is-risk td{background:color-mix(in srgb,var(--danger,#c43737) 8%,transparent)}
+    .prod-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.prod-toolbar h2{margin:0}.prod-toolbar-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}.prod-toolbar .prod-field{min-width:180px}
+    .prod-alert{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 42%,var(--border,transparent));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface,#fff));color:var(--text,#172033)}.prod-alert strong{display:block;font-size:13px}.prod-alert p{margin:4px 0 0;color:var(--muted,#65758b);font-size:12px}.prod-alert.is-danger{border-color:color-mix(in srgb,var(--danger,#c43737) 45%,var(--border,transparent));background:color-mix(in srgb,var(--danger,#c43737) 10%,var(--surface,#fff))}
+    .prod-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.prod-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .prod-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}.prod-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.prod-msg.is-error{color:var(--danger,#c43737)}
+    #tab-config .prod-form>label{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%);color:var(--text,#172033);font-weight:700}
+    html[data-theme^="dark"] .prod-head,html[data-theme^="dark"] .prod-box,html[data-theme^="dark"] .prod-kpi,html[data-theme^="dark"] .prod-tabs,html[data-theme^="dark"] .prod-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
+    @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}}
+    @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
   </style>
+  <script src="/js/empresa_submenu_context.js"></script>
 </head>
-<body class="prod-page">
+<body class="prod-page admin-subpage">
   <main class="prod-shell">
     <header class="prod-head">
-      <div class="prod-title">
-        <h1>Producción / MRP</h1>
-        <p>Planea recetas, componentes, órdenes de producción, consumos, calidad y requerimientos de materiales por empresa.</p>
+      <div>
+        <h1>Produccion / MRP</h1>
+        <p>Planea recetas BOM, ordenes de produccion, consumos, calidad, capacidad y requerimientos de materiales por empresa con control de costos.</p>
       </div>
       <div class="prod-actions">
         <button class="prod-btn" id="prodRefresh" type="button">Actualizar</button>
         <button class="prod-btn" id="prodSeed" type="button">Cargar demo</button>
+        <button class="prod-btn" id="prodExport" type="button">Exportar CSV</button>
         <button class="prod-btn primary" id="prodGenerateMRP" type="button">Generar MRP</button>
       </div>
     </header>
 
     <section class="prod-grid" aria-label="Indicadores">
       <article class="prod-kpi"><span>Recetas activas</span><strong id="kpiRecetas">0</strong></article>
-      <article class="prod-kpi"><span>Órdenes abiertas</span><strong id="kpiAbiertas">0</strong></article>
+      <article class="prod-kpi"><span>Ordenes abiertas</span><strong id="kpiAbiertas">0</strong></article>
+      <article class="prod-kpi"><span>Programadas</span><strong id="kpiProgramadas">0</strong></article>
+      <article class="prod-kpi"><span>En proceso</span><strong id="kpiProceso">0</strong></article>
       <article class="prod-kpi"><span>En calidad</span><strong id="kpiCalidad">0</strong></article>
-      <article class="prod-kpi"><span>Cerradas</span><strong id="kpiCerradas">0</strong></article>
+      <article class="prod-kpi"><span>Urgentes</span><strong id="kpiUrgentes">0</strong></article>
       <article class="prod-kpi"><span>Costo abierto</span><strong id="kpiCostoAbierto">$0</strong></article>
       <article class="prod-kpi"><span>Costo real mes</span><strong id="kpiCostoMes">$0</strong></article>
     </section>
 
-    <nav class="prod-tabs" aria-label="Secciones de producción">
-      <button class="prod-tab is-active" data-tab="recetas" type="button">Recetas</button>
-      <button class="prod-tab" data-tab="ordenes" type="button">Órdenes</button>
-      <button class="prod-tab" data-tab="consumos" type="button">Consumos y calidad</button>
+    <nav class="prod-tabs" aria-label="Submenu de produccion">
+      <button class="prod-tab is-active" data-tab="dashboard" type="button">Tablero</button>
+      <button class="prod-tab" data-tab="recetas" type="button">Recetas / BOM</button>
+      <button class="prod-tab" data-tab="ordenes" type="button">Ordenes</button>
+      <button class="prod-tab" data-tab="consumos" type="button">Consumos</button>
+      <button class="prod-tab" data-tab="calidad" type="button">Calidad</button>
       <button class="prod-tab" data-tab="mrp" type="button">Plan MRP</button>
-      <button class="prod-tab" data-tab="config" type="button">Configuración</button>
+      <button class="prod-tab" data-tab="config" type="button">Configuracion</button>
     </nav>
-
     <div id="prodMsg" class="prod-msg"></div>
 
-    <section id="tab-recetas" class="prod-panel is-active">
+    <section id="tab-dashboard" class="prod-panel is-active">
+      <div class="prod-overview">
+        <div class="prod-box"><div class="prod-toolbar"><h2>Flujo operativo</h2></div><div id="prodPipeline" class="prod-stage-grid"></div></div>
+        <aside class="prod-box"><div class="prod-toolbar"><h2>Alertas de produccion</h2></div><div id="prodAlerts" class="prod-alerts"></div></aside>
+      </div>
+      <div class="prod-box"><div class="prod-toolbar"><h2>Actividad reciente</h2></div><div id="prodRecent" class="prod-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-recetas" class="prod-panel">
       <div class="prod-two">
         <form id="recetaForm" class="prod-box prod-form">
+          <input id="recId" type="hidden">
           <h2>Receta / BOM</h2>
-          <div class="prod-row"><div class="prod-field"><label>Código</label><input id="recCodigo" required></div><div class="prod-field"><label>Versión</label><input id="recVersion" value="1.0"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Codigo</label><input id="recCodigo" required></div><div class="prod-field"><label>Version</label><input id="recVersion" value="1.0"></div></div>
           <div class="prod-field"><label>Nombre</label><input id="recNombre" required></div>
           <div class="prod-field"><label>Producto terminado</label><input id="recProducto" required></div>
           <div class="prod-row"><div class="prod-field"><label>Unidad</label><input id="recUnidad" value="und"></div><div class="prod-field"><label>Cantidad base</label><input id="recCantidad" type="number" step="0.0001" value="1"></div></div>
-          <div class="prod-row"><div class="prod-field"><label>Costo estándar</label><input id="recCosto" type="number" step="0.01" value="0"></div><div class="prod-field"><label>Merma %</label><input id="recMerma" type="number" step="0.01" value="0"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Costo estandar</label><input id="recCosto" type="number" step="0.01" value="0"></div><div class="prod-field"><label>Merma %</label><input id="recMerma" type="number" step="0.01" value="0"></div></div>
           <div class="prod-row"><div class="prod-field"><label>Tiempo min</label><input id="recTiempo" type="number" value="0"></div><div class="prod-field"><label>Estado</label><select id="recEstado"><option value="activo">Activo</option><option value="borrador">Borrador</option><option value="inactivo">Inactivo</option></select></div></div>
-          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo</label><textarea id="recComponentes">Materia prima principal|1|und|0</textarea></div>
-          <button class="prod-btn primary" type="submit">Guardar receta</button>
+          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo|merma|etapa</label><textarea id="recComponentes">Materia prima principal|1|und|0|0|produccion</textarea></div>
+          <div class="prod-row-actions"><button class="prod-btn primary" id="recSubmit" type="submit">Guardar receta</button><button class="prod-btn" id="recCancel" type="button">Limpiar</button></div>
         </form>
-        <div class="prod-box"><h2>Recetas registradas</h2><div id="recetasList" class="prod-list"></div></div>
+        <div class="prod-box">
+          <div class="prod-toolbar"><h2>Recetas registradas</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Estado</label><select id="recFilter"><option value="">Todos</option><option value="activo">Activas</option><option value="borrador">Borrador</option><option value="inactivo">Inactivas</option></select></div></div></div>
+          <div id="recetasList" class="prod-list"></div>
+        </div>
       </div>
     </section>
 
     <section id="tab-ordenes" class="prod-panel">
       <div class="prod-two">
         <form id="ordenForm" class="prod-box prod-form">
-          <h2>Orden de producción</h2>
+          <input id="ordId" type="hidden">
+          <h2 id="ordenFormTitle">Orden de produccion</h2>
           <div class="prod-row"><div class="prod-field"><label>Receta</label><select id="ordReceta"></select></div><div class="prod-field"><label>Cantidad</label><input id="ordCantidad" type="number" step="0.0001" value="1"></div></div>
           <div class="prod-row"><div class="prod-field"><label>Prioridad</label><select id="ordPrioridad"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option><option value="baja">Baja</option></select></div><div class="prod-field"><label>Fecha programada</label><input id="ordFecha" type="date"></div></div>
           <div class="prod-row"><div class="prod-field"><label>Responsable</label><input id="ordResponsable"></div><div class="prod-field"><label>Estado inicial</label><select id="ordEstado"><option value="programada">Programada</option><option value="borrador">Borrador</option><option value="en_proceso">En proceso</option></select></div></div>
           <div class="prod-field"><label>Observaciones</label><textarea id="ordObs"></textarea></div>
-          <button class="prod-btn primary" type="submit">Crear orden</button>
+          <div class="prod-row-actions"><button class="prod-btn primary" id="ordSubmit" type="submit">Crear orden</button><button class="prod-btn" id="ordCancel" type="button">Limpiar</button></div>
         </form>
-        <div class="prod-box"><h2>Órdenes</h2><div id="ordenesList" class="prod-list"></div></div>
+        <div class="prod-box">
+          <div class="prod-toolbar"><h2>Ordenes</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Estado</label><select id="ordenFilter"><option value="">Todas</option><option value="borrador">Borrador</option><option value="programada">Programadas</option><option value="en_proceso">En proceso</option><option value="calidad">Calidad</option><option value="cerrada">Cerradas</option><option value="cancelada">Canceladas</option></select></div><div class="prod-field"><label>Buscar</label><input id="ordenSearch" placeholder="Codigo, producto, responsable"></div></div></div>
+          <div id="ordenesList" class="prod-list"></div>
+        </div>
       </div>
     </section>
 
@@ -123,6 +137,12 @@
           <div class="prod-row"><div class="prod-field"><label>Cantidad consumida</label><input id="consCantidad" type="number" step="0.0001" value="1"></div><div class="prod-field"><label>Costo unitario</label><input id="consCosto" type="number" step="0.01" value="0"></div></div>
           <button class="prod-btn primary" type="submit">Guardar consumo</button>
         </form>
+        <div class="prod-box"><h2>Consumos recientes</h2><div id="consumosTable" class="prod-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-calidad" class="prod-panel">
+      <div class="prod-two">
         <form id="calidadForm" class="prod-box prod-form">
           <h2>Control de calidad</h2>
           <div class="prod-row"><div class="prod-field"><label>Orden</label><select id="calOrden"></select></div><div class="prod-field"><label>Resultado</label><select id="calResultado"><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="rechazado">Rechazado</option><option value="reproceso">Reproceso</option></select></div></div>
@@ -131,23 +151,26 @@
           <div class="prod-field"><label>Observaciones</label><textarea id="calObs"></textarea></div>
           <button class="prod-btn primary" type="submit">Guardar calidad</button>
         </form>
+        <div class="prod-box"><h2>Revisiones de calidad</h2><div id="calidadTable" class="prod-table-wrap"></div></div>
       </div>
-      <div class="prod-box"><h2>Movimientos recientes</h2><div id="movimientosTable" class="prod-table-wrap"></div></div>
     </section>
 
     <section id="tab-mrp" class="prod-panel">
-      <div class="prod-box"><h2>Requerimientos de materiales</h2><div id="mrpTable" class="prod-table-wrap"></div></div>
+      <div class="prod-box">
+        <div class="prod-toolbar"><h2>Requerimientos de materiales</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Periodo</label><input id="mrpPeriodo" placeholder="2026-05"></div><button class="prod-btn primary" id="mrpGenerate" type="button">Generar periodo</button></div></div>
+        <div id="mrpTable" class="prod-table-wrap"></div>
+      </div>
     </section>
 
     <section id="tab-config" class="prod-panel">
       <form id="configForm" class="prod-box prod-form">
-        <h2>Configuración</h2>
-        <div class="prod-row"><div class="prod-field"><label>Nombre del módulo</label><input id="cfgNombre"></div><div class="prod-field"><label>Moneda</label><input id="cfgMoneda" value="COP"></div></div>
-        <div class="prod-field"><label>Costeo</label><select id="cfgCosteo"><option value="estandar">Estándar</option><option value="promedio">Promedio</option><option value="real">Real</option></select></div>
-        <label><input id="cfgAprobar" type="checkbox"> Requerir aprobación de órdenes</label>
+        <h2>Configuracion</h2>
+        <div class="prod-row"><div class="prod-field"><label>Nombre del modulo</label><input id="cfgNombre"></div><div class="prod-field"><label>Moneda</label><input id="cfgMoneda" value="COP"></div></div>
+        <div class="prod-field"><label>Costeo</label><select id="cfgCosteo"><option value="estandar">Estandar</option><option value="promedio">Promedio</option><option value="real">Real</option></select></div>
+        <label><input id="cfgAprobar" type="checkbox"> Requerir aprobacion de ordenes</label>
         <label><input id="cfgConsumir" type="checkbox"> Consumir inventario al iniciar orden</label>
-        <label><input id="cfgCalidad" type="checkbox"> Cerrar órdenes con control de calidad</label>
-        <button class="prod-btn primary" type="submit">Guardar configuración</button>
+        <label><input id="cfgCalidad" type="checkbox"> Cerrar ordenes con control de calidad</label>
+        <button class="prod-btn primary" type="submit">Guardar configuracion</button>
       </form>
     </section>
   </main>

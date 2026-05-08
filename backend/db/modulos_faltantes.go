@@ -22,6 +22,8 @@ var empresaGenericAllowedTables = map[string]struct{}{
 	"empresa_cotizaciones_venta":          {},
 	"empresa_pedidos_venta":               {},
 	"empresa_devoluciones_venta":          {},
+	"empresa_compras_documentos":          {},
+	"empresa_facturacion_documentos":      {},
 	"empresa_plan_cuentas":                {},
 	"empresa_cuentas_por_cobrar":          {},
 	"empresa_cuentas_por_pagar":           {},

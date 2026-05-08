@@ -2474,6 +2474,24 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		return nil, err
+	}
 
 	resumen := &EmpresaReportesTableroResumen{
 		EmpresaID:  empresaID,

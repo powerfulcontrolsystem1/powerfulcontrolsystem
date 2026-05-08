@@ -50,9 +50,23 @@ html[data-theme="dark-emerald"] {
   --game-warn-soft: #fff7cc;
 }
 
+html[data-theme="dark-neon"] {
+  --game-bg: #050614;
+  --game-bg-alt: #0b1024;
+  --game-surface: #0d132b;
+  --game-surface-soft: #111a38;
+  --game-border: rgba(0, 229, 255, 0.22);
+  --game-text: #f8fbff;
+  --game-muted: #b7c3ee;
+  --game-accent: #00e5ff;
+  --game-warn: #faff00;
+  --game-warn-soft: #fcff91;
+}
+
 html[data-theme="light"],
 html[data-theme="light-rose"],
-html[data-theme="light-gold"] {
+html[data-theme="light-gold"],
+html[data-theme="light-wood"] {
   --game-bg: #f3f6fb;
   --game-bg-alt: #ffffff;
   --game-surface: #ffffff;
@@ -75,6 +89,16 @@ html[data-theme="light-gold"] {
   --game-bg: #fbfaf5;
   --game-surface-soft: #fcf7e8;
   --game-accent: #9a6700;
+}
+
+html[data-theme="light-wood"] {
+  --game-bg: #fff8ed;
+  --game-bg-alt: #f4dfbf;
+  --game-surface: #fffaf2;
+  --game-surface-soft: #f4dfbf;
+  --game-text: #352312;
+  --game-muted: #715b3e;
+  --game-accent: #8f5a24;
 }
 
 button,

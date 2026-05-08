@@ -4,11 +4,14 @@ import "testing"
 
 func TestNormalizeImportacionCosteo(t *testing.T) {
 	row := normalizeImportacionCosteo(EmpresaImportacionCosteo{
-		Codigo:       " imp-001 ",
-		Incoterm:     " fob ",
-		MonedaOrigen: " usd ",
-		TRM:          -10,
-		Estado:       "COSTEADO",
+		Codigo:               " imp-001 ",
+		Incoterm:             " fob ",
+		MonedaOrigen:         " usd ",
+		FechaDocumento:       " 2026-05-08 ",
+		FechaEstimadaLlegada: " 2026-05-20 ",
+		DocumentoReferencia:  " bl-777 ",
+		TRM:                  -10,
+		Estado:               "COSTEADO",
 	})
 	if row.Codigo != "IMP-001" || row.Incoterm != "FOB" || row.MonedaOrigen != "USD" {
 		t.Fatalf("normalizacion texto inesperada: %#v", row)
@@ -18,6 +21,9 @@ func TestNormalizeImportacionCosteo(t *testing.T) {
 	}
 	if row.Estado != "costeado" {
 		t.Fatalf("estado normalizado = %q", row.Estado)
+	}
+	if row.FechaDocumento != "2026-05-08" || row.FechaEstimadaLlegada != "2026-05-20" || row.DocumentoReferencia != "bl-777" {
+		t.Fatalf("fechas/referencia no saneadas: %#v", row)
 	}
 }
 
@@ -45,6 +51,19 @@ func TestImportacionBaseDistribucionItem(t *testing.T) {
 	for base, want := range cases {
 		if got := importacionBaseDistribucionItem(item, base); got != want {
 			t.Fatalf("base %s = %v, want %v", base, got, want)
+		}
+	}
+}
+
+func TestImportacionEstadoAbierto(t *testing.T) {
+	for _, estado := range []string{"borrador", "en_transito", "costeado"} {
+		if !importacionEstadoAbierto(estado) {
+			t.Fatalf("estado %q debe ser abierto", estado)
+		}
+	}
+	for _, estado := range []string{"cerrado", "contabilizado", "anulado"} {
+		if importacionEstadoAbierto(estado) {
+			t.Fatalf("estado %q no debe ser abierto", estado)
 		}
 	}
 }

@@ -25,3 +25,19 @@ func TestCRMLeadScoreRecommendation(t *testing.T) {
 		t.Fatalf("recomendacion inesperada: %s", got)
 	}
 }
+
+func TestCRMConversionPctAndAlerts(t *testing.T) {
+	if got := crmConversionPct(3, 1); got != 75 {
+		t.Fatalf("conversion inesperada: %v", got)
+	}
+	alertas := buildEmpresaCRMAlertas(EmpresaCRMVentasAvanzadasDashboard{
+		LeadsActivos:        0,
+		LeadsVencidos:       2,
+		MetaValor:           100,
+		CumplimientoMetaPct: 50,
+		CampanasActivas:     0,
+	})
+	if len(alertas) != 4 {
+		t.Fatalf("alertas inesperadas: %+v", alertas)
+	}
+}

@@ -3,9 +3,11 @@
     dark: true,
     "dark-violet": true,
     "dark-emerald": true,
+    "dark-neon": true,
     light: true,
     "light-rose": true,
-    "light-gold": true
+    "light-gold": true,
+    "light-wood": true
   };
 
   var KEY_META = {
@@ -78,13 +80,16 @@
     var controls = document.querySelector(".arcade-controls");
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 720;
     var controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
-    var minHeight = window.matchMedia && window.matchMedia("(max-width: 720px)").matches ? 300 : 430;
+    var isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+    var configuredAspect = Number(frame.getAttribute("data-arcade-aspect"));
+    var aspect = Number.isFinite(configuredAspect) && configuredAspect > 0 ? configuredAspect : (isMobile ? 1.05 : 0.62);
+    var minHeight = isMobile ? 300 : 360;
     var frameRect = frame.getBoundingClientRect();
-    var available = Math.max(minHeight, viewportHeight - frameRect.top - controlsHeight - 10);
-    var widthRatio = window.matchMedia && window.matchMedia("(max-width: 720px)").matches ? 0.78 : 0.68;
-    var maxByWidth = Math.max(minHeight, Math.round(frameRect.width * widthRatio));
-    var next = Math.min(available, maxByWidth, viewportHeight - 84);
-    frame.style.setProperty("--arcade-frame-height", Math.max(minHeight, Math.round(next)) + "px");
+    var available = Math.max(260, viewportHeight - frameRect.top - controlsHeight - 10);
+    var maxByWidth = Math.max(minHeight, Math.round(frameRect.width * aspect));
+    var maxViewport = isMobile ? Math.max(260, viewportHeight - 98) : Math.min(620, Math.max(360, viewportHeight - 106));
+    var next = Math.min(available, maxByWidth, maxViewport);
+    frame.style.setProperty("--arcade-frame-height", Math.max(Math.min(minHeight, available), Math.round(next)) + "px");
   }
 
   function makeEvent(win, type, keyCode) {

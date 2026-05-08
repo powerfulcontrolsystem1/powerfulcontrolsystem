@@ -71,18 +71,24 @@ type EmpresaSoporteComprasIAEvento struct {
 }
 
 type EmpresaSoporteComprasIADashboard struct {
-	EmpresaID          int64                     `json:"empresa_id"`
-	Pendientes         int                       `json:"pendientes"`
-	EnRevision         int                       `json:"en_revision"`
-	Aprobados          int                       `json:"aprobados"`
-	Contabilizados     int                       `json:"contabilizados"`
-	Rechazados         int                       `json:"rechazados"`
-	Duplicados         int                       `json:"duplicados"`
-	TotalPendiente     float64                   `json:"total_pendiente"`
-	TotalContabilizado float64                   `json:"total_contabilizado"`
-	SoportesRecientes  []EmpresaSoporteComprasIA `json:"soportes_recientes"`
-	Alertas            []string                  `json:"alertas"`
-	ModeloRecomendado  string                    `json:"modelo_recomendado"`
+	EmpresaID           int64                     `json:"empresa_id"`
+	Pendientes          int                       `json:"pendientes"`
+	EnRevision          int                       `json:"en_revision"`
+	Aprobados           int                       `json:"aprobados"`
+	Contabilizados      int                       `json:"contabilizados"`
+	Rechazados          int                       `json:"rechazados"`
+	Duplicados          int                       `json:"duplicados"`
+	TotalPendiente      float64                   `json:"total_pendiente"`
+	TotalAprobado       float64                   `json:"total_aprobado"`
+	TotalContabilizado  float64                   `json:"total_contabilizado"`
+	ConfianzaPromedio   float64                   `json:"confianza_promedio"`
+	RequierenRevision   int                       `json:"requieren_revision"`
+	InventarioPendiente int                       `json:"inventario_pendiente"`
+	PorVencer           int                       `json:"por_vencer"`
+	Vencidos            int                       `json:"vencidos"`
+	SoportesRecientes   []EmpresaSoporteComprasIA `json:"soportes_recientes"`
+	Alertas             []string                  `json:"alertas"`
+	ModeloRecomendado   string                    `json:"modelo_recomendado"`
 }
 
 func EnsureEmpresaSoportesComprasIASchema(dbConn *sql.DB) error {
@@ -173,6 +179,10 @@ func BuildEmpresaSoportesComprasIADashboard(dbConn *sql.DB, empresaID int64) (Em
 	if len(d.SoportesRecientes) > 12 {
 		d.SoportesRecientes = d.SoportesRecientes[:12]
 	}
+	today := time.Now().Format("2006-01-02")
+	limitSoon := time.Now().AddDate(0, 0, 7).Format("2006-01-02")
+	confidenceCount := 0
+	lowConfidence := 0
 	for _, s := range rows {
 		switch s.EstadoSoporte {
 		case "radicado", "extraido":
@@ -183,6 +193,7 @@ func BuildEmpresaSoportesComprasIADashboard(dbConn *sql.DB, empresaID int64) (Em
 			d.TotalPendiente += s.Total
 		case "aprobado":
 			d.Aprobados++
+			d.TotalAprobado += s.Total
 		case "contabilizado":
 			d.Contabilizados++
 			d.TotalContabilizado += s.Total
@@ -191,12 +202,54 @@ func BuildEmpresaSoportesComprasIADashboard(dbConn *sql.DB, empresaID int64) (Em
 		case "duplicado":
 			d.Duplicados++
 		}
+		if s.RequiereRevisionHumana {
+			d.RequierenRevision++
+		}
+		if s.ImpactaInventario && s.EstadoSoporte != "contabilizado" && s.EstadoSoporte != "rechazado" && s.EstadoSoporte != "duplicado" {
+			d.InventarioPendiente++
+		}
+		if s.ConfianzaIA > 0 {
+			d.ConfianzaPromedio += s.ConfianzaIA
+			confidenceCount++
+			if s.ConfianzaIA < 0.75 {
+				lowConfidence++
+			}
+		}
+		if soporteIAEstadoAbierto(s.EstadoSoporte) {
+			due := strings.TrimSpace(s.FechaVencimiento)
+			if len(due) >= 10 {
+				due = due[:10]
+				if due < today {
+					d.Vencidos++
+				} else if due <= limitSoon {
+					d.PorVencer++
+				}
+			}
+		}
+	}
+	if confidenceCount > 0 {
+		d.ConfianzaPromedio = soporteIARound(d.ConfianzaPromedio / float64(confidenceCount))
 	}
 	if d.Pendientes+d.EnRevision > 0 {
 		d.Alertas = append(d.Alertas, "Hay soportes pendientes de revision antes de contabilizar.")
 	}
+	if d.RequierenRevision > 0 {
+		d.Alertas = append(d.Alertas, fmt.Sprintf("%d soporte(s) requieren validacion humana por confianza, duplicidad o datos incompletos.", d.RequierenRevision))
+	}
 	if d.Duplicados > 0 {
 		d.Alertas = append(d.Alertas, "Se detectaron soportes duplicados por hash o documento.")
+	}
+	if d.Vencidos > 0 {
+		d.Alertas = append(d.Alertas, fmt.Sprintf("%d soporte(s) tienen vencimiento vencido y siguen abiertos.", d.Vencidos))
+	}
+	if d.PorVencer > 0 {
+		d.Alertas = append(d.Alertas, fmt.Sprintf("%d soporte(s) vencen en los proximos 7 dias.", d.PorVencer))
+	}
+	if d.InventarioPendiente > 0 {
+		d.Alertas = append(d.Alertas, fmt.Sprintf("%d soporte(s) impactan inventario y aun no estan contabilizados.", d.InventarioPendiente))
+	}
+	if lowConfidence > 0 {
+		d.Alertas = append(d.Alertas, fmt.Sprintf("%d extraccion(es) tienen confianza menor al 75%%.", lowConfidence))
 	}
 	if len(rows) == 0 {
 		d.Alertas = append(d.Alertas, "No hay soportes radicados. Carga una foto o PDF para iniciar.")
@@ -423,6 +476,18 @@ func InsertEmpresaSoporteComprasIAEvento(dbConn *sql.DB, empresaID, soporteID in
 
 func NormalizeEmpresaSoporteComprasIA(row EmpresaSoporteComprasIA) EmpresaSoporteComprasIA {
 	row.Codigo = strings.ToUpper(strings.TrimSpace(row.Codigo))
+	row.ArchivoNombre = strings.TrimSpace(row.ArchivoNombre)
+	row.ArchivoURL = strings.TrimSpace(row.ArchivoURL)
+	row.ArchivoMime = strings.TrimSpace(row.ArchivoMime)
+	row.ArchivoHash = strings.TrimSpace(row.ArchivoHash)
+	row.ProveedorNombre = strings.TrimSpace(row.ProveedorNombre)
+	row.ProveedorNIT = strings.TrimSpace(row.ProveedorNIT)
+	row.DocumentoNumero = strings.TrimSpace(row.DocumentoNumero)
+	row.FechaDocumento = strings.TrimSpace(row.FechaDocumento)
+	row.FechaVencimiento = strings.TrimSpace(row.FechaVencimiento)
+	row.CategoriaContable = strings.TrimSpace(row.CategoriaContable)
+	row.CentroCosto = strings.TrimSpace(row.CentroCosto)
+	row.Observaciones = strings.TrimSpace(row.Observaciones)
 	row.TipoSoporte = normalizeSoporteIATipo(row.TipoSoporte)
 	row.EstadoSoporte = normalizeSoporteIAEstado(row.EstadoSoporte)
 	row.Origen = normalizeSoporteIAOrigen(row.Origen)
@@ -442,8 +507,15 @@ func NormalizeEmpresaSoporteComprasIA(row EmpresaSoporteComprasIA) EmpresaSoport
 	if row.ConfianzaIA > 1 {
 		row.ConfianzaIA = 1
 	}
+	row.Subtotal = soporteIANonNegative(row.Subtotal)
+	row.ImpuestoIVA = soporteIANonNegative(row.ImpuestoIVA)
+	row.RetencionFuente = soporteIANonNegative(row.RetencionFuente)
+	row.RetencionICA = soporteIANonNegative(row.RetencionICA)
+	row.RetencionIVA = soporteIANonNegative(row.RetencionIVA)
+	row.Total = soporteIANonNegative(row.Total)
 	if row.Total == 0 && (row.Subtotal != 0 || row.ImpuestoIVA != 0) {
 		row.Total = soporteIARound(row.Subtotal + row.ImpuestoIVA - row.RetencionFuente - row.RetencionICA - row.RetencionIVA)
+		row.Total = soporteIANonNegative(row.Total)
 	}
 	if row.EstadoSoporte == "" {
 		row.EstadoSoporte = "radicado"
@@ -556,6 +628,22 @@ func boolToIntSoporteIA(v bool) int {
 		return 1
 	}
 	return 0
+}
+
+func soporteIAEstadoAbierto(v string) bool {
+	switch normalizeSoporteIAEstado(v) {
+	case "radicado", "extraido", "en_revision", "aprobado":
+		return true
+	default:
+		return false
+	}
+}
+
+func soporteIANonNegative(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	return v
 }
 
 func soporteIARound(v float64) float64 {

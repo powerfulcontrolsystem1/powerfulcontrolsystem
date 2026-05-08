@@ -163,14 +163,14 @@
     }
 
     .empresa-weather-panel {
-      align-self: stretch;
+      align-self: end;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 16px;
+      justify-content: flex-start;
+      gap: 11px;
       min-width: 0;
       max-width: 100%;
-      padding: 17px;
+      padding: 12px;
       border-radius: 8px;
       border: 1px solid var(--panel-glass-border);
       background: var(--panel-glass-bg);
@@ -189,7 +189,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 9px;
       min-width: 0;
     }
 
@@ -205,9 +205,11 @@
     }
 
     .empresa-weather-place {
-      margin-top: 4px;
+      margin-top: 2px;
       color: var(--panel-text);
       font-weight: 800;
+      font-size: .92rem;
+      line-height: 1.2;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -218,13 +220,13 @@
       display: grid;
       place-items: center;
       flex: 0 0 auto;
-      width: 63px;
-      height: 63px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: var(--panel-icon-bg);
       border: 1px solid var(--panel-icon-border);
       color: var(--panel-icon-text);
-      font-size: 2.28rem;
+      font-size: 1.85rem;
       line-height: 1;
       box-shadow: 0 12px 30px var(--panel-card-shadow);
     }
@@ -233,7 +235,7 @@
       margin: 0;
       color: var(--panel-text);
       max-width: 100%;
-      font-size: clamp(2.15rem, 4.65vw, 3.15rem);
+      font-size: clamp(1.85rem, 3.9vw, 2.55rem);
       line-height: 1;
       font-weight: 900;
       letter-spacing: 0;
@@ -243,9 +245,11 @@
     }
 
     .empresa-weather-desc {
-      margin: 8px 0 0;
+      margin: 4px 0 0;
       color: var(--panel-muted);
       font-weight: 700;
+      font-size: .92rem;
+      line-height: 1.25;
       max-width: 100%;
       overflow-wrap: anywhere;
     }
@@ -253,8 +257,8 @@
     .empresa-weather-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 8px;
       min-width: 0;
     }
 
@@ -269,8 +273,8 @@
       font-size: .82rem;
       font-weight: 850;
       line-height: 1.1;
-      min-height: 36px;
-      padding: 8px 10px;
+      min-height: 32px;
+      padding: 6px 9px;
       transition: border-color .18s ease, transform .18s ease, background .18s ease;
     }
 
@@ -296,8 +300,8 @@
     .empresa-weather-location-form {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 6px;
+      margin-top: 6px;
       min-width: 0;
     }
 
@@ -314,8 +318,8 @@
       color: var(--panel-text);
       font: inherit;
       font-size: .86rem;
-      min-height: 36px;
-      padding: 8px 10px;
+      min-height: 32px;
+      padding: 6px 9px;
       outline: none;
     }
 
@@ -328,22 +332,22 @@
     }
 
     .empresa-weather-hint {
-      margin: 8px 0 0;
+      margin: 5px 0 0;
       color: var(--panel-muted);
-      font-size: .78rem;
+      font-size: .72rem;
       font-weight: 700;
-      line-height: 1.35;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }
 
     .empresa-weather-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
+      gap: 5px;
     }
 
     .empresa-weather-stat {
-      padding: 8px;
+      padding: 6px;
       border-radius: 8px;
       background: var(--panel-stat-bg);
       border: 1px solid var(--panel-glass-border);
@@ -354,16 +358,16 @@
     .empresa-weather-stat span {
       display: block;
       color: var(--panel-kicker);
-      font-size: .75rem;
+      font-size: .68rem;
       font-weight: 800;
       text-transform: uppercase;
     }
 
     .empresa-weather-stat strong {
       display: block;
-      margin-top: 3px;
+      margin-top: 2px;
       color: var(--panel-text);
-      font-size: .98rem;
+      font-size: .86rem;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;

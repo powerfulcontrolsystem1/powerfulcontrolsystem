@@ -112,6 +112,12 @@ type EmpresaWMSDashboard struct {
 	OrdenesPacking     int                   `json:"ordenes_packing"`
 	DespachosEnRuta    int                   `json:"despachos_en_ruta"`
 	UnidadesPendientes float64               `json:"unidades_pendientes"`
+	CapacidadTotal     float64               `json:"capacidad_total"`
+	OcupacionTotal     float64               `json:"ocupacion_total"`
+	OcupacionPct       float64               `json:"ocupacion_pct"`
+	OrdenesVencidas    int                   `json:"ordenes_vencidas"`
+	OrdenesUrgentes    int                   `json:"ordenes_urgentes"`
+	OrdenesListas      int                   `json:"ordenes_listas"`
 	OrdenesRecientes   []EmpresaWMSOrden     `json:"ordenes_recientes"`
 	Ubicaciones        []EmpresaWMSUbicacion `json:"ubicaciones"`
 	DespachosRecientes []EmpresaWMSDespacho  `json:"despachos_recientes"`
@@ -235,6 +241,13 @@ func BuildEmpresaWMSDashboard(dbConn *sql.DB, empresaID int64) (EmpresaWMSDashbo
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_wms_ordenes WHERE empresa_id=? AND estado='en_packing'`, empresaID).Scan(&d.OrdenesPacking)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_wms_despachos WHERE empresa_id=? AND estado='en_ruta'`, empresaID).Scan(&d.DespachosEnRuta)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(CASE WHEN cantidad_solicitada>cantidad_pickeada THEN cantidad_solicitada-cantidad_pickeada ELSE 0 END),0) FROM empresa_wms_items WHERE empresa_id=? AND estado NOT IN ('completado','cancelado')`, empresaID).Scan(&d.UnidadesPendientes)
+	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(capacidad),0), COALESCE(SUM(ocupacion),0) FROM empresa_wms_ubicaciones WHERE empresa_id=? AND estado='activa'`, empresaID).Scan(&d.CapacidadTotal, &d.OcupacionTotal)
+	if d.CapacidadTotal > 0 {
+		d.OcupacionPct = float64(int64((d.OcupacionTotal/d.CapacidadTotal)*10000+0.5)) / 100
+	}
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_wms_ordenes WHERE empresa_id=? AND estado NOT IN ('cerrada','cancelada') AND COALESCE(fecha_compromiso,'')<>'' AND substr(fecha_compromiso,1,10)<substr(CAST(CURRENT_TIMESTAMP AS TEXT),1,10)`, empresaID).Scan(&d.OrdenesVencidas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_wms_ordenes WHERE empresa_id=? AND estado NOT IN ('cerrada','cancelada') AND prioridad='urgente'`, empresaID).Scan(&d.OrdenesUrgentes)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_wms_ordenes WHERE empresa_id=? AND estado='lista_despacho'`, empresaID).Scan(&d.OrdenesListas)
 	d.OrdenesRecientes, _ = ListEmpresaWMSOrdenes(dbConn, empresaID, "", "", 50)
 	d.Ubicaciones, _ = ListEmpresaWMSUbicaciones(dbConn, empresaID, "", 200)
 	d.DespachosRecientes, _ = ListEmpresaWMSDespachos(dbConn, empresaID, 0, 50)
@@ -247,6 +260,12 @@ func BuildEmpresaWMSDashboard(dbConn *sql.DB, empresaID int64) (EmpresaWMSDashbo
 	}
 	if d.DespachosEnRuta > 0 {
 		d.Alertas = append(d.Alertas, "Hay despachos en ruta pendientes de confirmar entrega.")
+	}
+	if d.OrdenesVencidas > 0 {
+		d.Alertas = append(d.Alertas, "Hay ordenes WMS vencidas frente a su fecha compromiso.")
+	}
+	if d.OcupacionPct >= 90 {
+		d.Alertas = append(d.Alertas, "La ocupacion de ubicaciones activas supera el 90%. Revisa capacidad o reabastecimiento.")
 	}
 	if len(d.Alertas) == 0 {
 		d.Alertas = append(d.Alertas, "Operacion WMS sin alertas criticas.")
@@ -276,9 +295,15 @@ func UpsertEmpresaWMSOrden(dbConn *sql.DB, x EmpresaWMSOrden) (int64, error) {
 	if x.EmpresaID <= 0 || x.Codigo == "" {
 		return 0, errors.New("empresa_id y codigo son requeridos")
 	}
+	if x.ID <= 0 && (x.Estado == "lista_despacho" || x.Estado == "despachada" || x.Estado == "cerrada") {
+		return 0, errors.New("una orden WMS nueva no puede iniciar como lista, despachada o cerrada sin items")
+	}
 	if x.ID > 0 {
 		old := ""
 		_ = QueryRowCompat(dbConn, `SELECT COALESCE(estado,'') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=?`, x.EmpresaID, x.ID).Scan(&old)
+		if err := validateWMSOrdenTransitionForTotals(dbConn, x.EmpresaID, x.ID, old, x.Estado); err != nil {
+			return 0, err
+		}
 		_, err := ExecCompat(dbConn, `UPDATE empresa_wms_ordenes SET codigo=?,tipo=?,origen_documento=?,tercero=?,cliente=?,fecha_compromiso=?,prioridad=?,responsable=?,estado=?,observaciones=?,usuario_creador=?,fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
 			x.Codigo, x.Tipo, x.OrigenDocumento, x.Tercero, x.Cliente, x.FechaCompromiso, x.Prioridad, x.Responsable, x.Estado, x.Observaciones, x.UsuarioCreador, x.EmpresaID, x.ID)
 		if err == nil && old != x.Estado {
@@ -309,6 +334,7 @@ func CreateEmpresaWMSItem(dbConn *sql.DB, x EmpresaWMSItem, usuario string) (int
 		x.EmpresaID, x.OrdenID, x.ProductoID, x.ProductoNombre, x.SKU, x.UbicacionOrigen, x.UbicacionDestino, x.Lote, x.Serial, x.CantidadSolicitada, x.CantidadPickeada, x.CantidadEmpacada, x.Estado, x.Observaciones)
 	if err == nil {
 		_ = registrarWMSEvento(dbConn, x.EmpresaID, "item", id, "item_agregado", "", x.Estado, x.ProductoNombre, usuario)
+		_ = recomputeWMSOrdenEstadoFromItems(dbConn, x.EmpresaID, x.OrdenID, usuario)
 	}
 	return id, err
 }
@@ -343,6 +369,10 @@ func ActualizarEmpresaWMSItemAvance(dbConn *sql.DB, empresaID, itemID int64, pic
 	_, err := ExecCompat(dbConn, `UPDATE empresa_wms_items SET cantidad_pickeada=?,cantidad_empacada=?,estado=? WHERE empresa_id=? AND id=?`, pickeada, empacada, estado, empresaID, itemID)
 	if err == nil {
 		_ = registrarWMSEvento(dbConn, empresaID, "item", itemID, "avance_item", old, estado, fmt.Sprintf("pick %.2f pack %.2f", pickeada, empacada), usuario)
+		var ordenID int64
+		if qerr := QueryRowCompat(dbConn, `SELECT COALESCE(orden_id,0) FROM empresa_wms_items WHERE empresa_id=? AND id=?`, empresaID, itemID).Scan(&ordenID); qerr == nil && ordenID > 0 {
+			_ = recomputeWMSOrdenEstadoFromItems(dbConn, empresaID, ordenID, usuario)
+		}
 	}
 	return err
 }
@@ -355,12 +385,18 @@ func UpsertEmpresaWMSDespacho(dbConn *sql.DB, x EmpresaWMSDespacho) (int64, erro
 	if x.EmpresaID <= 0 || x.OrdenID <= 0 || x.Codigo == "" {
 		return 0, errors.New("orden y codigo de despacho son requeridos")
 	}
+	if x.Estado == "en_ruta" || x.Estado == "entregado" {
+		if err := validateWMSOrdenReadyForDispatch(dbConn, x.EmpresaID, x.OrdenID); err != nil {
+			return 0, err
+		}
+	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_wms_despachos (empresa_id,orden_id,codigo,transportadora,guia,conductor,vehiculo,ruta,estado,fecha_salida,fecha_entrega,costo_flete,observaciones,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,codigo) DO UPDATE SET orden_id=EXCLUDED.orden_id,transportadora=EXCLUDED.transportadora,guia=EXCLUDED.guia,conductor=EXCLUDED.conductor,vehiculo=EXCLUDED.vehiculo,ruta=EXCLUDED.ruta,estado=EXCLUDED.estado,fecha_salida=EXCLUDED.fecha_salida,fecha_entrega=EXCLUDED.fecha_entrega,costo_flete=EXCLUDED.costo_flete,observaciones=EXCLUDED.observaciones,usuario_creador=EXCLUDED.usuario_creador`,
 		x.EmpresaID, x.OrdenID, x.Codigo, x.Transportadora, x.Guia, x.Conductor, x.Vehiculo, x.Ruta, x.Estado, x.FechaSalida, x.FechaEntrega, x.CostoFlete, x.Observaciones, x.UsuarioCreador)
 	if err == nil {
 		_ = registrarWMSEvento(dbConn, x.EmpresaID, "despacho", id, "despacho_guardado", "", x.Estado, x.Codigo, x.UsuarioCreador)
+		_ = updateWMSOrdenEstadoFromDespacho(dbConn, x.EmpresaID, x.OrdenID, x.Estado, x.UsuarioCreador)
 	}
 	return id, err
 }
@@ -699,6 +735,128 @@ func inferWMSItemEstado(total, pickeada, empacada float64) string {
 		return "en_picking"
 	}
 	return "pendiente"
+}
+
+type wmsOrdenTotals struct {
+	Items     int
+	Total     float64
+	Pickeada  float64
+	Empacada  float64
+	Cancelada int
+}
+
+func getWMSOrdenTotals(dbConn *sql.DB, empresaID, ordenID int64) wmsOrdenTotals {
+	var out wmsOrdenTotals
+	_ = QueryRowCompat(dbConn, `
+		SELECT COUNT(1),
+		       COALESCE(SUM(cantidad_solicitada),0),
+		       COALESCE(SUM(cantidad_pickeada),0),
+		       COALESCE(SUM(cantidad_empacada),0),
+		       COALESCE(SUM(CASE WHEN estado='cancelado' THEN 1 ELSE 0 END),0)
+		FROM empresa_wms_items
+		WHERE empresa_id=? AND orden_id=?
+	`, empresaID, ordenID).Scan(&out.Items, &out.Total, &out.Pickeada, &out.Empacada, &out.Cancelada)
+	return out
+}
+
+func validateWMSOrdenReadyForDispatch(dbConn *sql.DB, empresaID, ordenID int64) error {
+	totals := getWMSOrdenTotals(dbConn, empresaID, ordenID)
+	if totals.Items <= 0 || totals.Total <= 0 {
+		return errors.New("la orden WMS no tiene items para despacho")
+	}
+	if totals.Empacada < totals.Total {
+		return errors.New("la orden WMS requiere tener todos los items empacados antes del despacho")
+	}
+	return nil
+}
+
+func validateWMSOrdenTransitionForTotals(dbConn *sql.DB, empresaID, ordenID int64, current, next string) error {
+	current = normalizeWMSOrdenEstado(current)
+	next = normalizeWMSOrdenEstado(next)
+	if current == next || ordenID <= 0 {
+		return nil
+	}
+	if current == "cerrada" || current == "cancelada" {
+		return fmt.Errorf("la orden WMS ya esta %s y no permite cambios de estado", current)
+	}
+	totals := getWMSOrdenTotals(dbConn, empresaID, ordenID)
+	switch next {
+	case "en_packing":
+		if totals.Items > 0 && totals.Pickeada < totals.Total {
+			return errors.New("para pasar a packing primero debe completar el picking")
+		}
+	case "lista_despacho", "despachada", "cerrada":
+		if totals.Items <= 0 || totals.Empacada < totals.Total {
+			return errors.New("para pasar a despacho/cierre debe completar el packing de todos los items")
+		}
+	}
+	return nil
+}
+
+func recomputeWMSOrdenEstadoFromItems(dbConn *sql.DB, empresaID, ordenID int64, usuario string) error {
+	if ordenID <= 0 {
+		return nil
+	}
+	var current string
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(estado,'borrador') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=?`, empresaID, ordenID).Scan(&current); err != nil {
+		return err
+	}
+	current = normalizeWMSOrdenEstado(current)
+	if current == "cerrada" || current == "cancelada" || current == "despachada" {
+		return nil
+	}
+	totals := getWMSOrdenTotals(dbConn, empresaID, ordenID)
+	next := current
+	switch {
+	case totals.Items <= 0:
+		next = current
+	case totals.Empacada >= totals.Total:
+		next = "lista_despacho"
+	case totals.Pickeada >= totals.Total:
+		next = "en_packing"
+	case totals.Pickeada > 0:
+		next = "en_picking"
+	case current == "borrador":
+		next = "liberada"
+	}
+	if next == current || next == "" {
+		return nil
+	}
+	_, err := ExecCompat(dbConn, `UPDATE empresa_wms_ordenes SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, next, empresaID, ordenID)
+	if err == nil {
+		_ = registrarWMSEvento(dbConn, empresaID, "orden", ordenID, "estado_auto_wms", current, next, "Avance calculado por items WMS", usuario)
+	}
+	return err
+}
+
+func updateWMSOrdenEstadoFromDespacho(dbConn *sql.DB, empresaID, ordenID int64, despachoEstado, usuario string) error {
+	next := ""
+	switch normalizeWMSDespachoEstado(despachoEstado) {
+	case "en_ruta":
+		next = "despachada"
+	case "entregado":
+		next = "cerrada"
+	case "devuelto":
+		next = "en_packing"
+	default:
+		return nil
+	}
+	var current string
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(estado,'') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=?`, empresaID, ordenID).Scan(&current); err != nil {
+		return err
+	}
+	current = normalizeWMSOrdenEstado(current)
+	if current == next || current == "cancelada" {
+		return nil
+	}
+	if err := validateWMSOrdenTransitionForTotals(dbConn, empresaID, ordenID, current, next); err != nil {
+		return err
+	}
+	_, err := ExecCompat(dbConn, `UPDATE empresa_wms_ordenes SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, next, empresaID, ordenID)
+	if err == nil {
+		_ = registrarWMSEvento(dbConn, empresaID, "orden", ordenID, "estado_por_despacho", current, next, "Estado actualizado desde despacho", usuario)
+	}
+	return err
 }
 
 func registrarWMSEvento(dbConn *sql.DB, empresaID int64, refTipo string, refID int64, evento, old, nuevo, detalle, usuario string) error {

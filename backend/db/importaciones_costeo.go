@@ -69,12 +69,24 @@ type EmpresaImportacionCosto struct {
 }
 
 type EmpresaImportacionesCosteoDashboard struct {
-	EmpresaID             int64                      `json:"empresa_id"`
-	ImportacionesAbiertas int                        `json:"importaciones_abiertas"`
-	ImportacionesCerradas int                        `json:"importaciones_cerradas"`
-	CostosPendientesCOP   float64                    `json:"costos_pendientes_cop"`
-	CostoTotalCOP         float64                    `json:"costo_total_cop"`
-	UltimasImportaciones  []EmpresaImportacionCosteo `json:"ultimas_importaciones"`
+	EmpresaID              int64                      `json:"empresa_id"`
+	ImportacionesAbiertas  int                        `json:"importaciones_abiertas"`
+	ImportacionesCerradas  int                        `json:"importaciones_cerradas"`
+	Borradores             int                        `json:"borradores"`
+	EnTransito             int                        `json:"en_transito"`
+	Costeadas              int                        `json:"costeadas"`
+	Contabilizadas         int                        `json:"contabilizadas"`
+	Anuladas               int                        `json:"anuladas"`
+	SubtotalCOP            float64                    `json:"subtotal_cop"`
+	CostosPendientesCOP    float64                    `json:"costos_pendientes_cop"`
+	CostoTotalCOP          float64                    `json:"costo_total_cop"`
+	NacionalizacionPct     float64                    `json:"nacionalizacion_pct"`
+	ImportacionesSinItems  int                        `json:"importaciones_sin_items"`
+	ImportacionesSinCostos int                        `json:"importaciones_sin_costos"`
+	PorLlegar              int                        `json:"por_llegar"`
+	Atrasadas              int                        `json:"atrasadas"`
+	Alertas                []string                   `json:"alertas"`
+	UltimasImportaciones   []EmpresaImportacionCosteo `json:"ultimas_importaciones"`
 }
 
 func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
@@ -147,6 +159,9 @@ func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
 }
 
 func CreateEmpresaImportacionCosteo(dbConn *sql.DB, x EmpresaImportacionCosteo) (int64, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return 0, err
+	}
 	x = normalizeImportacionCosteo(x)
 	if x.EmpresaID <= 0 || x.Codigo == "" {
 		return 0, errors.New("empresa_id y codigo son requeridos")
@@ -173,6 +188,9 @@ func CreateEmpresaImportacionCosteo(dbConn *sql.DB, x EmpresaImportacionCosteo) 
 }
 
 func CreateEmpresaImportacionItem(dbConn *sql.DB, item EmpresaImportacionItem, trm float64) (int64, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return 0, err
+	}
 	item = normalizeImportacionItem(item, trm)
 	if item.EmpresaID <= 0 || item.ImportacionID <= 0 || item.ProductoNombre == "" {
 		return 0, errors.New("importacion y producto son requeridos")
@@ -188,6 +206,9 @@ func CreateEmpresaImportacionItem(dbConn *sql.DB, item EmpresaImportacionItem, t
 }
 
 func CreateEmpresaImportacionCosto(dbConn *sql.DB, costo EmpresaImportacionCosto) (int64, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return 0, err
+	}
 	costo = normalizeImportacionCosto(costo)
 	if costo.EmpresaID <= 0 || costo.ImportacionID <= 0 || costo.Concepto == "" {
 		return 0, errors.New("importacion y concepto son requeridos")
@@ -203,6 +224,9 @@ func CreateEmpresaImportacionCosto(dbConn *sql.DB, costo EmpresaImportacionCosto
 }
 
 func ListEmpresaImportacionesCosteo(dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaImportacionCosteo, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return nil, err
+	}
 	if limit <= 0 || limit > 500 {
 		limit = 200
 	}
@@ -246,6 +270,9 @@ func GetEmpresaImportacionCosteo(dbConn *sql.DB, empresaID, id int64) (EmpresaIm
 }
 
 func ListEmpresaImportacionItems(dbConn *sql.DB, empresaID, importacionID int64) ([]EmpresaImportacionItem, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return nil, err
+	}
 	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,importacion_id,COALESCE(producto_id,0),COALESCE(producto_nombre,''),COALESCE(sku,''),COALESCE(cantidad,0),COALESCE(unidad,'und'),COALESCE(peso_kg,0),COALESCE(volumen_m3,0),COALESCE(costo_unitario_origen,0),COALESCE(costo_origen,0),COALESCE(costo_base_cop,0),COALESCE(costo_distribuido_cop,0),COALESCE(costo_unitario_final_cop,0),COALESCE(estado,'activo') FROM empresa_importaciones_costeo_items WHERE empresa_id=? AND importacion_id=? ORDER BY id`, empresaID, importacionID)
 	if err != nil {
 		return nil, err
@@ -263,6 +290,9 @@ func ListEmpresaImportacionItems(dbConn *sql.DB, empresaID, importacionID int64)
 }
 
 func ListEmpresaImportacionCostos(dbConn *sql.DB, empresaID, importacionID int64) ([]EmpresaImportacionCosto, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return nil, err
+	}
 	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,importacion_id,COALESCE(tipo,'nacionalizacion'),COALESCE(concepto,''),COALESCE(base_distribucion,'valor'),COALESCE(valor_cop,0),COALESCE(tercero,''),COALESCE(documento,''),COALESCE(cuenta_contable,''),COALESCE(estado,'activo'),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_importaciones_costeo_costos WHERE empresa_id=? AND importacion_id=? ORDER BY id`, empresaID, importacionID)
 	if err != nil {
 		return nil, err
@@ -280,6 +310,9 @@ func ListEmpresaImportacionCostos(dbConn *sql.DB, empresaID, importacionID int64
 }
 
 func DistribuirEmpresaImportacionCostos(dbConn *sql.DB, empresaID, importacionID int64, usuario string) (EmpresaImportacionCosteo, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return EmpresaImportacionCosteo{}, err
+	}
 	imp, err := GetEmpresaImportacionCosteo(dbConn, empresaID, importacionID)
 	if err != nil {
 		return EmpresaImportacionCosteo{}, err
@@ -295,12 +328,13 @@ func DistribuirEmpresaImportacionCostos(dbConn *sql.DB, empresaID, importacionID
 		for _, it := range items {
 			baseTotal += importacionBaseDistribucionItem(it, c.BaseDistribucion)
 		}
-		if baseTotal <= 0 {
+		equalDistribution := baseTotal <= 0
+		if equalDistribution {
 			baseTotal = float64(len(items))
 		}
 		for _, it := range items {
 			base := importacionBaseDistribucionItem(it, c.BaseDistribucion)
-			if base <= 0 {
+			if equalDistribution {
 				base = 1
 			}
 			distribuido[it.ID] += roundImportacion(c.ValorCOP * base / baseTotal)
@@ -327,13 +361,58 @@ func DistribuirEmpresaImportacionCostos(dbConn *sql.DB, empresaID, importacionID
 }
 
 func BuildEmpresaImportacionesCosteoDashboard(dbConn *sql.DB, empresaID int64) (EmpresaImportacionesCosteoDashboard, error) {
+	if err := EnsureEmpresaImportacionesCosteoSchema(dbConn); err != nil {
+		return EmpresaImportacionesCosteoDashboard{}, err
+	}
 	ds := EmpresaImportacionesCosteoDashboard{EmpresaID: empresaID}
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado IN ('borrador','en_transito','costeado')`, empresaID).Scan(&ds.ImportacionesAbiertas)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado IN ('cerrado','contabilizado')`, empresaID).Scan(&ds.ImportacionesCerradas)
-	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(costos_nacionalizacion_cop),0),COALESCE(SUM(costo_total_cop),0) FROM empresa_importaciones_costeo WHERE empresa_id=?`, empresaID).Scan(&ds.CostosPendientesCOP, &ds.CostoTotalCOP)
+	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(subtotal_cop),0),COALESCE(SUM(costos_nacionalizacion_cop),0),COALESCE(SUM(costo_total_cop),0) FROM empresa_importaciones_costeo WHERE empresa_id=?`, empresaID).Scan(&ds.SubtotalCOP, &ds.CostosPendientesCOP, &ds.CostoTotalCOP)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado='borrador'`, empresaID).Scan(&ds.Borradores)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado='en_transito'`, empresaID).Scan(&ds.EnTransito)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado='costeado'`, empresaID).Scan(&ds.Costeadas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado='contabilizado'`, empresaID).Scan(&ds.Contabilizadas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo WHERE empresa_id=? AND estado='anulado'`, empresaID).Scan(&ds.Anuladas)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo imp WHERE imp.empresa_id=? AND NOT EXISTS (SELECT 1 FROM empresa_importaciones_costeo_items it WHERE it.empresa_id=imp.empresa_id AND it.importacion_id=imp.id)`, empresaID).Scan(&ds.ImportacionesSinItems)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_importaciones_costeo imp WHERE imp.empresa_id=? AND imp.estado NOT IN ('anulado','cerrado','contabilizado') AND NOT EXISTS (SELECT 1 FROM empresa_importaciones_costeo_costos c WHERE c.empresa_id=imp.empresa_id AND c.importacion_id=imp.id AND c.estado='activo')`, empresaID).Scan(&ds.ImportacionesSinCostos)
 	rows, err := ListEmpresaImportacionesCosteo(dbConn, empresaID, "", 20)
 	if err != nil {
 		return ds, err
+	}
+	today := time.Now().Format("2006-01-02")
+	soon := time.Now().AddDate(0, 0, 10).Format("2006-01-02")
+	for _, row := range rows {
+		if !importacionEstadoAbierto(row.Estado) {
+			continue
+		}
+		eta := strings.TrimSpace(row.FechaEstimadaLlegada)
+		if len(eta) < 10 {
+			continue
+		}
+		eta = eta[:10]
+		if eta < today {
+			ds.Atrasadas++
+		} else if eta <= soon {
+			ds.PorLlegar++
+		}
+	}
+	if ds.SubtotalCOP > 0 {
+		ds.NacionalizacionPct = roundImportacion(ds.CostosPendientesCOP / ds.SubtotalCOP * 100)
+	}
+	if ds.ImportacionesSinItems > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d importacion(es) no tienen items para costear.", ds.ImportacionesSinItems))
+	}
+	if ds.ImportacionesSinCostos > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d importacion(es) abiertas no tienen costos de nacionalizacion registrados.", ds.ImportacionesSinCostos))
+	}
+	if ds.Atrasadas > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d importacion(es) superaron la fecha estimada de llegada.", ds.Atrasadas))
+	}
+	if ds.PorLlegar > 0 {
+		ds.Alertas = append(ds.Alertas, fmt.Sprintf("%d importacion(es) llegan en los proximos 10 dias.", ds.PorLlegar))
+	}
+	if len(rows) == 0 {
+		ds.Alertas = append(ds.Alertas, "No hay importaciones registradas. Crea una importacion o carga datos demo.")
 	}
 	ds.UltimasImportaciones = rows
 	return ds, nil
@@ -378,6 +457,9 @@ func normalizeImportacionCosteo(x EmpresaImportacionCosteo) EmpresaImportacionCo
 	x.Codigo = strings.ToUpper(strings.TrimSpace(x.Codigo))
 	x.Proveedor = strings.TrimSpace(x.Proveedor)
 	x.PaisOrigen = strings.TrimSpace(x.PaisOrigen)
+	x.FechaDocumento = strings.TrimSpace(x.FechaDocumento)
+	x.FechaEstimadaLlegada = strings.TrimSpace(x.FechaEstimadaLlegada)
+	x.DocumentoReferencia = strings.TrimSpace(x.DocumentoReferencia)
 	x.Incoterm = strings.ToUpper(firstImportacionValue(x.Incoterm, "FOB"))
 	x.MonedaOrigen = strings.ToUpper(firstImportacionValue(x.MonedaOrigen, "USD"))
 	if x.TRM <= 0 {
@@ -393,6 +475,18 @@ func normalizeImportacionItem(x EmpresaImportacionItem, trm float64) EmpresaImpo
 	x.Unidad = strings.ToLower(firstImportacionValue(x.Unidad, "und"))
 	if x.Cantidad < 0 {
 		x.Cantidad = 0
+	}
+	if x.CostoUnitarioOrigen < 0 {
+		x.CostoUnitarioOrigen = 0
+	}
+	if x.CostoOrigen < 0 {
+		x.CostoOrigen = 0
+	}
+	if x.PesoKG < 0 {
+		x.PesoKG = 0
+	}
+	if x.VolumenM3 < 0 {
+		x.VolumenM3 = 0
 	}
 	if x.CostoOrigen <= 0 {
 		x.CostoOrigen = roundImportacion(x.Cantidad * x.CostoUnitarioOrigen)
@@ -411,6 +505,9 @@ func normalizeImportacionItem(x EmpresaImportacionItem, trm float64) EmpresaImpo
 func normalizeImportacionCosto(x EmpresaImportacionCosto) EmpresaImportacionCosto {
 	x.Tipo = strings.ToLower(firstImportacionValue(x.Tipo, "nacionalizacion"))
 	x.Concepto = strings.TrimSpace(x.Concepto)
+	x.Tercero = strings.TrimSpace(x.Tercero)
+	x.Documento = strings.TrimSpace(x.Documento)
+	x.CuentaContable = strings.TrimSpace(x.CuentaContable)
 	x.BaseDistribucion = normalizeImportacionBase(x.BaseDistribucion)
 	if x.ValorCOP < 0 {
 		x.ValorCOP = 0
@@ -449,6 +546,15 @@ func importacionBaseDistribucionItem(it EmpresaImportacionItem, base string) flo
 		return it.Cantidad
 	default:
 		return it.CostoBaseCOP
+	}
+}
+
+func importacionEstadoAbierto(v string) bool {
+	switch normalizeImportacionEstado(v) {
+	case "borrador", "en_transito", "costeado":
+		return true
+	default:
+		return false
 	}
 }
 

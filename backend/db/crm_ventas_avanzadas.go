@@ -61,6 +61,9 @@ type EmpresaCRMVentasAvanzadasDashboard struct {
 	LeadsActivos         int                       `json:"leads_activos"`
 	LeadsGanados         int                       `json:"leads_ganados"`
 	LeadsPerdidos        int                       `json:"leads_perdidos"`
+	LeadsVencidos        int                       `json:"leads_vencidos"`
+	AgendaHoy            int                       `json:"agenda_hoy"`
+	CampanasActivas      int                       `json:"campanas_activas"`
 	ValorPipeline        float64                   `json:"valor_pipeline"`
 	ForecastPonderado    float64                   `json:"forecast_ponderado"`
 	CotizacionesAbiertas int                       `json:"cotizaciones_abiertas"`
@@ -69,6 +72,9 @@ type EmpresaCRMVentasAvanzadasDashboard struct {
 	PedidosValor         float64                   `json:"pedidos_valor"`
 	MetaValor            float64                   `json:"meta_valor"`
 	CumplimientoMetaPct  float64                   `json:"cumplimiento_meta_pct"`
+	ConversionPct        float64                   `json:"conversion_pct"`
+	TicketPromedio       float64                   `json:"ticket_promedio"`
+	Alertas              []string                  `json:"alertas"`
 	Embudo               []EmpresaCRMEmbudoEstado  `json:"embudo"`
 	Agenda               []EmpresaCRMAgendaItem    `json:"agenda"`
 	TopLeads             []EmpresaCRMLeadScore     `json:"top_leads"`
@@ -154,9 +160,16 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado')`, empresaID).Scan(&d.LeadsActivos)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead='ganado'`, empresaID).Scan(&d.LeadsGanados)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead IN ('perdido','descalificado')`, empresaID).Scan(&d.LeadsPerdidos)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(proximo_contacto,'')<>'' AND datetime(proximo_contacto) < datetime('now')`, empresaID).Scan(&d.LeadsVencidos)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_campanas WHERE empresa_id=? AND estado='activo' AND estado_campana='activa'`, empresaID).Scan(&d.CampanasActivas)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(valor_potencial),0), COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('perdido','descalificado','cerrado')`, empresaID).Scan(&d.ValorPipeline, &d.ForecastPonderado)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(total),0) FROM empresa_cotizaciones_venta WHERE empresa_id=? AND estado='activo' AND estado_documento IN ('borrador','emitida','aprobada')`, empresaID).Scan(&d.CotizacionesAbiertas, &d.CotizacionesValor)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(total),0) FROM empresa_pedidos_venta WHERE empresa_id=? AND estado='activo' AND estado_pedido NOT IN ('cerrado','cancelado')`, empresaID).Scan(&d.PedidosAbiertos, &d.PedidosValor)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM (
+		SELECT proximo_contacto AS fecha FROM crm_leads WHERE empresa_id=? AND estado='activo' AND COALESCE(proximo_contacto,'')<>''
+		UNION ALL
+		SELECT proxima_accion AS fecha FROM crm_interacciones WHERE empresa_id=? AND estado='activo' AND COALESCE(proxima_accion,'')<>''
+	) WHERE substr(fecha,1,10)=date('now')`, empresaID, empresaID).Scan(&d.AgendaHoy)
 	metas, err := ListEmpresaCRMMetasComerciales(dbConn, empresaID, periodo)
 	if err != nil {
 		return d, err
@@ -169,6 +182,10 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 	}
 	if d.MetaValor > 0 {
 		d.CumplimientoMetaPct = crmRound((d.ForecastPonderado / d.MetaValor) * 100)
+	}
+	d.ConversionPct = crmConversionPct(d.LeadsGanados, d.LeadsPerdidos)
+	if d.LeadsGanados > 0 {
+		d.TicketPromedio = crmRound(d.PedidosValor / float64(d.LeadsGanados))
 	}
 	embudo, err := buildEmpresaCRMEmbudo(dbConn, empresaID)
 	if err != nil {
@@ -185,6 +202,7 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 		return d, err
 	}
 	d.TopLeads = top
+	d.Alertas = buildEmpresaCRMAlertas(d)
 	return d, nil
 }
 
@@ -362,6 +380,33 @@ func crmLeadRecommendation(x EmpresaCRMLeadScore) string {
 		return "contactar"
 	}
 	return "nutrir_seguimiento"
+}
+
+func buildEmpresaCRMAlertas(d EmpresaCRMVentasAvanzadasDashboard) []string {
+	alertas := []string{}
+	if d.LeadsVencidos > 0 {
+		alertas = append(alertas, fmt.Sprintf("%d leads tienen seguimiento vencido.", d.LeadsVencidos))
+	}
+	if d.MetaValor <= 0 {
+		alertas = append(alertas, "No hay meta comercial activa para el periodo.")
+	} else if d.CumplimientoMetaPct < 70 {
+		alertas = append(alertas, fmt.Sprintf("El forecast cubre %.0f%% de la meta del periodo.", d.CumplimientoMetaPct))
+	}
+	if d.LeadsActivos == 0 {
+		alertas = append(alertas, "No hay leads activos en el embudo comercial.")
+	}
+	if d.CampanasActivas == 0 {
+		alertas = append(alertas, "No hay campanas activas alimentando el embudo.")
+	}
+	return alertas
+}
+
+func crmConversionPct(ganados, perdidos int) float64 {
+	total := ganados + perdidos
+	if total <= 0 {
+		return 0
+	}
+	return crmRound((float64(ganados) / float64(total)) * 100)
 }
 
 func crmRound(v float64) float64 {
