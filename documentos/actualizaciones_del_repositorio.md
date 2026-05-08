@@ -7734,3 +7734,12 @@ Archivos modificados:
 - web/administrar_empresa/modulo_menu.html
 - web/estilos.css
 - web/js/modulo_colombia_admin.js
+
+2026-05-08 01:41:33 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: a200838c; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/administrar_empresa/aiu_construccion.html
+- web/administrar_empresa/consultorio_odontologico.html
+- web/administrar_empresa/modulo_menu.html
+- web/js/administrar_empresa.js
+- web/js/consultorio_odontologico.js
