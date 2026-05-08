@@ -7771,3 +7771,10 @@ Archivos modificados:
 - web/js/mi_horario.js
 - web/js/personas_activos_submenu.js
 - web/login_usuario.html
+
+2026-05-08 11:56:42 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 891829c5; PushStatus: OK
+Archivos modificados:
+- backend/main_empresa_delete_frontend_contract_test.go
+- web/editar_empresa.html
+- web/estilos.css
+- web/js/editar_empresa.js
