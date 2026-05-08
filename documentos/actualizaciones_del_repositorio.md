@@ -4519,3 +4519,9 @@ Archivos modificados:
 2026-05-07 18:54:25 - Mensaje: Elimina tarjeta resumen del super administrador; Commit: d75462ef; PushStatus: OK
 Archivos modificados:
 - web/super_administrador.html
+
+2026-05-07 19:14:55 - Mensaje: Mueve tarifas hoteleras a configuracion; Commit: e3e06a15; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_menu.html

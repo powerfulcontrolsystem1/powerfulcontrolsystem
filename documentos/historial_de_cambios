@@ -19186,3 +19186,10 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/super_administrador.html
+
+2026-05-07: Mueve tarifas hoteleras a configuracion
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_menu.html
