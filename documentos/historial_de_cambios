@@ -22371,3 +22371,35 @@ Archivos modificados:
 - web/js/egresos_ingresos.js
 - web/js/print_documents.js
 - web/js/seleccionar_empresa.js
+
+2026-05-08: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_configuracion_general.go
+- backend/db/empresa_configuracion_general_weather_test.go
+- backend/handlers/empresa_configuracion_general.go
+- web/administrar_empresa.html
+- web/administrar_empresa/alquileres.html
+- web/administrar_empresa/apartamentos_turisticos.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chat_usuarios.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/domicilios.html
+- web/administrar_empresa/gimnasio.html
+- web/administrar_empresa/gimnasio_menu.html
+- web/administrar_empresa/modulo_menu.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/parqueadero.html
+- web/administrar_empresa/propiedad_horizontal.html
+- web/administrar_empresa/taxi_system.html
+- web/administrar_empresa/turnos_atencion.html
+- web/estilos.css
+- web/index.html
+- web/js/alquileres.js
+- web/js/domicilios.js
+- web/js/empresa_submenu_context.js
+- web/js/empresa_submenu_shell.js
+- web/js/gimnasio.js
+- web/js/taxi_system.js
+- web/js/turnos_atencion.js
