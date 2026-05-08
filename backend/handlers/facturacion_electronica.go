@@ -48,12 +48,13 @@ type facturacionOperacionPayload struct {
 }
 
 type facturaEmailResultado struct {
-	Intentado          bool   `json:"intentado"`
-	Enviado            bool   `json:"enviado"`
-	Destinatario       string `json:"destinatario,omitempty"`
-	ClienteID          int64  `json:"cliente_id,omitempty"`
-	OrigenDestinatario string `json:"origen_destinatario,omitempty"`
-	Error              string `json:"error,omitempty"`
+	Intentado             bool   `json:"intentado"`
+	Enviado               bool   `json:"enviado"`
+	AutomaticoDesactivado bool   `json:"automatico_desactivado,omitempty"`
+	Destinatario          string `json:"destinatario,omitempty"`
+	ClienteID             int64  `json:"cliente_id,omitempty"`
+	OrigenDestinatario    string `json:"origen_destinatario,omitempty"`
+	Error                 string `json:"error,omitempty"`
 }
 
 type facturacionIntegracionResultado struct {
@@ -683,7 +684,11 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					}
 				}
 				if transition.Accion == "emitir" && documentoTipo == "factura_electronica" {
-					resp["factura_email"] = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payload, *docPersistido)
+					if facturacionAutoEmailClienteEnabled(dbEmp, payload.EmpresaID, payload.PaisCodigo) {
+						resp["factura_email"] = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payload, *docPersistido)
+					} else {
+						resp["factura_email"] = facturaEmailAutoDisabledResultado(payload)
+					}
 				}
 				writeJSON(w, http.StatusOK, resp)
 				return
@@ -751,6 +756,37 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func facturaEmailAutoDisabledResultado(payload facturacionOperacionPayload) facturaEmailResultado {
+	clienteID := payload.ClienteID
+	if clienteID <= 0 {
+		clienteID = payload.EntidadID
+	}
+	return facturaEmailResultado{
+		Intentado:             false,
+		Enviado:               false,
+		AutomaticoDesactivado: true,
+		ClienteID:             clienteID,
+		OrigenDestinatario:    "configuracion",
+	}
+}
+
+func facturacionAutoEmailClienteEnabled(dbEmp *sql.DB, empresaID int64, paisCodigo string) bool {
+	if dbEmp == nil || empresaID <= 0 {
+		return false
+	}
+	code := strings.TrimSpace(paisCodigo)
+	if code == "" {
+		code = "CO"
+	}
+	if cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, code); err == nil && cfg != nil && cfg.EnviarFacturaEmailClienteAuto {
+		return true
+	}
+	if cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, empresaID); err == nil && cfg != nil && cfg.EnviarFacturaElectronicaVenta {
+		return true
+	}
+	return false
 }
 
 func enviarFacturaElectronicaAlCliente(dbEmp, dbSuper *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion) facturaEmailResultado {

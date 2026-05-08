@@ -292,6 +292,18 @@
 
       <div class="form-row">
         <div class="form-col">
+          <div class="form-help">
+            <label>
+              <input id="enviar_factura_email_cliente_auto" type="checkbox">
+              Enviar factura electrónica automáticamente al correo del cliente
+            </label>
+          </div>
+          <p class="form-help">Al emitir una factura electrónica, el sistema usará el correo ingresado en la operación o el correo guardado en la ficha del cliente. El reenvío manual sigue disponible aunque esta opción esté apagada.</p>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
           <label class="form-label">Teléfono de facturación</label>
           <input id="telefono_facturacion" class="form-input" placeholder="Contacto de facturación">
         </div>
@@ -435,7 +447,7 @@
           <div class="form-col">
             <div class="form-help"><label><input id="adv_facturacion_electronica_activa" type="checkbox"> Activar facturación electrónica automática al cerrar venta</label></div>
             <div class="form-help"><label><input id="adv_enviar_email_venta" type="checkbox"> Enviar correo de la venta (comprobante)</label></div>
-            <div class="form-help"><label><input id="adv_enviar_factura_electronica_venta" type="checkbox"> Enviar factura electrónica de la venta</label></div>
+            <div class="form-help"><label><input id="adv_enviar_factura_electronica_venta" type="checkbox"> Enviar factura electrónica automáticamente al correo del cliente al cerrar venta</label></div>
           </div>
         </div>
 
@@ -1348,7 +1360,7 @@
 
       const table = document.createElement("table");
       table.className = "table";
-      table.innerHTML = "<thead><tr><th>País</th><th>Proveedor</th><th>Ambiente</th><th>Moneda</th><th>Estado</th><th>Acciones</th></tr></thead>";
+      table.innerHTML = "<thead><tr><th>País</th><th>Proveedor</th><th>Ambiente</th><th>Moneda</th><th>Correo auto</th><th>Estado</th><th>Acciones</th></tr></thead>";
       const tbody = document.createElement("tbody");
 
       arr.forEach(function(item) {
@@ -1357,6 +1369,7 @@
                        "<td>" + (item.proveedor || "manual") + "</td>" +
                        "<td>" + (item.ambiente || "sandbox") + "</td>" +
                        "<td>" + (item.moneda_codigo || "") + "</td>" +
+                       "<td>" + (item.enviar_factura_email_cliente_auto ? "Activo" : "Apagado") + "</td>" +
                        "<td>" + (item.estado || "activo") + "</td>" +
                        "<td class=\"actions\"><button class=\"btn secondary load-country\" data-country=\"" + (item.pais_codigo || "") + "\">Cargar</button></td>";
         tbody.appendChild(tr);
@@ -1390,6 +1403,7 @@
         identificador_fiscal: txt(document.getElementById("identificador_fiscal").value),
         razon_social: txt(document.getElementById("razon_social").value),
         email_facturacion: txt(document.getElementById("email_facturacion").value),
+        enviar_factura_email_cliente_auto: !!document.getElementById("enviar_factura_email_cliente_auto").checked,
         telefono_facturacion: txt(document.getElementById("telefono_facturacion").value),
         direccion_fiscal: txt(document.getElementById("direccion_fiscal").value),
         prefijo_factura: txt(document.getElementById("prefijo_factura").value),
@@ -1430,6 +1444,7 @@
       document.getElementById("identificador_fiscal").value = txt(cfg.identificador_fiscal);
       document.getElementById("razon_social").value = txt(cfg.razon_social);
       document.getElementById("email_facturacion").value = txt(cfg.email_facturacion);
+      document.getElementById("enviar_factura_email_cliente_auto").checked = cfg.enviar_factura_email_cliente_auto === true;
       document.getElementById("telefono_facturacion").value = txt(cfg.telefono_facturacion);
       document.getElementById("direccion_fiscal").value = txt(cfg.direccion_fiscal);
       document.getElementById("prefijo_factura").value = txt(cfg.prefijo_factura);
@@ -1603,6 +1618,8 @@
           const envio = data.factura_email;
           if (envio.enviado && envio.destinatario) {
             opMessage += " | Correo enviado a: " + envio.destinatario;
+          } else if (envio.automatico_desactivado) {
+            opMessage += " | Envío automático por correo desactivado.";
           } else if (envio.error) {
             opMessage += " | Correo no enviado: " + envio.error;
           }

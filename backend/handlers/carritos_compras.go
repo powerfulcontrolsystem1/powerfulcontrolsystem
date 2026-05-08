@@ -1998,8 +1998,10 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 		Observaciones:   observacionBase,
 	}
 	var envioCorreoFactura interface{} = map[string]interface{}{"intentado": false}
-	if cfg.EnviarFacturaElectronicaVenta {
+	if cfg.EnviarFacturaElectronicaVenta || facturacionAutoEmailClienteEnabled(dbEmp, ventaDoc.EmpresaID, strings.TrimSpace(docPersistido.PaisCodigo)) {
 		envioCorreoFactura = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
+	} else {
+		envioCorreoFactura = facturaEmailAutoDisabledResultado(payloadCorreo)
 	}
 
 	return map[string]interface{}{

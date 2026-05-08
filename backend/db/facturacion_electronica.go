@@ -13,29 +13,30 @@ import (
 
 // FacturacionElectronicaPaisConfig define configuración FE por empresa y país.
 type FacturacionElectronicaPaisConfig struct {
-	ID                  int64  `json:"id"`
-	EmpresaID           int64  `json:"empresa_id"`
-	PaisCodigo          string `json:"pais_codigo"`
-	PaisNombre          string `json:"pais_nombre"`
-	BanderaPais         string `json:"bandera_pais,omitempty"`
-	MonedaCodigo        string `json:"moneda_codigo,omitempty"`
-	Proveedor           string `json:"proveedor,omitempty"`
-	Ambiente            string `json:"ambiente,omitempty"`
-	TipoDocumentoEmisor string `json:"tipo_documento_emisor,omitempty"`
-	IdentificadorFiscal string `json:"identificador_fiscal,omitempty"`
-	RazonSocial         string `json:"razon_social,omitempty"`
-	EmailFacturacion    string `json:"email_facturacion,omitempty"`
-	TelefonoFacturacion string `json:"telefono_facturacion,omitempty"`
-	DireccionFiscal     string `json:"direccion_fiscal,omitempty"`
-	PrefijoFactura      string `json:"prefijo_factura,omitempty"`
-	ResolucionNumero    string `json:"resolucion_numero,omitempty"`
-	APIBaseURL          string `json:"api_base_url,omitempty"`
-	CamposPaisJSON      string `json:"campos_pais_json,omitempty"`
-	FechaCreacion       string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion  string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador      string `json:"usuario_creador,omitempty"`
-	Estado              string `json:"estado,omitempty"`
-	Observaciones       string `json:"observaciones,omitempty"`
+	ID                            int64  `json:"id"`
+	EmpresaID                     int64  `json:"empresa_id"`
+	PaisCodigo                    string `json:"pais_codigo"`
+	PaisNombre                    string `json:"pais_nombre"`
+	BanderaPais                   string `json:"bandera_pais,omitempty"`
+	MonedaCodigo                  string `json:"moneda_codigo,omitempty"`
+	Proveedor                     string `json:"proveedor,omitempty"`
+	Ambiente                      string `json:"ambiente,omitempty"`
+	TipoDocumentoEmisor           string `json:"tipo_documento_emisor,omitempty"`
+	IdentificadorFiscal           string `json:"identificador_fiscal,omitempty"`
+	RazonSocial                   string `json:"razon_social,omitempty"`
+	EmailFacturacion              string `json:"email_facturacion,omitempty"`
+	EnviarFacturaEmailClienteAuto bool   `json:"enviar_factura_email_cliente_auto"`
+	TelefonoFacturacion           string `json:"telefono_facturacion,omitempty"`
+	DireccionFiscal               string `json:"direccion_fiscal,omitempty"`
+	PrefijoFactura                string `json:"prefijo_factura,omitempty"`
+	ResolucionNumero              string `json:"resolucion_numero,omitempty"`
+	APIBaseURL                    string `json:"api_base_url,omitempty"`
+	CamposPaisJSON                string `json:"campos_pais_json,omitempty"`
+	FechaCreacion                 string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion            string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                string `json:"usuario_creador,omitempty"`
+	Estado                        string `json:"estado,omitempty"`
+	Observaciones                 string `json:"observaciones,omitempty"`
 }
 
 // PaisFacturacion representa un país soportado para FE.
@@ -248,6 +249,7 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 			identificador_fiscal TEXT,
 			razon_social TEXT,
 			email_facturacion TEXT,
+			enviar_factura_email_cliente_auto INTEGER DEFAULT 0,
 			telefono_facturacion TEXT,
 			direccion_fiscal TEXT,
 			prefijo_factura TEXT,
@@ -329,6 +331,9 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_pais", "email_facturacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_pais", "enviar_factura_email_cliente_auto", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_pais", "telefono_facturacion", "TEXT"); err != nil {
@@ -712,6 +717,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		identificador_fiscal,
 		razon_social,
 		email_facturacion,
+		enviar_factura_email_cliente_auto,
 		telefono_facturacion,
 		direccion_fiscal,
 		prefijo_factura,
@@ -723,7 +729,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id, pais_codigo) DO UPDATE SET
 		pais_nombre = excluded.pais_nombre,
 		moneda_codigo = excluded.moneda_codigo,
@@ -733,6 +739,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		identificador_fiscal = excluded.identificador_fiscal,
 		razon_social = excluded.razon_social,
 		email_facturacion = excluded.email_facturacion,
+		enviar_factura_email_cliente_auto = excluded.enviar_factura_email_cliente_auto,
 		telefono_facturacion = excluded.telefono_facturacion,
 		direccion_fiscal = excluded.direccion_fiscal,
 		prefijo_factura = excluded.prefijo_factura,
@@ -755,6 +762,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		payload.IdentificadorFiscal,
 		payload.RazonSocial,
 		payload.EmailFacturacion,
+		boolToInt(payload.EnviarFacturaEmailClienteAuto),
 		payload.TelefonoFacturacion,
 		payload.DireccionFiscal,
 		payload.PrefijoFactura,
@@ -800,6 +808,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 		COALESCE(identificador_fiscal, ''),
 		COALESCE(razon_social, ''),
 		COALESCE(email_facturacion, ''),
+		COALESCE(enviar_factura_email_cliente_auto, 0),
 		COALESCE(telefono_facturacion, ''),
 		COALESCE(direccion_fiscal, ''),
 		COALESCE(prefijo_factura, ''),
@@ -815,6 +824,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 	WHERE empresa_id = ? AND pais_codigo = ?
 	LIMIT 1`, empresaID, paisCodigo)
 
+	var enviarFacturaEmailClienteAutoInt int
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.EmpresaID,
@@ -827,6 +837,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 		&cfg.IdentificadorFiscal,
 		&cfg.RazonSocial,
 		&cfg.EmailFacturacion,
+		&enviarFacturaEmailClienteAutoInt,
 		&cfg.TelefonoFacturacion,
 		&cfg.DireccionFiscal,
 		&cfg.PrefijoFactura,
@@ -850,6 +861,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 	}
 
 	normalizeFacturacionConfig(&cfg)
+	cfg.EnviarFacturaEmailClienteAuto = enviarFacturaEmailClienteAutoInt == 1
 	return &cfg, nil
 }
 
@@ -870,6 +882,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 		COALESCE(identificador_fiscal, ''),
 		COALESCE(razon_social, ''),
 		COALESCE(email_facturacion, ''),
+		COALESCE(enviar_factura_email_cliente_auto, 0),
 		COALESCE(telefono_facturacion, ''),
 		COALESCE(direccion_fiscal, ''),
 		COALESCE(prefijo_factura, ''),
@@ -898,6 +911,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 	out := make([]FacturacionElectronicaPaisConfig, 0)
 	for rows.Next() {
 		cfg := FacturacionElectronicaPaisConfig{}
+		var enviarFacturaEmailClienteAutoInt int
 		if err := rows.Scan(
 			&cfg.ID,
 			&cfg.EmpresaID,
@@ -910,6 +924,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 			&cfg.IdentificadorFiscal,
 			&cfg.RazonSocial,
 			&cfg.EmailFacturacion,
+			&enviarFacturaEmailClienteAutoInt,
 			&cfg.TelefonoFacturacion,
 			&cfg.DireccionFiscal,
 			&cfg.PrefijoFactura,
@@ -925,6 +940,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 			return nil, err
 		}
 		normalizeFacturacionConfig(&cfg)
+		cfg.EnviarFacturaEmailClienteAuto = enviarFacturaEmailClienteAutoInt == 1
 		out = append(out, cfg)
 	}
 	return out, nil
