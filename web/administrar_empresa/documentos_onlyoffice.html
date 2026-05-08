@@ -51,8 +51,8 @@
     </div>
     <div id="msg" class="form-help"></div>
 
-    <div class="oo-grid mt-12">
-      <section class="card empresa-section">
+    <div class="oo-grid mt-12" data-pcs-submenu-group>
+      <section class="card empresa-section" data-pcs-submenu-section="crear">
         <div class="empresa-section-header">
           <h2 class="m-0">Crear</h2>
         </div>
@@ -88,14 +88,14 @@
         </div>
       </section>
 
-      <section class="card empresa-section">
+      <section class="card empresa-section" data-pcs-submenu-section="archivos">
         <div class="empresa-section-header">
           <h2 class="m-0">Archivos de esta empresa</h2>
         </div>
         <div id="list" class="oo-list">Cargando...</div>
       </section>
 
-      <section class="card empresa-section">
+      <section class="card empresa-section" data-pcs-submenu-section="editor">
         <div class="empresa-section-header">
           <h2 class="m-0">Editor</h2>
         </div>
@@ -304,5 +304,6 @@
       loadList().catch(function(e){ setMsg(e.message||String(e), true); });
     })();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>

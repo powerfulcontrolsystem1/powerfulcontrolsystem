@@ -166,6 +166,7 @@ try {
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
     document.getElementById("linkPortalUsuarios"),
+    document.getElementById("linkMiHorario"),
     document.getElementById("linkHorariosTrabajadores"),
     document.getElementById("linkCodigosDescuento"),
     document.getElementById("linkCorteCaja"),

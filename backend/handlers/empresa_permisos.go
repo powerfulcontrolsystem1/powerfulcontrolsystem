@@ -938,7 +938,7 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
-			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			next.ServeHTTP(w, r)
 			return
 		}
 		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
@@ -950,6 +950,42 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 		r = r.WithContext(ctx)
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 
+		next.ServeHTTP(w, r)
+	}
+}
+
+// WithEmpresaSelfServicePermissions protege endpoints de autoservicio del usuario
+// autenticado. Valida empresa y alcance, pero no exige permisos administrativos
+// de creacion/edicion sobre el modulo.
+func WithEmpresaSelfServicePermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID := extractEmpresaIDForPermissions(r)
+		if empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+		if adminEmail == "" || adminEmail == "sistema" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		canAccess, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
+		if err != nil {
+			log.Printf("[authz] self-service empresa=%d email=%s error: %v", empresaID, adminEmail, err)
+			http.Error(w, "No se pudo validar el alcance del usuario", http.StatusInternalServerError)
+			return
+		}
+		if !canAccess {
+			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "empresaID", empresaID)
+		r = r.WithContext(ctx)
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		next.ServeHTTP(w, r)
 	}
 }

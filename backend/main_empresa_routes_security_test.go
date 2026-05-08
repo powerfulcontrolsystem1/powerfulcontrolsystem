@@ -70,6 +70,7 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaCalidadProcesosPermissions(",
 		"WithEmpresaDrogueriaFarmaciaPermissions(",
 		"WithEmpresaPublicScope(",
+		"WithEmpresaSelfServicePermissions(",
 	}
 	allowedPublicPaths := map[string]bool{
 		"/api/empresa/usuarios/login":                           true,

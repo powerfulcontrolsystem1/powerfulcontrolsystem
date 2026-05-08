@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -198,5 +199,87 @@ func EmpresaHorariosTrabajadoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+// EmpresaMiHorarioUsuarioHandler expone la programacion publicada del usuario autenticado.
+func EmpresaMiHorarioUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+		if adminEmail == "" || adminEmail == "sistema" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		usuario, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, adminEmail, empresaID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "No se encontro un usuario operativo asociado a este correo en la empresa", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "No se pudo validar el usuario operativo", http.StatusInternalServerError)
+			return
+		}
+		desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+		hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+		if desde == "" || hasta == "" {
+			today := time.Now()
+			if desde == "" {
+				desde = today.Format("2006-01-02")
+			}
+			if hasta == "" {
+				hasta = today.AddDate(0, 0, 14).Format("2006-01-02")
+			}
+		}
+		items, err := dbpkg.GetHorariosTrabajadorByUsuarioPerfil(dbEmp, empresaID, usuario.ID, usuario.Email, desde, hasta, true, 300)
+		if err != nil {
+			http.Error(w, "No se pudo consultar tu horario", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"empresa_id": empresaID,
+			"desde":      desde,
+			"hasta":      hasta,
+			"usuario": map[string]interface{}{
+				"id":     usuario.ID,
+				"email":  usuario.Email,
+				"nombre": usuario.Nombre,
+				"rol":    usuario.RolNombre,
+			},
+			"resumen": buildMiHorarioResumen(items, time.Now()),
+			"items":   items,
+		})
+	}
+}
+
+func buildMiHorarioResumen(items []dbpkg.HorarioTrabajador, now time.Time) map[string]interface{} {
+	today := now.Format("2006-01-02")
+	var horas float64
+	var turnosHoy int
+	var proximos int
+	for _, item := range items {
+		horas += item.HorasProgramadas
+		if strings.TrimSpace(item.Fecha) == today {
+			turnosHoy++
+		}
+		if strings.TrimSpace(item.Fecha) >= today {
+			proximos++
+		}
+	}
+	return map[string]interface{}{
+		"turnos":         len(items),
+		"turnos_hoy":     turnosHoy,
+		"proximos":       proximos,
+		"horas":          horas,
+		"actualizado_en": now.Format("2006-01-02 15:04:05"),
 	}
 }

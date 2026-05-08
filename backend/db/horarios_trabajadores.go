@@ -362,6 +362,50 @@ func GetHorariosTrabajadorByUsuario(dbConn *sql.DB, empresaID int64, usuarioID i
 	return result, rows.Err()
 }
 
+func GetHorariosTrabajadorByUsuarioPerfil(dbConn *sql.DB, empresaID int64, usuarioID int64, email, desde, hasta string, publishedOnly bool, limit int) ([]HorarioTrabajador, error) {
+	if err := ensureHorariosTrabajadoresSchemaReady(); err != nil {
+		return nil, err
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	email = strings.TrimSpace(email)
+	query := `SELECT id, empresa_id, usuario_id, nombre_empleado, COALESCE(cargo, ''), COALESCE(area, ''), COALESCE(sede, ''), fecha, hora_inicio, hora_fin, COALESCE(descanso_minutos, 0), COALESCE(turno_nombre, ''), COALESCE(tipo_turno, ''), COALESCE(canal, ''), COALESCE(color, ''), COALESCE(estado, ''), COALESCE(publicado, 0), COALESCE(conflicto, 0), COALESCE(requiere_cobertura, 0), COALESCE(horas_programadas, 0), COALESCE(observaciones, ''), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, '') FROM empresa_horarios_trabajadores WHERE empresa_id = ? AND (usuario_id = ?`
+	args := []interface{}{empresaID, usuarioID}
+	if email != "" {
+		query += ` OR LOWER(COALESCE(nombre_empleado, '')) = LOWER(?)`
+		args = append(args, email)
+	}
+	query += `)`
+	if strings.TrimSpace(desde) != "" {
+		query += ` AND fecha >= ?`
+		args = append(args, strings.TrimSpace(desde))
+	}
+	if strings.TrimSpace(hasta) != "" {
+		query += ` AND fecha <= ?`
+		args = append(args, strings.TrimSpace(hasta))
+	}
+	if publishedOnly {
+		query += ` AND COALESCE(publicado, 0) = 1`
+	}
+	query += ` ORDER BY fecha ASC, hora_inicio ASC LIMIT ?`
+	args = append(args, limit)
+	rows, err := ExecQueryCompat(dbConn, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []HorarioTrabajador
+	for rows.Next() {
+		item, err := scanHorarioTrabajador(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}
+
 func BuildHorarioTrabajadorDashboard(dbConn *sql.DB, empresaID int64, desde, hasta string) (HorarioTrabajadorDashboard, error) {
 	if err := ensureHorariosTrabajadoresSchemaReady(); err != nil {
 		return HorarioTrabajadorDashboard{}, err
@@ -458,7 +502,13 @@ func CreateHorarioTrabajador(dbConn *sql.DB, item *HorarioTrabajador) (int64, er
 	if err != nil {
 		return 0, err
 	}
+	if err := validateHorarioTrabajadorInput(*item); err != nil {
+		return 0, err
+	}
 	normalizeHorarioTrabajador(item, cfg)
+	if err := validateHorarioTrabajadorNormalized(*item, cfg); err != nil {
+		return 0, err
+	}
 	if conflicts, err := findHorarioTrabajadorConflicts(dbConn, *item); err != nil {
 		return 0, err
 	} else if len(conflicts) > 0 {
@@ -511,7 +561,13 @@ func UpdateHorarioTrabajador(dbConn *sql.DB, item *HorarioTrabajador) error {
 	if err != nil {
 		return err
 	}
+	if err := validateHorarioTrabajadorInput(*item); err != nil {
+		return err
+	}
 	normalizeHorarioTrabajador(item, cfg)
+	if err := validateHorarioTrabajadorNormalized(*item, cfg); err != nil {
+		return err
+	}
 	if conflicts, err := findHorarioTrabajadorConflicts(dbConn, *item); err != nil {
 		return err
 	} else if len(conflicts) > 0 {
@@ -609,6 +665,12 @@ func CreateHorariosTrabajadoresBulk(dbConn *sql.DB, payload HorarioTrabajadorBul
 	if err != nil {
 		return 0, nil, err
 	}
+	if strings.TrimSpace(payload.NombreEmpleado) == "" {
+		return 0, nil, fmt.Errorf("nombre_empleado es obligatorio")
+	}
+	if !isValidHorarioHour(payload.HoraInicio) || !isValidHorarioHour(payload.HoraFin) {
+		return 0, nil, fmt.Errorf("hora_inicio y hora_fin deben tener formato HH:MM")
+	}
 	payload = normalizeHorarioTrabajadorBulkInput(payload, cfg)
 	startDate, err := time.Parse("2006-01-02", payload.FechaInicio)
 	if err != nil {
@@ -705,10 +767,12 @@ func normalizeHorarioTrabajador(item *HorarioTrabajador, cfg HorarioTrabajadorCo
 	if item.TipoTurno == "" {
 		item.TipoTurno = "operativo"
 	}
+	item.TipoTurno = normalizeHorarioChoice(item.TipoTurno, []string{"operativo", "administrativo", "cobertura", "guardia", "capacitacion"}, "operativo")
 	item.Canal = strings.TrimSpace(item.Canal)
 	if item.Canal == "" {
 		item.Canal = "presencial"
 	}
+	item.Canal = normalizeHorarioChoice(item.Canal, []string{"presencial", "mixto", "remoto"}, "presencial")
 	item.Color = strings.TrimSpace(item.Color)
 	if item.Color == "" {
 		item.Color = resolveHorarioDefaultColor(item.TurnoNombre, cfg)
@@ -716,6 +780,10 @@ func normalizeHorarioTrabajador(item *HorarioTrabajador, cfg HorarioTrabajadorCo
 	item.Estado = strings.TrimSpace(item.Estado)
 	if item.Estado == "" {
 		item.Estado = "programado"
+	}
+	item.Estado = normalizeHorarioChoice(item.Estado, []string{"programado", "publicado", "cubierto", "incidencia", "cancelado"}, "programado")
+	if strings.EqualFold(item.Estado, "publicado") {
+		item.Publicado = true
 	}
 	item.Observaciones = strings.TrimSpace(item.Observaciones)
 	item.HorasProgramadas = roundHorarioFloat(calcHorarioHours(item.HoraInicio, item.HoraFin, item.DescansoMinutos))
@@ -736,10 +804,12 @@ func normalizeHorarioTrabajadorBulkInput(payload HorarioTrabajadorBulkInput, cfg
 	if payload.TipoTurno == "" {
 		payload.TipoTurno = "operativo"
 	}
+	payload.TipoTurno = normalizeHorarioChoice(payload.TipoTurno, []string{"operativo", "administrativo", "cobertura", "guardia", "capacitacion"}, "operativo")
 	payload.Canal = strings.TrimSpace(payload.Canal)
 	if payload.Canal == "" {
 		payload.Canal = "presencial"
 	}
+	payload.Canal = normalizeHorarioChoice(payload.Canal, []string{"presencial", "mixto", "remoto"}, "presencial")
 	payload.Color = strings.TrimSpace(payload.Color)
 	if payload.Color == "" {
 		payload.Color = resolveHorarioDefaultColor(payload.TurnoNombre, cfg)
@@ -748,8 +818,51 @@ func normalizeHorarioTrabajadorBulkInput(payload HorarioTrabajadorBulkInput, cfg
 	if payload.Estado == "" {
 		payload.Estado = "programado"
 	}
+	payload.Estado = normalizeHorarioChoice(payload.Estado, []string{"programado", "publicado", "cubierto", "incidencia", "cancelado"}, "programado")
+	if strings.EqualFold(payload.Estado, "publicado") {
+		payload.Publicado = true
+	}
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
 	return payload
+}
+
+func validateHorarioTrabajadorInput(item HorarioTrabajador) error {
+	if item.EmpresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	if strings.TrimSpace(item.NombreEmpleado) == "" {
+		return fmt.Errorf("nombre_empleado es obligatorio")
+	}
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(item.Fecha)); err != nil {
+		return fmt.Errorf("fecha invalida")
+	}
+	if !isValidHorarioHour(item.HoraInicio) || !isValidHorarioHour(item.HoraFin) {
+		return fmt.Errorf("hora_inicio y hora_fin deben tener formato HH:MM")
+	}
+	if item.DescansoMinutos < 0 || item.DescansoMinutos > 720 {
+		return fmt.Errorf("descanso_minutos debe estar entre 0 y 720")
+	}
+	return nil
+}
+
+func validateHorarioTrabajadorNormalized(item HorarioTrabajador, cfg HorarioTrabajadorConfig) error {
+	if item.HorasProgramadas <= 0 {
+		return fmt.Errorf("el turno debe tener duracion positiva despues de descontar descansos")
+	}
+	if cfg.HorasObjetivoDia > 0 && item.HorasProgramadas > 24 {
+		return fmt.Errorf("la duracion del turno no puede superar 24 horas")
+	}
+	return nil
+}
+
+func normalizeHorarioChoice(value string, allowed []string, fallback string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	for _, item := range allowed {
+		if normalized == item {
+			return item
+		}
+	}
+	return fallback
 }
 
 func findHorarioTrabajadorConflicts(dbConn *sql.DB, item HorarioTrabajador) ([]string, error) {
@@ -860,6 +973,23 @@ func normalizeHorarioHour(raw string) string {
 		m = 0
 	}
 	return fmt.Sprintf("%02d:%02d", h, m)
+}
+
+func isValidHorarioHour(raw string) bool {
+	value := strings.TrimSpace(raw)
+	if len(value) < 5 {
+		return false
+	}
+	if len(value) > 5 {
+		value = value[:5]
+	}
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 {
+		return false
+	}
+	h, errH := strconv.Atoi(parts[0])
+	m, errM := strconv.Atoi(parts[1])
+	return errH == nil && errM == nil && h >= 0 && h <= 23 && m >= 0 && m <= 59
 }
 
 func resolveHorarioDefaultColor(turnoNombre string, cfg HorarioTrabajadorConfig) string {

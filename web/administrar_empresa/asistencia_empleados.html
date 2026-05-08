@@ -17,7 +17,7 @@
 
     <p class="form-help" style="margin:0 0 12px 0;">Registra entrada, salida, estado y novedad diaria por empleado y empresa con una bitácora operativa lista para revisión de supervisión.</p>
 
-    <section class="form asistencia-dashboard-shell" style="margin-bottom:14px;">
+    <section class="form asistencia-dashboard-shell" data-pcs-submenu-section="resumen" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Resumen operativo de llegadas</h2>
       <div class="kpi-grid asistencia-kpi-grid">
         <div class="kpi-box"><span class="kpi-label">Registros</span><strong id="kpiRegistros">0</strong></div>
@@ -41,7 +41,7 @@
       </div>
     </section>
 
-    <section class="form" style="margin-bottom:14px;">
+    <section class="form" data-pcs-submenu-section="configuracion" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Configuración de turnos y tolerancias</h2>
       <div class="form-row">
         <div class="form-col">
@@ -77,7 +77,7 @@
       <div id="cfgMsg" class="form-help"></div>
     </section>
 
-    <section class="form" style="margin-bottom:14px;">
+    <section class="form" data-pcs-submenu-section="cierre" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Cierre de periodo</h2>
       <p class="form-help" style="margin:0 0 8px 0;">Al cerrar un periodo, sus registros quedan bloqueados para edicion, activacion/desactivacion o eliminacion.</p>
       <div class="form-row">
@@ -102,7 +102,7 @@
       <div id="periodosCerradosList" class="form-help" >Sin cierres cargados.</div>
     </section>
 
-    <section class="form" style="margin-bottom:14px;">
+    <section class="form" data-pcs-submenu-section="reportes" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Reporte operativo para auditoria de nomina</h2>
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col" style="max-width:220px;">
@@ -122,7 +122,7 @@
       <div id="reporteMsg" class="form-help"></div>
     </section>
 
-    <form id="form" class="form">
+    <form id="form" class="form" data-pcs-submenu-section="registro">
       <input type="hidden" id="itemId">
       <input type="hidden" id="empresa_id">
 
@@ -219,7 +219,7 @@
       <div id="msg" class="form-help"></div>
     </form>
 
-    <div class="form" >
+    <div class="form" data-pcs-submenu-section="consulta">
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar</label>
@@ -255,7 +255,7 @@
       </div>
     </div>
 
-    <div id="list">Cargando...</div>
+    <div id="list" data-pcs-submenu-section="consulta">Cargando...</div>
   </div>
 
   <script>
@@ -997,6 +997,6 @@
 
     init();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>
-

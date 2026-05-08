@@ -475,6 +475,52 @@ html[data-theme="dark-emerald"] {
   --ambient-glow: rgba(36,210,154,0.2);
 }
 
+.pcs-section-submenu{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 16px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:color-mix(in srgb,var(--surface) 88%,var(--accent) 12%);
+  box-shadow:var(--shadow);
+}
+.pcs-section-submenu button{
+  border:1px solid var(--border);
+  background:var(--surface-soft);
+  color:var(--text);
+  border-radius:8px;
+  padding:9px 12px;
+  font-weight:800;
+  cursor:pointer;
+  min-height:38px;
+}
+.pcs-section-submenu button.active{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:var(--on-accent,#fff);
+}
+[data-pcs-submenu-section][hidden]{
+  display:none !important;
+}
+[data-pcs-submenu-group][hidden]{
+  display:none !important;
+}
+html[data-theme^="dark"] .pcs-section-submenu{
+  background:color-mix(in srgb,var(--surface) 76%,#000 24%);
+}
+@media(max-width:640px){
+  .pcs-section-submenu{
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding:8px;
+  }
+  .pcs-section-submenu button{
+    white-space:nowrap;
+  }
+}
+
 /* Tema Oscuro Neon (alto contraste con acentos electricos) */
 html[data-theme="dark-neon"] {
   --bg: #050712;
@@ -1413,10 +1459,17 @@ html.empresa-module-submenu-content .apt-hero,
 html.empresa-module-submenu-content .apt-tabs,
 html.empresa-module-submenu-content .ph-hero,
 html.empresa-module-submenu-content .ph-tabs,
+html.empresa-module-submenu-content .odonto-hero-card,
+html.empresa-module-submenu-content .odonto-sidebar,
+html.empresa-module-submenu-content #odontoDashboard,
 html.empresa-module-submenu-content .chat-workspace-subnav{display:none!important}
 html.empresa-module-submenu-content .taxi-main,
 html.empresa-module-submenu-content .turnos-main,
 html.empresa-module-submenu-content .dom-main{display:block!important}
+html.empresa-module-submenu-content .odonto-module-shell{padding:0!important}
+html.empresa-module-submenu-content .odonto-workspace{display:block!important}
+html.empresa-module-submenu-content .odonto-content{width:100%!important;max-width:none!important}
+html.empresa-module-submenu-content .odonto-context-card{margin-bottom:0}
 html.empresa-module-submenu-content .chat-workspace-page{max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
 .gym-module-body.gym-submenu-content{background:var(--bg)}
 .admin-content{position:relative;flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
@@ -1893,7 +1946,8 @@ ul{padding-left:18px}
 .epayco-response-actions{justify-content:center;margin-top:18px}
 .epayco-response-copy{max-width:32rem;margin-left:auto;margin-right:auto}
 
-.login-usuario-page{padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text)}
+.login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
+.login-usuario-page{min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text)}
 .login-usuario-page .card{background:var(--card);border:1px solid var(--border);color:var(--text)}
 .login-usuario-page .form-input,.login-usuario-page input,.login-usuario-page select,.login-usuario-page textarea{background:var(--form-input-bg);border-color:var(--form-border);color:var(--text)}
 .login-usuario-page .form-input::placeholder,.login-usuario-page input::placeholder,.login-usuario-page textarea::placeholder{color:color-mix(in srgb,var(--muted) 74%,transparent)}
@@ -1926,6 +1980,7 @@ ul{padding-left:18px}
 .login-usuario-contract-links{margin-top:10px}
 .login-usuario-company-box{border:1px solid var(--public-panel-soft-border);border-radius:16px;padding:16px;background:var(--public-panel-soft-bg)}
 .login-usuario-company-box .form-help,.login-usuario-company-box .login-card-note{margin-bottom:0}
+.login-usuario-context-note{margin:0 0 16px;color:var(--muted);line-height:1.55;text-align:left}
 .login-usuario-form-card{padding:20px;border:1px solid var(--public-panel-soft-border);border-radius:18px;background:var(--public-panel-bg);box-shadow:0 18px 28px var(--public-panel-shadow)}
 .login-usuario-form-head{margin-bottom:14px}
 .login-usuario-form-head h2{margin:0 0 6px 0}
@@ -2449,7 +2504,8 @@ ul{padding-left:18px}
 
 html[data-theme="light"] .login-usuario-page,
 html[data-theme="light-rose"] .login-usuario-page,
-html[data-theme="light-gold"] .login-usuario-page{
+html[data-theme="light-gold"] .login-usuario-page,
+html[data-theme="light-wood"] .login-usuario-page{
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 20%, transparent), transparent 38%),
     radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 30%),
@@ -2466,7 +2522,11 @@ html[data-theme="light-rose"] .login-usuario-contract-label,
 html[data-theme="light-gold"] .login-usuario-contract-label,
 html[data-theme="light"] .login-usuario-form-tag,
 html[data-theme="light-rose"] .login-usuario-form-tag,
-html[data-theme="light-gold"] .login-usuario-form-tag{
+html[data-theme="light-gold"] .login-usuario-form-tag,
+html[data-theme="light-wood"] .login-usuario-eyebrow,
+html[data-theme="light-wood"] .login-usuario-badge,
+html[data-theme="light-wood"] .login-usuario-contract-label,
+html[data-theme="light-wood"] .login-usuario-form-tag{
   color:var(--accent);
 }
 html[data-theme="light"] .login-usuario-highlight,
@@ -2480,14 +2540,19 @@ html[data-theme="light-rose"] .login-usuario-company-box,
 html[data-theme="light-gold"] .login-usuario-company-box,
 html[data-theme="light"] .login-usuario-form-card,
 html[data-theme="light-rose"] .login-usuario-form-card,
-html[data-theme="light-gold"] .login-usuario-form-card{
+html[data-theme="light-gold"] .login-usuario-form-card,
+html[data-theme="light-wood"] .login-usuario-highlight,
+html[data-theme="light-wood"] .login-usuario-contract,
+html[data-theme="light-wood"] .login-usuario-company-box,
+html[data-theme="light-wood"] .login-usuario-form-card{
   background:var(--public-panel-bg);
   border-color:var(--public-panel-border);
   box-shadow:0 16px 28px var(--public-panel-shadow);
 }
 html[data-theme="light"] .login-usuario-contract-version,
 html[data-theme="light-rose"] .login-usuario-contract-version,
-html[data-theme="light-gold"] .login-usuario-contract-version{
+html[data-theme="light-gold"] .login-usuario-contract-version,
+html[data-theme="light-wood"] .login-usuario-contract-version{
   background:var(--public-panel-soft-bg);
   color:var(--public-panel-text);
 }
@@ -4605,6 +4670,8 @@ body.selector-delete-modal-open{overflow:hidden}
   --station-card-min: 12.6em;
   --station-card-height: 8.82em;
   --station-gap: 8px;
+  --station-card-title: #1f3550;
+  --station-card-copy: #35506f;
   /* font-size here controls scaling of card internals (use em in children) */
   font-size: calc(1rem * var(--station-card-scale));
   display:grid;
@@ -4620,11 +4687,10 @@ body.selector-delete-modal-open{overflow:hidden}
 #estacionesGrid.station-size-auto_text{ --station-card-scale: 1; --station-card-min: 14em; --station-card-height: var(--station-card-auto-height, auto); }
 
 #estacionesGrid .portal-card{
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.08)),
-    var(--station-state-bg, #fff9ef);
+  background: var(--station-state-bg, #fff9ef);
   border: 1px solid color-mix(in srgb, var(--station-state-bg, #fff9ef) 58%, rgba(97, 73, 44, 0.5) 42%);
   box-shadow: 0 10px 24px rgba(83, 94, 120, 0.14);
+  color: var(--station-card-copy);
   align-items: center;
   text-align: center;
   width: 100%;
@@ -4639,20 +4705,16 @@ body.selector-delete-modal-open{overflow:hidden}
 }
 
 html[data-theme^="dark"] #estacionesGrid .portal-card{
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 82%, transparent), color-mix(in srgb, var(--surface) 94%, transparent)),
-    color-mix(in srgb, var(--station-state-bg, var(--surface-soft)) 18%, var(--surface) 82%);
-  border-color: color-mix(in srgb, var(--border) 72%, var(--station-state-bg, var(--accent)) 28%);
-  box-shadow: 0 14px 30px color-mix(in srgb, var(--bg) 70%, transparent);
-  color: var(--text);
+  background: var(--station-state-bg, #fff9ef);
+  border-color: color-mix(in srgb, var(--station-state-bg, #fff9ef) 62%, rgba(10, 18, 32, 0.46) 38%);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.24);
+  color: var(--station-card-copy);
 }
 
 html[data-theme="dark-neon"] #estacionesGrid .portal-card{
-  background:
-    linear-gradient(180deg, rgba(17,26,56,0.92), rgba(8,12,30,0.96)),
-    color-mix(in srgb, var(--station-state-bg, var(--surface-soft)) 16%, var(--surface) 84%);
-  border-color: color-mix(in srgb, var(--border) 64%, var(--accent-2) 18%);
-  box-shadow: 0 14px 32px rgba(0,0,0,0.36), 0 0 18px rgba(0,229,255,0.08);
+  background: var(--station-state-bg, #fff9ef);
+  border-color: color-mix(in srgb, var(--station-state-bg, #fff9ef) 66%, rgba(0,229,255,0.28) 34%);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.28);
 }
 
 #estacionesGrid .portal-card.station-card-active{
@@ -4661,8 +4723,8 @@ html[data-theme="dark-neon"] #estacionesGrid .portal-card{
 }
 
 html[data-theme^="dark"] #estacionesGrid .portal-card.station-card-active{
-  border-color: color-mix(in srgb, var(--success) 46%, var(--border) 54%);
-  box-shadow: 0 16px 34px color-mix(in srgb, var(--success) 16%, transparent), 0 14px 30px color-mix(in srgb, var(--bg) 70%, transparent);
+  border-color: color-mix(in srgb, var(--station-state-bg, #d9fbe8) 62%, rgba(30, 111, 72, 0.5) 38%);
+  box-shadow: 0 14px 30px rgba(30,111,72,0.2);
 }
 
 #estacionesGrid .portal-card.station-card-inactive{
@@ -4670,7 +4732,17 @@ html[data-theme^="dark"] #estacionesGrid .portal-card.station-card-active{
 }
 
 html[data-theme^="dark"] #estacionesGrid .portal-card.station-card-inactive{
-  border-color: color-mix(in srgb, var(--border) 78%, var(--muted) 22%);
+  border-color: color-mix(in srgb, var(--station-state-bg, #fff9ef) 58%, rgba(97, 73, 44, 0.5) 42%);
+}
+
+#estacionesGrid .portal-card.station-card-dirty{
+  border-color: color-mix(in srgb, var(--station-state-bg, #ffe0e0) 58%, rgba(148, 36, 36, 0.5) 42%);
+  box-shadow: 0 12px 28px rgba(148, 36, 36, 0.16);
+}
+
+#estacionesGrid .portal-card.station-card-alert{
+  border-color: color-mix(in srgb, var(--station-state-bg, #fff3cd) 58%, rgba(154, 104, 18, 0.5) 42%);
+  box-shadow: 0 12px 28px rgba(154, 104, 18, 0.16);
 }
 
 #estacionesGrid .portal-card h3{

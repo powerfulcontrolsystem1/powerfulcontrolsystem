@@ -268,11 +268,11 @@
       </div>
     </div>
 
-    <section class="metric-row" id="metricRow"></section>
+    <section class="metric-row" id="metricRow" data-pcs-submenu-section="resumen"></section>
 
-    <div class="carnets-layout">
+    <div class="carnets-layout" data-pcs-submenu-group>
       <div>
-        <section class="form" style="margin-bottom:14px;">
+        <section class="form" data-pcs-submenu-section="consulta" style="margin-bottom:14px;">
           <div class="carnets-toolbar">
             <div class="form-row" style="flex:1;margin:0;">
               <div class="form-col">
@@ -296,7 +296,7 @@
           <div id="carnetsList" class="carnet-list">Cargando...</div>
         </section>
 
-        <section class="form" style="margin-bottom:14px;">
+        <section class="form" data-pcs-submenu-section="emision" style="margin-bottom:14px;">
           <h2 style="margin-top:0;">Emitir carnet</h2>
           <form id="carnetForm">
             <input id="carnetId" type="hidden">
@@ -395,7 +395,7 @@
           </form>
         </section>
 
-        <section class="form">
+        <section class="form" data-pcs-submenu-section="plantilla">
           <h2 style="margin-top:0;">Plantilla visual</h2>
           <form id="templateForm">
             <input id="templateId" type="hidden">
@@ -438,7 +438,7 @@
       </div>
 
       <aside class="carnet-preview-shell">
-        <section class="form">
+        <section class="form" data-pcs-submenu-section="preview">
           <h2 style="margin-top:0;">Vista previa y exportacion</h2>
           <div id="carnetPreview" class="carnet-card-preview">
             <div class="carnet-card-band">
@@ -480,7 +480,7 @@
           <div id="exportMsg" class="form-help"></div>
         </section>
 
-        <section class="form" style="margin-top:14px;">
+        <section class="form" data-pcs-submenu-section="bitacora" style="margin-top:14px;">
           <h2 style="margin-top:0;">Bitacora</h2>
           <div id="eventsList" class="table-block">Selecciona un carnet.</div>
         </section>
@@ -988,5 +988,6 @@
       }
     })();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>

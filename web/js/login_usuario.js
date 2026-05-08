@@ -77,31 +77,12 @@
     return parsed;
   }
 
-  function readEmpresaIDFromStorage() {
-    var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
-    var stores = [];
-    try { stores.push(window.sessionStorage); } catch (error) {}
-    try { stores.push(window.localStorage); } catch (error) {}
-
-    for (var storeIndex = 0; storeIndex < stores.length; storeIndex += 1) {
-      var store = stores[storeIndex];
-      if (!store) continue;
-      for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
-        var parsed = parsePositiveInt(store.getItem(keys[keyIndex]));
-        if (parsed > 0) {
-          return parsed;
-        }
-      }
-    }
-    return 0;
-  }
-
   function resolveEmpresaID() {
     var fromURL = parsePositiveInt(getQueryParam("empresa_id") || getQueryParam("id"));
     if (fromURL > 0) {
       return persistEmpresaID(fromURL);
     }
-    return readEmpresaIDFromStorage();
+    return 0;
   }
 
   function updateEmpresaContextHint() {
@@ -110,9 +91,9 @@
     }
     if (!empresaContextHint) return;
     if (state.empresaID > 0) {
-      empresaContextHint.textContent = "Empresa activa: " + state.empresaID + ". Este dato se enviará en todos los formularios del portal.";
+      empresaContextHint.textContent = "Empresa detectada desde la invitación. También puedes entrar solo con tu correo único.";
     } else {
-      empresaContextHint.textContent = "Todavía no hay empresa seleccionada. Ingresa el ID o abre este portal desde el botón público de administrar empresa.";
+      empresaContextHint.textContent = "El sistema abrirá automáticamente la empresa asociada a tu correo y cargará tus roles asignados.";
     }
   }
 
@@ -223,7 +204,7 @@
     if (contractDialogTitle) contractDialogTitle.textContent = contract.titulo || "Contrato vigente";
     if (contractDialogSummary) contractDialogSummary.textContent = contract.resumen || "Lee el contrato vigente antes de continuar.";
     if (contractDialogContent) contractDialogContent.innerHTML = formatContractContent(contract.contenido);
-    setContractStatus("La aceptación se registrará cuando completes el flujo de acceso.", false);
+    setContractStatus("La aceptación se registrará cuando completes tu registro.", false);
   }
 
   function loadContract() {
@@ -301,9 +282,6 @@
     if (state.empresaID > 0) {
       out.empresa_id = state.empresaID;
     }
-    if (contractCheckbox && contractCheckbox.checked) {
-      out.accept_contract = true;
-    }
     return out;
   }
 
@@ -344,8 +322,8 @@
     if (payload && payload.contract) {
       applyContract(payload.contract);
     }
-    setContractStatus("Debes aceptar el contrato antes de continuar.", true);
-    setMessage(formKey, normalizeErrorMessage(payload, "Debes aceptar el contrato vigente para continuar."), true);
+    setContractStatus("Debes aceptar el contrato antes de completar tu registro.", true);
+    setMessage(formKey, normalizeErrorMessage(payload, "Debes aceptar el contrato vigente para completar tu registro."), true);
     if (contractPanel && typeof contractPanel.scrollIntoView === "function") {
       contractPanel.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -380,6 +358,10 @@
     }
 
     if (payload && payload.password_setup_required) {
+      if (payload.empresa_id) {
+        state.empresaID = persistEmpresaID(payload.empresa_id);
+        updateEmpresaContextHint();
+      }
       showForm("setup", {
         email: payload.email,
         message: payload.message || "Completa tu contraseña inicial para continuar."
@@ -426,18 +408,8 @@
     });
   }
 
-  function requireEmpresaIDIfNeeded(formKey) {
-    if (state.empresaID > 0) return true;
-    setMessage(formKey, "Debes indicar la empresa antes de continuar.", true);
-    if (empresaInput && typeof empresaInput.focus === "function") {
-      empresaInput.focus();
-    }
-    return false;
-  }
-
   function onLoginSubmit(event) {
     event.preventDefault();
-    if (!requireEmpresaIDIfNeeded("login")) return;
 
     var btn = document.getElementById("btnIngresar");
     var prevText = btn ? String(btn.textContent || "") : "";
@@ -472,7 +444,6 @@
 
   function onSetupSubmit(event) {
     event.preventDefault();
-    if (!requireEmpresaIDIfNeeded("setup")) return;
 
     var btn = document.getElementById("btnCrearPassword");
     var prevText = btn ? String(btn.textContent || "") : "";
@@ -491,6 +462,7 @@
         documento_identidad: document.getElementById("setupDocumento").value,
         password: document.getElementById("setupPassword").value,
         password_confirm: document.getElementById("setupPasswordConfirm").value,
+        accept_contract: !!(contractCheckbox && contractCheckbox.checked),
         recaptcha_token: token
       }));
     })
@@ -509,7 +481,6 @@
 
   function onRecoverySubmit(event) {
     event.preventDefault();
-    if (!requireEmpresaIDIfNeeded("recovery")) return;
 
     var btn = document.getElementById("btnSolicitarRecuperacion");
     var prevText = btn ? String(btn.textContent || "") : "";
@@ -544,7 +515,6 @@
 
   function onResetSubmit(event) {
     event.preventDefault();
-    if (!requireEmpresaIDIfNeeded("reset")) return;
 
     var btn = document.getElementById("btnRestablecerPassword");
     var prevText = btn ? String(btn.textContent || "") : "";
@@ -581,7 +551,6 @@
 
   function onChangePasswordSubmit(event) {
     event.preventDefault();
-    if (!requireEmpresaIDIfNeeded("change")) return;
 
     var btn = document.getElementById("btnCambiarPassword");
     var prevText = btn ? String(btn.textContent || "") : "";
@@ -638,7 +607,7 @@
     contractCheckbox.addEventListener("change", function () {
       if (contractCheckbox.checked) {
         setContractPanelAttention(false);
-        setContractStatus("La aceptación se registrará cuando completes el flujo de acceso.", false);
+        setContractStatus("La aceptación se registrará cuando completes tu registro.", false);
       }
     });
   }

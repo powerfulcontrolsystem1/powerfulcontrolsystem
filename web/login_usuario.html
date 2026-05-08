@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
-<body>
+<body class="login-usuario-body">
   <div class="login-page login-usuario-page">
     <div class="login-header">
       <h1 class="login-title">Acceso de usuarios operativos</h1>
@@ -24,15 +24,9 @@
         <h2>Iniciar sesión</h2>
 
         <form id="loginUsuarioForm" class="form email-login" autocomplete="on" novalidate>
-          <h3 class="text-center-lowercase">continúa con tu correo operativo</h3>
-
-          <div class="form-row">
-            <div class="form-col">
-              <label class="form-label" for="empresaID">Empresa ID</label>
-              <input id="empresaID" type="number" class="form-input" min="1" step="1" inputmode="numeric" placeholder="Ejemplo: 7">
-              <p id="empresaContextHint" class="login-card-note"></p>
-            </div>
-          </div>
+          <h3 class="text-center-lowercase">continúa con tu correo único</h3>
+          <input id="empresaID" type="hidden">
+          <p id="empresaContextHint" class="login-card-note login-usuario-context-note">El sistema abrirá automáticamente la empresa asociada a tu correo y cargará tus roles asignados.</p>
 
           <div class="form-row">
             <div class="form-col">
@@ -54,27 +48,6 @@
               </div>
             </div>
           </div>
-
-          <section id="contractPanel" class="login-usuario-contract">
-            <div class="login-usuario-contract-head">
-              <div>
-                <h3 id="contractTitle" style="margin:0 0 6px;font-size:1rem;">Cargando contrato...</h3>
-                <p id="contractSummary" class="form-help is-hidden" style="margin:0;"></p>
-              </div>
-              <span id="contractVersion" class="login-usuario-contract-version">Versión --</span>
-            </div>
-            <p id="contractNote" class="form-help is-hidden" style="margin-top:10px;"></p>
-            <div class="remember-row login-usuario-contract-acceptance">
-              <label class="remember-label" for="contractAcceptCheckbox">
-                <input id="contractAcceptCheckbox" type="checkbox">
-                <span>Acepto el contrato vigente para continuar.</span>
-              </label>
-            </div>
-            <div class="login-inline-links login-usuario-contract-links">
-              <a id="contractLink" href="#">Leer contrato completo</a>
-              <span id="contractStatus" class="login-card-note"></span>
-            </div>
-          </section>
 
           <div class="form-actions login-form-actions">
             <button id="btnIngresar" type="submit" class="btn login-email-submit">Ingresar</button>
@@ -98,7 +71,7 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="setupEmail">Correo</label>
-              <input id="setupEmail" type="email" class="form-input" autocomplete="username" readonly>
+              <input id="setupEmail" type="email" class="form-input" autocomplete="username" required placeholder="Correo de la invitación">
             </div>
           </div>
           <div class="form-row">
@@ -119,6 +92,27 @@
               <input id="setupPasswordConfirm" type="password" class="form-input" autocomplete="new-password" required placeholder="Repite tu nueva contraseña">
             </div>
           </div>
+          <section id="contractPanel" class="login-usuario-contract">
+            <div class="login-usuario-contract-head">
+              <div>
+                <p class="login-usuario-contract-label">Contrato de registro</p>
+                <h3 id="contractTitle" style="margin:0 0 6px;font-size:1rem;">Cargando contrato...</h3>
+                <p id="contractSummary" class="form-help is-hidden" style="margin:0;"></p>
+              </div>
+              <span id="contractVersion" class="login-usuario-contract-version">Versión --</span>
+            </div>
+            <p id="contractNote" class="form-help is-hidden" style="margin-top:10px;"></p>
+            <div class="remember-row login-usuario-contract-acceptance">
+              <label class="remember-label" for="contractAcceptCheckbox">
+                <input id="contractAcceptCheckbox" type="checkbox">
+                <span>Acepto el contrato vigente para completar mi registro.</span>
+              </label>
+            </div>
+            <div class="login-inline-links login-usuario-contract-links">
+              <a id="contractLink" href="#">Leer contrato completo</a>
+              <span id="contractStatus" class="login-card-note"></span>
+            </div>
+          </section>
           <div class="form-actions auth-alt-actions">
             <button id="btnCrearPassword" type="submit" class="btn">Crear contraseña y entrar</button>
             <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
@@ -231,6 +225,6 @@
 
   <script src="/config.js"></script>
   <script src="/js/recaptcha_helper.js?v=20260430-recaptcha-retry"></script>
-  <script src="/js/login_usuario.js?v=20260502-login-contract-internal"></script>
+  <script src="/js/login_usuario.js?v=20260508-universal-login"></script>
 </body>
 </html>

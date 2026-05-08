@@ -91,7 +91,7 @@
 </head>
 <body class="super-page form-bg-dark">
   <div class="container horarios-shell">
-    <section class="horarios-hero">
+    <section class="horarios-hero" data-pcs-submenu-section="vision">
       <article class="horarios-hero-card">
         <span class="horarios-hero-badge">Horarios laborales</span>
         <h1>Programación profesional de turnos y cobertura</h1>
@@ -109,7 +109,7 @@
       </aside>
     </section>
 
-    <section class="form">
+    <section class="form" data-pcs-submenu-section="resumen">
       <div class="page-header">
         <div>
           <h2 style="margin:0;">Resumen ejecutivo de la programación</h2>
@@ -126,8 +126,16 @@
           <input id="filtro_hasta" type="date" class="form-input">
         </div>
         <div class="form-col">
+          <label class="form-label" for="filtro_q">Buscar</label>
+          <input id="filtro_q" class="form-input" placeholder="Nombre, cargo o turno">
+        </div>
+        <div class="form-col">
           <label class="form-label" for="filtro_area">Área</label>
           <input id="filtro_area" class="form-input" placeholder="Recepción, caja, gimnasio...">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="filtro_sede">Sede</label>
+          <input id="filtro_sede" class="form-input" placeholder="Principal, norte...">
         </div>
         <div class="form-col">
           <label class="form-label" for="filtro_estado">Estado</label>
@@ -139,6 +147,10 @@
             <option value="incidencia">Incidencia</option>
             <option value="cancelado">Cancelado</option>
           </select>
+        </div>
+        <div class="form-col" style="display:flex;align-items:center;gap:8px;">
+          <input id="filtro_publicados" type="checkbox">
+          <label class="form-label" for="filtro_publicados" style="margin:0;">Solo publicados</label>
         </div>
       </div>
       <div class="horarios-actions">
@@ -167,7 +179,7 @@
       </div>
     </section>
 
-    <section class="horarios-grid-2">
+    <section class="horarios-grid-2" data-pcs-submenu-section="programacion">
       <form id="formTurno" class="form">
         <div class="page-header">
           <div>
@@ -348,7 +360,7 @@
       </section>
     </section>
 
-    <section class="horarios-table-card">
+    <section class="horarios-table-card" data-pcs-submenu-section="lista">
       <div class="page-header">
         <div>
           <h2 style="margin:0;">Programación cargada</h2>
@@ -376,5 +388,6 @@
     </section>
   </div>
   <script src="/js/horarios_trabajadores.js"></script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>

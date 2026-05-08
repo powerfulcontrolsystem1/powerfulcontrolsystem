@@ -17,7 +17,7 @@
 
     <p class="form-help" style="margin:0 0 12px 0;">Registra la patente y el control de ingreso/salida de vehículos por empresa.</p>
 
-    <section class="form" style="margin-bottom:14px;">
+    <section class="form" data-pcs-submenu-section="configuracion" style="margin-bottom:14px;">
       <h2 style="margin:0 0 8px 0;">Configuración de placa/patente por país</h2>
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col" style="max-width:220px;">
@@ -52,7 +52,7 @@
       <div id="cfgMsg" class="form-help"></div>
     </section>
 
-    <form id="form" class="form">
+    <form id="form" class="form" data-pcs-submenu-section="registro">
       <input type="hidden" id="itemId">
       <input type="hidden" id="empresa_id">
 
@@ -160,7 +160,7 @@
       <div id="msg" class="form-help"></div>
     </form>
 
-    <div class="form" >
+    <div class="form" data-pcs-submenu-section="consulta">
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar</label>
@@ -195,7 +195,7 @@
       </div>
     </div>
 
-    <section class="form" >
+    <section class="form" data-pcs-submenu-section="reportes">
       <h2 style="margin:0 0 8px 0;">Reporte de permanencia y tiempos de estancia</h2>
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col" style="max-width:220px;">
@@ -218,7 +218,7 @@
       <div id="permanenciaList" class="form-help" >Usa "Ver permanencia" para consultar detalles.</div>
     </section>
 
-    <div id="list">Cargando...</div>
+    <div id="list" data-pcs-submenu-section="consulta">Cargando...</div>
   </div>
 
   <script>
@@ -825,6 +825,6 @@
       setMessage(err.message || 'No se pudo inicializar el modulo.', true);
     });
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>
-

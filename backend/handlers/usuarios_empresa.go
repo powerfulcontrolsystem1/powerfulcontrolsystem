@@ -551,7 +551,6 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			EmpresaID      int64  `json:"empresa_id"`
 			Email          string `json:"email"`
 			Password       string `json:"password"`
-			AcceptContract bool   `json:"accept_contract"`
 			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -607,6 +606,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"ok":                      false,
 				"password_setup_required": true,
+				"empresa_id":              item.EmpresaID,
 				"email":                   item.Email,
 				"message":                 "Primer ingreso: debes crear tu contraseña para continuar.",
 			})
@@ -655,17 +655,6 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"message":                    "Debes cambiar tu contraseña antes de continuar por politica de seguridad.",
 				"password_policy":            empresaUsuarioPasswordPolicyToMap(policy),
 			})
-			return
-		}
-
-		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
-		if err != nil {
-			log.Printf("[usuarios_empresa] failed to verify contract acceptance (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
-			return
-		}
-		if !accepted {
-			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de iniciar sesión.")
 			return
 		}
 
@@ -892,7 +881,6 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			Token           string `json:"token"`
 			Password        string `json:"password"`
 			PasswordConfirm string `json:"password_confirm"`
-			AcceptContract  bool   `json:"accept_contract"`
 			RecaptchaToken  string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -908,7 +896,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			}
 		}
 		if email == "" || token == "" {
-			http.Error(w, "empresa_id, email y token son obligatorios", http.StatusBadRequest)
+			http.Error(w, "email y token son obligatorios", http.StatusBadRequest)
 			return
 		}
 		if _, err := mail.ParseAddress(email); err != nil {
@@ -965,17 +953,6 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 
-		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
-		if err != nil {
-			log.Printf("[usuarios_empresa] failed to verify contract acceptance (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
-			return
-		}
-		if !accepted {
-			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de restablecer tu contraseña.")
-			return
-		}
-
 		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
 		if err != nil {
 			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
@@ -1017,7 +994,6 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			PasswordNueva        string `json:"password_nueva"`
 			NewPasswordConfirm   string `json:"new_password_confirm"`
 			PasswordNuevaConfirm string `json:"password_nueva_confirm"`
-			AcceptContract       bool   `json:"accept_contract"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -1028,10 +1004,6 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
 				payload.EmpresaID = qEmpresaID
 			}
-		}
-		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
-			return
 		}
 
 		email := strings.TrimSpace(payload.Email)
@@ -1095,17 +1067,6 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		}
 		if currentPassword == newPassword {
 			http.Error(w, "la nueva contraseña debe ser diferente a la actual", http.StatusBadRequest)
-			return
-		}
-
-		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
-		if err != nil {
-			log.Printf("[usuarios_empresa] failed to verify contract acceptance (change_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
-			return
-		}
-		if !accepted {
-			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de cambiar tu contraseña.")
 			return
 		}
 

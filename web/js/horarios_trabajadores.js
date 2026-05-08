@@ -60,8 +60,11 @@
   var els = {
     filtroDesde: document.getElementById("filtro_desde"),
     filtroHasta: document.getElementById("filtro_hasta"),
+    filtroQ: document.getElementById("filtro_q"),
     filtroArea: document.getElementById("filtro_area"),
+    filtroSede: document.getElementById("filtro_sede"),
     filtroEstado: document.getElementById("filtro_estado"),
+    filtroPublicados: document.getElementById("filtro_publicados"),
     btnRefrescar: document.getElementById("btnRefrescar"),
     btnPublicarRango: document.getElementById("btnPublicarRango"),
     tablaBody: document.getElementById("tablaTurnosBody"),
@@ -251,8 +254,11 @@
     var url = endpoint +
       "&desde=" + encodeURIComponent(els.filtroDesde.value) +
       "&hasta=" + encodeURIComponent(els.filtroHasta.value) +
+      "&q=" + encodeURIComponent(els.filtroQ.value || "") +
       "&area=" + encodeURIComponent(els.filtroArea.value || "") +
-      "&estado=" + encodeURIComponent(els.filtroEstado.value || "");
+      "&sede=" + encodeURIComponent(els.filtroSede.value || "") +
+      "&estado=" + encodeURIComponent(els.filtroEstado.value || "") +
+      "&published_only=" + encodeURIComponent(els.filtroPublicados.checked ? "1" : "0");
     var data = await fetchJSON(url);
     renderRows((data && data.items) || []);
   }

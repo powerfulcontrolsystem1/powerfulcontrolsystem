@@ -15,9 +15,9 @@
       <button id="newEntityBtn" class="btn add" type="button">Nueva hoja de vida</button>
     </div>
 
-    <section class="grid-4" id="summaryCards" style="margin-bottom:14px;"></section>
+    <section class="grid-4" id="summaryCards" data-pcs-submenu-section="resumen" style="margin-bottom:14px;"></section>
 
-    <section class="form" style="margin-bottom:14px;">
+    <section class="form" data-pcs-submenu-section="consulta" style="margin-bottom:14px;">
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label" for="filterQ">Buscar</label>
@@ -43,7 +43,7 @@
       </div>
     </section>
 
-    <div class="grid-2" style="align-items:start;">
+    <div class="grid-2" data-pcs-submenu-section="registro" style="align-items:start;">
       <section class="form">
         <h2 style="margin-top:0;">Registro principal</h2>
         <form id="entityForm">
@@ -140,8 +140,8 @@
       </section>
     </div>
 
-    <div class="grid-2" style="align-items:start;margin-top:14px;">
-      <section class="form">
+    <div class="grid-2" data-pcs-submenu-group style="align-items:start;margin-top:14px;">
+      <section class="form" data-pcs-submenu-section="eventos">
         <h2 style="margin-top:0;">Eventos y servicios</h2>
         <p id="selectedEntityLabel" class="form-help">Selecciona una hoja de vida para ver o agregar eventos.</p>
         <form id="eventForm">
@@ -212,7 +212,7 @@
         <div id="eventsTable" class="table-block" style="margin-top:12px;">Sin seleccion.</div>
       </section>
 
-      <section class="form">
+      <section class="form" data-pcs-submenu-section="alertas">
         <h2 style="margin-top:0;">Alertas y reportes recurrentes</h2>
         <form id="alertForm">
           <div class="form-row">
@@ -578,5 +578,6 @@
       });
     })();
   </script>
+  <script src="/js/personas_activos_submenu.js"></script>
 </body>
 </html>
