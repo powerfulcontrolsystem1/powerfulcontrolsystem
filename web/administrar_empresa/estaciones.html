@@ -10,11 +10,7 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
 <section class="card empresa-section">
-      <div class="empresa-section-header estaciones-toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <div>
-          <h2 class="empresa-section-title">Mapa operativo</h2>
-          <p class="form-help" style="margin:4px 0 0 0;">Alterna la vista visual o revisa las tarjetas completas según el ritmo de la operación.</p>
-        </div>
+      <div class="empresa-section-header estaciones-toolbar" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
         <button type="button" id="btnEstacionesThumbToggle" class="btn secondary estaciones-thumb-toggle" aria-pressed="false">Ver miniaturas</button>
       </div>
       <p id="estacionesStatus" class="form-help empresa-loading-status">Cargando estaciones...</p>
@@ -630,6 +626,43 @@
       return hex;
     }
 
+    const ESTADO_CARRITO_COLOR_PREF_KEY = 'estaciones_colores_visuales';
+
+    function applyColoresEstadoCarrito(cfg) {
+      state.colores.activo = normalizeColor(cfg && cfg.color_carrito_activo, '#d9fbe8');
+      state.colores.inactivo = normalizeColor(cfg && cfg.color_carrito_inactivo, '#fff9ef');
+      state.colores.disponible = normalizeColor(cfg && cfg.color_estacion_disponible, state.colores.inactivo || '#fff9ef');
+      state.colores.ocupada = normalizeColor(cfg && cfg.color_estacion_ocupada, state.colores.activo || '#d9fbe8');
+      state.colores.sucia = normalizeColor(cfg && cfg.color_estacion_sucia, '#ffe0e0');
+      state.colores.alertaTiempo = normalizeColor(cfg && cfg.color_estacion_alerta_tiempo, '#fff3cd');
+    }
+
+    function applyFormatoMonetarioFromConfig(cfg) {
+      try {
+        let usar = true;
+        let cantidad = 2;
+        if (cfg && typeof cfg.usar_decimales !== 'undefined') usar = !!cfg.usar_decimales;
+        if (cfg && typeof cfg.cantidad_decimales !== 'undefined') cantidad = Number(cfg.cantidad_decimales) || 0;
+        state.formato = { usarDecimales: usar, cantidadDecimales: Math.max(0, Math.trunc(cantidad)) };
+      } catch (e) {
+        state.formato = { usarDecimales: true, cantidadDecimales: 2 };
+      }
+    }
+
+    async function fetchColoresEstadoCarritoPref() {
+      const data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId) + '&estacion_id=0');
+      const prefs = data && data.prefs ? data.prefs : [];
+      if (!Array.isArray(prefs) || !prefs.length) return null;
+      const pref = prefs.find(p => p && Number(p.estacion_id) === 0 && String(p.clave || '') === ESTADO_CARRITO_COLOR_PREF_KEY);
+      if (!pref || !pref.valor) return null;
+      try {
+        return JSON.parse(pref.valor);
+      } catch (err) {
+        console.warn('Preferencia de colores de estaciones invalida:', err);
+        return null;
+      }
+    }
+
     function formatStationEntryDateTime(rawValue) {
       const raw = String(rawValue == null ? '' : rawValue).trim();
       if (!raw) return '';
@@ -694,28 +727,29 @@
 
     async function loadColoresEstadoCarrito() {
       if (!empresaId) return;
+      let coloresFromPrefs = false;
       try {
-        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const cfg = await res.json();
-        state.colores.activo = normalizeColor(cfg && cfg.color_carrito_activo, '#d9fbe8');
-        state.colores.inactivo = normalizeColor(cfg && cfg.color_carrito_inactivo, '#fff9ef');
-        state.colores.disponible = normalizeColor(cfg && cfg.color_estacion_disponible, state.colores.inactivo || '#fff9ef');
-        state.colores.ocupada = normalizeColor(cfg && cfg.color_estacion_ocupada, state.colores.activo || '#d9fbe8');
-        state.colores.sucia = normalizeColor(cfg && cfg.color_estacion_sucia, '#ffe0e0');
-        state.colores.alertaTiempo = normalizeColor(cfg && cfg.color_estacion_alerta_tiempo, '#fff3cd');
-        // Leer configuración de formato monetario (usar_decimales, cantidad_decimales)
-        try {
-          var usar = true;
-          var cantidad = 2;
-          if (cfg && typeof cfg.usar_decimales !== 'undefined') usar = !!cfg.usar_decimales;
-          if (cfg && typeof cfg.cantidad_decimales !== 'undefined') cantidad = Number(cfg.cantidad_decimales) || 0;
-          state.formato = { usarDecimales: usar, cantidadDecimales: Math.max(0, Math.trunc(cantidad)) };
-        } catch (e) {
-          state.formato = { usarDecimales: true, cantidadDecimales: 2 };
+        const prefColors = await fetchColoresEstadoCarritoPref();
+        if (prefColors) {
+          applyColoresEstadoCarrito(prefColors);
+          coloresFromPrefs = true;
         }
       } catch (err) {
-        console.warn('No se pudieron cargar colores de estado de carrito:', err);
+        console.warn('No se pudieron cargar colores guardados en preferencias:', err);
+      }
+
+      try {
+        const cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+        if (!coloresFromPrefs) {
+          applyColoresEstadoCarrito(cfg);
+        }
+        applyFormatoMonetarioFromConfig(cfg);
+      } catch (err) {
+        if (!coloresFromPrefs) {
+          applyColoresEstadoCarrito({});
+        }
+        applyFormatoMonetarioFromConfig({});
+        console.warn('No se pudo cargar configuracion avanzada para estaciones:', err);
       }
     }
 

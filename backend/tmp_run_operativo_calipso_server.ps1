@@ -1,7 +1,0 @@
-Set-Location 'D:\powerfulcontrolsystem\backend'
-$env:TMP='D:\powerfulcontrolsystem\.gotmp'
-$env:TEMP='D:\powerfulcontrolsystem\.gotmp'
-$env:GOTMPDIR='D:\powerfulcontrolsystem\.gotmp'
-$env:GOCACHE='D:\powerfulcontrolsystem\.gocache'
-$env:RECAPTCHA_DEV_BYPASS='1'
-go run . 1>> 'D:\powerfulcontrolsystem\backend\tmp_operativo_calipso_server.out.log' 2>> 'D:\powerfulcontrolsystem\backend\tmp_operativo_calipso_server.err.log'

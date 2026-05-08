@@ -161,6 +161,7 @@ try {
     document.getElementById("linkHotelTarjetasAcceso"),
     document.getElementById("linkControlElectrico"),
     document.getElementById("linkConsultorioOdontologico"),
+    document.getElementById("linkDrogueriaFarmacia"),
     document.getElementById("linkDomicilios"),
     document.getElementById("linkReportes"),
     document.getElementById("linkUsuarios"),
@@ -237,6 +238,7 @@ try {
   var permModuleContratosObligaciones = "contratos_obligaciones";
   var permModuleHelpdesk = "helpdesk";
   var permModuleCalidadProcesos = "calidad_procesos";
+  var permModuleDrogueriaFarmacia = "drogueria_farmacia";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
@@ -304,6 +306,7 @@ try {
     linkPropiedadHorizontal: { module: permModulePropiedadHorizontal, action: permActionCreate },
     linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
     linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
+    linkDrogueriaFarmacia: { module: permModuleDrogueriaFarmacia, action: permActionCreate },
     linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
@@ -895,6 +898,7 @@ try {
       case permModulePropiedadHorizontal:
       case permModuleAlquileres:
       case permModuleOdontologia:
+      case permModuleDrogueriaFarmacia:
       case permModuleTurnos:
       case permModuleCarnets:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);

@@ -695,6 +695,24 @@ func main() {
 			log.Printf("INFO: preconfiguraciones por tipo verificadas: tipos=%d creadas=%d omitidas=%d errores=%d", seedResult.TotalTipos, seedResult.Creadas, seedResult.Omitidas, seedResult.Errores)
 		}
 		startupTrace("after_seed_default_tipo_empresa")
+		if tipoID, licencias, err := dbpkg.EnsureConstructoraTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudo asegurar constructora/licencias: %v", err)
+		} else {
+			log.Printf("INFO: tipo constructora verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+		}
+		startupTrace("after_ensure_constructora_tipo_licencias")
+		if tipoID, licencias, err := dbpkg.EnsureDrogueriaFarmaciaTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudo asegurar drogueria/farmacia/licencias: %v", err)
+		} else {
+			log.Printf("INFO: tipo drogueria/farmacia verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+		}
+		startupTrace("after_ensure_drogueria_farmacia_tipo_licencias")
+		if tipoID, licencias, err := dbpkg.EnsureAlquileresTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudo asegurar alquileres/licencias: %v", err)
+		} else {
+			log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+		}
+		startupTrace("after_ensure_alquileres_tipo_licencias")
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -948,6 +966,7 @@ func main() {
 	http.HandleFunc("/api/empresa/gestion_documental", handlers.WithEmpresaGestionDocumentalPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "gestion_documental")))
 	http.HandleFunc("/api/empresa/contratos_obligaciones", handlers.WithEmpresaContratosObligacionesPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "contratos_obligaciones")))
 	http.HandleFunc("/api/empresa/helpdesk", handlers.WithEmpresaHelpdeskPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "helpdesk")))
+	http.HandleFunc("/api/empresa/drogueria_farmacia", handlers.WithEmpresaDrogueriaFarmaciaPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "drogueria_farmacia")))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/aiu_construccion", handlers.WithEmpresaAIUConstruccionPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIUConstruccionHandler(dbEmpresas)))

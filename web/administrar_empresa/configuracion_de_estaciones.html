@@ -689,6 +689,16 @@
       return hex;
     }
 
+    var ESTADO_CARRITO_COLOR_PREF_KEY = 'estaciones_colores_visuales';
+    var ESTADO_CARRITO_COLOR_DEFAULTS = {
+      color_carrito_activo: '#d9fbe8',
+      color_carrito_inactivo: '#fff9ef',
+      color_estacion_disponible: '#fff9ef',
+      color_estacion_ocupada: '#d9fbe8',
+      color_estacion_sucia: '#ffe0e0',
+      color_estacion_alerta_tiempo: '#fff3cd'
+    };
+
     function setEstadoCarritoMessage(text, type) {
       var box = document.getElementById('estadoCarritoMsg');
       if (!box) return;
@@ -696,21 +706,44 @@
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
-    function setEstadoCarritoFormData(cfg) {
+    function normalizeEstadoCarritoColors(cfg) {
       var src = cfg && typeof cfg === 'object' ? cfg : {};
+      return {
+        color_carrito_activo: normalizeColorHex(src.color_carrito_activo, ESTADO_CARRITO_COLOR_DEFAULTS.color_carrito_activo),
+        color_carrito_inactivo: normalizeColorHex(src.color_carrito_inactivo, ESTADO_CARRITO_COLOR_DEFAULTS.color_carrito_inactivo),
+        color_estacion_disponible: normalizeColorHex(src.color_estacion_disponible, ESTADO_CARRITO_COLOR_DEFAULTS.color_estacion_disponible),
+        color_estacion_ocupada: normalizeColorHex(src.color_estacion_ocupada, ESTADO_CARRITO_COLOR_DEFAULTS.color_estacion_ocupada),
+        color_estacion_sucia: normalizeColorHex(src.color_estacion_sucia, ESTADO_CARRITO_COLOR_DEFAULTS.color_estacion_sucia),
+        color_estacion_alerta_tiempo: normalizeColorHex(src.color_estacion_alerta_tiempo, ESTADO_CARRITO_COLOR_DEFAULTS.color_estacion_alerta_tiempo)
+      };
+    }
+
+    function getEstadoCarritoFormData() {
+      return normalizeEstadoCarritoColors({
+        color_carrito_activo: document.getElementById('carritoColorActivo').value,
+        color_carrito_inactivo: document.getElementById('carritoColorInactivo').value,
+        color_estacion_disponible: document.getElementById('estacionColorDisponible').value,
+        color_estacion_ocupada: document.getElementById('estacionColorOcupada').value,
+        color_estacion_sucia: document.getElementById('estacionColorSucia').value,
+        color_estacion_alerta_tiempo: document.getElementById('estacionColorAlertaTiempo').value
+      });
+    }
+
+    function setEstadoCarritoFormData(cfg) {
+      var src = normalizeEstadoCarritoColors(cfg);
       var activo = document.getElementById('carritoColorActivo');
       var inactivo = document.getElementById('carritoColorInactivo');
-      if (activo) activo.value = normalizeColorHex(src.color_carrito_activo, '#d9fbe8');
-      if (inactivo) inactivo.value = normalizeColorHex(src.color_carrito_inactivo, '#fff9ef');
+      if (activo) activo.value = src.color_carrito_activo;
+      if (inactivo) inactivo.value = src.color_carrito_inactivo;
 
       var disp = document.getElementById('estacionColorDisponible');
       var occ = document.getElementById('estacionColorOcupada');
       var dirty = document.getElementById('estacionColorSucia');
       var alert = document.getElementById('estacionColorAlertaTiempo');
-      if (disp) disp.value = normalizeColorHex(src.color_estacion_disponible, '#fff9ef');
-      if (occ) occ.value = normalizeColorHex(src.color_estacion_ocupada, '#d9fbe8');
-      if (dirty) dirty.value = normalizeColorHex(src.color_estacion_sucia, '#ffe0e0');
-      if (alert) alert.value = normalizeColorHex(src.color_estacion_alerta_tiempo, '#fff3cd');
+      if (disp) disp.value = src.color_estacion_disponible;
+      if (occ) occ.value = src.color_estacion_ocupada;
+      if (dirty) dirty.value = src.color_estacion_sucia;
+      if (alert) alert.value = src.color_estacion_alerta_tiempo;
 
       setColorPreview('prev_carritoColorActivo', activo && activo.value);
       setColorPreview('prev_carritoColorInactivo', inactivo && inactivo.value);
@@ -727,9 +760,38 @@
       el.style.backgroundColor = c;
     }
 
-    async function fetchEmpresaConfigAvanzada() {
+    async function fetchEstadoCarritoColorPref() {
       if (!empresaId) throw new Error('empresa_id missing');
-      return requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+      var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId) + '&estacion_id=0');
+      var prefs = data && data.prefs ? data.prefs : [];
+      if (!Array.isArray(prefs) || !prefs.length) return null;
+      var pref = prefs.find(function (p) {
+        return p && Number(p.estacion_id) === 0 && String(p.clave || '') === ESTADO_CARRITO_COLOR_PREF_KEY;
+      });
+      if (!pref || !pref.valor) return null;
+      try {
+        return normalizeEstadoCarritoColors(JSON.parse(pref.valor));
+      } catch (err) {
+        console.warn('Preferencia de colores de estaciones invalida:', err);
+        return null;
+      }
+    }
+
+    async function saveEstadoCarritoColorPref(colors) {
+      if (!empresaId) throw new Error('empresa_id missing');
+      var normalized = normalizeEstadoCarritoColors(colors);
+      await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estacion_id: 0,
+          clave: ESTADO_CARRITO_COLOR_PREF_KEY,
+          valor: JSON.stringify(normalized),
+          estado: 'activo',
+          observaciones: 'Colores visuales de estaciones y carritos'
+        })
+      });
+      return normalized;
     }
 
     async function loadEstadoCarritoConfig() {
@@ -738,12 +800,17 @@
         return;
       }
       try {
-        var cfg = await fetchEmpresaConfigAvanzada();
-        setEstadoCarritoFormData(cfg || {});
-        setEstadoCarritoMessage('', 'help');
+        var pref = await fetchEstadoCarritoColorPref();
+        if (pref) {
+          setEstadoCarritoFormData(pref);
+          setEstadoCarritoMessage('', 'help');
+          return;
+        }
       } catch (err) {
-        setEstadoCarritoMessage('No se pudo cargar colores de estaciones: ' + (err && err.message ? err.message : err), 'error');
+        console.warn('No se pudieron cargar colores guardados en preferencias:', err);
       }
+      setEstadoCarritoFormData(ESTADO_CARRITO_COLOR_DEFAULTS);
+      setEstadoCarritoMessage('', 'help');
     }
 
     async function guardarEstadoCarritoConfig() {
@@ -753,24 +820,8 @@
       }
 
       try {
-        var current = await fetchEmpresaConfigAvanzada();
-        var payload = Object.assign({}, current || {}, {
-          empresa_id: Number(empresaId),
-          color_carrito_activo: normalizeColorHex(document.getElementById('carritoColorActivo').value, '#d9fbe8'),
-          color_carrito_inactivo: normalizeColorHex(document.getElementById('carritoColorInactivo').value, '#fff9ef'),
-          color_estacion_disponible: normalizeColorHex(document.getElementById('estacionColorDisponible').value, '#fff9ef'),
-          color_estacion_ocupada: normalizeColorHex(document.getElementById('estacionColorOcupada').value, '#d9fbe8'),
-          color_estacion_sucia: normalizeColorHex(document.getElementById('estacionColorSucia').value, '#ffe0e0'),
-          color_estacion_alerta_tiempo: normalizeColorHex(document.getElementById('estacionColorAlertaTiempo').value, '#fff3cd')
-        });
-
-        var out = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        var updated = out && out.configuracion ? out.configuracion : payload;
+        var payload = getEstadoCarritoFormData();
+        var updated = await saveEstadoCarritoColorPref(payload);
         setEstadoCarritoFormData(updated);
         setEstadoCarritoMessage('Colores de estaciones guardados correctamente.', 'success');
       } catch (err) {

@@ -89,6 +89,32 @@
     if (current) select.value = current;
   }
 
+  function ensureUniversalRentalTypeOptions() {
+    var options = [
+      ["objeto", "Objeto"],
+      ["herramienta_electrica", "Herramienta electrica"],
+      ["moto", "Moto"],
+      ["mobiliario", "Mobiliario"],
+      ["sonido_eventos", "Sonido / eventos"],
+      ["tecnologia", "Tecnologia"]
+    ];
+    ["rentalCategoryType", "rentalAssetType"].forEach(function (id) {
+      var select = byId(id);
+      if (!select) return;
+      var existing = {};
+      Array.prototype.slice.call(select.options || []).forEach(function (option) {
+        existing[String(option.value || "")] = true;
+      });
+      options.forEach(function (item) {
+        if (existing[item[0]]) return;
+        var option = document.createElement("option");
+        option.value = item[0];
+        option.textContent = item[1];
+        select.appendChild(option);
+      });
+    });
+  }
+
   function syncSelects() {
     populateSelect("rentalAssetCategory", state.categorias, "id", function (item) { return item.nombre; }, true);
     populateSelect("rentalRateCategory", state.categorias, "id", function (item) { return item.nombre; }, true);
@@ -448,6 +474,7 @@
       setMessage("No se encontró empresa_id en el contexto.", true);
       return;
     }
+    ensureUniversalRentalTypeOptions();
     wireEvents();
     refreshAll().catch(showError);
   }

@@ -202,10 +202,10 @@ func EmpresaAlquileresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			case "cambiar_estado":
 				var payload struct {
-					ContratoID     int64  `json:"contrato_id"`
-					Estado         string `json:"estado"`
-					Observaciones  string `json:"observaciones"`
-					Responsable    string `json:"responsable"`
+					ContratoID    int64  `json:"contrato_id"`
+					Estado        string `json:"estado"`
+					Observaciones string `json:"observaciones"`
+					Responsable   string `json:"responsable"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -226,7 +226,7 @@ func EmpresaAlquileresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			case "seed_demo":
-				if err := dbpkg.SeedEmpresaAlquilerDemoData(dbEmp, empresaID, adminEmail); err != nil {
+				if err := dbpkg.SeedEmpresaAlquilerProfesionalData(dbEmp, empresaID, adminEmail); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}

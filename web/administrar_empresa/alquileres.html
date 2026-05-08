@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Alquileres</title>
+  <title>Alquiler universal de activos</title>
   <link rel="stylesheet" href="/estilos.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="admin-empresa-shell">
   <div class="page-shell">
     <section class="card">
-      <h1>Alquiler de equipos, herramientas y vehículos</h1>
-      <p class="form-help">Controla activos rentables, reservas, contratos, mantenimientos, depósitos y trazabilidad GPS desde un solo frente.</p>
+      <h1>Alquiler universal de herramientas, motos y objetos</h1>
+      <p class="form-help">Controla activos rentables, reservas, contratos, mantenimientos, depositos, kilometraje y trazabilidad GPS desde un solo frente.</p>
       <div class="form-actions" style="justify-content:flex-start;flex-wrap:wrap;">
         <button type="button" class="btn secondary" data-rental-tab="dashboard">Dashboard</button>
         <button type="button" class="btn secondary" data-rental-tab="config">Configuración</button>
@@ -83,7 +83,7 @@
         <div class="form-row">
           <div class="form-col"><label class="form-label" for="rentalCategoryCode">Código</label><input id="rentalCategoryCode" class="form-input"></div>
           <div class="form-col"><label class="form-label" for="rentalCategoryName">Nombre</label><input id="rentalCategoryName" class="form-input"></div>
-          <div class="form-col"><label class="form-label" for="rentalCategoryType">Tipo</label><select id="rentalCategoryType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="vehiculo">Vehículo</option><option value="maquinaria">Maquinaria</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalCategoryType">Tipo</label><select id="rentalCategoryType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="herramienta_electrica">Herramienta electrica</option><option value="vehiculo">Vehiculo</option><option value="moto">Moto</option><option value="maquinaria">Maquinaria</option><option value="mobiliario">Mobiliario</option><option value="sonido_eventos">Sonido / eventos</option><option value="tecnologia">Tecnologia</option><option value="objeto">Objeto</option></select></div>
         </div>
         <div class="form-actions"><button type="submit" class="btn secondary">Guardar categoría</button></div>
       </form>
@@ -98,7 +98,7 @@
           <div class="form-col"><label class="form-label" for="rentalAssetCategory">Categoría</label><select id="rentalAssetCategory" class="form-input"></select></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label" for="rentalAssetType">Tipo</label><select id="rentalAssetType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="vehiculo">Vehículo</option><option value="maquinaria">Maquinaria</option></select></div>
+          <div class="form-col"><label class="form-label" for="rentalAssetType">Tipo</label><select id="rentalAssetType" class="form-input"><option value="equipo">Equipo</option><option value="herramienta">Herramienta</option><option value="herramienta_electrica">Herramienta electrica</option><option value="vehiculo">Vehiculo</option><option value="moto">Moto</option><option value="maquinaria">Maquinaria</option><option value="mobiliario">Mobiliario</option><option value="sonido_eventos">Sonido / eventos</option><option value="tecnologia">Tecnologia</option><option value="objeto">Objeto</option></select></div>
           <div class="form-col"><label class="form-label" for="rentalAssetBrand">Marca</label><input id="rentalAssetBrand" class="form-input"></div>
           <div class="form-col"><label class="form-label" for="rentalAssetModel">Modelo</label><input id="rentalAssetModel" class="form-input"></div>
         </div>

@@ -516,7 +516,13 @@ os_arch="$(uname -m 2>/dev/null || echo desconocido)";
 ok "SYSTEM_INFO host=$os_name arch=$os_arch kernel=$os_release";
 if command -v apt-get >/dev/null 2>&1; then
   ok "PKG_MANAGER detectado apt-get";
-  if can_run_root; then
+  missing_base_deps=0;
+  for cmd in curl wget lsof ps; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then missing_base_deps=1; fi;
+  done;
+  if [ "$missing_base_deps" -eq 0 ]; then
+    ok "PKG_INSTALL_SKIP paquetes base ya disponibles; se omite apt-get update/install";
+  elif can_run_root; then
     export DEBIAN_FRONTEND=noninteractive;
     run_root apt-get update -y >/dev/null 2>&1 || warn "APT_UPDATE apt-get update reporto incidencias; se intentara instalar de todos modos";
     if run_root apt-get install -y ca-certificates curl wget procps lsof >/dev/null 2>&1; then
@@ -1235,6 +1241,10 @@ function Get-SyncExcludePatterns {
     ".gitignore",
     ".codex",
     ".codex/*",
+    ".codex-gocache",
+    ".codex-gocache/*",
+    ".codex-tmp-go",
+    ".codex-tmp-go/*",
     ".agents",
     ".agents/*",
     ".cache",
@@ -1243,6 +1253,14 @@ function Get-SyncExcludePatterns {
     ".gocache/*",
     ".gotmp",
     ".gotmp/*",
+    "*/.codex-gocache",
+    "*/.codex-gocache/*",
+    "*/.codex-tmp-go",
+    "*/.codex-tmp-go/*",
+    "*/.gocache",
+    "*/.gocache/*",
+    "*/.gotmp",
+    "*/.gotmp/*",
     ".cursor",
     ".cursor/*",
     ".github",
@@ -1290,6 +1308,10 @@ function Get-SyncExcludePatterns {
     "backend/tools/*",
     "backend/tmp",
     "backend/tmp/*",
+    "backend/.codex-gocache",
+    "backend/.codex-gocache/*",
+    "backend/.codex-tmp-go",
+    "backend/.codex-tmp-go/*",
     "backend/server.log",
     "backend/server.err",
     "herramientas",
@@ -1381,6 +1403,9 @@ function Invoke-PuttySync {
   if (-not (Test-Path $tmpDir)) {
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
   }
+  Get-ChildItem -LiteralPath $tmpDir -Filter "pcs_sync_*.tar*" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-2) } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
 
   $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
   $archiveExtension = if ($UseCompression) { ".tar.gz" } else { ".tar" }

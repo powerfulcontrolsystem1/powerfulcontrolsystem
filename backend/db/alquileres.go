@@ -384,7 +384,7 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 func defaultEmpresaAlquilerConfig(empresaID int64) EmpresaAlquilerConfig {
 	return EmpresaAlquilerConfig{
 		EmpresaID:                empresaID,
-		NombreSistema:            "Alquileres y contratos",
+		NombreSistema:            "Alquiler universal de activos",
 		Moneda:                   "COP",
 		PermitirReservas:         true,
 		PermitirGPS:              false,
@@ -426,6 +426,48 @@ func normalizeActivoEstado(raw string) string {
 		return strings.ToLower(strings.TrimSpace(raw))
 	default:
 		return "disponible"
+	}
+}
+
+func normalizeAlquilerTipoActivo(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.NewReplacer(" ", "_", "-", "_", "/", "_", "\\", "_").Replace(value)
+	for strings.Contains(value, "__") {
+		value = strings.ReplaceAll(value, "__", "_")
+	}
+	if strings.Trim(value, "_") == "" {
+		return "equipo"
+	}
+	switch strings.Trim(value, "_") {
+	case "equipo", "herramienta", "herramienta_electrica", "vehiculo", "moto", "maquinaria", "mobiliario", "sonido_eventos", "tecnologia", "objeto", "andamio", "dotacion", "otro":
+		return strings.Trim(value, "_")
+	case "herramienta_electrica_o_combustion", "electrica", "combustion":
+		return "herramienta_electrica"
+	case "motocicleta", "motos":
+		return "moto"
+	case "audio", "sonido", "eventos":
+		return "sonido_eventos"
+	case "mueble", "muebles":
+		return "mobiliario"
+	default:
+		return "objeto"
+	}
+}
+
+func normalizeAlquilerTipoRegistro(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.NewReplacer(" ", "_", "-", "_", "/", "_", "\\", "_").Replace(value)
+	switch strings.Trim(value, "_") {
+	case "reserva", "alquiler", "renovacion", "devolucion", "garantia", "cotizacion":
+		return strings.Trim(value, "_")
+	case "renta", "rentas", "arrendamiento":
+		return "alquiler"
+	case "presupuesto", "propuesta":
+		return "cotizacion"
+	case "mantenimiento", "servicio":
+		return "mantenimiento"
+	default:
+		return "alquiler"
 	}
 }
 
@@ -503,9 +545,7 @@ func CreateEmpresaAlquilerCategoria(dbConn *sql.DB, item EmpresaAlquilerCategori
 	if item.Codigo == "" || item.Nombre == "" {
 		return 0, fmt.Errorf("codigo y nombre son obligatorios")
 	}
-	if strings.TrimSpace(item.TipoActivo) == "" {
-		item.TipoActivo = "equipo"
-	}
+	item.TipoActivo = normalizeAlquilerTipoActivo(item.TipoActivo)
 	if strings.TrimSpace(item.Estado) == "" {
 		item.Estado = "activo"
 	}
@@ -546,9 +586,7 @@ func CreateEmpresaAlquilerActivo(dbConn *sql.DB, item EmpresaAlquilerActivo) (in
 		return 0, fmt.Errorf("codigo y nombre son obligatorios")
 	}
 	item.Estado = normalizeActivoEstado(item.Estado)
-	if strings.TrimSpace(item.TipoActivo) == "" {
-		item.TipoActivo = "equipo"
-	}
+	item.TipoActivo = normalizeAlquilerTipoActivo(item.TipoActivo)
 	if strings.TrimSpace(item.Sede) == "" {
 		item.Sede = "principal"
 	}
@@ -651,10 +689,7 @@ func CreateEmpresaAlquilerContrato(dbConn *sql.DB, item EmpresaAlquilerContrato)
 	if item.Codigo == "" || item.ClienteNombre == "" || item.ActivoID <= 0 {
 		return 0, fmt.Errorf("codigo, cliente y activo son obligatorios")
 	}
-	item.TipoRegistro = strings.TrimSpace(item.TipoRegistro)
-	if item.TipoRegistro == "" {
-		item.TipoRegistro = "alquiler"
-	}
+	item.TipoRegistro = normalizeAlquilerTipoRegistro(item.TipoRegistro)
 	item.ModalidadCobro = normalizeModalidadCobro(item.ModalidadCobro)
 	item.Estado = normalizeAlquilerEstado(item.Estado)
 	if item.Cantidad <= 0 {
@@ -981,4 +1016,115 @@ func SeedEmpresaAlquilerDemoData(dbConn *sql.DB, empresaID int64, usuario string
 	}
 	_, err = CreateEmpresaAlquilerContrato(dbConn, EmpresaAlquilerContrato{EmpresaID: empresaID, Codigo: fmt.Sprintf("ALQ-%d", time.Now().Unix()%1000000), TipoRegistro: "reserva", ActivoID: activoID, ClienteNombre: "Cliente demo", ClienteTelefono: "3000000000", TarifaID: tarifaID, ModalidadCobro: "dia", FechaReserva: time.Now().Format("2006-01-02 15:04:05"), FechaInicio: time.Now().Format("2006-01-02 15:04:05"), FechaFinPrevista: time.Now().Add(48 * time.Hour).Format("2006-01-02 15:04:05"), Estado: "reservado", DiasPlaneados: 2, Deposito: 180000, ValorBase: 170000, Impuestos: 32300, UsuarioCreador: usuario})
 	return err
+}
+
+func SeedEmpresaAlquilerProfesionalData(dbConn *sql.DB, empresaID int64, usuario string) error {
+	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
+		return err
+	}
+	cfg := defaultEmpresaAlquilerConfig(empresaID)
+	cfg.PermitirGPS = true
+	cfg.PermitirKilometraje = true
+	cfg.PermitirEntregaDomicilio = true
+	cfg.DepositoBaseSugerido = 150000
+	cfg.UsuarioCreador = usuario
+	if err := UpsertEmpresaAlquilerConfig(dbConn, cfg); err != nil {
+		return err
+	}
+	herID, err := ensureEmpresaAlquilerCategoriaByCode(dbConn, EmpresaAlquilerCategoria{EmpresaID: empresaID, Codigo: "HER", Nombre: "Herramientas electricas", TipoActivo: "herramienta_electrica", Descripcion: "Taladros, demoledores, pulidoras, hidrolavadoras y herramientas por hora o dia.", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	motoID, err := ensureEmpresaAlquilerCategoriaByCode(dbConn, EmpresaAlquilerCategoria{EmpresaID: empresaID, Codigo: "MOTO", Nombre: "Motos y movilidad", TipoActivo: "moto", Descripcion: "Motocicletas, bicis electricas, patinetas y movilidad con control de garantia y kilometraje.", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	maqID, err := ensureEmpresaAlquilerCategoriaByCode(dbConn, EmpresaAlquilerCategoria{EmpresaID: empresaID, Codigo: "MAQ", Nombre: "Maquinaria y obra", TipoActivo: "maquinaria", Descripcion: "Andamios, mezcladoras, plantas, compactadores y equipos de construccion.", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	objID, err := ensureEmpresaAlquilerCategoriaByCode(dbConn, EmpresaAlquilerCategoria{EmpresaID: empresaID, Codigo: "OBJ", Nombre: "Objetos y eventos", TipoActivo: "objeto", Descripcion: "Mobiliario, sonido, tecnologia, dotacion y objetos rentables generales.", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	tarifaHerID, err := ensureEmpresaAlquilerTarifaByCode(dbConn, EmpresaAlquilerTarifa{EmpresaID: empresaID, Codigo: "HER-DIA", Nombre: "Herramienta por dia", CategoriaID: herID, ModalidadCobro: "dia", PrecioDia: 85000, PrecioSemana: 420000, DepositoMinimo: 120000, Estado: "activa", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	tarifaMotoID, err := ensureEmpresaAlquilerTarifaByCode(dbConn, EmpresaAlquilerTarifa{EmpresaID: empresaID, Codigo: "MOTO-DIA", Nombre: "Moto por dia con garantia", CategoriaID: motoID, ModalidadCobro: "dia", PrecioDia: 95000, PrecioSemana: 520000, PrecioMes: 1450000, KilometrosIncluidos: 120, DepositoMinimo: 450000, Estado: "activa", UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	if _, err := ensureEmpresaAlquilerTarifaByCode(dbConn, EmpresaAlquilerTarifa{EmpresaID: empresaID, Codigo: "MAQ-HORA", Nombre: "Maquinaria por hora", CategoriaID: maqID, ModalidadCobro: "hora", PrecioHora: 38000, PrecioDia: 240000, DepositoMinimo: 350000, Estado: "activa", UsuarioCreador: usuario}); err != nil {
+		return err
+	}
+	if _, err := ensureEmpresaAlquilerTarifaByCode(dbConn, EmpresaAlquilerTarifa{EmpresaID: empresaID, Codigo: "OBJ-EVENTO", Nombre: "Objeto por evento", CategoriaID: objID, ModalidadCobro: "evento", PrecioBase: 180000, PrecioDia: 180000, DepositoMinimo: 100000, Estado: "activa", UsuarioCreador: usuario}); err != nil {
+		return err
+	}
+	demoledorID, err := ensureEmpresaAlquilerActivoByCode(dbConn, EmpresaAlquilerActivo{EmpresaID: empresaID, Codigo: "HER-001", Nombre: "Martillo demoledor Bosch", CategoriaID: herID, TipoActivo: "herramienta_electrica", Marca: "Bosch", Modelo: "GSH 11", Serie: "HER-DEMO-001", Sede: "principal", Estado: "disponible", ValorReposicion: 4200000, DepositoSugerido: 180000, CostoBaseHora: 12000, RequiereChecklist: true, UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	motoDemoID, err := ensureEmpresaAlquilerActivoByCode(dbConn, EmpresaAlquilerActivo{EmpresaID: empresaID, Codigo: "MOTO-001", Nombre: "Moto AKT 125 alquiler urbano", CategoriaID: motoID, TipoActivo: "moto", Marca: "AKT", Modelo: "NKD 125", Placa: "ABC12E", Sede: "principal", Estado: "disponible", ValorReposicion: 6500000, DepositoSugerido: 450000, CostoBaseHora: 9000, UsaGPS: true, RequiereChecklist: true, RequiereLicencia: true, UsuarioCreador: usuario})
+	if err != nil {
+		return err
+	}
+	if _, err := ensureEmpresaAlquilerActivoByCode(dbConn, EmpresaAlquilerActivo{EmpresaID: empresaID, Codigo: "MAQ-001", Nombre: "Mezcladora de concreto 1 bulto", CategoriaID: maqID, TipoActivo: "maquinaria", Marca: "Honda", Modelo: "GX160", Serie: "MAQ-MEZ-001", Sede: "bodega", Estado: "disponible", ValorReposicion: 3800000, DepositoSugerido: 350000, CostoBaseHora: 18000, RequiereChecklist: true, UsuarioCreador: usuario}); err != nil {
+		return err
+	}
+	if _, err := ensureEmpresaAlquilerActivoByCode(dbConn, EmpresaAlquilerActivo{EmpresaID: empresaID, Codigo: "OBJ-001", Nombre: "Kit sonido evento pequeno", CategoriaID: objID, TipoActivo: "sonido_eventos", Marca: "Yamaha", Modelo: "Kit 2 cabinas", Sede: "principal", Estado: "disponible", ValorReposicion: 5200000, DepositoSugerido: 250000, RequiereChecklist: true, UsuarioCreador: usuario}); err != nil {
+		return err
+	}
+	contracts, err := ListEmpresaAlquilerContratos(dbConn, empresaID)
+	if err != nil {
+		return err
+	}
+	if len(contracts) == 0 {
+		if _, err := CreateEmpresaAlquilerContrato(dbConn, EmpresaAlquilerContrato{EmpresaID: empresaID, Codigo: fmt.Sprintf("ALQ-%d", time.Now().Unix()%1000000), TipoRegistro: "reserva", ActivoID: demoledorID, ClienteNombre: "Cliente demo", ClienteTelefono: "3000000000", TarifaID: tarifaHerID, ModalidadCobro: "dia", FechaReserva: time.Now().Format("2006-01-02 15:04:05"), FechaInicio: time.Now().Format("2006-01-02 15:04:05"), FechaFinPrevista: time.Now().Add(48 * time.Hour).Format("2006-01-02 15:04:05"), Estado: "reservado", DiasPlaneados: 2, Deposito: 180000, ValorBase: 170000, Impuestos: 32300, RequiereGarantia: true, Observaciones: "Reserva demo con checklist, deposito y devolucion programada.", UsuarioCreador: usuario}); err != nil {
+			return err
+		}
+		if _, err := CreateEmpresaAlquilerContrato(dbConn, EmpresaAlquilerContrato{EmpresaID: empresaID, Codigo: fmt.Sprintf("MOTO-%d", time.Now().Unix()%1000000), TipoRegistro: "cotizacion", ActivoID: motoDemoID, ClienteNombre: "Cliente moto demo", ClienteTelefono: "3000000001", TarifaID: tarifaMotoID, ModalidadCobro: "dia", FechaInicio: time.Now().Add(24 * time.Hour).Format("2006-01-02 15:04:05"), FechaFinPrevista: time.Now().Add(72 * time.Hour).Format("2006-01-02 15:04:05"), Estado: "reservado", DiasPlaneados: 2, KilometrosIncluidos: 240, Deposito: 450000, ValorBase: 190000, Impuestos: 36100, RequiereGarantia: true, GpsTrackingActivo: true, Observaciones: "Cotizacion demo para movilidad con garantia, licencia y kilometraje.", UsuarioCreador: usuario}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureEmpresaAlquilerCategoriaByCode(dbConn *sql.DB, item EmpresaAlquilerCategoria) (int64, error) {
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM empresa_alquileres_categorias WHERE empresa_id=? AND UPPER(TRIM(codigo))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, item.Codigo).Scan(&id)
+	if err == nil && id > 0 {
+		item.ID = id
+		return CreateEmpresaAlquilerCategoria(dbConn, item)
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	return CreateEmpresaAlquilerCategoria(dbConn, item)
+}
+
+func ensureEmpresaAlquilerTarifaByCode(dbConn *sql.DB, item EmpresaAlquilerTarifa) (int64, error) {
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM empresa_alquileres_tarifas WHERE empresa_id=? AND UPPER(TRIM(codigo))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, item.Codigo).Scan(&id)
+	if err == nil && id > 0 {
+		item.ID = id
+		return CreateEmpresaAlquilerTarifa(dbConn, item)
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	return CreateEmpresaAlquilerTarifa(dbConn, item)
+}
+
+func ensureEmpresaAlquilerActivoByCode(dbConn *sql.DB, item EmpresaAlquilerActivo) (int64, error) {
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM empresa_alquileres_activos WHERE empresa_id=? AND UPPER(TRIM(codigo))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, item.Codigo).Scan(&id)
+	if err == nil && id > 0 {
+		item.ID = id
+		return CreateEmpresaAlquilerActivo(dbConn, item)
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	return CreateEmpresaAlquilerActivo(dbConn, item)
 }

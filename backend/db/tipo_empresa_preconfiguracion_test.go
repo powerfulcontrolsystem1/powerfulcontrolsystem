@@ -21,6 +21,9 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 		{nombre: "Pymes", prefijo: "Punto de venta", estaciones: 2, ventaDirecta: true, nombreSingular: "Punto de venta"},
 		{nombre: "Tienda punto de venta", prefijo: "Punto de venta", estaciones: 1, ventaDirecta: true, nombreSingular: "Punto de venta"},
 		{nombre: "Taller mecanico", prefijo: "Bahia", estaciones: 5, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
+		{nombre: "Alquiler de herramientas y motos", prefijo: "Mostrador", estaciones: 2, ventaDirecta: true, nombreSingular: "Mostrador"},
+		{nombre: "Constructora", prefijo: "Obra", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Obra"},
+		{nombre: "Drogueria y farmacia", prefijo: "Caja", estaciones: 2, ventaDirecta: true, nombreSingular: "Caja"},
 		{nombre: "Gimnasio", prefijo: "Zona", estaciones: 4, ventaDirecta: true, comisiones: true, nombreSingular: "Zona"},
 		{nombre: "Odontologia", prefijo: "Consultorio", estaciones: 3, ventaDirecta: true, comisiones: true, nombreSingular: "Consultorio"},
 		{nombre: "Manejo de turnos", prefijo: "Puesto", estaciones: 4, ventaDirecta: true, nombreSingular: "Puesto"},
@@ -104,6 +107,38 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 			case "Vehiculos y flotas", "Taller mecanico", "Lavadero de autos":
 				if template.Modulos.Vehiculos == nil || len(template.Modulos.Vehiculos.Registros) == 0 || len(template.Modulos.HojaVida) == 0 {
 					t.Fatalf("%s debe incluir vehiculos y hoja de vida guia", tc.nombre)
+				}
+			case "Constructora":
+				if template.Operacion.TipoNegocio != "constructora" {
+					t.Fatalf("constructora debe quedar como tipo_negocio constructora, got %q", template.Operacion.TipoNegocio)
+				}
+				if template.Modulos.Vehiculos == nil || len(template.Modulos.Vehiculos.Registros) == 0 || len(template.Modulos.HojaVida) == 0 {
+					t.Fatalf("constructora debe incluir maquinaria/flota y hoja de vida guia")
+				}
+				if !isTipoEmpresaConstructora("Construcción civil") {
+					t.Fatalf("constructora debe reconocer construccion con tilde")
+				}
+			}
+			if tc.nombre == "Drogueria y farmacia" {
+				if template.Operacion.TipoNegocio != "drogueria_farmacia" {
+					t.Fatalf("drogueria debe quedar como tipo_negocio drogueria_farmacia, got %q", template.Operacion.TipoNegocio)
+				}
+				if !isTipoEmpresaDrogueriaFarmacia("Farmacia especializada") {
+					t.Fatalf("drogueria debe reconocer farmacia")
+				}
+				if len(template.TareasGuia) < 8 {
+					t.Fatalf("drogueria debe incluir guia sanitaria amplia, got %d", len(template.TareasGuia))
+				}
+			}
+			if tc.nombre == "Alquiler de herramientas y motos" {
+				if template.Operacion.TipoNegocio != "alquileres" {
+					t.Fatalf("alquileres debe quedar como tipo_negocio alquileres, got %q", template.Operacion.TipoNegocio)
+				}
+				if !isTipoEmpresaAlquilerObjetos("Renta de motos y herramientas") {
+					t.Fatalf("alquileres debe reconocer renta de motos y herramientas")
+				}
+				if len(template.TareasGuia) < 8 {
+					t.Fatalf("alquileres debe incluir guia profesional amplia, got %d", len(template.TareasGuia))
 				}
 			}
 			raw, err := MarshalTipoEmpresaPreconfigTemplate(template)

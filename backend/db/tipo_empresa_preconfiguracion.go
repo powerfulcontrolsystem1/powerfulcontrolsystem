@@ -725,6 +725,9 @@ func EnsureCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 		{"Pymes", "Empresa general con venta directa, productos, servicios y caja.", isTipoEmpresaPyme},
 		{"Punto de venta", "Una estacion principal y venta directa por mostrador.", isTipoEmpresaPuntoVenta},
 		{"Taller mecanico", "Bahias, tecnicos, ordenes de servicio y comisiones.", isTipoEmpresaTaller},
+		{"Alquileres de herramientas, motos y objetos", "Herramientas, motos, maquinaria, mobiliario, garantias, contratos, devoluciones y mantenimiento.", isTipoEmpresaAlquilerObjetos},
+		{"Constructora", "Obras, presupuestos AIU, contratistas, compras, centros de costo y avance de proyectos.", isTipoEmpresaConstructora},
+		{"Drogueria y farmacia", "Medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion.", isTipoEmpresaDrogueriaFarmacia},
 		{"Gimnasio", "Planes, socios, entrenadores, clases, accesos y pagos.", isTipoEmpresaGimnasio},
 		{"Odontologia", "Pacientes, profesionales, consultorios, agenda, tratamientos y presupuestos.", isTipoEmpresaOdontologia},
 		{"Manejo de turnos", "Servicios, puestos, emision publica y pantalla de llamados.", isTipoEmpresaTurnos},
@@ -905,6 +908,76 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Caja taller", "caja", "Cobra ordenes y repuestos."),
 		}, "Asistente para ordenes de servicio, repuestos, tiempos, diagnosticos y cobros."), operacionPreconfig("taller", "Bahia", "Bahias", true, true, true, "tecnico", "servicio", 25, []string{"recepcion", "tecnico", "caja"}))
 	}
+	if isTipoEmpresaAlquilerObjetos(tipoNombre) {
+		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("ALQ", "Mostrador", 2, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-ALQ-001", "Alquiler taladro percutor por dia", "Herramientas", "Servicio guia para alquiler de herramienta con checklist y deposito.", 0, 45000, 0),
+			productoPreconfig("DEMO-ALQ-002", "Alquiler moto 125 por dia", "Motos", "Servicio guia para alquiler de moto con garantia, licencia, kilometraje y GPS.", 0, 95000, 0),
+			productoPreconfig("DEMO-ALQ-003", "Alquiler mezcladora por hora", "Maquinaria", "Servicio guia para obra, entrega, devolucion y mantenimiento.", 0, 38000, 0),
+			productoPreconfig("DEMO-ALQ-004", "Kit sonido evento pequeno", "Objetos y eventos", "Servicio guia para objetos rentables por evento.", 0, 180000, 0),
+			productoPreconfig("DEMO-ALQ-005", "Deposito o garantia de alquiler", "Garantias", "Concepto guia para garantias reembolsables o retenidas.", 0, 150000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Coordinador alquileres", "coordinador_alquileres", "Aprueba contratos, garantias, entregas, devoluciones, descuentos y activos bloqueados."),
+			usuarioPreconfig("Auxiliar bodega alquiler", "auxiliar_alquileres", "Prepara herramientas, motos u objetos, realiza checklist y registra entregas/devoluciones."),
+			usuarioPreconfig("Tecnico mantenimiento", "tecnico_mantenimiento", "Inspecciona activos, programa mantenimientos, bloquea equipos y valida condiciones."),
+			usuarioPreconfig("Caja alquileres", "caja", "Registra pagos, depositos, saldos pendientes, facturacion y cierres."),
+		}, "Asistente para alquiler universal: catalogo rentable, contratos, garantias, checklist, vencimientos, GPS, mantenimiento, depositos y facturacion."), operacionPreconfig("alquileres", "Mostrador", "Mostradores", true, true, false, "", "", 0, []string{"coordinador_alquileres", "auxiliar_alquileres", "tecnico_mantenimiento", "caja"}))
+		template.TareasGuia = append(template.TareasGuia,
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Alquileres", Titulo: "Preconfigurar activos rentables", Descripcion: "Crear categorias para herramientas, motos, maquinaria y objetos con valor de reposicion, deposito y checklist."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Alquileres", Titulo: "Definir tarifas por modalidad", Descripcion: "Configurar cobro por hora, dia, semana, mes, kilometro o evento, con depositos minimos y condiciones."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Alquileres", Titulo: "Normalizar contratos y devoluciones", Descripcion: "Usar estados reserva, en curso, vencido, devuelto y cancelado con evidencias de entrega."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Mantenimientos", Titulo: "Crear rutina de inspeccion", Descripcion: "Bloquear activos por mantenimiento, registrar proveedor, costo estimado y cierre tecnico."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Facturacion", Titulo: "Separar renta, depositos y saldos", Descripcion: "Facturar cargos de alquiler y controlar depositos retenidos o devueltos."},
+		)
+		return enrichTipoEmpresaPreconfigTemplate(template)
+	}
+	if isTipoEmpresaConstructora(tipoNombre) {
+		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("OBRA", "Obra", 6, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-OBRA-001", "Presupuesto AIU obra civil", "AIU", "Servicio guia para presupuestar administracion, imprevistos y utilidad.", 0, 1500000, 0),
+			productoPreconfig("DEMO-OBRA-002", "Mano de obra cuadrilla", "Mano de obra", "Jornal o paquete de cuadrilla por actividad.", 180000, 280000, 0),
+			productoPreconfig("DEMO-OBRA-003", "Concreto premezclado m3", "Materiales", "Material guia para control de compras y consumo por obra.", 320000, 390000, 3),
+			productoPreconfig("DEMO-OBRA-004", "Acero de refuerzo kg", "Materiales", "Insumo guia para estructura y presupuesto.", 4200, 6200, 500),
+			productoPreconfig("DEMO-OBRA-005", "Alquiler equipo menor", "Equipos", "Cargo diario por equipo o herramienta.", 25000, 65000, 0),
+			productoPreconfig("DEMO-OBRA-006", "Interventoria y control", "Servicios", "Servicio de seguimiento tecnico y documental.", 0, 450000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Director de obra", "director_obra", "Aprueba presupuestos, contratos, avances y reportes ejecutivos."),
+			usuarioPreconfig("Residente de obra", "residente_obra", "Registra avance fisico, consumos, novedades y tareas de campo."),
+			usuarioPreconfig("Compras obra", "compras", "Gestiona requisiciones, proveedores, soportes y entradas de materiales."),
+			usuarioPreconfig("Interventoria", "interventoria", "Revisa evidencias, calidad, cumplimiento y aprobaciones."),
+			usuarioPreconfig("Caja constructora", "caja", "Registra pagos, anticipos, egresos e ingresos por proyecto."),
+		}, "Asistente para obras, AIU, presupuestos, contratistas, compras, centros de costo, avance fisico, documentos y facturacion."), operacionPreconfig("constructora", "Obra", "Obras", true, true, true, "residente_obra", "proyecto", 15, []string{"director_obra", "residente_obra", "compras", "interventoria", "caja"}))
+		template.TareasGuia = append(template.TareasGuia,
+			TipoEmpresaPreconfigTareaGuia{Modulo: "AIU construccion", Titulo: "Configurar presupuesto AIU base", Descripcion: "Definir costo directo, administracion, imprevistos, utilidad, IVA y retenciones por contrato."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Centros de costo", Titulo: "Crear centros por obra", Descripcion: "Separar presupuesto, ingresos, compras, nomina y egresos por proyecto o frente de trabajo."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Contratos", Titulo: "Registrar contratos y contratistas", Descripcion: "Cargar contrato principal, polizas, anticipos, actas, vencimientos y responsables."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Compras", Titulo: "Organizar requisiciones de materiales", Descripcion: "Controlar proveedores, soportes de compra, entregas y consumo por obra."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Calidad y procesos", Titulo: "Activar seguimiento de avance", Descripcion: "Definir hitos, evidencias, aprobaciones e indicadores de cumplimiento por obra."},
+		)
+		return enrichTipoEmpresaPreconfigTemplate(template)
+	}
+	if isTipoEmpresaDrogueriaFarmacia(tipoNombre) {
+		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("FARMA", "Caja", 2, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("DEMO-FARMA-001", "Acetaminofen 500 mg", "Medicamentos OTC", "Producto guia con control de lote, vencimiento y registro sanitario.", 90, 250, 80),
+			productoPreconfig("DEMO-FARMA-002", "Ibuprofeno 400 mg", "Medicamentos OTC", "Producto guia para dispensacion y alertas de vencimiento.", 160, 450, 60),
+			productoPreconfig("DEMO-FARMA-003", "Suero oral sobre", "Hidratacion", "Producto guia de alta rotacion en drogueria.", 900, 2200, 30),
+			productoPreconfig("DEMO-FARMA-004", "Tapabocas quirurgico", "Dispositivos medicos", "Dispositivo medico guia para inventario sanitario.", 250, 800, 100),
+			productoPreconfig("DEMO-FARMA-005", "Alcohol antiseptico 700 ml", "Aseo salud", "Producto guia para trazabilidad de compras y vencimientos.", 4200, 9500, 12),
+			productoPreconfig("DEMO-FARMA-006", "Servicio de inyectologia", "Servicios farmacia", "Servicio guia sujeto a configuracion sanitaria local.", 0, 12000, 0),
+		}, []TipoEmpresaPreconfigUsuario{
+			usuarioPreconfig("Director tecnico", "director_tecnico_farmacia", "Aprueba control sanitario, medicamentos controlados, compras criticas y farmacovigilancia."),
+			usuarioPreconfig("Regente farmacia", "regente_farmacia", "Valida formulas, lotes, vencimientos, devoluciones y dispensacion responsable."),
+			usuarioPreconfig("Auxiliar farmacia", "auxiliar_farmacia", "Atiende mostrador, ventas, inventario, formulas y alertas de vencimiento."),
+			usuarioPreconfig("Compras farmacia", "compras", "Gestiona proveedores, soportes, recepcion de medicamentos y trazabilidad de lotes."),
+			usuarioPreconfig("Caja farmacia", "caja", "Registra ventas, pagos, facturacion y cierres diarios."),
+		}, "Asistente sanitario-operativo para lotes, INVIMA, vencimientos, recetas, controlados, compras, dispensacion, cartera y facturacion."), operacionPreconfig("drogueria_farmacia", "Caja", "Cajas", true, true, false, "", "", 0, []string{"director_tecnico_farmacia", "regente_farmacia", "auxiliar_farmacia", "compras", "caja"}))
+		template.TareasGuia = append(template.TareasGuia,
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Drogueria / Farmacia", Titulo: "Configurar trazabilidad sanitaria", Descripcion: "Registrar INVIMA, lotes, fechas de vencimiento, proveedor, laboratorio y condiciones especiales por producto."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Inventario", Titulo: "Activar alertas FEFO y stock minimo", Descripcion: "Priorizar salida por vencimiento, controlar quiebres y bloquear lotes vencidos o observados."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Compras", Titulo: "Normalizar recepcion de medicamentos", Descripcion: "Validar factura, proveedor, lote, registro sanitario, temperatura y novedades antes de poner en venta."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Facturacion", Titulo: "Revisar dispensacion y factura electronica", Descripcion: "Definir envio automatico al cliente, datos minimos del comprador y trazabilidad documental."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Calidad y procesos", Titulo: "Crear procedimiento de farmacovigilancia", Descripcion: "Registrar eventos adversos, devoluciones, quejas, responsables y cierres con evidencia."},
+		)
+		return enrichTipoEmpresaPreconfigTemplate(template)
+	}
 	if isTipoEmpresaGimnasio(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GYM", "Zona", 4, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-GYM-001", "Mensualidad general", "Planes", "Plan mensual de acceso general", 0, 95000, 0),
@@ -1070,6 +1143,13 @@ func enrichTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) T
 		}
 		if len(template.Modulos.HojaVida) == 0 {
 			template.Modulos.HojaVida = defaultHojaVidaVehiculosPreconfig("taller")
+		}
+	case "constructora":
+		if template.Modulos.Vehiculos == nil {
+			template.Modulos.Vehiculos = defaultVehiculosPreconfig("flota")
+		}
+		if len(template.Modulos.HojaVida) == 0 {
+			template.Modulos.HojaVida = defaultHojaVidaConstructoraPreconfig()
 		}
 	case "gimnasio":
 		if template.Modulos.Gimnasio == nil {
@@ -1262,6 +1342,39 @@ func defaultHojaVidaVehiculosPreconfig(contexto string) []TipoEmpresaPreconfigHo
 	}
 }
 
+func defaultHojaVidaConstructoraPreconfig() []TipoEmpresaPreconfigHojaVida {
+	return []TipoEmpresaPreconfigHojaVida{
+		{
+			TipoEntidad:     "maquinaria",
+			Codigo:          "OBRA-EQ-001",
+			Nombre:          "Mezcladora de concreto",
+			Marca:           "Equipo guia",
+			Serie:           "MX-001",
+			EstadoOperativo: "activo",
+			Metadata:        map[string]any{"obra": "Obra guia", "criticidad": "media", "mantenimiento_dias": 30},
+			Observaciones:   "Activo guia para controlar disponibilidad, mantenimiento, costos y evidencias por obra.",
+			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
+				{TipoEvento: "mantenimiento", Titulo: "Revision preventiva", Descripcion: "Validar motor, aspas, seguridad electrica y limpieza.", Responsable: "residente_obra", Recurrente: true, RecurrenciaDias: 30},
+			},
+			Alertas: []TipoEmpresaPreconfigHojaVidaAlerta{
+				{Titulo: "Programar mantenimiento", Descripcion: "Revisar estado antes de asignar a una nueva obra.", Prioridad: "media", Responsable: "residente_obra"},
+			},
+		},
+		{
+			TipoEntidad:     "frente_obra",
+			Codigo:          "OBRA-FR-001",
+			Nombre:          "Cimentacion etapa 1",
+			ClienteNombre:   "Cliente guia",
+			EstadoOperativo: "en_proceso",
+			Metadata:        map[string]any{"avance_pct": 35, "centro_costo": "OBRA-GUIA", "presupuesto_aiu": true},
+			Observaciones:   "Frente de trabajo guia para relacionar avance fisico, compras, evidencias y facturacion.",
+			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
+				{TipoEvento: "avance", Titulo: "Acta parcial de avance", Descripcion: "Registrar porcentaje ejecutado, evidencias y pendientes.", Responsable: "interventoria", Recurrente: true, RecurrenciaDias: 7},
+			},
+		},
+	}
+}
+
 func operacionPreconfig(tipoNegocio, singular, plural string, usaEstaciones, ventaDirecta, comisiones bool, comisionRol, comisionFiltro string, comisionPorcentaje float64, roles []string) TipoEmpresaPreconfigOperacion {
 	return TipoEmpresaPreconfigOperacion{
 		TipoNegocio:            tipoNegocio,
@@ -1408,6 +1521,53 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		add("compras", readCreateUpdate)
 		add("inventario", readCreateUpdate)
 		add("finanzas", readOnly)
+	case "director_obra":
+		for _, modulo := range []string{"aiu_construccion", "centros_costo", "contratos_obligaciones", "compras", "inventario", "finanzas", "contabilidad_colombia", "gestion_documental", "calidad_procesos", "produccion_mrp", "logistica_wms", "clientes", "facturacion"} {
+			add(modulo, allActions)
+		}
+	case "residente_obra":
+		for _, modulo := range []string{"aiu_construccion", "centros_costo", "compras", "inventario", "gestion_documental", "calidad_procesos", "produccion_mrp", "logistica_wms"} {
+			add(modulo, readCreateUpdate)
+		}
+		add("finanzas", readOnly)
+		add("facturacion", readOnly)
+	case "interventoria":
+		for _, modulo := range []string{"aiu_construccion", "centros_costo", "contratos_obligaciones", "gestion_documental", "calidad_procesos", "produccion_mrp"} {
+			add(modulo, readCreateUpdate)
+		}
+		add("finanzas", readOnly)
+	case "coordinador_alquileres":
+		for _, modulo := range []string{"alquileres", "inventario", "ventas", "clientes", "facturacion", "finanzas", "gestion_documental", "contratos_obligaciones", "calidad_procesos"} {
+			add(modulo, allActions)
+		}
+	case "auxiliar_alquileres":
+		add("alquileres", readCreateUpdate)
+		add("inventario", readCreateUpdate)
+		add("ventas", readCreateUpdate)
+		add("clientes", readCreate)
+		add("facturacion", readOnly)
+	case "tecnico_mantenimiento":
+		add("alquileres", readCreateUpdate)
+		add("inventario", readCreateUpdate)
+		add("calidad_procesos", readCreateUpdate)
+		add("ventas", readOnly)
+	case "director_tecnico_farmacia":
+		for _, modulo := range []string{"drogueria_farmacia", "inventario", "compras", "soportes_compras_ia", "logistica_wms", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos", "cumplimiento_kyc"} {
+			add(modulo, allActions)
+		}
+		add("finanzas", readOnly)
+	case "regente_farmacia":
+		for _, modulo := range []string{"drogueria_farmacia", "inventario", "compras", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos"} {
+			add(modulo, readCreateUpdate)
+		}
+		add("finanzas", readOnly)
+	case "auxiliar_farmacia":
+		add("drogueria_farmacia", readCreateUpdate)
+		add("inventario", readCreateUpdate)
+		add("ventas", readCreateUpdate)
+		add("clientes", readCreate)
+		add("facturacion", readCreate)
+		add("compras", readOnly)
 	case "auditor":
 		for _, modulo := range []string{"ventas", "inventario", "finanzas", "clientes", "compras", "facturacion", "seguridad"} {
 			add(modulo, readOnly)
@@ -1451,6 +1611,24 @@ func descripcionRolPreconfig(rolNombre, tipoEmpresaNombre string) string {
 		return "Rol de odontologo para pacientes, agenda clinica, historias, tratamientos y presupuestos."
 	case "compras":
 		return "Rol de compras para proveedores, ordenes e inventario."
+	case "director_obra":
+		return "Rol director de obra para aprobar presupuestos AIU, contratos, avances, compras y cierres por proyecto."
+	case "residente_obra":
+		return "Rol residente de obra para registrar avances, consumos, evidencias, novedades y requisiciones."
+	case "interventoria":
+		return "Rol de interventoria para validar evidencias, calidad, cumplimiento, actas y aprobaciones."
+	case "coordinador_alquileres":
+		return "Rol coordinador para aprobar contratos de alquiler, garantias, entregas, devoluciones y activos bloqueados."
+	case "auxiliar_alquileres":
+		return "Rol auxiliar para preparar activos, registrar checklist, entregas, devoluciones, ubicacion y novedades."
+	case "tecnico_mantenimiento":
+		return "Rol tecnico para inspecciones, mantenimiento preventivo/correctivo y bloqueo operativo de activos rentables."
+	case "director_tecnico_farmacia":
+		return "Rol director tecnico para control sanitario, medicamentos controlados, farmacovigilancia, compras criticas y auditoria."
+	case "regente_farmacia":
+		return "Rol regente de farmacia para lotes, vencimientos, formulas, dispensacion, devoluciones e inventario sanitario."
+	case "auxiliar_farmacia":
+		return "Rol auxiliar de farmacia para mostrador, ventas, formulas, inventario, alertas y apoyo de dispensacion."
 	case "auditor":
 		return "Rol auditor para consultar trazabilidad, reportes y cumplimiento."
 	default:
@@ -2029,6 +2207,18 @@ func isTipoEmpresaTaller(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "taller", "mecanica", "mecanica", "serviteca")
 }
 
+func isTipoEmpresaAlquilerObjetos(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "alquiler", "alquileres", "renta", "rentas", "rental", "herramientas en alquiler", "motos en alquiler", "maquinaria en alquiler", "objetos en alquiler")
+}
+
+func isTipoEmpresaConstructora(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "constructora", "construccion", "construccion civil", "obra civil", "obras civiles", "contratista obra", "contratistas obra")
+}
+
+func isTipoEmpresaDrogueriaFarmacia(tipoNombre string) bool {
+	return tipoEmpresaNameContains(tipoNombre, "drogueria", "drogueria y farmacia", "farmacia", "farmaceutica", "farmaceutico", "medicamentos", "botica")
+}
+
 func isTipoEmpresaGimnasio(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "gimnasio", "gym", "fitness", "centro deportivo", "entrenamiento")
 }
@@ -2077,6 +2267,12 @@ func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
 		return "Punto de venta guia"
 	case isTipoEmpresaTaller(tipoNombre):
 		return "Taller con bahias guia"
+	case isTipoEmpresaAlquilerObjetos(tipoNombre):
+		return "Alquileres con activos, contratos y garantias guia"
+	case isTipoEmpresaConstructora(tipoNombre):
+		return "Constructora con obras, AIU y proyectos guia"
+	case isTipoEmpresaDrogueriaFarmacia(tipoNombre):
+		return "Drogueria y farmacia con inventario sanitario guia"
 	case isTipoEmpresaGimnasio(tipoNombre):
 		return "Gimnasio con socios, planes y clases guia"
 	case isTipoEmpresaOdontologia(tipoNombre):
@@ -2113,6 +2309,12 @@ func tipoEmpresaNameContains(tipoNombre string, tokens ...string) bool {
 func normalizeTipoEmpresaName(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	replacer := strings.NewReplacer(
+		"á", "a", "à", "a", "ä", "a",
+		"é", "e", "è", "e", "ë", "e",
+		"í", "i", "ì", "i", "ï", "i",
+		"ó", "o", "ò", "o", "ö", "o",
+		"ú", "u", "ù", "u", "ü", "u",
+		"ñ", "n",
 		"á", "a", "à", "a", "ä", "a",
 		"é", "e", "è", "e", "ë", "e",
 		"í", "i", "ì", "i", "ï", "i",
