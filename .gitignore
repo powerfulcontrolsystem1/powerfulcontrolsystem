@@ -10,6 +10,7 @@ backend/bin/vps_security_scan_linux_amd64
 backend/pos.db
 *.db
 logs/test_runs/*.log
+test_runs/
 scripts/logs/*.log
 # URL local del remoto para actualizar_repositorio.ps1 (no versionar)
 scripts/actualizar_repositorio.repo_url
