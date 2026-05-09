@@ -25,12 +25,23 @@
     .dom-nav button.is-active{border-color:color-mix(in srgb,var(--accent) 42%,var(--border));background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--surface)),var(--surface-soft))}
     .dom-content{display:grid;gap:18px}.dom-panel[hidden]{display:none!important}
     .dom-grid-2,.dom-grid-3{display:grid;gap:14px}.dom-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.dom-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .dom-command-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:18px;align-items:stretch}
+    .dom-command-card{position:relative;overflow:hidden}
+    .dom-command-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,#16a34a,#06b6d4)}
+    .dom-flow-list{display:grid;gap:10px;margin-top:14px}
+    .dom-flow-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px;border-radius:8px;background:color-mix(in srgb,var(--surface) 90%,var(--accent) 10%);border:1px solid color-mix(in srgb,var(--accent) 16%,var(--border))}
+    .dom-flow-step strong{display:block;color:var(--text);margin-bottom:3px}
+    .dom-flow-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,#16a34a,#06b6d4);color:#fff;font-weight:900;box-shadow:0 12px 24px rgba(22,163,74,.18)}
+    .dom-status-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+    .dom-status-card{min-height:94px;padding:14px;border-radius:8px;background:color-mix(in srgb,var(--surface) 92%,var(--accent-2) 8%);border:1px solid color-mix(in srgb,var(--accent-2) 18%,var(--border));display:grid;align-content:center;gap:4px}
+    .dom-status-card span{color:var(--muted);font-size:.78rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .dom-status-card strong{color:var(--text);font-size:1.45rem;line-height:1}
     .dom-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .dom-list{display:grid;gap:10px;margin-top:12px}.dom-item{padding:13px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
     .dom-item strong{display:block;color:var(--text);margin-bottom:4px}.dom-item small{color:var(--muted)}
     .dom-map{height:520px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
     .dom-context{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.dom-msg{min-width:min(360px,100%);padding:12px 14px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border);color:var(--muted)}
-    @media(max-width:1080px){.dom-hero,.dom-main,.dom-grid-2,.dom-grid-3{grid-template-columns:1fr}.dom-nav{position:static}}
+    @media(max-width:1080px){.dom-hero,.dom-main,.dom-grid-2,.dom-grid-3,.dom-command-grid{grid-template-columns:1fr}.dom-nav{position:static}}
     @media(max-width:720px){.dom-shell{padding:14px}.dom-context{flex-direction:column}.dom-msg{width:100%}}
   </style>
 </head>
@@ -64,7 +75,8 @@
 
     <section class="dom-main">
       <nav class="dom-nav" aria-label="Secciones domicilios">
-        <button class="is-active" data-tab="central"><strong>Central</strong><span>Pedidos, despacho y mapa</span></button>
+        <button class="is-active" data-tab="resumen"><strong>Resumen operativo</strong><span>Estado, cola y accesos críticos</span></button>
+        <button data-tab="central"><strong>Central</strong><span>Pedidos, despacho y mapa</span></button>
         <button data-tab="restaurantes"><strong>Restaurantes</strong><span>Aliados, PIN y operación</span></button>
         <button data-tab="domiciliarios"><strong>Domiciliarios</strong><span>Flota, vehículo y disponibilidad</span></button>
         <button data-tab="menu"><strong>Menú</strong><span>Productos por restaurante</span></button>
@@ -73,11 +85,40 @@
 
       <section class="dom-content">
         <article class="dom-card dom-context">
-          <div><span class="dom-kicker">Panel activo</span><h2 id="sectionTitle">Central</h2><p id="sectionSummary">Monitorea pedidos y ubicación de domiciliarios en tiempo real.</p></div>
+          <div><span class="dom-kicker">Panel activo</span><h2 id="sectionTitle">Resumen operativo</h2><p id="sectionSummary">Lee cola, cobertura, aliados y accesos de delivery en un solo panel.</p></div>
           <div id="domMsg" class="dom-msg">Listo para operar domicilios.</div>
         </article>
 
-        <section id="panel-central" class="dom-panel">
+        <section id="panel-resumen" class="dom-panel">
+          <div class="dom-command-grid">
+            <article class="dom-card dom-command-card">
+              <h3>Centro de mando</h3>
+              <p>Vista ejecutiva para decidir si la operacion puede recibir pedidos, preparar en restaurantes y despachar domiciliarios sin friccion.</p>
+              <div class="dom-flow-list">
+                <div class="dom-flow-step"><span class="dom-flow-icon">1</span><div><strong>Controla demanda</strong><small>Revisa pedidos pendientes, preparacion y ruta antes de abrir campanas o turnos pico.</small></div></div>
+                <div class="dom-flow-step"><span class="dom-flow-icon">2</span><div><strong>Asegura cobertura</strong><small>Valida domiciliarios online, disponibles y restaurantes aceptando pedidos.</small></div></div>
+                <div class="dom-flow-step"><span class="dom-flow-icon">3</span><div><strong>Despacha con trazabilidad</strong><small>Usa central y mapa para asignar pedidos, relanzar ofertas y seguir entregas.</small></div></div>
+              </div>
+            </article>
+            <article class="dom-card">
+              <h3>Lectura rapida</h3>
+              <p>Indicadores de presion operativa calculados con la informacion actual.</p>
+              <div class="dom-status-grid">
+                <div class="dom-status-card"><span>Pendientes</span><strong id="miniPendientes">0</strong></div>
+                <div class="dom-status-card"><span>Preparacion</span><strong id="miniPreparacion">0</strong></div>
+                <div class="dom-status-card"><span>En ruta</span><strong id="miniRuta">0</strong></div>
+                <div class="dom-status-card"><span>Disponibles</span><strong id="miniDisponibles">0</strong></div>
+              </div>
+              <div class="dom-actions" style="margin-top:14px;">
+                <button class="btn secondary" type="button" data-dom-go="central">Ir a central</button>
+                <button class="btn secondary" type="button" data-dom-go="restaurantes">Ver restaurantes</button>
+                <button class="btn secondary" type="button" data-dom-go="domiciliarios">Ver domiciliarios</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="panel-central" class="dom-panel" hidden>
           <div class="dom-grid-2">
             <article class="dom-card">
               <h3>Pedidos</h3>
@@ -155,6 +196,6 @@
     </section>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="/js/domicilios.js"></script>
+  <script src="/js/domicilios.js?v=20260509-domicilios-professional"></script>
 </body>
 </html>

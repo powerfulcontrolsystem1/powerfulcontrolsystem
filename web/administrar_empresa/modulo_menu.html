@@ -44,14 +44,15 @@
         },
         domicilios: {
           title: "Domicilios",
-          summary: "Pedidos, restaurantes, domiciliarios, menu y reglas de entrega.",
-          defaultUrl: "/administrar_empresa/domicilios.html?tab=central",
+          summary: "Central de delivery para pedidos, restaurantes, domiciliarios, menu y tracking en vivo.",
+          defaultUrl: "/administrar_empresa/domicilios.html?tab=resumen&v=20260509-domicilios",
           items: [
-            ["Central", "/img/analytics-color.svg", "/administrar_empresa/domicilios.html?tab=central"],
-            ["Restaurantes", "/img/ecommerce.svg", "/administrar_empresa/domicilios.html?tab=restaurantes"],
-            ["Domiciliarios", "/img/gps.svg", "/administrar_empresa/domicilios.html?tab=domiciliarios"],
-            ["Menu", "/img/tags-color.svg", "/administrar_empresa/domicilios.html?tab=menu"],
-            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/domicilios.html?tab=config"]
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/domicilios.html?tab=resumen&v=20260509-domicilios"],
+            ["Central de pedidos", "/img/network-color.svg", "/administrar_empresa/domicilios.html?tab=central&v=20260509-domicilios"],
+            ["Restaurantes", "/img/ecommerce.svg", "/administrar_empresa/domicilios.html?tab=restaurantes&v=20260509-domicilios"],
+            ["Domiciliarios", "/img/gps.svg", "/administrar_empresa/domicilios.html?tab=domiciliarios&v=20260509-domicilios"],
+            ["Menu", "/img/tags-color.svg", "/administrar_empresa/domicilios.html?tab=menu&v=20260509-domicilios"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/domicilios.html?tab=config&v=20260509-domicilios"]
           ]
         },
         drogueria_farmacia: {
@@ -343,7 +344,7 @@
       document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
     })();
   </script>
-  <script src="/js/empresa_submenu_shell.js" data-version="20260509-taxi-system"></script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260509-verticales"></script>
   <script src="/menu.js"></script>
 </body>
 </html>

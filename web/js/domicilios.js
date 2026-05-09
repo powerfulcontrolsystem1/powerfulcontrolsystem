@@ -11,20 +11,28 @@
   var map=L.map("domMap").setView([4.711,-74.0721],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap"}).addTo(map);
   var layer=L.layerGroup().addTo(map);
+  var tabMeta={
+    resumen:["Resumen operativo","Lee cola, cobertura, aliados y accesos de delivery en un solo panel."],
+    central:["Central de pedidos","Monitorea pedidos, despacho y ubicacion de domiciliarios en tiempo real."],
+    restaurantes:["Restaurantes","Administra aliados, acceso y tiempos de preparacion."],
+    domiciliarios:["Domiciliarios","Registra flota, PIN movil y disponibilidad."],
+    menu:["Menu","Publica productos por restaurante para el portal cliente."],
+    config:["Configuracion","Define tarifas, radios, comisiones y seguridad."]
+  };
 
   function msg(text,bad){var el=document.getElementById("domMsg");el.textContent=text||"";el.classList.toggle("is-error",!!bad)}
   function setTab(tab){
-    var allowedTabs={central:1,restaurantes:1,domiciliarios:1,menu:1,config:1};
-    if(!allowedTabs[tab])tab="central";
+    if(!tabMeta[tab])tab="resumen";
     document.querySelectorAll("[data-tab]").forEach(function(b){b.classList.toggle("is-active",b.dataset.tab===tab)});
     document.querySelectorAll(".dom-panel").forEach(function(p){p.hidden=p.id!=="panel-"+tab});
     var titles={central:["Central","Monitorea pedidos y ubicación de domiciliarios en tiempo real."],restaurantes:["Restaurantes","Administra aliados, acceso y tiempos de preparación."],domiciliarios:["Domiciliarios","Registra flota, PIN móvil y disponibilidad."],menu:["Menú","Publica productos por restaurante para el portal cliente."],config:["Configuración","Define tarifas, radios, comisiones y seguridad."]};
-    document.getElementById("sectionTitle").textContent=titles[tab][0];document.getElementById("sectionSummary").textContent=titles[tab][1];
+    document.getElementById("sectionTitle").textContent=tabMeta[tab][0];document.getElementById("sectionSummary").textContent=tabMeta[tab][1];
+    try{var next=new URL(window.location.href);next.searchParams.set("tab",tab);window.history.replaceState({},"",next.toString())}catch(_){}
     if(tab==="central")setTimeout(function(){map.invalidateSize();drawMap()},80);
   }
-  function initialTabFromURL(){var tab=q("tab")||q("view")||q("section");return {central:1,restaurantes:1,domiciliarios:1,menu:1,config:1}[tab]?tab:"central"}
+  function initialTabFromURL(){var tab=q("tab")||q("view")||q("section");return tabMeta[tab]?tab:"resumen"}
   function fillConfig(c){state.cfg=c||{};document.getElementById("cfgNombreSistema").value=state.cfg.nombre_sistema||"Domicilios";document.getElementById("cfgNombrePortal").value=state.cfg.nombre_portal||"Pide a domicilio";document.getElementById("cfgMoneda").value=state.cfg.moneda||"COP";document.getElementById("cfgCobertura").value=state.cfg.radio_cobertura_km||8;document.getElementById("cfgAsignacion").value=state.cfg.radio_asignacion_km||6;document.getElementById("cfgRonda").value=state.cfg.domiciliarios_por_ronda||5;document.getElementById("cfgTarifaBase").value=state.cfg.tarifa_base||0;document.getElementById("cfgTarifaKm").value=state.cfg.tarifa_km||0;document.getElementById("cfgComision").value=state.cfg.comision_porcentaje||0;document.getElementById("cfgAuto").checked=!!state.cfg.auto_asignar;document.getElementById("cfgPublico").checked=!!state.cfg.permitir_pedidos_publicos;document.getElementById("cfgCodigo").checked=!!state.cfg.exigir_codigo_entrega}
-  function fillKpis(d){document.getElementById("kpiPendientes").textContent=d.pedidos_pendientes||0;document.getElementById("kpiPreparacion").textContent=d.pedidos_preparacion||0;document.getElementById("kpiRuta").textContent=d.pedidos_ruta||0;document.getElementById("kpiOnline").textContent=d.domiciliarios_online||0;document.getElementById("kpiDisponibles").textContent=d.domiciliarios_disponibles||0;document.getElementById("kpiVentas").textContent=money(d.ventas_hoy||0)}
+  function fillKpis(d){var pendientes=d.pedidos_pendientes||0,preparacion=d.pedidos_preparacion||0,ruta=d.pedidos_ruta||0,disponibles=d.domiciliarios_disponibles||0;document.getElementById("kpiPendientes").textContent=pendientes;document.getElementById("kpiPreparacion").textContent=preparacion;document.getElementById("kpiRuta").textContent=ruta;document.getElementById("kpiOnline").textContent=d.domiciliarios_online||0;document.getElementById("kpiDisponibles").textContent=disponibles;document.getElementById("kpiVentas").textContent=money(d.ventas_hoy||0);var miniPendientes=document.getElementById("miniPendientes"),miniPreparacion=document.getElementById("miniPreparacion"),miniRuta=document.getElementById("miniRuta"),miniDisponibles=document.getElementById("miniDisponibles");if(miniPendientes)miniPendientes.textContent=pendientes;if(miniPreparacion)miniPreparacion.textContent=preparacion;if(miniRuta)miniRuta.textContent=ruta;if(miniDisponibles)miniDisponibles.textContent=disponibles}
   function renderRestaurants(){document.getElementById("restaurantsList").innerHTML=state.restaurants.map(function(r){return '<article class="dom-item"><strong>'+esc(r.nombre)+' <span class="dom-badge">'+esc(r.estado)+'</span></strong><small>'+esc(r.categoria||"Restaurante")+' | '+esc(r.codigo)+' | PIN configurado | '+(r.acepta_pedidos?"Acepta pedidos":"Pausado")+'</small><div class="dom-actions" style="margin-top:8px"><button class="btn secondary" data-edit-rest="'+r.id+'">Editar</button></div></article>'}).join("")||'<div class="dom-item">Sin restaurantes.</div>';var sel=document.getElementById("menuRestaurant");sel.innerHTML=state.restaurants.map(function(r){return '<option value="'+r.id+'">'+esc(r.nombre)+'</option>'}).join("")}
   function renderCouriers(){document.getElementById("couriersList").innerHTML=state.couriers.map(function(c){return '<article class="dom-item"><strong>'+esc(c.nombre)+' <span class="dom-badge">'+(c.online?"Online":"Offline")+'</span></strong><small>'+esc(c.documento)+' | '+esc(c.vehiculo_tipo||"Vehículo")+' '+esc(c.vehiculo_placa||"")+' | '+(c.disponible?"Disponible":"Ocupado")+'</small><div class="dom-actions" style="margin-top:8px"><button class="btn secondary" data-edit-courier="'+c.id+'">Editar</button></div></article>'}).join("")||'<div class="dom-item">Sin domiciliarios.</div>'}
   function renderMenu(){document.getElementById("menuList").innerHTML=state.menu.map(function(m){return '<article class="dom-item"><strong>'+esc(m.nombre)+' <span class="dom-badge">'+money(m.precio)+'</span></strong><small>'+esc(m.restaurant_nombre)+' | '+esc(m.categoria||"Menu")+' | '+(m.disponible?"Disponible":"Oculto")+'</small><div class="dom-actions" style="margin-top:8px"><button class="btn secondary" data-edit-menu="'+m.id+'">Editar</button></div></article>'}).join("")||'<div class="dom-item">Sin productos.</div>'}
@@ -33,6 +41,7 @@
   async function load(){try{var d=await api("dashboard");state.restaurants=d.restaurants||[];state.couriers=d.couriers||[];state.orders=d.orders||[];state.offers=d.offers||[];fillKpis(d);renderRestaurants();renderCouriers();renderOrders();drawMap();state.menu=await api("menu");renderMenu();fillConfig(await api("config"));msg("Domicilios actualizado.")}catch(e){msg(e.message,true)}}
 
   document.querySelectorAll("[data-tab]").forEach(function(b){b.onclick=function(){setTab(b.dataset.tab)}});
+  document.querySelectorAll("[data-dom-go]").forEach(function(b){b.onclick=function(){setTab(b.dataset.domGo)}});
   document.getElementById("refreshBtn").onclick=load;
   document.getElementById("seedBtn").onclick=async function(){try{await post("seed_demo",{});await load();msg("Demo cargada. PIN restaurante y domiciliarios: 1234.")}catch(e){msg(e.message,true)}};
   document.getElementById("configForm").onsubmit=async function(e){e.preventDefault();try{await post("config",{nombre_sistema:cfgNombreSistema.value,nombre_portal:cfgNombrePortal.value,moneda:cfgMoneda.value,radio_cobertura_km:n(cfgCobertura.value),radio_asignacion_km:n(cfgAsignacion.value),domiciliarios_por_ronda:n(cfgRonda.value),tarifa_base:n(cfgTarifaBase.value),tarifa_km:n(cfgTarifaKm.value),comision_porcentaje:n(cfgComision.value),auto_asignar:cfgAuto.checked,permitir_pedidos_publicos:cfgPublico.checked,exigir_codigo_entrega:cfgCodigo.checked});await load();msg("Configuración guardada.")}catch(err){msg(err.message,true)}};
