@@ -41,6 +41,7 @@
   function fmt(v) { return numFmt.format(Number(v) || 0); }
   function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]; }); }
   function label(v) { return labels[String(v || "").toLowerCase()] || String(v || "-").replace(/_/g, " "); }
+  function q(name) { return new URLSearchParams(location.search || "").get(name) || ""; }
 
   function resolveEmpresaId() {
     try {
@@ -120,6 +121,22 @@
     el("kpiNacionalizacion").textContent = money(d.costos_pendientes_cop || 0);
     el("kpiTotal").textContent = money(d.costo_total_cop || 0);
     el("kpiPct").textContent = fmt(d.nacionalizacion_pct || 0) + "%";
+    if (el("miniSinItems")) el("miniSinItems").textContent = d.importaciones_sin_items || 0;
+    if (el("miniSinCostos")) el("miniSinCostos").textContent = d.importaciones_sin_costos || 0;
+    if (el("miniBorradores")) el("miniBorradores").textContent = d.borradores || 0;
+    if (el("miniAnuladas")) el("miniAnuladas").textContent = d.anuladas || 0;
+  }
+
+  function setTab(tab) {
+    var allowed = { tablero: 1, importaciones: 1, items: 1, costos: 1, costeo: 1 };
+    tab = allowed[tab] ? tab : "tablero";
+    document.querySelectorAll(".imp-tab").forEach(function (b) { b.classList.toggle("is-active", b.dataset.tab === tab); });
+    document.querySelectorAll(".imp-panel").forEach(function (p) { p.classList.toggle("is-active", p.id === "tab-" + tab); });
+    try {
+      var next = new URL(window.location.href);
+      next.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", next.toString());
+    } catch (_) {}
   }
 
   function renderPipeline() {
@@ -444,8 +461,12 @@
   document.addEventListener("click", function (ev) {
     var tab = ev.target.closest("[data-tab]");
     if (tab) {
-      document.querySelectorAll(".imp-tab").forEach(function (b) { b.classList.toggle("is-active", b === tab); });
-      document.querySelectorAll(".imp-panel").forEach(function (p) { p.classList.toggle("is-active", p.id === "tab-" + tab.dataset.tab); });
+      setTab(tab.dataset.tab);
+      return;
+    }
+    var go = ev.target.closest("[data-imp-go]");
+    if (go) {
+      setTab(go.dataset.impGo);
       return;
     }
     var manage = ev.target.getAttribute("data-manage");
@@ -470,5 +491,6 @@
   el("searchFilter").addEventListener("input", function () { state.filters.search = this.value || ""; renderImportaciones(); });
 
   clearImportacionForm();
+  setTab(q("tab") || q("panel") || "tablero");
   load();
 })();

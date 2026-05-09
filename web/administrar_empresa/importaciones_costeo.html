@@ -24,6 +24,19 @@
     .imp-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--bg,#f3f6fb) 12%);box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.05))}
     .imp-tab{border:1px solid transparent;background:transparent;color:var(--muted,#65758b);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px}.imp-tab:hover{color:var(--text,#172033);background:var(--surface-soft,#f4f7fc);border-color:var(--border,rgba(15,35,64,.14))}
     .imp-tab.is-active{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--accent,#1769e0) 14%,var(--surface,#fff));color:var(--accent,#1769e0);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#1769e0) 18%,transparent)}
+    .imp-command-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:12px;align-items:stretch}
+    .imp-command-card{position:relative;overflow:hidden}
+    .imp-command-card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,#1769e0,#0ea5a4,#16a34a)}
+    .imp-command-card p{margin:6px 0 0;color:var(--muted,#65758b);line-height:1.45}
+    .imp-flow-list{display:grid;gap:8px;margin-top:12px}
+    .imp-flow-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;border:1px solid color-mix(in srgb,var(--accent,#1769e0) 14%,var(--border,rgba(15,35,64,.14)));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--accent,#1769e0) 12%)}
+    .imp-flow-step strong{display:block;color:var(--text,#172033);margin-bottom:2px}
+    .imp-flow-step small{color:var(--muted,#65758b);line-height:1.35}
+    .imp-flow-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#1769e0,#0ea5a4);color:white;font-weight:900}
+    .imp-readiness-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+    .imp-readiness-card{min-height:84px;border:1px solid color-mix(in srgb,var(--accent-2,#0ea5a4) 16%,var(--border,rgba(15,35,64,.14)));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 90%,var(--accent-2,#0ea5a4) 10%);display:grid;align-content:center;gap:4px}
+    .imp-readiness-card span{color:var(--muted,#65758b);font-size:12px;font-weight:900;text-transform:uppercase}
+    .imp-readiness-card strong{font-size:22px;line-height:1;color:var(--text,#172033)}
     .imp-panel{display:none}.imp-panel.is-active{display:grid;gap:12px}.imp-grid{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(360px,.78fr);gap:12px;align-items:start}.imp-overview{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(330px,.92fr);gap:12px;align-items:start}
     .imp-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.imp-toolbar h2,.imp-box h2{margin:0;font-size:16px;line-height:1.25;letter-spacing:0}.imp-toolbar-actions{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.imp-toolbar .imp-field{min-width:170px}
     .imp-form{display:grid;gap:9px}.imp-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.imp-row.three{grid-template-columns:repeat(3,1fr)}.imp-row.four{grid-template-columns:repeat(4,1fr)}.imp-field{display:grid;gap:4px}.imp-field label{font-size:12px;color:var(--muted,#65758b);font-weight:800}
@@ -38,7 +51,7 @@
     .imp-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.imp-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
     .imp-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.imp-msg.is-error{color:var(--danger,#c43737)}
     html[data-theme^="dark"] .imp-head,html[data-theme^="dark"] .imp-box,html[data-theme^="dark"] .imp-kpi,html[data-theme^="dark"] .imp-tabs,html[data-theme^="dark"] .imp-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
-    @media(max-width:1180px){.imp-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.imp-grid,.imp-overview{grid-template-columns:1fr}.imp-head{display:grid}.imp-actions{justify-content:flex-start}.imp-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:1180px){.imp-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.imp-grid,.imp-overview,.imp-command-grid{grid-template-columns:1fr}.imp-head{display:grid}.imp-actions{justify-content:flex-start}.imp-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.imp-shell{padding:12px}.imp-kpis,.imp-row,.imp-row.three,.imp-row.four,.imp-stage-grid{grid-template-columns:1fr}.imp-tab{flex:1 1 42%}.imp-table{min-width:760px}.imp-toolbar,.imp-toolbar-actions{display:grid}.imp-actions{display:grid;justify-content:stretch}.imp-detail-item{grid-template-columns:1fr}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -78,6 +91,34 @@
     <div id="impMsg" class="imp-msg"></div>
 
     <section id="tab-tablero" class="imp-panel is-active">
+      <div class="imp-command-grid">
+        <article class="imp-box imp-command-card">
+          <h2>Centro de mando de nacionalizacion</h2>
+          <p>Controla el recorrido completo del embarque antes de llevar el costo final a inventario: documento, items, gastos, distribucion y cierre.</p>
+          <div class="imp-flow-list">
+            <div class="imp-flow-step"><span class="imp-flow-icon">1</span><div><strong>Radica el embarque</strong><small>Registra proveedor, pais, incoterm, moneda, TRM, documento y ETA.</small></div></div>
+            <div class="imp-flow-step"><span class="imp-flow-icon">2</span><div><strong>Carga items importados</strong><small>Agrega cantidades, peso, volumen, costo origen y SKU para costeo unitario.</small></div></div>
+            <div class="imp-flow-step"><span class="imp-flow-icon">3</span><div><strong>Consolida nacionalizacion</strong><small>Incluye flete, seguro, arancel, IVA, aduana, bodega y transporte interno.</small></div></div>
+            <div class="imp-flow-step"><span class="imp-flow-icon">4</span><div><strong>Distribuye y cierra</strong><small>Reparte costos por valor, peso, volumen o cantidad y valida costo aterrizado.</small></div></div>
+          </div>
+        </article>
+        <aside class="imp-box">
+          <h2>Lectura ejecutiva</h2>
+          <p class="imp-muted">Riesgos que conviene resolver antes de costear o contabilizar.</p>
+          <div class="imp-readiness-grid">
+            <div class="imp-readiness-card"><span>Sin items</span><strong id="miniSinItems">0</strong></div>
+            <div class="imp-readiness-card"><span>Sin costos</span><strong id="miniSinCostos">0</strong></div>
+            <div class="imp-readiness-card"><span>Borradores</span><strong id="miniBorradores">0</strong></div>
+            <div class="imp-readiness-card"><span>Anuladas</span><strong id="miniAnuladas">0</strong></div>
+          </div>
+          <div class="imp-actions" style="justify-content:flex-start;margin-top:12px;">
+            <button class="imp-btn" type="button" data-imp-go="importaciones">Nuevo embarque</button>
+            <button class="imp-btn" type="button" data-imp-go="items">Cargar items</button>
+            <button class="imp-btn" type="button" data-imp-go="costos">Registrar costos</button>
+            <button class="imp-btn primary" type="button" data-imp-go="costeo">Ver costeo</button>
+          </div>
+        </aside>
+      </div>
       <div class="imp-overview">
         <div class="imp-box">
           <div class="imp-toolbar"><h2>Flujo de importacion</h2></div>
@@ -201,6 +242,6 @@
       </div>
     </section>
   </main>
-  <script src="/js/importaciones_costeo.js"></script>
+  <script src="/js/importaciones_costeo.js?v=20260509-importaciones-pro"></script>
 </body>
 </html>
