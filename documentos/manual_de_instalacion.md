@@ -2,6 +2,32 @@
 
 Este documento resume los pasos minimos para dejar operativo el proyecto en entorno local y para validar el login Google en produccion sobre el dominio publico.
 
+## Estado de despliegue Docker en VPS
+
+Desde el 2026-05-09, la VPS de produccion ejecuta el nucleo de la plataforma con Docker Compose:
+
+- Nginx del host publica `https://powerfulcontrolsystem.com`.
+- Nginx del host reenvia al frontend Docker en `127.0.0.1:8081`.
+- El frontend Docker sirve `web` y reenvia API al backend Docker.
+- El backend Docker se comunica internamente con PostgreSQL Docker.
+- Las bases `pcs_superadministrador` y `pcs_empresas` fueron migradas al volumen PostgreSQL Docker.
+
+Documentacion operativa completa:
+
+- `documentos/docker_vps_operacion.md`
+- `deploy/README-compose-platform.md`
+
+Comandos rapidos en la VPS:
+
+```bash
+cd /root/powerfulcontrolsystem
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps
+curl -I http://127.0.0.1:8081/
+curl -I https://powerfulcontrolsystem.com
+```
+
+El servicio anterior `powerfulcontrolsystem.service` puede quedar activo temporalmente como rollback mientras se estabiliza el despliegue Docker. No lo elimines sin confirmar respaldos y ventana de mantenimiento.
+
 ## 1) Credenciales en Google Cloud Console
 
 1. Abre:

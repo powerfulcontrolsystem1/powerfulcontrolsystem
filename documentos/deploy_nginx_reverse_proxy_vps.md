@@ -1,31 +1,56 @@
 # Guia operativa: Nginx reverse proxy para dominio en VPS
 
-Fecha: 2026-04-14
-Alcance: Ubuntu VPS (Hostinger), app backend en puerto 8080
+Fecha: 2026-05-09
+Alcance: Ubuntu VPS (Hostinger), Nginx publico hacia Docker en puerto interno 8081
 
-## Objetivo
-Publicar la aplicacion backend en:
-- http://powerfulcontrolsystem.com
-- http://www.powerfulcontrolsystem.com
-- http://empresa1.powerfulcontrolsystem.com (y subdominios por empresa)
+## Estado actual Docker
 
-usando Nginx como reverse proxy hacia:
-- http://127.0.0.1:8080
+La VPS actual ya fue conmutada a Docker para el nucleo de la plataforma. Nginx del host sigue publicando `80/443`, pero el upstream ya no debe apuntar al backend systemd en `127.0.0.1:8080`; ahora apunta al frontend Docker en:
 
-## Comandos en orden (listos para copiar/pegar)
+```text
+http://127.0.0.1:8081
+```
+
+El servicio anterior `powerfulcontrolsystem.service` queda disponible como rollback temporal. El backup de configuracion creado durante la conmutacion es:
 
 ```bash
-sudo apt update
-sudo apt install -y nginx
+/etc/nginx/sites-available/powerfulcontrolsystem.bak.20260509-193744
+```
 
+Verificacion actual:
+
+```bash
+cd /root/powerfulcontrolsystem
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps
+curl -I http://127.0.0.1:8081/
+curl -I https://powerfulcontrolsystem.com
+```
+
+## Objetivo
+
+Publicar la aplicacion en:
+
+- `https://powerfulcontrolsystem.com`
+- `https://www.powerfulcontrolsystem.com`
+- `https://empresa1.powerfulcontrolsystem.com` y subdominios por empresa
+
+usando Nginx del host como reverse proxy hacia el frontend Docker:
+
+- `http://127.0.0.1:8081`
+
+## Configuracion base
+
+Ejemplo de bloque HTTP. En produccion puede coexistir con los bloques HTTPS generados por Certbot, manteniendo el mismo upstream `127.0.0.1:8081`.
+
+```bash
 sudo tee /etc/nginx/sites-available/powerfulcontrolsystem > /dev/null <<'EOF'
 server {
-    listen 80;
-    listen [::]:80;
+  listen 80;
+  listen [::]:80;
   server_name powerfulcontrolsystem.com www.powerfulcontrolsystem.com;
 
   location / {
-    proxy_pass http://127.0.0.1:8080;
+    proxy_pass http://127.0.0.1:8081;
     proxy_http_version 1.1;
 
     proxy_set_header Host $host;
@@ -50,75 +75,80 @@ server {
     return 302 /venta_publica.html?empresa_slug=$empresa_slug;
   }
 
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
+  location / {
+    proxy_pass http://127.0.0.1:8081;
+    proxy_http_version 1.1;
 
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
 
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
 
-        proxy_read_timeout 300;
-        proxy_send_timeout 300;
-    }
+    proxy_read_timeout 300;
+    proxy_send_timeout 300;
+  }
 }
 EOF
 
 sudo ln -sfn /etc/nginx/sites-available/powerfulcontrolsystem /etc/nginx/sites-enabled/powerfulcontrolsystem
-
-if [ -e /etc/nginx/sites-enabled/default ]; then
-  sudo rm -f /etc/nginx/sites-enabled/default
-fi
-
 sudo nginx -t
-sudo systemctl restart nginx
-sudo systemctl enable nginx
+sudo systemctl reload nginx
+```
 
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 8080/tcp
-sudo ufw status
+## Verificacion
 
-curl -I http://localhost:8080
-curl -I http://powerfulcontrolsystem.com
+```bash
+curl -I http://127.0.0.1:8081/
+curl -I https://powerfulcontrolsystem.com
 curl -I -H "Host: empresa1.powerfulcontrolsystem.com" http://127.0.0.1/
 curl -I -H "Host: empresa1.powerfulcontrolsystem.com" http://127.0.0.1/venta_publica.html
 ```
 
-## HTTPS automatico (opcional recomendado)
+Si `https://powerfulcontrolsystem.com` responde `200 OK` pero Docker no esta saludable, revisa:
 
 ```bash
-sudo apt update
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d powerfulcontrolsystem.com -d www.powerfulcontrolsystem.com --redirect -m admin@powerfulcontrolsystem.com --agree-tos --no-eff-email
-sudo certbot renew --dry-run
-curl -I https://powerfulcontrolsystem.com
-curl -I https://www.powerfulcontrolsystem.com
+cd /root/powerfulcontrolsystem
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml logs --tail=120 backend
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml logs --tail=120 frontend
 ```
 
-## Nota operativa
-No se cambia el puerto 8080 del backend. Nginx publica el dominio y reenvia trafico al backend en localhost.
+## HTTPS y DNS
 
-Si activas HTTPS con `certbot --nginx --redirect`, debes abrir `443/tcp` en UFW. Si el dominio redirige a `https://...` pero `443/tcp` queda cerrado, la aplicacion puede responder bien en `127.0.0.1:8080` y aun asi verse caída desde navegadores externos.
+Mantener abiertos `80/tcp` y `443/tcp`. El puerto `8081` debe permanecer local en `127.0.0.1`, no expuesto publicamente.
 
-Si publicas `www.powerfulcontrolsystem.com`, mantenlo incluido en el certificado (`-d www.powerfulcontrolsystem.com`) y verifica que `http://www...` no quede devolviendo `404`, sino redirigiendo o resolviendo por HTTPS.
+Para subdominios por empresa, mantener DNS wildcard:
 
-Para subdominios por empresa, crear un registro DNS wildcard `*.powerfulcontrolsystem.com` apuntando a `2.24.197.58`.
+```text
+*.powerfulcontrolsystem.com -> 2.24.197.58
+```
 
-## Servicio persistente del backend
+El certificado wildcard documentado en el manual de instalacion cubre `powerfulcontrolsystem.com` y `*.powerfulcontrolsystem.com`.
 
-El backend del VPS no debe quedar corriendo con `nohup` manual. El flujo soportado es desplegar con `scripts/sync_to_vps.ps1` o `scripts/sync_to_vps.sh`, porque esos scripts ya crean o actualizan la unidad `systemd` del proyecto y la dejan habilitada para autoarranque.
+## Servicio legacy y rollback
 
-Comandos utiles de verificacion en el VPS:
+Con Docker activo, el backend legacy por systemd no es el upstream principal. Puede quedar activo temporalmente para rollback:
 
 ```bash
 sudo systemctl status powerfulcontrolsystem.service --no-pager
-sudo systemctl is-enabled powerfulcontrolsystem.service
 sudo journalctl -u powerfulcontrolsystem.service -n 80 --no-pager
-tail -n 80 /root/powerfulcontrolsystem/backend/server.err
-tail -n 80 /root/powerfulcontrolsystem/backend/server.log
+```
+
+Rollback rapido al upstream anterior:
+
+```bash
+sudo cp /etc/nginx/sites-available/powerfulcontrolsystem.bak.20260509-193744 /etc/nginx/sites-available/powerfulcontrolsystem
+sudo nginx -t
+sudo systemctl reload nginx
+sudo systemctl status powerfulcontrolsystem.service --no-pager
+```
+
+Despues del rollback, validar:
+
+```bash
+curl -I http://127.0.0.1:8080/
+curl -I https://powerfulcontrolsystem.com
 ```

@@ -1,0 +1,266 @@
+name: powerful-control-system
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pcs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pcs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DEFAULT_DB:-pcs_superadministrador}
+      TZ: ${TZ:-America/Bogota}
+      PGTZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pcs_internal
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    container_name: pcs-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      TZ: ${TZ:-America/Bogota}
+      DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://powerfulcontrolsystem.com/auth/google/callback}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ONLYOFFICE_DOCUMENT_SERVER_URL: ${ONLYOFFICE_DOCUMENT_SERVER_URL:-https://onlyoffice.powerfulcontrolsystem.com}
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:-}
+      NEXTCLOUD_BASE_URL: ${NEXTCLOUD_BASE_URL:-https://nextcloud.powerfulcontrolsystem.com}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_SECRET: ${NEXTCLOUD_ADMIN_PASSWORD:-}
+      VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
+      GOOGLE_RECAPTCHA_SITE_KEY: ${GOOGLE_RECAPTCHA_SITE_KEY:-}
+      GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
+      RECAPTCHA_PROVIDER: ${RECAPTCHA_PROVIDER:-google-recaptcha-v2}
+      RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-0}
+    volumes:
+      - pcs_backend_logs:/app/backend/logs
+      - pcs_web_uploads:/app/web/uploads
+      - pcs_backups:/app/backup
+      - pcs_downloads:/app/descargas
+      - ../juegos:/app/juegos:ro
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - pcs_internal
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/docker/frontend.Dockerfile
+    image: ${PCS_FRONTEND_IMAGE:-pcs-frontend:local}
+    container_name: pcs-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:80"
+    volumes:
+      - pcs_web_uploads:/usr/share/nginx/html/uploads:ro
+      - pcs_downloads:/usr/share/nginx/html/descargas:ro
+    networks:
+      - pcs_internal
+
+  onlyoffice-documentserver:
+    profiles: ["office"]
+    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-latest}
+    container_name: pcs-onlyoffice-documentserver
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Defina ONLYOFFICE_JWT_SECRET}
+      JWT_HEADER: Authorization
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_onlyoffice_data:/var/www/onlyoffice/Data
+      - pcs_onlyoffice_logs:/var/log/onlyoffice
+      - pcs_onlyoffice_lib:/var/lib/onlyoffice
+      - pcs_onlyoffice_db:/var/lib/postgresql
+    expose:
+      - "80"
+    ports:
+      - "${ONLYOFFICE_BIND:-127.0.0.1}:${ONLYOFFICE_PORT:-8088}:80"
+    networks:
+      - pcs_internal
+
+  nextcloud-db:
+    profiles: ["cloud"]
+    image: mariadb:11
+    container_name: pcs-nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD:?Defina NEXTCLOUD_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Defina NEXTCLOUD_DB_PASSWORD}
+      MARIADB_AUTO_UPGRADE: "1"
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_nextcloud_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pcs_internal
+
+  nextcloud-redis:
+    profiles: ["cloud"]
+    image: redis:7-alpine
+    container_name: pcs-nextcloud-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - pcs_nextcloud_redis:/data
+    networks:
+      - pcs_internal
+
+  nextcloud:
+    profiles: ["cloud"]
+    image: nextcloud:${NEXTCLOUD_TAG:-29-apache}
+    container_name: pcs-nextcloud
+    restart: unless-stopped
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+      nextcloud-redis:
+        condition: service_started
+    environment:
+      MYSQL_HOST: nextcloud-db
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?Defina NEXTCLOUD_ADMIN_PASSWORD}
+      REDIS_HOST: nextcloud-redis
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1 frontend}
+      OVERWRITEPROTOCOL: ${NEXTCLOUD_OVERWRITEPROTOCOL:-https}
+      OVERWRITEHOST: ${NEXTCLOUD_OVERWRITEHOST:-nextcloud.powerfulcontrolsystem.com}
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS:-nextcloud.powerfulcontrolsystem.com}
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_nextcloud_html:/var/www/html
+      - pcs_nextcloud_data:/var/www/html/data
+      - pcs_nextcloud_apps:/var/www/html/custom_apps
+      - pcs_nextcloud_config:/var/www/html/config
+    expose:
+      - "80"
+    ports:
+      - "${NEXTCLOUD_BIND:-127.0.0.1}:${NEXTCLOUD_PORT:-8090}:80"
+    networks:
+      - pcs_internal
+
+  voice-stream:
+    profiles: ["voice"]
+    build:
+      context: ..
+      dockerfile: deploy/docker/voice-stream.Dockerfile
+    image: ${PCS_VOICE_STREAM_IMAGE:-pcs-voice-stream:local}
+    container_name: pcs-voice-stream
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      VOICE_STREAM_ENABLED: ${VOICE_STREAM_ENABLED:-true}
+      VOICE_STREAM_PIPER_BIN: ${VOICE_STREAM_PIPER_BIN:-piper}
+      VOICE_STREAM_TTS_MODEL: ${VOICE_STREAM_TTS_MODEL:-}
+      VOICE_STREAM_TTS_CONFIG: ${VOICE_STREAM_TTS_CONFIG:-}
+      VOICE_STREAM_MODEL_DIR: ${VOICE_STREAM_MODEL_DIR:-/models}
+      VOICE_STREAM_MODEL_NAME: ${VOICE_STREAM_MODEL_NAME:-es_ES-sharvard-medium}
+      VOICE_STREAM_MODEL_BASE_URL: ${VOICE_STREAM_MODEL_BASE_URL:-https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium}
+      VOICE_STREAM_MAX_CHARS: ${VOICE_STREAM_MAX_CHARS:-4000}
+      VOICE_STREAM_TTS_TIMEOUT: ${VOICE_STREAM_TTS_TIMEOUT:-20}
+      VOICE_STREAM_AUTH_HEADER: ${VOICE_STREAM_AUTH_HEADER:-X-PCS-Voice-Token}
+      VOICE_STREAM_AUTH_TOKEN: ${VOICE_STREAM_AUTH_TOKEN:-}
+    volumes:
+      - pcs_voice_models:/models
+      - pcs_voice_cache:/tmp/pcs_voice
+    expose:
+      - "8000"
+    ports:
+      - "${VOICE_STREAM_BIND:-127.0.0.1}:${VOICE_STREAM_PORT:-8011}:8000"
+    networks:
+      - pcs_internal
+
+  rustdesk-hbbs:
+    profiles: ["rustdesk"]
+    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    container_name: pcs-rustdesk-hbbs
+    restart: unless-stopped
+    command: hbbs -r rustdesk-hbbr:21117
+    volumes:
+      - pcs_rustdesk_data:/data
+    ports:
+      - "${RUSTDESK_BIND:-0.0.0.0}:21115:21115"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116/udp"
+    networks:
+      - pcs_internal
+
+  rustdesk-hbbr:
+    profiles: ["rustdesk"]
+    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    container_name: pcs-rustdesk-hbbr
+    restart: unless-stopped
+    command: hbbr
+    volumes:
+      - pcs_rustdesk_data:/data
+    ports:
+      - "${RUSTDESK_BIND:-0.0.0.0}:21117:21117"
+    networks:
+      - pcs_internal
+
+networks:
+  pcs_internal:
+    name: pcs_internal
+    driver: bridge
+
+volumes:
+  pcs_postgres_data:
+  pcs_backend_logs:
+  pcs_web_uploads:
+  pcs_backups:
+  pcs_downloads:
+  pcs_onlyoffice_data:
+  pcs_onlyoffice_logs:
+  pcs_onlyoffice_lib:
+  pcs_onlyoffice_db:
+  pcs_nextcloud_db:
+  pcs_nextcloud_redis:
+  pcs_nextcloud_html:
+  pcs_nextcloud_data:
+  pcs_nextcloud_apps:
+  pcs_nextcloud_config:
+  pcs_voice_models:
+  pcs_voice_cache:
+  pcs_rustdesk_data:

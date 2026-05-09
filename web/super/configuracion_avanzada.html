@@ -21,11 +21,11 @@
     .advanced-section-finder { position:relative; z-index:1; margin:18px 0 26px; padding:14px; border:1px solid color-mix(in srgb,var(--border) 82%,var(--accent) 18%); border-radius:12px; background:linear-gradient(180deg, var(--surface), var(--surface-soft)); box-shadow:0 18px 38px rgba(3,10,20,.32); isolation:isolate; backdrop-filter:none; }
     .advanced-section-finder-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .advanced-section-finder-row input { flex:1 1 260px; }
-    .advanced-category-map { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-top:12px; }
-    .advanced-category-map a { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border:1px solid color-mix(in srgb,var(--border) 84%,var(--accent) 16%); border-radius:8px; background:color-mix(in srgb,var(--surface) 88%,var(--accent) 12%); color:var(--text); text-decoration:none; font-weight:800; min-height:48px; }
-    .advanced-category-map a:hover, .advanced-category-map a:focus-visible { background:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 22%); outline:none; }
-    .advanced-category-map a span { color:var(--muted); font-weight:700; font-size:.82rem; text-align:right; }
-    .advanced-category-map a.is-hidden { display:none; }
+    .advanced-category-map { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin-top:12px; }
+    .advanced-category-map button { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:48px; padding:10px 12px; border:1px solid color-mix(in srgb,var(--border) 84%,var(--accent) 16%); border-radius:8px; background:color-mix(in srgb,var(--surface) 88%,var(--accent) 12%); color:var(--text); font:inherit; font-weight:800; text-align:left; cursor:pointer; }
+    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 22%); outline:none; }
+    .advanced-category-map button span { color:var(--muted); font-weight:700; font-size:.82rem; text-align:right; }
+    .advanced-category-map button.is-hidden { display:none; }
     .advanced-section-empty { display:none; margin-top:10px; color:var(--muted); }
     .advanced-section-empty.is-visible { display:block; }
     .advanced-card, .advanced-category-heading { scroll-margin-top:18px; }
@@ -55,12 +55,20 @@
         <button id="advancedSectionClear" class="btn secondary" type="button">Limpiar</button>
       </div>
       <div id="advancedCategoryList" class="advanced-category-map">
-        <a href="#categoriaInfraestructura" data-search="infraestructura vps documentos nube rustdesk onlyoffice nextcloud voz">Infraestructura <span>VPS, documentos, nube</span></a>
-        <a href="#categoriaPagos" data-search="pagos facturacion checkout epayco wompi nequi venta digital">Pagos <span>Pasarelas y checkout</span></a>
-        <a href="#categoriaComunicaciones" data-search="comunicaciones gmail correo smtp whatsapp contacto portal">Comunicaciones <span>Correo y contacto</span></a>
-        <a href="#categoriaSeguridad" data-search="seguridad captcha recaptcha respaldo backup mantenimiento continuidad">Seguridad <span>Captcha y respaldo</span></a>
-        <a href="#categoriaIA" data-search="ia inteligencia artificial modelos credenciales chat gpt openai voz">IA <span>Modelos y voz</span></a>
-        <a href="#consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto">Consumos <span>Costos externos</span></a>
+        <button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto">Consumos <span>Costos externos</span></button>
+        <button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr">RustDesk VPS <span>Soporte remoto</span></button>
+        <button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas">Limitaciones <span>API, DB, cuotas</span></button>
+        <button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina">OnlyOffice <span>Documentos</span></button>
+        <button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada">Nextcloud <span>Nube privada</span></button>
+        <button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token">Voz IA <span>Streaming</span></button>
+        <button type="button" data-target="epaycoConfig" data-search="pagos facturacion checkout epayco venta digital">Epayco <span>Checkout</span></button>
+        <button type="button" data-target="wompiConfig" data-search="pagos wompi nequi bancolombia checkout">Wompi / Nequi <span>Pagos</span></button>
+        <button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email">Gmail SMTP <span>Correo</span></button>
+        <button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono">WhatsApp portal <span>Contacto</span></button>
+        <button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios">reCAPTCHA <span>Seguridad</span></button>
+        <button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google">IA global <span>Modelos</span></button>
+        <button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema">Mantenimiento <span>Sistema</span></button>
+        <button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion">Respaldo <span>Backup</span></button>
       </div>
       <div id="advancedSectionEmpty" class="advanced-section-empty">No se encontraron secciones con ese texto.</div>
     </nav>
@@ -70,7 +78,9 @@
         <h2 style="margin:0">Configurar consumos (Hostinger / Cursor / costos OpenAI)</h2>
         <div class="consumos-config-actions">
           <button id="btnReloadConsumos" class="btn secondary" type="button">Actualizar consumos</button>
-          <button id="btnSaveConsumos" class="btn" type="button">Guardar</button>
+          <button id="btnSaveConsumos" class="btn" type="button" style="display:none;">Guardar</button>
+          <button id="btnEditConsumos" class="btn secondary" type="button">Editar</button>
+          <button id="btnCancelConsumos" class="btn secondary" type="button" style="display:none;">Cancelar</button>
         </div>
       </div>
       <div class="form-help muted" style="margin-top:6px">
@@ -201,7 +211,9 @@
       </div>
 
       <div class="form-actions">
-        <button id="rustdeskSaveSshBtn" type="button" class="btn secondary">Guardar SSH</button>
+        <button id="rustdeskSaveSshBtn" type="button" class="btn secondary" style="display:none;">Guardar SSH</button>
+        <button id="rustdeskEditSshBtn" type="button" class="btn secondary">Editar SSH</button>
+        <button id="rustdeskCancelSshBtn" type="button" class="btn secondary" style="display:none;">Cancelar</button>
       </div>
       <div id="rustdeskSshMsg" class="form-help"></div>
 
@@ -321,7 +333,9 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveEmpresaLimitacionesBtn" class="btn" type="button">Guardar limitaciones</button>
+        <button id="saveEmpresaLimitacionesBtn" class="btn" type="button" style="display:none;">Guardar limitaciones</button>
+        <button id="editEmpresaLimitacionesBtn" class="btn secondary" type="button">Editar</button>
+        <button id="cancelEmpresaLimitacionesBtn" class="btn secondary" type="button" style="display:none;">Cancelar</button>
       </div>
       <div id="empresaLimitacionesMsg" class="form-help"></div>
     </section>
@@ -359,7 +373,9 @@
       </div>
 
       <div class="form-actions">
-        <button id="onlyofficeSaveBtn" type="button" class="btn">Guardar OnlyOffice</button>
+        <button id="onlyofficeSaveBtn" type="button" class="btn" style="display:none;">Guardar OnlyOffice</button>
+        <button id="onlyofficeEditBtn" type="button" class="btn secondary" style="margin-left:8px;">Editar</button>
+        <button id="onlyofficeCancelBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="onlyofficeTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
       </div>
       <div id="onlyofficeMsg" class="form-help"></div>
@@ -406,7 +422,9 @@
       </div>
 
       <div class="form-actions">
-        <button id="nextcloudSaveBtn" type="button" class="btn">Guardar Nextcloud</button>
+        <button id="nextcloudSaveBtn" type="button" class="btn" style="display:none;">Guardar Nextcloud</button>
+        <button id="nextcloudEditBtn" type="button" class="btn secondary" style="margin-left:8px;">Editar</button>
+        <button id="nextcloudCancelBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="nextcloudTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
       </div>
       <div id="nextcloudMsg" class="form-help"></div>
@@ -765,7 +783,9 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveRecaptchaBtn" class="btn" type="button">Guardar reCAPTCHA</button>
+        <button id="saveRecaptchaBtn" class="btn" type="button" style="display:none;">Guardar reCAPTCHA</button>
+        <button id="editRecaptchaBtn" class="btn secondary" type="button" style="margin-left:8px;">Editar</button>
+        <button id="cancelRecaptchaBtn" class="btn secondary" type="button" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="recaptchaTestBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar reCAPTCHA</button>
       </div>
       <div id="recaptchaConfigMsg" class="form-help"></div>
@@ -891,6 +911,19 @@
         el.textContent = text || '';
         el.className = isErr ? 'form-help error' : 'form-help muted';
       }
+      const consumosFieldIds = ['openaiCostPer1M','hostingerEnabled','hostBwUsed','hostBwLimit','hostDiskUsed','hostDiskLimit','hostCostMonth','hostApiToken','cursorEnabled','cursorCostMonth','cursorApiKey','cursorNotes'];
+      function setConsumosEditMode(isEditing){
+        consumosFieldIds.forEach(function(id){
+          const el = consumosEl(id);
+          if (el) el.disabled = !isEditing;
+        });
+        const saveBtn = consumosEl('btnSaveConsumos');
+        const editBtn = consumosEl('btnEditConsumos');
+        const cancelBtn = consumosEl('btnCancelConsumos');
+        if (saveBtn) saveBtn.style.display = isEditing ? '' : 'none';
+        if (editBtn) editBtn.style.display = isEditing ? 'none' : '';
+        if (cancelBtn) cancelBtn.style.display = isEditing ? '' : 'none';
+      }
       async function loadConsumosAvanzados(){
         try{
           const res = await fetch('/super/api/consumos', { credentials:'same-origin' });
@@ -916,8 +949,10 @@
           consumosEl('cursorNotes').value = cur.notes ? String(cur.notes) : '';
 
           consumosSetMsg('Consumos cargados correctamente.', false);
+          setConsumosEditMode(false);
         }catch(e){
           consumosSetMsg(e.message || 'No se pudieron cargar consumos.', true);
+          setConsumosEditMode(false);
         }
       }
       async function saveConsumosAvanzados(){
@@ -961,8 +996,13 @@
       document.addEventListener('DOMContentLoaded', function(){
         const btnReload = consumosEl('btnReloadConsumos');
         const btnSave = consumosEl('btnSaveConsumos');
+        const btnEdit = consumosEl('btnEditConsumos');
+        const btnCancel = consumosEl('btnCancelConsumos');
         if(btnReload) btnReload.addEventListener('click', loadConsumosAvanzados);
         if(btnSave) btnSave.addEventListener('click', saveConsumosAvanzados);
+        if(btnEdit) btnEdit.addEventListener('click', function(){ setConsumosEditMode(true); consumosSetMsg('Modo edicion activo para consumos.', false); });
+        if(btnCancel) btnCancel.addEventListener('click', loadConsumosAvanzados);
+        setConsumosEditMode(false);
         loadConsumosAvanzados();
       });
     })();
@@ -974,6 +1014,97 @@
         { model_id: 'openai:gpt-5.4-mini', inputId: 'aiKeyOpenAI', statusId: 'aiStatusOpenAI' }
       ];
       let rustdeskActiveToggleBusy = false;
+
+      function setDisabledByIds(ids, disabled){
+        ids.forEach(function(id){
+          const el = document.getElementById(id);
+          if (el) el.disabled = !!disabled;
+        });
+      }
+
+      function setEditButtons(saveId, editId, cancelId, isEditing){
+        const saveBtn = document.getElementById(saveId);
+        const editBtn = document.getElementById(editId);
+        const cancelBtn = document.getElementById(cancelId);
+        if (saveBtn) saveBtn.style.display = isEditing ? '' : 'none';
+        if (editBtn) editBtn.style.display = isEditing ? 'none' : '';
+        if (cancelBtn) cancelBtn.style.display = isEditing ? '' : 'none';
+      }
+
+      function setRustDeskSshEditMode(isEditing){
+        setDisabledByIds(['rustdeskSshEnabledToggle','rustdeskSshHost','rustdeskSshUser','rustdeskSshKeyPath'], !isEditing);
+        setEditButtons('rustdeskSaveSshBtn', 'rustdeskEditSshBtn', 'rustdeskCancelSshBtn', isEditing);
+      }
+
+      function setEmpresaLimitacionesEditMode(isEditing){
+        setDisabledByIds(['empresaLimitAPIRequests','empresaLimitDBQueries','empresaLimitRustDeskMinutes','empresaLimitAIConsultas','empresaLimitGPSDispositivos','empresaLimitNextcloudGB'], !isEditing);
+        setEditButtons('saveEmpresaLimitacionesBtn', 'editEmpresaLimitacionesBtn', 'cancelEmpresaLimitacionesBtn', isEditing);
+      }
+
+      function setOnlyOfficeEditMode(isEditing){
+        setDisabledByIds(['onlyofficeEnabledToggle','onlyofficeDSUrl','onlyofficeJWTSecret'], !isEditing);
+        setEditButtons('onlyofficeSaveBtn', 'onlyofficeEditBtn', 'onlyofficeCancelBtn', isEditing);
+      }
+
+      function setNextcloudEditMode(isEditing){
+        setDisabledByIds(['nextcloudEnabledToggle','nextcloudBaseUrl','nextcloudAdminUser','nextcloudAdminSecret'], !isEditing);
+        setEditButtons('nextcloudSaveBtn', 'nextcloudEditBtn', 'nextcloudCancelBtn', isEditing);
+      }
+
+      function setRecaptchaEditMode(isEditing){
+        setDisabledByIds(['recaptchaEnabledToggle','recaptchaSiteKey','recaptchaSecretKey','recaptchaProvider'], !isEditing);
+        setEditButtons('saveRecaptchaBtn', 'editRecaptchaBtn', 'cancelRecaptchaBtn', isEditing);
+      }
+
+      function enableEditRustDeskSshConfig(){
+        setRustDeskSshEditMode(true);
+        const msgEl = document.getElementById('rustdeskSshMsg');
+        if (msgEl) msgEl.innerText = 'Modo edición activo para SSH de RustDesk.';
+      }
+
+      function cancelEditRustDeskSshConfig(){
+        loadRustDeskSshConfig();
+      }
+
+      function enableEditEmpresaLimitacionesConfig(){
+        setEmpresaLimitacionesEditMode(true);
+        const msgEl = document.getElementById('empresaLimitacionesMsg');
+        if (msgEl) msgEl.innerText = 'Modo edición activo para limitaciones por empresa.';
+      }
+
+      function cancelEditEmpresaLimitacionesConfig(){
+        loadEmpresaLimitacionesConfig();
+      }
+
+      function enableEditOnlyOfficeConfig(){
+        setOnlyOfficeEditMode(true);
+        const msgEl = document.getElementById('onlyofficeMsg');
+        if (msgEl) msgEl.innerText = 'Modo edición activo para OnlyOffice.';
+      }
+
+      function cancelEditOnlyOfficeConfig(){
+        loadOnlyOfficeConfig();
+      }
+
+      function enableEditNextcloudConfig(){
+        setNextcloudEditMode(true);
+        const msgEl = document.getElementById('nextcloudMsg');
+        if (msgEl) msgEl.innerText = 'Modo edición activo para Nextcloud.';
+      }
+
+      function cancelEditNextcloudConfig(){
+        loadNextcloudConfig();
+      }
+
+      function enableEditRecaptchaConfig(){
+        setRecaptchaEditMode(true);
+        const msgEl = document.getElementById('recaptchaConfigMsg');
+        if (msgEl) msgEl.innerText = 'Modo edición activo para reCAPTCHA.';
+      }
+
+      function cancelEditRecaptchaConfig(){
+        loadRecaptchaConfig();
+      }
 
       function normalizeRustDeskStatus(value){
         const status = String(value || '').trim().toLowerCase();
@@ -1034,9 +1165,11 @@
           keyEl.value = data.key_path || '';
           if (helpEl) helpEl.innerText = data.enabled ? 'Control por SSH activo.' : 'Control por SSH apagado.';
           if (msgEl) msgEl.innerText = '';
+          setRustDeskSshEditMode(false);
         } catch (err) {
           if (helpEl) helpEl.innerText = 'No se pudo cargar la configuración SSH.';
           if (msgEl) msgEl.innerText = err.message || 'Error cargando configuración SSH.';
+          setRustDeskSshEditMode(false);
         }
       }
 
@@ -1069,6 +1202,7 @@
           const raw = await res.text();
           if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
           if (msgEl) msgEl.innerText = 'Configuración SSH guardada.';
+          setRustDeskSshEditMode(false);
           await loadRustDeskCard('Configuración SSH actualizada. Consultando estado...');
         } catch (err) {
           if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar la configuración SSH.';
@@ -1231,6 +1365,7 @@
           }
 
           if (msgEl) msgEl.innerText = 'Limitaciones cargadas.';
+          setEmpresaLimitacionesEditMode(false);
         } catch (err) {
           if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar limitaciones.';
           if (apiStatus) apiStatus.innerText = 'Error al leer.';
@@ -1239,6 +1374,7 @@
           if (aiStatus) aiStatus.innerText = 'Error al leer.';
           if (gpsStatus) gpsStatus.innerText = 'Error al leer.';
           if (nextcloudStatus) nextcloudStatus.innerText = 'Error al leer.';
+          setEmpresaLimitacionesEditMode(false);
         }
       }
 
@@ -1374,6 +1510,7 @@
           const raw = await res.text();
           if (!res.ok) {
             if (msgEl) msgEl.innerText = 'Error cargando OnlyOffice: ' + (raw || res.status);
+            setOnlyOfficeEditMode(false);
             return;
           }
           const data = raw ? JSON.parse(raw) : {};
@@ -1389,8 +1526,10 @@
             if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) parts.push('ERROR: cifrado no disponible (CONFIG_ENC_KEY).');
             msgEl.innerText = parts.join(' ');
           }
+          setOnlyOfficeEditMode(false);
         } catch (err) {
           if (msgEl) msgEl.innerText = 'Error cargando OnlyOffice: ' + (err.message || err);
+          setOnlyOfficeEditMode(false);
         }
       }
 
@@ -1477,8 +1616,10 @@
           userEl.value = String(data.admin_user || '').trim();
           secretEl.value = '';
           if (msgEl) msgEl.innerText = data.enabled ? 'Nextcloud activo.' : 'Nextcloud desactivado.';
+          setNextcloudEditMode(false);
         } catch (err) {
           if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar Nextcloud.';
+          setNextcloudEditMode(false);
         }
       }
 
@@ -1628,46 +1769,46 @@
           return text;
         };
 
-        const existingHrefs = new Set(Array.from(listEl.querySelectorAll('a')).map(function(link){
-          return link.getAttribute('href') || '';
+        const existingTargets = new Set(Array.from(listEl.querySelectorAll('button[data-target]')).map(function(button){
+          return button.dataset.target || '';
         }));
-        const nodes = Array.from(document.querySelectorAll('.advanced-category-heading[id], section.advanced-card[id]'));
+        const nodes = Array.from(document.querySelectorAll('section.advanced-card[id]'));
         nodes.forEach(function(node){
           const id = node.getAttribute('id');
-          if (!id || existingHrefs.has('#' + id)) return;
+          if (!id || existingTargets.has(id)) return;
           const titleEl = node.querySelector('h2');
           const title = titleEl ? titleEl.textContent.trim() : id;
           const help = node.querySelector('.form-help');
           const hint = help ? help.textContent.trim() : 'Seccion';
-          const link = document.createElement('a');
-          link.href = '#' + id;
-          link.dataset.search = normalizeText(title + ' ' + hint + ' ' + id);
-          link.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
-          listEl.appendChild(link);
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.dataset.target = id;
+          button.dataset.search = normalizeText(title + ' ' + hint + ' ' + id);
+          button.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
+          listEl.appendChild(button);
         });
 
-        const links = Array.from(listEl.querySelectorAll('a'));
-        links.forEach(function(link){
-          if (!link.dataset.search) {
-            link.dataset.search = normalizeText(link.textContent || '');
+        const sectionButtons = Array.from(listEl.querySelectorAll('button[data-target]'));
+        sectionButtons.forEach(function(button){
+          if (!button.dataset.search) {
+            button.dataset.search = normalizeText(button.textContent || '');
           }
-          link.addEventListener('click', function(ev){
-            const href = link.getAttribute('href') || '';
-            const target = href.charAt(0) === '#' ? document.getElementById(href.slice(1)) : null;
+          button.addEventListener('click', function(){
+            const targetId = button.dataset.target || '';
+            const target = targetId ? document.getElementById(targetId) : null;
             if (!target) return;
-            ev.preventDefault();
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            history.replaceState(null, '', href);
+            history.replaceState(null, '', '#' + targetId);
           });
         });
 
         const applyFilter = function(){
           const query = normalizeText(searchEl.value);
           let visible = 0;
-          links.forEach(function(link){
-            const haystack = normalizeText((link.dataset.search || '') + ' ' + link.textContent);
+          sectionButtons.forEach(function(button){
+            const haystack = normalizeText((button.dataset.search || '') + ' ' + button.textContent);
             const show = !query || haystack.indexOf(query) >= 0;
-            link.classList.toggle('is-hidden', !show);
+            button.classList.toggle('is-hidden', !show);
             if (show) visible += 1;
           });
           if (emptyEl) emptyEl.classList.toggle('is-visible', visible === 0);
@@ -2023,6 +2164,7 @@
         statusEl.innerText = 'No se pudo consultar el estado de reCAPTCHA.';
         envEl.innerText = (raw && String(raw).trim()) ? String(raw).trim() : 'Error al leer variables de entorno.';
       }
+      setRecaptchaEditMode(false);
       return;
       }
       const data = await res.json();
@@ -2050,9 +2192,11 @@
         : 'Aún no hay secret key guardada.';
       msgEl.innerText = service.message || '';
       saveBtn.disabled = false;
+      setRecaptchaEditMode(false);
     } catch (err) {
       statusEl.innerText = 'Error cargando reCAPTCHA.';
       envEl.innerText = err.message || 'No se pudo validar el servicio.';
+      setRecaptchaEditMode(false);
     }
     }
 
@@ -2874,10 +3018,18 @@
       document.getElementById('rustdeskStopBtn').addEventListener('click', function(){ toggleRustDeskService('stop'); });
       document.getElementById('rustdeskProbeBtn').addEventListener('click', probeRustDeskCard);
       document.getElementById('rustdeskSaveSshBtn').addEventListener('click', saveRustDeskSshConfig);
+      document.getElementById('rustdeskEditSshBtn').addEventListener('click', enableEditRustDeskSshConfig);
+      document.getElementById('rustdeskCancelSshBtn').addEventListener('click', cancelEditRustDeskSshConfig);
       document.getElementById('saveEmpresaLimitacionesBtn').addEventListener('click', saveEmpresaLimitacionesConfig);
+      document.getElementById('editEmpresaLimitacionesBtn').addEventListener('click', enableEditEmpresaLimitacionesConfig);
+      document.getElementById('cancelEmpresaLimitacionesBtn').addEventListener('click', cancelEditEmpresaLimitacionesConfig);
       document.getElementById('onlyofficeSaveBtn').addEventListener('click', saveOnlyOfficeConfig);
+      document.getElementById('onlyofficeEditBtn').addEventListener('click', enableEditOnlyOfficeConfig);
+      document.getElementById('onlyofficeCancelBtn').addEventListener('click', cancelEditOnlyOfficeConfig);
       document.getElementById('onlyofficeTestBtn').addEventListener('click', testOnlyOfficeConfig);
       document.getElementById('nextcloudSaveBtn').addEventListener('click', saveNextcloudConfig);
+      document.getElementById('nextcloudEditBtn').addEventListener('click', enableEditNextcloudConfig);
+      document.getElementById('nextcloudCancelBtn').addEventListener('click', cancelEditNextcloudConfig);
       document.getElementById('nextcloudTestBtn').addEventListener('click', testNextcloudConfig);
       document.getElementById('voiceStreamQuickActivateTestBtn').addEventListener('click', activateAndTestVoiceStreamQuickConfig);
       document.getElementById('voiceStreamQuickTestBtn').addEventListener('click', testVoiceStreamQuickConfig);
@@ -2951,6 +3103,8 @@
       document.getElementById('editPortalWhatsAppBtn').addEventListener('click', enableEditPortalWhatsApp);
       document.getElementById('cancelPortalWhatsAppBtn').addEventListener('click', cancelEditPortalWhatsApp);
       document.getElementById('saveRecaptchaBtn').addEventListener('click', saveRecaptchaConfig);
+      document.getElementById('editRecaptchaBtn').addEventListener('click', enableEditRecaptchaConfig);
+      document.getElementById('cancelRecaptchaBtn').addEventListener('click', cancelEditRecaptchaConfig);
       document.getElementById('recaptchaTestBtn').addEventListener('click', testRecaptchaService);
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);

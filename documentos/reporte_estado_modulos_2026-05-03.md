@@ -14,7 +14,7 @@ El proyecto queda documentado como plataforma SaaS ERP/POS multiempresa con vert
 - Estaciones: se agrega el tamano `Se adapta al texto`; todas las tarjetas mantienen el mismo alto tomando como referencia la tarjeta con mayor contenido visible.
 - Panel empresarial: `USD / COP` se muestra siempre como primer indicador de mercado.
 - Configuracion de estaciones: la opcion de apariencia ahora acepta `small`, `medium`, `large` y `auto_text`.
-- Despliegue: `sync_to_vps.ps1` compilo binario Linux, sincronizo el VPS y dejo `powerfulcontrolsystem.service` activo en puerto `8080`.
+- Despliegue: desde 2026-05-09 el nucleo publico esta conmutado a Docker Compose en la VPS. Nginx del host apunta a `127.0.0.1:8081`, con `pcs-frontend`, `pcs-backend` y `pcs-postgres` saludables. `powerfulcontrolsystem.service` queda activo solo como rollback temporal.
 
 ## Estado por modulo
 
@@ -77,7 +77,8 @@ No es correcto afirmar que todos los modulos estan 100% terminados y sin errores
 
 ## Verificaciones recientes conocidas
 
-- `sync_to_vps.ps1`: OK, servicio remoto activo en `powerfulcontrolsystem.service`, puerto `8080`.
+- Docker VPS: OK, `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps` muestra `pcs-postgres`, `pcs-backend` y `pcs-frontend` activos; `https://powerfulcontrolsystem.com` responde `200 OK`.
+- Rollback: existe backup Nginx `/etc/nginx/sites-available/powerfulcontrolsystem.bak.20260509-193744`; `powerfulcontrolsystem.service` permanece activo temporalmente.
 - Carrito desde estacion: probado con apertura real de estacion y carga de cargo automatico.
 - `git diff --check` en cambios frontend recientes: OK.
 - `go test ./db ./handlers`: OK en verificacion previa de la reparacion operativa.
