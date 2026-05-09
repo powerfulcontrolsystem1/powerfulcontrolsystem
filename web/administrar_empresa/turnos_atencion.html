@@ -177,6 +177,55 @@
       color:var(--text);
       letter-spacing:.04em;
     }
+    .turnos-command-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);
+      gap:16px;
+      align-items:stretch;
+    }
+    .turnos-ticket-preview{
+      display:grid;
+      gap:10px;
+      padding:16px;
+      border-radius:16px;
+      border:1px dashed color-mix(in srgb, var(--accent) 28%, var(--border) 72%);
+      background:color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+      text-align:center;
+    }
+    .turnos-ticket-preview .turno-code{font-size:2.4rem}
+    .turnos-tv-console{
+      display:grid;
+      gap:12px;
+      min-height:100%;
+    }
+    .turnos-tv-console .turnos-list-item{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr);
+      gap:12px;
+      align-items:start;
+    }
+    .turnos-step{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      background:linear-gradient(135deg,#0ea5e9,#16a34a);
+      color:white;
+      font-weight:900;
+    }
+    .turnos-copy-row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .turnos-copy-row input{
+      flex:1 1 280px;
+      min-width:0;
+    }
     .turnos-page .table thead th{
       background:var(--table-head-bg);
       color:var(--muted);
@@ -185,7 +234,7 @@
       background:linear-gradient(180deg, var(--table-row-hover-start), var(--table-row-hover-end));
     }
     @media (max-width: 1080px){
-      .turnos-hero,.turnos-layout-2,.turnos-layout-3,.turnos-main{grid-template-columns:1fr}
+      .turnos-hero,.turnos-layout-2,.turnos-layout-3,.turnos-main,.turnos-command-grid{grid-template-columns:1fr}
       .turnos-sidebar{position:static}
     }
     @media (max-width: 720px){
@@ -245,6 +294,10 @@
           <button type="button" class="turnos-nav-btn" data-turnos-tab="seguimiento">
             <strong>Seguimiento</strong>
             <span>Fila activa y llamados recientes</span>
+          </button>
+          <button type="button" class="turnos-nav-btn" data-turnos-tab="pantalla">
+            <strong>Pantalla TV</strong>
+            <span>Modo sala, pantalla completa y alarmas</span>
           </button>
         </nav>
       </aside>
@@ -389,6 +442,8 @@
               <div class="turnos-actions">
                 <button id="btnEmitirTicket" class="btn add" type="button">Emitir ticket</button>
                 <button id="btnLlamarSiguiente" class="btn secondary" type="button">Llamar siguiente</button>
+                <button id="btnPrintLastTicket" class="btn secondary" type="button">Imprimir ticket</button>
+                <button id="btnOpenDisplayFromOps" class="btn secondary" type="button">Ver en TV</button>
               </div>
               <div id="emitMsg" class="form-help"></div>
               <div id="lastTicketBox" class="turnos-list"></div>
@@ -427,10 +482,49 @@
             </section>
           </div>
         </section>
+
+        <section class="turnos-panel" id="turnosPanel-pantalla" hidden>
+          <div class="turnos-command-grid">
+            <section class="turnos-card turnos-tv-console">
+              <div class="turnos-panel-head">
+                <h3>Salida para pantalla TV</h3>
+                <p>Abre la pantalla de llamados en un televisor, activa el audio y deja visible el turno actual con historial reciente.</p>
+              </div>
+              <div class="turnos-list">
+                <div class="turnos-list-item"><span class="turnos-step">1</span><div><strong>Abrir pantalla</strong><span class="form-help">Usa el enlace publico del modulo para llevarlo a un navegador del televisor o un computador conectado por HDMI.</span></div></div>
+                <div class="turnos-list-item"><span class="turnos-step">2</span><div><strong>Activar sonido</strong><span class="form-help">La TV mostrara un boton para habilitar alarmas. Los navegadores lo piden por seguridad antes de reproducir audio.</span></div></div>
+                <div class="turnos-list-item"><span class="turnos-step">3</span><div><strong>Llamar turno</strong><span class="form-help">Cada nuevo llamado resalta la pantalla, reproduce alarma y anuncia turno y puesto cuando el navegador lo permite.</span></div></div>
+              </div>
+              <div class="turnos-actions">
+                <a class="btn secondary" id="openDisplayScreenPanel" target="_blank" rel="noopener">Abrir pantalla TV</a>
+                <a class="btn secondary" id="openPublicKioskPanel" target="_blank" rel="noopener">Abrir kiosco publico</a>
+                <button id="btnCopyDisplayUrl" class="btn secondary" type="button">Copiar enlace TV</button>
+              </div>
+              <div class="turnos-copy-row">
+                <input id="displayUrlText" class="form-input" readonly>
+              </div>
+            </section>
+
+            <section class="turnos-card">
+              <div class="turnos-panel-head">
+                <h3>Impresion de tickets</h3>
+                <p>El operador y el kiosco publico pueden imprimir el turno en formato corto para impresora termica o impresora normal.</p>
+              </div>
+              <div class="turnos-ticket-preview">
+                <strong>Ticket de turno</strong>
+                <div class="turno-code" id="ticketPreviewCode">T-000</div>
+                <span class="form-help" id="ticketPreviewInfo">Emitelo desde el panel de operacion y usa imprimir.</span>
+                <div class="turnos-actions" style="justify-content:center;">
+                  <button id="btnPrintDemoTicket" class="btn secondary" type="button">Vista de impresion</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
       </section>
     </section>
   </div>
-  <script src="/js/turnos_atencion.js"></script>
+  <script src="/js/turnos_atencion.js?v=20260509-tv-print"></script>
 </body>
 </html>
 

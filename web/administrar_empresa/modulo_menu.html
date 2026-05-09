@@ -152,13 +152,16 @@
         },
         turnos: {
           title: "Turnos de atencion",
-          summary: "Configuracion, catalogo, emision y seguimiento de filas.",
+          summary: "Configuracion, catalogo, emision, tickets impresos, pantalla TV y alarmas.",
           defaultUrl: "/administrar_empresa/turnos_atencion.html?tab=configuracion",
           items: [
             ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/turnos_atencion.html?tab=configuracion"],
             ["Servicios y puestos", "/img/tags-color.svg", "/administrar_empresa/turnos_atencion.html?tab=catalogo"],
             ["Emision y llamado", "/img/network-color.svg", "/administrar_empresa/turnos_atencion.html?tab=operacion"],
-            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=seguimiento"]
+            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=seguimiento"],
+            ["Pantalla TV", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=pantalla"],
+            ["Kiosco publico", "/img/customer.svg", "/turnos_publicos.html"],
+            ["TV publica", "/img/network-color.svg", "/pantalla_turnos.html?sound=1"]
           ]
         },
         chat_tareas: {
@@ -344,7 +347,7 @@
       document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
     })();
   </script>
-  <script src="/js/empresa_submenu_shell.js" data-version="20260509-verticales"></script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260509-turnos-tv"></script>
   <script src="/menu.js"></script>
 </body>
 </html>

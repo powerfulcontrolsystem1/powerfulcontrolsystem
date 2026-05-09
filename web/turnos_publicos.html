@@ -18,6 +18,7 @@
     .service-btn small{display:block;margin-top:8px;color:#b8cada;font-weight:600}
     .ticket-preview{display:grid;gap:10px;place-items:center;text-align:center}
     .ticket-code{font-size:3rem;font-weight:900;color:#f4f8ff}
+    .ticket-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -35,9 +36,10 @@
       <strong>Último ticket generado</strong>
       <div id="ticketCode" class="ticket-code">-</div>
       <div id="ticketInfo" class="form-help">Todavía no has generado un turno.</div>
+      <div class="ticket-actions"><button id="printTicketBtn" class="btn secondary" type="button" disabled>Imprimir ticket</button></div>
     </section>
   </main>
-  <script src="/js/turnos_publicos.js"></script>
+  <script src="/js/turnos_publicos.js?v=20260509-print"></script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

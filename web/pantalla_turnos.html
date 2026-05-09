@@ -6,16 +6,28 @@
   <title>Pantalla de turnos</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left, rgba(49,157,231,.14), transparent 28%),linear-gradient(180deg,#07131f,#0d1f32);color:#eef4fb;font-family:"Segoe UI Variable","Segoe UI",sans-serif}
-    .tv-shell{max-width:1280px;margin:0 auto;padding:20px 18px;display:grid;gap:18px}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left, rgba(49,157,231,.14), transparent 28%),radial-gradient(circle at bottom right, rgba(22,163,74,.12), transparent 30%),linear-gradient(180deg,#07131f,#0d1f32);color:#eef4fb;font-family:"Segoe UI Variable","Segoe UI",sans-serif}
+    body.turn-alert{animation:tvPulse 1.6s ease 2}
+    .tv-shell{max-width:1360px;margin:0 auto;padding:20px 18px;display:grid;gap:18px}
     .tv-hero,.tv-card{background:rgba(11,26,42,.9);border:1px solid rgba(150,176,206,.16);border-radius:22px;box-shadow:0 24px 44px rgba(0,0,0,.28)}
     .tv-hero{padding:22px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
-    .tv-board{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    .tv-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .turno-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(150,176,206,.2);color:#eef4fb;font-weight:900}
+    .tv-actions button{border:1px solid rgba(150,176,206,.22);border-radius:999px;background:rgba(255,255,255,.06);color:#eef4fb;padding:10px 14px;font-weight:800;cursor:pointer}
+    .tv-actions button.is-on{background:rgba(22,163,74,.22);border-color:rgba(34,197,94,.45)}
+    .tv-board{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
     .tv-card{padding:18px}
     .tv-ticket{padding:18px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(150,176,206,.14);display:grid;gap:8px}
+    .tv-ticket.is-current{min-height:320px;align-content:center;text-align:center;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(22,163,74,.17));border-color:rgba(125,211,252,.42)}
     .tv-code{font-size:3rem;font-weight:900;letter-spacing:.06em}
+    .tv-ticket.is-current .tv-code{font-size:clamp(4rem,9rem,9rem);line-height:.95}
+    .tv-puesto{font-size:2rem;font-weight:900;color:#dff7ff}
+    .tv-meta{color:#b8cada;font-size:1.05rem}
     .tv-grid{display:grid;gap:12px}
-    @media (max-width: 980px){.tv-board{grid-template-columns:1fr}.tv-code{font-size:2.3rem}}
+    .tv-status{display:inline-flex;align-items:center;gap:8px;color:#b8cada;font-size:.95rem}
+    .tv-status::before{content:"";width:10px;height:10px;border-radius:999px;background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.8)}
+    @keyframes tvPulse{0%{filter:none}30%{filter:brightness(1.35)}100%{filter:none}}
+    @media (max-width: 980px){.tv-board{grid-template-columns:1fr}.tv-code{font-size:2.3rem}.tv-ticket.is-current{min-height:240px}.tv-ticket.is-current .tv-code{font-size:4rem}}
   </style>
 </head>
 <body>
@@ -25,7 +37,12 @@
         <h1 id="screenTitle" style="margin:0;font-size:2rem;">Pantalla de turnos</h1>
         <p style="margin:8px 0 0;color:#b8cada;">Los turnos llamados aparecerán aquí en tiempo real mediante actualización automática.</p>
       </div>
-      <div id="screenClock" class="turno-pill">--:--</div>
+      <div class="tv-actions">
+        <span id="screenClock" class="turno-pill">--:--</span>
+        <span id="soundStatus" class="tv-status">Alarmas listas</span>
+        <button id="enableSoundBtn" type="button">Activar sonido</button>
+        <button id="fullScreenBtn" type="button">Pantalla completa</button>
+      </div>
     </header>
     <section class="tv-board">
       <article class="tv-card">
@@ -42,6 +59,6 @@
       <div id="recentCalls" class="tv-grid"></div>
     </section>
   </main>
-  <script src="/js/pantalla_turnos.js"></script>
+  <script src="/js/pantalla_turnos.js?v=20260509-alarms"></script>
 </body>
 </html>

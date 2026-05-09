@@ -17,6 +17,10 @@
     seguimiento: {
       title: "Seguimiento",
       summary: "Consulta llamados recientes y usa el historial para supervisar la sala."
+    },
+    pantalla: {
+      title: "Pantalla TV e impresion",
+      summary: "Prepara el televisor de sala, comparte el enlace publico y valida la impresion de tickets."
     }
   };
 
@@ -80,8 +84,18 @@
     recentCallsList: document.getElementById("recentCallsList"),
     openPublicKiosk: document.getElementById("openPublicKiosk"),
     openDisplayScreen: document.getElementById("openDisplayScreen"),
+    openPublicKioskPanel: document.getElementById("openPublicKioskPanel"),
+    openDisplayScreenPanel: document.getElementById("openDisplayScreenPanel"),
+    btnOpenDisplayFromOps: document.getElementById("btnOpenDisplayFromOps"),
+    btnPrintLastTicket: document.getElementById("btnPrintLastTicket"),
+    btnPrintDemoTicket: document.getElementById("btnPrintDemoTicket"),
+    btnCopyDisplayUrl: document.getElementById("btnCopyDisplayUrl"),
+    displayUrlText: document.getElementById("displayUrlText"),
+    ticketPreviewCode: document.getElementById("ticketPreviewCode"),
+    ticketPreviewInfo: document.getElementById("ticketPreviewInfo"),
     pageMsg: document.getElementById("turnosPageMsg")
   };
+  var lastTicket = null;
 
   function setMsg(el, text, bad) {
     if (!el) return;
@@ -112,6 +126,11 @@
     var summaryEl = document.getElementById("turnosSectionSummary");
     if (titleEl) titleEl.textContent = meta.title;
     if (summaryEl) summaryEl.textContent = meta.summary;
+    try {
+      var next = new URL(window.location.href);
+      next.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", next.toString());
+    } catch (_) {}
   }
 
   function initialTabFromURL() {
@@ -173,6 +192,52 @@
     document.getElementById("kpiCancelados").textContent = dashboard.cancelados || 0;
     document.getElementById("kpiEspera").textContent = dashboard.tiempo_espera_prom_min || 0;
     document.getElementById("kpiAtencion").textContent = dashboard.tiempo_atencion_prom_min || 0;
+  }
+
+  function ticketPayload(item) {
+    item = item || {};
+    return {
+      codigo_turno: item.codigo_turno || "T-000",
+      servicio_nombre: item.servicio_nombre || "Servicio",
+      puesto_nombre: item.puesto_nombre || "",
+      nombre_cliente: item.nombre_cliente || "",
+      documento_cliente: item.documento_cliente || "",
+      fecha_emision: item.fecha_emision || new Date().toLocaleString("es-CO")
+    };
+  }
+
+  function printTicket(item) {
+    var t = ticketPayload(item);
+    var title = "Turno " + t.codigo_turno;
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
+      '@page{size:80mm auto;margin:6mm}body{font-family:Arial,sans-serif;margin:0;color:#111}.ticket{width:72mm;margin:0 auto;text-align:center}.brand{font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.08em}.code{font-size:42px;font-weight:900;margin:10px 0}.row{border-top:1px dashed #999;padding:8px 0;font-size:13px}.muted{color:#555;font-size:11px}.screen{margin-top:10px;font-weight:700}@media print{.no-print{display:none}}button{margin-top:14px;padding:10px 14px;border:1px solid #222;background:#fff;border-radius:8px;cursor:pointer}' +
+      '</style></head><body><main class="ticket"><div class="brand">Turnos de atencion</div><div class="code">' + esc(t.codigo_turno) + '</div><div class="row"><strong>' + esc(t.servicio_nombre) + '</strong></div>' +
+      (t.nombre_cliente ? '<div class="row">Cliente: ' + esc(t.nombre_cliente) + '</div>' : '') +
+      (t.documento_cliente ? '<div class="row">Documento: ' + esc(t.documento_cliente) + '</div>' : '') +
+      (t.puesto_nombre ? '<div class="row">Puesto: ' + esc(t.puesto_nombre) + '</div>' : '') +
+      '<div class="row muted">' + esc(t.fecha_emision) + '</div><div class="screen">Espera tu llamado en pantalla</div><button class="no-print" onclick="window.print()">Imprimir</button></main><script>setTimeout(function(){window.print()},250)<\/script></body></html>';
+    var win = window.open("", "pcs_turno_print", "width=420,height=640");
+    if (!win) {
+      setPageMsg("El navegador bloqueo la ventana de impresion. Permite ventanas emergentes para imprimir tickets.", true);
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+  }
+
+  function updateTicketPreview(item) {
+    var t = ticketPayload(item || lastTicket);
+    if (els.ticketPreviewCode) els.ticketPreviewCode.textContent = t.codigo_turno;
+    if (els.ticketPreviewInfo) els.ticketPreviewInfo.textContent = t.servicio_nombre + (t.puesto_nombre ? " | " + t.puesto_nombre : "");
+  }
+
+  function urls() {
+    return {
+      kiosk: "/turnos_publicos.html?empresa_id=" + encodeURIComponent(eid),
+      display: "/pantalla_turnos.html?empresa_id=" + encodeURIComponent(eid) + "&sound=1"
+    };
   }
 
   async function refreshAll() {
@@ -266,7 +331,9 @@
           canal_emision: "modulo"
         })
       });
-      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Ticket emitido</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + '</span></div>';
+      lastTicket = item;
+      updateTicketPreview(item);
+      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Ticket emitido</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + '</span><div class="turnos-actions" style="margin-top:10px;"><button class="btn secondary" type="button" data-print-last="1">Imprimir ticket</button></div></div>';
       setMsg(els.emitMsg, "Ticket emitido correctamente.");
       setPageMsg("Ticket emitido correctamente.");
       await refreshAll();
@@ -284,7 +351,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ puesto_id: Number(els.emitPuesto.value || 0) })
       });
-      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Llamando ahora</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + ' | ' + esc(item.puesto_nombre) + '</span></div>';
+      lastTicket = item;
+      updateTicketPreview(item);
+      els.lastTicketBox.innerHTML = '<div class="turnos-list-item"><strong>Llamando ahora</strong><div class="turno-code">' + esc(item.codigo_turno) + '</div><span>' + esc(item.servicio_nombre) + ' | ' + esc(item.puesto_nombre) + '</span><div class="turnos-actions" style="margin-top:10px;"><button class="btn secondary" type="button" data-print-last="1">Imprimir turno</button></div></div>';
       setMsg(els.emitMsg, "Se llamó el siguiente turno.");
       setPageMsg("Se llamó el siguiente turno.");
       await refreshAll();
@@ -322,6 +391,31 @@
     els.puestoForm.addEventListener("submit", createPuesto);
     document.getElementById("btnEmitirTicket").addEventListener("click", emitirTicket);
     document.getElementById("btnLlamarSiguiente").addEventListener("click", llamarSiguiente);
+    if (els.btnPrintLastTicket) {
+      els.btnPrintLastTicket.addEventListener("click", function () { printTicket(lastTicket); });
+    }
+    if (els.btnPrintDemoTicket) {
+      els.btnPrintDemoTicket.addEventListener("click", function () { printTicket(lastTicket); });
+    }
+    if (els.btnOpenDisplayFromOps) {
+      els.btnOpenDisplayFromOps.addEventListener("click", function () { window.open(urls().display, "_blank", "noopener"); });
+    }
+    if (els.btnCopyDisplayUrl) {
+      els.btnCopyDisplayUrl.addEventListener("click", async function () {
+        var full = new URL(urls().display, window.location.origin).toString();
+        if (els.displayUrlText) els.displayUrlText.value = full;
+        try {
+          await navigator.clipboard.writeText(full);
+          setPageMsg("Enlace de pantalla TV copiado.");
+        } catch (_) {
+          setPageMsg("Copia el enlace desde el campo de pantalla TV.");
+        }
+      });
+    }
+    els.lastTicketBox.addEventListener("click", function (ev) {
+      var target = ev.target;
+      if (target && target.dataset && target.dataset.printLast) printTicket(lastTicket);
+    });
     els.ticketsList.addEventListener("click", function (ev) {
       var target = ev.target;
       if (!target.dataset || !target.dataset.action) return;
@@ -332,8 +426,12 @@
       if (action === "completar") changeTicketState(id, "completado");
       if (action === "cancelar") changeTicketState(id, "cancelado");
     });
-    els.openPublicKiosk.href = "/turnos_publicos.html?empresa_id=" + encodeURIComponent(eid);
-    els.openDisplayScreen.href = "/pantalla_turnos.html?empresa_id=" + encodeURIComponent(eid);
+    var u = urls();
+    els.openPublicKiosk.href = u.kiosk;
+    els.openDisplayScreen.href = u.display;
+    if (els.openPublicKioskPanel) els.openPublicKioskPanel.href = u.kiosk;
+    if (els.openDisplayScreenPanel) els.openDisplayScreenPanel.href = u.display;
+    if (els.displayUrlText) els.displayUrlText.value = new URL(u.display, window.location.origin).toString();
   }
 
   wireActions();
