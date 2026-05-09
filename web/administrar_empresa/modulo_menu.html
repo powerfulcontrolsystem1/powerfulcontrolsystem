@@ -31,14 +31,15 @@
       var modules = {
         taxi: {
           title: "Taxi system",
-          summary: "Despacho, conductores, GPS y seguimiento operativo.",
-          defaultUrl: "/administrar_empresa/taxi_system.html?tab=configuracion",
+          summary: "Central operativa para despacho, flota, GPS, portales y seguimiento en vivo.",
+          defaultUrl: "/administrar_empresa/taxi_system.html?tab=resumen&v=20260509-taxi-system",
           items: [
-            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/taxi_system.html?tab=configuracion"],
-            ["Conductores", "/img/customer.svg", "/administrar_empresa/taxi_system.html?tab=conductores"],
-            ["GPS y telemetria", "/img/gps.svg", "/administrar_empresa/taxi_system.html?tab=gps"],
-            ["Despacho", "/img/network-color.svg", "/administrar_empresa/taxi_system.html?tab=despacho"],
-            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=seguimiento"]
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=resumen&v=20260509-taxi-system"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/taxi_system.html?tab=configuracion&v=20260509-taxi-system"],
+            ["Conductores", "/img/customer.svg", "/administrar_empresa/taxi_system.html?tab=conductores&v=20260509-taxi-system"],
+            ["GPS y telemetria", "/img/gps.svg", "/administrar_empresa/taxi_system.html?tab=gps&v=20260509-taxi-system"],
+            ["Despacho", "/img/network-color.svg", "/administrar_empresa/taxi_system.html?tab=despacho&v=20260509-taxi-system"],
+            ["Seguimiento en vivo", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=seguimiento&v=20260509-taxi-system"]
           ]
         },
         domicilios: {
@@ -342,7 +343,7 @@
       document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
     })();
   </script>
-  <script src="/js/empresa_submenu_shell.js" data-version="20260508-modulo-menu"></script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260509-taxi-system"></script>
   <script src="/menu.js"></script>
 </body>
 </html>

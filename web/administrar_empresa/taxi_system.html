@@ -32,6 +32,17 @@
     .taxi-grid-2,.taxi-grid-3{display:grid;gap:16px}
     .taxi-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
     .taxi-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .taxi-command-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px;align-items:stretch}
+    .taxi-command-card{position:relative;overflow:hidden}
+    .taxi-command-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,#2563eb,#06b6d4)}
+    .taxi-command-list{display:grid;gap:10px;margin-top:14px}
+    .taxi-command-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--surface) 90%,var(--accent) 10%);border:1px solid color-mix(in srgb,var(--accent) 16%,var(--border))}
+    .taxi-command-row strong{display:block;color:var(--text);margin-bottom:3px}
+    .taxi-command-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#fff;font-weight:900;box-shadow:0 12px 24px rgba(37,99,235,.18)}
+    .taxi-status-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+    .taxi-status-card{min-height:96px;padding:14px;border-radius:16px;background:color-mix(in srgb,var(--surface) 92%,var(--accent-2) 8%);border:1px solid color-mix(in srgb,var(--accent-2) 18%,var(--border));display:grid;align-content:center;gap:4px}
+    .taxi-status-card span{color:var(--muted);font-size:.78rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .taxi-status-card strong{color:var(--text);font-size:1.45rem;line-height:1}
     .taxi-main{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:18px;align-items:start}
     .taxi-sidebar{position:sticky;top:16px;display:grid;gap:14px}
     .taxi-sidebar-card{display:grid;gap:10px}
@@ -63,7 +74,7 @@
     .taxi-operator-strip .taxi-item{margin:0}
     .taxi-page .table thead th{background:var(--table-head-bg);color:var(--muted)}
     .taxi-page .table tbody tr:hover{background:linear-gradient(180deg, var(--table-row-hover-start), var(--table-row-hover-end))}
-    @media (max-width:1080px){.taxi-hero,.taxi-grid-2,.taxi-grid-3,.taxi-main,.taxi-operator-strip{grid-template-columns:1fr}.taxi-sidebar{position:static}}
+    @media (max-width:1080px){.taxi-hero,.taxi-grid-2,.taxi-grid-3,.taxi-command-grid,.taxi-main,.taxi-operator-strip{grid-template-columns:1fr}.taxi-sidebar{position:static}}
     @media (max-width:720px){.taxi-shell{padding:14px}.taxi-context{flex-direction:column}.taxi-context-msg{width:100%;min-width:0}}
   </style>
 </head>
@@ -101,7 +112,11 @@
           <p>Muévete entre configuración, conductores, despacho y seguimiento sin perder el contexto operativo de la central.</p>
         </article>
         <nav class="taxi-nav" aria-label="Secciones del sistema de taxi">
-          <button type="button" class="taxi-nav-btn is-active" data-taxi-tab="configuracion">
+          <button type="button" class="taxi-nav-btn is-active" data-taxi-tab="resumen">
+            <strong>Resumen operativo</strong>
+            <span>Estado de central, cola, disponibilidad y accesos</span>
+          </button>
+          <button type="button" class="taxi-nav-btn" data-taxi-tab="configuracion">
             <strong>Configuración</strong>
             <span>Nombre, radio de búsqueda y políticas del portal</span>
           </button>
@@ -134,7 +149,39 @@
           <div id="taxiPageMsg" class="taxi-context-msg">Listo para configurar el despacho, registrar conductores y monitorear la operación.</div>
         </article>
 
-        <section class="taxi-panel" id="taxiPanel-configuracion">
+        <section class="taxi-panel" id="taxiPanel-resumen">
+          <div class="taxi-command-grid">
+            <article class="taxi-card taxi-command-card">
+              <div class="taxi-panel-head">
+                <h3>Centro de mando</h3>
+                <p>Vista ejecutiva para saber si la central puede recibir solicitudes, despachar conductores y monitorear recorridos sin entrar a cada panel.</p>
+              </div>
+              <div class="taxi-command-list">
+                <div class="taxi-command-row"><span class="taxi-command-icon">1</span><div><strong>Revisa cobertura</strong><span class="form-help">Confirma conductores online, unidades disponibles y GPS reportando antes de abrir demanda.</span></div></div>
+                <div class="taxi-command-row"><span class="taxi-command-icon">2</span><div><strong>Controla la cola</strong><span class="form-help">Prioriza solicitudes pendientes y redespacha servicios que no reciban respuesta.</span></div></div>
+                <div class="taxi-command-row"><span class="taxi-command-icon">3</span><div><strong>Monitorea recorridos</strong><span class="form-help">Usa seguimiento para ver solicitudes, conductores, GPS externos y rutas de soporte.</span></div></div>
+              </div>
+            </article>
+            <article class="taxi-card">
+              <div class="taxi-panel-head">
+                <h3>Lectura rápida</h3>
+                <p>Indicadores clave calculados con la información actual del despacho.</p>
+              </div>
+              <div class="taxi-status-grid">
+                <div class="taxi-status-card"><span>En cola</span><strong id="miniPendientes">0</strong></div>
+                <div class="taxi-status-card"><span>Viajes activos</span><strong id="miniActivos">0</strong></div>
+                <div class="taxi-status-card"><span>Unidades libres</span><strong id="miniDisponibles">0</strong></div>
+                <div class="taxi-status-card"><span>GPS vivos</span><strong id="miniGps">0</strong></div>
+              </div>
+              <div class="taxi-actions" style="margin-top:14px;">
+                <button type="button" class="btn secondary" data-taxi-go="despacho">Ir a despacho</button>
+                <button type="button" class="btn secondary" data-taxi-go="seguimiento">Abrir seguimiento</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="taxi-panel" id="taxiPanel-configuracion" hidden>
           <div class="taxi-grid-3">
             <form id="taxiConfigForm" class="form taxi-card">
               <div class="taxi-panel-head">
@@ -378,6 +425,6 @@
     </section>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="/js/taxi_system.js"></script>
+  <script src="/js/taxi_system.js?v=20260509-taxi-professional"></script>
 </body>
 </html>

@@ -2,6 +2,10 @@
   "use strict";
 
   var tabMeta = {
+    resumen: {
+      title: "Resumen operativo",
+      summary: "Lee el estado de la central, disponibilidad, cola de servicios y accesos criticos."
+    },
     configuracion: {
       title: "Configuración",
       summary: "Define identidad comercial, radio de búsqueda y reglas del portal de clientes y conductores."
@@ -65,8 +69,8 @@
   }
 
   function setTab(tab) {
-    var meta = tabMeta[tab] || tabMeta.configuracion;
-    tab = tabMeta[tab] ? tab : "configuracion";
+    var meta = tabMeta[tab] || tabMeta.resumen;
+    tab = tabMeta[tab] ? tab : "resumen";
     document.querySelectorAll("[data-taxi-tab]").forEach(function (button) {
       var active = button.getAttribute("data-taxi-tab") === tab;
       button.classList.toggle("is-active", active);
@@ -79,6 +83,11 @@
     var summaryEl = document.getElementById("taxiSectionSummary");
     if (titleEl) titleEl.textContent = meta.title;
     if (summaryEl) summaryEl.textContent = meta.summary;
+    try {
+      var next = new URL(window.location.href);
+      next.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", next.toString());
+    } catch (e) {}
     if (tab === "seguimiento") {
       window.setTimeout(function () {
         map.invalidateSize();
@@ -89,15 +98,24 @@
 
   function initialTabFromURL() {
     var requested = q("tab") || q("view") || q("section");
-    return tabMeta[requested] ? requested : "configuracion";
+    return tabMeta[requested] ? requested : "resumen";
   }
 
   function fillKpis(d) {
-    document.getElementById("kpiPendientes").textContent = d.solicitudes_pendientes || 0;
-    document.getElementById("kpiActivos").textContent = d.servicios_activos || 0;
+    var pendientes = d.solicitudes_pendientes || 0;
+    var activos = d.servicios_activos || 0;
+    var disponibles = d.conductores_disponibles || 0;
+    document.getElementById("kpiPendientes").textContent = pendientes;
+    document.getElementById("kpiActivos").textContent = activos;
     document.getElementById("kpiOnline").textContent = d.conductores_online || 0;
-    document.getElementById("kpiDisponibles").textContent = d.conductores_disponibles || 0;
+    document.getElementById("kpiDisponibles").textContent = disponibles;
     document.getElementById("kpiClientes").textContent = d.clientes_registrados || 0;
+    var miniPendientes = document.getElementById("miniPendientes");
+    var miniActivos = document.getElementById("miniActivos");
+    var miniDisponibles = document.getElementById("miniDisponibles");
+    if (miniPendientes) miniPendientes.textContent = pendientes;
+    if (miniActivos) miniActivos.textContent = activos;
+    if (miniDisponibles) miniDisponibles.textContent = disponibles;
   }
 
   function gpsOnlineCount() {
@@ -106,7 +124,10 @@
 
   function fillGpsKpi() {
     var el = document.getElementById("kpiGps");
-    if (el) el.textContent = String(gpsOnlineCount());
+    var count = String(gpsOnlineCount());
+    if (el) el.textContent = count;
+    var mini = document.getElementById("miniGps");
+    if (mini) mini.textContent = count;
   }
 
   function renderOperatorStrip() {
@@ -327,6 +348,12 @@
     });
   });
 
+  document.querySelectorAll("[data-taxi-go]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      setTab(button.getAttribute("data-taxi-go"));
+    });
+  });
+
   document.getElementById("taxiConfigForm").addEventListener("submit", async function (ev) {
     ev.preventDefault();
     try {
@@ -440,7 +467,7 @@
     navigator.geolocation.getCurrentPosition(function (pos) {
       document.getElementById("cfgLatBase").value = pos.coords.latitude.toFixed(8);
       document.getElementById("cfgLngBase").value = pos.coords.longitude.toFixed(8);
-      setTab(initialTabFromURL());
+      setTab("configuracion");
       setMsg("configMsg", "Ubicacion cargada. Guarda la configuracion para fijarla como base.");
     }, function () {
       setMsg("mapMsg", "No se pudo obtener la ubicacion del navegador.", true);
@@ -472,8 +499,8 @@
 
   (async function init() {
     try {
-      setTab("configuracion");
-      setPageMsg("Listo para configurar el despacho, registrar conductores y monitorear la operación.");
+      setTab(initialTabFromURL());
+      setPageMsg("Taxi system listo para revisar cobertura, despachar servicios y monitorear la operación.");
       await loadConfig();
       await loadGpsDevices();
       await loadDashboard();
