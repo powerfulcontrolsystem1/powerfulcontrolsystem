@@ -62,6 +62,34 @@
     if (text) msg(text);
   }
 
+  function requestedTab() {
+    var tab = new URLSearchParams(location.search || "").get("tab") || "dashboard";
+    var exists = false;
+    document.querySelectorAll(".prod-tab").forEach(function (btn) {
+      if (btn.dataset.tab === tab) exists = true;
+    });
+    return exists ? tab : "dashboard";
+  }
+
+  function setTab(name, skipUrl) {
+    var selected = null;
+    document.querySelectorAll(".prod-tab").forEach(function (btn) {
+      var active = btn.dataset.tab === name;
+      btn.classList.toggle("is-active", active);
+      if (active) selected = btn;
+    });
+    if (!selected) return false;
+    document.querySelectorAll(".prod-panel").forEach(function (panel) {
+      panel.classList.toggle("is-active", panel.id === "tab-" + name);
+    });
+    if (!skipUrl) {
+      var url = new URL(location.href);
+      url.searchParams.set("tab", name);
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+    }
+    return true;
+  }
+
   async function api(action, opts) {
     if (!empresaId) throw new Error("No se encontro empresa_id para Produccion/MRP.");
     var url = "/api/empresa/produccion_mrp?empresa_id=" + encodeURIComponent(empresaId) + (action ? "&action=" + encodeURIComponent(action) : "");
@@ -90,6 +118,8 @@
     $("kpiUrgentes").textContent = d.ordenes_urgentes || 0;
     $("kpiCostoAbierto").textContent = money(d.costo_estimado_abierto || 0);
     $("kpiCostoMes").textContent = money(d.costo_real_mes || 0);
+    if ($("checkRecetas")) $("checkRecetas").textContent = d.recetas_activas || 0;
+    if ($("checkUrgentes")) $("checkUrgentes").textContent = d.ordenes_urgentes || 0;
   }
 
   function fillConfig(c) {
@@ -132,6 +162,7 @@
     }).length;
     if (vencidas) alerts.push(["is-danger", "Ordenes vencidas", vencidas + " orden(es) superaron su fecha programada."]);
     var riesgoMRP = state.plan.filter(function (p) { return num(p.disponible_proyectado) < 0 || num(p.cantidad_sugerida_compra) > 0 || num(p.cantidad_sugerida_producir) > 0; }).length;
+    if ($("checkMRP")) $("checkMRP").textContent = riesgoMRP;
     if (riesgoMRP) alerts.push(["", "MRP con requerimientos", riesgoMRP + " linea(s) requieren compra o produccion."]);
     if (!alerts.length) alerts.push(["", "Operacion estable", "No hay alertas criticas con los datos cargados."]);
     $("prodAlerts").innerHTML = alerts.map(function (a) {
@@ -391,10 +422,9 @@
   }
 
   document.addEventListener("click", async function (ev) {
-    var tab = ev.target.closest(".prod-tab");
+    var tab = ev.target.closest("[data-tab]");
     if (tab) {
-      document.querySelectorAll(".prod-tab").forEach(function (b) { b.classList.toggle("is-active", b === tab); });
-      document.querySelectorAll(".prod-panel").forEach(function (p) { p.classList.toggle("is-active", p.id === "tab-" + tab.dataset.tab); });
+      setTab(tab.dataset.tab);
       return;
     }
     var recetaBtn = ev.target.closest("[data-receta]");
@@ -438,6 +468,7 @@
   $("ordenFilter").onchange = function () { state.filters.ordenes = this.value; renderOrdenes(); };
   $("ordenSearch").oninput = function () { state.filters.search = this.value; renderOrdenes(); };
   $("mrpPeriodo").value = todayMonth();
+  setTab(requestedTab(), true);
 
   $("recetaForm").onsubmit = async function (ev) {
     ev.preventDefault();

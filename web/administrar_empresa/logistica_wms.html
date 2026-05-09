@@ -33,12 +33,13 @@
     .wms-muted{color:var(--muted,#65758b)}.wms-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}
     .wms-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--accent,#1769e0) 14%,transparent);color:var(--accent,#1769e0);font-size:12px;font-weight:800;white-space:nowrap}.wms-good{background:color-mix(in srgb,var(--success,#16a34a) 14%,transparent);color:var(--success,#15803d)}.wms-warn{background:color-mix(in srgb,var(--warning,#f59e0b) 16%,transparent);color:#b45309}.wms-bad{background:color-mix(in srgb,var(--danger,#ef4444) 14%,transparent);color:var(--danger,#b91c1c)}
     .wms-alerts,.wms-stage-grid{display:grid;gap:8px}.wms-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.wms-stage{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 90%,var(--surface-soft,#f4f7fc) 10%);min-height:76px}.wms-stage span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.wms-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.wms-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
+    .wms-command{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:12px;align-items:stretch}.wms-command-main,.wms-command-side{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 90%,var(--accent-2,#0ea5a4) 10%),var(--surface,#fff));padding:14px}.wms-command h2{margin:0 0 6px;font-size:16px}.wms-command p{margin:0;color:var(--muted,#65758b);line-height:1.45}.wms-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.wms-readiness{display:grid;gap:8px;margin-top:12px}.wms-readiness span{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%);padding:8px 10px;color:var(--muted,#65758b);font-size:12px;font-weight:800}.wms-readiness strong{color:var(--text,#172033)}
     .wms-alert{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 42%,var(--border,transparent));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface,#fff));color:var(--text,#172033)}.wms-alert strong{display:block;font-size:13px}.wms-alert p{margin:4px 0 0;color:var(--muted,#65758b);font-size:12px}.wms-alert.is-danger{border-color:color-mix(in srgb,var(--danger,#c43737) 45%,var(--border,transparent));background:color-mix(in srgb,var(--danger,#c43737) 10%,var(--surface,#fff))}
     .wms-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.wms-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
     .wms-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.wms-msg.is-error{color:var(--danger,#c43737)}
     html[data-theme^="dark"] .wms-head,html[data-theme^="dark"] .wms-box,html[data-theme^="dark"] .wms-kpi,html[data-theme^="dark"] .wms-tabs,html[data-theme^="dark"] .wms-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
-    @media(max-width:1180px){.wms-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.wms-grid,.wms-overview{grid-template-columns:1fr}.wms-head{display:grid}.wms-actions{justify-content:flex-start}.wms-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:720px){.wms-shell{padding:12px}.wms-kpis,.wms-row,.wms-row.three,.wms-stage-grid{grid-template-columns:1fr}.wms-tab{flex:1 1 42%}.wms-table{min-width:760px}.wms-toolbar,.wms-toolbar-actions{display:grid}.wms-actions{display:grid;justify-content:stretch}}
+    @media(max-width:1180px){.wms-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.wms-grid,.wms-overview,.wms-command{grid-template-columns:1fr}.wms-head{display:grid}.wms-actions{justify-content:flex-start}.wms-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.wms-shell{padding:12px}.wms-kpis,.wms-row,.wms-row.three,.wms-stage-grid,.wms-quick-grid{grid-template-columns:1fr}.wms-tab{flex:1 1 42%}.wms-table{min-width:760px}.wms-toolbar,.wms-toolbar-actions{display:grid}.wms-actions{display:grid;justify-content:stretch}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -78,6 +79,26 @@
     <div id="wmsMsg" class="wms-msg"></div>
 
     <section id="tab-dashboard" class="wms-panel is-active">
+      <div class="wms-command">
+        <div class="wms-command-main">
+          <h2>Torre de control WMS</h2>
+          <p>Coordina cola operativa, capacidad, picking, packing y despachos con lectura rapida de SLA y ocupacion.</p>
+          <div class="wms-quick-grid">
+            <button class="wms-btn" data-tab="ubicaciones" type="button">Mapa de bodega</button>
+            <button class="wms-btn" data-tab="ordenes" type="button">Gestionar ordenes</button>
+            <button class="wms-btn primary" data-tab="despachos" type="button">Despachos</button>
+          </div>
+        </div>
+        <aside class="wms-command-side">
+          <h2>Estado de alistamiento</h2>
+          <p>Indicadores clave para anticipar cuellos de botella antes de prometer salida.</p>
+          <div class="wms-readiness">
+            <span>Ordenes abiertas <strong id="readyOrdenes">0</strong></span>
+            <span>Unidades pendientes <strong id="readyPendientes">0</strong></span>
+            <span>Ocupacion bodega <strong id="readyOcupacion">0%</strong></span>
+          </div>
+        </aside>
+      </div>
       <div class="wms-overview">
         <div class="wms-box">
           <div class="wms-toolbar"><h2>Flujo operativo</h2></div>
@@ -182,6 +203,6 @@
       <div class="wms-box"><div class="wms-toolbar"><h2>Bitacora WMS</h2></div><div id="eventosTable" class="wms-table-wrap"></div></div>
     </section>
   </main>
-  <script src="/js/logistica_wms.js"></script>
+  <script src="/js/logistica_wms.js?v=20260509-wms-pro"></script>
 </body>
 </html>

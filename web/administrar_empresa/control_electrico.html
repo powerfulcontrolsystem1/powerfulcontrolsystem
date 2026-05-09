@@ -76,6 +76,94 @@
       justify-content: flex-end;
     }
 
+    .electric-submenu {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      margin-bottom: 14px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--electric-panel) 92%, var(--electric-bg) 8%);
+      box-shadow: 0 8px 18px var(--electric-shadow);
+    }
+
+    .electric-submenu button {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--electric-muted);
+      min-height: 38px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .electric-submenu button:hover,
+    .electric-submenu button.is-active {
+      border-color: color-mix(in srgb, var(--electric-accent) 48%, var(--electric-line));
+      background: color-mix(in srgb, var(--electric-accent) 14%, var(--electric-panel));
+      color: var(--electric-accent);
+    }
+
+    .electric-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .electric-command-card {
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--electric-panel) 88%, var(--electric-accent) 12%), var(--electric-panel));
+      box-shadow: 0 10px 22px var(--electric-shadow);
+      padding: 14px;
+    }
+
+    .electric-command-card h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .electric-command-card p {
+      margin: 0;
+      color: var(--electric-muted);
+      line-height: 1.45;
+    }
+
+    .electric-quick-grid,
+    .electric-readiness {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .electric-quick-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .electric-readiness span {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--electric-panel-soft) 82%, var(--electric-panel) 18%);
+      padding: 8px 10px;
+      color: var(--electric-muted);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .electric-readiness strong {
+      color: var(--electric-ink);
+    }
+
     .electric-grid {
       display: grid;
       grid-template-columns: minmax(320px, 410px) minmax(0, 1fr);
@@ -354,7 +442,8 @@
 
     @media (max-width: 1000px) {
       .electric-header,
-      .electric-grid {
+      .electric-grid,
+      .electric-command {
         grid-template-columns: 1fr;
       }
 
@@ -374,7 +463,8 @@
 
       .electric-form-grid,
       .relay-fields,
-      .electric-kpis {
+      .electric-kpis,
+      .electric-quick-grid {
         grid-template-columns: 1fr;
       }
 
@@ -410,7 +500,15 @@
 
     <div id="message" class="form-message" role="status" aria-live="polite"></div>
 
-    <section class="electric-kpis" aria-label="Indicadores de control electrico">
+    <nav class="electric-submenu" aria-label="Submenu de control electrico">
+      <button class="is-active" data-electric-tab="resumen" type="button">Resumen</button>
+      <button data-electric-tab="conexion" type="button">Conexion GPIO</button>
+      <button data-electric-tab="raspberry" type="button">Raspberry Pi</button>
+      <button data-electric-tab="reles" type="button">Estaciones y reles</button>
+      <button data-electric-tab="bitacora" type="button">Bitacora</button>
+    </nav>
+
+    <section id="electricResumen" class="electric-kpis" data-electric-section="resumen" aria-label="Indicadores de control electrico">
       <article class="electric-kpi"><small>Modulo</small><strong id="kpiModulo">--</strong></article>
       <article class="electric-kpi"><small>Raspberry Pi</small><strong id="kpiRaspberry">0</strong></article>
       <article class="electric-kpi"><small>Estaciones activas</small><strong id="kpiActivas">0</strong></article>
@@ -418,8 +516,29 @@
       <article class="electric-kpi"><small>Ultimo evento</small><strong id="kpiEvento">--</strong></article>
     </section>
 
+    <section class="electric-command" aria-label="Centro operativo electrico">
+      <article class="electric-command-card">
+        <h2>Centro de control electrico</h2>
+        <p>Supervisa disponibilidad GPIO, agenda horaria, estaciones y comandos enviados a los controladores Raspberry Pi.</p>
+        <div class="electric-quick-grid">
+          <button class="btn secondary" data-electric-tab="conexion" type="button">Configurar conexion</button>
+          <button class="btn secondary" data-electric-tab="reles" type="button">Ver reles</button>
+          <button class="btn add" data-electric-tab="bitacora" type="button">Auditar eventos</button>
+        </div>
+      </article>
+      <aside class="electric-command-card">
+        <h2>Preparacion operativa</h2>
+        <p>Resumen para validar que la automatizacion esta lista antes de operar cargas reales.</p>
+        <div class="electric-readiness">
+          <span>Conexion <strong id="electricReadyConexion">--</strong></span>
+          <span>Raspberry activas <strong id="electricReadyRaspberry">0</strong></span>
+          <span>Reles activos <strong id="electricReadyReles">0</strong></span>
+        </div>
+      </aside>
+    </section>
+
     <section class="electric-grid">
-      <aside class="electric-panel">
+      <aside id="electricConexion" class="electric-panel" data-electric-section="conexion">
         <h2>Control global y Raspberry Pi</h2>
         <p>Servidor GPIO principal y nodos adicionales para ampliar salidas por estacion.</p>
         <div class="electric-form-grid">
@@ -465,7 +584,7 @@
           <button id="saveConfigBtn" class="btn add" type="button">Guardar conexion</button>
         </div>
 
-        <div class="electric-subsection">
+        <div id="electricRaspberry" class="electric-subsection" data-electric-section="raspberry">
           <h2>Controladores Raspberry Pi</h2>
           <p>Agrega controladores GPIO para repartir luces, jacuzzi, puertas o equipos entre varias placas.</p>
           <input id="raspberryId" type="hidden" value="0">
@@ -511,7 +630,7 @@
         </div>
       </aside>
 
-      <section class="electric-panel">
+      <section id="electricReles" class="electric-panel" data-electric-section="reles">
         <div class="empresa-section-header compact">
           <div>
             <h2>Estaciones y relés GPIO</h2>
@@ -522,7 +641,7 @@
       </section>
     </section>
 
-    <section class="electric-panel" style="margin-top:14px;">
+    <section id="electricBitacora" class="electric-panel" data-electric-section="bitacora" style="margin-top:14px;">
       <div class="empresa-section-header compact">
         <div>
           <h2>Bitacora electrica</h2>
@@ -557,6 +676,33 @@
         if (!box) return;
         box.textContent = text || '';
         box.className = 'form-message' + (type ? ' ' + type : '');
+      }
+
+      function requestedElectricTab() {
+        var tab = params.get('tab') || 'resumen';
+        return ['resumen', 'conexion', 'raspberry', 'reles', 'bitacora'].indexOf(tab) >= 0 ? tab : 'resumen';
+      }
+
+      function setElectricTab(name, skipUrl) {
+        var sectionId = {
+          resumen: 'electricResumen',
+          conexion: 'electricConexion',
+          raspberry: 'electricRaspberry',
+          reles: 'electricReles',
+          bitacora: 'electricBitacora'
+        }[name] || 'electricResumen';
+        document.querySelectorAll('[data-electric-tab]').forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-electric-tab') === name);
+        });
+        if (!skipUrl) {
+          var url = new URL(location.href);
+          url.searchParams.set('tab', name);
+          history.replaceState(null, '', url.pathname + url.search + url.hash);
+        }
+        var target = $(sectionId);
+        if (target && target.scrollIntoView) {
+          target.scrollIntoView({ behavior: skipUrl ? 'auto' : 'smooth', block: 'start' });
+        }
       }
 
       async function requestJSON(url, options) {
@@ -806,6 +952,9 @@
         $('kpiActivas').textContent = String(activas);
         $('kpiReles').textContent = String(relays);
         $('kpiEvento').textContent = state.eventos.length ? (state.eventos[0].resultado || '--') : '--';
+        $('electricReadyConexion').textContent = cfg.habilitado ? 'Lista' : 'Pausada';
+        $('electricReadyRaspberry').textContent = String(raspberries);
+        $('electricReadyReles').textContent = String(relays);
       }
 
       function renderRaspberryList() {
@@ -1038,6 +1187,11 @@
       });
 
       document.addEventListener('click', async function (ev) {
+        var electricTab = ev.target.closest('[data-electric-tab]');
+        if (electricTab) {
+          setElectricTab(electricTab.getAttribute('data-electric-tab'));
+          return;
+        }
         var card = ev.target.closest('.relay-card');
         var raspberryCard = ev.target.closest('.raspberry-item');
         try {
@@ -1088,6 +1242,7 @@
 
       cargarEmpresa();
       loadAll();
+      setTimeout(function () { setElectricTab(requestedElectricTab(), true); }, 80);
     }());
   </script>
 </body>

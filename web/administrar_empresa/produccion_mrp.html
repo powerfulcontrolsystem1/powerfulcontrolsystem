@@ -28,6 +28,7 @@
     .prod-field input,.prod-field select,.prod-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--form-border,var(--border,rgba(15,35,64,.16)));background:var(--form-input-bg,var(--input-bg,#fff));color:var(--text,#172033);border-radius:8px;padding:9px 10px;min-height:38px;outline:none}
     .prod-field textarea{resize:vertical;min-height:72px}.prod-field input:focus,.prod-field select:focus,.prod-field textarea:focus{border-color:var(--accent,#1769e0);box-shadow:0 0 0 3px var(--focus,rgba(23,105,224,.18))}
     .prod-list,.prod-alerts,.prod-stage-grid,.prod-detail-list{display:grid;gap:8px}.prod-list{max-height:560px;overflow:auto;padding-right:2px}.prod-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .prod-command{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:12px;align-items:stretch}.prod-command-main,.prod-command-side{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 90%,var(--accent,#1769e0) 10%),var(--surface,#fff));padding:14px}.prod-command-main h2,.prod-command-side h2{margin:0 0 6px;font-size:16px}.prod-command-main p,.prod-command-side p{margin:0;color:var(--muted,#65758b);line-height:1.45}.prod-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.prod-check{display:grid;gap:8px;margin-top:12px}.prod-check span{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%);padding:8px 10px;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-check strong{color:var(--text,#172033)}
     .prod-item,.prod-stage,.prod-meta{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%)}.prod-item{padding:11px;display:grid;gap:7px}.prod-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center;min-width:0}.prod-item strong{font-size:14px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
     .prod-stage{padding:10px;min-height:76px}.prod-stage span,.prod-meta span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.prod-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
     .prod-meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.prod-meta{padding:8px;background:var(--surface,#fff)}.prod-meta strong{display:block;margin-top:3px;overflow-wrap:anywhere}
@@ -39,8 +40,8 @@
     .prod-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}.prod-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.prod-msg.is-error{color:var(--danger,#c43737)}
     #tab-config .prod-form>label{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%);color:var(--text,#172033);font-weight:700}
     html[data-theme^="dark"] .prod-head,html[data-theme^="dark"] .prod-box,html[data-theme^="dark"] .prod-kpi,html[data-theme^="dark"] .prod-tabs,html[data-theme^="dark"] .prod-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
-    @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}}
-    @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
+    @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview,.prod-command{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}}
+    @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid,.prod-quick-grid{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -82,6 +83,26 @@
     <div id="prodMsg" class="prod-msg"></div>
 
     <section id="tab-dashboard" class="prod-panel is-active">
+      <div class="prod-command">
+        <div class="prod-command-main">
+          <h2>Centro de planeacion productiva</h2>
+          <p>Prioriza ordenes, capacidad, materiales criticos y calidad desde un tablero pensado para decidir rapido antes de liberar produccion.</p>
+          <div class="prod-quick-grid">
+            <button class="prod-btn" data-tab="recetas" type="button">Gestionar BOM</button>
+            <button class="prod-btn" data-tab="ordenes" type="button">Programar orden</button>
+            <button class="prod-btn primary" data-tab="mrp" type="button">Revisar MRP</button>
+          </div>
+        </div>
+        <aside class="prod-command-side">
+          <h2>Checklist operativo</h2>
+          <p>Controla los puntos que suelen bloquear el piso de produccion.</p>
+          <div class="prod-check">
+            <span>Recetas activas <strong id="checkRecetas">0</strong></span>
+            <span>Ordenes urgentes <strong id="checkUrgentes">0</strong></span>
+            <span>Lineas MRP en riesgo <strong id="checkMRP">0</strong></span>
+          </div>
+        </aside>
+      </div>
       <div class="prod-overview">
         <div class="prod-box"><div class="prod-toolbar"><h2>Flujo operativo</h2></div><div id="prodPipeline" class="prod-stage-grid"></div></div>
         <aside class="prod-box"><div class="prod-toolbar"><h2>Alertas de produccion</h2></div><div id="prodAlerts" class="prod-alerts"></div></aside>
@@ -174,6 +195,6 @@
       </form>
     </section>
   </main>
-  <script src="/js/produccion_mrp.js"></script>
+  <script src="/js/produccion_mrp.js?v=20260509-produccion-pro"></script>
 </body>
 </html>

@@ -67,6 +67,34 @@
     if (text) msg(text);
   }
 
+  function requestedTab() {
+    var tab = new URLSearchParams(location.search || "").get("tab") || "dashboard";
+    var exists = false;
+    document.querySelectorAll(".wms-tab").forEach(function (btn) {
+      if (btn.dataset.tab === tab) exists = true;
+    });
+    return exists ? tab : "dashboard";
+  }
+
+  function setTab(name, skipUrl) {
+    var selected = null;
+    document.querySelectorAll(".wms-tab").forEach(function (btn) {
+      var active = btn.dataset.tab === name;
+      btn.classList.toggle("is-active", active);
+      if (active) selected = btn;
+    });
+    if (!selected) return false;
+    document.querySelectorAll(".wms-panel").forEach(function (panel) {
+      panel.classList.toggle("is-active", panel.id === "tab-" + name);
+    });
+    if (!skipUrl) {
+      var url = new URL(location.href);
+      url.searchParams.set("tab", name);
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+    }
+    return true;
+  }
+
   function api(action, options, extra) {
     if (!state.empresaId) return Promise.reject(new Error("empresa_id no disponible"));
     var url = "/api/empresa/logistica_wms?empresa_id=" + encodeURIComponent(state.empresaId) + "&action=" + encodeURIComponent(action) + (extra || "");
@@ -116,6 +144,9 @@
     el("kpiRuta").textContent = d.despachos_en_ruta || 0;
     el("kpiPendientes").textContent = fmt(d.unidades_pendientes || 0);
     el("kpiOcupacion").textContent = fmt(d.ocupacion_pct || 0) + "%";
+    if (el("readyOrdenes")) el("readyOrdenes").textContent = d.ordenes_abiertas || 0;
+    if (el("readyPendientes")) el("readyPendientes").textContent = fmt(d.unidades_pendientes || 0);
+    if (el("readyOcupacion")) el("readyOcupacion").textContent = fmt(d.ocupacion_pct || 0) + "%";
   }
 
   function renderPipeline() {
@@ -290,8 +321,7 @@
   document.addEventListener("click", function (ev) {
     var tab = ev.target.closest("[data-tab]");
     if (tab) {
-      document.querySelectorAll(".wms-tab").forEach(function (b) { b.classList.toggle("is-active", b === tab); });
-      document.querySelectorAll(".wms-panel").forEach(function (p) { p.classList.toggle("is-active", p.id === "tab-" + tab.dataset.tab); });
+      setTab(tab.dataset.tab);
       return;
     }
     var oid = ev.target.getAttribute("data-edit-orden") || ev.target.getAttribute("data-select-orden");
@@ -367,5 +397,6 @@
 
   clearOrdenForm();
   clearUbicacionForm();
+  setTab(requestedTab(), true);
   load();
 })();
