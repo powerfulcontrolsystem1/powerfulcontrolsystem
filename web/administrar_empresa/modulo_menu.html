@@ -164,6 +164,22 @@
             ["TV publica", "/img/network-color.svg", "/pantalla_turnos.html?sound=1"]
           ]
         },
+        crm_unificado: {
+          title: "CRM unificado",
+          summary: "Clientes, leads, seguimientos, cotizaciones, campanas, forecast, metas y embudo comercial.",
+          defaultUrl: "/administrar_empresa/crm_comercial.html?tab=tablero&v=20260509-crm-submenu",
+          items: [
+            ["Tablero ejecutivo", "/img/analytics-color.svg", "/administrar_empresa/crm_comercial.html?tab=tablero&v=20260509-crm-submenu"],
+            ["Clientes", "/img/customer.svg", "/administrar_empresa/administrar_clientes.html"],
+            ["Leads", "/img/network-color.svg", "/administrar_empresa/crm_comercial.html?tab=leads&v=20260509-crm-submenu"],
+            ["Seguimientos", "/img/report.svg", "/administrar_empresa/crm_comercial.html?tab=interacciones&v=20260509-crm-submenu"],
+            ["Cotizaciones", "/img/money.svg", "/administrar_empresa/crm_comercial.html?tab=cotizaciones&v=20260509-crm-submenu"],
+            ["Campanas", "/img/tags-color.svg", "/administrar_empresa/crm_comercial.html?tab=campanas&v=20260509-crm-submenu"],
+            ["Forecast", "/img/analytics-color.svg", "/administrar_empresa/crm_comercial.html?tab=forecast&v=20260509-crm-submenu"],
+            ["Metas y conversion", "/img/shield-license-color.svg", "/administrar_empresa/crm_comercial.html?tab=metas&v=20260509-crm-submenu"],
+            ["Embudo documental", "/img/report.svg", "/administrar_empresa/crm_comercial.html?tab=embudo&v=20260509-crm-submenu"]
+          ]
+        },
         chat_tareas: {
           title: "Chat y tareas",
           summary: "Conversaciones, usuarios, asignaciones y agenda compartida.",
@@ -347,7 +363,7 @@
       document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
     })();
   </script>
-  <script src="/js/empresa_submenu_shell.js" data-version="20260509-turnos-tv"></script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260509-crm-submenu"></script>
   <script src="/menu.js"></script>
 </body>
 </html>

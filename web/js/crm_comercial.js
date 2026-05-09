@@ -292,6 +292,11 @@
       const panel = $(TAB_PANEL[key]);
       if (panel) panel.classList.toggle("is-hidden", key !== tab);
     });
+    try {
+      const next = new URL(window.location.href);
+      next.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", next.toString());
+    } catch (_) {}
   }
 
   function leadName(lead) {
