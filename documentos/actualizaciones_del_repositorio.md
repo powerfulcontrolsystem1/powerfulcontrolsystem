@@ -7888,3 +7888,7 @@ Archivos modificados:
 - web/red_social_comercial.html
 - web/super/configuracion_avanzada.html
 - web/super/formato_para_emviar_email.html
+
+2026-05-10 17:07:31 - Mensaje: Corregir redeploy Docker en sync_to_vps; Commit: 2ac80094; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
