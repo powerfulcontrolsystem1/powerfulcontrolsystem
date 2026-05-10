@@ -1,6 +1,10 @@
 # Resumen del proyecto Powerful Control System
 
-Actualizacion: 2026-05-06
+Actualizacion: 2026-05-10
+
+Revision 2026-05-10: se actualiza el sistema de roles y permisos con modulos finos para CRM unificado, reservas hoteleras, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups, documentos OnlyOffice y Nextcloud. Backend, menu empresarial, paginas `link...`, wrappers API y compatibilidad de licencias quedan documentados en `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
+
+Ayuda super 2026-05-10: la ayuda administrativa completa `/ayuda/ayuda.html` sigue restringida al rol `super_administrador` y ahora se abre desde el boton `Ayuda super administrador` dentro de `web/super_administrador.html`. El rol `control_super_administrador`, administradores de empresa y usuarios operativos no ven esa ayuda privada; conservan ayudas publicas o contextuales.
 
 Powerful Control System es una plataforma POS/ERP SaaS multiempresa orientada a comercios, restaurantes, hoteles, moteles, gimnasios, consultorios odontologicos, copropiedades, domicilios, taxi/flotas y operaciones con estaciones o puntos de atencion. El sistema permite administrar empresas desde un panel central, operar ventas por carritos o estaciones, controlar usuarios, carnets empresariales, inventario, finanzas, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, cierre y bloqueo fiscal, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, facturacion, propiedad horizontal, reportes, soporte remoto, venta publica, red social comercial, carta QR y herramientas de inteligencia artificial. La operacion productiva esta pensada para PostgreSQL en VPS, con separacion entre base global de super administrador y base operativa de empresas.
 

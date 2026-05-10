@@ -1,3 +1,12 @@
+## Actualizacion 2026-05-10 (roles finos y ayuda privada super)
+
+- `backend/handlers/empresa_permisos.go` es la fuente canonica de modulos, acciones, paginas `link...`, wrappers empresariales y compatibilidad de licencias para los nuevos modulos finos.
+- `backend/main.go` registra rutas empresariales recientes con wrappers especificos: CRM unificado, reservas hoteleras, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
+- `web/js/administrar_empresa.js` mantiene el espejo frontend del catalogo para mostrar/ocultar botones del panel y submenus con la misma regla modulo/accion que el backend.
+- `web/super_administrador.html` incluye el boton `Ayuda super administrador` hacia `/ayuda/ayuda.html`; `web/js/super_administrador.js` permite cargarlo en `contentFrame`, pero la lista limitada del rol `control_super_administrador` no lo habilita.
+- `backend/utils/utils.go` conserva `/ayuda/ayuda.html` como ruta privada exclusiva de `super_administrador`; las ayudas especificas bajo `/ayuda/` siguen publicas cuando no son la ayuda administrativa completa.
+- `documentos/reporte_roles_ayuda_super_2026-05-10.md` resume el contrato operativo y las pruebas recomendadas.
+
 ## Actualizacion 2026-05-05 (portal publico, carta QR y publicacion Motel Calipso)
 
 - `web/index.html` contiene la seccion publica `Modulos del sistema` y el arreglo `fallbackCards`; ambos describen el alcance comercial actual de la plataforma: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios, taxi, turnos, control electrico, venta publica, carta QR, red social, roles/licencias y hoja de vida.

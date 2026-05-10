@@ -241,9 +241,12 @@ try {
   var permModuleDrogueriaFarmacia = "drogueria_farmacia";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
+  var permModuleCRMUnificado = "crm_unificado";
   var permModuleFacturacion = "facturacion";
   var permModuleSeguridad = "seguridad";
   var permModuleVentaPublica = "venta_publica";
+  var permModuleReservasHotel = "reservas_hotel";
+  var permModuleChatTareas = "chat_tareas";
   var permModuleGimnasio = "gimnasio";
   var permModuleTaxiSystem = "taxi_system";
   var permModuleDomicilios = "domicilios";
@@ -256,48 +259,66 @@ try {
   var permModuleControlElectrico = "control_electrico";
   var permModuleCarnets = "carnets";
   var permModuleProduccionMRP = "produccion_mrp";
+  var permModuleHorariosTrab = "horarios_trabajadores";
+  var permModuleAsistenciaEmpleados = "asistencia_empleados";
+  var permModuleVehiculosRegistro = "vehiculos_registro";
+  var permModuleHojaVidaOperativa = "hoja_vida_operativa";
+  var permModuleUbicacionGPS = "ubicacion_gps";
+  var permModuleNominaSueldos = "nomina_sueldos";
+  var permModuleReportes = "reportes";
+  var permModuleAuditoria = "auditoria";
+  var permModuleBackups = "backups";
+  var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
+  var permModuleNextcloud = "nextcloud";
 
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
+    linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
+    linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
+    linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
+    linkChatIA: { module: permModuleVentas, action: permActionRead },
+    linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
+    linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
+    linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
+    linkTarifasHotel: { module: permModuleVentas, action: permActionCreate },
+    linkTarifasMotel: { module: permModuleVentas, action: permActionCreate },
+    linkReservasHotel: { module: permModuleReservasHotel, action: permActionCreate },
+    linkHotelTarjetasAcceso: { module: permModuleReservasHotel, action: permActionCreate },
+    linkChatTareas: { module: permModuleChatTareas, action: permActionCreate },
+    linkConfiguracionChatFlotante: { module: permModuleChatTareas, action: permActionUpdate },
+    linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
+
     linkProductos: { module: permModuleInventario, action: permActionCreate },
+    linkProductosMain: { module: permModuleInventario, action: permActionCreate },
     linkInventarioAvanzado: { module: permModuleInventario, action: permActionCreate },
     linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
-    linkCartaProductosPublica: { module: permModuleVentaPublica, action: permActionCreate },
-    linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
-    linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
+    linkPreciosHistorial: { module: permModuleInventario, action: permActionRead },
+    linkBodegas: { module: permModuleInventario, action: permActionUpdate },
+    linkCategorias: { module: permModuleInventario, action: permActionUpdate },
     linkGeneradorCodigosBarras: { module: permModuleInventario, action: permActionUpdate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
+    linkComprasDoc: { module: permModuleCompras, action: permActionCreate },
+    linkProveedores: { module: permModuleCompras, action: permActionCreate },
     linkComprasAvanzadas: { module: permModuleCompras, action: permActionCreate },
     linkSoportesComprasIA: { module: permModuleSoportesComprasIA, action: permActionCreate },
     linkSoportesComprasIAMenu: { module: permModuleSoportesComprasIA, action: permActionCreate },
-    linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
-    linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
-    linkHelpdesk: { module: permModuleHelpdesk, action: permActionCreate },
     linkImportacionesCosteo: { module: permModuleImportaciones, action: permActionCreate },
     linkProduccionMRP: { module: permModuleProduccionMRP, action: permActionCreate },
     linkLogisticaWMS: { module: permModuleLogisticaWMS, action: permActionCreate },
-    linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionImpresora: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionPermisos: { module: permModuleSeguridad, action: permActionApprove },
-    linkConfiguracionGuiada: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionChatFlotante: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
-    linkConfiguracionCarritoEmpresa: { module: permModuleVentas, action: permActionApprove },
-    linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
-    linkHorariosTrabajadores: { module: permModuleSeguridad, action: permActionUpdate },
-    linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
-    linkCarnets: { module: permModuleCarnets, action: permActionCreate },
-    linkPortalUsuarios: { module: permModuleSeguridad, action: permActionRead },
-    linkNominaSueldos: { module: permModuleFinanzas, action: permActionCreate },
-    linkVehiculosRegistro: { module: permModuleSeguridad, action: permActionCreate },
-    linkHojaVidaOperativa: { module: permModuleSeguridad, action: permActionUpdate },
-    linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
-    linkChatTareas: { module: permModuleVentas, action: permActionCreate },
-    linkClientes: { module: permModuleClientes, action: permActionCreate },
-    linkCRMComercial: { module: permModuleClientes, action: permActionCreate },
-    linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
+    linkCartaProductosPublica: { module: permModuleVentaPublica, action: permActionCreate },
+    linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
+    linkConfiguracionCarritoEmpresa: { module: permModuleVentaPublica, action: permActionApprove },
+
     linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioDashboard: { module: permModuleGimnasio, action: permActionRead },
+    linkGimnasioSocios: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioPlanes: { module: permModuleGimnasio, action: permActionUpdate },
+    linkGimnasioEntrenadores: { module: permModuleGimnasio, action: permActionUpdate },
+    linkGimnasioClases: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioInscripciones: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioAsistencias: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioPagos: { module: permModuleGimnasio, action: permActionCreate },
+    linkGimnasioAcceso: { module: permModuleGimnasio, action: permActionApprove },
     linkTaxiSystem: { module: permModuleTaxiSystem, action: permActionCreate },
     linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
     linkParqueadero: { module: permModuleParqueadero, action: permActionCreate },
@@ -306,16 +327,21 @@ try {
     linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
     linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
     linkDrogueriaFarmacia: { module: permModuleDrogueriaFarmacia, action: permActionCreate },
-    linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
-    linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
-    linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
-    linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
-    linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkAIUConstruccion: { module: permModuleAIUConstruccion, action: permActionCreate },
-    linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
-    linkChatIA: { module: permModuleVentas, action: permActionRead },
+
+    linkClientes: { module: permModuleClientes, action: permActionCreate },
+    linkCRMComercial: { module: permModuleCRMUnificado, action: permActionCreate },
+
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
     linkFinanzasMain: { module: permModuleFinanzas, action: permActionCreate },
+    linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
+    linkEgresos: { module: permModuleFinanzas, action: permActionCreate },
+    linkIngresos: { module: permModuleFinanzas, action: permActionCreate },
+    linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
+    linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
+    linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
+    linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
+    linkComisiones: { module: permModuleFinanzas, action: permActionCreate },
     linkContabilidadColombia: { module: permModuleContabilidadCO, action: permActionCreate },
     linkContabilidadColombiaAvanzada: { module: permModuleContabilidadCOAv, action: permActionCreate },
     linkCentrosCosto: { module: permModuleCentrosCosto, action: permActionCreate },
@@ -328,9 +354,6 @@ try {
     linkDeclaracionesTributarias: { module: permModuleDeclaracionesTrib, action: permActionCreate },
     linkDeclaracionesTributariasMenu: { module: permModuleDeclaracionesTrib, action: permActionCreate },
     linkTesoreriaPresupuesto: { module: permModuleTesoreria, action: permActionCreate },
-    linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
-    linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
-    linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkCobranza: { module: permModuleCobranza, action: permActionCreate },
     linkCobranzaMenu: { module: permModuleCobranza, action: permActionCreate },
     linkPortalContador: { module: permModulePortalContador, action: permActionCreate },
@@ -338,33 +361,60 @@ try {
     linkPortalTercerosCertificados: { module: permModulePortalTerceros, action: permActionCreate },
     linkPortalTercerosCertificadosMenu: { module: permModulePortalTerceros, action: permActionCreate },
     linkCumplimientoKYC: { module: permModuleCumplimientoKYC, action: permActionApprove },
-    linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
-    linkNominaMenu: { module: permModuleFinanzas, action: permActionCreate },
-    linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
-    linkBackups: { module: permModuleSeguridad, action: permActionApprove },
-    linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
-    linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
-    linkComisiones: { module: permModuleFinanzas, action: permActionCreate },
-    linkUbicacionGPS: { module: permModuleInventario, action: permActionCreate },
-    linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
-    linkConfiguracionSensoresRaspberry: { module: permModuleSeguridad, action: permActionUpdate },
-    linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
-    linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
-    linkTarifasHotel: { module: permModuleVentas, action: permActionCreate },
-    linkTarifasMotel: { module: permModuleVentas, action: permActionCreate },
-    linkHotelTarjetasAcceso: { module: permModuleVentas, action: permActionCreate },
-    linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
-    linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
+    linkNominaSueldos: { module: permModuleNominaSueldos, action: permActionCreate },
+    linkNominaMenu: { module: permModuleNominaSueldos, action: permActionCreate },
+
+    linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
+    linkFacturacionMain: { module: permModuleFacturacion, action: permActionCreate },
+    linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkImpuestos: { module: permModuleFacturacion, action: permActionUpdate },
-    linkDocumentosOnlyOffice: { module: permModuleSeguridad, action: permActionRead },
+    linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
+
+    linkReportes: { module: permModuleReportes, action: permActionRead },
+    linkReportesMain: { module: permModuleReportes, action: permActionRead },
+    linkReportesVentas: { module: permModuleVentas, action: permActionRead },
+    linkReportesInventario: { module: permModuleInventario, action: permActionRead },
+    linkReportesFinanzas: { module: permModuleFinanzas, action: permActionRead },
+    linkReportesImpuestos: { module: permModuleFacturacion, action: permActionRead },
+    linkReportesIAChat: { module: permModuleReportes, action: permActionRead },
+    linkGraficosEstadisticas: { module: permModuleReportes, action: permActionRead },
+    linkCalculadora: { module: permModuleFinanzas, action: permActionRead },
+
+    linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
+    linkPortalUsuarios: { module: permModuleSeguridad, action: permActionRead },
+    linkMiHorario: { module: permModuleHorariosTrab, action: permActionRead },
+    linkHorariosTrabajadores: { module: permModuleHorariosTrab, action: permActionUpdate },
+    linkAsistenciaEmpleados: { module: permModuleAsistenciaEmpleados, action: permActionUpdate },
+    linkCarnets: { module: permModuleCarnets, action: permActionCreate },
+    linkVehiculosRegistro: { module: permModuleVehiculosRegistro, action: permActionCreate },
+    linkHojaVidaOperativa: { module: permModuleHojaVidaOperativa, action: permActionUpdate },
+    linkUbicacionGPS: { module: permModuleUbicacionGPS, action: permActionCreate },
+
+    linkAuditoria: { module: permModuleAuditoria, action: permActionRead },
+    linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
+    linkBackups: { module: permModuleBackups, action: permActionApprove },
+
+    linkDocumentosOnlyOffice: { module: permModuleDocumentosOnlyOffice, action: permActionRead },
+    linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
+    linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
+    linkHelpdesk: { module: permModuleHelpdesk, action: permActionCreate },
+    linkNextcloud: { module: permModuleNextcloud, action: permActionRead },
+    linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
+
+    linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionImpresora: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionPermisos: { module: permModuleSeguridad, action: permActionApprove },
+    linkConfiguracionGuiada: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionSensoresRaspberry: { module: permModuleControlElectrico, action: permActionUpdate },
+    linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
     linkRadioOnline: { module: permModuleSeguridad, action: permActionRead },
-    linkNextcloud: { module: permModuleSeguridad, action: permActionRead },
+    linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
+    linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
+    linkChatIAGlobal: { module: permModuleSeguridad, action: permActionRead },
     linkEstaciones: { alwaysVisible: true },
-    linkPanelEmpresa: { alwaysVisible: true },
-    
-    linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
-    linkReportes: { module: permModuleFinanzas, action: permActionRead },
-    linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
+    linkPanelEmpresa: { alwaysVisible: true }
   };
 
   function storageKey(empresaId) {
@@ -863,6 +913,7 @@ try {
       case permModuleActivosFijosNIIF:
       case permModuleDeclaracionesTrib:
       case permModuleTesoreria:
+      case permModuleNominaSueldos:
       case permModuleCobranza:
       case permModulePortalContador:
       case permModulePortalTerceros:
@@ -875,7 +926,27 @@ try {
         }
         break;
 
+      case permModuleBancosPagos:
+      case permModuleGestionDocumental:
+      case permModuleCumplimientoKYC:
+      case permModuleContratosObligaciones:
+      case permModuleHelpdesk:
+      case permModuleCalidadProcesos:
+      case permModuleAuditoria:
+      case permModuleBackups:
+      case permModuleDocumentosOnlyOffice:
+      case permModuleNextcloud:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);
+        }
+        if (normalizedAction === "D") {
+          return roleIn(normalizedRole, ["admin_empresa"]);
+        }
+        break;
+
       case permModuleClientes:
+      case permModuleCRMUnificado:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero"]);
@@ -913,6 +984,8 @@ try {
         break;
 
       case permModuleVentaPublica:
+      case permModuleReservasHotel:
+      case permModuleChatTareas:
       case permModuleGimnasio:
       case permModuleTaxiSystem:
       case permModuleDomicilios:
@@ -939,6 +1012,30 @@ try {
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario", "compras"]);
+        }
+        break;
+
+      case permModuleHorariosTrab:
+      case permModuleAsistenciaEmpleados:
+      case permModuleVehiculosRegistro:
+      case permModuleHojaVidaOperativa:
+      case permModuleUbicacionGPS:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
+        }
+        if (normalizedAction === "D" || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa"]);
+        }
+        break;
+
+      case permModuleReportes:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);
+        }
+        if (normalizedAction === "D") {
+          return roleIn(normalizedRole, ["admin_empresa"]);
         }
         break;
 

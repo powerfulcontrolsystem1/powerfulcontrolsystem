@@ -23,7 +23,8 @@
   }
 
   function isAllowedSuperHref(href) {
-    return normalizeHref(href).indexOf("/super/") === 0;
+    var normalized = normalizeHref(href);
+    return normalized.indexOf("/super/") === 0 || normalized === "/ayuda/ayuda.html";
   }
 
   function persistLastPage(href) {

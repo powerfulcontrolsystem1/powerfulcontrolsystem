@@ -1,3 +1,11 @@
+2026-05-10: Nota operativa para roles finos, paginas nuevas y ayuda super
+- Se agregan claves independientes al catalogo de permisos/licencias: `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice` y `nextcloud`.
+- Las paginas del menu empresarial y submenus quedan cubiertas por `permissionPagesCatalogOrdered` en backend y por `menuPermissionCatalog` en frontend; no debe existir un boton `link...` visible sin regla de modulo/accion.
+- Los endpoints que antes dependian de modulos amplios ahora usan wrappers especificos cuando corresponde: CRM unificado, reservas hoteleras, chat/tareas, personal/activos, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
+- Compatibilidad de licencias: si una licencia antigua habilita `ventas`, `seguridad`, `finanzas`, `inventario` o `clientes`, esas claves siguen habilitando las funciones que fueron separadas en modulos finos para evitar cortes operativos durante la migracion.
+- La ayuda administrativa completa `/ayuda/ayuda.html` es privada para `super_administrador` y se accede desde el boton `Ayuda super administrador` del panel super; el rol `control_super_administrador` no recibe este acceso.
+- Validacion: `go test ./...`, `node --check web/js/administrar_empresa.js`, `node --check web/js/super_administrador.js` y auditoria de IDs `link...` contra catalogos backend/frontend.
+
 2026-05-06: Nota operativa para modulos empresariales Colombia
 - Se agregan claves independientes: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos`, activables por licencia mediante `licencias.modulos_habilitados`.
 - Las paginas `linkBancosPagos`, `linkGestionDocumental`, `linkCumplimientoKYC`, `linkContratosObligaciones`, `linkHelpdesk` y `linkCalidadProcesos` quedan registradas en el catalogo de paginas y en el menu de Administrar empresa.

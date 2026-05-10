@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-06
-Estado: vigente, actualizado con Modulos empresariales Colombia (bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad), Logistica avanzada / WMS, Declaraciones Tributarias y Motor de Impuestos Colombia, Portal de Terceros y Certificados Tributarios, Activos Fijos e Intangibles NIIF/Fiscal, Propiedad Horizontal, promocion de licencias por asesor, Cierre y bloqueo fiscal, Centros de costo y rentabilidad, CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
+Fecha: 2026-05-10
+Estado: vigente, actualizado con roles y permisos finos para nuevos modulos/paginas, ayuda privada del super administrador, Modulos empresariales Colombia (bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad), Logistica avanzada / WMS, Declaraciones Tributarias y Motor de Impuestos Colombia, Portal de Terceros y Certificados Tributarios, Activos Fijos e Intangibles NIIF/Fiscal, Propiedad Horizontal, promocion de licencias por asesor, Cierre y bloqueo fiscal, Centros de costo y rentabilidad, CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-10: actualizado el sistema documental de roles/permisos con modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`), wrappers API especificos y compatibilidad de licencias amplias. Ver `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
+- 2026-05-10: la ayuda administrativa completa `/ayuda/ayuda.html` se mantiene exclusiva para `super_administrador` y se abre desde el boton `Ayuda super administrador` en `web/super_administrador.html`; el rol `control_super_administrador` no ve ese acceso.
 - 2026-05-06: implementados `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos` sobre un nucleo compartido por `empresa_id`, con APIs privadas, pantallas administrativas, permisos/licencias, datos demo, exportacion CSV y documento `documentos/modulos_empresariales_colombia.md`.
 - 2026-05-06: agregado modulo `Logistica avanzada / WMS` con API `/api/empresa/logistica_wms`, ubicaciones internas, ordenes WMS, picking, packing, despachos, rutas, avance por item, bitacora, permiso/licencia `logistica_wms`, pantalla `web/administrar_empresa/logistica_wms.html` y documento `documentos/logistica_wms.md`.
 - 2026-05-06: agregado modulo `Declaraciones Tributarias y Motor de Impuestos Colombia` con API `/api/empresa/declaraciones_tributarias`, preliquidacion de IVA, retenciones, ICA, consumo, renta y regimen simple, calendario tributario editable, saldos a pagar/favor, movimientos de conciliacion, permiso/licencia `declaraciones_tributarias`, pantalla `web/administrar_empresa/declaraciones_tributarias.html` y documento `documentos/declaraciones_tributarias.md`.
@@ -69,6 +71,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
+- Roles, permisos finos y ayuda privada super: `documentos/reporte_roles_ayuda_super_2026-05-10.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
 - Suite contable Colombia avanzada: `documentos/contabilidad_colombia_avanzada.md`
 - Declaraciones tributarias Colombia: `documentos/declaraciones_tributarias.md`

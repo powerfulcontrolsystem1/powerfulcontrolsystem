@@ -27,6 +27,38 @@ func TestLicenciaModulosCSVControlsModuleAccess(t *testing.T) {
 	}
 }
 
+func TestLicenciaModulosLegacyFallbacksKeepSplitModulesEnabled(t *testing.T) {
+	allowed, _ := parseLicenciaModulosCSV(strings.Join([]string{
+		permModuleVentas,
+		permModuleSeguridad,
+		permModuleFinanzas,
+		permModuleInventario,
+		permModuleClientes,
+	}, ","))
+
+	cases := []string{
+		permModuleReservasHotel,
+		permModuleChatTareas,
+		permModuleHorariosTrab,
+		permModuleAsistenciaEmpleados,
+		permModuleVehiculosRegistro,
+		permModuleHojaVidaOperativa,
+		permModuleUbicacionGPS,
+		permModuleNominaSueldos,
+		permModuleReportes,
+		permModuleAuditoria,
+		permModuleBackups,
+		permModuleDocumentosOnlyOffice,
+		permModuleNextcloud,
+		permModuleCRMUnificado,
+	}
+	for _, module := range cases {
+		if !isModuloPermitidoByLicencia(module, allowed) {
+			t.Fatalf("expected legacy licencia modules to enable split module %s", module)
+		}
+	}
+}
+
 func TestApplyLicenciaRestriccionesDisablesActionsForInactiveModules(t *testing.T) {
 	rows := []permissionModuleMatrixRow{
 		{

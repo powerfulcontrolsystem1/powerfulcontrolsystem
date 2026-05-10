@@ -1,9 +1,11 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-05-06
+Actualizacion: 2026-05-10
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
+
+Revision roles/ayuda 2026-05-10: el catalogo de permisos separa nuevos modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`) y conserva compatibilidad con licencias antiguas basadas en `ventas`, `seguridad`, `finanzas`, `inventario` o `clientes`. La ayuda completa de super administrador se abre desde `web/super_administrador.html` y solo la puede ver `super_administrador`.
 
 Revision QA 2026-05-06: se validaron paginas y APIs principales con sesion super administradora sobre Motel Calipso (`empresa_id=7`), se corrigio coherencia de permisos locales para `administrador_total`, se optimizaron dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia`, y se documento el resultado en `documentos/reporte_qa_modulos_2026-05-06.md`. La portada publica `web/index.html` tambien queda actualizada para describir Cobranza, Portal contador, Captura IA/OCR, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
 
@@ -68,7 +70,7 @@ Actualizacion operativa 2026-05-05:
 - Gestion de cobranza se agrega al Centro financiero y contable como modulo profesional propio para recuperar cartera sin duplicar cuentas por cobrar: dashboard, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio, datos demo y exportacion CSV por empresa.
 - Portal contador se agrega al Centro financiero y contable como oficina virtual para contadores y firmas contables, con clientes contables, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, tablero de vencimientos y permisos por modulo/licencia.
 - La navegacion empresarial se organiza por dominios: Finanzas operativas, Contabilidad Colombia y Suite contable Colombia se agrupan bajo `Centro financiero y contable` sin eliminar rutas internas ni duplicar codigo.
-- La ayuda administrativa principal queda reservada para `super_administrador`; el nuevo rol `control_super_administrador` supervisa administradores, seguridad, errores, metricas y reportes globales con alcance limitado.
+- La ayuda administrativa principal queda reservada para `super_administrador`, se abre desde el boton `Ayuda super administrador` del panel super y no se muestra al rol `control_super_administrador`; ese rol supervisa administradores, seguridad, errores, metricas y reportes globales con alcance limitado.
 
 1) Autenticacion y sesiones
 - Login Google para administradores.

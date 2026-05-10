@@ -1,3 +1,12 @@
+2026-05-10: Roles finos, paginas nuevas y ayuda super privada
+- Modulos afectados: `roles/licencias`, `administrar_empresa`, `super_administrador`, `ayuda`, `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`.
+- Cambio funcional: el sistema de roles distingue funciones que antes colgaban de modulos amplios, permitiendo administrar visibilidad de paginas, acciones R/C/U/D/A y wrappers API con mayor precision.
+- Backend: se amplian `permissionModulesCatalogOrdered`, `permissionPagesCatalogOrdered`, `roleAllowsModuleAction` y wrappers `WithEmpresa*Permissions` para los nuevos modulos.
+- Frontend: `web/js/administrar_empresa.js` queda alineado con el catalogo backend para que los botones del menu y submenus respondan al mismo modulo/accion.
+- Licencias: se conserva fallback de compatibilidad para licencias antiguas basadas en `ventas`, `seguridad`, `finanzas`, `inventario` o `clientes`.
+- Ayuda: `web/super_administrador.html` agrega boton `Ayuda super administrador` hacia `/ayuda/ayuda.html`, protegido exclusivamente para `super_administrador`.
+- Documentacion: se agrega `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
+
 2026-05-06: Modulos empresariales Colombia faltantes
 - Modulos afectados: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk`, `calidad_procesos`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se agrega una familia profesional de modulos empresariales para bancos/pagos masivos, gestion documental, KYC/KYB y LAFT, contratos/obligaciones, mesa de ayuda y calidad/procesos.

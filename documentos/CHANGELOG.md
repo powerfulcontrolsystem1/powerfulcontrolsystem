@@ -1,3 +1,11 @@
+## [2026-05-10] Roles finos y ayuda privada super
+- [Permisos] Se documentan modulos finos para CRM unificado, reservas, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
+- [Backend] Las rutas empresariales recientes quedan asociadas a wrappers especificos y la prueba de seguridad de rutas reconoce esos wrappers.
+- [Licencias] Se mantiene compatibilidad para licencias antiguas con modulos amplios (`ventas`, `seguridad`, `finanzas`, `inventario`, `clientes`) para evitar perdida de acceso tras separar modulos.
+- [Super] `web/super_administrador.html` agrega el boton `Ayuda super administrador`, que abre `/ayuda/ayuda.html` dentro del panel.
+- [Seguridad] `/ayuda/ayuda.html` permanece exclusiva de `super_administrador`; el rol `control_super_administrador` no recibe el boton ni la ruta en su lista limitada.
+- [Docs] Se agrega `documentos/reporte_roles_ayuda_super_2026-05-10.md` y se actualizan README documental, resumen, descripcion del proyecto, descripcion de modulos, matriz de roles y ayuda web.
+
 ## [2026-05-07] QA E2E Motel Calipso y ajustes flotantes
 - [QA Motel Calipso] Se ejecuta regresion autenticada sobre `empresa_id=7` con 60 modulos de Administrar empresa: escritorio con 60/60 modulos cargados y validacion dirigida posterior sin errores para activos fijos, auditoria, red social, control electrico, venta publica, radio y configuracion.
 - [QA profunda] Se agrega runner `backend/tmp_tools/qa_calipso_operativo/deep_flows_calipso.mjs` para crear datos QA reales en parqueadero, WMS, centros de costo, activos fijos, red social con imagen, carta publica, venta publica y validacion QR publica. Resultado final: 6/6 pasos OK, sin errores de consola, red ni pagina.

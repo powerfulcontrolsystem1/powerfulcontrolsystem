@@ -1,3 +1,14 @@
+- Actualizacion 2026-05-10: roles finos y ayuda privada super
+	- `backend/handlers/empresa_permisos.go` : catalogo actualizado de modulos, paginas, wrappers y compatibilidad de licencias para CRM unificado, reservas, chat/tareas, personal/activos, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
+	- `backend/main.go` : rutas empresariales recientes registradas con wrappers especificos por modulo.
+	- `backend/main_empresa_routes_security_test.go` : lista de wrappers permitidos actualizada para mantener la prueba de rutas protegidas.
+	- `backend/main_super_help_frontend_test.go` : contrato frontend para verificar boton privado de ayuda super y que el rol contralor no quede autorizado por navegacion limitada.
+	- `web/js/administrar_empresa.js` : espejo frontend de permisos para paginas `link...` y submenus empresariales.
+	- `web/super_administrador.html` : agrega boton `Ayuda super administrador`.
+	- `web/js/super_administrador.js` : permite cargar `/ayuda/ayuda.html` en el iframe del panel super.
+	- `web/ayuda/ayuda.html` : ayuda administrativa actualizada con roles finos y acceso privado.
+	- `documentos/reporte_roles_ayuda_super_2026-05-10.md` : reporte documental de la actualizacion.
+
 - Actualizacion 2026-05-06: logistica avanzada / WMS
 	- `backend/db/logistica_wms.go` : esquema, normalizacion, CRUD de ubicaciones, ordenes, items, despachos, eventos, dashboard y datos demo por `empresa_id`.
 	- `backend/handlers/logistica_wms.go` : API `/api/empresa/logistica_wms` con acciones de consulta, guardado, avance operativo y demo.

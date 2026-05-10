@@ -25,47 +25,61 @@ const (
 	permActionDelete  = "D"
 	permActionApprove = "A"
 
-	permModuleVentas              = "ventas"
-	permModuleInventario          = "inventario"
-	permModuleFinanzas            = "finanzas"
-	permModuleContabilidadCO      = "contabilidad_colombia"
-	permModuleContabilidadCOAv    = "contabilidad_colombia_avanzada"
-	permModuleCentrosCosto        = "centros_costo"
-	permModuleCierreFiscal        = "cierre_fiscal"
-	permModuleActivosFijosNIIF    = "activos_fijos_niif_fiscal"
-	permModuleDeclaracionesTrib   = "declaraciones_tributarias"
-	permModuleClientes            = "clientes"
-	permModuleCompras             = "compras"
-	permModuleFacturacion         = "facturacion"
-	permModuleSeguridad           = "seguridad"
-	permModuleVentaPublica        = "venta_publica"
-	permModuleGimnasio            = "gimnasio"
-	permModuleTaxiSystem          = "taxi_system"
-	permModuleDomicilios          = "domicilios"
-	permModuleParqueadero         = "parqueadero"
-	permModuleApartTuristicos     = "apartamentos_turisticos"
-	permModulePropiedadHorizontal = "propiedad_horizontal"
-	permModuleAlquileres          = "alquileres"
-	permModuleOdontologia         = "odontologia"
-	permModuleTurnos              = "turnos_atencion"
-	permModuleControlElectrico    = "control_electrico"
-	permModuleCarnets             = "carnets"
-	permModuleProduccionMRP       = "produccion_mrp"
-	permModuleLogisticaWMS        = "logistica_wms"
-	permModuleTesoreria           = "tesoreria_presupuesto"
-	permModuleImportaciones       = "importaciones_costeo"
-	permModuleAIUConstruccion     = "aiu_construccion"
-	permModuleCobranza            = "cobranza"
-	permModulePortalContador      = "portal_contador"
-	permModulePortalTerceros      = "portal_terceros_certificados"
-	permModuleSoportesComprasIA   = "soportes_compras_ia"
-	permModuleBancosPagos         = "bancos_pagos"
-	permModuleGestionDocumental   = "gestion_documental"
-	permModuleCumplimientoKYC     = "cumplimiento_kyc"
-	permModuleContratosOblig      = "contratos_obligaciones"
-	permModuleHelpdesk            = "helpdesk"
-	permModuleCalidadProcesos     = "calidad_procesos"
-	permModuleDrogueriaFarmacia   = "drogueria_farmacia"
+	permModuleVentas               = "ventas"
+	permModuleInventario           = "inventario"
+	permModuleFinanzas             = "finanzas"
+	permModuleContabilidadCO       = "contabilidad_colombia"
+	permModuleContabilidadCOAv     = "contabilidad_colombia_avanzada"
+	permModuleCentrosCosto         = "centros_costo"
+	permModuleCierreFiscal         = "cierre_fiscal"
+	permModuleActivosFijosNIIF     = "activos_fijos_niif_fiscal"
+	permModuleDeclaracionesTrib    = "declaraciones_tributarias"
+	permModuleClientes             = "clientes"
+	permModuleCRMUnificado         = "crm_unificado"
+	permModuleCompras              = "compras"
+	permModuleFacturacion          = "facturacion"
+	permModuleSeguridad            = "seguridad"
+	permModuleVentaPublica         = "venta_publica"
+	permModuleReservasHotel        = "reservas_hotel"
+	permModuleChatTareas           = "chat_tareas"
+	permModuleGimnasio             = "gimnasio"
+	permModuleTaxiSystem           = "taxi_system"
+	permModuleDomicilios           = "domicilios"
+	permModuleParqueadero          = "parqueadero"
+	permModuleApartTuristicos      = "apartamentos_turisticos"
+	permModulePropiedadHorizontal  = "propiedad_horizontal"
+	permModuleAlquileres           = "alquileres"
+	permModuleOdontologia          = "odontologia"
+	permModuleTurnos               = "turnos_atencion"
+	permModuleControlElectrico     = "control_electrico"
+	permModuleCarnets              = "carnets"
+	permModuleHorariosTrab         = "horarios_trabajadores"
+	permModuleAsistenciaEmpleados  = "asistencia_empleados"
+	permModuleVehiculosRegistro    = "vehiculos_registro"
+	permModuleHojaVidaOperativa    = "hoja_vida_operativa"
+	permModuleUbicacionGPS         = "ubicacion_gps"
+	permModuleProduccionMRP        = "produccion_mrp"
+	permModuleLogisticaWMS         = "logistica_wms"
+	permModuleTesoreria            = "tesoreria_presupuesto"
+	permModuleNominaSueldos        = "nomina_sueldos"
+	permModuleImportaciones        = "importaciones_costeo"
+	permModuleAIUConstruccion      = "aiu_construccion"
+	permModuleCobranza             = "cobranza"
+	permModuleReportes             = "reportes"
+	permModulePortalContador       = "portal_contador"
+	permModulePortalTerceros       = "portal_terceros_certificados"
+	permModuleSoportesComprasIA    = "soportes_compras_ia"
+	permModuleBancosPagos          = "bancos_pagos"
+	permModuleGestionDocumental    = "gestion_documental"
+	permModuleCumplimientoKYC      = "cumplimiento_kyc"
+	permModuleContratosOblig       = "contratos_obligaciones"
+	permModuleHelpdesk             = "helpdesk"
+	permModuleCalidadProcesos      = "calidad_procesos"
+	permModuleDrogueriaFarmacia    = "drogueria_farmacia"
+	permModuleAuditoria            = "auditoria"
+	permModuleBackups              = "backups"
+	permModuleDocumentosOnlyOffice = "documentos_onlyoffice"
+	permModuleNextcloud            = "nextcloud"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -168,6 +182,8 @@ func sanitizeLegacyPermissionVisibleText(value string) string {
 var permissionUniversalGroupLabels = map[string]string{
 	"Operaci\u00f3n diaria y ventas":                "Operaci\u00f3n universal y ventas",
 	"Operaci\u00f3n y venta":                        "Operaci\u00f3n universal y ventas",
+	"Operacion diaria y ventas":                     "Operaci\u00f3n universal y ventas",
+	"Operacion y venta":                             "Operaci\u00f3n universal y ventas",
 	"Verticales de negocio":                         "Soluciones universales por negocio",
 	"Inventario y compras":                          "Inventario y compras universales",
 	"Inventario y cat\u00e1logo":                    "Inventario y compras universales",
@@ -179,9 +195,15 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Administraci\u00f3n y configuraci\u00f3n":      "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Seguridad e integraci\u00f3n":                  "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Configuraci\u00f3n":                            "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Administracion y configuracion":                "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Seguridad e integracion":                       "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Configuracion":                                 "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Facturaci\u00f3n electr\u00f3nica":             "Facturaci\u00f3n electr\u00f3nica universal",
 	"Facturaci\u00f3n DIAN":                         "Facturaci\u00f3n electr\u00f3nica universal",
+	"Facturacion electronica":                       "Facturaci\u00f3n electr\u00f3nica universal",
+	"Facturacion DIAN":                              "Facturaci\u00f3n electr\u00f3nica universal",
 	"Gesti\u00f3n de Relaciones con Clientes (CRM)": "CRM universal y clientes",
+	"Gestion de Relaciones con Clientes (CRM)":      "CRM universal y clientes",
 	"Clientes":                   "CRM universal y clientes",
 	"Personas y activos":         "Personas y activos universales",
 	"An\u00e1lisis y control":    "An\u00e1lisis universal y control",
@@ -232,10 +254,13 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleActivosFijosNIIF,
 	permModuleDeclaracionesTrib,
 	permModuleClientes,
+	permModuleCRMUnificado,
 	permModuleCompras,
 	permModuleFacturacion,
 	permModuleSeguridad,
 	permModuleVentaPublica,
+	permModuleReservasHotel,
+	permModuleChatTareas,
 	permModuleGimnasio,
 	permModuleTaxiSystem,
 	permModuleDomicilios,
@@ -247,12 +272,19 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleTurnos,
 	permModuleControlElectrico,
 	permModuleCarnets,
+	permModuleHorariosTrab,
+	permModuleAsistenciaEmpleados,
+	permModuleVehiculosRegistro,
+	permModuleHojaVidaOperativa,
+	permModuleUbicacionGPS,
 	permModuleProduccionMRP,
 	permModuleLogisticaWMS,
 	permModuleTesoreria,
+	permModuleNominaSueldos,
 	permModuleImportaciones,
 	permModuleAIUConstruccion,
 	permModuleCobranza,
+	permModuleReportes,
 	permModulePortalContador,
 	permModulePortalTerceros,
 	permModuleSoportesComprasIA,
@@ -263,6 +295,10 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleHelpdesk,
 	permModuleCalidadProcesos,
 	permModuleDrogueriaFarmacia,
+	permModuleAuditoria,
+	permModuleBackups,
+	permModuleDocumentosOnlyOffice,
+	permModuleNextcloud,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -284,47 +320,61 @@ var permissionActionDisplayNames = map[string]string{
 
 // permissionModuleDisplayNames nombres de negocio por clave de módulo.
 var permissionModuleDisplayNames = map[string]string{
-	permModuleVentas:              "Ventas y servicio al cliente",
-	permModuleInventario:          "Inventario y almacén",
-	permModuleFinanzas:            "Finanzas, caja y reportes",
-	permModuleContabilidadCO:      "Contabilidad Colombia NIIF/DIAN",
-	permModuleContabilidadCOAv:    "Suite contable Colombia avanzada",
-	permModuleCentrosCosto:        "Centros de costo y rentabilidad",
-	permModuleCierreFiscal:        "Cierre y bloqueo fiscal",
-	permModuleActivosFijosNIIF:    "Activos fijos e intangibles NIIF/Fiscal",
-	permModuleDeclaracionesTrib:   "Declaraciones tributarias Colombia",
-	permModuleClientes:            "Clientes y cartera comercial",
-	permModuleCompras:             "Compras y proveedores",
-	permModuleFacturacion:         "Facturación electrónica (DIAN)",
-	permModuleSeguridad:           "Seguridad, usuarios e integración",
-	permModuleVentaPublica:        "Venta publica y carta de productos",
-	permModuleGimnasio:            "Gimnasio y membresias",
-	permModuleTaxiSystem:          "Taxi system y despacho GPS",
-	permModuleDomicilios:          "Domicilios y delivery",
-	permModuleParqueadero:         "Parqueadero y tickets QR",
-	permModuleApartTuristicos:     "Apartamentos turisticos",
-	permModulePropiedadHorizontal: "Propiedad horizontal",
-	permModuleAlquileres:          "Alquiler universal de activos",
-	permModuleOdontologia:         "Odontologia y agenda clinica",
-	permModuleTurnos:              "Turnos de atencion",
-	permModuleControlElectrico:    "Control electrico e IoT",
-	permModuleCarnets:             "Carnets empresariales",
-	permModuleProduccionMRP:       "Produccion / MRP",
-	permModuleLogisticaWMS:        "Logistica avanzada / WMS",
-	permModuleTesoreria:           "Tesoreria y presupuesto",
-	permModuleImportaciones:       "Importaciones y costeo",
-	permModuleAIUConstruccion:     "AIU construccion y contratos de obra",
-	permModuleCobranza:            "Gestion de cobranza",
-	permModulePortalContador:      "Portal contador",
-	permModulePortalTerceros:      "Portal de terceros y certificados tributarios",
-	permModuleSoportesComprasIA:   "Captura inteligente de compras y gastos",
-	permModuleBancosPagos:         "Bancos y pagos masivos Colombia",
-	permModuleGestionDocumental:   "Gestion documental y aprobaciones",
-	permModuleCumplimientoKYC:     "Cumplimiento KYC/KYB y riesgo LAFT",
-	permModuleContratosOblig:      "Contratos, obligaciones y firma electronica",
-	permModuleHelpdesk:            "Mesa de ayuda / Helpdesk",
-	permModuleCalidadProcesos:     "Calidad, procesos y no conformidades",
-	permModuleDrogueriaFarmacia:   "Drogueria y farmacia",
+	permModuleVentas:               "Ventas y servicio al cliente",
+	permModuleInventario:           "Inventario y almacén",
+	permModuleFinanzas:             "Finanzas, caja y reportes",
+	permModuleContabilidadCO:       "Contabilidad Colombia NIIF/DIAN",
+	permModuleContabilidadCOAv:     "Suite contable Colombia avanzada",
+	permModuleCentrosCosto:         "Centros de costo y rentabilidad",
+	permModuleCierreFiscal:         "Cierre y bloqueo fiscal",
+	permModuleActivosFijosNIIF:     "Activos fijos e intangibles NIIF/Fiscal",
+	permModuleDeclaracionesTrib:    "Declaraciones tributarias Colombia",
+	permModuleClientes:             "Clientes y cartera comercial",
+	permModuleCRMUnificado:         "CRM unificado comercial",
+	permModuleCompras:              "Compras y proveedores",
+	permModuleFacturacion:          "Facturación electrónica (DIAN)",
+	permModuleSeguridad:            "Seguridad, usuarios e integración",
+	permModuleVentaPublica:         "Venta publica y carta de productos",
+	permModuleReservasHotel:        "Reservas hoteleras",
+	permModuleChatTareas:           "Chat, tareas y agenda compartida",
+	permModuleGimnasio:             "Gimnasio y membresias",
+	permModuleTaxiSystem:           "Taxi system y despacho GPS",
+	permModuleDomicilios:           "Domicilios y delivery",
+	permModuleParqueadero:          "Parqueadero y tickets QR",
+	permModuleApartTuristicos:      "Apartamentos turisticos",
+	permModulePropiedadHorizontal:  "Propiedad horizontal",
+	permModuleAlquileres:           "Alquiler universal de activos",
+	permModuleOdontologia:          "Odontologia y agenda clinica",
+	permModuleTurnos:               "Turnos de atencion",
+	permModuleControlElectrico:     "Control electrico e IoT",
+	permModuleCarnets:              "Carnets empresariales",
+	permModuleHorariosTrab:         "Horarios laborales",
+	permModuleAsistenciaEmpleados:  "Asistencia de empleados",
+	permModuleVehiculosRegistro:    "Registro de vehiculos",
+	permModuleHojaVidaOperativa:    "Historial de activos",
+	permModuleUbicacionGPS:         "Ubicacion GPS de activos",
+	permModuleProduccionMRP:        "Produccion / MRP",
+	permModuleLogisticaWMS:         "Logistica avanzada / WMS",
+	permModuleTesoreria:            "Tesoreria y presupuesto",
+	permModuleNominaSueldos:        "Nomina y sueldos",
+	permModuleImportaciones:        "Importaciones y costeo",
+	permModuleAIUConstruccion:      "AIU construccion y contratos de obra",
+	permModuleCobranza:             "Gestion de cobranza",
+	permModuleReportes:             "Reportes ejecutivos y analitica",
+	permModulePortalContador:       "Portal contador",
+	permModulePortalTerceros:       "Portal de terceros y certificados tributarios",
+	permModuleSoportesComprasIA:    "Captura inteligente de compras y gastos",
+	permModuleBancosPagos:          "Bancos y pagos masivos Colombia",
+	permModuleGestionDocumental:    "Gestion documental y aprobaciones",
+	permModuleCumplimientoKYC:      "Cumplimiento KYC/KYB y riesgo LAFT",
+	permModuleContratosOblig:       "Contratos, obligaciones y firma electronica",
+	permModuleHelpdesk:             "Mesa de ayuda / Helpdesk",
+	permModuleCalidadProcesos:      "Calidad, procesos y no conformidades",
+	permModuleDrogueriaFarmacia:    "Drogueria y farmacia",
+	permModuleAuditoria:            "Auditoria empresarial",
+	permModuleBackups:              "Backups empresariales",
+	permModuleDocumentosOnlyOffice: "Documentos OnlyOffice",
+	permModuleNextcloud:            "Nextcloud empresarial",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -351,60 +401,70 @@ type permissionPageRule struct {
 var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
-	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estación", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atención y fila", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestión de gimnasio", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estacion", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Codigos de descuento", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkReservasHotel", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkChatTareas", Modulo: permModuleChatTareas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atencion y fila", Grupo: "Operacion diaria y ventas"},
+
+	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestion de gimnasio", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioDashboard", Modulo: permModuleGimnasio, Accion: permActionRead, Titulo: "Gimnasio - dashboard", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioSocios", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - socios", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioPlanes", Modulo: permModuleGimnasio, Accion: permActionUpdate, Titulo: "Gimnasio - planes", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioEntrenadores", Modulo: permModuleGimnasio, Accion: permActionUpdate, Titulo: "Gimnasio - entrenadores", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioClases", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - clases", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioInscripciones", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - inscripciones", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioAsistencias", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - asistencias", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioPagos", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - pagos", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkGimnasioAcceso", Modulo: permModuleGimnasio, Accion: permActionApprove, Titulo: "Gimnasio - control de acceso", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkTaxiSystem", Modulo: permModuleTaxiSystem, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkDomicilios", Modulo: permModuleDomicilios, Accion: permActionCreate, Titulo: "Domicilios y delivery", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkParqueadero", Modulo: permModuleParqueadero, Accion: permActionCreate, Titulo: "Parqueadero y tickets QR", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkApartamentosTuristicos", Modulo: permModuleApartTuristicos, Accion: permActionCreate, Titulo: "Apartamentos turisticos", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkPropiedadHorizontal", Modulo: permModulePropiedadHorizontal, Accion: permActionCreate, Titulo: "Propiedad horizontal", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkAlquileres", Modulo: permModuleAlquileres, Accion: permActionCreate, Titulo: "Alquiler universal de activos", Grupo: "Verticales de negocio"},
-	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontológico", Grupo: "Verticales de negocio"},
-	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Venta pública (e-commerce)", Grupo: "Operación diaria y ventas"},
+	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontologico", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkDrogueriaFarmacia", Modulo: permModuleDrogueriaFarmacia, Accion: permActionCreate, Titulo: "Drogueria / Farmacia", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkAIUConstruccion", Modulo: permModuleAIUConstruccion, Accion: permActionCreate, Titulo: "AIU construccion y contratos de obra", Grupo: "Verticales de negocio"},
+
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkProductosMain", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Inventario (Productos)", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkInventarioAvanzado", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Inventario avanzado", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkProduccionMRP", Modulo: permModuleProduccionMRP, Accion: permActionCreate, Titulo: "Produccion / MRP", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkLogisticaWMS", Modulo: permModuleLogisticaWMS, Accion: permActionCreate, Titulo: "Logistica avanzada / WMS", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkCartaProductosPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Carta publica de productos", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de códigos de barras", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Códigos de descuento", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y órdenes", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkPreciosHistorial", Modulo: permModuleInventario, Accion: permActionRead, Titulo: "Historial de productos", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkBodegas", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Bodegas", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkCategorias", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Categorias", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkGeneradorCodigosBarras", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Generador de codigos de barras", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras y ordenes", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkComprasDoc", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Gestion de compras", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkProveedores", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Proveedores", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkComprasAvanzadas", Modulo: permModuleCompras, Accion: permActionCreate, Titulo: "Compras avanzadas", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkSoportesComprasIA", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkSoportesComprasIAMenu", Modulo: permModuleSoportesComprasIA, Accion: permActionCreate, Titulo: "Captura inteligente de compras y gastos", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkHelpdesk", Modulo: permModuleHelpdesk, Accion: permActionCreate, Titulo: "Mesa de ayuda / Helpdesk", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkImportacionesCosteo", Modulo: permModuleImportaciones, Accion: permActionCreate, Titulo: "Importaciones y costeo", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de empresa", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración de impresora", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkConfiguracionGuiada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuración guiada con IA", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Personas y activos"},
-	{PaginaClave: "linkPortalUsuarios", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Portal de usuarios", Grupo: "Personas y activos"},
-	{PaginaClave: "linkHorariosTrabajadores", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Horarios laborales", Grupo: "Personas y activos"},
-	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Personas y activos"},
-	{PaginaClave: "linkCarnets", Modulo: permModuleCarnets, Accion: permActionCreate, Titulo: "Carnets de empleados y usuarios", Grupo: "Personas y activos"},
-	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Nómina y sueldos", Grupo: "Personas y activos"},
-	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate, Titulo: "Registro de vehículos", Grupo: "Personas y activos"},
-	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Personas y activos"},
-	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Auditoría de acciones", Grupo: "Análisis y control"},
-	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM básico", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
-	{PaginaClave: "linkCRMComercial", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "CRM unificado", Grupo: "Gestión de Relaciones con Clientes (CRM)"},
-	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturación electrónica (emitir)", Grupo: "Facturación electrónica"},
-	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturación electrónica"},
-	{PaginaClave: "linkAIUConstruccion", Modulo: permModuleAIUConstruccion, Accion: permActionCreate, Titulo: "AIU construcción y contratos de obra", Grupo: "Verticales de negocio"},
-	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas y movimientos", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkProduccionMRP", Modulo: permModuleProduccionMRP, Accion: permActionCreate, Titulo: "Produccion / MRP", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkLogisticaWMS", Modulo: permModuleLogisticaWMS, Accion: permActionCreate, Titulo: "Logistica avanzada / WMS", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkCartaProductosPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Carta publica de productos", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Venta publica (e-commerce)", Grupo: "Operacion diaria y ventas"},
+
+	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate, Titulo: "Clientes y CRM basico", Grupo: "Gestion de Relaciones con Clientes (CRM)"},
+	{PaginaClave: "linkCRMComercial", Modulo: permModuleCRMUnificado, Accion: permActionCreate, Titulo: "CRM unificado", Grupo: "Gestion de Relaciones con Clientes (CRM)"},
+
+	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Centro financiero y contable", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkFinanzasMain", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas operativas", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkEgresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Ingresos", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkContabilidadColombia", Modulo: permModuleContabilidadCO, Accion: permActionCreate, Titulo: "Contabilidad Colombia NIIF/DIAN", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkContabilidadColombiaAvanzada", Modulo: permModuleContabilidadCOAv, Accion: permActionCreate, Titulo: "Suite contable Colombia avanzada", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCentrosCosto", Modulo: permModuleCentrosCosto, Accion: permActionCreate, Titulo: "Centros de costo y rentabilidad", Grupo: "Centro financiero y contable"},
@@ -415,41 +475,75 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkActivosFijosNIIFMenu", Modulo: permModuleActivosFijosNIIF, Accion: permActionCreate, Titulo: "Activos fijos e intangibles NIIF/Fiscal", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkDeclaracionesTributarias", Modulo: permModuleDeclaracionesTrib, Accion: permActionCreate, Titulo: "Declaraciones tributarias Colombia", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkDeclaracionesTributariasMenu", Modulo: permModuleDeclaracionesTrib, Accion: permActionCreate, Titulo: "Declaraciones tributarias Colombia", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkBancosPagos", Modulo: permModuleBancosPagos, Accion: permActionCreate, Titulo: "Bancos y pagos masivos", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCumplimientoKYC", Modulo: permModuleCumplimientoKYC, Accion: permActionApprove, Titulo: "Cumplimiento KYC/KYB y LAFT", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Análisis y control"},
 	{PaginaClave: "linkTesoreriaPresupuesto", Modulo: permModuleTesoreria, Accion: permActionCreate, Titulo: "Tesoreria y presupuesto", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Créditos y cartera", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkBancosPagos", Modulo: permModuleBancosPagos, Accion: permActionCreate, Titulo: "Bancos y pagos masivos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCobranza", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCobranzaMenu", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPortalContador", Modulo: permModulePortalContador, Accion: permActionCreate, Titulo: "Portal contador", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPortalContadorMenu", Modulo: permModulePortalContador, Accion: permActionCreate, Titulo: "Portal contador", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPortalTercerosCertificados", Modulo: permModulePortalTerceros, Accion: permActionCreate, Titulo: "Portal de terceros y certificados tributarios", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPortalTercerosCertificadosMenu", Modulo: permModulePortalTerceros, Accion: permActionCreate, Titulo: "Portal de terceros y certificados tributarios", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Análisis y control"},
-	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkNextcloud", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Nextcloud", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Ubicación / GPS (activos)", Grupo: "Personas y activos"},
-	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobación: configuración de estaciones", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por habitacion", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por día", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkTarifasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de hotel", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkTarifasMotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de motel", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkHotelTarjetasAcceso", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarjetas habitación", Grupo: "Administración y configuración"},
-	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Operación diaria y ventas"},
-	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Análisis y control"},
-	{PaginaClave: "linkReportesIAChat", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Análisis y control"},
+	{PaginaClave: "linkCumplimientoKYC", Modulo: permModuleCumplimientoKYC, Accion: permActionApprove, Titulo: "Cumplimiento KYC/KYB y LAFT", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkNominaSueldos", Modulo: permModuleNominaSueldos, Accion: permActionCreate, Titulo: "Nomina y sueldos", Grupo: "Personas y activos"},
+	{PaginaClave: "linkNominaMenu", Modulo: permModuleNominaSueldos, Accion: permActionCreate, Titulo: "Nomina de sueldos", Grupo: "Centro financiero y contable"},
+
+	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturacion electronica (emitir)", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkFacturacionMain", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturacion electronica", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
+
+	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesMain", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes generales", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Reportes de ventas", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesInventario", Modulo: permModuleInventario, Accion: permActionRead, Titulo: "Reportes de inventario", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesFinanzas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes financieros", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesImpuestos", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Reportes de impuestos", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesIAChat", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Analisis y control"},
+	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Analitica ejecutiva avanzada", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Analítica ejecutiva avanzada", Grupo: "Análisis y control"},
+
+	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Personas y activos"},
+	{PaginaClave: "linkPortalUsuarios", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Portal de usuarios", Grupo: "Personas y activos"},
+	{PaginaClave: "linkMiHorario", Modulo: permModuleHorariosTrab, Accion: permActionRead, Titulo: "Mi horario", Grupo: "Personas y activos"},
+	{PaginaClave: "linkHorariosTrabajadores", Modulo: permModuleHorariosTrab, Accion: permActionUpdate, Titulo: "Horarios laborales", Grupo: "Personas y activos"},
+	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleAsistenciaEmpleados, Accion: permActionUpdate, Titulo: "Asistencia de empleados", Grupo: "Personas y activos"},
+	{PaginaClave: "linkCarnets", Modulo: permModuleCarnets, Accion: permActionCreate, Titulo: "Carnets de empleados y usuarios", Grupo: "Personas y activos"},
+	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleVehiculosRegistro, Accion: permActionCreate, Titulo: "Registro de vehiculos", Grupo: "Personas y activos"},
+	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleHojaVidaOperativa, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Personas y activos"},
+	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleUbicacionGPS, Accion: permActionCreate, Titulo: "Ubicacion / GPS (activos)", Grupo: "Personas y activos"},
+
+	{PaginaClave: "linkAuditoria", Modulo: permModuleAuditoria, Accion: permActionRead, Titulo: "Auditoria de acciones", Grupo: "Analisis y control"},
+	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
+	{PaginaClave: "linkBackups", Modulo: permModuleBackups, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Analisis y control"},
+
+	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleDocumentosOnlyOffice, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkHelpdesk", Modulo: permModuleHelpdesk, Accion: permActionCreate, Titulo: "Mesa de ayuda / Helpdesk", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkNextcloud", Modulo: permModuleNextcloud, Accion: permActionRead, Titulo: "Nextcloud", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
+
+	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion general", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de impresora", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionPermisos", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Permisos y roles", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionGuiada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion guiada con IA", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionChatFlotante", Modulo: permModuleChatTareas, Accion: permActionUpdate, Titulo: "Configurar chat y robot", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionCarritoEmpresa", Modulo: permModuleVentaPublica, Accion: permActionApprove, Titulo: "Carrito unificado", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionAvanzada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Documento y formato", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobacion: configuracion de estaciones", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por habitacion", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkERPExtendidoMenu", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "ERP extendido", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkChatIAGlobal", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Chat IA global (super)", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por minutos", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por dia", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkTarifasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de hotel", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkTarifasMotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de motel", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkHotelTarjetasAcceso", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Tarjetas habitacion", Grupo: "Administracion y configuracion"},
 }
 
 type permissionModuleMatrixRow struct {
@@ -814,6 +908,76 @@ func WithEmpresaPortalTercerosPermissions(dbEmp, dbSuper *sql.DB, next http.Hand
 // WithEmpresaSeguridadPermissions aplica control de alcance por empresa y permisos por rol para seguridad/usuarios.
 func WithEmpresaSeguridadPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleSeguridad, resolveSeguridadPermissionAction, next)
+}
+
+// WithEmpresaChatTareasPermissions aplica permisos independientes para chat, tareas y agenda.
+func WithEmpresaChatTareasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleChatTareas, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaReservasHotelPermissions aplica permisos para reservas hoteleras y tarjetas de acceso.
+func WithEmpresaReservasHotelPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleReservasHotel, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaHorariosTrabajadoresPermissions aplica permisos para programacion de turnos laborales.
+func WithEmpresaHorariosTrabajadoresPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleHorariosTrab, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaAsistenciaEmpleadosPermissions aplica permisos para control de asistencia.
+func WithEmpresaAsistenciaEmpleadosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAsistenciaEmpleados, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaVehiculosRegistroPermissions aplica permisos para registro y salida de vehiculos.
+func WithEmpresaVehiculosRegistroPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleVehiculosRegistro, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaHojaVidaOperativaPermissions aplica permisos para historial operativo de activos.
+func WithEmpresaHojaVidaOperativaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleHojaVidaOperativa, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaUbicacionGPSPermissions aplica permisos para dispositivos, recorridos y mapa GPS.
+func WithEmpresaUbicacionGPSPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleUbicacionGPS, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaAuditoriaPermissions aplica permisos para auditoria empresarial.
+func WithEmpresaAuditoriaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAuditoria, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaBackupsPermissions aplica permisos para snapshots, restauracion y descargas de backups.
+func WithEmpresaBackupsPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleBackups, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaDocumentosOnlyOfficePermissions aplica permisos para documentos OnlyOffice.
+func WithEmpresaDocumentosOnlyOfficePermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDocumentosOnlyOffice, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaNextcloudPermissions aplica permisos para nube empresarial Nextcloud.
+func WithEmpresaNextcloudPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleNextcloud, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaReportesPermissions aplica permisos para analitica y reportes ejecutivos.
+func WithEmpresaReportesPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleReportes, resolveFinanzasPermissionAction, next)
+}
+
+// WithEmpresaNominaSueldosPermissions aplica permisos independientes para nomina y sueldos.
+func WithEmpresaNominaSueldosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleNominaSueldos, resolveFinanzasPermissionAction, next)
+}
+
+// WithEmpresaCRMUnificadoPermissions aplica permisos para embudo comercial, leads y seguimiento.
+func WithEmpresaCRMUnificadoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCRMUnificado, resolveClientesPermissionAction, next)
 }
 
 // WithEmpresaVentaPublicaPermissions aplica permisos independientes para venta publica y carta.
@@ -1927,7 +2091,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
 		}
 
-	case permModuleVentaPublica, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleParqueadero, permModuleApartTuristicos, permModulePropiedadHorizontal, permModuleAlquileres, permModuleOdontologia, permModuleDrogueriaFarmacia, permModuleTurnos, permModuleCarnets:
+	case permModuleVentaPublica, permModuleReservasHotel, permModuleChatTareas, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleParqueadero, permModuleApartTuristicos, permModulePropiedadHorizontal, permModuleAlquileres, permModuleOdontologia, permModuleDrogueriaFarmacia, permModuleTurnos, permModuleCarnets:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -1953,7 +2117,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "compras")
 		}
 
-	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleCentrosCosto, permModuleCierreFiscal, permModuleActivosFijosNIIF, permModuleDeclaracionesTrib, permModuleTesoreria, permModuleCobranza, permModulePortalContador, permModulePortalTerceros:
+	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleCentrosCosto, permModuleCierreFiscal, permModuleActivosFijosNIIF, permModuleDeclaracionesTrib, permModuleTesoreria, permModuleNominaSueldos, permModuleCobranza, permModulePortalContador, permModulePortalTerceros:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -1963,7 +2127,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice, permModuleNextcloud:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -1973,7 +2137,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa")
 		}
 
-	case permModuleClientes:
+	case permModuleClientes, permModuleCRMUnificado:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2038,6 +2202,26 @@ func roleAllowsModuleAction(role, module, action string) bool {
 		case permActionCreate, permActionUpdate:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal")
 		case permActionDelete, permActionApprove:
+			return roleIn(role, "admin_empresa")
+		}
+
+	case permModuleHorariosTrab, permModuleAsistenciaEmpleados, permModuleVehiculosRegistro, permModuleHojaVidaOperativa, permModuleUbicacionGPS:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal")
+		case permActionDelete, permActionApprove:
+			return roleIn(role, "admin_empresa")
+		}
+
+	case permModuleReportes:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "contabilidad", "auditor")
+		case permActionDelete:
 			return roleIn(role, "admin_empresa")
 		}
 	}
@@ -2498,6 +2682,23 @@ func isPermissionModuleKnown(modulo string) bool {
 	return false
 }
 
+var permissionModuleLicenseFallbacks = map[string][]string{
+	permModuleCRMUnificado:         {permModuleClientes},
+	permModuleReservasHotel:        {permModuleVentas},
+	permModuleChatTareas:           {permModuleVentas},
+	permModuleHorariosTrab:         {permModuleSeguridad},
+	permModuleAsistenciaEmpleados:  {permModuleSeguridad},
+	permModuleVehiculosRegistro:    {permModuleSeguridad},
+	permModuleHojaVidaOperativa:    {permModuleSeguridad},
+	permModuleUbicacionGPS:         {permModuleInventario, permModuleSeguridad},
+	permModuleNominaSueldos:        {permModuleFinanzas},
+	permModuleReportes:             {permModuleFinanzas},
+	permModuleAuditoria:            {permModuleSeguridad},
+	permModuleBackups:              {permModuleSeguridad},
+	permModuleDocumentosOnlyOffice: {permModuleSeguridad},
+	permModuleNextcloud:            {permModuleSeguridad},
+}
+
 func isModuloPermitidoByLicencia(modulo string, allowed map[string]bool) bool {
 	if len(allowed) == 0 {
 		return true
@@ -2506,7 +2707,15 @@ func isModuloPermitidoByLicencia(modulo string, allowed map[string]bool) bool {
 	if key == "" {
 		return false
 	}
-	return allowed[key]
+	if allowed[key] {
+		return true
+	}
+	for _, fallback := range permissionModuleLicenseFallbacks[key] {
+		if allowed[strings.ToLower(strings.TrimSpace(fallback))] {
+			return true
+		}
+	}
+	return false
 }
 
 func applyLicenciaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, allowed map[string]bool) []permissionModuleMatrixRow {

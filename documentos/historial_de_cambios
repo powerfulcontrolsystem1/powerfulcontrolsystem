@@ -1,3 +1,10 @@
+2026-05-10 - Roles finos y ayuda privada del super administrador
+- Se actualiza la documentacion central del proyecto para reflejar nuevos modulos finos de permisos: `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice` y `nextcloud`.
+- Se documenta la compatibilidad de licencias amplias (`ventas`, `seguridad`, `finanzas`, `inventario`, `clientes`) con funciones separadas para evitar cortes operativos.
+- Se agrega el reporte `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
+- Se actualiza `web/ayuda/ayuda.html` con la guia de acceso privado desde el panel super.
+- Se agrega el boton `Ayuda super administrador` en `web/super_administrador.html`, cargado dentro de `contentFrame`.
+- La ruta `/ayuda/ayuda.html` permanece protegida exclusivamente para `super_administrador`; el rol `control_super_administrador` no recibe el boton.
 - 2026-05-07: QA E2E Motel Calipso, robot/radio movil y pruebas profundas.
     - Archivos: `backend/tmp_tools/qa_calipso_operativo/frontend_buttons_calipso.mjs`, `backend/tmp_tools/qa_calipso_operativo/deep_flows_calipso.mjs`, `web/estilos.css`, `web/js/ai_chat_drawer.js`, `web/administrar_empresa/activos_fijos_niif_fiscal.html`, `web/administrar_empresa/auditoria.html`, `web/administrar_empresa/publicar_red_social.html`, `web/administrar_empresa/graficos_estadisticas.html`, `documentos/plan_qa_e2e_motel_calipso_2026-05-06.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`.
     - Descripcion: se ejecutan pruebas con Motel Calipso (`empresa_id=7`) en escritorio, flujos reales con datos QA, cargas de archivos, QR/carta/venta publica y validacion movil. Se corrige el robot/secretaria para que no tape botones, se compacta la radio flotante en celular y se protegen estados de carga en modulos financieros/auditoria/red social.

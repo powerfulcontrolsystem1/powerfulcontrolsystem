@@ -128,7 +128,7 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA y resuelve bloqueos frecuentes sin romper el flujo diario.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-05-10 con modulos finos de roles, paginas nuevas y acceso privado desde el panel super.</p>
       </div>
       <div class="help-search-row">
         <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
@@ -185,7 +185,7 @@
             </article>
             <article class="help-mini-card">
               <h3>Acceso a esta ayuda</h3>
-              <p>La ayuda administrativa completa es privada y solo debe estar disponible para el rol <code>super_administrador</code>. Los usuarios operativos usan ayudas contextuales o manuales de login.</p>
+              <p>La ayuda administrativa completa es privada y solo debe estar disponible para el rol <code>super_administrador</code>. Se abre desde el boton <strong>Ayuda super administrador</strong> del panel super. Los usuarios operativos usan ayudas contextuales o manuales de login.</p>
             </article>
           </div>
         </section>
@@ -195,7 +195,7 @@
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>Super administrador</h3>
-              <p>Administra plataforma, licencias, tipos de empresa, pagos, integraciones, IA, voz, auditoria, configuracion avanzada y metricas globales.</p>
+              <p>Administra plataforma, licencias, tipos de empresa, pagos, integraciones, IA, voz, auditoria, configuracion avanzada, ayuda privada y metricas globales.</p>
               <span class="help-route">Ruta: /super_administrador.html</span>
             </article>
             <article class="help-mini-card">
@@ -220,6 +220,7 @@
           <h2>Super administrador</h2>
           <ol class="help-step-list">
             <li>Usa <strong>Panel</strong> para ver estado general, metricas, empresas y alertas.</li>
+            <li>Usa <strong>Ayuda super administrador</strong> para abrir esta guia privada dentro del panel; no se muestra al rol <code>control_super_administrador</code> ni a administradores de empresa.</li>
             <li>Usa <strong>Tipos de empresas</strong> y <strong>Preconfiguracion de tipos</strong> para preparar empresas nuevas con estaciones, productos, usuarios guia y reglas por tipo.</li>
             <li>Usa <strong>Licencias</strong> para crear planes, pruebas de 15 dias, valores por pais, descuentos y vigencias.</li>
             <li>Usa <strong>Configuración avanzada</strong> para Epayco, Gmail, Nextcloud, OnlyOffice, RustDesk, voz IA, seguridad y costos.</li>
@@ -260,6 +261,14 @@
             <article class="help-mini-card">
               <h3>Criterio de separacion</h3>
               <p>Un modulo se separa cuando tiene permisos, licencia o datos propios. Si solo es una vista de trabajo del mismo dominio, se agrupa bajo un menu padre.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Modulos finos de roles</h3>
+              <p>El catalogo ahora separa CRM unificado, reservas hoteleras, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud para controlar pagina, rol y API con mayor precision.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compatibilidad de licencias</h3>
+              <p>Las licencias antiguas que habilitaban modulos amplios como ventas, seguridad, finanzas, inventario o clientes conservan acceso a las funciones separadas que antes dependian de esos grupos.</p>
             </article>
           </div>
         </section>
@@ -395,7 +404,7 @@
 
         <section id="estado-operativo" class="card empresa-section help-section" data-help="estado operativo modulos terminados errores estaciones carrito tarjetas dolar cop vps calidad">
           <h2>Estado operativo de modulos</h2>
-          <p class="form-help">Actualizacion 2026-05-03: la plataforma tiene los modulos principales implementados u operativos, con reparaciones recientes en estaciones, carrito, pago y panel empresarial. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
+          <p class="form-help">Actualizacion 2026-05-10: la plataforma tiene los modulos principales implementados u operativos, con roles finos alineados entre backend, frontend, paginas, wrappers API y licencias. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>Estaciones y carrito</h3>
