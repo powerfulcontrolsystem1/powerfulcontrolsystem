@@ -7850,3 +7850,14 @@ Archivos modificados:
 - web/js/empresa_submenu_shell.js
 - web/js/modulo_colombia_admin.js
 - web/js/personas_activos_submenu.js
+
+2026-05-10 15:54:43 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: b16aa9e9; PushStatus: OK
+Archivos modificados:
+- backend/utils/utils.go
+- tools/qa_print_formats.cjs
+- web/js/print_documents.js
+- web/js/super_administrador.js
+- web/super/asesor_comercial.html
+- web/super/errores.html
+- web/super/licencias_resumen.html
+- web/super_administrador.html
