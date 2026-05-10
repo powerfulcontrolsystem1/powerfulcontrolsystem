@@ -593,7 +593,6 @@ func allowSuperControlRoute(path, method, role string) bool {
 	case "/super/licencias_resumen.html",
 		"/super/administradores.html",
 		"/super/seguridad.html",
-		"/super/errores.html",
 		"/super/reportes_globales.html",
 		"/super/api/administradores",
 		"/super/administradores",

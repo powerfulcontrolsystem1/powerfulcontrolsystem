@@ -26,6 +26,13 @@
     .ops-kpi{font-size:.9rem;line-height:1.08;font-weight:850;color:var(--text);margin-top:2px;overflow-wrap:anywhere}
     .ops-sub{margin-top:1px;font-size:.64rem;line-height:1.08;overflow-wrap:anywhere}
     .ops-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .super-summary-table-card{margin-bottom:10px;padding:0;overflow:hidden}
+    .super-summary-table{width:100%;border-collapse:collapse;table-layout:fixed}
+    .super-summary-table th,.super-summary-table td{padding:7px 10px;border:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
+    .super-summary-table th{width:22%;background:color-mix(in srgb,var(--surface-soft) 82%, var(--surface) 18%);color:var(--muted);font-size:.68rem;font-weight:900;text-align:left;text-transform:uppercase;letter-spacing:.04em}
+    .super-summary-table td{color:var(--text);font-size:.82rem;font-weight:780;line-height:1.2}
+    .super-summary-table small{display:block;margin-top:2px;color:var(--muted);font-size:.64rem;font-weight:650;line-height:1.15}
+    .super-summary-value{display:inline;font-weight:900}
     .ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .ops-form .form-col{min-width:0}
     .super-metrics-panel{margin-top:10px}
@@ -43,57 +50,82 @@
     .super-metrics-table-card{margin-top:12px}
     .super-metrics-table-wrap{margin-top:10px;overflow:auto}
     .super-metrics-table-wrap table{min-width:760px}
+    .super-errors-panel{margin-top:14px}
+    .super-errors-hero{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;padding:12px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 90%, var(--danger) 10%),color-mix(in srgb,var(--surface-soft) 88%, var(--accent) 12%))}
+    .super-errors-hero h2{margin:0;color:var(--text);font-size:1.08rem}
+    .super-errors-hero p{margin:4px 0 0;color:var(--muted);font-size:.76rem;line-height:1.35;max-width:760px}
+    .super-errors-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .super-errors-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px;margin-top:10px}
+    .super-errors-filters .form-col{min-width:0}
+    .super-errors-filters .form-input{width:100%;min-width:0}
+    .super-errors-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px;background:var(--surface)}
+    .super-errors-stat{padding:8px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .super-errors-stat span{display:block;color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase}
+    .super-errors-stat strong{display:block;margin-top:3px;color:var(--text);font-size:1rem}
+    .super-errors-table-wrap{display:block;max-width:100%;margin-top:10px;overflow:auto}
+    .super-errors-table{min-width:1080px;table-layout:fixed}
+    .super-errors-table td{vertical-align:top}
+    .super-errors-table th,.super-errors-table td{overflow-wrap:anywhere;word-break:break-word}
+    .super-errors-table tr.is-selected{background:color-mix(in srgb,var(--accent) 10%, transparent 90%)}
+    .super-errors-message{min-width:260px}
+    .super-errors-level{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:.72rem;font-weight:850;border:1px solid transparent}
+    .super-errors-level.info{background:color-mix(in srgb,var(--accent) 12%, transparent 88%);color:color-mix(in srgb,var(--accent) 72%, var(--text) 28%)}
+    .super-errors-level.warning{background:color-mix(in srgb,var(--accent-yellow,#facc15) 18%, transparent 82%);color:color-mix(in srgb,var(--accent-yellow,#facc15) 65%, var(--text) 35%)}
+    .super-errors-level.error,.super-errors-level.critical{background:color-mix(in srgb,var(--danger) 15%, transparent 85%);color:color-mix(in srgb,var(--danger) 72%, var(--text) 28%)}
+    .super-errors-pagination{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .super-errors-detail{margin-top:10px}
+    .super-errors-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:10px}
+    .super-errors-meta{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--content-soft-bg)}
+    .super-errors-meta span{display:block;color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase}
+    .super-errors-meta strong{display:block;margin-top:3px;color:var(--text);font-size:.82rem;overflow-wrap:anywhere}
+    .super-errors-pre{margin:0;padding:10px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--surface) 88%, var(--bg) 12%);color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;font-size:.78rem}
+    .super-errors-empty{padding:16px;text-align:center;color:var(--muted)}
+    .super-errors-banner{display:none;margin-top:10px;border:1px solid color-mix(in srgb,var(--danger) 42%, transparent 58%);background:color-mix(in srgb,var(--danger) 12%, var(--surface) 88%);color:color-mix(in srgb,var(--danger) 38%, var(--text) 62%);font-weight:750}
+    .super-errors-banner.show{display:block}
     @media (max-width:1100px){.ops-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media (min-width:1200px){.super-metrics-chart-card.is-wide{grid-column:1 / -1}.super-metrics-chart-wrap{min-height:380px}}
     @media (max-width:1050px){.super-metrics-charts{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:1fr 1fr}}
     @media (max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:680px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}}
+    @media (max-width:680px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-form{grid-template-columns:1fr}.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-chart-card{min-height:330px}.super-metrics-chart-wrap{min-height:260px}.super-errors-actions .btn{flex:1 1 auto}.super-errors-pagination .btn{flex:1 1 calc(50% - 4px)}.super-summary-table th,.super-summary-table td{display:block;width:100%;border-left:0;border-right:0}.super-summary-table th{padding-bottom:3px}.super-summary-table td{padding-top:3px}}
     @media (max-width:460px){.summary-grid,.ops-grid,.super-metrics-current{grid-template-columns:repeat(2,minmax(0,1fr))}.super-metrics-header{align-items:flex-start}}
     @media (max-width:860px){.super-overview-hero{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page">
   <div class="container">
-    <div class="page-header">
-      <div>
-        <button id="refreshBtn" class="btn" aria-label="Actualizar recuento">Actualizar</button>
-        <a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a>
-      </div>
-    </div>
-    <div class="summary-grid">
-      <div class="card summary-card">
-        <div class="muted">Licencias activas</div>
-        <div id="activeCount" class="big-number">Cargando...</div>
-        <div id="lastUpdate" class="form-help muted"></div>
-      </div>
-      <div class="card summary-card">
-        <div class="muted">Empresas registradas</div>
-        <div id="empresasCount" class="big-number">Cargando...</div>
-        <div class="form-help muted">Total de empresas creadas en el sistema (panel super).</div>
-      </div>
-    </div>
-
-    <section class="ops-grid" aria-label="Consumos y salud del sistema">
-      <div class="card ops-card">
-        <div class="muted">Errores del sistema (total)</div>
-        <div id="errTotal" class="ops-kpi">-</div>
-      <div class="form-help muted ops-sub">Solo contador. Detalle en “Errores del sistema”.</div>
-      </div>
-      <div class="card ops-card">
-      <div class="muted">OpenAI (hoy) — Super</div>
-        <div id="openaiSuper" class="ops-kpi">-</div>
-        <div id="openaiSuperCost" class="form-help muted ops-sub"></div>
-      </div>
-      <div class="card ops-card">
-      <div class="muted">OpenAI (hoy) — Empresas</div>
-        <div id="openaiEmp" class="ops-kpi">-</div>
-        <div id="openaiEmpCost" class="form-help muted ops-sub"></div>
-      </div>
-      <div class="card ops-card">
-        <div class="muted">Hostinger (manual)</div>
-        <div id="hostingerSummary" class="ops-kpi">-</div>
-        <div id="hostingerCost" class="form-help muted ops-sub"></div>
-      </div>
+    <section class="card super-summary-table-card" aria-label="Resumen operativo del super administrador">
+      <table class="super-summary-table">
+        <tbody>
+          <tr>
+            <th>Licencias activas</th>
+            <td><span id="activeCount" class="super-summary-value">Cargando...</span><small id="lastUpdate"></small></td>
+            <th>Empresas registradas</th>
+            <td><span id="empresasCount" class="super-summary-value">Cargando...</span></td>
+          </tr>
+          <tr>
+            <th>Errores del sistema</th>
+            <td><span id="errTotal" class="super-summary-value">-</span><small>Detalle completo al final del panel.</small></td>
+            <th>Hostinger</th>
+            <td><span id="hostingerSummary" class="super-summary-value">-</span><small id="hostingerCost"></small></td>
+          </tr>
+          <tr>
+            <th>OpenAI Super</th>
+            <td><span id="openaiSuper" class="super-summary-value">-</span><small id="openaiSuperCost"></small></td>
+            <th>OpenAI Empresas</th>
+            <td><span id="openaiEmp" class="super-summary-value">-</span><small id="openaiEmpCost"></small></td>
+          </tr>
+          <tr>
+            <th>CPU actual</th>
+            <td><span id="cpuValue" class="super-summary-value">- %</span></td>
+            <th>Memoria usada</th>
+            <td><span id="memValue" class="super-summary-value">- MB (- %)</span></td>
+          </tr>
+          <tr>
+            <th>Tráfico total</th>
+            <td colspan="3"><span id="netValue" class="super-summary-value">- B</span></td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <section class="card empresa-section" hidden style="display:none;margin-top:12px">
@@ -171,24 +203,9 @@
     </section>
 
     <section id="metricasSuperPanel" class="super-metrics-panel" aria-label="Metricas operativas del VPS">
-      <div class="super-metrics-current">
-        <article class="card ops-card">
-          <div class="muted">CPU actual</div>
-          <div id="cpuValue" class="super-metrics-value">- %</div>
-        </article>
-        <article class="card ops-card">
-          <div class="muted">Memoria usada</div>
-          <div id="memValue" class="super-metrics-value">- MB (- %)</div>
-        </article>
-        <article class="card ops-card">
-          <div class="muted">Trafico total</div>
-          <div id="netValue" class="super-metrics-value">- B</div>
-        </article>
-      </div>
-
       <div class="super-metrics-charts">
         <article class="card super-metrics-chart-card">
-          <h3>Estado actual</h3>
+          <h3>Estado actual (%)</h3>
           <div class="super-metrics-chart-wrap"><canvas id="loadChart"></canvas></div>
         </article>
         <article class="card super-metrics-chart-card">
@@ -249,6 +266,117 @@
               <tr><td colspan="4" class="muted">Cargando...</td></tr>
             </tbody>
           </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="superErrorsPanel" class="super-errors-panel" aria-label="Errores del sistema">
+      <div class="super-errors-hero">
+        <div>
+          <h2>Errores del sistema</h2>
+          <p>Monitor centralizado de incidencias del POS multiempresa. Registra errores HTTP, pánicos recuperados y fallos operativos sin exponer detalles técnicos al usuario final.</p>
+          <div class="form-help muted" id="errorsGeneratedAt">Última lectura: pendiente</div>
+        </div>
+        <div class="super-errors-actions">
+          <button id="errorsRefreshBtn" class="btn" type="button">Refrescar errores</button>
+          <button id="errorsClearBtn" class="btn secondary" type="button">Limpiar filtros</button>
+        </div>
+      </div>
+
+      <section id="errorsBanner" class="card super-errors-banner"></section>
+
+      <section class="card super-metrics-table-card">
+        <div class="empresa-section-header">
+          <div>
+            <h2 style="margin:0">Filtros e incidencias</h2>
+            <div class="form-help muted" id="errorsTableMeta">Sin resultados cargados.</div>
+          </div>
+        </div>
+        <div class="super-errors-filters">
+          <div class="form-col">
+            <label class="form-label" for="errorsEmpresaFilter">Empresa</label>
+            <select id="errorsEmpresaFilter" class="form-input"><option value="">Todas</option></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="errorsLevelFilter">Nivel</label>
+            <select id="errorsLevelFilter" class="form-input">
+              <option value="">Todos</option>
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="ERROR">ERROR</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="errorsTypeFilter">Tipo</label>
+            <input id="errorsTypeFilter" class="form-input" type="text" placeholder="Ej. panic_recovered">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="errorsFromFilter">Desde</label>
+            <input id="errorsFromFilter" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="errorsToFilter">Hasta</label>
+            <input id="errorsToFilter" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="errorsSearchFilter">Búsqueda</label>
+            <input id="errorsSearchFilter" class="form-input" type="search" placeholder="mensaje, request_id, endpoint, usuario">
+          </div>
+        </div>
+
+        <div class="super-errors-stats">
+          <article class="super-errors-stat"><span>Total filtrado</span><strong id="errorsStatTotal">-</strong></article>
+          <article class="super-errors-stat"><span>INFO</span><strong id="errorsStatInfo">-</strong></article>
+          <article class="super-errors-stat"><span>WARNING</span><strong id="errorsStatWarning">-</strong></article>
+          <article class="super-errors-stat"><span>ERROR</span><strong id="errorsStatError">-</strong></article>
+          <article class="super-errors-stat"><span>CRITICAL</span><strong id="errorsStatCritical">-</strong></article>
+          <article class="super-errors-stat"><span>Últimas 24h</span><strong id="errorsStatLast24">-</strong></article>
+        </div>
+
+        <div class="super-errors-table-wrap">
+          <table class="table super-errors-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Nivel</th>
+                <th>Empresa</th>
+                <th>Usuario</th>
+                <th>Tipo</th>
+                <th>Endpoint</th>
+                <th>Mensaje</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="errorsTableBody">
+              <tr><td colspan="8" class="super-errors-empty">Cargando errores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="super-errors-pagination">
+          <button id="errorsPrevBtn" class="btn secondary" type="button">Anterior</button>
+          <span id="errorsPageText" class="form-help muted">Página 1</span>
+          <button id="errorsNextBtn" class="btn secondary" type="button">Siguiente</button>
+        </div>
+      </section>
+
+      <section class="card super-errors-detail">
+        <div class="empresa-section-header">
+          <h2 style="margin:0">Detalle de la incidencia</h2>
+        </div>
+        <div id="errorsDetailsEmpty" class="super-errors-empty">Selecciona un error para ver su detalle completo.</div>
+        <div id="errorsDetailsPanel" hidden>
+          <div id="errorsDetailsMeta" class="super-errors-detail-grid"></div>
+          <div class="form-label">Mensaje interno</div>
+          <pre id="errorsDetailsMessage" class="super-errors-pre"></pre>
+          <div class="form-label" style="margin-top:10px">Mensaje público</div>
+          <pre id="errorsDetailsPublicMessage" class="super-errors-pre"></pre>
+          <div class="form-label" style="margin-top:10px">Detalle</div>
+          <pre id="errorsDetailsDetail" class="super-errors-pre"></pre>
+          <div class="form-label" style="margin-top:10px">Stack trace</div>
+          <pre id="errorsDetailsStack" class="super-errors-pre"></pre>
+          <div class="form-label" style="margin-top:10px">Metadata JSON</div>
+          <pre id="errorsDetailsMetadata" class="super-errors-pre"></pre>
         </div>
       </section>
     </section>
@@ -460,23 +588,57 @@
     function updateLoadChart(cpuPct, memPct, netTotal){
       if(!window.Chart) return;
       const theme = chartTheme();
-      const netScore = Math.min(100, Math.max(0, Number(netTotal || 0) / (1024 * 1024 * 100) * 100));
-      const data = [Number(cpuPct || 0), Number(memPct || 0), netScore];
-      const labels = ['CPU', 'Memoria', 'Red'];
+      const cpuValue = Math.min(100, Math.max(0, Number(cpuPct || 0)));
+      const memValue = Math.min(100, Math.max(0, Number(memPct || 0)));
+      const netValue = Math.min(100, Math.max(0, Number(netTotal || 0) / (1024 * 1024 * 100) * 100));
+      const data = [cpuValue, memValue, netValue];
+      const labels = ['Procesador', 'Memoria', 'Red'];
       if(loadChart){
+        loadChart.data.labels = labels;
         loadChart.data.datasets[0].data = data;
         loadChart.update('none');
         return;
       }
       loadChart = new Chart(document.getElementById('loadChart'), {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: ['#ef4444', '#2563eb', '#16a34a'], borderColor: theme.gridColor, borderWidth: 1 }] },
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Uso actual (%)',
+            data,
+            backgroundColor: ['rgba(239,68,68,.82)', 'rgba(37,99,235,.82)', 'rgba(22,163,74,.82)'],
+            borderColor: ['#ef4444', '#2563eb', '#16a34a'],
+            borderWidth: 1,
+            borderRadius: 8,
+            maxBarThickness: 72
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '62%',
           animation: false,
-          plugins: { legend: { position: 'bottom', labels: { color: theme.labelColor } } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return 'Uso actual: ' + Number(ctx.parsed.y || 0).toFixed(2) + '%';
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: theme.labelColor }, grid: { display: false } },
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                color: theme.labelColor,
+                callback: function(value) { return value + '%'; }
+              },
+              grid: { color: theme.gridColor }
+            }
+          }
         }
       });
     }
@@ -588,6 +750,255 @@
       reloadMetricsPanel();
       setInterval(updateCurrent, 5000);
     });
+  </script>
+  <script>
+    (function () {
+      var root = document.getElementById('superErrorsPanel');
+      if (!root) return;
+      var state = { limit: 50, offset: 0, total: 0, items: [], empresas: [] };
+      var el = {
+        banner: document.getElementById('errorsBanner'),
+        empresa: document.getElementById('errorsEmpresaFilter'),
+        level: document.getElementById('errorsLevelFilter'),
+        type: document.getElementById('errorsTypeFilter'),
+        from: document.getElementById('errorsFromFilter'),
+        to: document.getElementById('errorsToFilter'),
+        search: document.getElementById('errorsSearchFilter'),
+        tbody: document.getElementById('errorsTableBody'),
+        meta: document.getElementById('errorsTableMeta'),
+        generatedAt: document.getElementById('errorsGeneratedAt'),
+        pageText: document.getElementById('errorsPageText'),
+        prev: document.getElementById('errorsPrevBtn'),
+        next: document.getElementById('errorsNextBtn'),
+        detailEmpty: document.getElementById('errorsDetailsEmpty'),
+        detailPanel: document.getElementById('errorsDetailsPanel'),
+        detailMeta: document.getElementById('errorsDetailsMeta'),
+        detailMessage: document.getElementById('errorsDetailsMessage'),
+        detailPublic: document.getElementById('errorsDetailsPublicMessage'),
+        detailDetail: document.getElementById('errorsDetailsDetail'),
+        detailStack: document.getElementById('errorsDetailsStack'),
+        detailMetadata: document.getElementById('errorsDetailsMetadata'),
+        statTotal: document.getElementById('errorsStatTotal'),
+        statInfo: document.getElementById('errorsStatInfo'),
+        statWarning: document.getElementById('errorsStatWarning'),
+        statError: document.getElementById('errorsStatError'),
+        statCritical: document.getElementById('errorsStatCritical'),
+        statLast24: document.getElementById('errorsStatLast24')
+      };
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+        });
+      }
+
+      function requestJSON(url, options) {
+        return fetch(url, options || {}).then(function (response) {
+          return response.text().then(function (text) {
+            var data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (err) { data = { error: text || ('HTTP ' + response.status) }; }
+            if (!response.ok) throw new Error((data && data.error) || ('HTTP ' + response.status));
+            return data;
+          });
+        });
+      }
+
+      function setBanner(message) {
+        if (!el.banner) return;
+        el.banner.textContent = message || '';
+        el.banner.classList.toggle('show', !!message);
+      }
+
+      function companyLabel(id) {
+        id = Number(id || 0);
+        if (!id) return 'Global';
+        var found = state.empresas.find(function (item) { return Number(item.id || item.empresa_id || 0) === id; });
+        return found ? ((found.nombre || ('Empresa #' + id)) + ' (#' + id + ')') : ('Empresa #' + id);
+      }
+
+      function levelBadge(level) {
+        var value = String(level || 'INFO').toUpperCase();
+        var css = value === 'WARNING' ? 'warning' : (value === 'ERROR' ? 'error' : (value === 'CRITICAL' ? 'critical' : 'info'));
+        return '<span class="super-errors-level ' + css + '">' + escapeHTML(value) + '</span>';
+      }
+
+      function setSummary(summary) {
+        summary = summary || {};
+        el.statTotal.textContent = Number(summary.total || 0);
+        el.statInfo.textContent = Number(summary.info || 0);
+        el.statWarning.textContent = Number(summary.warning || 0);
+        el.statError.textContent = Number(summary.error || 0);
+        el.statCritical.textContent = Number(summary.critical || 0);
+        el.statLast24.textContent = Number(summary.ultimas_24_horas || 0);
+      }
+
+      function renderRows(items) {
+        if (!items.length) {
+          el.tbody.innerHTML = '<tr><td colspan="8" class="super-errors-empty">No se encontraron errores con los filtros actuales.</td></tr>';
+          return;
+        }
+        el.tbody.innerHTML = items.map(function (item, index) {
+          return '<tr>' +
+            '<td>' + escapeHTML(item.fecha_error || item.fecha_creacion || '-') + '</td>' +
+            '<td>' + levelBadge(item.nivel) + '</td>' +
+            '<td>' + escapeHTML(companyLabel(item.empresa_id)) + '</td>' +
+            '<td>' + escapeHTML(item.usuario_email || 'sistema') + '</td>' +
+            '<td>' + escapeHTML(item.tipo_error || '-') + '</td>' +
+            '<td>' + escapeHTML(item.metodo_http || '') + ' ' + escapeHTML(item.endpoint || '-') + '</td>' +
+            '<td class="super-errors-message">' + escapeHTML(item.mensaje || item.mensaje_publico || '-') + '</td>' +
+            '<td><button type="button" class="btn secondary small" data-error-index="' + index + '">Ver error</button></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function metaBox(label, value) {
+        return '<div class="super-errors-meta"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(value || '-') + '</strong></div>';
+      }
+
+      function renderDetails(item) {
+        if (!item) {
+          el.detailPanel.hidden = true;
+          el.detailEmpty.hidden = false;
+          Array.prototype.slice.call(el.tbody.querySelectorAll('tr')).forEach(function (row) { row.classList.remove('is-selected'); });
+          return;
+        }
+        el.detailEmpty.hidden = true;
+        el.detailPanel.hidden = false;
+        el.detailMeta.innerHTML = [
+          metaBox('Fecha', item.fecha_error || item.fecha_creacion || '-'),
+          metaBox('Nivel', item.nivel || '-'),
+          metaBox('Empresa', companyLabel(item.empresa_id)),
+          metaBox('Usuario', item.usuario_email || 'sistema'),
+          metaBox('Tipo', item.tipo_error || '-'),
+          metaBox('Modulo', item.modulo || '-'),
+          metaBox('Endpoint', (item.metodo_http || '') + ' ' + (item.endpoint || '-')),
+          metaBox('HTTP', item.codigo_http || '-'),
+          metaBox('Request ID', item.request_id || '-'),
+          metaBox('Origen', item.origen || '-'),
+          metaBox('IP', item.ip || '-'),
+          metaBox('Error ID', item.id || '-')
+        ].join('');
+        el.detailMessage.textContent = item.mensaje || '-';
+        el.detailPublic.textContent = item.mensaje_publico || '-';
+        el.detailDetail.textContent = item.detalle || '-';
+        el.detailStack.textContent = item.stack_trace || 'Sin stack trace disponible';
+        el.detailMetadata.textContent = item.metadata_json || '{}';
+      }
+
+      function markSelectedRow(index) {
+        Array.prototype.slice.call(el.tbody.querySelectorAll('tr')).forEach(function (row, rowIndex) {
+          row.classList.toggle('is-selected', rowIndex === index);
+        });
+      }
+
+      function buildQuery() {
+        var params = new URLSearchParams();
+        if (el.empresa.value) params.set('empresa_id', el.empresa.value);
+        if (el.level.value) params.set('nivel', el.level.value);
+        if (el.type.value.trim()) params.set('tipo_error', el.type.value.trim());
+        if (el.from.value) params.set('desde', el.from.value);
+        if (el.to.value) params.set('hasta', el.to.value);
+        if (el.search.value.trim()) params.set('search', el.search.value.trim());
+        params.set('limit', String(state.limit));
+        params.set('offset', String(state.offset));
+        return params.toString();
+      }
+
+      function updatePagination() {
+        var page = Math.floor(state.offset / state.limit) + 1;
+        var totalPages = Math.max(1, Math.ceil((state.total || 0) / state.limit));
+        el.pageText.textContent = 'Página ' + page + ' de ' + totalPages;
+        el.prev.disabled = state.offset <= 0;
+        el.next.disabled = state.offset + state.limit >= state.total;
+      }
+
+      function loadEmpresasForErrors() {
+        return requestJSON('/super/api/empresas', { credentials: 'same-origin' })
+          .then(function (payload) {
+            var items = Array.isArray(payload) ? payload : (payload.items || payload.empresas || []);
+            state.empresas = items.filter(function (item) { return item && (item.id || item.empresa_id); });
+            el.empresa.innerHTML = ['<option value="">Todas</option>'].concat(state.empresas.map(function (item) {
+              var id = Number(item.id || item.empresa_id || 0);
+              return '<option value="' + id + '">' + escapeHTML((item.nombre || ('Empresa #' + id)) + ' (#' + id + ')') + '</option>';
+            })).join('');
+          })
+          .catch(function () {
+            state.empresas = [];
+            el.empresa.innerHTML = '<option value="">Todas</option>';
+          });
+      }
+
+      function loadErrorsPanel() {
+        setBanner('');
+        el.meta.textContent = 'Consultando errores...';
+        return requestJSON('/super/api/errores?' + buildQuery(), { credentials: 'same-origin' })
+          .then(function (payload) {
+            state.items = Array.isArray(payload.items) ? payload.items : [];
+            state.total = Number(payload.total || 0);
+            setSummary(payload.summary || {});
+            renderRows(state.items);
+            renderDetails(state.items[0] || null);
+            el.generatedAt.textContent = 'Última lectura: ' + new Date().toLocaleString();
+            el.meta.textContent = 'Mostrando ' + state.items.length + ' de ' + state.total + ' errores filtrados.';
+            updatePagination();
+          })
+          .catch(function (err) {
+            el.tbody.innerHTML = '<tr><td colspan="8" class="super-errors-empty">No fue posible cargar el monitor de errores.</td></tr>';
+            el.meta.textContent = 'Sin resultados disponibles.';
+            setSummary({});
+            renderDetails(null);
+            updatePagination();
+            setBanner(err && err.message ? err.message : String(err));
+          });
+      }
+
+      function clearFilters() {
+        el.empresa.value = '';
+        el.level.value = '';
+        el.type.value = '';
+        el.from.value = '';
+        el.to.value = '';
+        el.search.value = '';
+        state.offset = 0;
+        loadErrorsPanel();
+      }
+
+      function bindErrorsPanel() {
+        document.getElementById('errorsRefreshBtn').addEventListener('click', loadErrorsPanel);
+        document.getElementById('errorsClearBtn').addEventListener('click', clearFilters);
+        [el.empresa, el.level, el.from, el.to].forEach(function (input) {
+          input.addEventListener('change', function () { state.offset = 0; loadErrorsPanel(); });
+        });
+        [el.type, el.search].forEach(function (input) {
+          input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') { state.offset = 0; loadErrorsPanel(); }
+          });
+        });
+        el.prev.addEventListener('click', function () {
+          state.offset = Math.max(0, state.offset - state.limit);
+          loadErrorsPanel();
+        });
+        el.next.addEventListener('click', function () {
+          if (state.offset + state.limit >= state.total) return;
+          state.offset += state.limit;
+          loadErrorsPanel();
+        });
+        el.tbody.addEventListener('click', function (event) {
+          var target = event.target;
+          if (!target || !target.getAttribute) return;
+          var index = target.getAttribute('data-error-index');
+          if (index == null) return;
+          var numericIndex = Number(index);
+          markSelectedRow(numericIndex);
+          renderDetails(state.items[numericIndex] || null);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        bindErrorsPanel();
+        loadEmpresasForErrors().then(loadErrorsPanel).catch(loadErrorsPanel);
+      });
+    })();
   </script>
 </body>
 </html>

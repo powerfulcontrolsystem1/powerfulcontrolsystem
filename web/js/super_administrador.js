@@ -130,7 +130,6 @@
       "/super/licencias_resumen.html": true,
       "/super/administradores.html": true,
       "/super/seguridad.html": true,
-      "/super/errores.html": true,
       "/super/reportes_globales.html": true
     };
     links.forEach(function (a) {
