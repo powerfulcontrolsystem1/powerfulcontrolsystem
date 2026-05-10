@@ -11,7 +11,7 @@ func TestDefaultDrogueriaFarmaciaLicenciaPlans(t *testing.T) {
 		t.Fatalf("planes drogueria farmacia = %d, want 4", len(plans))
 	}
 	expectedValues := []float64{0, 60000, 100000, 150000}
-	expectedDocs := []int{500, 1000, 2000, 5000}
+	expectedDocs := []int{250, 1000, 2000, 4000}
 	for i, plan := range plans {
 		if plan.Valor != expectedValues[i] {
 			t.Fatalf("valor plan %d = %.0f, want %.0f", i, plan.Valor, expectedValues[i])

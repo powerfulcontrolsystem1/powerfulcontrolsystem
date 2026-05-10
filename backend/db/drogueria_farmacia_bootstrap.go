@@ -49,7 +49,7 @@ func DefaultDrogueriaFarmaciaLicenciaPlans() []DrogueriaFarmaciaLicenciaPlan {
 			Descripcion:            "Licencia de prueba para droguerias y farmacias: medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion.",
 			Valor:                  0,
 			DuracionDias:           15,
-			MaxDocumentosMensuales: 500,
+			MaxDocumentosMensuales: 250,
 			ModulosHabilitados:     modules,
 		},
 		{
@@ -69,11 +69,11 @@ func DefaultDrogueriaFarmaciaLicenciaPlans() []DrogueriaFarmaciaLicenciaPlan {
 			ModulosHabilitados:     modules,
 		},
 		{
-			Nombre:                 "Drogueria y farmacia 30 dias - 5000 documentos",
-			Descripcion:            "Plan drogueria y farmacia para operacion mensual con hasta 5000 documentos electronicos o ventas.",
+			Nombre:                 "Drogueria y farmacia 30 dias - 4000 documentos",
+			Descripcion:            "Plan drogueria y farmacia para operacion mensual con hasta 4000 documentos electronicos o ventas.",
 			Valor:                  150000,
 			DuracionDias:           30,
-			MaxDocumentosMensuales: 5000,
+			MaxDocumentosMensuales: 4000,
 			ModulosHabilitados:     modules,
 		},
 	}

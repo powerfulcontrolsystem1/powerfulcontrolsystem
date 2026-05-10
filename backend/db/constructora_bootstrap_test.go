@@ -10,7 +10,7 @@ func TestDefaultConstructoraLicenciaPlans(t *testing.T) {
 	if len(plans) != 4 {
 		t.Fatalf("planes constructora = %d, want 4", len(plans))
 	}
-	expectedDocs := []int{500, 1000, 2000, 5000}
+	expectedDocs := []int{250, 1000, 2000, 4000}
 	expectedValues := []float64{0, 60000, 100000, 150000}
 	for i, plan := range plans {
 		if plan.DuracionDias != map[bool]int{true: 15, false: 30}[i == 0] {

@@ -52,7 +52,7 @@ func DefaultConstructoraLicenciaPlans() []ConstructoraLicenciaPlan {
 			Descripcion:            "Licencia de prueba para constructoras: obras, AIU, compras, contratos, centros de costo y documentos.",
 			Valor:                  0,
 			DuracionDias:           15,
-			MaxDocumentosMensuales: 500,
+			MaxDocumentosMensuales: 250,
 			ModulosHabilitados:     modules,
 		},
 		{
@@ -72,11 +72,11 @@ func DefaultConstructoraLicenciaPlans() []ConstructoraLicenciaPlan {
 			ModulosHabilitados:     modules,
 		},
 		{
-			Nombre:                 "Constructora 30 dias - 5000 documentos",
-			Descripcion:            "Plan constructora para operacion mensual con hasta 5000 documentos electronicos o ventas.",
+			Nombre:                 "Constructora 30 dias - 4000 documentos",
+			Descripcion:            "Plan constructora para operacion mensual con hasta 4000 documentos electronicos o ventas.",
 			Valor:                  150000,
 			DuracionDias:           30,
-			MaxDocumentosMensuales: 5000,
+			MaxDocumentosMensuales: 4000,
 			ModulosHabilitados:     modules,
 		},
 	}

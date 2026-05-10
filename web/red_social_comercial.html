@@ -23,6 +23,7 @@
     }
     .social-topbar h1{font-size:clamp(1.14rem,2.1vw,1.45rem);margin:0;font-weight:900;letter-spacing:0;color:var(--text)}
     .social-topbar p{margin:0;color:var(--muted);max-width:48rem;line-height:1.35;font-size:0.92rem}
+    .social-session-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .feed{display:flex;flex-direction:column;gap:14px;align-items:center;width:100%}
     .post-card{width:min(100%,560px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 24px color-mix(in srgb,#020617 14%,transparent);overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
     .post-cover{height:220px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--surface-soft)),color-mix(in srgb,var(--accent-2) 12%,var(--surface)));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
@@ -65,7 +66,9 @@
         <h1>Red Social Comercial</h1>
         <p>Feed público de publicaciones empresariales. Baja para cargar más (estilo Facebook).</p>
       </div>
-      <a class="btn secondary" href="/login_usuario.html" style="text-decoration:none;">Iniciar sesión</a>
+      <div class="social-session-actions" id="socialSessionActions">
+        <a class="btn secondary" id="socialSessionBtn" href="/login_usuario.html" style="text-decoration:none;">Iniciar sesión</a>
+      </div>
     </header>
     <div class="feed" id="feedContenedor">
       <div class="empty-state">Cargando publicaciones...</div>
@@ -108,6 +111,59 @@
     var pageParams = new URLSearchParams(window.location.search || '');
     var pageEmpresaId = Number(String(pageParams.get('empresa_id') || pageParams.get('id') || '').trim()) || 0;
     var paging = { limit: 12, offset: 0, done: false, loading: false };
+    function parsePositiveInt(raw) {
+      var value = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(value)) return 0;
+      value = Math.trunc(value);
+      return value > 0 ? value : 0;
+    }
+    function getStoredEmpresaId() {
+      var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+      var stores = [];
+      try { stores.push(window.sessionStorage); } catch (_) {}
+      try { stores.push(window.localStorage); } catch (_) {}
+      for (var s = 0; s < stores.length; s += 1) {
+        for (var k = 0; k < keys.length; k += 1) {
+          try {
+            var id = parsePositiveInt(stores[s].getItem(keys[k]));
+            if (id > 0) return id;
+          } catch (_) {}
+        }
+      }
+      return 0;
+    }
+    function hasVisibleSessionCookie() {
+      try {
+        return /(?:^|;\s*)browser_session_active=1(?:;|$)/.test(document.cookie || '');
+      } catch (_) {
+        return false;
+      }
+    }
+    function syncSessionButton() {
+      var btn = document.getElementById('socialSessionBtn');
+      var actions = document.getElementById('socialSessionActions');
+      if (!btn || !actions) return;
+      var empresaId = pageEmpresaId || getStoredEmpresaId();
+      var loggedIn = hasVisibleSessionCookie() || empresaId > 0;
+      if (!loggedIn) {
+        btn.textContent = 'Iniciar sesión';
+        btn.href = '/login_usuario.html' + (pageEmpresaId > 0 ? ('?empresa_id=' + encodeURIComponent(String(pageEmpresaId))) : '');
+        return;
+      }
+      btn.textContent = 'Mi panel';
+      btn.href = empresaId > 0
+        ? '/administrar_empresa.html?id=' + encodeURIComponent(String(empresaId)) + '&empresa_id=' + encodeURIComponent(String(empresaId))
+        : '/seleccionar_empresa.html';
+      if (empresaId > 0 && !document.getElementById('socialPublishBtn')) {
+        var publish = document.createElement('a');
+        publish.id = 'socialPublishBtn';
+        publish.className = 'btn';
+        publish.style.textDecoration = 'none';
+        publish.href = '/administrar_empresa/publicar_red_social.html?empresa_id=' + encodeURIComponent(String(empresaId));
+        publish.textContent = 'Publicar';
+        actions.appendChild(publish);
+      }
+    }
     function getActorKey() {
       try {
         var key = localStorage.getItem('pcs_actor_key');
@@ -119,6 +175,7 @@
         return String(Date.now()) + '_' + Math.random().toString(16).slice(2);
       }
     }
+    syncSessionButton();
     function reaccionLabel(r) {
       switch(String(r||'')) {
         case 'me_gusta': return 'Me gusta';

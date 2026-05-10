@@ -18,13 +18,24 @@
     .rustdesk-download-item span { display:block; color:var(--muted); font-size:.88rem; }
     .rustdesk-probe-list { margin:0; padding-left:18px; display:grid; gap:8px; }
     .rustdesk-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
-    .advanced-section-finder { position:relative; z-index:1; margin:18px 0 26px; padding:14px; border:1px solid color-mix(in srgb,var(--border) 82%,var(--accent) 18%); border-radius:12px; background:linear-gradient(180deg, var(--surface), var(--surface-soft)); box-shadow:0 18px 38px rgba(3,10,20,.32); isolation:isolate; backdrop-filter:none; }
+    .advanced-config-layout { display:grid; grid-template-columns:minmax(230px,280px) minmax(0,1fr); gap:18px; align-items:start; }
+    .advanced-config-main { min-width:0; display:block; }
+    .advanced-section-finder { position:sticky; top:14px; z-index:2; margin:0; padding:14px; border:1px solid color-mix(in srgb,var(--border) 82%,var(--accent) 18%); border-radius:8px; background:linear-gradient(180deg, var(--surface), var(--surface-soft)); box-shadow:0 18px 38px rgba(3,10,20,.24); isolation:isolate; backdrop-filter:none; }
+    .advanced-section-finder-header { display:grid; gap:3px; margin:0 0 12px; }
+    .advanced-section-finder-header h2 { margin:0; font-size:1rem; line-height:1.2; }
+    .advanced-section-finder-header p { margin:0; color:var(--muted); font-size:.86rem; line-height:1.35; }
     .advanced-section-finder-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .advanced-section-finder-row input { flex:1 1 260px; }
-    .advanced-category-map { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin-top:12px; }
-    .advanced-category-map button { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:48px; padding:10px 12px; border:1px solid color-mix(in srgb,var(--border) 84%,var(--accent) 16%); border-radius:8px; background:color-mix(in srgb,var(--surface) 88%,var(--accent) 12%); color:var(--text); font:inherit; font-weight:800; text-align:left; cursor:pointer; }
-    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 22%); outline:none; }
-    .advanced-category-map button span { color:var(--muted); font-weight:700; font-size:.82rem; text-align:right; }
+    .advanced-category-map { display:grid; grid-template-columns:1fr; gap:8px; margin:12px 0 0; padding:0; list-style:none; max-height:calc(100vh - 230px); overflow:auto; }
+    .advanced-category-map li { display:block; }
+    .advanced-category-map button { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-height:46px; padding:10px 11px; border:1px solid color-mix(in srgb,var(--border) 84%,var(--accent) 16%); border-radius:8px; background:color-mix(in srgb,var(--surface) 90%,var(--accent) 10%); color:var(--text); font:inherit; font-weight:850; text-align:left; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease; }
+    .advanced-category-map button::before { content:""; width:8px; height:8px; border-radius:999px; background:color-mix(in srgb,var(--accent) 72%,#22c55e 28%); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); flex:0 0 auto; }
+    .advanced-category-map button strong { flex:1 1 auto; min-width:0; }
+    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 22%); border-color:color-mix(in srgb,var(--border) 55%,var(--accent) 45%); outline:none; transform:translateX(2px); }
+    .advanced-category-map button.is-active { background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 22%,var(--surface) 78%), color-mix(in srgb,#22c55e 14%,var(--surface) 86%)); border-color:color-mix(in srgb,var(--accent) 62%,var(--border) 38%); box-shadow:inset 3px 0 0 var(--accent); }
+    .advanced-category-map button.is-active::before { background:#22c55e; }
+    .advanced-category-map button span { color:var(--muted); font-weight:750; font-size:.78rem; text-align:right; flex:0 0 auto; max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .advanced-category-map li.is-hidden { display:none; }
     .advanced-category-map button.is-hidden { display:none; }
     .advanced-section-empty { display:none; margin-top:10px; color:var(--muted); }
     .advanced-section-empty.is-visible { display:block; }
@@ -35,7 +46,8 @@
     .consumos-config-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
     .consumos-config-form .form-col { min-width:0; }
     .consumos-config-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
-    @media (max-width: 760px) { .consumos-config-form { grid-template-columns:1fr; } .consumos-config-actions { justify-content:flex-start; } }
+    @media (max-width: 980px) { .advanced-config-layout { grid-template-columns:1fr; } .advanced-section-finder { position:relative; top:auto; } .advanced-category-map { grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); max-height:none; overflow:visible; } }
+    @media (max-width: 760px) { .consumos-config-form { grid-template-columns:1fr; } .consumos-config-actions { justify-content:flex-start; } .advanced-section-finder-row input { flex-basis:100%; } .advanced-section-finder-row .btn { width:100%; } }
     @media (max-width: 900px) { .rustdesk-download-item { flex-direction:column; align-items:flex-start; } }
   </style>
 </head>
@@ -49,30 +61,36 @@
       <p class="form-help"><strong>Nota:</strong> cada tarjeta se guarda por separado con su botón <strong>Guardar</strong>.</p>
     </div>
 
-    <nav class="advanced-section-finder" aria-label="Submenú de búsqueda de configuración avanzada">
+    <div class="advanced-config-layout">
+    <nav class="advanced-section-finder" aria-label="Submenú de configuración avanzada">
+      <div class="advanced-section-finder-header">
+        <h2>Submenú</h2>
+        <p>Cada botón abre una sección de configuración.</p>
+      </div>
       <div class="advanced-section-finder-row">
         <input id="advancedSectionSearch" class="form-input" type="search" placeholder="Buscar seccion: IA, pagos, Gmail, RustDesk, voz, respaldo...">
         <button id="advancedSectionClear" class="btn secondary" type="button">Limpiar</button>
       </div>
-      <div id="advancedCategoryList" class="advanced-category-map">
-        <button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto">Consumos <span>Costos externos</span></button>
-        <button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr">RustDesk VPS <span>Soporte remoto</span></button>
-        <button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas">Limitaciones <span>API, DB, cuotas</span></button>
-        <button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina">OnlyOffice <span>Documentos</span></button>
-        <button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada">Nextcloud <span>Nube privada</span></button>
-        <button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token">Voz IA <span>Streaming</span></button>
-        <button type="button" data-target="epaycoConfig" data-search="pagos facturacion checkout epayco venta digital">Epayco <span>Checkout</span></button>
-        <button type="button" data-target="wompiConfig" data-search="pagos wompi nequi bancolombia checkout">Wompi / Nequi <span>Pagos</span></button>
-        <button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email">Gmail SMTP <span>Correo</span></button>
-        <button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono">WhatsApp portal <span>Contacto</span></button>
-        <button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios">reCAPTCHA <span>Seguridad</span></button>
-        <button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google">IA global <span>Modelos</span></button>
-        <button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema">Mantenimiento <span>Sistema</span></button>
-        <button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion">Respaldo <span>Backup</span></button>
-      </div>
+      <ul id="advancedCategoryList" class="advanced-category-map">
+        <li><button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto"><strong>Consumos</strong><span>Costos externos</span></button></li>
+        <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr"><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
+        <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas"><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
+        <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina"><strong>OnlyOffice</strong><span>Documentos</span></button></li>
+        <li><button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada"><strong>Nextcloud</strong><span>Nube privada</span></button></li>
+        <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token"><strong>Voz IA</strong><span>Streaming</span></button></li>
+        <li><button type="button" data-target="epaycoConfig" data-search="pagos facturacion checkout epayco venta digital"><strong>Epayco</strong><span>Checkout</span></button></li>
+        <li><button type="button" data-target="wompiConfig" data-search="pagos wompi nequi bancolombia checkout"><strong>Wompi / Nequi</strong><span>Pagos</span></button></li>
+        <li><button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email"><strong>Gmail SMTP</strong><span>Correo</span></button></li>
+        <li><button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono"><strong>WhatsApp portal</strong><span>Contacto</span></button></li>
+        <li><button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios"><strong>reCAPTCHA</strong><span>Seguridad</span></button></li>
+        <li><button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google"><strong>IA global</strong><span>Modelos</span></button></li>
+        <li><button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema"><strong>Mantenimiento</strong><span>Sistema</span></button></li>
+        <li><button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion"><strong>Respaldo</strong><span>Backup</span></button></li>
+      </ul>
       <div id="advancedSectionEmpty" class="advanced-section-empty">No se encontraron secciones con ese texto.</div>
     </nav>
 
+    <main class="advanced-config-main">
     <section class="card form advanced-card" data-brand="system" id="consumosExternosCard">
       <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <h2 style="margin:0">Configurar consumos (Hostinger / Cursor / costos OpenAI)</h2>
@@ -895,6 +913,8 @@
       <div id="backupConfigMsg" class="form-help"></div>
       <div id="backupTestResult" class="form-help"></div>
     </section>
+    </main>
+    </div>
 
   </div>
 
@@ -1785,10 +1805,23 @@
           button.dataset.target = id;
           button.dataset.search = normalizeText(title + ' ' + hint + ' ' + id);
           button.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
-          listEl.appendChild(button);
+          const item = document.createElement('li');
+          item.appendChild(button);
+          listEl.appendChild(item);
         });
 
         const sectionButtons = Array.from(listEl.querySelectorAll('button[data-target]'));
+        const setActiveButton = function(targetId){
+          sectionButtons.forEach(function(button){
+            const active = (button.dataset.target || '') === targetId;
+            button.classList.toggle('is-active', active);
+            if (active) {
+              button.setAttribute('aria-current', 'true');
+            } else {
+              button.removeAttribute('aria-current');
+            }
+          });
+        };
         sectionButtons.forEach(function(button){
           if (!button.dataset.search) {
             button.dataset.search = normalizeText(button.textContent || '');
@@ -1797,6 +1830,7 @@
             const targetId = button.dataset.target || '';
             const target = targetId ? document.getElementById(targetId) : null;
             if (!target) return;
+            setActiveButton(targetId);
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             history.replaceState(null, '', '#' + targetId);
           });
@@ -1809,6 +1843,8 @@
             const haystack = normalizeText((button.dataset.search || '') + ' ' + button.textContent);
             const show = !query || haystack.indexOf(query) >= 0;
             button.classList.toggle('is-hidden', !show);
+            const parentItem = button.closest('li');
+            if (parentItem) parentItem.classList.toggle('is-hidden', !show);
             if (show) visible += 1;
           });
           if (emptyEl) emptyEl.classList.toggle('is-visible', visible === 0);
@@ -1823,6 +1859,22 @@
           });
         }
         applyFilter();
+        if (window.location.hash) {
+          setActiveButton(window.location.hash.slice(1));
+        } else if (sectionButtons[0]) {
+          setActiveButton(sectionButtons[0].dataset.target || '');
+        }
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver(function(entries){
+            const visible = entries
+              .filter(function(entry){ return entry.isIntersecting; })
+              .sort(function(a, b){ return b.intersectionRatio - a.intersectionRatio; })[0];
+            if (visible && visible.target && visible.target.id) {
+              setActiveButton(visible.target.id);
+            }
+          }, { rootMargin: '-20% 0px -65% 0px', threshold: [0.01, 0.2, 0.45] });
+          nodes.forEach(function(node){ observer.observe(node); });
+        }
       }
 
       async function load(){

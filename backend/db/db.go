@@ -240,10 +240,20 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 	// Backfill: licencias ya creadas deben quedar en Colombia por defecto.
 	// Es idempotente y no afecta registros ya definidos.
 	_, _ = dbConn.Exec(`UPDATE licencias SET pais_codigo = 'CO' WHERE COALESCE(TRIM(pais_codigo),'') = ''`)
-	// Las licencias de prueba existentes quedan limitadas a 500 documentos/ventas mensuales.
+	// Migracion idempotente: los planes heredados de 5000 documentos quedan en 4000.
 	_, _ = dbConn.Exec(`UPDATE licencias
-		SET max_documentos_mensuales = 500
-		WHERE COALESCE(max_documentos_mensuales, 0) = 0
+		SET nombre = REPLACE(COALESCE(nombre, ''), '5000 documentos', '4000 documentos'),
+			descripcion = REPLACE(COALESCE(descripcion, ''), '5000 documentos', '4000 documentos'),
+			max_documentos_mensuales = 4000
+		WHERE COALESCE(max_documentos_mensuales, 0) = 5000
+		  AND (
+			LOWER(COALESCE(nombre, '')) LIKE '%5000 documentos%'
+			OR LOWER(COALESCE(descripcion, '')) LIKE '%5000 documentos%'
+		  )`)
+	// Las licencias de prueba existentes quedan limitadas a 250 documentos/ventas mensuales.
+	_, _ = dbConn.Exec(`UPDATE licencias
+		SET max_documentos_mensuales = 250
+		WHERE COALESCE(max_documentos_mensuales, 0) <> 250
 		  AND COALESCE(valor, 0) = 0
 		  AND COALESCE(duracion_dias, 0) = 15
 		  AND (

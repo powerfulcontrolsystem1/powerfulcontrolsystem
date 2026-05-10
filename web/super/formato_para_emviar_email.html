@@ -20,8 +20,10 @@
       </div>
     </div>
 
-    <section class="card form mp-card">
-      <h2>Secciones</h2>
+    <div class="email-templates-layout">
+    <aside class="card form mp-card email-templates-submenu" aria-label="Submenú de formatos de email">
+      <h2>Submenú</h2>
+      <p class="form-help">Cada botón abre un grupo de formatos.</p>
       <div class="email-templates-tabs" id="emailTemplateTabs">
         <button type="button" class="email-templates-tab active" data-panel="panel-confirmacion">Confirmación de correo</button>
         <button type="button" class="email-templates-tab" data-panel="panel-administracion">Administración</button>
@@ -29,8 +31,9 @@
         <button type="button" class="email-templates-tab" data-panel="panel-recomendadas">Recomendados</button>
       </div>
       <p class="form-help">Variables disponibles: escríbelas tal como aparecen entre llaves dobles, por ejemplo {{name}} o {{confirm_url}}.</p>
-    </section>
+    </aside>
 
+    <main class="email-templates-content">
     <section id="panel-confirmacion" class="email-template-panel">
       <article class="card form mp-card email-template-card" data-template-key="admin_confirmation">
         <h2>Correo cuando se confirma cuenta administrativa</h2>
@@ -270,6 +273,8 @@
         <button id="emailTemplatesSaveBottom" type="button" class="btn">Guardar cambios</button>
       </div>
     </div>
+    </main>
+    </div>
   </div>
 
   <script>
@@ -300,7 +305,13 @@
           panel.hidden = panel.id !== panelId;
         });
         document.querySelectorAll('.email-templates-tab').forEach(function(tab){
-          tab.classList.toggle('active', tab.getAttribute('data-panel') === panelId);
+          const active = tab.getAttribute('data-panel') === panelId;
+          tab.classList.toggle('active', active);
+          if (active) {
+            tab.setAttribute('aria-current', 'true');
+          } else {
+            tab.removeAttribute('aria-current');
+          }
         });
       }
 
