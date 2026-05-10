@@ -39,5 +39,22 @@ echo "[sidecar] Contenedores:"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
 
 echo "[sidecar] Probando frontend Docker en http://127.0.0.1:$http_port"
-curl -fsSI "http://127.0.0.1:$http_port/" >/dev/null
+ready=0
+for attempt in $(seq 1 24); do
+  if curl -fsSI "http://127.0.0.1:$http_port/" >/dev/null; then
+    ready=1
+    break
+  fi
+  echo "[sidecar] Esperando frontend/backend Docker... intento $attempt/24"
+  sleep 5
+done
+
+if [ "$ready" != "1" ]; then
+  echo "[sidecar] ERROR: el frontend Docker no respondio a tiempo en http://127.0.0.1:$http_port" >&2
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps >&2 || true
+  docker logs --tail 80 pcs-backend >&2 || true
+  docker logs --tail 80 pcs-frontend >&2 || true
+  exit 1
+fi
+
 echo "[sidecar] OK. Docker esta arriba en paralelo; Nginx publico aun puede seguir apuntando al servicio actual."

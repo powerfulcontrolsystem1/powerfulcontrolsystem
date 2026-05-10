@@ -48,6 +48,7 @@ param(
   [string]$RemoteStdoutLogPath = "backend/server.log",
   [string]$RemoteStderrLogPath = "backend/server.err",
   [int]$RestartHealthTimeoutSeconds = 45,
+  [bool]$RedeployDockerStack = $true,
   [bool]$OpenPublicUrlAfterDeploy = $true
 )
 
@@ -1694,6 +1695,56 @@ function Invoke-RemoteCommandSimple {
   }
 }
 
+function Invoke-RemoteDockerComposeRedeploy {
+  param(
+    [Parameter(Mandatory=$true)][string]$RemoteUser,
+    [Parameter(Mandatory=$true)][string]$RemoteHost,
+    [Parameter(Mandatory=$true)][int]$Port,
+    [Parameter(Mandatory=$true)][string]$IdentityPath,
+    [Parameter(Mandatory=$true)][string]$RemotePath,
+    [Parameter(Mandatory=$true)][bool]$Enabled,
+    [Parameter(Mandatory=$true)][bool]$IsDryRun,
+    [Parameter(Mandatory=$true)][bool]$IsPreviewOnly
+  )
+
+  if (-not $Enabled) {
+    Write-Host "[INFO] Redeploy Docker omitido por parametro -RedeployDockerStack false."
+    return
+  }
+  if ($IsDryRun -or $IsPreviewOnly) {
+    Write-Host "[INFO] Redeploy Docker omitido por DryRun/PreviewOnly."
+    return
+  }
+
+  $identityContext = Resolve-IdentityContext -IdentityPath $IdentityPath
+  $remotePathLit = Convert-ToBashLiteral $RemotePath
+  $remoteScript = @"
+set -e
+remote_path=$remotePathLit
+if [ ! -d "`$remote_path" ]; then
+  echo "[INFO] Docker redeploy omitido: no existe `$remote_path"
+  exit 0
+fi
+cd "`$remote_path"
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[INFO] Docker redeploy omitido: docker no esta instalado en el VPS"
+  exit 0
+fi
+if [ ! -f deploy/docker-compose.platform.yml ] || [ ! -f deploy/.env.platform ]; then
+  echo "[INFO] Docker redeploy omitido: falta deploy/docker-compose.platform.yml o deploy/.env.platform"
+  exit 0
+fi
+if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-frontend'; then
+  echo "[INFO] Docker redeploy omitido: pcs-frontend no esta activo"
+  exit 0
+fi
+echo "[INFO] Docker stack activo detectado; reconstruyendo backend/frontend con Compose..."
+bash deploy/scripts/vps-compose-sidecar-up.sh
+"@
+  $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
+  Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
+}
+
 try {
   $scriptPath = Join-Path $PSScriptRoot "sync_to_vps.sh"
   if (-not (Test-Path $scriptPath)) {
@@ -1833,6 +1884,8 @@ try {
   if (-not (Test-WslReady)) {
     Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
+    Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $RedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent
+
     if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
       $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
       Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
@@ -1936,6 +1989,8 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw (Get-FriendlyExternalFailureMessage -Label "sincronización en WSL" -ExitCode $LASTEXITCODE -Text ($wslOutput -join "`n"))
   }
+
+  Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $RedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent
 
   if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
     $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
