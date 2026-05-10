@@ -7866,3 +7866,7 @@ Archivos modificados:
 Archivos modificados:
 - deploy/scripts/vps-compose-sidecar-up.sh
 - scripts/sync_to_vps.ps1
+
+2026-05-10 16:16:56 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 5fface5d; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
