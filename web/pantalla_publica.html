@@ -131,6 +131,8 @@
         const emptyState = document.getElementById('emptyState');
         let peerConnection;
         let ws;
+        const params = new URLSearchParams(window.location.search);
+        const empresaId = Number(params.get('empresa_id') || params.get('id') || '0');
 
         const config = {
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -149,8 +151,13 @@
         }
 
         function connect() {
+            if (!empresaId) {
+                setStatus('Abre esta pantalla desde el enlace publico de la empresa.');
+                showEmptyState();
+                return;
+            }
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.host}/api/public/webrtc/signaling`;
+            const wsUrl = `${wsProtocol}//${window.location.host}/api/public/webrtc/signaling?empresa_id=${encodeURIComponent(String(empresaId))}&role=viewer`;
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {

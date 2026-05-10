@@ -457,7 +457,7 @@
           const host = window.location.hostname.toLowerCase();
           if (host !== 'localhost' && host !== '127.0.0.1' && host.indexOf('.') > 0) {
             const first = host.split('.')[0];
-            if (first && first !== 'www') state.slug = normalizeSlug(first);
+            if (first && first !== 'www' && first !== 'powerfulcontrolsystem') state.slug = normalizeSlug(first);
           }
         }
       }

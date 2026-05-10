@@ -16796,6 +16796,57 @@ html[data-theme^="dark"] .mc-bulk select {
   }
 }
 
+/* Guardrail responsive para modulos administrativos legacy con estilos inline.
+   Evita que encabezados, acciones y tablas empujen el ancho total de la pagina en celular. */
+@media (max-width: 720px) {
+  body[class*="-page"] main,
+  body[class*="-page"] section,
+  body[class*="-page"] article,
+  body[class*="-page"] aside,
+  body[class*="-page"] header,
+  body[class*="-page"] nav,
+  body[class*="-page"] form,
+  body[class*="-page"] div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body[class*="-page"] header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body[class*="-page"] header h1,
+  body[class*="-page"] header p {
+    overflow-wrap: anywhere !important;
+  }
+
+  body[class*="-page"] header [class*="-actions"],
+  body[class*="-page"] header [class*="-period"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+  }
+
+  body[class*="-page"] header button,
+  body[class*="-page"] header input,
+  body[class*="-page"] header select,
+  body[class*="-page"] header a[class*="btn"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body[class*="-page"] [class*="-kpis"],
+  body[class*="-page"] [class*="-grid"],
+  body[class*="-page"] [class*="-split"],
+  body[class*="-page"] [class*="-row"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
 /* Ajuste final del robot/secretaria en movil: los globos quedan por encima del avatar
    y no interceptan el boton del asistente ni controles inferiores de la pagina. */
 @media (max-width: 640px) {

@@ -26,6 +26,15 @@
     el.style.color = bad ? "#ffb4b4" : "";
   }
 
+  if (!empresaId) {
+    setMsg("requestMsg", "Abre este portal desde el enlace de una empresa para solicitar un servicio.", true);
+    setMsg("registerMsg", "Falta empresa_id en el enlace publico.", true);
+    document.querySelectorAll("form input, form textarea, form button").forEach(function (el) {
+      el.disabled = true;
+    });
+    return;
+  }
+
   function persistToken(v) {
     state.customerToken = v || "";
     try { localStorage.setItem(tokenKey, state.customerToken); } catch (e) {}

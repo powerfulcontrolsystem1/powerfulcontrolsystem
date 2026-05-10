@@ -20,6 +20,13 @@
   var lastTicket = null;
   function setMsg(text, bad) { kioskMsg.textContent = text || ""; kioskMsg.style.color = bad ? "#ffb4b4" : "#b8d8ff"; }
 
+  if (!empresaId) {
+    servicesGrid.innerHTML = '<div class="form-help">Abre este kiosco desde el enlace publico de una empresa.</div>';
+    setMsg("Falta empresa_id en el enlace publico.", true);
+    if (printTicketBtn) printTicketBtn.disabled = true;
+    return;
+  }
+
   function printTicket(item) {
     item = item || {};
     var code = item.codigo_turno || "-";

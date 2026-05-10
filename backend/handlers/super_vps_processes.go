@@ -47,8 +47,8 @@ func SuperVPSProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		// ps output: pid comm rss pmem pcpu args
-		cmd := exec.Command("bash", "-lc", fmt.Sprintf("ps -eo pid,comm,rss,pmem,pcpu,args --sort=-rss | head -n %d", limit+1))
+		// BusyBox/Alpine no soporta --sort ni columnas pmem/pcpu; Go ordena despues.
+		cmd := exec.Command("sh", "-lc", fmt.Sprintf("ps -o pid,comm,rss,args | head -n %d", limit+8))
 		out, err := cmd.Output()
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "No se pudo ejecutar ps en el VPS"})
@@ -67,20 +67,20 @@ func SuperVPSProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if lineNo == 1 && strings.Contains(line, "PID") {
 				continue // header
 			}
-			// Split into at most 6 fields.
+			// Split: pid comm rss args...
 			parts := strings.Fields(line)
-			if len(parts) < 6 {
+			if len(parts) < 4 {
 				continue
 			}
 			pid, _ := strconv.Atoi(parts[0])
-			rss, _ := strconv.ParseInt(parts[2], 10, 64)
-			args := strings.Join(parts[5:], " ")
+			rss := parseProcessRSSKB(parts[2])
+			args := strings.Join(parts[3:], " ")
 			rows = append(rows, vpsProcessRow{
 				PID:     pid,
 				Command: parts[1],
 				RSSKB:   rss,
-				MemPct:  parts[3],
-				CpuPct:  parts[4],
+				MemPct:  "",
+				CpuPct:  "",
 				Args:    args,
 			})
 		}
@@ -92,3 +92,25 @@ func SuperVPSProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+func parseProcessRSSKB(raw string) int64 {
+	v := strings.TrimSpace(strings.ToLower(raw))
+	if v == "" {
+		return 0
+	}
+	multiplier := int64(1)
+	switch {
+	case strings.HasSuffix(v, "g"):
+		multiplier = 1024 * 1024
+		v = strings.TrimSuffix(v, "g")
+	case strings.HasSuffix(v, "m"):
+		multiplier = 1024
+		v = strings.TrimSuffix(v, "m")
+	case strings.HasSuffix(v, "k"):
+		v = strings.TrimSuffix(v, "k")
+	}
+	n, _ := strconv.ParseFloat(strings.TrimSpace(v), 64)
+	if n <= 0 {
+		return 0
+	}
+	return int64(n * float64(multiplier))
+}

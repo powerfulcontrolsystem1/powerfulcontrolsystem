@@ -222,7 +222,32 @@ func EmpresaMiHorarioUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 		usuario, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, adminEmail, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "No se encontro un usuario operativo asociado a este correo en la empresa", http.StatusNotFound)
+				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+				if desde == "" || hasta == "" {
+					today := time.Now()
+					if desde == "" {
+						desde = today.Format("2006-01-02")
+					}
+					if hasta == "" {
+						hasta = today.AddDate(0, 0, 14).Format("2006-01-02")
+					}
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":         true,
+					"empresa_id": empresaID,
+					"desde":      desde,
+					"hasta":      hasta,
+					"usuario": map[string]interface{}{
+						"id":     0,
+						"email":  adminEmail,
+						"nombre": adminEmail,
+						"rol":    "administrador",
+					},
+					"resumen": buildMiHorarioResumen(nil, time.Now()),
+					"items":   []dbpkg.HorarioTrabajador{},
+					"warning": "No hay un usuario operativo asociado a este correo en la empresa.",
+				})
 				return
 			}
 			http.Error(w, "No se pudo validar el usuario operativo", http.StatusInternalServerError)

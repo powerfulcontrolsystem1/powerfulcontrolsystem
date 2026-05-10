@@ -121,6 +121,13 @@
   }
 
   render();
+  if (!empresaId) {
+    screenTitle.textContent = "Pantalla de turnos";
+    renderList(callingNow, [], function () { return ""; }, "Abre esta pantalla desde el enlace publico de una empresa.");
+    renderList(recentCalls, [], function () { return ""; }, "Falta empresa_id en el enlace publico.");
+    renderList(serviceSummary, [], function () { return ""; }, "Sin empresa asociada.");
+    return;
+  }
   refresh().catch(function () {});
   setInterval(render, 1000);
   setInterval(function () { refresh().catch(function () {}); }, 5000);

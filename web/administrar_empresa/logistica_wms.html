@@ -11,8 +11,9 @@
     html[data-theme^="dark"] body.wms-page{color-scheme:dark}
     html[data-theme^="light"] body.wms-page{color-scheme:light}
     .wms-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .wms-shell,.wms-head,.wms-box,.wms-kpi,.wms-tabs,.wms-panel,.wms-grid,.wms-overview,.wms-command,.wms-table-wrap{min-width:0}
     .wms-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 94%,var(--accent,#1769e0) 6%),var(--surface,#fff));box-shadow:var(--shadow-sm,0 10px 24px rgba(15,23,42,.08))}
-    .wms-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0}.wms-head p{margin:6px 0 0;color:var(--muted,#65758b);max-width:900px;line-height:1.45}
+    .wms-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0;overflow-wrap:anywhere}.wms-head p{margin:6px 0 0;color:var(--muted,#65758b);max-width:900px;line-height:1.45;overflow-wrap:anywhere}
     .wms-actions,.wms-row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
     .wms-btn{border:1px solid var(--border,rgba(15,35,64,.16));background:var(--surface,#fff);color:var(--text,#172033);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px;box-shadow:0 1px 0 color-mix(in srgb,var(--text,#172033) 8%,transparent);transition:background .16s ease,border-color .16s ease,transform .16s ease}
     .wms-btn:hover{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--surface-soft,#f4f7fc) 82%,var(--accent,#1769e0) 18%);transform:translateY(-1px)}

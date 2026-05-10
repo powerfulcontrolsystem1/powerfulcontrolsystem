@@ -74,7 +74,7 @@
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;display:none}
     .overlay.open{display:block}
     @media(max-width:960px){.public-layout{grid-template-columns:1fr}.quick-metrics{grid-template-columns:1fr}.toolbar{align-items:stretch}.search{min-width:0}}
-    @media(max-width:720px){.store{padding:0 0 60px}.cover{border-radius:0;border-left:0;border-right:0;min-height:250px}.cover-body{padding:18px}.avatar{width:80px;height:80px;border-radius:22px}.headline h1{font-size:2rem}.grid,.feed-head{padding:12px}.tabs{padding:0 12px}}
+    @media(max-width:720px){.store{padding:0 0 60px;max-width:100%;overflow-x:hidden}.cover{border-radius:0;border-left:0;border-right:0;min-height:250px}.cover-body{padding:18px}.identity,.headline,.toolbar,.search{min-width:0;max-width:100%}.avatar{width:80px;height:80px;border-radius:22px}.headline h1{font-size:2rem;letter-spacing:0;overflow-wrap:anywhere}.grid,.feed-head{padding:12px}.tabs{padding:0 12px}.toolbar,.search{display:grid;grid-template-columns:minmax(0,1fr);width:100%;align-items:stretch}.search input,.search select,.cart-btn{width:100%;min-width:0;box-sizing:border-box}.public-layout,.panel,.side-card{min-width:0;max-width:100%}}
   </style>
 </head>
 <body>

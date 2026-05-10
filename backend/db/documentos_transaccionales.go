@@ -565,6 +565,12 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	fechaDesde := strings.TrimSpace(filter.FechaDesde)
 	fechaHasta := strings.TrimSpace(filter.FechaHasta)
 	busqueda := strings.TrimSpace(filter.Query)
+	fechaDocumentoExpr := `COALESCE(
+		NULLIF(CASE WHEN COALESCE(d.fecha_documento, '') LIKE 'date(%' OR COALESCE(d.fecha_documento, '') LIKE 'datetime(%' THEN '' ELSE COALESCE(d.fecha_documento, '') END, ''),
+		NULLIF(CASE WHEN COALESCE(d.fecha_creacion, '') LIKE 'date(%' OR COALESCE(d.fecha_creacion, '') LIKE 'datetime(%' THEN '' ELSE COALESCE(d.fecha_creacion, '') END, ''),
+		''
+	)`
+	fechaDocumentoDiaExpr := `substr(` + fechaDocumentoExpr + `, 1, 10)`
 
 	query := `SELECT
 		d.id,
@@ -626,11 +632,11 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 		args = append(args, documentoLike, documentoLike, documentoLike)
 	}
 	if fechaDesde != "" {
-		query += ` AND date(COALESCE(NULLIF(d.fecha_documento, ''), substr(d.fecha_creacion, 1, 10))) >= date(?)`
+		query += ` AND ` + fechaDocumentoDiaExpr + ` >= ?`
 		args = append(args, fechaDesde)
 	}
 	if fechaHasta != "" {
-		query += ` AND date(COALESCE(NULLIF(d.fecha_documento, ''), substr(d.fecha_creacion, 1, 10))) <= date(?)`
+		query += ` AND ` + fechaDocumentoDiaExpr + ` <= ?`
 		args = append(args, fechaHasta)
 	}
 	if busqueda != "" {
@@ -649,11 +655,11 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	}
 
 	query += `
-	ORDER BY datetime(COALESCE(NULLIF(d.fecha_documento, ''), d.fecha_creacion)) DESC, d.id DESC
+	ORDER BY ` + fechaDocumentoExpr + ` DESC, d.id DESC
 	LIMIT ? OFFSET ?`
 	args = append(args, filter.Limit, filter.Offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := ExecQueryCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -123,6 +124,14 @@ func (rw *apiCaptureResponseWriter) Write(p []byte) (int, error) {
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.status = code
 	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func (lrw *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := lrw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("response writer does not support hijacking")
+	}
+	return hijacker.Hijack()
 }
 
 func requestIDFromContext(ctx context.Context) string {
@@ -399,7 +408,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 // JSONErrorMiddleware unifica errores no-JSON para endpoints de API.
 func JSONErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !isLikelyAPIRequest(r) {
+		if !isLikelyAPIRequest(r) || isWebSocketUpgrade(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -466,6 +475,10 @@ func JSONErrorMiddleware(next http.Handler) http.Handler {
 		w.WriteHeader(capture.status)
 		_, _ = w.Write(capture.body.Bytes())
 	})
+}
+
+func isWebSocketUpgrade(r *http.Request) bool {
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get("Upgrade")), "websocket")
 }
 
 // GenerateSecureToken devuelve un token seguro en hex de `n` bytes.
@@ -665,6 +678,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/pagina_principal":                          {},
 			"/api/public/contrato":                                  {},
 			"/api/public/turnos_atencion":                           {},
+			"/api/public/webrtc/signaling":                          {},
 			"/api/public/licencias/payment_methods":                 {},
 			"/api/empresa/usuarios/login":                           {},
 			"/api/empresa/usuarios/establecer_password":             {},
