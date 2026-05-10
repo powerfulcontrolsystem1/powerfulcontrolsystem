@@ -22557,3 +22557,22 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - scripts/sync_to_vps.ps1
+
+2026-05-10: Actualizar licencias y mejoras UI
+PushStatus: OK
+Archivos modificados:
+- backend/db/alquileres_bootstrap.go
+- backend/db/alquileres_bootstrap_test.go
+- backend/db/constructora_bootstrap.go
+- backend/db/constructora_bootstrap_test.go
+- backend/db/db.go
+- backend/db/drogueria_farmacia_bootstrap.go
+- backend/db/drogueria_farmacia_bootstrap_test.go
+- web/Informacion_de_contacto.html
+- web/estilos.css
+- web/img/bancolombia-logo.svg
+- web/img/davivienda-logo.svg
+- web/pagar_licencia.html
+- web/red_social_comercial.html
+- web/super/configuracion_avanzada.html
+- web/super/formato_para_emviar_email.html

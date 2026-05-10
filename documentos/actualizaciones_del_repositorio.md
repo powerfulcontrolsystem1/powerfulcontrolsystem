@@ -7870,3 +7870,21 @@ Archivos modificados:
 2026-05-10 16:16:56 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 5fface5d; PushStatus: OK
 Archivos modificados:
 - scripts/sync_to_vps.ps1
+
+2026-05-10 17:05:45 - Mensaje: Actualizar licencias y mejoras UI; Commit: 41b254a0; PushStatus: OK
+Archivos modificados:
+- backend/db/alquileres_bootstrap.go
+- backend/db/alquileres_bootstrap_test.go
+- backend/db/constructora_bootstrap.go
+- backend/db/constructora_bootstrap_test.go
+- backend/db/db.go
+- backend/db/drogueria_farmacia_bootstrap.go
+- backend/db/drogueria_farmacia_bootstrap_test.go
+- web/Informacion_de_contacto.html
+- web/estilos.css
+- web/img/bancolombia-logo.svg
+- web/img/davivienda-logo.svg
+- web/pagar_licencia.html
+- web/red_social_comercial.html
+- web/super/configuracion_avanzada.html
+- web/super/formato_para_emviar_email.html
