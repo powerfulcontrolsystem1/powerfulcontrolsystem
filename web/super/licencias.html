@@ -23,7 +23,13 @@
     .lic-admin-kpi small{display:block;margin-top:4px;color:var(--muted);font-size:.68rem;line-height:1.15}
     .lic-admin-toolbar{display:grid;grid-template-columns:minmax(210px,1.2fr) repeat(4,minmax(135px,.7fr));gap:8px;align-items:end;margin:10px 0;padding:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
     .lic-admin-toolbar .btn{min-height:38px}
+    .lic-admin-scroll-top{height:18px;margin:0 0 6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface-soft)}
+    .lic-admin-scroll-top-inner{height:1px}
     .lic-admin-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+    .lic-admin-table-wrap.has-top-scroll{border-radius:0 0 16px 16px}
+    .lic-admin-scroll-top::-webkit-scrollbar,.lic-admin-table-wrap::-webkit-scrollbar{height:12px}
+    .lic-admin-scroll-top::-webkit-scrollbar-thumb,.lic-admin-table-wrap::-webkit-scrollbar-thumb{border:3px solid transparent;border-radius:999px;background:color-mix(in srgb,var(--muted) 55%,transparent);background-clip:content-box}
+    .lic-admin-scroll-top::-webkit-scrollbar-track,.lic-admin-table-wrap::-webkit-scrollbar-track{background:transparent}
     .lic-admin-table{min-width:1120px;margin:0}
     .lic-admin-table td,.lic-admin-table th{vertical-align:top}
     .lic-plan-name{font-weight:900;color:var(--text)}
@@ -275,6 +281,7 @@
       const formSubtitle = document.getElementById('formSubtitle');
       const formModeBadge = document.getElementById('formModeBadge');
       const crudState = { licencias: [], tipos: [], filtersReady: false };
+      let cleanupCrudTableScroll = null;
       const moduleLabels = {
         ventas: 'Ventas universales',
         inventario: 'Inventario universal',
@@ -591,6 +598,58 @@
         return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(limit) + ' docs/ventas mes';
       }
 
+      function cleanupTopTableScroll(){
+        if (typeof cleanupCrudTableScroll === 'function') {
+          cleanupCrudTableScroll();
+          cleanupCrudTableScroll = null;
+        }
+      }
+
+      function setupTopTableScroll(){
+        cleanupTopTableScroll();
+        const topScroll = list.querySelector('[data-lic-scroll-top]');
+        const mainScroll = list.querySelector('[data-lic-scroll-main]');
+        const topInner = topScroll ? topScroll.querySelector('.lic-admin-scroll-top-inner') : null;
+        if (!topScroll || !mainScroll || !topInner) return;
+
+        let syncing = false;
+        let resizeObserver = null;
+        function syncWidth(){
+          const width = Math.max(mainScroll.scrollWidth, mainScroll.clientWidth);
+          topInner.style.width = width + 'px';
+          topScroll.hidden = mainScroll.scrollWidth <= mainScroll.clientWidth;
+          topScroll.scrollLeft = mainScroll.scrollLeft;
+        }
+        function syncFromTop(){
+          if (syncing) return;
+          syncing = true;
+          mainScroll.scrollLeft = topScroll.scrollLeft;
+          syncing = false;
+        }
+        function syncFromMain(){
+          if (syncing) return;
+          syncing = true;
+          topScroll.scrollLeft = mainScroll.scrollLeft;
+          syncing = false;
+        }
+
+        topScroll.addEventListener('scroll', syncFromTop, { passive: true });
+        mainScroll.addEventListener('scroll', syncFromMain, { passive: true });
+        if (window.ResizeObserver) {
+          resizeObserver = new ResizeObserver(syncWidth);
+          resizeObserver.observe(mainScroll);
+        }
+        window.addEventListener('resize', syncWidth, { passive: true });
+        syncWidth();
+        window.setTimeout(syncWidth, 0);
+        cleanupCrudTableScroll = function(){
+          topScroll.removeEventListener('scroll', syncFromTop);
+          mainScroll.removeEventListener('scroll', syncFromMain);
+          window.removeEventListener('resize', syncWidth);
+          if (resizeObserver) resizeObserver.disconnect();
+        };
+      }
+
       function getDaysRemaining(fechaFin){
         const end = parseDateTime(fechaFin);
         if (!end) return null;
@@ -773,6 +832,7 @@
         renderCrudInsights(crudState.licencias);
 
         if (!data.length) {
+          cleanupTopTableScroll();
           list.innerHTML = '<div class="lic-admin-empty">No hay licencias que coincidan con los filtros actuales.</div>';
           return;
         }
@@ -800,8 +860,9 @@
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        list.innerHTML = '<div class="lic-admin-table-wrap"></div>';
-        list.querySelector('.lic-admin-table-wrap').appendChild(table);
+        list.innerHTML = '<div class="lic-admin-scroll-top" data-lic-scroll-top aria-label="Desplazamiento horizontal superior de licencias"><div class="lic-admin-scroll-top-inner"></div></div><div class="lic-admin-table-wrap has-top-scroll" data-lic-scroll-main></div>';
+        list.querySelector('[data-lic-scroll-main]').appendChild(table);
+        setupTopTableScroll();
 
         list.querySelectorAll('.edit').forEach(function(b){
           b.onclick = function(){
