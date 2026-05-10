@@ -7861,3 +7861,8 @@ Archivos modificados:
 - web/super/errores.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-05-10 16:08:08 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 105106d5; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-compose-sidecar-up.sh
+- scripts/sync_to_vps.ps1
