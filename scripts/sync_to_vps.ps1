@@ -1716,7 +1716,21 @@ function Invoke-RemoteDockerComposeRedeploy {
     return
   }
 
-  $identityContext = Resolve-IdentityContext -IdentityPath $IdentityPath
+  if (-not (Test-Path $IdentityPath)) {
+    throw "No se encontrÃ³ la clave de identidad: $IdentityPath"
+  }
+  $resolvedIdentityPath = (Resolve-Path $IdentityPath).Path
+  $identityContext = [pscustomobject]@{
+    Mode = "ssh"
+    IdentityPath = $resolvedIdentityPath
+    PlinkExeWsl = ""
+    PlinkKeyWin = ""
+  }
+  if ([System.IO.Path]::GetExtension($resolvedIdentityPath).ToLowerInvariant() -eq ".ppk") {
+    $identityContext.Mode = "plink"
+    $identityContext.IdentityPath = ""
+    $identityContext.PlinkKeyWin = $resolvedIdentityPath
+  }
   $remotePathLit = Convert-ToBashLiteral $RemotePath
   $remoteScript = @"
 set -e
