@@ -7892,3 +7892,26 @@ Archivos modificados:
 2026-05-10 17:07:31 - Mensaje: Corregir redeploy Docker en sync_to_vps; Commit: 2ac80094; PushStatus: OK
 Archivos modificados:
 - scripts/sync_to_vps.ps1
+
+2026-05-10 17:30:41 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: f8669513; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- RESUMEN_DEL_PROYECTO.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- backend/main_super_help_frontend_test.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/reporte_roles_ayuda_super_2026-05-10.md
+- web/ayuda/ayuda.html
+- web/js/administrar_empresa.js
+- web/js/super_administrador.js
+- web/super_administrador.html
