@@ -124,6 +124,18 @@
     }, 80);
   }
 
+  function scrollToSubmenuHash(hash) {
+    var value = String(hash || "");
+    if (!value) return;
+    if (value.charAt(0) !== "#") value = "#" + value;
+    try {
+      if (window.location.hash !== value) {
+        window.history.replaceState(null, "", value);
+      }
+    } catch (_) {}
+    scrollToRequestedSection();
+  }
+
   function optionList(values, selected) {
     return (values || []).map(function (value) {
       var text = String(value || "");
@@ -709,6 +721,12 @@
     state.lead = document.body.getAttribute("data-lead") || "";
     renderShell();
     scrollToRequestedSection();
+    window.addEventListener("hashchange", scrollToRequestedSection);
+    window.addEventListener("message", function (event) {
+      var data = event && event.data;
+      if (!data || data.type !== "pcs-submenu-select") return;
+      scrollToSubmenuHash(data.hash || data.key || "");
+    });
     api("plantilla").then(function (plantilla) {
       state.plantilla = plantilla || {};
       applyPlantilla();

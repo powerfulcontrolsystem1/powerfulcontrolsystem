@@ -42,11 +42,45 @@
     });
   }
 
+  function submenuKeyFromUrl(rawUrl) {
+    try {
+      var url = new URL(rawUrl, window.location.origin);
+      var hash = String(url.hash || "");
+      if (hash.indexOf("#tab-") === 0) return hash.slice(5);
+    } catch (_) {}
+    return "";
+  }
+
+  function hashTargetFromUrl(rawUrl) {
+    try {
+      var url = new URL(rawUrl, window.location.origin);
+      return String(url.hash || "").replace(/^#/, "");
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function notifyFrameSelection(rawUrl) {
+    var key = submenuKeyFromUrl(rawUrl);
+    var hash = hashTargetFromUrl(rawUrl);
+    if (!key && !hash) return;
+    var frame = document.querySelector("iframe[data-submenu-frame]");
+    if (!frame || !frame.contentWindow) return;
+    window.setTimeout(function () {
+      try {
+        frame.contentWindow.postMessage({ type: "pcs-submenu-select", key: key, hash: hash }, window.location.origin);
+      } catch (_) {}
+    }, 80);
+  }
+
   function boot() {
     var links = Array.prototype.slice.call(document.querySelectorAll("[data-submenu-link]"));
     links.forEach(function (link, index) {
       link.setAttribute("href", withContext(link.getAttribute("href") || ""));
-      link.addEventListener("click", function () { markActive(link); });
+      link.addEventListener("click", function () {
+        markActive(link);
+        notifyFrameSelection(link.getAttribute("href") || "");
+      });
       if (index === 0) markActive(link);
     });
 

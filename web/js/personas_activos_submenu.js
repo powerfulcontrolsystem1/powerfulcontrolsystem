@@ -127,6 +127,14 @@
     return sections[0] ? sections[0].key : "";
   }
 
+  function findSectionKey(sections, key) {
+    if (!key) return "";
+    for (var i = 0; i < sections.length; i += 1) {
+      if (sections[i].key === key) return key;
+    }
+    return "";
+  }
+
   function mountSubmenu(sections) {
     if (sections.length < 2) return;
     var container = document.querySelector(".container") || document.querySelector(".mi-horario-shell") || document.querySelector(".oo-shell") || document.querySelector(".nc-shell") || document.body;
@@ -162,6 +170,16 @@
       setActive(sections, buttons[next].getAttribute("data-pcs-submenu-target"), nav);
     });
     setActive(sections, initialKey(sections), nav);
+    window.addEventListener("hashchange", function () {
+      var key = findSectionKey(sections, String(window.location.hash || "").replace(/^#tab-/, ""));
+      if (key) setActive(sections, key, nav);
+    });
+    window.addEventListener("message", function (event) {
+      var data = event && event.data;
+      if (!data || data.type !== "pcs-submenu-select") return;
+      var key = findSectionKey(sections, String(data.key || ""));
+      if (key) setActive(sections, key, nav);
+    });
   }
 
   function init() {
