@@ -1752,7 +1752,7 @@ if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-frontend'; then
   echo "[INFO] Docker redeploy omitido: pcs-frontend no esta activo"
   exit 0
 fi
-echo "[INFO] Docker stack activo detectado; reconstruyendo backend/frontend con Compose..."
+echo "[INFO] Docker stack activo detectado. Reconstruyendo backend/frontend con Compose..."
 bash deploy/scripts/vps-compose-sidecar-up.sh
 "@
   $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
