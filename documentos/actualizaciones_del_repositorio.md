@@ -7844,3 +7844,9 @@ Archivos modificados:
 - web/administrar_empresa/gestion_documental_menu.html
 - web/administrar_empresa/modulo_menu.html
 - web/js/personas_activos_submenu.js
+
+2026-05-10 15:02:47 - Mensaje: Actualizar repositorio antes de sincronizar VPS; Commit: 3d23332c; PushStatus: OK
+Archivos modificados:
+- web/js/empresa_submenu_shell.js
+- web/js/modulo_colombia_admin.js
+- web/js/personas_activos_submenu.js
