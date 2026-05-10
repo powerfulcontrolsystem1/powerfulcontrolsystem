@@ -165,9 +165,9 @@
       openBtn.classList.toggle("is-disabled", !state.enabled);
       openBtn.setAttribute("aria-hidden", state.enabled ? "false" : "true");
       openBtn.setAttribute("aria-pressed", state.enabled ? "true" : "false");
-      openBtn.setAttribute("title", "Abrir radio online");
+      openBtn.setAttribute("title", "Abrir musica latina online");
       var label = openBtn.querySelector(".ai-chat-toggle-label");
-      if (label) label.textContent = "Radio online";
+      if (label) label.textContent = "Musica latina";
     }
     renderGrid();
     updateMiniPlayer();

@@ -36,7 +36,7 @@
 
   function applyEnabled(enabled) {
     if (enabledToggle) enabledToggle.checked = !!enabled;
-    if (statusEl) statusEl.textContent = enabled ? "Radio online activa." : "Radio online desactivada.";
+    if (statusEl) statusEl.textContent = enabled ? "Musica latina online activa." : "Musica latina online desactivada.";
     container.classList.toggle("is-disabled", !enabled);
     container.querySelectorAll("[data-radio-page-play]").forEach(function (button) {
       button.disabled = !enabled;

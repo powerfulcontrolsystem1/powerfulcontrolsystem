@@ -3,94 +3,94 @@
 
   window.__pcsRadioStations = [
     {
-      id: "kexp",
-      name: "KEXP 90.3",
-      tagline: "Indie, alternative y cultura musical desde Seattle.",
-      country: "EE. UU.",
-      genre: "Indie / Alternative",
-      streamUrl: "https://kexp.streamguys1.com/kexp160.aac",
-      sourceUrl: "https://www.kexp.org/streaming-urls/"
+      id: "los40-colombia",
+      name: "LOS40 Colombia",
+      tagline: "Pop latino, urbana y exitos actuales desde Colombia.",
+      country: "Colombia",
+      genre: "Pop latino / Urbana",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_COLOMBIAAAC.aac",
+      sourceUrl: "https://los40.com.co/"
     },
     {
-      id: "wfmu",
-      name: "WFMU",
-      tagline: "Freeform radio legendaria e independiente de Nueva York.",
-      country: "EE. UU.",
-      genre: "Freeform / Eclectic",
-      streamUrl: "https://stream0.wfmu.org/freeform-128k",
-      sourceUrl: "https://www.wfmu.org/audiostream.shtml"
+      id: "la-100-argentina",
+      name: "La 100",
+      tagline: "Hits latinos e internacionales con energia de Buenos Aires.",
+      country: "Argentina",
+      genre: "Pop latino / Hits",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/FM999_56.mp3",
+      sourceUrl: "https://la100.cienradios.com/"
     },
     {
-      id: "swiss-jazz",
-      name: "Radio Swiss Jazz",
-      tagline: "Jazz global sin interrupciones desde Suiza.",
-      country: "Suiza",
-      genre: "Jazz",
-      streamUrl: "https://stream.srg-ssr.ch/srgssr/rsj/mp3/128",
-      sourceUrl: "https://www.radioswissjazz.ch/en/reception/internet"
+      id: "radio-disney-argentina",
+      name: "Radio Disney Argentina",
+      tagline: "Pop juvenil, latin pop y canciones familiares.",
+      country: "Argentina",
+      genre: "Pop latino / Top 40",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.aac",
+      sourceUrl: "https://ar.radiodisney.com/"
     },
     {
-      id: "swiss-pop",
-      name: "Radio Swiss Pop",
-      tagline: "Pop internacional continuo con sonido limpio.",
-      country: "Suiza",
-      genre: "Pop",
-      streamUrl: "https://stream.srg-ssr.ch/srgssr/rsp/mp3/128",
-      sourceUrl: "https://www.radioswisspop.ch/en/reception/internet"
+      id: "radio-felicidad",
+      name: "Radio Felicidad",
+      tagline: "Baladas, clasicos en espanol y musica romantica.",
+      country: "Mexico",
+      genre: "Balada / Recuerdo",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/XEFRAMAAC.aac",
+      sourceUrl: "https://www.iheart.com/live/radio-felicidad-1180-6534/"
     },
     {
-      id: "swiss-classic",
-      name: "Radio Swiss Classic",
-      tagline: "Música clásica para concentración y jornadas largas.",
-      country: "Suiza",
-      genre: "Clásica",
-      streamUrl: "https://stream.srg-ssr.ch/srgssr/rsc_de/mp3/128",
-      sourceUrl: "https://www.radioswissclassic.ch/it/ricezione/internet"
+      id: "cafe-romantico-radio",
+      name: "Cafe Romantico Radio",
+      tagline: "Romanticas en espanol para ambiente suave de trabajo.",
+      country: "Mexico",
+      genre: "Romantica / Clasicos",
+      streamUrl: "https://panel.retrolandigital.com/radio/8110/listen",
+      sourceUrl: "https://caferomanticoradio.com/"
     },
     {
-      id: "groove-salad",
-      name: "SomaFM Groove Salad",
-      tagline: "Ambient y downtempo clásico del internet radio.",
-      country: "EE. UU.",
-      genre: "Ambient / Downtempo",
-      streamUrl: "https://ice5.somafm.com/groovesalad-128-mp3",
-      sourceUrl: "https://somafm.com/groovesalad/directstreamlinks.html"
+      id: "boleros-inolvidables",
+      name: "Boleros Inolvidables",
+      tagline: "Boleros y clasicos latinos de larga duracion.",
+      country: "Peru",
+      genre: "Bolero / Clasicos",
+      streamUrl: "https://stream.zeno.fm/5t45zksv7mruv",
+      sourceUrl: "https://boleros.fmlima.com/"
     },
     {
-      id: "drone-zone",
-      name: "SomaFM Drone Zone",
-      tagline: "Texturas atmosféricas para foco profundo.",
-      country: "EE. UU.",
-      genre: "Ambient / Drone",
-      streamUrl: "https://ice5.somafm.com/dronezone-128-mp3",
-      sourceUrl: "https://somafm.com/dronezone/directstreamlinks.html"
+      id: "cumbia-total",
+      name: "Cumbia Total",
+      tagline: "Cumbia, tropical y sonidos bailables de Latinoamerica.",
+      country: "Mexico",
+      genre: "Cumbia / Tropical",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/ACIR40_S01AAC.aac",
+      sourceUrl: "https://www.iheart.com/live/cumbia-total-8370/"
     },
     {
-      id: "deep-space-one",
-      name: "SomaFM Deep Space One",
-      tagline: "Viaje espacial electrónico para sesiones largas.",
-      country: "EE. UU.",
-      genre: "Space / Ambient",
-      streamUrl: "https://ice5.somafm.com/deepspaceone-128-mp3",
-      sourceUrl: "https://somafm.com/deepspaceone/directstreamlinks.html"
+      id: "siempre-gruperos",
+      name: "Siempre Gruperos",
+      tagline: "Regional mexicana, grupera y musica popular.",
+      country: "Mexico",
+      genre: "Regional mexicana",
+      streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/ACIR07_s01AAC.aac",
+      sourceUrl: "https://acironline.mx/radio-online/"
     },
     {
-      id: "secret-agent",
-      name: "SomaFM Secret Agent",
-      tagline: "Lounge, espionaje y cine retro con mucha personalidad.",
-      country: "EE. UU.",
-      genre: "Lounge / Retro",
-      streamUrl: "https://ice5.somafm.com/secretagent-128-mp3",
-      sourceUrl: "https://somafm.com/secretagent/directstreamlinks.html"
+      id: "salsa-y-mas-cali",
+      name: "Salsa y Mas Cali",
+      tagline: "Salsa, tropical, vallenato y sabor colombiano.",
+      country: "Colombia",
+      genre: "Salsa / Tropical",
+      streamUrl: "https://stream.zeno.fm/42w3pfn7pzzuv",
+      sourceUrl: "https://www.facebook.com/salsaymascali/"
     },
     {
-      id: "groove-salad-classic",
-      name: "SomaFM Groove Salad Classic",
-      tagline: "La versión clásica de una de las radios online más influyentes.",
-      country: "EE. UU.",
-      genre: "Ambient / Chill",
-      streamUrl: "https://ice5.somafm.com/gsclassic-128-mp3",
-      sourceUrl: "https://somafm.com/gsclassic/directstreamlinks.html"
+      id: "la-salsa-maestra",
+      name: "La Salsa Maestra",
+      tagline: "Salsa clasica y afro-latina para subir el animo.",
+      country: "Peru",
+      genre: "Salsa",
+      streamUrl: "https://stream.zeno.fm/c1skkw28pfeuv",
+      sourceUrl: "https://www.facebook.com/lasalsamaestra/"
     }
   ];
 })();
