@@ -8453,3 +8453,8 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/descripcion_de_archivos
 - documentos/plan_profesional_12_puntos.md
+
+2026-05-11 01:47:23 - Mensaje: ci: preparar actions para node 24; Commit: 1c581813; PushStatus: OK
+Archivos modificados:
+- .github/workflows/e2e-visual.yml
+- .github/workflows/professional-ci.yml

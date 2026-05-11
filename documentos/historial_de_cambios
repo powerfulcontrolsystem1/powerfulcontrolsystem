@@ -23218,3 +23218,9 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/descripcion_de_archivos
 - documentos/plan_profesional_12_puntos.md
+
+2026-05-11: ci: preparar actions para node 24
+PushStatus: OK
+Archivos modificados:
+- .github/workflows/e2e-visual.yml
+- .github/workflows/professional-ci.yml
