@@ -1,3 +1,10 @@
+2026-05-11: Portada publica y Probar Gratis para 20 nuevas empresas
+- Modulos afectados: `portal_publico`, `verticales_nuevos`, `licencias`, `registro`.
+- Cambio funcional: las tarjetas publicas de las 20 nuevas empresas muestran parrafos descriptivos largos en lugar de textos resumidos.
+- Catalogo: `web/js/nuevos_verticales_catalogo.js` incorpora `description` por cada vertical, reutilizable por index, detalle publico, licencias y futuras paginas comerciales.
+- Frontend: `web/index.html` prioriza la descripcion larga y agrega contexto al boton `Probar Gratis` con modulo, tipo de empresa, titulo, descripcion y secciones.
+- Detalle publico: `web/descripcion_de_los_sistemas.ht` muestra fichas mas especificas para cada vertical y conserva ese contexto al enviar al registro de prueba.
+
 2026-05-10: Carritos en modo tactil
 - Modulos afectados: `carritos`, `estaciones`, `venta_directa`, `productos`.
 - Cambio funcional: se agrega `modo_pantalla_tactil` a la configuracion unificada del carrito por empresa/estacion.
@@ -308,6 +315,7 @@
 - Modulos afectados: `super`, `empresas`, `estaciones`, `productos`, `licencias`, `pagos`
 - Cambio funcional: Super Administrador agrega `Preconfiguracion de tipos de empresa` para guardar plantillas iniciales de estaciones/productos por tipo. Al crear una empresa, la plantilla activa se aplica como datos guia y luego puede conservarse o limpiarse. El checkout de licencias mejora sus tarjetas comerciales y muestra `Codigo de asesor comercial` debajo de `Codigo de descuento`.
 - Impacto operativo: la preconfiguracion es opcional y no bloquea la creacion de empresa si falla; el asesor sigue viajando como `asesor_id` a pagos y activacion sin pago.
+- Actualizacion 2026-05-10: la siembra ahora completa faltantes por tipo activo, los verticales nuevos usan plantilla inteligente por defecto y el robot ya no inicia automaticamente una configuracion guiada al crear o abrir la empresa.
 
 2026-04-29: Estaciones - tarjetas sin filas vacias
 - Modulos afectados: `estaciones`, `carritos`

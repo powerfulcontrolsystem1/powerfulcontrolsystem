@@ -173,7 +173,7 @@
         var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
         var local = localVerticalVisualsByModule[module] || {};
         var title = (item && (item.full_title || item.fullTitle || item.title || item.titulo)) || local.fullTitle || local.title || module;
-        var summary = (item && (item.lead || item.summary || item.resumen)) || local.lead || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
+        var summary = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || local.description || local.lead || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
         var sections = verticalSectionsFromCatalogItem(item);
         var firstSections = sections.slice(0, 5);
         var points = firstSections.map(function(section) {
@@ -183,6 +183,9 @@
         points.push('Configuracion inicial con tipos, estados, acciones sugeridas, diagnostico y exportacion.');
         return {
           __verticalModule: module,
+          module: module,
+          full_title: title,
+          sections: sections,
           detalle_id: 'vertical-' + module,
           titulo: title,
           descripcion: summary,
@@ -190,7 +193,7 @@
           enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
           detalle_etiqueta: 'Vertical empresarial',
           detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
-          detalle_parrafo_uno: 'Este vertical nace sobre el motor empresarial comun de Powerful Control System. La empresa puede usar un flujo propio para su industria sin duplicar tecnologia: tablero, registros, agenda, seguimiento, responsables, aprobaciones, evidencias, tareas, importacion, exportacion y auditoria viven en una misma base profesional.',
+          detalle_parrafo_uno: summary + ' Trabaja sobre el motor empresarial comun de Powerful Control System, por eso puede compartir usuarios, roles, licencias, auditoria, reportes, evidencias y configuracion inicial sin duplicar tecnologia ni aislar la informacion del negocio.',
           detalle_parrafo_dos: sections.length
             ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. Esa estructura permite arrancar con un negocio real, mantener control por permisos y crecer hacia reportes, SLA, evidencias y configuraciones avanzadas sin cambiar de plataforma.')
             : 'La ruta de trabajo se alimenta desde el catalogo backend del vertical, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
@@ -259,6 +262,28 @@
         return normalized;
       }
 
+      function buildPublicTrialLink(raw, card, titulo, descripcion, detalleId) {
+        var base = resolvePublicTrialLink(raw);
+        var params = new URLSearchParams();
+        var module = String((card && (card.module || card.__verticalModule || card.modulo)) || '').trim().toLowerCase();
+        params.set('origen', 'probar_gratis');
+        params.set('detalle_id', detalleId);
+        params.set('titulo', titulo);
+        params.set('descripcion', descripcion);
+        if (module) {
+          params.set('module', module);
+          params.set('tipo_empresa', module);
+        }
+        var fullTitle = String((card && (card.full_title || card.fullTitle)) || titulo).trim();
+        if (fullTitle) params.set('titulo_completo', fullTitle);
+        var sections = Array.isArray(card && card.sections) ? card.sections : [];
+        if (sections.length) params.set('secciones', sections.join('|'));
+        if (base.indexOf('?') >= 0) {
+          return base + '&' + params.toString();
+        }
+        return base + '?' + params.toString();
+      }
+
       function normalizeImage(raw) {
         var value = String(raw || '').trim();
         if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
@@ -301,8 +326,8 @@
           var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
           var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
-          var trialLink = resolvePublicTrialLink((card && card.enlace) || fallback.enlace);
           var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
+          var trialLink = buildPublicTrialLink((card && card.enlace) || fallback.enlace, card, titulo, descripcion, detalleId);
           return {
             titulo: titulo,
             descripcion: descripcion,

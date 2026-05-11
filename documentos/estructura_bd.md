@@ -1018,6 +1018,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - modulos_habilitados, super_rol_habilitado
   - fecha_inicio, fecha_fin, activo
   - fecha_actualizacion, usuario_creador, estado, observaciones
+- tipo_empresa_preconfiguraciones:
+  - tipo_empresa_id, enabled, nombre, descripcion, config_json
+  - usuario_creador, fecha_creacion, fecha_actualizacion, estado
+  - la siembra completa faltantes por `tipo_empresa_id` activo y conserva personalizaciones existentes
 - super_venta_digital_configuracion:
   - nombre_tienda, descripcion_tienda, logo_url, banner_url, color_primario
   - moneda, wompi_activo

@@ -1119,11 +1119,15 @@
       function verticalCardFromCatalogItem(item) {
         var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
         var local = localVerticalVisualsByModule[module] || {};
+        var description = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
         return {
           __verticalModule: module,
+          module: module,
+          full_title: (item && (item.full_title || item.fullTitle || item.title || item.titulo || item.module)) || module,
+          sections: item && Array.isArray(item.sections) ? item.sections.slice() : [],
           detalle_id: 'vertical-' + module,
           titulo: (item && (item.full_title || item.fullTitle || item.title || item.titulo || item.module)) || module,
-          descripcion: (item && (item.lead || item.summary || item.resumen)) || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.',
+          descripcion: description,
           imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
           imagen_secundaria_url: local.secondaryIcon || (item && item.secondaryIcon) || '/img/report.svg',
           enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module)
@@ -1237,6 +1241,8 @@
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
           var tipoTarjeta = normalizeCardType(card && card.tipo_tarjeta);
           var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
+          var module = String((card && (card.module || card.__verticalModule || card.modulo)) || '').trim().toLowerCase();
+          var sections = Array.isArray(card && card.sections) ? card.sections : [];
           return {
             tipo_tarjeta: tipoTarjeta,
             titulo: titulo,
@@ -1244,10 +1250,33 @@
             imagen_url: imagen,
             imagen_secundaria_url: imagenSec,
             enlace: enlace,
+            module: module,
+            full_title: String((card && (card.full_title || card.fullTitle)) || titulo).trim(),
+            sections: sections,
             detalle_id: detalleId,
-            detalle_href: '/descripcion_de_los_sistemas.ht#' + encodeURIComponent(detalleId)
+            detalle_href: buildDetailHref(card, titulo, descripcion, detalleId, enlace, module, sections)
           };
         });
+      }
+
+      function buildDetailHref(card, titulo, descripcion, detalleId, enlace, module, sections) {
+        var params = new URLSearchParams();
+        params.set('origen', 'index');
+        params.set('accion', 'probar_gratis');
+        params.set('detalle_id', detalleId);
+        params.set('titulo', titulo);
+        params.set('descripcion', descripcion);
+        if (module) {
+          params.set('module', module);
+          params.set('tipo_empresa', module);
+        }
+        var fullTitle = String((card && (card.full_title || card.fullTitle)) || titulo).trim();
+        if (fullTitle) params.set('titulo_completo', fullTitle);
+        if (enlace) params.set('enlace_operativo', enlace);
+        if (Array.isArray(sections) && sections.length) {
+          params.set('secciones', sections.join('|'));
+        }
+        return '/descripcion_de_los_sistemas.ht?' + params.toString() + '#' + encodeURIComponent(detalleId);
       }
 
       async function refreshFallbackVerticalCards() {
@@ -1307,7 +1336,7 @@
             '    <p>' + escapeHTML(card.descripcion) + '</p>' +
             '  </div>' +
             '  <div class="card-actions" style="margin-top:auto;">' +
-        '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '">Probar Gratis</a>' +
+        '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '" data-source="index" data-module="' + escapeHTML(card.module || '') + '" data-title="' + escapeHTML(card.full_title || card.titulo) + '" data-description="' + escapeHTML(card.descripcion) + '">Probar Gratis</a>' +
             '  </div>' +
             '</article>';
         }).join('');

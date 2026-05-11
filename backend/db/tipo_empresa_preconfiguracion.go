@@ -616,7 +616,7 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 			TipoEmpresaID:     tipo.ID,
 			TipoEmpresaNombre: strings.TrimSpace(tipo.Nombre),
 		}
-		if existing, ok := byTipo[tipo.ID]; ok && !overwrite {
+		if existing, ok := byTipo[tipo.ID]; ok && !overwrite && strings.ToLower(strings.TrimSpace(existing.Estado)) != "inactivo" {
 			item.PreconfigID = existing.ID
 			item.Accion = "omitida"
 			item.Nombre = existing.Nombre
@@ -681,11 +681,19 @@ func canSkipDefaultTipoEmpresaSeed(dbConn *sql.DB, totalTipos int) (bool, error)
 		}
 	}
 
-	var preconfigCount int
-	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM tipo_empresa_preconfiguraciones WHERE COALESCE(NULLIF(TRIM(estado), ''), 'activo') <> 'inactivo'`).Scan(&preconfigCount); err != nil {
+	var missingPreconfigCount int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
+		FROM tipos_de_empresas t
+		WHERE COALESCE(NULLIF(TRIM(t.estado), ''), 'activo') <> 'inactivo'
+			AND NOT EXISTS (
+				SELECT 1
+				FROM tipo_empresa_preconfiguraciones p
+				WHERE p.tipo_empresa_id = t.id
+					AND COALESCE(NULLIF(TRIM(p.estado), ''), 'activo') <> 'inactivo'
+			)`).Scan(&missingPreconfigCount); err != nil {
 		return false, err
 	}
-	if preconfigCount < totalTipos {
+	if missingPreconfigCount > 0 {
 		return false, nil
 	}
 
@@ -791,6 +799,11 @@ func ResolveTipoEmpresaPreconfiguracion(dbConn *sql.DB, tipoEmpresaID int64, tip
 }
 
 func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfigTemplate {
+	if item, ok := matchNuevoVerticalTipoEmpresaTitulo(tipoNombre); ok {
+		if template, ok := defaultNuevoVerticalTipoEmpresaPreconfigTemplate(item.Nombre); ok {
+			return template
+		}
+	}
 	if isTipoEmpresaMotel(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
 			productoPreconfig("DEMO-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),

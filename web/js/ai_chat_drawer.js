@@ -3775,10 +3775,6 @@
       setRobotAssistantText('Acciones canceladas. Puedes pedirme otra configuración o ajustar la propuesta.');
       return;
     }
-    if (value === '__PCS_START_GUIDED_SETUP__') {
-      loadAndStartGuidedSetup();
-      return true;
-    }
     if (value.indexOf('__PCS_GUIDED_SETUP_OPTION__') === 0) {
       handleGuidedSetupAnswer(value.replace('__PCS_GUIDED_SETUP_OPTION__', ''));
       return true;
@@ -4000,10 +3996,6 @@
     var tipo = normalize(summary && summary.tipo_empresa_nombre);
     var tipoText = tipo ? (' para una empresa tipo ' + tipo) : '';
     return [
-      {
-        label: 'Configuracion guiada',
-        prompt: '__PCS_START_GUIDED_SETUP__'
-      },
       {
         label: 'Agregar productos',
         prompt: 'Actúa como asistente de configuración inicial' + tipoText + '. Revisa el contexto de preconfiguración y guíame para agregar o ajustar productos, categorías, precios, costos, impuestos y stock mínimo. Si puedes proponer acciones seguras, proponlas para confirmarlas.'

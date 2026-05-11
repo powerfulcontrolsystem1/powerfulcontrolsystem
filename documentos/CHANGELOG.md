@@ -1,3 +1,23 @@
+## [2026-05-11] Script rapido rs
+- [Deploy] Se agrega `scripts/rs.ps1` para ejecutar en secuencia `actualizar_repositorio.ps1` y `sync_to_vps.ps1`.
+- [Raiz] Se agrega `rs.ps1` como acceso corto desde la raiz del proyecto.
+- [Seguridad operativa] Si falla la actualizacion del repositorio, no se ejecuta la sincronizacion al VPS.
+
+## [2026-05-11] Reubicacion de ayuda super administrador
+- [Super] El boton `Ayuda super administrador` se mueve al grupo `Infraestructura y comunicaciones`, justo al lado de `Configuracion avanzada`.
+- [Seguridad] Se conserva la misma ruta privada `/ayuda/ayuda.html` y el mismo filtro de rol existente.
+
+## [2026-05-11] Portada publica con verticales completos
+- [Index] Las 20 nuevas empresas del catalogo publico usan descripciones largas, similares a las tarjetas principales de la portada.
+- [Probar gratis] El enlace de cada tarjeta conserva contexto de titulo, descripcion, modulo/tipo de empresa y secciones para llegar a una ficha de detalle mas completa.
+- [Detalle publico] `descripcion_de_los_sistemas.ht` reutiliza el catalogo ampliado para mostrar informacion especifica de cada vertical antes del registro de prueba.
+
+## [2026-05-10] Preconfiguraciones inteligentes y robot no automatico
+- [Preconfiguracion] La siembra por tipo de empresa completa faltantes reales por `tipo_empresa_id`, aunque existan plantillas antiguas o sobrantes.
+- [Verticales] Los 20 tipos nuevos usan su plantilla inteligente como default si aun no tienen preconfiguracion guardada.
+- [UX] Se retira el acceso visible a `Configuracion guiada` del submenu de configuracion empresarial.
+- [Robot] Al crear una empresa ya no se pregunta ni se agenda el inicio automatico del robot de configuracion.
+
 ## [2026-05-10] Carritos en modo tactil
 - [Carritos] Se agrega `modo_pantalla_tactil` a la configuracion unificada de carrito por empresa/estacion.
 - [UI] `carrito_de_compras.html` adapta botones, campos, toolbar, lector, cobro y resumen para uso profesional en pantallas tactiles.

@@ -1,3 +1,9 @@
+2026-05-10: Nota operativa para preconfiguraciones y configuracion guiada
+- Las preconfiguraciones por tipo de empresa se aseguran por `tipo_empresa_id`, no por conteo global; si un tipo activo no tiene plantilla, el arranque o `seed_defaults` crea una plantilla inicial sin sobrescribir personalizaciones.
+- Los 20 verticales nuevos conservan plantilla inteligente propia para estaciones, productos/servicios, usuarios guia, roles y tareas iniciales.
+- La pagina/API interna de configuracion guiada conserva control por modulo `seguridad`, pero el boton visible del submenu empresarial fue retirado y el robot no se inicia automaticamente al entrar a una empresa nueva.
+- La preconfiguracion aplicada al crear empresa sigue respetando `empresa_id` y solo crea datos guia de esa empresa; el usuario decide conservar o eliminar esos datos guia.
+
 2026-05-10: Nota operativa para modo tactil en carritos
 - `carritos` mantiene los mismos permisos existentes para configurar y operar el carrito.
 - La bandera `modo_pantalla_tactil` no crea permiso nuevo: se guarda dentro de `estaciones_config` y solo la pueden modificar los roles que ya tienen acceso a configuracion de estaciones/carrito.

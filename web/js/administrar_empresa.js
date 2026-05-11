@@ -139,7 +139,6 @@ try {
     document.getElementById("linkConfiguracionMain"),
     document.getElementById("linkConfiguracionImpresora"),
     document.getElementById("linkConfiguracionPermisos"),
-    document.getElementById("linkConfiguracionGuiada"),
     document.getElementById("linkConfiguracionChatFlotante"),
     document.getElementById("linkConfiguracionAvanzada"),
     document.getElementById("linkConfiguracionCarritoEmpresa"),
@@ -411,7 +410,6 @@ try {
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionImpresora: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionPermisos: { module: permModuleSeguridad, action: permActionApprove },
-    linkConfiguracionGuiada: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionSensoresRaspberry: { module: permModuleControlElectrico, action: permActionUpdate },
     linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
@@ -1517,50 +1515,11 @@ try {
     setActiveByHref(initialSrc);
   }
 
-  function readPendingConfigurationAssistant(empresaId) {
-    if (!empresaId) return null;
-    var key = "pcs_config_assistant_pending_" + String(empresaId);
-    var stores = [];
-    try { stores.push(window.sessionStorage); } catch (e) {}
-    try { stores.push(window.localStorage); } catch (e) {}
-    for (var i = 0; i < stores.length; i += 1) {
-      var store = stores[i];
-      if (!store) continue;
-      try {
-        var raw = store.getItem(key) || "";
-        if (!raw) continue;
-        var data = JSON.parse(raw);
-        if (data && Number(data.empresa_id || empresaId) > 0) {
-          return data;
-        }
-      } catch (e) {}
-    }
-    return null;
-  }
-
   function clearPendingConfigurationAssistant(empresaId) {
     if (!empresaId) return;
     var key = "pcs_config_assistant_pending_" + String(empresaId);
     try { window.sessionStorage.removeItem(key); } catch (e) {}
     try { window.localStorage.removeItem(key); } catch (e) {}
-  }
-
-  function startPendingConfigurationAssistant(empresaId) {
-    var pending = readPendingConfigurationAssistant(empresaId);
-    if (!pending) return;
-    var attempts = 0;
-    function tryStart() {
-      attempts += 1;
-      if (window.PCSAIChatRobot && typeof window.PCSAIChatRobot.startConfigurationAssistant === "function") {
-        clearPendingConfigurationAssistant(empresaId);
-        window.PCSAIChatRobot.startConfigurationAssistant(pending);
-        return;
-      }
-      if (attempts < 40) {
-        window.setTimeout(tryStart, 200);
-      }
-    }
-    window.setTimeout(tryStart, 650);
   }
 
   if (frame) {
@@ -1644,7 +1603,7 @@ try {
           .then(function () {
             initializeMenuAndFrame(id);
             loadEmpresaTitle(id);
-            startPendingConfigurationAssistant(id);
+            clearPendingConfigurationAssistant(id);
           });
       }
       applyMenuPermissionsByRole(role);
@@ -1660,7 +1619,7 @@ try {
         setMenuPermissionsEvidence("Permisos de menú: no se pudo resolver contexto, se mantiene visibilidad base.", true);
         initializeMenuAndFrame(id);
         loadEmpresaTitle(id);
-        startPendingConfigurationAssistant(id);
+        clearPendingConfigurationAssistant(id);
         return;
       }
       applyMenuPermissionsByRole("");

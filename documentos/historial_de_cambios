@@ -1,3 +1,15 @@
+2026-05-11 - Script rapido rs para repositorio y VPS
+- Archivos: scripts/rs.ps1, rs.ps1, documentos/CHANGELOG.md.
+- Descripcion: se agrega un wrapper corto que ejecuta primero actualizar_repositorio.ps1 y, solo si termina correctamente, ejecuta sync_to_vps.ps1. El acceso de raiz permite lanzarlo como .\rs.ps1 desde el proyecto.
+- Verificacion: parseo de PowerShell para ambos scripts y git diff --check.
+2026-05-11 - Ayuda super administrador junto a Configuracion avanzada
+- Archivos: web/super_administrador.html, documentos/CHANGELOG.md.
+- Descripcion: se mueve el boton Ayuda super administrador desde Operacion global hacia Infraestructura y comunicaciones, justo despues de Configuracion avanzada, conservando ruta privada y comportamiento dentro del iframe del panel.
+- Verificacion: validacion estatica de HTML/JS y git diff --check.
+2026-05-11 - Portada publica con informacion ampliada de nuevas empresas
+- Archivos: web/index.html, web/descripcion_de_los_sistemas.ht, web/js/nuevos_verticales_catalogo.js, documentacion central.
+- Descripcion: se amplian las descripciones de las 20 nuevas empresas en la portada publica y el flujo del boton Probar Gratis conserva modulo, tipo de empresa, titulo, descripcion y secciones para mostrar una ficha detallada antes del registro.
+- Verificacion: validacion estatica de JavaScript/HTML, revision visual local y git diff --check.
 2026-05-10 - Modo tactil para carritos y agregador de productos
 - Archivos: web/administrar_empresa/configuracion_carrito_de_compra_empresa.html, web/administrar_empresa/configuracion_de_estaciones.html, web/administrar_empresa/estaciones.html, web/administrar_empresa/carrito_de_compras.html, web/administrar_empresa/buscar_producto_botones.html, web/estilos.css, documentacion central.
 - Descripcion: se agrega la bandera modo_pantalla_tactil dentro de estaciones_config para adaptar carrito, cobro, lector y catalogo por botones a tablets, monitores POS y pantallas tactiles. La opcion respeta herencia global o por estacion y no crea tablas ni dependencias nuevas.
@@ -23068,3 +23080,8 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/super/licencias.html
+
+2026-05-10 - Preconfiguraciones inteligentes y configuracion guiada no automatica
+- Archivos: backend/db/tipo_empresa_preconfiguracion.go, backend/db/tipo_empresa_preconfiguracion_test.go, web/js/seleccionar_empresa.js, web/js/administrar_empresa.js, web/js/ai_chat_drawer.js, web/administrar_empresa/configuracion_menu.html, documentacion central.
+- Descripcion: la siembra de preconfiguraciones ahora detecta faltantes por tipo activo y no se salta casos por conteo global. Los verticales nuevos usan plantilla inteligente por defecto cuando no existe una guardada. Se retira el boton visible de configuracion guiada del submenu empresarial y se elimina el inicio automatico del robot al crear/entrar a la empresa.
+- Verificacion: go test ./... en backend; validacion de sintaxis JS.

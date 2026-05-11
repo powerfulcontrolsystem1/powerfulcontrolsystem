@@ -155,3 +155,33 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 		})
 	}
 }
+
+func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.T) {
+	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
+		t.Run(item.Modulo, func(t *testing.T) {
+			preconfig := DefaultTipoEmpresaPreconfiguracion(456, item.Nombre)
+			if !preconfig.Enabled {
+				t.Fatalf("preconfiguracion vertical no quedo habilitada")
+			}
+			template, err := ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
+			if err != nil {
+				t.Fatalf("config vertical invalida: %v", err)
+			}
+			if template.Operacion.TipoNegocio != item.Modulo {
+				t.Fatalf("tipo_negocio vertical incorrecto: got %q want %q", template.Operacion.TipoNegocio, item.Modulo)
+			}
+			if template.Estaciones.Cantidad < 3 {
+				t.Fatalf("vertical debe tener estaciones guia: got %d", template.Estaciones.Cantidad)
+			}
+			if len(template.Productos) < 3 {
+				t.Fatalf("vertical debe tener productos/servicios guia: got %d", len(template.Productos))
+			}
+			if len(template.Usuarios) < 3 {
+				t.Fatalf("vertical debe tener usuarios guia: got %d", len(template.Usuarios))
+			}
+			if len(template.TareasGuia) < 4 {
+				t.Fatalf("vertical debe tener tareas guia profesionales: got %d", len(template.TareasGuia))
+			}
+		})
+	}
+}

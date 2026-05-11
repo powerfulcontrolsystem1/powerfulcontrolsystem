@@ -231,26 +231,11 @@
     });
   }
 
-  function storeConfigurationAssistantPending(createData, options) {
-    if (!createData || !createData.id) return;
-    var preconfig = createData.preconfiguracion || {};
-    var cfg = options || {};
-    var key = "pcs_config_assistant_pending_" + String(createData.id);
-    var payload = {
-      empresa_id: Number(createData.id) || 0,
-      tipo_empresa_nombre: String(preconfig.tipo_empresa_nombre || "").trim(),
-      estaciones_creadas: Number(preconfig.estaciones_creadas || 0),
-      productos_creados: Number(preconfig.productos_creados || 0),
-      usuarios_creados: Number(preconfig.usuarios_creados || 0),
-      auto_start_guided_setup: !!cfg.autoStartGuidedSetup,
-      created_at: Date.now()
-    };
-    try {
-      window.localStorage.setItem(key, JSON.stringify(payload));
-    } catch (e) {}
-    try {
-      window.sessionStorage.setItem(key, JSON.stringify(payload));
-    } catch (e) {}
+  function clearConfigurationAssistantPending(empresaId) {
+    if (!empresaId) return;
+    var key = "pcs_config_assistant_pending_" + String(empresaId);
+    try { window.localStorage.removeItem(key); } catch (e) {}
+    try { window.sessionStorage.removeItem(key); } catch (e) {}
   }
 
   function readEmpresaContext() {
@@ -939,19 +924,8 @@
       "Cancelar: eliminarla y dejar la empresa sin configuracion personalizada.";
     var keep = window.confirm(message);
     if (keep) {
-      var wantsGuidedSetup = window.confirm(
-        "La preconfiguracion inicial quedo aplicada.\n\n" +
-        "¿Quieres que el robot te ayude a terminar la configuracion al entrar a la empresa?\n\n" +
-        "Aceptar: abrir configuracion guiada con preguntas cortas.\n" +
-        "Cancelar: solo conservar la preconfiguracion y continuar manualmente."
-      );
-      storeConfigurationAssistantPending(createData, { autoStartGuidedSetup: wantsGuidedSetup });
-      setShareNotice(
-        wantsGuidedSetup
-          ? "Empresa creada con preconfiguracion conservada. El robot iniciara la configuracion guiada al entrar."
-          : "Empresa creada con preconfiguracion inicial conservada.",
-        false
-      );
+      clearConfigurationAssistantPending(createData.id);
+      setShareNotice("Empresa creada con preconfiguracion inicial conservada.", false);
       return;
     }
     setShareNotice("Eliminando preconfiguracion inicial...", false);

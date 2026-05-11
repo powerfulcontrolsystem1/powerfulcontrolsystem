@@ -293,6 +293,16 @@ func matchNuevoVerticalTipoEmpresa(tipoNombre string) (NuevoVerticalTipoEmpresa,
 	return NuevoVerticalTipoEmpresa{}, false
 }
 
+func matchNuevoVerticalTipoEmpresaTitulo(tipoNombre string) (NuevoVerticalTipoEmpresa, bool) {
+	clean := normalizeTipoEmpresaName(tipoNombre)
+	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+		if clean == normalizeTipoEmpresaName(item.Nombre) {
+			return item, true
+		}
+	}
+	return NuevoVerticalTipoEmpresa{}, false
+}
+
 func nuevoVerticalTipoEmpresaMatches(tipoNombre string, item NuevoVerticalTipoEmpresa) bool {
 	clean := normalizeTipoEmpresaName(tipoNombre)
 	return clean == normalizeTipoEmpresaName(item.Nombre) || clean == normalizeTipoEmpresaName(strings.ReplaceAll(item.Modulo, "_", " "))
