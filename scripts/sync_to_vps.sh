@@ -82,6 +82,8 @@ EXCLUDES=(
   "tmp/*"
   "test_runs"
   "test_runs/*"
+  "documentos/evidencias_qa"
+  "documentos/evidencias_qa/*"
   "coverage"
   "coverage/*"
   "dist"

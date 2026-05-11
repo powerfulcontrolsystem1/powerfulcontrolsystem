@@ -43,12 +43,16 @@ param(
   [string]$DbDialect = "postgres",
   [string]$DbEmpresasDsn = "",
   [string]$DbSuperadminDsn = "",
+  [ValidateSet("docker", "hybrid", "legacy")]
+  [string]$DeploymentMode = "docker",
   [bool]$RestartRemoteServer = $true,
   [string]$RemoteBinaryPath = "backend/bin/server_linux_amd64",
   [string]$RemoteStdoutLogPath = "backend/server.log",
   [string]$RemoteStderrLogPath = "backend/server.err",
   [int]$RestartHealthTimeoutSeconds = 45,
   [bool]$RedeployDockerStack = $true,
+  [int]$DockerHealthTimeoutSeconds = 180,
+  [bool]$ExcludeEvidenceFromPackage = $true,
   [bool]$OpenPublicUrlAfterDeploy = $true
 )
 
@@ -1234,7 +1238,10 @@ function Get-RelativePathIfInside {
 }
 
 function Get-SyncExcludePatterns {
-  param([AllowEmptyString()][string]$ExcludeFile)
+  param(
+    [AllowEmptyString()][string]$ExcludeFile,
+    [bool]$ExcludeEvidence = $true
+  )
 
   $patterns = @(
     ".git",
@@ -1283,6 +1290,8 @@ function Get-SyncExcludePatterns {
     "tmp/*",
     "test_runs",
     "test_runs/*",
+    "documentos/evidencias_qa",
+    "documentos/evidencias_qa/*",
     "coverage",
     "coverage/*",
     "dist",
@@ -1321,6 +1330,12 @@ function Get-SyncExcludePatterns {
     "*.pem",
     "*.key"
   )
+
+  if (-not $ExcludeEvidence) {
+    $patterns = $patterns | Where-Object {
+      $_ -ne "documentos/evidencias_qa" -and $_ -ne "documentos/evidencias_qa/*"
+    }
+  }
 
   if ($ExcludeFile) {
     if (-not (Test-Path $ExcludeFile)) {
@@ -1366,6 +1381,7 @@ function Invoke-PuttySync {
     [Parameter(Mandatory=$true)][bool]$IsDryRun,
     [Parameter(Mandatory=$true)][bool]$IsPreviewOnly,
     [AllowEmptyString()][string]$ExcludeFile,
+    [bool]$ExcludeEvidence = $true,
     [bool]$UseCompression = $true,
     [int]$LargeTransferWarningMB = 200,
     [AllowEmptyString()][string]$ExecRelativePath = "",
@@ -1398,7 +1414,7 @@ function Invoke-PuttySync {
   $identityResolved = (Resolve-Path $IdentityPath).Path
   $isPpkIdentity = ([System.IO.Path]::GetExtension($identityResolved).ToLowerInvariant() -eq ".ppk")
   $transportLabel = "OpenSSH"
-  $excludePatterns = Get-SyncExcludePatterns -ExcludeFile $ExcludeFile
+  $excludePatterns = Get-SyncExcludePatterns -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidence
 
   $tmpDir = Join-Path $LocalResolvedPath ".gotmp\pcs_sync_staging"
   if (-not (Test-Path $tmpDir)) {
@@ -1704,7 +1720,8 @@ function Invoke-RemoteDockerComposeRedeploy {
     [Parameter(Mandatory=$true)][string]$RemotePath,
     [Parameter(Mandatory=$true)][bool]$Enabled,
     [Parameter(Mandatory=$true)][bool]$IsDryRun,
-    [Parameter(Mandatory=$true)][bool]$IsPreviewOnly
+    [Parameter(Mandatory=$true)][bool]$IsPreviewOnly,
+    [int]$HealthTimeoutSeconds = 180
   )
 
   if (-not $Enabled) {
@@ -1748,12 +1765,15 @@ if [ ! -f deploy/docker-compose.platform.yml ] || [ ! -f deploy/.env.platform ];
   echo "[INFO] Docker redeploy omitido: falta deploy/docker-compose.platform.yml o deploy/.env.platform"
   exit 0
 fi
-if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-frontend'; then
-  echo "[INFO] Docker redeploy omitido: pcs-frontend no esta activo"
-  exit 0
-fi
-echo "[INFO] Docker stack activo detectado. Reconstruyendo backend/frontend con Compose..."
+echo "[INFO] Docker stack detectado. Reconstruyendo backend/frontend con Compose..."
+echo "[INFO] Limpiando caches locales que no pertenecen al runtime Docker..."
+rm -rf .codex-gocache .codex-tmp-go .gocache .gotmp tmp \
+  backend/.codex-gocache backend/.codex-tmp-go backend/.gocache backend/.gotmp \
+  backend/.tmp-go-test-* backend/tmp 2>/dev/null || true
+export HEALTH_TIMEOUT_SECONDS=$HealthTimeoutSeconds
 bash deploy/scripts/vps-compose-sidecar-up.sh
+echo "[INFO] Estado Docker despues del redeploy:"
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(backend|frontend|postgres)|NAMES' || true
 "@
   $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
@@ -1864,7 +1884,29 @@ try {
     throw "No puedes usar -BuildOnly y -PreviewOnly al mismo tiempo."
   }
 
-  if (-not $SkipBuild) {
+  $effectiveSkipBuild = $SkipBuild.IsPresent
+  $effectiveRestartRemoteServer = [bool]$RestartRemoteServer
+  $effectiveRedeployDockerStack = [bool]$RedeployDockerStack
+  switch ($DeploymentMode) {
+    "docker" {
+      $effectiveSkipBuild = $true
+      $effectiveRestartRemoteServer = $false
+      $effectiveRedeployDockerStack = $true
+      Write-Host "[INFO] DeploymentMode=docker: Docker Compose construye y reinicia backend/frontend; se omite systemd."
+    }
+    "legacy" {
+      $effectiveRedeployDockerStack = $false
+      Write-Host "[INFO] DeploymentMode=legacy: se usa binario/systemd y se omite Docker Compose."
+    }
+    default {
+      Write-Host "[INFO] DeploymentMode=hybrid: se actualiza binario/systemd y tambien Docker Compose."
+    }
+  }
+  if ($BuildOnly) {
+    $effectiveSkipBuild = $false
+  }
+
+  if (-not $effectiveSkipBuild) {
     if ($PreviewOnly) {
       Write-Host "[INFO] PreviewOnly: compilación Linux omitida (usa -BuildOnly para compilar sin sincronizar)."
     } else {
@@ -1877,7 +1919,11 @@ try {
       }
     }
   } else {
-    Write-Host "[INFO] Compilación Linux omitida por parámetro -SkipBuild."
+    if ($DeploymentMode -eq "docker" -and -not $SkipBuild.IsPresent) {
+      Write-Host "[INFO] Compilación Linux omitida porque Docker construye el backend dentro del contenedor."
+    } else {
+      Write-Host "[INFO] Compilación Linux omitida por parámetro -SkipBuild."
+    }
     if (-not [string]::IsNullOrWhiteSpace($builtBinaryRel)) {
       $restartBinaryRel = $builtBinaryRel
     }
@@ -1896,11 +1942,11 @@ try {
   }
 
   if (-not (Test-WslReady)) {
-    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
-    Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $RedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent
+    Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
-    if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
+    if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent) {
       $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
       Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
       try {
@@ -1954,7 +2000,7 @@ try {
     $argList += @("--exclude-file", $excludeWsl)
   }
 
-  if ($RestartRemoteServer) {
+  if ($effectiveRestartRemoteServer) {
     $argList += @("--restart-server", "--server-port", "$ServerPort", "--remote-binary", $restartBinaryRel, "--stdout-log", $RemoteStdoutLogPath, "--stderr-log", $RemoteStderrLogPath, "--health-timeout", "$RestartHealthTimeoutSeconds")
   } else {
     $argList += @("--no-restart-server")
@@ -2004,9 +2050,9 @@ try {
     throw (Get-FriendlyExternalFailureMessage -Label "sincronización en WSL" -ExitCode $LASTEXITCODE -Text ($wslOutput -join "`n"))
   }
 
-  Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $RedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent
+  Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
-  if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
+  if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent) {
     $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
     Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
     try {

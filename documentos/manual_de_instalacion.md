@@ -26,6 +26,14 @@ curl -I http://127.0.0.1:8081/
 curl -I https://powerfulcontrolsystem.com
 ```
 
+Despliegue recomendado desde Windows/local:
+
+```powershell
+.\scripts\sync_to_vps.ps1
+```
+
+Ese comando usa por defecto `DeploymentMode=docker`: sincroniza el proyecto, no reinicia el backend legacy por `systemd`, reconstruye Docker Compose y valida que `pcs-backend` y `pcs-frontend` queden saludables. Para rollback temporal existe `-DeploymentMode legacy`; para doble despliegue temporal existe `-DeploymentMode hybrid`.
+
 El servicio anterior `powerfulcontrolsystem.service` puede quedar activo temporalmente como rollback mientras se estabiliza el despliegue Docker. No lo elimines sin confirmar respaldos y ventana de mantenimiento.
 
 ## 1) Credenciales en Google Cloud Console

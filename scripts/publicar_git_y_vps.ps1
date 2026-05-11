@@ -34,6 +34,9 @@ param(
   [string]$DbDialect = "",
   [string]$DbEmpresasDsn = "",
   [string]$DbSuperadminDsn = "",
+  [string]$DeploymentMode = "",
+  [string]$DockerHealthTimeoutSeconds = "",
+  [string]$ExcludeEvidenceFromPackage = "",
   [string]$BootstrapServer = "",
   [string]$RestartRemoteServer = "",
   [string]$OpenPublicUrlAfterDeploy = ""
@@ -112,7 +115,8 @@ if (-not $SkipVps) {
     'PublicBaseUrl',
     'DbDialect',
     'DbEmpresasDsn',
-    'DbSuperadminDsn'
+    'DbSuperadminDsn',
+    'DeploymentMode'
   )) {
     if ($PSBoundParameters.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$PSBoundParameters[$name])) {
       $syncArgs[$name] = $PSBoundParameters[$name]
@@ -126,7 +130,8 @@ if (-not $SkipVps) {
   foreach ($name in @(
     'BootstrapServer',
     'RestartRemoteServer',
-    'OpenPublicUrlAfterDeploy'
+    'OpenPublicUrlAfterDeploy',
+    'ExcludeEvidenceFromPackage'
   )) {
     if ($PSBoundParameters.ContainsKey($name)) {
       $parsedBool = ConvertTo-OptionalBoolean -Value ([string]$PSBoundParameters[$name]) -ParameterName $name
@@ -134,6 +139,14 @@ if (-not $SkipVps) {
         $syncArgs[$name] = $parsedBool
       }
     }
+  }
+
+  if ($PSBoundParameters.ContainsKey('DockerHealthTimeoutSeconds') -and -not [string]::IsNullOrWhiteSpace($DockerHealthTimeoutSeconds)) {
+    $parsedTimeout = 0
+    if (-not [int]::TryParse($DockerHealthTimeoutSeconds, [ref]$parsedTimeout) -or $parsedTimeout -lt 30 -or $parsedTimeout -gt 600) {
+      throw "Valor no valido para -DockerHealthTimeoutSeconds: $DockerHealthTimeoutSeconds. Usa un entero entre 30 y 600."
+    }
+    $syncArgs.DockerHealthTimeoutSeconds = $parsedTimeout
   }
 
   & $sync @syncArgs

@@ -1,5 +1,8 @@
 param(
-    [switch]$Background
+    [switch]$Background,
+    [int]$Port = 8080,
+    [switch]$NoKillLocalPort,
+    [switch]$NoVpsTunnel
 )
 
 function Write-Step {
@@ -27,6 +30,12 @@ function Write-ErrMsg {
     Write-Host "[ERROR] $Text" -ForegroundColor Red
 }
 
+if ($Port -lt 1 -or $Port -gt 65535) {
+    Write-ErrMsg "Puerto invalido: $Port. Usa un valor entre 1 y 65535."
+    exit 1
+}
+$localServerPort = $Port
+
 Write-Step "1/8 Preparando entorno"
 
 
@@ -36,8 +45,16 @@ if (-not (Test-Path $backend)) {
     exit 1
 }
 Write-Info "Directorio backend detectado: $backend"
+Write-Info "Modo local seguro: este script no apaga ni reinicia servicios de la VPS."
+Write-Info ("Puerto local seleccionado: {0}" -f $localServerPort)
 if ($Background) {
     Write-Info "Modo background activo: no se abrira navegador automaticamente."
+}
+if ($NoKillLocalPort) {
+    Write-Info "NoKillLocalPort activo: no se cerraran procesos locales aunque el puerto este ocupado."
+}
+if ($NoVpsTunnel) {
+    Write-Info "NoVpsTunnel activo: no se abrira tunel SSH hacia la VPS."
 }
 Push-Location $backend
 
@@ -461,6 +478,11 @@ if (-not $env:DB_DIALECT) {
 }
 
 $tunnelEnabled = Test-TruthyValue -Value ([Environment]::GetEnvironmentVariable('DB_VPS_TUNNEL_ENABLED', 'Process'))
+if ($NoVpsTunnel -and $tunnelEnabled) {
+    Write-WarnMsg "DB_VPS_TUNNEL_ENABLED esta activo, pero se omitira por -NoVpsTunnel para una prueba 100% local."
+    $tunnelEnabled = $false
+    [Environment]::SetEnvironmentVariable('DB_VPS_TUNNEL_ENABLED', '0', 'Process')
+}
 if ($tunnelEnabled) {
     $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
     $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
@@ -513,7 +535,10 @@ Write-Info "DB_SUPERADMIN_DSN configurado: $([string]::IsNullOrWhiteSpace($env:D
 Write-Info "GEMINI_API_KEY configurado: $([string]::IsNullOrWhiteSpace($env:GEMINI_API_KEY) -eq $false)"
 
 function Stop-ProcessesOnPort {
-    param([int]$port)
+    param(
+        [int]$port,
+        [switch]$AlsoStopManagedServerNames
+    )
 
     function Get-ListeningPidsOnPort {
         param([int]$TargetPort)
@@ -668,6 +693,12 @@ function Stop-ProcessesOnPort {
     }
 
     # Además intentar cerrar procesos por nombre comunes del servidor
+    if (-not $AlsoStopManagedServerNames) {
+        return
+    }
+
+    # Solo se usa cuando se solicita expresamente; para pruebas locales no debe
+    # tocar servidores que esten escuchando en otros puertos.
     $names = @('server','server.exe','pos-backend','pos-backend.exe')
     foreach ($name in $names) {
         try {
@@ -727,8 +758,12 @@ function Test-ServerAvailability {
     return $false
 }
 
-Write-Step "3/8 Liberando puerto 8080"
-Stop-ProcessesOnPort -port 8080
+Write-Step ("3/8 Revisando puerto local {0}" -f $localServerPort)
+if ($NoKillLocalPort) {
+    Write-WarnMsg ("Se omitio liberar el puerto local {0}. Si ya esta ocupado, el backend puede fallar al iniciar." -f $localServerPort)
+} else {
+    Stop-ProcessesOnPort -port $localServerPort
+}
 
 Write-Step "4/8 Verificando dependencias Go"
 Write-Info "Ejecutando: go mod tidy"
@@ -751,7 +786,7 @@ if ([string]::IsNullOrWhiteSpace($clientId) -or [string]::IsNullOrWhiteSpace($cl
     Write-WarnMsg "No se encontraron GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET en entorno o .env; el backend intentara resolverlos desde la DB."
 }
 
-$env:GOOGLE_REDIRECT_URL = "http://localhost:8080/auth/google/callback"
+$env:GOOGLE_REDIRECT_URL = "http://localhost:{0}/auth/google/callback" -f $localServerPort
 
 if (-not [string]::IsNullOrWhiteSpace($clientId)) {
     $env:GOOGLE_CLIENT_ID = $clientId
@@ -760,8 +795,8 @@ if (-not [string]::IsNullOrWhiteSpace($clientSecret)) {
     $env:GOOGLE_CLIENT_SECRET = $clientSecret
 }
 
-# Forzar puerto 8080 (usuario solicitó usar solo 8080)
-$env:PORT = "8080"
+# Puerto local de pruebas. Por defecto es 8080, pero puede cambiarse con -Port.
+$env:PORT = [string]$localServerPort
 
 try {
     $encKeyResult = Resolve-ConfigEncryptionKey -BackendDir $backend
@@ -835,7 +870,7 @@ if ($Background) {
 # Esperar a que el backend abra el puerto y/o responda HTTP
 $maxWait = 30  # segundos
 $waited = 0
-$listenPort = 8080
+$listenPort = $localServerPort
 if (-not [string]::IsNullOrWhiteSpace($env:PORT)) {
     $parsedPort = 0
     if ([int]::TryParse($env:PORT, [ref]$parsedPort) -and $parsedPort -gt 0) {

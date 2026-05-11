@@ -4,6 +4,7 @@ set -euo pipefail
 PROJECT_DIR="${PROJECT_DIR:-/root/powerfulcontrolsystem}"
 COMPOSE_FILE="${COMPOSE_FILE:-$PROJECT_DIR/deploy/docker-compose.platform.yml}"
 ENV_FILE="${ENV_FILE:-$PROJECT_DIR/deploy/.env.platform}"
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-180}"
 
 get_env_value() {
   local file="$1"
@@ -40,12 +41,18 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
 
 echo "[sidecar] Probando frontend Docker en http://127.0.0.1:$http_port"
 ready=0
-for attempt in $(seq 1 24); do
-  if curl -fsSI "http://127.0.0.1:$http_port/" >/dev/null; then
+attempts=$(( HEALTH_TIMEOUT_SECONDS / 5 ))
+if [ "$attempts" -lt 6 ]; then
+  attempts=6
+fi
+for attempt in $(seq 1 "$attempts"); do
+  backend_status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' pcs-backend 2>/dev/null || true)"
+  frontend_status="$(docker inspect -f '{{.State.Status}}' pcs-frontend 2>/dev/null || true)"
+  if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "running" ] && curl -fsS "http://127.0.0.1:$http_port/" >/dev/null 2>&1; then
     ready=1
     break
   fi
-  echo "[sidecar] Esperando frontend/backend Docker... intento $attempt/24"
+  echo "[sidecar] Esperando Docker... intento $attempt/$attempts backend=$backend_status frontend=$frontend_status"
   sleep 5
 done
 

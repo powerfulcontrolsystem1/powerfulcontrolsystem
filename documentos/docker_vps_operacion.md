@@ -1,6 +1,6 @@
 # Docker en VPS - Operacion y migracion
 
-Fecha de actualizacion: 2026-05-09
+Fecha de actualizacion: 2026-05-10
 
 ## Estado actual
 
@@ -110,6 +110,51 @@ CONFIRM_CUTOVER=YES bash deploy/scripts/vps-cutover-docker-nginx.sh
 ```
 
 Los scripts usan confirmaciones explicitas para operaciones sensibles y no imprimen secretos.
+
+## Sincronizacion desde Windows/local
+
+El script principal de despliegue quedo adaptado al runtime Docker de produccion:
+
+```powershell
+.\scripts\sync_to_vps.ps1
+```
+
+Comportamiento por defecto:
+
+- Usa `DeploymentMode=docker`.
+- Sincroniza el proyecto al VPS.
+- Omite la compilacion local del binario Go, porque Docker construye el backend dentro del contenedor.
+- No reinicia `powerfulcontrolsystem.service` por `systemd`.
+- Reconstruye y levanta `pcs-backend` y `pcs-frontend` con Docker Compose.
+- Espera a que `pcs-backend` quede `healthy`, `pcs-frontend` quede `running` y `127.0.0.1:8081` responda.
+- Excluye evidencias de QA, temporales, logs, backups, llaves y secretos del paquete de produccion.
+
+Modos disponibles:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -DeploymentMode docker
+.\scripts\sync_to_vps.ps1 -DeploymentMode hybrid
+.\scripts\sync_to_vps.ps1 -DeploymentMode legacy
+```
+
+- `docker`: modo recomendado actual. Solo Docker Compose.
+- `hybrid`: mantiene compatibilidad temporal, actualiza `systemd` y luego Docker Compose.
+- `legacy`: solo binario + `systemd`, sin Docker Compose.
+
+Para probar sin tocar el VPS:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -DryRun
+.\scripts\sync_to_vps.ps1 -PreviewOnly
+```
+
+Si se necesita incluir evidencias de QA en una sincronizacion puntual:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -ExcludeEvidenceFromPackage:$false
+```
+
+El contexto Docker tambien excluye `documentos/evidencias_qa`, `test_runs`, llaves y archivos temporales mediante `.dockerignore`, para evitar builds pesados o filtracion accidental de artefactos locales.
 
 ## Faltantes controlados
 
