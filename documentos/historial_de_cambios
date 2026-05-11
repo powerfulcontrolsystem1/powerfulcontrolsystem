@@ -1,3 +1,7 @@
+2026-05-11 - Ajuste profesional staging Docker
+- Archivos: deploy/docker-compose.staging.yml, deploy/scripts/vps-staging-up.sh.
+- Descripcion: staging queda con red Docker aislada pcs_staging_internal y el script genera secretos seguros cuando deploy/.env.staging nace desde plantilla.
+- Verificacion local: preflight rapido OK.
 2026-05-11 - Operacion diaria de los 12 frentes profesionales
 - Archivos: deploy/scripts/vps-install-buildx.sh, deploy/scripts/vps-configure-staging-nginx.sh, deploy/scripts/vps-install-backup-cron.sh, deploy/scripts/vps-backup-operacion.sh, deploy/scripts/vps-observability-snapshot.sh, scripts/release_gate.ps1, tools/migration_audit.mjs, tools/qa_module_contracts.mjs, tools/ux_consistency_audit.mjs, workflows GitHub y documentacion de release/secretos.
 - Descripcion: se completa la operacion diaria profesional con staging real, backups programados, Buildx, observabilidad VPS, release gate, E2E programado y auditorias adicionales en preflight.

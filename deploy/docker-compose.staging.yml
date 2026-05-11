@@ -35,3 +35,8 @@ volumes:
   pcs_staging_web_uploads:
   pcs_staging_backups:
   pcs_staging_downloads:
+
+networks:
+  pcs_internal:
+    name: pcs_staging_internal
+    driver: bridge
