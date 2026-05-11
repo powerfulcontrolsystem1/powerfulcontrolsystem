@@ -92,7 +92,7 @@ func TestEmpresaVerticalesNuevosCatalogoProduccionMasiva(t *testing.T) {
 	for _, item := range items {
 		if item.ProduccionMasiva {
 			masivos++
-			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 10 {
+			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 20 {
 				t.Fatalf("prioridad masiva invalida para %s: %d", item.Modulo, item.PrioridadProduccion)
 			}
 			if item.DecisionPreconfig != "integrar_v1_produccion_masiva" {
@@ -100,15 +100,10 @@ func TestEmpresaVerticalesNuevosCatalogoProduccionMasiva(t *testing.T) {
 			}
 			continue
 		}
-		if item.PrioridadProduccion != 0 {
-			t.Fatalf("diferido %s no debe tener prioridad, got %d", item.Modulo, item.PrioridadProduccion)
-		}
-		if item.DecisionPreconfig != "diferir_de_v1" {
-			t.Fatalf("diferido %s decision=%q", item.Modulo, item.DecisionPreconfig)
-		}
+		t.Fatalf("%s debe estar marcado como produccion masiva", item.Modulo)
 	}
-	if masivos != 10 {
-		t.Fatalf("verticales masivos=%d, want 10", masivos)
+	if masivos != 20 {
+		t.Fatalf("verticales masivos=%d, want 20", masivos)
 	}
 }
 

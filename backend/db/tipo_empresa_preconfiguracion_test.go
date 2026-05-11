@@ -202,10 +202,10 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 	}
 }
 
-func TestNuevosVerticalesProduccionMasivaSeleccionaDiez(t *testing.T) {
+func TestNuevosVerticalesProduccionMasivaSeleccionaVeinte(t *testing.T) {
 	selected := NuevosVerticalesProduccionMasivaSeleccionados()
-	if len(selected) != 10 {
-		t.Fatalf("verticales produccion masiva len=%d, want 10: %v", len(selected), selected)
+	if len(selected) != 20 {
+		t.Fatalf("verticales produccion masiva len=%d, want 20: %v", len(selected), selected)
 	}
 
 	seen := map[string]bool{}
@@ -240,19 +240,16 @@ func TestNuevosVerticalesProduccionMasivaSeleccionaDiez(t *testing.T) {
 		if integracion == nil {
 			t.Fatalf("sin integracion para %s", item.Modulo)
 		}
-		if integracion.ProduccionMasiva {
-			masivos++
-			continue
+		if !integracion.ProduccionMasiva {
+			t.Fatalf("%s debe estar promovido a produccion masiva", item.Modulo)
 		}
-		if integracion.Decision != "diferir_de_v1" {
-			t.Fatalf("%s no masivo debe diferirse, got %q", item.Modulo, integracion.Decision)
+		if integracion.Decision != "integrar_v1_produccion_masiva" {
+			t.Fatalf("%s decision=%q", item.Modulo, integracion.Decision)
 		}
-		if integracion.MotivoDecision == "" {
-			t.Fatalf("%s diferido debe explicar motivo", item.Modulo)
-		}
+		masivos++
 	}
-	if masivos != 10 {
-		t.Fatalf("verticales masivos=%d, want 10", masivos)
+	if masivos != 20 {
+		t.Fatalf("verticales masivos=%d, want 20", masivos)
 	}
 }
 

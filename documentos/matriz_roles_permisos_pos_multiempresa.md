@@ -1,10 +1,10 @@
 2026-05-11: Nota operativa para integracion de verticales
 - Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.
 - Los 20 verticales nuevos permanecen visibles como `plantilla_integrada_nucleo` porque usan el motor comun y no duplican clientes, productos/servicios, ventas ni pagos.
-- Para version masiva v1, la preconfiguracion marca 10 verticales como `produccion_masiva`: `salon_spa`, `veterinaria_petshop`, `clinica_consultorios`, `laboratorio_clinico`, `taller_mecanico`, `servicios_tecnicos`, `lavanderia_tintoreria`, `agencia_viajes`, `eventos_boleteria` y `transporte_carga_tms`.
-- Los 10 restantes quedan con decision `diferir_de_v1`; esto no cambia permisos existentes ni borra licencias, solo evita tratarlos como oferta masiva hasta completar sus flujos especificos.
+- Para version masiva, la preconfiguracion marca los 20 verticales nuevos como `produccion_masiva` con prioridad 1-20.
+- Los 20 verticales nuevos quedan como plantillas reales sobre el nucleo unico, con decision de produccion masiva y prioridad 1-20.
 - `web/super/verticales_produccion_masiva.html` queda como vista de gobierno para `super_administrador`; consume `/super/api/verticales_nuevos/catalogo` y no crea permisos nuevos. El rol `control_super_administrador` no recibe este acceso en su navegacion limitada.
-- La accion `Asegurar v1` usa el mismo endpoint super con POST y requiere alcance de super administrador; no concede permisos empresariales ni activa modulos por rol, solo asegura catalogo comercial/preconfiguracion/licencias.
+- La accion `Asegurar 20` usa el mismo endpoint super con POST y requiere alcance de super administrador; no concede permisos empresariales ni activa modulos por rol, solo asegura catalogo comercial/preconfiguracion/licencias.
 - Gimnasio, odontologia, parqueadero, taxi system, domicilios, apartamentos turisticos, propiedad horizontal, alquileres, drogueria/farmacia y AIU construccion quedan visibles como `plantilla_integrada_nucleo` al enlazar sus personas/servicios/tickets/viajes/pedidos/reservas/cargos/recaudos/contratos/facturas o expedientes sanitarios con clientes, servicios, inventario, ventas, pagos y facturacion centrales.
 - La ocultacion por matriz sigue aplicando a cualquier vertical futuro que no tenga integracion real; no concede ni retira permisos de API, solo evita prometer al usuario un modulo operativo antes de su migracion al nucleo.
 - `linkVerticalesIntegracion` queda protegido por `seguridad:R`; permite consultar la matriz operativa desde el panel empresa sin conceder permisos de operacion sobre cada vertical.

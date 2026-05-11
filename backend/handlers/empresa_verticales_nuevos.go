@@ -64,7 +64,7 @@ func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" {
+			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_20_licencias" {
 				http.Error(w, "accion no permitida", http.StatusBadRequest)
 				return
 			}
@@ -72,9 +72,9 @@ func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 				http.Error(w, "db super no disponible", http.StatusInternalServerError)
 				return
 			}
-			tipos, licencias, err := dbpkg.EnsureNuevosVerticalesProduccionMasivaLicencias(dbSuper[0], "super.verticales_v1")
+			tipos, licencias, err := dbpkg.EnsureNuevosVerticalesProduccionMasivaLicencias(dbSuper[0], "super.verticales_20")
 			if err != nil {
-				http.Error(w, "no se pudieron asegurar verticales v1: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron asegurar verticales de produccion: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 			items := buildEmpresaVerticalesNuevosCatalogo()

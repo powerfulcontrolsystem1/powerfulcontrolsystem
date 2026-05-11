@@ -3,38 +3,50 @@
 - [Operacion] Corrige el fallo de despliegue en VPS con bases existentes que todavia no tenian `empresa_parqueadero_tickets.carrito_id`.
 - [Alcance] No hay nuevas tablas, endpoints, permisos ni dependencias.
 
+## [2026-05-11] Consistencia del panel super
+- [Frontend] `web/js/super_administrador.js` permite restaurar la ayuda privada del super administrador mediante validacion explicita de ruta.
+- [Seguridad] La ayuda privada no queda dentro de la lista limitada del rol `control_super_administrador`.
+- [QA] Alinea el contrato esperado por `TestSuperAdminPanelExposesPrivateHelpButton`.
+
+## [2026-05-11] 20 verticales nuevos reales
+- [Backend] `backend/db/nuevos_verticales_bootstrap.go` promueve los 20 verticales nuevos a produccion masiva con ranking 1-20.
+- [API] `/super/api/verticales_nuevos/catalogo` acepta `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.
+- [Frontend] `web/js/nuevos_verticales_catalogo.js`, `web/index.html` y `web/super/verticales_produccion_masiva.html` publican y gobiernan las 20 plantillas reales.
+- [QA] Las pruebas actualizadas exigen 20 verticales masivos, metadata extendida y decision de produccion masiva en nuevos verticales.
+- [Alcance] No hay tablas, dependencias ni circuitos paralelos de clientes, productos, ventas o pagos.
+
 ## [2026-05-11] Portada index alineada a modulos reales
 - [Frontend] `web/index.html` y los defaults de `/api/public/pagina_principal` actualizan el texto de cobertura y las tarjetas publicas con nucleo unico, modulos reales y verticales clasificados.
-- [Producto] Los 20 verticales nuevos siguen en catalogo, pero solo los 10 V1 masiva se publican como tarjetas operativas; los 10 diferidos quedan resumidos y ocultos como oferta de `Probar gratis`.
+- [Producto] Los 20 verticales nuevos siguen en catalogo y quedan publicables como tarjetas operativas de `Probar gratis`.
 - [Catalogo] `web/js/nuevos_verticales_catalogo.js` agrega decision, ranking, metadata de plantilla, permisos, flujo de venta y reportes para sincronizar la portada con la matriz extendida.
 - [Alcance] No hay endpoints, tablas, permisos, dependencias ni cambios en `go.mod`.
 
-## [2026-05-11] Aseguramiento comercial de verticales v1
-- [Backend] `POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias` llama `EnsureNuevosVerticalesProduccionMasivaLicencias`.
-- [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 10 verticales priorizados.
-- [Frontend] `web/super/verticales_produccion_masiva.html` agrega `Asegurar v1` y refresca el semaforo despues de ejecutar.
+## [2026-05-11] Aseguramiento comercial de verticales
+- [Backend] `POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias` llama `EnsureNuevosVerticalesProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
+- [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 20 verticales.
+- [Frontend] `web/super/verticales_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
 - [Alcance] No hay tablas, rutas nuevas, permisos nuevos ni dependencias.
 
-## [2026-05-11] Semaforo listo para venta en verticales v1
+## [2026-05-11] Semaforo listo para venta en verticales
 - [Frontend] `web/super/verticales_produccion_masiva.html` cruza verticales, preconfiguraciones y licencias activas para marcar `Listo venta`.
-- [Regla] Un vertical queda listo solo si es v1 masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluye el modulo.
+- [Regla] Un vertical queda listo solo si tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluye el modulo.
 - [Alcance] No hay cambios de esquema, endpoints, permisos ni dependencias.
 
-## [2026-05-11] Acciones de gobierno para verticales v1
+## [2026-05-11] Acciones de gobierno para verticales 20
 - [Frontend] Cada fila de `web/super/verticales_produccion_masiva.html` enlaza a tipos, preconfiguraciones y licencias del vertical.
 - [UX] `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` aplican filtros iniciales desde `q`, `vertical` o `modulo`.
 - [Alcance] No se agregan endpoints, tablas, permisos ni dependencias.
 
-## [2026-05-11] Gobierno super de verticales v1 masiva
+## [2026-05-11] Gobierno super de verticales de produccion masiva
 - [Frontend] Se agrega `web/super/verticales_produccion_masiva.html` con KPIs, filtros, ranking, decision, metadata extendida y exportacion CSV.
-- [Menu] `web/super_administrador.html` incorpora `Verticales v1` dentro de Licencias y `web/js/super_administrador.js` permite restaurar la pagina.
+- [Menu] `web/super_administrador.html` incorpora `Verticales 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar la pagina.
 - [Seguridad] Se reutiliza `/super/api/verticales_nuevos/catalogo`; no hay endpoints, permisos, esquemas ni dependencias nuevas.
 
-## [2026-05-11] Preconfiguraciones y verticales v1 masiva
+## [2026-05-11] Preconfiguraciones y verticales de produccion masiva
 - [Backend] `config_json` de tipos de empresa puede incluir `integracion_vertical` con decision, prioridad, permisos, flujo de venta, tablas y reportes.
 - [Catalogos] Los endpoints de verticales nuevos publican `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
-- [Producto] Se priorizan 10 verticales nuevos para v1 masiva y 10 quedan diferidos con motivo en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
-- [QA] Las pruebas exigen metadata extendida y exactamente 10 verticales marcados como produccion masiva; no hay cambios de esquema ni dependencias.
+- [Producto] Se priorizan los 20 verticales nuevos para produccion masiva en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
+- [QA] Las pruebas exigen metadata extendida y exactamente 20 verticales marcados como produccion masiva; no hay cambios de esquema ni dependencias.
 
 ## [2026-05-11] Matriz extendida de plantillas verticales
 - [Backend] El catalogo de integracion agrega `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.

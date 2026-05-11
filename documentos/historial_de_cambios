@@ -1,3 +1,13 @@
+2026-05-11: Consistencia del panel super
+- Modulo afectado: super_administrador.
+- Cambio: web/js/super_administrador.js permite restaurar /ayuda/ayuda.html para super administrador mediante validacion explicita, sin agregarla al allowlist limitado de control_super_administrador.
+- Verificacion: cubierto por TestSuperAdminPanelExposesPrivateHelpButton dentro de go test ./... -count=1.
+2026-05-11: 20 verticales nuevos reales
+- Modulos afectados: `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: los 20 verticales nuevos quedan en produccion masiva; el ranking de nuevos verticales ahora va de 1 a 20.
+- Backend: `backend/db/nuevos_verticales_bootstrap.go` asegura tipos de empresa, preconfiguraciones y licencias recomendadas para los 20 verticales; `backend/handlers/empresa_verticales_nuevos.go` acepta `asegurar_20_licencias` y conserva alias compatible.
+- Frontend: `web/js/nuevos_verticales_catalogo.js`, `web/index.html`, `web/super/verticales_produccion_masiva.html` y `web/super_administrador.html` publican/gobiernan las 20 plantillas reales.
+- Gobernanza: no se crean ventas, clientes, productos ni pagos paralelos; todos los verticales usan el nucleo y conservan solo especialidad en `empresa_modulos_colombia_*`.
 2026-05-11: Fix arranque PostgreSQL parqueadero
 - Modulo afectado: `parqueadero`.
 - Causa tecnica: el despliegue VPS fallaba en `EnsureEmpresaParqueaderoSchema` porque intentaba crear el indice `ix_parqueadero_ticket_empresa_carrito` antes de asegurar la columna `carrito_id` en tablas ya existentes.
@@ -5,36 +15,36 @@
 - Alcance: no agrega tablas, endpoints, permisos ni dependencias; solo corrige orden de migracion ligera PostgreSQL.
 2026-05-11: Portada index alineada a modulos y verticales reales
 - Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
-- Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` dejan de presentar los 20 verticales nuevos como si todos fueran ofertas operativas y publica tarjetas individuales solo para los 10 verticales V1 masiva.
-- Catalogo: `web/js/nuevos_verticales_catalogo.js` agrega decision V1/diferido, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
+- Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` presentan los 20 verticales nuevos como ofertas operativas cuando el catalogo los marca en produccion masiva.
+- Catalogo: `web/js/nuevos_verticales_catalogo.js` agrega decision de produccion, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
 - Backend publico: `backend/handlers/pagina_principal_handlers.go` actualiza las tarjetas por defecto que entrega el endpoint publico cuando no hay configuracion guardada.
 - UX publica: se agregan tarjetas para modulos reales del nucleo y transversales como CRM, drogueria/farmacia, alquileres, WMS, bancos/pagos, gestion documental, helpdesk/calidad y facturacion electronica Colombia.
-- Gobernanza: los 10 diferidos siguen visibles en el resumen de plantillas y matriz tecnica, pero no se ofrecen como boton operativo de `Probar gratis` hasta completar su flujo.
-- Verificacion: `node --check web/js/nuevos_verticales_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 10 publicables / 10 diferidos.
-2026-05-11: Aseguramiento comercial de verticales v1
-- POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias asegura tipos, preconfiguraciones y licencias recomendadas de los 10 verticales v1.
-- web/super/verticales_produccion_masiva.html agrega boton Asegurar v1 y refresca el semaforo Listo venta.
+- Gobernanza: las 20 plantillas nuevas se ofrecen como boton operativo de `Probar gratis` y siguen usando el nucleo unico.
+- Verificacion: `node --check web/js/nuevos_verticales_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 20 publicables.
+2026-05-11: Aseguramiento comercial de verticales 20
+- POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias asegura tipos, preconfiguraciones y licencias recomendadas de los 20 verticales.
+- web/super/verticales_produccion_masiva.html agrega boton Asegurar 20 y refresca el semaforo Listo venta.
 - No se agregan rutas nuevas, permisos nuevos, tablas ni dependencias.
 
-2026-05-11: Semaforo listo para venta en verticales v1
+2026-05-11: Semaforo listo para venta en verticales 20
 - web/super/verticales_produccion_masiva.html cruza catalogo de verticales, preconfiguraciones y licencias activas.
-- Un vertical queda Listo venta solo si es v1 masiva, tiene metadata completa, preconfiguracion activa con integracion_vertical y licencia activa que incluye el modulo.
+- Un vertical queda Listo venta solo si esta en produccion masiva, tiene metadata completa, preconfiguracion activa con integracion_vertical y licencia activa que incluye el modulo.
 - No se agregan endpoints, permisos, tablas ni dependencias.
 
-2026-05-11: Acciones de gobierno para verticales v1
-- La vista super Verticales v1 enlaza cada vertical con Tipos de empresa, Preconfiguraciones y Licencias.
+2026-05-11: Acciones de gobierno para verticales 20
+- La vista super Verticales 20 enlaza cada vertical con Tipos de empresa, Preconfiguraciones y Licencias.
 - Las paginas web/super/tipos_empresas.html, web/super/preconfiguracion_tipos_empresa.html y web/super/licencias.html aceptan filtros iniciales q, vertical o modulo.
 - No se agregan endpoints, permisos, tablas ni dependencias.
 
-2026-05-11: Gobierno super de verticales v1 masiva
+2026-05-11: Gobierno super de verticales produccion masiva
 - Se agrega web/super/verticales_produccion_masiva.html con KPIs, filtros, ranking, metadata extendida y exportacion CSV.
-- El panel super enlaza Verticales v1 desde Licencias y permite restaurar la pagina en web/js/super_administrador.js.
+- El panel super enlaza Verticales 20 desde Licencias y permite restaurar la pagina en web/js/super_administrador.js.
 - La vista reutiliza /super/api/verticales_nuevos/catalogo; no agrega endpoints, permisos, tablas ni dependencias.
 
-2026-05-11: Preconfiguraciones conectadas a matriz vertical y decision v1 masiva
+2026-05-11: Preconfiguraciones conectadas a matriz vertical y produccion masiva 20
 - Se agrega integracion_vertical al JSON de preconfiguracion por tipo de empresa.
 - Los catalogos de verticales nuevos exponen integracion_preconfig, produccion_masiva, prioridad_produccion y decision_preconfig.
-- Se priorizan 10 verticales nuevos para produccion masiva v1 y 10 quedan diferidos con motivo documentado en documentos/plan_verticales_produccion_masiva_2026-05-11.md.
+- Se priorizan 20 verticales nuevos para produccion masiva con motivo documentado en documentos/plan_verticales_produccion_masiva_2026-05-11.md.
 - Verificacion enfocada: go test ./db -run TipoEmpresaPreconfig|NuevosVerticalesProduccion -count=1; go test ./handlers -run VerticalesNuevos -count=1.
 
 - 2026-05-11: matriz extendida de plantillas verticales. El catalogo /api/*/verticales_integracion/catalogo publica template_activates, tables_touched, required_permissions, sale_flow y reports_produced; la pantalla empresarial muestra esos datos por vertical y la prueba de contrato bloquea verticales visibles sin metadata completa. No hay cambios de esquema ni dependencias nuevas.

@@ -37,12 +37,12 @@
     "/super/alertas_sistema.html": true,
     "/super/seguridad.html": true,
     "/super/administrar_base_de_datos.html": true,
-    "/super/configuracion_avanzada.html": true,
-    "/ayuda/ayuda.html": true
+    "/super/configuracion_avanzada.html": true
   };
 
   function isAllowedSuperHref(href) {
     var normalized = normalizeHref(href).split("?")[0];
+    if (normalized === "/ayuda/ayuda.html") return true;
     return !!coreSuperPages[normalized];
   }
 

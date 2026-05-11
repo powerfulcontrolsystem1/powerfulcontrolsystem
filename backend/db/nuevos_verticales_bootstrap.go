@@ -58,29 +58,26 @@ var nuevosVerticalesBootstrapMeta = []nuevoVerticalBootstrapMeta{
 var nuevosVerticalesTipoEmpresaCatalog = buildNuevosVerticalesTipoEmpresaCatalog()
 
 var nuevosVerticalesProduccionMasiva = map[string]int{
-	"salon_spa":             1,
-	"veterinaria_petshop":   2,
-	"clinica_consultorios":  3,
-	"laboratorio_clinico":   4,
-	"taller_mecanico":       5,
-	"servicios_tecnicos":    6,
-	"lavanderia_tintoreria": 7,
-	"agencia_viajes":        8,
-	"eventos_boleteria":     9,
-	"transporte_carga_tms":  10,
-}
-
-var nuevosVerticalesDiferidosMotivo = map[string]string{
-	"operador_turistico":       "Cubierto inicialmente por agencia_viajes; conviene diferirlo hasta tener reservas, cupos y liquidacion turistica mas profunda.",
-	"colegio_academia":         "Tiene demanda, pero requiere notas, periodos academicos y cartera educativa mas especifica para produccion masiva.",
-	"guarderia_infantil":       "Requiere controles adicionales de menores, autorizaciones y trazabilidad sensible antes de masificar.",
-	"inmobiliaria_comercial":   "Ciclo comercial mas largo y mayor dependencia de CRM/contratos; queda para fase de ventas consultivas.",
-	"seguridad_privada":        "Requiere programacion de turnos, rondas y cumplimiento laboral mas especializado antes de masificar.",
-	"club_deportivo":           "Solapa con gimnasio/educacion deportiva; conviene estabilizar gimnasio y agenda primero.",
-	"funeraria_exequial":       "Vertical sensible y de menor volumen relativo; conviene abordarlo con flujos documentales y soporte especializado.",
-	"parque_recreativo":        "Depende de control de aforo, manillas y hardware; queda para fase con boleteria/QR mas madura.",
-	"cooperativa_fondo":        "Requiere cartera, creditos, aportes y regulacion financiera mas estricta; no es prioridad de version masiva.",
-	"capacitacion_empresarial": "Puede reutilizar colegio_academia/CRM; queda para fase B2B despues de estabilizar ventas y agenda.",
+	"salon_spa":                1,
+	"veterinaria_petshop":      2,
+	"clinica_consultorios":     3,
+	"laboratorio_clinico":      4,
+	"taller_mecanico":          5,
+	"servicios_tecnicos":       6,
+	"lavanderia_tintoreria":    7,
+	"agencia_viajes":           8,
+	"eventos_boleteria":        9,
+	"transporte_carga_tms":     10,
+	"operador_turistico":       11,
+	"colegio_academia":         12,
+	"guarderia_infantil":       13,
+	"inmobiliaria_comercial":   14,
+	"seguridad_privada":        15,
+	"club_deportivo":           16,
+	"funeraria_exequial":       17,
+	"parque_recreativo":        18,
+	"cooperativa_fondo":        19,
+	"capacitacion_empresarial": 20,
 }
 
 func buildNuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
@@ -125,7 +122,13 @@ func NuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
 }
 
 func NuevosVerticalesProduccionMasivaSeleccionados() []string {
-	out := make([]string, 10)
+	maxRank := 0
+	for _, rank := range nuevosVerticalesProduccionMasiva {
+		if rank > maxRank {
+			maxRank = rank
+		}
+	}
+	out := make([]string, maxRank)
 	for modulo, rank := range nuevosVerticalesProduccionMasiva {
 		if rank >= 1 && rank <= len(out) {
 			out[rank-1] = modulo
@@ -156,14 +159,13 @@ func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPre
 	}
 	rank := nuevosVerticalesProduccionMasiva[clean]
 	produccion := rank > 0
-	decision := "diferir_de_v1"
-	motivo := nuevosVerticalesDiferidosMotivo[clean]
+	decision := "integrar_v1_produccion_masiva"
+	motivo := "Plantilla real de produccion masiva: opera sobre clientes, servicios, ventas, pagos, facturacion, reportes y seguridad centrales, conservando solo la especialidad del vertical en empresa_modulos_colombia."
 	if produccion {
 		decision = "integrar_v1_produccion_masiva"
-		motivo = "Seleccionado para version masiva por demanda esperada en servicios, salud, turismo, comercio, transporte o entretenimiento en Colombia."
 	}
 	if motivo == "" {
-		motivo = "Mantener como plantilla disponible, sin prioridad de produccion masiva en esta version."
+		motivo = "Mantener como plantilla real disponible sobre el nucleo unico."
 	}
 	return &TipoEmpresaPreconfigIntegracionVertical{
 		Modulo:              clean,
@@ -198,7 +200,7 @@ func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmp
 			EstadoIntegracion:   "plantilla_integrada_nucleo",
 			Decision:            "mantener_como_plantilla",
 			ProduccionMasiva:    false,
-			MotivoDecision:      "Vertical clasico conectado a preconfiguracion; la prioridad de esta fase se concentra en 10 verticales nuevos para produccion masiva.",
+			MotivoDecision:      "Vertical clasico conectado a preconfiguracion; la produccion masiva de nuevos verticales se gobierna en el catalogo de 20 plantillas nuevas.",
 			TemplateActivates:   []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
 			TablesTouched:       []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items"},
 			RequiredPermissions: []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "reportes:R"},
@@ -295,7 +297,7 @@ func EnsureNuevosVerticalesProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 	for _, modulo := range NuevosVerticalesProduccionMasivaSeleccionados() {
 		item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
 		if !ok {
-			return tiposAsegurados, licenciasAseguradas, fmt.Errorf("vertical v1 no encontrado: %s", modulo)
+			return tiposAsegurados, licenciasAseguradas, fmt.Errorf("vertical de produccion no encontrado: %s", modulo)
 		}
 		tipoID, err := ensureNuevoVerticalTipoEmpresa(dbConn, item)
 		if err != nil {

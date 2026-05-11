@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Verticales v1 masiva</title>
+  <title>Verticales produccion masiva</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .verticales-v1-shell{max-width:1280px;margin:0 auto;padding:22px;display:grid;gap:16px}
@@ -45,21 +45,21 @@
 <body class="super-page form-bg-dark">
   <main class="verticales-v1-shell">
     <header class="verticales-v1-head">
-      <h1>Verticales v1 masiva</h1>
-      <p>Gobierno comercial y tecnico de las plantillas priorizadas para escalar en Colombia sin duplicar clientes, productos, ventas, pagos ni reportes.</p>
+      <h1>Verticales produccion masiva</h1>
+      <p>Gobierno comercial y tecnico de las 20 plantillas reales para escalar en Colombia sin duplicar clientes, productos, ventas, pagos ni reportes.</p>
       <div class="verticales-v1-actions">
         <a class="btn secondary" href="/super/tipos_empresas.html">Tipos de empresa</a>
         <a class="btn secondary" href="/super/preconfiguracion_tipos_empresa.html">Preconfiguraciones</a>
         <a class="btn secondary" href="/super/licencias.html">Licencias</a>
-        <button class="btn secondary" id="ensureBtn" type="button">Asegurar v1</button>
+        <button class="btn secondary" id="ensureBtn" type="button">Asegurar 20</button>
         <button class="btn" id="exportBtn" type="button">Exportar CSV</button>
       </div>
     </header>
 
     <section class="verticales-v1-kpis" aria-label="Resumen de verticales">
       <div class="verticales-v1-kpi"><span>Total catalogo</span><strong id="kpiTotal">0</strong></div>
-      <div class="verticales-v1-kpi"><span>V1 masiva</span><strong id="kpiMass">0</strong></div>
-      <div class="verticales-v1-kpi"><span>Diferidos</span><strong id="kpiDeferred">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Produccion</span><strong id="kpiMass">0</strong></div>
+      <div class="verticales-v1-kpi"><span>No listos</span><strong id="kpiDeferred">0</strong></div>
       <div class="verticales-v1-kpi"><span>Metadata completa</span><strong id="kpiComplete">0</strong></div>
       <div class="verticales-v1-kpi"><span>Listos venta</span><strong id="kpiReady">0</strong></div>
     </section>
@@ -69,8 +69,8 @@
       <div class="verticales-v1-segmented" role="tablist" aria-label="Estado comercial">
         <button type="button" class="is-active" data-filter="all">Todos</button>
         <button type="button" data-filter="ready">Listos</button>
-        <button type="button" data-filter="mass">V1 masiva</button>
-        <button type="button" data-filter="deferred">Diferidos</button>
+        <button type="button" data-filter="mass">Produccion</button>
+        <button type="button" data-filter="not_ready">No listos</button>
       </div>
       <button class="btn secondary" id="refreshBtn" type="button">Actualizar</button>
     </section>
@@ -186,7 +186,7 @@
         var metadataReady = isComplete(item);
         var massReady = !!item.produccion_masiva;
         var missing = [];
-        if (!massReady) missing.push('no es v1 masiva');
+        if (!massReady) missing.push('no esta en produccion');
         if (!metadataReady) missing.push('metadata incompleta');
         if (!preconfigReady) missing.push(preconfig ? 'preconfig sin integracion activa' : 'sin preconfiguracion');
         if (!licenseReady) missing.push('sin licencia activa');
@@ -221,7 +221,7 @@
           var readiness = buildReadiness(item);
           if (state.filter === 'ready' && !readiness.ready) return false;
           if (state.filter === 'mass' && !mass) return false;
-          if (state.filter === 'deferred' && mass) return false;
+          if (state.filter === 'not_ready' && readiness.ready) return false;
           if (query && itemSearchText(item).indexOf(query) < 0) return false;
           return true;
         }).sort(function(a,b){
@@ -247,7 +247,7 @@
         var rows = filteredItems();
         document.getElementById('kpiTotal').textContent = state.items.length;
         document.getElementById('kpiMass').textContent = state.items.filter(function(i){ return !!i.produccion_masiva; }).length;
-        document.getElementById('kpiDeferred').textContent = state.items.filter(function(i){ return !i.produccion_masiva; }).length;
+        document.getElementById('kpiDeferred').textContent = state.items.filter(function(i){ return !buildReadiness(i).ready; }).length;
         document.getElementById('kpiComplete').textContent = state.items.filter(isComplete).length;
         document.getElementById('kpiReady').textContent = state.items.filter(function(i){ return buildReadiness(i).ready; }).length;
 
@@ -275,7 +275,7 @@
               '<td><span class="verticales-v1-rank ' + (rank ? '' : 'is-empty') + '">' + (rank ? escapeHTML(rank) : '-') + '</span></td>' +
               '<td><strong>' + escapeHTML(item.title || item.module) + '</strong><small>' + escapeHTML(item.module || '') + '</small><small>' + escapeHTML(item.summary || '') + '</small></td>' +
               '<td><span class="verticales-v1-pill ' + (readiness.ready ? 'is-ready' : 'is-blocked') + '">' + (readiness.ready ? 'Listo venta' : 'Pendiente') + '</span><small>' + escapeHTML(readiness.ready ? ('Preconfig: ' + (preconfigName || 'activa') + ' / Licencia: ' + (licenseName || 'activa')) : readiness.missing.join(', ')) + '</small></td>' +
-              '<td><span class="verticales-v1-pill ' + (mass ? 'is-mass' : 'is-deferred') + '">' + (mass ? 'V1 masiva' : 'Diferido') + '</span><small>' + escapeHTML(integration.motivo_decision || item.decision_preconfig || '') + '</small></td>' +
+              '<td><span class="verticales-v1-pill ' + (mass ? 'is-mass' : 'is-deferred') + '">' + (mass ? 'Produccion' : 'No productivo') + '</span><small>' + escapeHTML(integration.motivo_decision || item.decision_preconfig || '') + '</small></td>' +
               '<td>' + renderList(integration.template_activates, 5) + '<small>Tablas: ' + escapeHTML(asArray(integration.tables_touched).slice(0, 4).join(', ') || 'sin declarar') + '</small></td>' +
               '<td>' + renderList(integration.required_permissions, 5) + '</td>' +
               '<td>' + renderList(integration.sale_flow, 5) + '</td>' +
@@ -343,14 +343,14 @@
         }
       }
 
-      async function ensureV1(){
-        if (!confirm('Asegurar tipos, preconfiguraciones y licencias recomendadas para los 10 verticales v1?')) return;
+      async function ensureProductionVerticals(){
+        if (!confirm('Asegurar tipos, preconfiguraciones y licencias recomendadas para los 20 verticales reales?')) return;
         var originalText = ensureBtn.textContent;
         ensureBtn.disabled = true;
         ensureBtn.textContent = 'Asegurando...';
         setMessage('', false);
         try {
-          var res = await fetch('/super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias', {
+          var res = await fetch('/super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias', {
             method: 'POST',
             credentials: 'same-origin'
           });
@@ -359,9 +359,9 @@
           try { payload = raw ? JSON.parse(raw) : null; } catch (e) { payload = null; }
           if (!res.ok) throw new Error((payload && (payload.error || payload.message)) || raw || ('HTTP ' + res.status));
           await load();
-          setMessage('Verticales v1 asegurados: tipos ' + (payload && payload.tipos_asegurados || 0) + ', licencias ' + (payload && payload.licencias_aseguradas || 0) + '.', false);
+          setMessage('Verticales reales asegurados: tipos ' + (payload && payload.tipos_asegurados || 0) + ', licencias ' + (payload && payload.licencias_aseguradas || 0) + '.', false);
         } catch (err) {
-          setMessage('No fue posible asegurar verticales v1: ' + err.message, true);
+          setMessage('No fue posible asegurar verticales reales: ' + err.message, true);
         } finally {
           ensureBtn.disabled = false;
           ensureBtn.textContent = originalText;
@@ -399,7 +399,7 @@
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'verticales_v1_masiva.csv';
+        a.download = 'verticales_produccion_masiva.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -416,7 +416,7 @@
       });
       searchInput.addEventListener('input', function(){ state.query = searchInput.value; renderTable(); });
       document.getElementById('refreshBtn').addEventListener('click', load);
-      ensureBtn.addEventListener('click', ensureV1);
+      ensureBtn.addEventListener('click', ensureProductionVerticals);
       exportBtn.addEventListener('click', exportCSV);
       load();
     })();

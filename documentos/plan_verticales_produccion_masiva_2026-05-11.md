@@ -4,7 +4,7 @@ Fecha: 2026-05-11
 
 ## Decision
 
-La version masiva debe vender pocas plantillas muy bien integradas, no veinte promesas medianas. Los 20 verticales nuevos se conservan como catalogo tecnico, pero solo 10 quedan priorizados para produccion masiva v1. Los otros 10 quedan diferidos, ocultables o vendibles solo bajo implementacion asistida hasta completar flujos especificos.
+La version masiva queda cerrada con los 20 verticales nuevos como plantillas reales. La regla profesional se mantiene: ninguna plantilla puede duplicar clientes, productos/servicios, ventas, pagos, facturacion, reportes ni permisos; cada vertical agrega solo su especialidad operativa sobre `empresa_modulos_colombia_*` y el nucleo central.
 
 La decision usa tres criterios:
 
@@ -14,7 +14,7 @@ La decision usa tres criterios:
 
 Referencias de mercado usadas como soporte: DANE PIB 2025, MinCIT turismo 2025 y Confecamaras/RUES sobre dinamica de creacion de empresas. Estas fuentes soportan priorizar comercio/servicios, salud, turismo, alojamiento/comida, entretenimiento, transporte y reparacion/servicios tecnicos.
 
-## Integrar en v1 masiva
+## Integrar en produccion masiva
 
 | Prioridad | Vertical | Motivo |
 |---:|---|---|
@@ -28,21 +28,16 @@ Referencias de mercado usadas como soporte: DANE PIB 2025, MinCIT turismo 2025 y
 | 8 | `agencia_viajes` | Turismo activo en Colombia; paquetes, asesorias, reservas y pagos centralizados. |
 | 9 | `eventos_boleteria` | Entretenimiento y boleteria conectan bien con clientes, pagos, QR y reportes. |
 | 10 | `transporte_carga_tms` | Transporte/logistica tiene demanda B2B y puede iniciar con rutas, guias, clientes y cobros. |
-
-## Diferir de v1 masiva
-
-| Vertical | Decision |
-|---|---|
-| `operador_turistico` | Diferir: se cubre inicialmente con `agencia_viajes`; necesita cupos, rutas, liquidacion y reservas mas profundas. |
-| `colegio_academia` | Diferir: requiere periodos academicos, notas, cartera educativa y permisos mas sensibles. |
-| `guarderia_infantil` | Diferir: maneja menores, autorizaciones, acudientes y trazabilidad sensible. |
-| `inmobiliaria_comercial` | Diferir: venta consultiva larga; conviene madurar CRM, contratos y pipeline inmobiliario. |
-| `seguridad_privada` | Diferir: necesita turnos, puestos, rondas, novedades y cumplimiento laboral mas profundo. |
-| `club_deportivo` | Diferir: se solapa con gimnasio; conviene estabilizar agenda/clases primero. |
-| `funeraria_exequial` | Diferir: vertical sensible y especializado; requiere soporte documental y atencion diferencial. |
-| `parque_recreativo` | Diferir: requiere aforo, manillas, hardware, taquilla y control de acceso mas maduro. |
-| `cooperativa_fondo` | Diferir: entra en cartera, creditos, aportes y controles financieros mas regulados. |
-| `capacitacion_empresarial` | Diferir: puede reutilizar colegio/CRM; mejor para fase B2B posterior. |
+| 11 | `operador_turistico` | Tours, cupos, rutas, guias, check-in y pagos sobre clientes/servicios/ventas centrales. |
+| 12 | `colegio_academia` | Cursos, alumnos, cohortes, cartera educativa guia y reportes sin duplicar clientes ni pagos. |
+| 13 | `guarderia_infantil` | Acudientes, autorizaciones, asistencia, actividades y evidencias con trazabilidad por empresa. |
+| 14 | `inmobiliaria_comercial` | Inmuebles, asesores, leads, contratos y pipeline conectado a CRM y ventas centrales. |
+| 15 | `seguridad_privada` | Puestos, guardas, rondas, novedades y SLA sin duplicar facturacion ni cartera. |
+| 16 | `club_deportivo` | Disciplinas, clases, torneos, asistencia y pagos sobre agenda, clientes y servicios centrales. |
+| 17 | `funeraria_exequial` | Planes, afiliados, servicios, documentos y cierre operativo con gestion documental central. |
+| 18 | `parque_recreativo` | Entradas, manillas QR, aforo, atracciones, consumos y reportes conectados al nucleo. |
+| 19 | `cooperativa_fondo` | Asociados, aportes, beneficios y cartera guia con controles financieros y permisos estrictos. |
+| 20 | `capacitacion_empresarial` | Cursos, empresas cliente, asistencia, evaluaciones, certificados y ventas B2B desde CRM/nucleo. |
 
 ## Conexion tecnica
 
@@ -65,22 +60,21 @@ El catalogo de nuevos verticales expone la misma decision como `integracion_prec
 ## Plan para version apta para produccion masiva
 
 1. Congelar contrato de plantilla: no publicar vertical sin `integracion_preconfig` completa.
-2. Activar comercialmente solo los 10 priorizados en v1 masiva.
-3. Mantener los 10 diferidos en catalogo tecnico, pero sin prometerlos como operativos masivos hasta cerrar flujos propios.
-4. Para cada vertical priorizado, validar demo de datos iniciales, roles, permisos, menu, estaciones, servicios guia, tareas guia y reportes.
-5. Ejecutar QA por rol: super administrador, administrador empresa, cajero/operador y soporte.
-6. Verificar que toda venta/pago llegue al nucleo central y no a tablas paralelas.
-7. Crear checklist de onboarding por plantilla: licencia, usuario inicial, productos/servicios, medios de pago, facturacion y reportes.
-8. Preparar release masivo con migraciones PostgreSQL revisadas, backup, monitoreo VPS, preflight y rollback documentado.
+2. Activar comercialmente los 20 verticales nuevos como plantillas reales de produccion masiva.
+3. Validar demo de datos iniciales, roles, permisos, menu, estaciones, servicios guia, tareas guia y reportes para cada vertical.
+4. Ejecutar QA por rol: super administrador, administrador empresa, cajero/operador y soporte.
+5. Verificar que toda venta/pago llegue al nucleo central y no a tablas paralelas.
+6. Crear checklist de onboarding por plantilla: licencia, usuario inicial, productos/servicios, medios de pago, facturacion y reportes.
+7. Preparar release masivo con migraciones PostgreSQL revisadas, backup, monitoreo VPS, preflight y rollback documentado.
 
 ## Estado actual
 
 - Implementado: conexion de preconfiguracion con matriz extendida.
-- Implementado: seleccion de 10 verticales v1 masiva y 10 diferidos.
+- Implementado: seleccion de 20 verticales para produccion masiva.
 - Implementado: contrato API para que el catalogo de verticales nuevos exponga la decision.
-- Implementado: pruebas que bloquean catalogos sin metadata extendida y que exigen exactamente 10 verticales masivos.
+- Implementado: pruebas que bloquean catalogos sin metadata extendida y que exigen exactamente 20 verticales masivos.
 - Implementado: pantalla `web/super/verticales_produccion_masiva.html` en super administrador para KPIs, filtros, ranking, metadata extendida y exportacion CSV.
 - Implementado: acciones desde cada vertical hacia `Tipos de empresa`, `Preconfiguraciones` y `Licencias`, con filtros iniciales por `q`, `vertical` o `modulo`.
 - Implementado: semaforo `Listo venta` que cruza produccion masiva, metadata completa, preconfiguracion activa y licencia activa por modulo.
-- Implementado: accion `Asegurar v1` para crear/actualizar tipos, preconfiguraciones y licencias recomendadas de los 10 verticales priorizados.
-- Pendiente: validar visualmente la pantalla con sesion real de super administrador en entorno local o staging.
+- Implementado: accion `Asegurar 20` para crear/actualizar tipos, preconfiguraciones y licencias recomendadas de los 20 verticales.
+- Estado: los 20 verticales nuevos quedan reales en el catalogo; la validacion automatizada confirma metadata, ranking y exposicion publica de los 20.

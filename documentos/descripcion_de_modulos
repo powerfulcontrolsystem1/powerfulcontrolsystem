@@ -1,7 +1,13 @@
+2026-05-11: Veinte verticales nuevos como plantillas reales
+- Modulos afectados: `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: los 20 verticales nuevos quedan en produccion masiva con ranking 1-20, preconfiguracion, tipos de empresa, licencias recomendadas, permisos, flujo de venta y reportes.
+- Producto: `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` tambien quedan listos para venta como plantillas reales.
+- Gobernanza: todos siguen operando como plantillas sobre el nucleo unico; no se crean ventas, clientes, productos ni pagos paralelos.
+
 2026-05-11: Portada publica alineada con modulos y verticales reales
 - Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
-- Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` ya no presentan los 20 verticales nuevos como si todos fueran operativos de venta masiva; solo se publican como tarjetas los 10 V1 masiva.
-- Producto: los 10 diferidos siguen documentados en la tarjeta resumen de plantillas y en el catalogo tecnico, pero no se ofrecen como boton operativo hasta completar su integracion.
+- Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` presentan los 20 verticales nuevos como operativos de produccion masiva cuando el catalogo los marca como reales.
+- Producto: las 20 plantillas nuevas quedan publicables como `Probar gratis`.
 - Gobernanza: las tarjetas refuerzan que ventas, clientes, productos, pagos, facturacion y reportes viven en el nucleo unico, no en verticales paralelos.
 
 2026-05-11: Fases de integracion profesional de verticales
@@ -15,19 +21,19 @@
 2026-05-11: Preconfiguraciones conectadas a matriz extendida de verticales
 - Modulos afectados: `preconfiguracion_tipos_empresa`, `verticales_nuevos`, `roles/licencias`, `ventas`, `pagos`, `reportes`.
 - Cambio funcional: cada preconfiguracion normalizada puede incluir `integracion_vertical` con decision, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos, flujo de venta y reportes.
-- Decision comercial v1: se priorizan 10 verticales nuevos para produccion masiva (`salon_spa`, `veterinaria_petshop`, `clinica_consultorios`, `laboratorio_clinico`, `taller_mecanico`, `servicios_tecnicos`, `lavanderia_tintoreria`, `agencia_viajes`, `eventos_boleteria`, `transporte_carga_tms`).
-- Diferidos: `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` quedan para fases posteriores.
+- Decision comercial: se priorizan los 20 verticales nuevos para produccion masiva con ranking 1-20 y preconfiguracion conectada a la matriz extendida.
+- Alcance: cada vertical nuevo activa modulos, permisos, flujo de venta y reportes sobre el nucleo unico, sin duplicar clientes, productos, ventas ni pagos.
 - Backend: `/api/empresa/verticales_nuevos/catalogo`, `/super/api/verticales_nuevos/catalogo` y `/api/public/verticales_nuevos/catalogo` exponen `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
 - Plan de producto: `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
 
-2026-05-11: Gobierno super de verticales v1 masiva
+2026-05-11: Gobierno super de verticales produccion masiva
 - Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
 - Cambio funcional: se agrega `web/super/verticales_produccion_masiva.html` para que super administrador vea KPIs, filtros, ranking, decision, permisos, flujo de venta y reportes de los 20 verticales nuevos.
-- Navegacion: `web/super_administrador.html` enlaza `Verticales v1` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
-- Operacion: la vista consume `/super/api/verticales_nuevos/catalogo`, permite filtrar entre todos/v1 masiva/diferidos, buscar por modulo/permisos/reportes y exportar CSV.
+- Navegacion: `web/super_administrador.html` enlaza `Verticales 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
+- Operacion: la vista consume `/super/api/verticales_nuevos/catalogo`, permite filtrar entre todos, produccion y no listos, buscar por modulo/permisos/reportes y exportar CSV.
 - Acciones: cada fila enlaza a `Tipos de empresa`, `Preconfiguraciones` y `Licencias` con parametros `q`, `vertical` o `modulo`; esas paginas aplican el filtro inicial para aterrizar en el vertical correcto.
-- Readiness: la vista cruza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias?activo=1` para marcar `Listo venta` solo si el vertical es v1 masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
-- Aseguramiento: `Asegurar v1` ejecuta `POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias` y llama `EnsureNuevosVerticalesProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por vertical v1.
+- Readiness: la vista cruza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias?activo=1` para marcar `Listo venta` solo si el vertical esta en produccion masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
+- Aseguramiento: `Asegurar 20` ejecuta `POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias` y llama `EnsureNuevosVerticalesProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por cada vertical real. `asegurar_v1_licencias` queda como alias compatible.
 - Seguridad: no se agregan permisos ni endpoints nuevos; se reutiliza el alcance autenticado del panel super y el rol `control_super_administrador` conserva su navegacion limitada.
 
 2026-05-11: Sincronizacion segura desde matriz de verticales

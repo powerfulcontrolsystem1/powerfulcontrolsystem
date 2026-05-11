@@ -6,7 +6,7 @@ Actualizacion: 2026-05-11
 
 Las preconfiguraciones de tipo de empresa quedan conectadas directamente con esta matriz extendida mediante el bloque JSON `integracion_vertical`. Ese bloque declara modulo, estado de integracion, decision comercial, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos requeridos, flujo de venta y reportes producidos.
 
-Para produccion masiva v1 se priorizan 10 de los 20 verticales nuevos: `salon_spa`, `veterinaria_petshop`, `clinica_consultorios`, `laboratorio_clinico`, `taller_mecanico`, `servicios_tecnicos`, `lavanderia_tintoreria`, `agencia_viajes`, `eventos_boleteria` y `transporte_carga_tms`. Los otros 10 quedan diferidos de v1 masiva, no eliminados. El detalle de decision y plan esta en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
+Para produccion masiva se priorizan los 20 verticales nuevos con ranking 1-20. Los verticales `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` quedan incluidos como plantillas reales sobre el mismo nucleo unico. El detalle de decision y plan esta en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
 
 ## Regla profesional
 
@@ -80,10 +80,10 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 - `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo` exponen la misma matriz operativa para auditoria, super y empresa.
 - `web/js/nuevos_verticales_catalogo.js` marca los 20 verticales nuevos como `plantilla_integrada_nucleo`.
 - `/api/empresa/verticales_nuevos/catalogo`, `/super/api/verticales_nuevos/catalogo` y `/api/public/verticales_nuevos/catalogo` exponen estado de integracion para los nuevos verticales.
-- `web/super/verticales_produccion_masiva.html` usa `/super/api/verticales_nuevos/catalogo` para auditar los 10 verticales v1 masiva, los 10 diferidos, metadata extendida y exportacion CSV desde el panel super.
+- `web/super/verticales_produccion_masiva.html` usa `/super/api/verticales_nuevos/catalogo` para auditar los 20 verticales de produccion masiva, metadata extendida y exportacion CSV desde el panel super.
 - Desde esa vista super, cada vertical abre sus pantallas relacionadas con filtro inicial: `Tipos de empresa`, `Preconfiguraciones` y `Licencias`.
-- La senal `Listo venta` exige cuatro condiciones: decision v1 masiva, metadata extendida completa, preconfiguracion activa con `integracion_vertical` y licencia activa de catalogo que incluya el modulo.
-- La accion `Asegurar v1` asegura solo los 10 verticales priorizados, manteniendo los otros 10 diferidos sin eliminarlos ni convertirlos en oferta masiva.
+- La senal `Listo venta` exige metadata extendida completa, preconfiguracion activa con `integracion_vertical` y licencia activa de catalogo que incluya el modulo.
+- La accion `Asegurar 20` asegura tipos, preconfiguraciones y licencias recomendadas para los 20 verticales nuevos.
 - Gimnasio crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/gimnasio?action=sincronizar_nucleo&empresa_id=...` migra referencias historicas sin borrar las tablas especializadas del vertical.
 - Odontologia crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/odontologia?action=sincronizar_nucleo&empresa_id=...` migra pacientes, tratamientos y pagos historicos sin borrar historia clinica, odontogramas, agenda ni presupuesto especializado.
 - Parqueadero crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/parqueadero?action=sincronizar_nucleo&empresa_id=...` migra tickets cerrados historicos sin borrar placas, QR, tiempos, tarifas ni trazabilidad de entrada/salida.

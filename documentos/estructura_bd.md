@@ -26,12 +26,12 @@ Actualizacion 2026-05-11 (integracion profesional de verticales)
 - Los 20 verticales nuevos siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.
 - Los verticales clasicos con tablas propias solo pueden quedar visibles cuando sus datos cobrables migran o referencian el nucleo de clientes, productos/servicios, ventas y pagos.
 
-Actualizacion 2026-05-11 (preconfiguraciones verticales v1 masiva)
+Actualizacion 2026-05-11 (preconfiguraciones verticales produccion masiva)
 - No se agregan tablas ni columnas fisicas.
 - El JSON de `tipo_empresa_preconfiguraciones.config_json` puede incluir `integracion_vertical` para conectar la plantilla con la matriz extendida.
 - `integracion_vertical` registra `modulo`, `estado_integracion`, `decision`, `produccion_masiva`, `prioridad_produccion`, `motivo_decision`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
-- Los 10 verticales priorizados para produccion masiva v1 quedan marcados en el JSON; los otros 10 permanecen diferidos sin borrar catalogo ni datos.
-- La accion super `asegurar_v1_licencias` reutiliza las tablas existentes `tipos_empresas`, `tipo_empresa_preconfiguraciones` y `licencias`; no introduce esquema nuevo.
+- Los 20 verticales nuevos quedan marcados como produccion masiva en el JSON, con prioridad 1-20.
+- La accion super `asegurar_20_licencias` reutiliza las tablas existentes `tipos_empresas`, `tipo_empresa_preconfiguraciones` y `licencias`; no introduce esquema nuevo. Se conserva `asegurar_v1_licencias` como alias compatible.
 
 Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
 - `empresa_gimnasio_socios.cliente_id`: referencia al cliente central creado o reutilizado para el socio.

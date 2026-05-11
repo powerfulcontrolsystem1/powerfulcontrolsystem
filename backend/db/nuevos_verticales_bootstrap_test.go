@@ -38,8 +38,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 
 func TestNuevosVerticalesProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 	selected := NuevosVerticalesProduccionMasivaSeleccionados()
-	if len(selected) != 10 {
-		t.Fatalf("seleccion v1 len=%d want 10", len(selected))
+	if len(selected) != 20 {
+		t.Fatalf("seleccion produccion len=%d want 20", len(selected))
 	}
 	for _, modulo := range selected {
 		t.Run(modulo, func(t *testing.T) {

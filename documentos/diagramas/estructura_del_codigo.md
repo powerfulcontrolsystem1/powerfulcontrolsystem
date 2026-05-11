@@ -4,7 +4,14 @@
 - `backend/handlers/pagina_principal_handlers.go` mantiene los defaults de `/api/public/pagina_principal` alineados con la misma oferta real cuando no existe configuracion guardada en super.
 - Las tarjetas base de la portada cubren modulos reales del nucleo y transversales: POS, CRM, hotel/motel, apartamentos, propiedad horizontal, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, produccion/MRP, compras OCR/IA, WMS, bancos/pagos, gestion documental, helpdesk/calidad, tesoreria, facturacion, cierre fiscal, centros de costo, activos, cobranza, contador, certificados y AIU.
 - El catalogo local de los 20 verticales nuevos agrega estado de producto (`productionMass`, `productionRank`, `decisionPreconfig`) y metadata de plantilla (`templateActivates`, `tablesTouched`, `requiredPermissions`, `saleFlow`, `reportsProduced`).
-- `index.html` solo transforma en tarjetas publicas los verticales nuevos con visibilidad operativa/V1 masiva. Los diferidos quedan en la matriz y en el resumen de plantillas, no como boton operativo de `Probar gratis`.
+- `index.html` transforma en tarjetas publicas los 20 verticales nuevos porque todos quedan con visibilidad operativa y produccion masiva.
+
+## Actualizacion 2026-05-11 (20 verticales nuevos reales)
+
+- `backend/db/nuevos_verticales_bootstrap.go` declara prioridad 1-20 para todos los verticales nuevos y `EnsureNuevosVerticalesProduccionMasivaLicencias` asegura tipos, preconfiguraciones y licencias para los 20.
+- `backend/handlers/empresa_verticales_nuevos.go` mantiene el contrato publico/super/empresa con `produccion_masiva`, `prioridad_produccion` e `integracion_preconfig`; agrega el alias `asegurar_20_licencias`.
+- `web/super/verticales_produccion_masiva.html` gobierna los 20 verticales reales, con semaforo de listos/no listos y accion `Asegurar 20`.
+- `web/js/nuevos_verticales_catalogo.js` expone los 20 como plantillas reales publicables sobre el nucleo unico.
 
 ## Actualizacion 2026-05-11 (sincronizacion segura de matriz vertical)
 
@@ -18,15 +25,15 @@
 ## Actualizacion 2026-05-11 (preconfiguracion vertical y produccion masiva)
 
 - `backend/db/tipo_empresa_preconfiguracion.go` agrega el bloque `integracion_vertical` al template normalizado de preconfiguracion.
-- `backend/db/nuevos_verticales_bootstrap.go` centraliza la decision de 10 verticales nuevos para produccion masiva v1 y 10 diferidos.
+- `backend/db/nuevos_verticales_bootstrap.go` centraliza la decision de 20 verticales nuevos para produccion masiva.
 - `backend/handlers/empresa_verticales_nuevos.go` publica `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig` en los catalogos publico, empresa y super.
 - `web/super/verticales_produccion_masiva.html` consume el catalogo super y presenta KPIs, filtros, ranking, metadata extendida y exportacion CSV para gobierno comercial.
 - La misma vista calcula `Listo venta` cruzando catalogo de verticales, preconfiguraciones y licencias activas; si falta algo, muestra el pendiente por fila.
-- La accion `Asegurar v1` llama `POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias`; `backend/handlers/empresa_verticales_nuevos.go` delega en `db.EnsureNuevosVerticalesProduccionMasivaLicencias`.
+- La accion `Asegurar 20` llama `POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias`; `backend/handlers/empresa_verticales_nuevos.go` delega en `db.EnsureNuevosVerticalesProduccionMasivaLicencias`.
 - `web/super_administrador.html` y `web/js/super_administrador.js` incorporan la vista como pagina permitida del panel principal para `super_administrador`.
 - `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` aceptan filtros iniciales por `q`, `vertical` o `modulo` para abrir desde la matriz comercial sin duplicar pantallas ni datos.
-- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` validan que existan exactamente 10 verticales masivos y que todos tengan metadata extendida.
-- `documentos/plan_verticales_produccion_masiva_2026-05-11.md` registra decision comercial, diferidos y plan de cierre para version masiva.
+- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` validan que existan exactamente 20 verticales masivos y que todos tengan metadata extendida.
+- `documentos/plan_verticales_produccion_masiva_2026-05-11.md` registra decision comercial y plan de cierre para version masiva.
 
 ## Actualizacion 2026-05-11 (integracion profesional de verticales)
 
