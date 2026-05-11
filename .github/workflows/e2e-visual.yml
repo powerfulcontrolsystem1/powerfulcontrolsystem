@@ -1,5 +1,8 @@
 name: E2E Visual QA
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 on:
   schedule:
     - cron: "30 9 * * 1-5"
