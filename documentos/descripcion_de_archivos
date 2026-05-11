@@ -10,6 +10,12 @@
 	- `web/js/super_administrador.js` : conserva la ayuda privada como pagina restaurable para `super_administrador`, pero fuera de la lista limitada de `control_super_administrador`.
 	- `CHANGELOG.md` y `documentos/CHANGELOG.md` : registran el ajuste de contrato frontend validado por pruebas.
 
+- Actualizacion 2026-05-11: correccion de cargas parciales en verticales integrados
+	- `backend/db/odontologia.go` : crea indices de integracion solo despues de asegurar `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`, evitando errores PostgreSQL en bases existentes.
+	- `backend/db/gimnasio.go` : aplica el mismo orden seguro para indices de `servicio_id`, `cliente_id` y `carrito_id`.
+	- `backend/db/odontologia_integracion_test.go` y `backend/db/gimnasio_integracion_test.go` : agregan pruebas de contrato para que los indices de integracion no vuelvan a adelantarse a las columnas.
+	- `web/js/consultorio_odontologico.js`, `web/js/gimnasio.js` y `web/js/alquileres.js` : limpian el aviso de carga parcial cuando no hay errores y normalizan el mensaje.
+
 - Actualizacion 2026-05-11: portada index alineada a modulos y verticales reales
 	- `web/index.html` : actualiza la seccion de modulos y las tarjetas publicas para reflejar nucleo unico, modulos reales y 20 verticales nuevos reales.
 	- `web/js/nuevos_verticales_catalogo.js` : agrega decision local `productionMass`, `productionRank`, `decisionPreconfig`, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica para los 20 verticales.

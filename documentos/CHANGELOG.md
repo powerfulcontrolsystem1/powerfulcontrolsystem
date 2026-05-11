@@ -1,3 +1,9 @@
+## [2026-05-11] Correccion de cargas parciales en verticales integrados
+- [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` crean indices de integracion solo despues de asegurar columnas nuevas en bases PostgreSQL existentes.
+- [Frontend] `web/js/consultorio_odontologico.js`, `web/js/gimnasio.js` y `web/js/alquileres.js` limpian el aviso de carga parcial cuando la recarga completa no devuelve errores.
+- [QA] Se agregan pruebas para impedir que los indices de `cliente_id`, `servicio_id` y `carrito_id` vuelvan a ejecutarse antes de las columnas.
+- [Alcance] No hay tablas, endpoints, permisos ni dependencias nuevas.
+
 ## [2026-05-11] Fix arranque PostgreSQL parqueadero
 - [Backend] `backend/db/parqueadero.go` ahora asegura columnas de integracion al nucleo antes de crear el indice por `carrito_id`.
 - [Operacion] Corrige el fallo de despliegue en VPS con bases existentes que todavia no tenian `empresa_parqueadero_tickets.carrito_id`.

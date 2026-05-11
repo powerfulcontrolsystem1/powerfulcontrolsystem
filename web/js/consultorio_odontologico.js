@@ -102,7 +102,14 @@
   async function fetchJSON(url, options) {
     var resp = await fetch(url, Object.assign({ credentials: "same-origin" }, options || {}));
     var raw = await resp.text();
-    var data = raw ? JSON.parse(raw) : null;
+    var data = null;
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        data = null;
+      }
+    }
     if (!resp.ok) {
       throw new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
     }
@@ -350,7 +357,9 @@
     ]);
     errors = errors.filter(Boolean);
     if (errors.length) {
-      setNotice("Módulo cargado parcialmente: " + errors.slice(0, 3).join(" | "), true);
+      setNotice("Modulo cargado parcialmente: " + errors.slice(0, 3).join(" | "), true);
+    } else {
+      setNotice("", false);
     }
   }
 

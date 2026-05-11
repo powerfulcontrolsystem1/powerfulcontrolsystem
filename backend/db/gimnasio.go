@@ -312,7 +312,6 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_empresa ON empresa_gimnasio_planes(empresa_id, estado, id DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_servicio ON empresa_gimnasio_planes(empresa_id, servicio_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_socios (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -339,7 +338,6 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_empresa ON empresa_gimnasio_socios(empresa_id, estado, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_plan ON empresa_gimnasio_socios(empresa_id, plan_id);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_cliente ON empresa_gimnasio_socios(empresa_id, cliente_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_entrenadores (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -425,7 +423,6 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_empresa_fecha ON empresa_gimnasio_pagos(empresa_id, fecha_pago DESC, id DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_carrito ON empresa_gimnasio_pagos(empresa_id, carrito_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_acceso_config (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL UNIQUE,
@@ -746,6 +743,16 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			if err := ensureColumnIfMissing(dbConn, group.table, column.name, column.def); err != nil {
 				return err
 			}
+		}
+	}
+	postColumnIndexes := []string{
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_servicio ON empresa_gimnasio_planes(empresa_id, servicio_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_cliente ON empresa_gimnasio_socios(empresa_id, cliente_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_carrito ON empresa_gimnasio_pagos(empresa_id, carrito_id);`,
+	}
+	for _, stmt := range postColumnIndexes {
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
 		}
 	}
 	empresaGimnasioSchemaEnsured.Store(cacheKey, true)

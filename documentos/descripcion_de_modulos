@@ -60,6 +60,7 @@
 - Cambio funcional: pacientes nuevos se enlazan a clientes centrales; tratamientos nuevos se enlazan a servicios vendibles; pagos odontologicos generan carrito, item de servicio y cierre de venta central.
 - Migracion: se agrega `POST /api/empresa/odontologia?action=sincronizar_nucleo` para sincronizar pacientes, tratamientos y pagos historicos sin borrar historia clinica, odontogramas, agenda ni presupuestos especializados.
 - Frontend: el panel del consultorio agrega accion `Sincronizar nucleo` y resumen operativo de pacientes, tratamientos, pagos y observaciones.
+- Estabilidad: el esquema asegura columnas de integracion antes de crear indices PostgreSQL y la pantalla limpia el aviso de carga parcial cuando las consultas se recuperan correctamente.
 - Gobernanza: odontologia queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para datos clinicos y operacion especializada, no para duplicar clientes, servicios, ventas o pagos.
 
 2026-05-11: Parqueadero integrado al nucleo

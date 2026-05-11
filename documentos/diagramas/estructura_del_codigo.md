@@ -46,6 +46,7 @@
 ## Actualizacion 2026-05-11 (gimnasio al nucleo)
 
 - `backend/db/gimnasio.go` enlaza socios con `clientes`, planes con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
+- `EnsureEmpresaGimnasioSchema` asegura columnas de integracion antes de crear indices sobre `servicio_id`, `cliente_id` y `carrito_id`, evitando carga parcial en bases PostgreSQL existentes.
 - `backend/handlers/gimnasio.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
 - `web/administrar_empresa/gimnasio.html` y `web/js/gimnasio.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `gimnasio` como plantilla visible integrada.
@@ -53,6 +54,7 @@
 ## Actualizacion 2026-05-11 (odontologia al nucleo)
 
 - `backend/db/odontologia.go` enlaza pacientes con `clientes`, tratamientos con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
+- `EnsureEmpresaOdontologiaSchema` asegura columnas de integracion antes de crear indices sobre `cliente_id`, `servicio_id` y `carrito_id`, corrigiendo errores que hacian ver el modulo como cargado parcialmente.
 - `backend/handlers/odontologia.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
 - `web/administrar_empresa/consultorio_odontologico.html` y `web/js/consultorio_odontologico.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `odontologia` y `consultorio_odontologico` como plantillas visibles integradas.

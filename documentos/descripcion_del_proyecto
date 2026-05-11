@@ -20,6 +20,8 @@ Revision gimnasio 2026-05-11: `gimnasio` inicia la migracion real al nucleo. Los
 
 Revision odontologia 2026-05-11: `odontologia` queda integrada al nucleo comercial. Los pacientes facturables se sincronizan con `clientes`, los tratamientos con `servicios`, y cada pago aplicado crea una venta central en `carritos_compras` con item de servicio y referencia de pago. Historia clinica, odontogramas, agenda, profesionales, consultorios y presupuestos se conservan como especialidad clinica.
 
+Revision estabilidad verticales clinicos 2026-05-11: se corrige la carga parcial de `odontologia` y el mismo riesgo en `gimnasio` asegurando columnas de integracion antes de crear indices PostgreSQL sobre `cliente_id`, `servicio_id` y `carrito_id`. Las pantallas de odontologia, gimnasio y alquileres limpian el aviso de carga parcial cuando todas las consultas vuelven a responder correctamente.
+
 Revision parqueadero 2026-05-11: `parqueadero` queda integrado al nucleo comercial. Al cobrar la salida, el ticket crea una venta central en `carritos_compras`, enlaza un servicio vendible por tipo de vehiculo y registra el pago con la referencia del ticket. Placas, QR, entrada, salida, tiempos, tarifas y anulaciones se conservan como especialidad operativa.
 
 Revision taxi system 2026-05-11: `taxi_system` queda integrado al nucleo comercial. Los clientes registrados o invitados se sincronizan con `clientes`, los viajes completados con tarifa se enlazan a un servicio vendible y generan una venta central en `carritos_compras` con pago normalizado. Conductores, ofertas, GPS, rutas y estados del viaje se conservan como especialidad operativa.

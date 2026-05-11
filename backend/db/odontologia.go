@@ -256,7 +256,6 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_empresa ON empresa_odontologia_pacientes(empresa_id, estado, id DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_cliente ON empresa_odontologia_pacientes(empresa_id, cliente_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_profesionales (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -361,7 +360,6 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_empresa ON empresa_odontologia_tratamientos(empresa_id, estado, id DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_servicio ON empresa_odontologia_tratamientos(empresa_id, servicio_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_presupuestos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -400,7 +398,6 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_empresa ON empresa_odontologia_pagos(empresa_id, fecha_pago DESC, id DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_carrito ON empresa_odontologia_pagos(empresa_id, carrito_id);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
@@ -432,6 +429,16 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			if err := ensureColumnIfMissing(dbConn, group.table, column.name, column.def); err != nil {
 				return err
 			}
+		}
+	}
+	postColumnIndexes := []string{
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_cliente ON empresa_odontologia_pacientes(empresa_id, cliente_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_servicio ON empresa_odontologia_tratamientos(empresa_id, servicio_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_carrito ON empresa_odontologia_pagos(empresa_id, carrito_id);`,
+	}
+	for _, stmt := range postColumnIndexes {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
 		}
 	}
 	empresaOdontologiaSchemaEnsured.Store(cacheKey, true)

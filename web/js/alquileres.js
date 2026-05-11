@@ -275,7 +275,9 @@
       renderMap();
       errors = errors.filter(Boolean);
       if (errors.length) {
-        setMessage("Módulo cargado parcialmente: " + errors.slice(0, 3).join(" | "), true);
+        setMessage("Modulo cargado parcialmente: " + errors.slice(0, 3).join(" | "), true);
+      } else {
+        setMessage("", false);
       }
     });
   }
