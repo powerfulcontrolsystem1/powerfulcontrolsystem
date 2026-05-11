@@ -8307,3 +8307,14 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/modulo_colombia_admin.js
+
+2026-05-10 22:55:24 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 75443e6f; PushStatus: OK
+Archivos modificados:
+- .dockerignore
+- deploy/scripts/vps-compose-sidecar-up.sh
+- documentos/docker_vps_operacion.md
+- documentos/manual_de_instalacion.md
+- scripts/iniciar_servidor.ps1
+- scripts/publicar_git_y_vps.ps1
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
