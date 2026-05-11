@@ -23205,3 +23205,8 @@ Archivos modificados:
 - deploy/docker-compose.staging.yml
 - deploy/scripts/vps-staging-up.sh
 - documentos/historial_de_cambios
+
+2026-05-11: fix: reset controlado staging
+PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-staging-up.sh

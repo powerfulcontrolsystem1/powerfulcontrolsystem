@@ -8442,3 +8442,7 @@ Archivos modificados:
 - deploy/docker-compose.staging.yml
 - deploy/scripts/vps-staging-up.sh
 - documentos/historial_de_cambios
+
+2026-05-11 01:34:45 - Mensaje: fix: reset controlado staging; Commit: 3b7968b1; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-staging-up.sh
