@@ -8348,3 +8348,7 @@ Archivos modificados:
 - web/super/alertas_sistema.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-05-10 23:43:17 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 6d47b160; PushStatus: OK
+Archivos modificados:
+- web/super/licencias.html

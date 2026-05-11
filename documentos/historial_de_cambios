@@ -23063,3 +23063,8 @@ Archivos modificados:
 - web/super/alertas_sistema.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-05-10: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- web/super/licencias.html
