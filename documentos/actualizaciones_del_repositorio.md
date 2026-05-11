@@ -8652,3 +8652,10 @@ Archivos modificados:
 - web/super/tipos_empresas.html
 - web/super/verticales_produccion_masiva.html
 - web/super_administrador.html
+
+2026-05-11 15:48:28 - Mensaje: Corregir arranque PostgreSQL parqueadero; Commit: 683eff9c; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/parqueadero.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
