@@ -1,0 +1,58 @@
+name: E2E Visual QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL base a probar"
+        required: true
+        default: "https://powerfulcontrolsystem.com"
+      empresa_id:
+        description: "Empresa de prueba"
+        required: true
+        default: "7"
+      max_pages:
+        description: "Limite de paginas, 0 para todas"
+        required: true
+        default: "40"
+
+jobs:
+  visual:
+    name: Buttons, layout and print evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run button and layout QA
+        env:
+          PCS_QA_BASE_URL: ${{ inputs.base_url }}
+          PCS_QA_EMPRESA_ID: ${{ inputs.empresa_id }}
+          PCS_QA_EMAIL: ${{ secrets.PCS_QA_EMAIL }}
+          PCS_QA_PASSWORD: ${{ secrets.PCS_QA_PASSWORD }}
+          PCS_QA_MAX_PAGES: ${{ inputs.max_pages }}
+          PCS_QA_VIEWPORTS: desktop,mobile
+        run: node tools/qa_e2e_buttons.cjs
+
+      - name: Run print format QA
+        run: node tools/qa_print_formats.cjs
+
+      - name: Upload E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-visual-evidence
+          path: test_runs/
+          if-no-files-found: ignore

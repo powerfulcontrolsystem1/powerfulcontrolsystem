@@ -34,7 +34,51 @@ Despliegue recomendado desde Windows/local:
 
 Ese comando usa por defecto `DeploymentMode=docker`: sincroniza el proyecto, no reinicia el backend legacy por `systemd`, reconstruye Docker Compose y valida que `pcs-backend` y `pcs-frontend` queden saludables. Para rollback temporal existe `-DeploymentMode legacy`; para doble despliegue temporal existe `-DeploymentMode hybrid`.
 
+Antes de despliegues importantes se recomienda ejecutar:
+
+```powershell
+.\scripts\profesional_preflight.ps1
+```
+
+El acceso rapido `.\rs.ps1` ya ejecuta ese preflight antes de actualizar repositorio y sincronizar la VPS. Para una verificacion mas profunda:
+
+```powershell
+.\scripts\profesional_preflight.ps1 -Full
+```
+
+Desde el 2026-05-11, `sync_to_vps.ps1` tambien ejecuta una limpieza segura al terminar el despliegue: elimina paquetes temporales antiguos `pcs_sync_*.tar.gz`, caches locales no persistentes del proyecto, contenedores detenidos antiguos, imagenes Docker dangling y cache BuildKit no usado. No elimina volumenes Docker, bases de datos, uploads, descargas ni backups persistentes. Se puede desactivar con:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -CleanupRemoteUnusedFiles:$false
+```
+
 El servicio anterior `powerfulcontrolsystem.service` puede quedar activo temporalmente como rollback mientras se estabiliza el despliegue Docker. No lo elimines sin confirmar respaldos y ventana de mantenimiento.
+
+Respaldo operativo manual de la VPS:
+
+```powershell
+.\scripts\vps_backup_operacion.ps1
+```
+
+Este comando genera dump PostgreSQL y empaqueta volumenes persistentes en la propia VPS bajo `backups/vps-snapshots`, con retencion automatica.
+
+Ambiente staging:
+
+```powershell
+.\scripts\staging_up.ps1 -ConfigOnly
+.\scripts\staging_up.ps1 -Build
+```
+
+El staging usa `deploy/docker-compose.staging.yml`, `deploy/.env.staging.example`, puerto `8082` y volumenes separados para probar cambios antes de produccion. En VPS se puede preparar con `bash deploy/scripts/vps-staging-up.sh`.
+
+Validacion de restauracion de backups:
+
+```powershell
+.\scripts\vps_restore_validation.ps1
+.\scripts\vps_restore_validation.ps1 -ExecuteDrill
+```
+
+La primera valida el ultimo snapshot sin modificar datos; la segunda restaura el dump en un contenedor PostgreSQL temporal.
 
 ## 1) Credenciales en Google Cloud Console
 

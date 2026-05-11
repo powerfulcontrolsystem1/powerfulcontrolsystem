@@ -12,6 +12,7 @@ backend/pos.db
 logs/test_runs/*.log
 test_runs/
 scripts/logs/*.log
+documentos/reportes_profesionales/
 # URL local del remoto para actualizar_repositorio.ps1 (no versionar)
 scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1
@@ -19,6 +20,8 @@ tmp/*.txt
 tmp/*.js
 backend/.env.local
 .env.local
+deploy/.env.platform
+deploy/.env.staging
 .gocache/
 .gotmp/
 .codex-gocache/

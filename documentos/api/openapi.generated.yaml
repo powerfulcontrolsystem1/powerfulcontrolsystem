@@ -1,0 +1,3376 @@
+openapi: 3.0.3
+info:
+  title: Powerful Control System API
+  version: "generated"
+  description: Inventario automatico de rutas registradas en backend/main.go. Completar contratos detallados por modulo en documentos/gobernanza_tecnica/contratos.
+servers:
+  - url: https://powerfulcontrolsystem.com
+  - url: https://staging.powerfulcontrolsystem.com
+paths:
+  "/":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/accept/complete":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /accept/complete
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /accept/complete
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/account":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/account
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/account
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/account/change_password":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/change_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/change_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/account/set_google_password":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/set_google_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/set_google_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/account/update_profile":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/update_profile
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/account/update_profile
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/asesor_comercial/aceptar":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/asesor_comercial/aceptar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/asesor_comercial/aceptar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/asesor_comercial/mis_clientes":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/asesor_comercial/mis_clientes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/asesor_comercial/mis_clientes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/chat_flotante/preferencias":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/chat_flotante/preferencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/chat_flotante/preferencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/activos_fijos_niif_fiscal":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/activos_fijos_niif_fiscal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/activos_fijos_niif_fiscal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/aiu_construccion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/aiu_construccion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/aiu_construccion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/alquileres":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/alquileres
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/alquileres
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/apartamentos_turisticos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/apartamentos_turisticos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/apartamentos_turisticos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/asistencia_empleados":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/asistencia_empleados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/asistencia_empleados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/auditoria/eventos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/auditoria/eventos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/auditoria/eventos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/backups":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/backups
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/backups
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/bancos_pagos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/bancos_pagos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/bancos_pagos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/bodegas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/bodegas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/bodegas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/calculadora":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/calculadora
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/calculadora
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/calidad_procesos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/calidad_procesos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/calidad_procesos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/carnets":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carnets
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carnets
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/carritos_compra":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carritos_compra
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carritos_compra
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/carritos_compra/items":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carritos_compra/items
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/carritos_compra/items
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/categorias_productos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/categorias_productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/categorias_productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/centros_costo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/centros_costo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/centros_costo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/citas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/citas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/citas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/conversaciones":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/conversaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/conversaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/mensajes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/mensajes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/mensajes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/mensajes/adjunto":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/mensajes/adjunto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/mensajes/adjunto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/papelera":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/papelera
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/papelera
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/participantes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/participantes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/participantes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/tareas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/tareas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/tareas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/chat_tareas/tareas/nota_voz":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/tareas/nota_voz
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/chat_tareas/tareas/nota_voz
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/cierre_fiscal":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cierre_fiscal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cierre_fiscal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/clientes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/clientes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/clientes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/cobranza":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cobranza
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cobranza
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/codigos_de_descuento":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/codigos_de_descuento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/codigos_de_descuento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/combos_productos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/combos_productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/combos_productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/comisiones":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/comisiones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/comisiones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/compras_avanzadas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras_avanzadas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras_avanzadas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/compras/documentos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/documentos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/documentos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/compras/documentos/comprobante":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/documentos/comprobante
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/documentos/comprobante
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/compras/plan_reposicion/actualizar_estado":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/plan_reposicion/actualizar_estado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/plan_reposicion/actualizar_estado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/compras/plan_reposicion/emitir_orden":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/plan_reposicion/emitir_orden
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/compras/plan_reposicion/emitir_orden
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_avanzada":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_avanzada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_avanzada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_general":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_general
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_general
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_guiada":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_guiada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_guiada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_operativa":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_operativa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_operativa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/contabilidad_colombia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contabilidad_colombia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contabilidad_colombia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/contabilidad_colombia_avanzada":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contabilidad_colombia_avanzada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contabilidad_colombia_avanzada
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/contratos_obligaciones":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contratos_obligaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/contratos_obligaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/control_electrico":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/control_electrico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/control_electrico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/corte_caja":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/corte_caja
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/corte_caja
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/corte_caja/configuracion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/corte_caja/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/corte_caja/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/creditos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/creditos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/creditos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/crm_avanzado":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/crm_avanzado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/crm_avanzado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/cumplimiento_kyc":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cumplimiento_kyc
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/cumplimiento_kyc
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/db_admin":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/db_admin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/db_admin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/declaraciones_tributarias":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/declaraciones_tributarias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/declaraciones_tributarias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/documentos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/documentos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/documentos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/domicilios":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/domicilios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/domicilios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/drogueria_farmacia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/drogueria_farmacia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/drogueria_farmacia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/estacion_prefs":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/estacion_prefs
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/estacion_prefs
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica/pais_detectado":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/pais_detectado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/pais_detectado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica/paises_disponibles":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/paises_disponibles
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/paises_disponibles
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/asientos_contables":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/asientos_contables
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/asientos_contables
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/cierres_caja":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/cierres_caja
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/cierres_caja
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/configuracion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/movimientos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/movimientos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/movimientos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/movimientos/comprobante":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/movimientos/comprobante
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/movimientos/comprobante
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/periodos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/periodos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/periodos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/frecuencia_fp/permitido":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/frecuencia_fp/permitido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/frecuencia_fp/permitido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/gestion_documental":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/gestion_documental
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/gestion_documental
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/gimnasio":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/gimnasio
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/gimnasio
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/graficos_estadisticas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/graficos_estadisticas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/graficos_estadisticas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/helpdesk":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/helpdesk
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/helpdesk
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/hoja_vida_operativa":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/hoja_vida_operativa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/hoja_vida_operativa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/horarios_trabajadores":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/horarios_trabajadores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/horarios_trabajadores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/hotel_tarjetas_acceso":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/hotel_tarjetas_acceso
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/hotel_tarjetas_acceso
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/importaciones_costeo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/importaciones_costeo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/importaciones_costeo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/impresoras":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/impresoras/resolver":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras/resolver
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras/resolver
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/impuestos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impuestos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impuestos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario_avanzado":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario_avanzado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario_avanzado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/ajustar":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/ajustar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/ajustar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/alertas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/alertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/alertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/balance_bodegas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/balance_bodegas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/balance_bodegas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/cambiar_producto":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/cambiar_producto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/cambiar_producto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/configuracion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/conteo_ciclico":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/conteo_ciclico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/conteo_ciclico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/existencias":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/existencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/existencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/movimientos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/movimientos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/movimientos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/plan_reposicion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/plan_reposicion_borrador":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion_borrador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion_borrador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/plan_reposicion_resumen":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion_resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/plan_reposicion_resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/proyeccion_quiebre":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/proyeccion_quiebre
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/proyeccion_quiebre
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/resumen":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/tendencia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/tendencia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/tendencia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/inventario/transferir":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/transferir
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/inventario/transferir
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/logistica_wms":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/logistica_wms
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/logistica_wms
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/mi_horario":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/mi_horario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/mi_horario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/nextcloud":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nextcloud
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nextcloud
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/nomina":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nomina
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nomina
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/odontologia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/odontologia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/odontologia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/parqueadero":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/parqueadero
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/parqueadero
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/permisos_contexto":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/permisos_contexto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/permisos_contexto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/permisos_empresa":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/permisos_empresa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/permisos_empresa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/portal_contador":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/portal_contador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/portal_contador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/portal_terceros_certificados":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/portal_terceros_certificados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/portal_terceros_certificados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/produccion_mrp":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/produccion_mrp
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/produccion_mrp
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/productos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/productos/imagen":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos/imagen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos/imagen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/productos/precios_historial":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos/precios_historial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/productos/precios_historial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/propiedad_horizontal":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/propiedad_horizontal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/propiedad_horizontal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/propinas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/propinas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/propinas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/proveedores":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/proveedores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/proveedores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/publicaciones":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/publicaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/publicaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/publicaciones/":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/reportes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reportes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reportes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/reportes_ia_chat":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reportes_ia_chat
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reportes_ia_chat
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/reservas_hotel":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reservas_hotel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/reservas_hotel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/roles_de_usuario":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/roles_de_usuario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/roles_de_usuario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/sensor_puertas":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/sensor_puertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/sensor_puertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/sensor_puertas/messages":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/sensor_puertas/messages
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/sensor_puertas/messages
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/servicios":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/servicios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/servicios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/soporte_remoto":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/soportes_compras_ia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/soportes_compras_ia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/soportes_compras_ia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/tarifas_motel":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_motel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_motel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/tarifas_por_dia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_por_dia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_por_dia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/tarifas_por_minutos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_por_minutos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tarifas_por_minutos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/taxi_system":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/taxi_system
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/taxi_system
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/tesoreria_presupuesto":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tesoreria_presupuesto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tesoreria_presupuesto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/turnos_atencion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/turnos_atencion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/turnos_atencion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/ubicacion_gps/dispositivos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ubicacion_gps/dispositivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ubicacion_gps/dispositivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/ubicacion_gps/recorridos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ubicacion_gps/recorridos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ubicacion_gps/recorridos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/cambiar_password":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/cambiar_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/cambiar_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/establecer_password":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/establecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/establecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/login":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/restablecer_password":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/restablecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/restablecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/solicitar_recuperacion_password":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/solicitar_recuperacion_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/solicitar_recuperacion_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/vehiculos_registro":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/vehiculos_registro
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/vehiculos_registro
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/venta_publica":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/verticales_nuevos/catalogo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/onlyoffice/callback":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/onlyoffice/callback
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/onlyoffice/callback
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/onlyoffice/file":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/onlyoffice/file
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/onlyoffice/file
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/certificados_tributarios":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/certificados_tributarios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/certificados_tributarios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/chat_portal":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/chat_portal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/chat_portal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/chat_portal_stream":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/chat_portal_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/chat_portal_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/contrato":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/contrato
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/contrato
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/domicilios":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/domicilios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/domicilios
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/estacion_vip":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/estacion_vip
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/estacion_vip
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/geo":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/geo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/geo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/hotel_tarjetas_acceso":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/hotel_tarjetas_acceso
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/hotel_tarjetas_acceso
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/licencias/checkout_summary":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/licencias/checkout_summary
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/licencias/checkout_summary
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/licencias/payment_methods":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/licencias/payment_methods
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/licencias/payment_methods
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/market_symbol":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/market_symbol
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/market_symbol
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/mensajes_privados":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/mensajes_privados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/mensajes_privados
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/pagina_principal":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/parqueadero":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/parqueadero
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/parqueadero
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/publicaciones":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/publicaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/publicaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/publicaciones/":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/sensor_puertas":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/sensor_puertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/sensor_puertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/soporte_remoto":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/taxi_system":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/taxi_system
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/taxi_system
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/turnos_atencion":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/turnos_atencion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/turnos_atencion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/venta_digital":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/venta_publica":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/verticales_nuevos/catalogo":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/webrtc/signaling":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/webrtc/signaling
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/webrtc/signaling
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/user/configuracion":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/user/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/user/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/voice_stream/status":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/voice_stream/status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/voice_stream/status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/voice_stream/tts":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/voice_stream/tts
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/voice_stream/tts
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/auth/confirmar_admin":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/confirmar_admin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/confirmar_admin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/auth/confirmar_correo":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/confirmar_correo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/confirmar_correo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/auth/google/callback":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/callback
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/callback
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/auth/google/login":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/auth/logout":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/logout
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/logout
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/config.js":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /config.js
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /config.js
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/download":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /download
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /download
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/epayco/create_transaction":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/create_transaction
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/create_transaction
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/epayco/transaction_status":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/transaction_status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/transaction_status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/epayco/webhook":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/webhook
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /epayco/webhook
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/favicon.ico":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /favicon.ico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /favicon.ico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/generate":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /generate
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /generate
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/licencias/activar_sin_pago":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /licencias/activar_sin_pago
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /licencias/activar_sin_pago
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/me":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /me
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /me
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/pantalla":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /pantalla
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /pantalla
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/administradores":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/administradores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/administradores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores_frecuencia_fe":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores_frecuencia_fe
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores_frecuencia_fe
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores/login":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores/register":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/register
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/register
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores/restablecer_password":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/restablecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/restablecer_password
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administradores/solicitar_recuperacion":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/solicitar_recuperacion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administradores/solicitar_recuperacion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/alertas_sistema":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/alertas_sistema
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/alertas_sistema
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/asesor_comercial":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/asesor_comercial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/asesor_comercial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/consultar":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/consultar_con_adjunto":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar_con_adjunto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar_con_adjunto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/consultar_stream":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/consultar_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/historial":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/historial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/historial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/modelo_preferido":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/chat_con_ia_global/modelos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/modelos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/chat_con_ia_global/modelos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/ai":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/ai
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/ai
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/backup":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/backup
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/backup
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/chat_ia_logica":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/chat_ia_logica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/chat_ia_logica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/contexto_ia_logica_negocio":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/contexto_ia_logica_negocio
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/contexto_ia_logica_negocio
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/email_templates":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/email_templates
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/email_templates
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/epayco":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/epayco
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/epayco
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/gmail":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/gmail
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/gmail
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/limitaciones_empresa":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/limitaciones_empresa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/limitaciones_empresa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/mantenimiento":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/mantenimiento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/mantenimiento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/nextcloud":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/nextcloud
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/nextcloud
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/onlyoffice":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/onlyoffice
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/onlyoffice
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/portal_chat_ia_info":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/portal_chat_ia_info
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/portal_chat_ia_info
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/recaptcha":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/recaptcha
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/recaptcha
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/rustdesk":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/rustdesk
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/rustdesk
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/voice_stream":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/voice_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/voice_stream
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/wompi":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/wompi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/wompi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/consumos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/consumos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/consumos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/contrato":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/contrato
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/contrato
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/empresa_licencias_adicionales":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresa_licencias_adicionales
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresa_licencias_adicionales
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/empresas":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/empresas/compartidos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas/compartidos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas/compartidos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/empresas/compartidos/aceptar":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas/compartidos/aceptar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas/compartidos/aceptar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/errores":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/errores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/errores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/licencias":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/metrics/current":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/metrics/current
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/metrics/current
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/metrics/history":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/metrics/history
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/metrics/history
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/pagina_principal":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/postgres/performance":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/postgres/performance
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/postgres/performance
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/reportes_globales":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/reportes_globales
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/reportes_globales
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/roles_de_usuario":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/roles_de_usuario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/roles_de_usuario
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/roles_de_usuario/permisos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/roles_de_usuario/permisos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/roles_de_usuario/permisos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/ports":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/ports
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/ports
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/processes":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/processes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/processes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/compare":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/compare
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/compare
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/config":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/config
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/config
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/history":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/history
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/history
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/report":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/report
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/report
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/run":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/run
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/run
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/security/vps/status":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/security/vps/status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/servidores":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/servidores/probar":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores/probar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores/probar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/servidores/toggle":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores/toggle
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/servidores/toggle
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/soporte_remoto":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/tipos_empresas":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tipos_empresas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tipos_empresas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/tipos_empresas/preconfiguracion":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tipos_empresas/preconfiguracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tipos_empresas/preconfiguracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/venta_digital":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/verticales_nuevos/catalogo":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/verticales_nuevos/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/vps/procesos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps/procesos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps/procesos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/sesiones":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/sesiones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/sesiones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/wompi/create_checkout":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/create_checkout
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/create_checkout
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/wompi/create_transaction_nequi":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/create_transaction_nequi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/create_transaction_nequi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/wompi/terms":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/terms
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/terms
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/wompi/transaction_status":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/transaction_status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/transaction_status
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/wompi/webhook":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/webhook
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /wompi/webhook
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.

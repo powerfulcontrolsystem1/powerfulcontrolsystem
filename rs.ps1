@@ -9,7 +9,12 @@ param(
   [switch]$SetOrigin,
   [switch]$ForcePush,
   [switch]$DryRun,
-  [switch]$PreviewOnly
+  [switch]$PreviewOnly,
+  [switch]$SkipPreflight,
+  [switch]$FullPreflight,
+  [bool]$CleanupRemoteUnusedFiles = $true,
+  [int]$RemoteCleanupTempMinAgeMinutes = 60,
+  [int]$RemoteCleanupDockerBuilderCacheMaxAgeHours = 0
 )
 
 Set-StrictMode -Version Latest
@@ -30,6 +35,11 @@ if ($SetOrigin) { $forward.SetOrigin = $true }
 if ($ForcePush) { $forward.ForcePush = $true }
 if ($DryRun) { $forward.DryRun = $true }
 if ($PreviewOnly) { $forward.PreviewOnly = $true }
+if ($SkipPreflight) { $forward.SkipPreflight = $true }
+if ($FullPreflight) { $forward.FullPreflight = $true }
+$forward.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
+$forward.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
+$forward.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours
 
 & $target @forward
 exit $LASTEXITCODE

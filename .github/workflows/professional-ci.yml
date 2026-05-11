@@ -1,0 +1,63 @@
+name: Professional CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Preflight, audits and Docker config
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Professional preflight
+        shell: pwsh
+        run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig
+
+      - name: Security audit
+        run: node tools/security_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Permissions and licenses audit
+        run: node tools/permissions_license_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Generate and verify OpenAPI inventory
+        run: |
+          node tools/openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
+          git diff --check documentos/api/openapi.generated.yaml
+
+      - name: Docker production config
+        run: docker compose --env-file deploy/.env.platform.example -f deploy/docker-compose.platform.yml config --quiet
+
+      - name: Docker staging config
+        run: docker compose --env-file deploy/.env.staging.example -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml config --quiet
+
+      - name: Observability inventory
+        run: node tools/observability_report.mjs --out documentos/reportes_profesionales
+
+      - name: Upload professional reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-reports
+          path: documentos/reportes_profesionales/
+          if-no-files-found: ignore

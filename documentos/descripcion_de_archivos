@@ -1,3 +1,18 @@
+- Actualizacion 2026-05-11: base profesional de QA, respaldo y auditoria
+	- `scripts/profesional_preflight.ps1` : orquestador previo a repositorio/sync que valida scripts PowerShell, sintaxis JavaScript, auditoria profesional, Docker Compose cuando esta disponible, pruebas Go en modo `-Full` y `git diff --check`.
+	- `tools/professional_audit.mjs` : auditor estatico de catalogo de 20 nuevas empresas, permisos backend, wrappers de rutas, enlaces del menu empresarial, portal publico, documentacion base y scripts criticos.
+	- `scripts/vps_backup_operacion.ps1` : respaldo operativo remoto para la VPS con preview, dump PostgreSQL, tarballs de volumenes Docker persistentes y retencion configurable.
+	- `scripts/rs.ps1` y `rs.ps1` : ejecutan el preflight por defecto antes de actualizar repositorio y sincronizar VPS, con banderas para modo full, omision controlada y limpieza segura.
+	- `documentos/plan_profesionalizacion_plataforma.md` : guia operativa de los siete frentes profesionales implementados.
+
+- Actualizacion 2026-05-11: implementacion profesional de 12 frentes
+	- `.github/workflows/professional-ci.yml` : CI de preflight completo, auditorias, Docker production/staging, OpenAPI y observabilidad.
+	- `.github/workflows/e2e-visual.yml` : workflow manual Playwright para botones, layout y comprobantes con evidencias.
+	- `deploy/docker-compose.staging.yml`, `deploy/.env.staging.example`, `scripts/staging_up.ps1` y `deploy/scripts/vps-staging-up.sh` : ambiente staging aislado.
+	- `tools/security_audit.mjs`, `tools/permissions_license_audit.mjs`, `tools/observability_report.mjs` y `tools/openapi_inventory.mjs` : auditorias ejecutables de seguridad, licencias, observabilidad y API.
+	- `scripts/vps_restore_validation.ps1` : validacion de restaurabilidad de backups con prueba temporal PostgreSQL.
+	- `documentos/plan_profesional_12_puntos.md`, `documentos/api/openapi.generated.yaml` y runbooks de staging/DRP : documentacion operativa de continuidad.
+
 - Actualizacion 2026-05-10: modo tactil para carritos
 	- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` : agrega el check `modo_pantalla_tactil` para adaptar carrito y agregador de productos a pantallas tactiles.
 	- `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/estaciones.html` : preservan la bandera tactil dentro de `estaciones_config`, con herencia global o por estacion.

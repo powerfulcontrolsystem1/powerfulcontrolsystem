@@ -53,7 +53,12 @@ param(
   [bool]$RedeployDockerStack = $true,
   [int]$DockerHealthTimeoutSeconds = 180,
   [bool]$ExcludeEvidenceFromPackage = $true,
-  [bool]$OpenPublicUrlAfterDeploy = $true
+  [bool]$OpenPublicUrlAfterDeploy = $true,
+  [bool]$CleanupRemoteUnusedFiles = $true,
+  [int]$RemoteCleanupTempMinAgeMinutes = 60,
+  [int]$RemoteCleanupDockerBuilderCacheMaxAgeHours = 0,
+  [bool]$RemoteCleanupDockerDanglingImages = $true,
+  [bool]$RemoteCleanupStoppedContainers = $true
 )
 
 Set-StrictMode -Version Latest
@@ -1779,6 +1784,110 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(b
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
 }
 
+function Invoke-RemoteUnusedFilesCleanup {
+  param(
+    [Parameter(Mandatory=$true)][string]$RemoteUser,
+    [Parameter(Mandatory=$true)][string]$RemoteHost,
+    [Parameter(Mandatory=$true)][int]$Port,
+    [Parameter(Mandatory=$true)][string]$IdentityPath,
+    [Parameter(Mandatory=$true)][string]$RemotePath,
+    [Parameter(Mandatory=$true)][bool]$Enabled,
+    [Parameter(Mandatory=$true)][bool]$IsDryRun,
+    [Parameter(Mandatory=$true)][bool]$IsPreviewOnly,
+    [int]$TempMinAgeMinutes = 60,
+    [int]$DockerBuilderCacheMaxAgeHours = 0,
+    [bool]$PruneDockerDanglingImages = $true,
+    [bool]$PruneStoppedContainers = $true
+  )
+
+  if (-not $Enabled) {
+    Write-Host "[INFO] Limpieza remota omitida por parametro -CleanupRemoteUnusedFiles false."
+    return
+  }
+  if ($IsDryRun -or $IsPreviewOnly) {
+    Write-Host "[INFO] Limpieza remota omitida por DryRun/PreviewOnly."
+    return
+  }
+
+  if ($TempMinAgeMinutes -lt 1) {
+    $TempMinAgeMinutes = 60
+  }
+  if ($DockerBuilderCacheMaxAgeHours -lt 0) {
+    $DockerBuilderCacheMaxAgeHours = 0
+  }
+
+  if (-not (Test-Path $IdentityPath)) {
+    throw "No se encontrÃ³ la clave de identidad: $IdentityPath"
+  }
+  $resolvedIdentityPath = (Resolve-Path $IdentityPath).Path
+  $identityContext = [pscustomobject]@{
+    Mode = "ssh"
+    IdentityPath = $resolvedIdentityPath
+    PlinkExeWsl = ""
+    PlinkKeyWin = ""
+  }
+  if ([System.IO.Path]::GetExtension($resolvedIdentityPath).ToLowerInvariant() -eq ".ppk") {
+    $identityContext.Mode = "plink"
+    $identityContext.IdentityPath = ""
+    $identityContext.PlinkKeyWin = $resolvedIdentityPath
+  }
+
+  $remotePathLit = Convert-ToBashLiteral $RemotePath
+  $pruneImages = if ($PruneDockerDanglingImages) { "1" } else { "0" }
+  $pruneContainers = if ($PruneStoppedContainers) { "1" } else { "0" }
+  $remoteScript = @"
+set +e
+remote_path=$remotePathLit
+temp_min_age=$TempMinAgeMinutes
+builder_cache_max_age_hours=$DockerBuilderCacheMaxAgeHours
+prune_images=$pruneImages
+prune_containers=$pruneContainers
+
+echo "[INFO] Limpieza VPS: iniciando limpieza segura de temporales y caches."
+df -h / | awk 'NR==2 {print "[INFO] Disco antes limpieza: usado=" `$5 " libre=" `$4 " total=" `$2}'
+
+echo "[INFO] Limpieza VPS: eliminando paquetes temporales antiguos de sync en /tmp."
+find /tmp -maxdepth 1 -type f -name 'pcs_sync_*.tar.gz' -mmin +"`$temp_min_age" -print -delete 2>/dev/null | sed 's/^/[INFO] Eliminado: /'
+
+if [ -n "`$remote_path" ] && [ -d "`$remote_path" ]; then
+  echo "[INFO] Limpieza VPS: eliminando caches locales no persistentes del proyecto."
+  rm -rf "`$remote_path/.codex-gocache" "`$remote_path/.codex-tmp-go" "`$remote_path/.gocache" "`$remote_path/.gotmp" "`$remote_path/tmp" \
+    "`$remote_path/backend/.codex-gocache" "`$remote_path/backend/.codex-tmp-go" "`$remote_path/backend/.gocache" "`$remote_path/backend/.gotmp" \
+    "`$remote_path/backend/.tmp-go-test-"* "`$remote_path/backend/tmp" 2>/dev/null || true
+fi
+
+if command -v docker >/dev/null 2>&1; then
+  echo "[INFO] Limpieza VPS: estado Docker antes de limpiar."
+  docker system df 2>/dev/null || true
+
+  if [ "`$prune_containers" = "1" ]; then
+    echo "[INFO] Limpieza VPS: eliminando contenedores detenidos antiguos."
+    docker container prune -f --filter "until=24h" 2>/dev/null || true
+  fi
+
+  if [ "`$prune_images" = "1" ]; then
+    echo "[INFO] Limpieza VPS: eliminando imagenes dangling no usadas."
+    docker image prune -f 2>/dev/null || true
+  fi
+
+  echo "[INFO] Limpieza VPS: eliminando cache BuildKit no usado."
+  if [ "`$builder_cache_max_age_hours" -gt 0 ]; then
+    docker builder prune -af --filter "until=`${builder_cache_max_age_hours}h" 2>/dev/null || true
+  else
+    docker builder prune -af 2>/dev/null || true
+  fi
+
+  echo "[INFO] Limpieza VPS: estado Docker despues de limpiar."
+  docker system df 2>/dev/null || true
+fi
+
+df -h / | awk 'NR==2 {print "[INFO] Disco despues limpieza: usado=" `$5 " libre=" `$4 " total=" `$2}'
+echo "[OK] Limpieza VPS completada sin tocar volumenes ni bases de datos."
+"@
+  $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
+  Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
+}
+
 try {
   $scriptPath = Join-Path $PSScriptRoot "sync_to_vps.sh"
   if (-not (Test-Path $scriptPath)) {
@@ -1946,6 +2055,8 @@ try {
 
     Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
+    Invoke-RemoteUnusedFilesCleanup -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $CleanupRemoteUnusedFiles -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -TempMinAgeMinutes $RemoteCleanupTempMinAgeMinutes -DockerBuilderCacheMaxAgeHours $RemoteCleanupDockerBuilderCacheMaxAgeHours -PruneDockerDanglingImages $RemoteCleanupDockerDanglingImages -PruneStoppedContainers $RemoteCleanupStoppedContainers
+
     if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent) {
       $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
       Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
@@ -2051,6 +2162,8 @@ try {
   }
 
   Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
+
+  Invoke-RemoteUnusedFilesCleanup -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $CleanupRemoteUnusedFiles -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -TempMinAgeMinutes $RemoteCleanupTempMinAgeMinutes -DockerBuilderCacheMaxAgeHours $RemoteCleanupDockerBuilderCacheMaxAgeHours -PruneDockerDanglingImages $RemoteCleanupDockerDanglingImages -PruneStoppedContainers $RemoteCleanupStoppedContainers
 
   if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent) {
     $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort

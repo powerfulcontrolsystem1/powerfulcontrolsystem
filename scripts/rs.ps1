@@ -16,7 +16,12 @@ param(
   [switch]$SetOrigin,
   [switch]$ForcePush,
   [switch]$DryRun,
-  [switch]$PreviewOnly
+  [switch]$PreviewOnly,
+  [switch]$SkipPreflight,
+  [switch]$FullPreflight,
+  [bool]$CleanupRemoteUnusedFiles = $true,
+  [int]$RemoteCleanupTempMinAgeMinutes = 60,
+  [int]$RemoteCleanupDockerBuilderCacheMaxAgeHours = 0
 )
 
 Set-StrictMode -Version Latest
@@ -25,12 +30,16 @@ $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $updateScript = Join-Path $scriptDir "actualizar_repositorio.ps1"
 $syncScript = Join-Path $scriptDir "sync_to_vps.ps1"
+$preflightScript = Join-Path $scriptDir "profesional_preflight.ps1"
 
 if (-not (Test-Path -LiteralPath $updateScript)) {
   throw "No se encontro el script requerido: $updateScript"
 }
 if (-not (Test-Path -LiteralPath $syncScript)) {
   throw "No se encontro el script requerido: $syncScript"
+}
+if (-not $SkipPreflight -and -not (Test-Path -LiteralPath $preflightScript)) {
+  throw "No se encontro el script requerido: $preflightScript"
 }
 
 function Invoke-Step {
@@ -42,6 +51,7 @@ function Invoke-Step {
 
   Write-Host ""
   Write-Host "==> $Name" -ForegroundColor Cyan
+  $global:LASTEXITCODE = 0
   & $Path @Arguments
   $exitCode = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
   if ($exitCode -ne 0) {
@@ -61,6 +71,15 @@ if ($ForcePush) { $updateArgs.ForcePush = $true }
 $syncArgs = @{}
 if ($DryRun) { $syncArgs.DryRun = $true }
 if ($PreviewOnly) { $syncArgs.PreviewOnly = $true }
+$syncArgs.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
+$syncArgs.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
+$syncArgs.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours
+
+if (-not $SkipPreflight) {
+  $preflightArgs = @{}
+  if ($FullPreflight) { $preflightArgs.Full = $true }
+  Invoke-Step -Name "Preflight profesional" -Path $preflightScript -Arguments $preflightArgs
+}
 
 Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
 Invoke-Step -Name "Sincronizar VPS" -Path $syncScript -Arguments $syncArgs

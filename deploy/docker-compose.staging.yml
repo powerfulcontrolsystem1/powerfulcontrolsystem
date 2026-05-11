@@ -1,0 +1,37 @@
+name: powerful-control-system-staging
+
+services:
+  postgres:
+    container_name: pcs-staging-postgres
+    volumes:
+      - pcs_staging_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+  backend:
+    container_name: pcs-staging-backend
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://staging.powerfulcontrolsystem.com}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://staging.powerfulcontrolsystem.com/auth/google/callback}
+      RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-1}
+      PCS_ENVIRONMENT: staging
+    volumes:
+      - pcs_staging_backend_logs:/app/backend/logs
+      - pcs_staging_web_uploads:/app/web/uploads
+      - pcs_staging_backups:/app/backup
+      - pcs_staging_downloads:/app/descargas
+      - ../juegos:/app/juegos:ro
+
+  frontend:
+    container_name: pcs-staging-frontend
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8082}:80"
+    volumes:
+      - pcs_staging_web_uploads:/usr/share/nginx/html/uploads:ro
+      - pcs_staging_downloads:/usr/share/nginx/html/descargas:ro
+
+volumes:
+  pcs_staging_postgres_data:
+  pcs_staging_backend_logs:
+  pcs_staging_web_uploads:
+  pcs_staging_backups:
+  pcs_staging_downloads:

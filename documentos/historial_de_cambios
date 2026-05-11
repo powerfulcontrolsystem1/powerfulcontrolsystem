@@ -1,3 +1,19 @@
+2026-05-11 - Verificacion real de backup y restauracion temporal
+- Snapshot VPS: /root/powerfulcontrolsystem/backups/vps-snapshots/20260511_055520.
+- Resultado: backup real creado, dump PostgreSQL generado, tarballs de volumenes Docker validados y restauracion temporal PostgreSQL completada en contenedor efimero.
+- Alcance: no se modifico la base de datos de produccion.
+2026-05-11 - Implementacion profesional de 12 frentes operativos
+- Archivos: .github/workflows/professional-ci.yml, .github/workflows/e2e-visual.yml, deploy/docker-compose.staging.yml, deploy/.env.staging.example, scripts/staging_up.ps1, deploy/scripts/vps-staging-up.sh, tools/security_audit.mjs, tools/permissions_license_audit.mjs, tools/observability_report.mjs, tools/openapi_inventory.mjs, scripts/vps_restore_validation.ps1, documentos/plan_profesional_12_puntos.md, documentos/api/openapi.generated.yaml y runbooks de gobernanza tecnica.
+- Descripcion: se implementan los 12 frentes profesionales: staging, CI/CD, E2E visual, seguridad, observabilidad, backups restaurables, migraciones versionadas, auditoria permisos/licencias, logs, OpenAPI, recuperacion ante desastre y control de pagos/facturacion mediante contratos y QA.
+- Verificacion: pendiente de preflight final despues de integrar todos los archivos.
+2026-05-11 - Base profesional de QA, respaldo y auditoria
+- Archivos: scripts/profesional_preflight.ps1, scripts/vps_backup_operacion.ps1, tools/professional_audit.mjs, scripts/rs.ps1, rs.ps1, documentos/plan_profesionalizacion_plataforma.md, documentos/CHANGELOG.md, documentos/manual_de_instalacion.md, documentos/docker_vps_operacion.md.
+- Descripcion: se implementa una capa profesional para ejecutar preflight antes de rs, auditar modulos, permisos, licencias, portal publico, scripts criticos y Docker; tambien se agrega un respaldo operativo para VPS con PostgreSQL, volumenes Docker y retencion configurable.
+- Verificacion: parseo PowerShell de scripts operativos y sintaxis Node del auditor profesional.
+2026-05-11 - Limpieza segura de VPS integrada en sync_to_vps
+- Archivos: scripts/sync_to_vps.ps1, scripts/rs.ps1, rs.ps1, documentos/CHANGELOG.md, documentos/manual_de_instalacion.md, documentos/docker_vps_operacion.md, deploy/README-compose-platform.md.
+- Descripcion: se agrega la opcion CleanupRemoteUnusedFiles para limpiar temporales antiguos de sync, caches locales no persistentes, contenedores detenidos, imagenes Docker dangling y cache BuildKit no usado despues del despliegue. La limpieza no toca volumenes Docker, bases de datos, uploads, descargas ni backups persistentes.
+- Verificacion: parseo PowerShell de scripts modificados y git diff --check.
 2026-05-11 - Script rapido rs para repositorio y VPS
 - Archivos: scripts/rs.ps1, rs.ps1, documentos/CHANGELOG.md.
 - Descripcion: se agrega un wrapper corto que ejecuta primero actualizar_repositorio.ps1 y, solo si termina correctamente, ejecuta sync_to_vps.ps1. El acceso de raiz permite lanzarlo como .\rs.ps1 desde el proyecto.

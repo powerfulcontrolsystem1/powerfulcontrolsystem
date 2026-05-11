@@ -26,6 +26,12 @@ bash deploy/scripts/vps-compose-sidecar-up.sh
 
 Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice y Nextcloud ya existen como contenedores y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion.
 
+El wrapper local `scripts/sync_to_vps.ps1` reconstruye este stack y, por defecto, limpia temporales antiguos de sincronizacion y cache Docker no usado al final del despliegue. La limpieza no ejecuta `docker volume prune` ni elimina datos persistentes. Para desactivarla temporalmente:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -CleanupRemoteUnusedFiles:$false
+```
+
 Antes de conmutar el dominio publico, migra las bases actuales al PostgreSQL de Docker:
 
 ```bash
@@ -66,6 +72,21 @@ docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform
 ```
 
 Activa esos perfiles solo despues de apagar o migrar los servicios antiguos que ya ocupan los mismos nombres o puertos.
+
+## Staging
+
+Para probar cambios antes de produccion:
+
+```powershell
+.\scripts\staging_up.ps1 -ConfigOnly
+.\scripts\staging_up.ps1 -Build
+```
+
+El override `deploy/docker-compose.staging.yml` cambia nombre de proyecto, contenedores, puerto `8082` y volumenes persistentes para no mezclar datos con produccion. En VPS se puede usar:
+
+```bash
+bash deploy/scripts/vps-staging-up.sh
+```
 
 ## Migracion futura a otro servidor
 

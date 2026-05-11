@@ -43,6 +43,67 @@ curl -I http://127.0.0.1:8081/
 curl -I https://powerfulcontrolsystem.com
 ```
 
+## Limpieza automatica durante sync
+
+`scripts/sync_to_vps.ps1` ejecuta limpieza remota segura despues de reconstruir Docker:
+
+- Borra `/tmp/pcs_sync_*.tar.gz` antiguos.
+- Borra caches no persistentes del proyecto (`.gotmp`, `.gocache`, `tmp`, caches de pruebas Go).
+- Ejecuta `docker container prune` solo para contenedores detenidos antiguos.
+- Ejecuta `docker image prune` solo para imagenes dangling.
+- Ejecuta `docker builder prune` para cache BuildKit no usado.
+
+No toca volumenes Docker ni bases de datos. Para omitirla en un despliegue puntual:
+
+```powershell
+.\scripts\sync_to_vps.ps1 -CleanupRemoteUnusedFiles:$false
+```
+
+## Backups operativos
+
+Para crear un snapshot operativo de PostgreSQL y volumenes persistentes:
+
+```powershell
+.\scripts\vps_backup_operacion.ps1
+```
+
+El respaldo queda en:
+
+```bash
+/root/powerfulcontrolsystem/backups/vps-snapshots/<fecha>
+```
+
+Incluye `pg_dumpall` comprimido y tarballs de volumenes de uploads, descargas, logs, backups y datos PostgreSQL. Por defecto no copia `deploy/.env.platform`; si se necesita respaldar secretos en la VPS, usar `-IncludeEnvSecrets` y conservar permisos privados.
+
+Para validar que el backup se puede restaurar:
+
+```powershell
+.\scripts\vps_restore_validation.ps1
+```
+
+Para ejecutar una restauracion real en un contenedor temporal de PostgreSQL:
+
+```powershell
+.\scripts\vps_restore_validation.ps1 -ExecuteDrill
+```
+
+## Staging Docker
+
+Staging usa el mismo Compose base con override aislado:
+
+```powershell
+.\scripts\staging_up.ps1 -ConfigOnly
+.\scripts\staging_up.ps1 -Build
+```
+
+En VPS:
+
+```bash
+bash deploy/scripts/vps-staging-up.sh
+```
+
+Usa puerto `8082`, volumenes `pcs_staging_*` y variables `deploy/.env.staging`.
+
 ## Datos migrados a volumenes
 
 Se migraron las dos bases actuales al volumen PostgreSQL Docker. Tambien se copiaron archivos persistentes:

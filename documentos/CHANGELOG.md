@@ -1,3 +1,23 @@
+## [2026-05-11] Implementacion profesional de 12 frentes operativos
+- [Staging] Se agrega `deploy/docker-compose.staging.yml`, `deploy/.env.staging.example`, `scripts/staging_up.ps1` y `deploy/scripts/vps-staging-up.sh`.
+- [CI/CD] Se agregan workflows `.github/workflows/professional-ci.yml` y `.github/workflows/e2e-visual.yml`.
+- [Auditorias] Se agregan `tools/security_audit.mjs`, `tools/permissions_license_audit.mjs`, `tools/observability_report.mjs` y `tools/openapi_inventory.mjs`.
+- [Backups] Se agrega `scripts/vps_restore_validation.ps1` para validar snapshots y ejecutar restauracion temporal PostgreSQL.
+- [API/DRP] Se genera `documentos/api/openapi.generated.yaml` y runbooks de staging, CI, E2E y recuperacion ante desastre.
+- [Verificacion] Se creo snapshot real en VPS `backups/vps-snapshots/20260511_055520`, se validaron tarballs y se ejecuto restauracion temporal PostgreSQL exitosa.
+
+## [2026-05-11] Base profesional de QA, respaldo y auditoria
+- [QA] Se agrega `scripts/profesional_preflight.ps1` para validar sintaxis, Docker, auditoria de modulos/permisos y `git diff --check` antes de despliegues.
+- [Auditoria] Se agrega `tools/professional_audit.mjs` para revisar catalogo de 20 verticales, permisos backend, wrappers, portal publico y documentacion obligatoria.
+- [RS] `rs.ps1` ejecuta preflight por defecto antes de actualizar repositorio y sincronizar VPS; se puede omitir con `-SkipPreflight`.
+- [Backups] Se agrega `scripts/vps_backup_operacion.ps1` para crear dump PostgreSQL y tarballs de volumenes persistentes en la VPS con retencion.
+- [Docs] Se agrega `documentos/plan_profesionalizacion_plataforma.md` como guia de los siete frentes profesionales.
+
+## [2026-05-11] Limpieza segura en sync_to_vps
+- [Deploy] `scripts/sync_to_vps.ps1` agrega `-CleanupRemoteUnusedFiles` para limpiar temporales antiguos de sync, caches locales no persistentes, contenedores detenidos, imagenes Docker dangling y cache BuildKit no usado.
+- [Seguridad] La limpieza evita `docker volume prune` y no toca PostgreSQL, uploads, descargas ni backups persistentes.
+- [RS] `rs.ps1` y `scripts/rs.ps1` heredan la limpieza por defecto y permiten ajustar antiguedad de temporales/cache.
+
 ## [2026-05-11] Script rapido rs
 - [Deploy] Se agrega `scripts/rs.ps1` para ejecutar en secuencia `actualizar_repositorio.ps1` y `sync_to_vps.ps1`.
 - [Raiz] Se agrega `rs.ps1` como acceso corto desde la raiz del proyecto.
