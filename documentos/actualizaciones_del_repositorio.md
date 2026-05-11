@@ -8375,3 +8375,35 @@ Archivos modificados:
 - web/js/nuevos_verticales_catalogo.js
 - web/js/seleccionar_empresa.js
 - web/super_administrador.html
+
+2026-05-11 01:02:12 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 0b69fc42; PushStatus: OK
+Archivos modificados:
+- .github/workflows/e2e-visual.yml
+- .github/workflows/professional-ci.yml
+- .gitignore
+- deploy/.env.staging.example
+- deploy/README-compose-platform.md
+- deploy/docker-compose.staging.yml
+- deploy/scripts/vps-staging-up.sh
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/docker_vps_operacion.md
+- documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md
+- documentos/gobernanza_tecnica/runbooks/runbook_staging_ci_e2e.md
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- documentos/plan_profesional_12_puntos.md
+- documentos/plan_profesionalizacion_plataforma.md
+- rs.ps1
+- scripts/profesional_preflight.ps1
+- scripts/rs.ps1
+- scripts/staging_up.ps1
+- scripts/sync_to_vps.ps1
+- scripts/vps_backup_operacion.ps1
+- scripts/vps_restore_validation.ps1
+- tools/observability_report.mjs
+- tools/openapi_inventory.mjs
+- tools/permissions_license_audit.mjs
+- tools/professional_audit.mjs
+- tools/security_audit.mjs
