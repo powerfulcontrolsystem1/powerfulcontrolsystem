@@ -1,3 +1,20 @@
+2026-05-10: Carritos en modo tactil
+- Modulos afectados: `carritos`, `estaciones`, `venta_directa`, `productos`.
+- Cambio funcional: se agrega `modo_pantalla_tactil` a la configuracion unificada del carrito por empresa/estacion.
+- Frontend: `carrito_de_compras.html` adapta botones, campos, toolbar, lector, cobro, resumen y tarjetas para uso con dedo en tablet, pantalla POS o monitor tactil.
+- Productos: `buscar_producto_botones.html` recibe el modo tactil desde el carrito y agranda grilla, tarjetas de producto, buscador y acciones para agregar productos con pulsaciones amplias.
+- Configuracion: la bandera se administra desde `configuracion_carrito_de_compra_empresa.html` y `configuracion_de_estaciones.html`, respetando herencia global o sobreescritura por estacion.
+- Persistencia: reutiliza `estaciones_config` en preferencias de estacion; no introduce tablas, endpoints ni dependencias externas.
+
+2026-05-10: Alertas automaticas del sistema super
+- Modulos afectados: `super_administrador`, `metricas`, `gmail_smtp`, `infraestructura`.
+- Cambio funcional: se agrega modulo privado `Alertas del sistema` para que el super administrador configure destino, umbrales y enfriamiento de notificaciones automaticas.
+- Backend: nuevo endpoint `/super/api/alertas_sistema` con `GET` de configuracion/estado/historial, `PUT` de configuracion, `POST?action=test` para prueba SMTP y `POST?action=evaluate` para evaluacion manual.
+- Worker: `super.alertas_worker` evalua cada minuto disco VPS, trafico, sesiones administrativas activas y conexiones PostgreSQL; usa Gmail SMTP existente y registra historial en base super.
+- Frontend: nueva pantalla `web/super/alertas_sistema.html` con submenu interno de configuracion, estado actual e historial.
+- Integracion: reutiliza la configuracion Gmail de `Configuracion avanzada` y el limite Hostinger de trafico si esta configurado; no introduce dependencias externas.
+- Seguridad: solo `super_administrador` puede abrir la pagina y consumir el API.
+
 2026-05-10: Roles finos, paginas nuevas y ayuda super privada
 - Modulos afectados: `roles/licencias`, `administrar_empresa`, `super_administrador`, `ayuda`, `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`.
 - Cambio funcional: el sistema de roles distingue funciones que antes colgaban de modulos amplios, permitiendo administrar visibilidad de paginas, acciones R/C/U/D/A y wrappers API con mayor precision.

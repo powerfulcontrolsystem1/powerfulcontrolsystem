@@ -8045,11 +8045,87 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   margin-bottom:10px;
 }
 
+body.cart-touch-mode .container{
+  max-width:min(1500px, calc(100vw - 20px));
+}
+
+body.cart-touch-mode .carrito-workspace-card{
+  padding:18px;
+}
+
+body.cart-touch-mode .carrito-primary-layout{
+  grid-template-columns:minmax(0,1fr) minmax(286px,360px);
+  gap:22px;
+}
+
+body.cart-touch-mode .btn,
+body.cart-touch-mode .form-input,
+body.cart-touch-mode .form-textarea{
+  min-height:52px;
+  font-size:1rem;
+}
+
+body.cart-touch-mode .form-label{
+  font-size:.96rem;
+}
+
+body.cart-touch-mode .carrito-station-toolbar{
+  grid-template-columns:repeat(auto-fit,minmax(172px,1fr));
+  gap:8px;
+  border:0;
+  background:transparent;
+  overflow:visible;
+}
+
+body.cart-touch-mode .carrito-station-toolbar > button,
+body.cart-touch-mode .carrito-station-toolbar > label{
+  min-height:62px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+}
+
+body.cart-touch-mode .carrito-items-box{
+  min-height:340px;
+  max-height:min(62vh,620px);
+  padding:14px;
+}
+
+body.cart-touch-mode .carrito-summary-card{
+  max-width:360px;
+  padding:14px;
+}
+
+body.cart-touch-mode .carrito-summary-row{
+  min-height:38px;
+  padding:8px 10px;
+}
+
+body.cart-touch-mode .carrito-summary-row span,
+body.cart-touch-mode .carrito-summary-row strong{
+  font-size:.95rem;
+}
+
+body.cart-touch-mode .carrito-payment-card{
+  min-height:58px;
+  touch-action:manipulation;
+}
+
+body.cart-touch-mode #btnPagarCarrito,
+body.cart-touch-mode #scannerAgregarBtn,
+body.cart-touch-mode #carritoBtnBuscarBotones{
+  min-height:60px;
+  font-size:1.05rem;
+}
+
 @media (max-width:900px){
   .carrito-primary-layout{grid-template-columns:1fr;}
   .carrito-side-column{min-width:0;max-width:none;order:-1;}
   #carritoTotalsPanel{position:static;max-width:none;order:-1;}
   .carrito-scanner-stack{grid-template-columns:1fr;}
+  body.cart-touch-mode .carrito-primary-layout{grid-template-columns:1fr;}
+  body.cart-touch-mode .carrito-summary-card{max-width:none;}
+  body.cart-touch-mode .carrito-station-toolbar{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 
 @media (min-width:901px){

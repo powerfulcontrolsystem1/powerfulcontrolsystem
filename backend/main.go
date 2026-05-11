@@ -874,6 +874,11 @@ func main() {
 		metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
 	})
 
+	stopSuperAlertas := make(chan struct{})
+	go utils.RunProtectedProcess("super.alertas_worker", map[string]interface{}{"interval_minutes": 1}, func() {
+		handlers.StartSuperAlertasWorker(dbSuper, time.Minute, stopSuperAlertas)
+	})
+
 	stopAuditRetention := make(chan struct{})
 	go utils.RunProtectedProcess("auditoria.retention_worker", map[string]interface{}{"interval_hours": 12}, func() {
 		dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
@@ -1187,6 +1192,7 @@ func main() {
 	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
 	// Endpoint super para consumos (OpenAI/Hostinger/Cursor) y contador de errores
 	http.HandleFunc("/super/api/consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/alertas_sistema", handlers.SuperAlertasSistemaHandler(dbSuper))
 	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.SuperPortalChatIAInfoHandler(dbSuper))
 	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.SuperContextoIALogicaNegocioHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)

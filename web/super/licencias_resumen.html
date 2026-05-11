@@ -122,7 +122,9 @@
           </tr>
           <tr>
             <th>Tráfico total</th>
-            <td colspan="3"><span id="netValue" class="super-summary-value">- B</span></td>
+            <td><span id="netValue" class="super-summary-value">- B</span></td>
+            <th>Disco VPS</th>
+            <td><span id="diskValue" class="super-summary-value">- %</span><small id="diskDetail"></small></td>
           </tr>
         </tbody>
       </table>
@@ -546,7 +548,7 @@
       };
     }
 
-    function createOrUpdateCharts(labels, cpuData, memData, netData){
+    function createOrUpdateCharts(labels, cpuData, memData, diskData, netData){
       if(!window.Chart) return;
       const theme = chartTheme();
       const common = {
@@ -582,17 +584,18 @@
         options: common
       });
 
-      updateLoadChart(cpuData[cpuData.length - 1] || 0, memData[memData.length - 1] || 0, netData[netData.length - 1] || 0);
+      updateLoadChart(cpuData[cpuData.length - 1] || 0, memData[memData.length - 1] || 0, diskData[diskData.length - 1] || 0, netData[netData.length - 1] || 0);
     }
 
-    function updateLoadChart(cpuPct, memPct, netTotal){
+    function updateLoadChart(cpuPct, memPct, diskPct, netTotal){
       if(!window.Chart) return;
       const theme = chartTheme();
       const cpuValue = Math.min(100, Math.max(0, Number(cpuPct || 0)));
       const memValue = Math.min(100, Math.max(0, Number(memPct || 0)));
+      const diskValue = Math.min(100, Math.max(0, Number(diskPct || 0)));
       const netValue = Math.min(100, Math.max(0, Number(netTotal || 0) / (1024 * 1024 * 100) * 100));
-      const data = [cpuValue, memValue, netValue];
-      const labels = ['Procesador', 'Memoria', 'Red'];
+      const data = [cpuValue, memValue, diskValue, netValue];
+      const labels = ['Procesador', 'Memoria', 'Disco', 'Red'];
       if(loadChart){
         loadChart.data.labels = labels;
         loadChart.data.datasets[0].data = data;
@@ -606,8 +609,8 @@
           datasets: [{
             label: 'Uso actual (%)',
             data,
-            backgroundColor: ['rgba(239,68,68,.82)', 'rgba(37,99,235,.82)', 'rgba(22,163,74,.82)'],
-            borderColor: ['#ef4444', '#2563eb', '#16a34a'],
+            backgroundColor: ['rgba(239,68,68,.82)', 'rgba(37,99,235,.82)', 'rgba(245,158,11,.82)', 'rgba(22,163,74,.82)'],
+            borderColor: ['#ef4444', '#2563eb', '#f59e0b', '#16a34a'],
             borderWidth: 1,
             borderRadius: 8,
             maxBarThickness: 72
@@ -652,8 +655,9 @@
         const labels = rows.map(x => x.timestamp || '');
         const cpuData = rows.map(x => x.cpu_percent || 0);
         const memData = rows.map(x => x.mem_percent || 0);
+        const diskData = rows.map(x => x.disk_percent || 0);
         const netData = rows.map(x => ((x.net_recv || 0) + (x.net_sent || 0)) || 0);
-        createOrUpdateCharts(labels, cpuData, memData, netData);
+        createOrUpdateCharts(labels, cpuData, memData, diskData, netData);
       }catch(e){ console.error(e); }
     }
 
@@ -666,9 +670,16 @@
         const usedMB = ((m.mem_used || 0) / 1024 / 1024).toFixed(1);
         const memPct = (m.mem_percent || 0).toFixed(1);
         document.getElementById('memValue').textContent = usedMB + ' MB (' + memPct + '%)';
+        const diskPct = Number(m.disk_percent || 0);
+        const diskUsed = fmtBytes(m.disk_used || 0);
+        const diskTotal = fmtBytes(m.disk_total || 0);
+        const diskValueEl = document.getElementById('diskValue');
+        const diskDetailEl = document.getElementById('diskDetail');
+        if (diskValueEl) diskValueEl.textContent = diskPct.toFixed(1) + ' %';
+        if (diskDetailEl) diskDetailEl.textContent = diskUsed + ' / ' + diskTotal;
         const netTotal = (m.net_recv || 0) + (m.net_sent || 0);
         document.getElementById('netValue').textContent = fmtBytes(netTotal);
-        updateLoadChart(m.cpu_percent || 0, m.mem_percent || 0, netTotal);
+        updateLoadChart(m.cpu_percent || 0, m.mem_percent || 0, diskPct, netTotal);
       }catch(e){ console.error(e); }
     }
 

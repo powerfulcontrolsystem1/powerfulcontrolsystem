@@ -141,6 +141,7 @@
 
       function defaultUnifiedCartConfig() {
         return {
+          modo_pantalla_tactil: false,
           mostrar_boton_buscar_productos: true,
           mostrar_busqueda_catalogo: true,
           mostrar_codigo_manual_item: true,
@@ -158,6 +159,7 @@
         const base = defaultUnifiedCartConfig();
         const src = raw && typeof raw === 'object' ? raw : {};
         return {
+          modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : toBool(src.modo_pantalla_tactil),
           mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : toBool(src.mostrar_boton_buscar_productos),
           mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : toBool(src.mostrar_busqueda_catalogo),
           mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : toBool(src.mostrar_codigo_manual_item),

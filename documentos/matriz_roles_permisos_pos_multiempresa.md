@@ -1,3 +1,16 @@
+2026-05-10: Nota operativa para modo tactil en carritos
+- `carritos` mantiene los mismos permisos existentes para configurar y operar el carrito.
+- La bandera `modo_pantalla_tactil` no crea permiso nuevo: se guarda dentro de `estaciones_config` y solo la pueden modificar los roles que ya tienen acceso a configuracion de estaciones/carrito.
+- El efecto visible aplica en `carrito_de_compras.html` y `buscar_producto_botones.html`, respetando `empresa_id`, permisos de estacion/venta directa y visibilidad de botones configurada.
+
+2026-05-10: Nota operativa para `alertas_sistema` super
+- El modulo `Alertas del sistema` vive solo en Super administrador > Infraestructura y comunicaciones.
+- Pagina: `web/super/alertas_sistema.html`; API: `/super/api/alertas_sistema`.
+- Roles: acceso exclusivo para `super_administrador`; el rol `control_super_administrador` conserva su lista limitada y no recibe este modulo.
+- Acciones: leer configuracion/estado/historial, actualizar umbrales, probar correo y ejecutar evaluacion manual.
+- Alcance: opera sobre `pcs_superadministrador`, metricas del VPS y configuracion Gmail SMTP global; no concede acceso a datos de empresas ni modifica licencias.
+- Side effects: puede enviar correo a `powerfulcontrolsystem@gmail.com` o al destino configurado y registra cada intento en `super_alertas_eventos`.
+
 2026-05-10: Nota operativa para roles finos, paginas nuevas y ayuda super
 - Se agregan claves independientes al catalogo de permisos/licencias: `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice` y `nextcloud`.
 - Las paginas del menu empresarial y submenus quedan cubiertas por `permissionPagesCatalogOrdered` en backend y por `menuPermissionCatalog` en frontend; no debe existir un boton `link...` visible sin regla de modulo/accion.

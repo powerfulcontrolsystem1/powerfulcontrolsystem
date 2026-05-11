@@ -7,6 +7,13 @@
 - `backend/utils/utils.go` conserva `/ayuda/ayuda.html` como ruta privada exclusiva de `super_administrador`; las ayudas especificas bajo `/ayuda/` siguen publicas cuando no son la ayuda administrativa completa.
 - `documentos/reporte_roles_ayuda_super_2026-05-10.md` resume el contrato operativo y las pruebas recomendadas.
 
+## Actualizacion 2026-05-10 (alertas automaticas super)
+
+- `backend/db/super_alertas.go` concentra la persistencia del modulo de alertas globales: configuracion, historial, conteo de sesiones y conexiones PostgreSQL.
+- `backend/handlers/super_alertas.go` expone `/super/api/alertas_sistema` y el worker `StartSuperAlertasWorker`, que se registra desde `backend/main.go` dentro de los procesos protegidos.
+- `backend/metrics/collector.go` alimenta las metricas de disco en `metrics`; el modulo de alertas consume la ultima muestra junto con configuraciones Hostinger/Gmail existentes.
+- `web/super/alertas_sistema.html` es la vista iframe del panel super y `web/super_administrador.html` agrega el enlace en Infraestructura y comunicaciones.
+
 ## Actualizacion 2026-05-05 (portal publico, carta QR y publicacion Motel Calipso)
 
 - `web/index.html` contiene la seccion publica `Modulos del sistema` y el arreglo `fallbackCards`; ambos describen el alcance comercial actual de la plataforma: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios, taxi, turnos, control electrico, venta publica, carta QR, red social, roles/licencias y hoja de vida.

@@ -1682,6 +1682,9 @@ type Metric struct {
 	MemTotal      uint64  `json:"mem_total"`
 	MemUsed       uint64  `json:"mem_used"`
 	MemPercent    float64 `json:"mem_percent"`
+	DiskTotal     uint64  `json:"disk_total"`
+	DiskUsed      uint64  `json:"disk_used"`
+	DiskPercent   float64 `json:"disk_percent"`
 	NetRecv       uint64  `json:"net_recv"`
 	NetSent       uint64  `json:"net_sent"`
 	FechaCreacion string  `json:"fecha_creacion"`
@@ -1697,6 +1700,9 @@ func InitMetricsTable(dbConn *sql.DB) error {
 			mem_total BIGINT,
 			mem_used BIGINT,
 			mem_percent DOUBLE PRECISION,
+			disk_total BIGINT DEFAULT 0,
+			disk_used BIGINT DEFAULT 0,
+			disk_percent DOUBLE PRECISION DEFAULT 0,
 			net_recv BIGINT,
 			net_sent BIGINT,
 			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
@@ -1705,8 +1711,10 @@ func InitMetricsTable(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`
-		_, err := execSQLCompat(dbConn, create)
-		return err
+		if _, err := execSQLCompat(dbConn, create); err != nil {
+			return err
+		}
+		return ensureMetricsDiskColumns(dbConn)
 	}
 
 	create := `CREATE TABLE IF NOT EXISTS metrics (
@@ -1716,6 +1724,9 @@ func InitMetricsTable(dbConn *sql.DB) error {
 		mem_total INTEGER,
 		mem_used INTEGER,
 		mem_percent REAL,
+		disk_total INTEGER DEFAULT 0,
+		disk_used INTEGER DEFAULT 0,
+		disk_percent REAL DEFAULT 0,
 		net_recv INTEGER,
 		net_sent INTEGER,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -1724,8 +1735,38 @@ func InitMetricsTable(dbConn *sql.DB) error {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	_, err := execSQLCompat(dbConn, create)
-	return err
+	if _, err := execSQLCompat(dbConn, create); err != nil {
+		return err
+	}
+	return ensureMetricsDiskColumns(dbConn)
+}
+
+func ensureMetricsDiskColumns(dbConn *sql.DB) error {
+	var alters []string
+	if isPostgresDialect() {
+		alters = []string{
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_total BIGINT DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_used BIGINT DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_percent DOUBLE PRECISION DEFAULT 0`,
+		}
+	} else {
+		alters = []string{
+			`ALTER TABLE metrics ADD COLUMN disk_total INTEGER DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN disk_used INTEGER DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN disk_percent REAL DEFAULT 0`,
+		}
+	}
+
+	for _, q := range alters {
+		if _, err := execSQLCompat(dbConn, q); err != nil {
+			low := strings.ToLower(strings.TrimSpace(err.Error()))
+			if strings.Contains(low, "duplicate column") || strings.Contains(low, "already exists") || strings.Contains(low, "ya existe") {
+				continue
+			}
+			return err
+		}
+	}
+	return nil
 }
 
 // CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
@@ -2330,19 +2371,19 @@ func GetConfigValue(dbConn *sql.DB, key string) (string, bool, error) {
 }
 
 // InsertMetric inserta una muestra de métricas en la tabla metrics
-func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, netRecv, netSent uint64) error {
-	_, err := execSQLCompat(dbConn, "INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?)",
-		cpuPercent, memTotal, memUsed, memPercent, netRecv, netSent)
+func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, diskTotal, diskUsed uint64, diskPercent float64, netRecv, netSent uint64) error {
+	_, err := execSQLCompat(dbConn, "INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, disk_total, disk_used, disk_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		cpuPercent, memTotal, memUsed, memPercent, diskTotal, diskUsed, diskPercent, netRecv, netSent)
 	return err
 }
 
 // GetLatestMetric obtiene la última muestra registrada
 func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
-	row := queryRowSQLCompat(dbConn, "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
+	row := queryRowSQLCompat(dbConn, "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, COALESCE(disk_total, 0), COALESCE(disk_used, 0), COALESCE(disk_percent, 0), net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
 	var m Metric
 	var timestamp sql.NullString
 	var fechaCre sql.NullString
-	if err := row.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+	if err := row.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.DiskTotal, &m.DiskUsed, &m.DiskPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
 		return nil, err
 	}
 	if timestamp.Valid {
@@ -2356,7 +2397,7 @@ func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
 
 // GetMetricsHistory devuelve las últimas 'limit' muestras (ordenadas de más antiguo a más reciente)
 func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
-	q := "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT ?"
+	q := "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, COALESCE(disk_total, 0), COALESCE(disk_used, 0), COALESCE(disk_percent, 0), net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT ?"
 	rows, err := querySQLCompat(dbConn, q, limit)
 	if err != nil {
 		return nil, err
@@ -2367,7 +2408,7 @@ func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
 		var m Metric
 		var timestamp sql.NullString
 		var fechaCre sql.NullString
-		if err := rows.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+		if err := rows.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.DiskTotal, &m.DiskUsed, &m.DiskPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
 			return nil, err
 		}
 		if timestamp.Valid {

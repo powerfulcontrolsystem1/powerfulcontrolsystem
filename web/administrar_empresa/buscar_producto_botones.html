@@ -157,6 +157,50 @@
       box-shadow: 0 8px 18px color-mix(in srgb, var(--product-tone) 28%, transparent);
     }
 
+    .product-touch-mode .empresa-module {
+      max-width: 1500px;
+    }
+
+    .product-touch-mode .product-catalog-hero {
+      padding: 22px;
+    }
+
+    .product-touch-mode .product-buttons-grid {
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .product-touch-mode .product-pick-btn {
+      min-height: 164px;
+      padding: 18px;
+      touch-action: manipulation;
+    }
+
+    .product-touch-mode .product-pick-name {
+      font-size: 1.12rem;
+      line-height: 1.22;
+    }
+
+    .product-touch-mode .product-pick-meta {
+      font-size: .92rem;
+    }
+
+    .product-touch-mode .product-pick-price {
+      font-size: 1.1rem;
+    }
+
+    .product-touch-mode .product-pick-qty {
+      min-width: 38px;
+      height: 38px;
+      font-size: .9rem;
+    }
+
+    .product-touch-mode .form-input,
+    .product-touch-mode .btn {
+      min-height: 52px;
+      font-size: 1rem;
+    }
+
     @media (max-width: 760px) {
       .product-catalog-hero {
         padding: 12px;
@@ -186,6 +230,16 @@
 
       .product-pick-meta {
         font-size: .68rem;
+      }
+
+      .product-touch-mode .product-buttons-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .product-touch-mode .product-pick-btn {
+        min-height: 148px;
+        padding: 14px;
       }
     }
   </style>
@@ -244,7 +298,8 @@
       seleccion: new Map(),
       addingProductos: new Set(),
       touchedItems: new Map(),
-      touchSeq: 0
+      touchSeq: 0,
+      touchMode: false
     };
 
     function getQueryParam(name) {
@@ -709,6 +764,8 @@
       state.carritoID = carritoID;
       state.carritoCodigo = carritoCode;
       state.returnURL = returnURL || buildDefaultReturnURL();
+      state.touchMode = getQueryParam('touch') === '1' || String(getQueryParam('touch') || '').toLowerCase() === 'true';
+      document.body.classList.toggle('product-touch-mode', state.touchMode);
 
       try {
         await resolveCarrito();

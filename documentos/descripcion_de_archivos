@@ -1,3 +1,19 @@
+- Actualizacion 2026-05-10: modo tactil para carritos
+	- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` : agrega el check `modo_pantalla_tactil` para adaptar carrito y agregador de productos a pantallas tactiles.
+	- `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/estaciones.html` : preservan la bandera tactil dentro de `estaciones_config`, con herencia global o por estacion.
+	- `web/administrar_empresa/carrito_de_compras.html` : aplica la clase visual tactil al carrito operativo y propaga el modo al catalogo por botones.
+	- `web/administrar_empresa/buscar_producto_botones.html` y `web/estilos.css` : agrandan botones, campos, grillas y controles de cobro/productos para operacion en tablet, monitor POS o pantalla tactil.
+
+- Actualizacion 2026-05-10: estructura de agentes Copilot aplicada a Codex
+	- `AGENTS.md` : guia operativa raiz para que Codex trabaje como `agente_go`, aplique los frentes backend/BD, frontend/UX y QA/operacion, respete Go puro, PostgreSQL, documentacion obligatoria, roles, permisos y trazabilidad del proyecto.
+
+- Actualizacion 2026-05-10: alertas automaticas del sistema super
+	- `backend/db/super_alertas.go` : esquema y operaciones para configurar alertas globales, registrar historial de envios, contar sesiones activas y conexiones PostgreSQL.
+	- `backend/handlers/super_alertas.go` : API protegida `/super/api/alertas_sistema` y worker automatico para evaluar disco VPS, trafico, sesiones y conexiones, enviando correo por Gmail SMTP.
+	- `web/super/alertas_sistema.html` : modulo del panel super con submenu de configuracion, estado actual, historial, prueba de correo y evaluacion manual.
+	- `web/super_administrador.html` : enlace al modulo Alertas del sistema dentro de Infraestructura y comunicaciones.
+	- `backend/metrics/collector.go` y `backend/db/db.go` : metricas de disco VPS persistidas en `metrics`.
+
 - Actualizacion 2026-05-10: roles finos y ayuda privada super
 	- `backend/handlers/empresa_permisos.go` : catalogo actualizado de modulos, paginas, wrappers y compatibilidad de licencias para CRM unificado, reservas, chat/tareas, personal/activos, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
 	- `backend/main.go` : rutas empresariales recientes registradas con wrappers especificos por modulo.

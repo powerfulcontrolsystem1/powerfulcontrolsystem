@@ -1,3 +1,17 @@
+## [2026-05-10] Carritos en modo tactil
+- [Carritos] Se agrega `modo_pantalla_tactil` a la configuracion unificada de carrito por empresa/estacion.
+- [UI] `carrito_de_compras.html` adapta botones, campos, toolbar, lector, cobro y resumen para uso profesional en pantallas tactiles.
+- [Productos] `buscar_producto_botones.html` agranda grilla, tarjetas y buscador cuando el carrito abre el catalogo en modo tactil.
+- [Persistencia] La opcion se guarda dentro de `estaciones_config`, sin tablas nuevas ni dependencias externas.
+
+## [2026-05-10] Alertas automaticas del sistema super
+- [Super] Se agrega `web/super/alertas_sistema.html` como modulo privado con configuracion, estado actual, historial, prueba de correo y evaluacion manual.
+- [Backend] Se agrega `/super/api/alertas_sistema` y el worker `super.alertas_worker` para evaluar cada minuto disco VPS, trafico, sesiones administrativas y conexiones PostgreSQL.
+- [Base de datos] Se crean `super_alertas_config` y `super_alertas_eventos`; `metrics` ahora persiste `disk_total`, `disk_used` y `disk_percent`.
+- [Correo] Las alertas reutilizan Gmail SMTP global y por defecto notifican a `powerfulcontrolsystem@gmail.com`, con enfriamiento configurable para no repetir correos.
+- [Gobernanza] Se aplican las reglas de `copilot-instructions.md`: Go puro, sin dependencias externas, documentacion de archivos, modulos, base de datos y matriz de permisos.
+- [Verificacion] `go test ./...` en `backend/`.
+
 ## [2026-05-10] Roles finos y ayuda privada super
 - [Permisos] Se documentan modulos finos para CRM unificado, reservas, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups, OnlyOffice y Nextcloud.
 - [Backend] Las rutas empresariales recientes quedan asociadas a wrappers especificos y la prueba de seguridad de rutas reconoce esos wrappers.

@@ -844,6 +844,7 @@
 
     function defaultUnifiedCartUIConfig() {
       return {
+        modo_pantalla_tactil: false,
         mostrar_boton_buscar_productos: true,
         mostrar_busqueda_catalogo: true,
         mostrar_codigo_manual_item: true,
@@ -876,6 +877,7 @@
       const base = defaultUnifiedCartUIConfig();
       const src = raw && typeof raw === 'object' ? raw : {};
       return {
+        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : Boolean(src.modo_pantalla_tactil),
         mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : Boolean(src.mostrar_boton_buscar_productos),
         mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : Boolean(src.mostrar_busqueda_catalogo),
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : Boolean(src.mostrar_codigo_manual_item),
@@ -1144,6 +1146,7 @@
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
+      document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       placeVipCardBelowTotals();
 
       const searchActions = document.getElementById('buscarProductosActions');
@@ -3220,6 +3223,9 @@
       }
       if (state.directSaleMode) {
         params.set('modo', 'venta_directa');
+      }
+      if (state.stationCartUI && state.stationCartUI.modo_pantalla_tactil) {
+        params.set('touch', '1');
       }
 
       const returnParams = new URLSearchParams();

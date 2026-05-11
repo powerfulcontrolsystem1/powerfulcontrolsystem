@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 
@@ -61,6 +62,20 @@ func collectAndStore(dbConn *sql.DB) {
 		log.Println("metrics: mem.VirtualMemory error:", err)
 	}
 
+	// Disco principal del VPS/contenedor. En Linux "/" representa el filesystem
+	// montado para la app; en Windows local se mantiene compatible para pruebas.
+	du, err := disk.Usage("/")
+	var diskTotal uint64
+	var diskUsed uint64
+	var diskPercent float64
+	if err == nil && du != nil {
+		diskTotal = du.Total
+		diskUsed = du.Used
+		diskPercent = du.UsedPercent
+	} else if err != nil {
+		log.Println("metrics: disk.Usage error:", err)
+	}
+
 	// Network (agregado)
 	netIOs, err := net.IOCounters(false)
 	var netRecv uint64
@@ -72,10 +87,10 @@ func collectAndStore(dbConn *sql.DB) {
 		log.Println("metrics: net.IOCounters error:", err)
 	}
 
-	if err := dbpkg.InsertMetric(dbConn, cpuPercent, memTotal, memUsed, memPercent, netRecv, netSent); err != nil {
+	if err := dbpkg.InsertMetric(dbConn, cpuPercent, memTotal, memUsed, memPercent, diskTotal, diskUsed, diskPercent, netRecv, netSent); err != nil {
 		log.Println("metrics: failed to insert metric:", err)
 	} else {
-		log.Printf("metrics: stored cpu=%.2f mem=%.2f%% recv=%d sent=%d", cpuPercent, memPercent, netRecv, netSent)
+		log.Printf("metrics: stored cpu=%.2f mem=%.2f%% disk=%.2f%% recv=%d sent=%d", cpuPercent, memPercent, diskPercent, netRecv, netSent)
 	}
 }
 

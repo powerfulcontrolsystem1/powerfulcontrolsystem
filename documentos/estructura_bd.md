@@ -20,6 +20,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-10 (alertas automaticas super)
+- `metrics`: se amplia con `disk_total`, `disk_used` y `disk_percent` para que el panel super y las alertas midan la capacidad real del filesystem del VPS/contenedor.
+- `super_alertas_config`: configuracion global del modulo de alertas super. Incluye activacion, correo destino, umbrales de disco, trafico, sesiones, conexiones PostgreSQL y ventana de enfriamiento entre correos repetidos.
+- `super_alertas_eventos`: historial de alertas evaluadas y enviadas, con tipo, severidad, valor, umbral, destinatario, asunto, cuerpo, resultado SMTP, metadata JSON, fecha y auditoria.
+- El trafico por porcentaje usa `hostinger.bandwidth.limit_gb` de `configuraciones` cuando existe; si no, el modulo permite umbral absoluto en GB.
+
 Actualizacion 2026-05-06 (modulos empresariales Colombia)
 - `empresa_modulos_colombia_registros`: registro transversal por `empresa_id` y `modulo` para bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad. Incluye tipo, codigo, nombre, tercero, responsable, categoria, referencia, prioridad, estado, fechas, valor, metadata JSON y auditoria.
 - `empresa_modulos_colombia_eventos`: bitacora por `empresa_id`, modulo y registro, con evento, cambio de estado, detalle, usuario y fecha.

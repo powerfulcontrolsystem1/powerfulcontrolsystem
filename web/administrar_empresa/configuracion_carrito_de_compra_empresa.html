@@ -24,6 +24,16 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgModoTactil" type="checkbox">
+              Adaptar carrito y agregador de productos para pantallas tactiles
+            </label>
+            <div class="form-help">Aumenta botones, campos, tarjetas de cobro y catalogo por botones para operar con el dedo en tablet, monitor POS o pantalla tactil.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgBuscarProductos" type="checkbox" checked>
               Mostrar botón de buscar productos
             </label>
@@ -248,6 +258,7 @@
 
     function defaultUnifiedCartConfig() {
       return {
+        modo_pantalla_tactil: false,
         mostrar_boton_buscar_productos: true,
         mostrar_busqueda_catalogo: true,
         mostrar_codigo_manual_item: true,
@@ -280,6 +291,7 @@
       const base = defaultUnifiedCartConfig();
       const src = raw && typeof raw === 'object' ? raw : {};
       return {
+        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : !!src.modo_pantalla_tactil,
         mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : !!src.mostrar_boton_buscar_productos,
         mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : !!src.mostrar_busqueda_catalogo,
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : !!src.mostrar_codigo_manual_item,
@@ -415,6 +427,7 @@
 
     function applyConfig(cfg) {
       const normalized = normalizeUnifiedCartConfig(cfg);
+      document.getElementById('carritoCfgModoTactil').checked = !!normalized.modo_pantalla_tactil;
       document.getElementById('carritoCfgBuscarProductos').checked = !!normalized.mostrar_boton_buscar_productos;
       document.getElementById('carritoCfgBusquedaCatalogo').checked = !!normalized.mostrar_busqueda_catalogo;
       document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
@@ -450,6 +463,7 @@
         document.getElementById('btnGuardarConfigCarrito').disabled = true;
         [
           'carritoCfgBuscarProductos',
+          'carritoCfgModoTactil',
           'carritoCfgBusquedaCatalogo',
           'carritoCfgCodigoManual',
           'carritoCfgObservaciones',
@@ -492,6 +506,7 @@
     document.getElementById('btnGuardarConfigCarrito').addEventListener('click', async function() {
       try {
         const cfg = normalizeUnifiedCartConfig({
+          modo_pantalla_tactil: document.getElementById('carritoCfgModoTactil').checked,
           mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
           mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
           mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,

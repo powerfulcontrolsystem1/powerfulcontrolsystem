@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Alertas del sistema</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .alerts-shell{max-width:1180px;margin:0 auto;padding:16px}
+    .alerts-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .alerts-header h1{margin:0;color:var(--text);font-size:1.45rem}
+    .alerts-header p{margin:4px 0 0;color:var(--muted);font-size:.84rem;line-height:1.35}
+    .alerts-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .alerts-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+    .alerts-tab{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 12px;font-weight:850;cursor:pointer}
+    .alerts-tab.active{background:color-mix(in srgb,var(--accent) 16%,var(--surface) 84%);border-color:color-mix(in srgb,var(--accent) 45%,var(--border) 55%)}
+    .alerts-panel[hidden]{display:none!important}
+    .alerts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+    .alerts-kpi{padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .alerts-kpi span{display:block;color:var(--muted);font-size:.72rem;font-weight:900;text-transform:uppercase}
+    .alerts-kpi strong{display:block;margin-top:5px;color:var(--text);font-size:1.25rem}
+    .alerts-kpi small{display:block;margin-top:3px;color:var(--muted);font-size:.72rem;line-height:1.25}
+    .alerts-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .alerts-rule{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px}
+    .alerts-rule h3{margin:0 0 10px;color:var(--text);font-size:.98rem}
+    .alerts-rule-row{display:grid;grid-template-columns:1fr 140px;gap:10px;align-items:end}
+    .alerts-toggle{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:780}
+    .alerts-table-wrap{overflow:auto;margin-top:10px}
+    .alerts-table{min-width:920px}
+    .alerts-status{margin-top:10px;min-height:20px}
+    .alerts-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:.72rem;font-weight:850}
+    .alerts-badge.ok{background:color-mix(in srgb,#16a34a 15%,transparent 85%);color:#15803d}
+    .alerts-badge.warn{background:color-mix(in srgb,#f59e0b 18%,transparent 82%);color:#b45309}
+    .alerts-badge.err{background:color-mix(in srgb,#ef4444 16%,transparent 84%);color:#b91c1c}
+    @media(max-width:760px){.alerts-form{grid-template-columns:1fr}.alerts-rule-row{grid-template-columns:1fr}.alerts-actions .btn{flex:1 1 auto}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="alerts-shell">
+    <div class="alerts-header">
+      <div>
+        <h1>Alertas del sistema</h1>
+        <p>Notificaciones operativas por correo para capacidad, trafico, sesiones y conexiones.</p>
+      </div>
+      <div class="alerts-actions">
+        <button id="btnReload" type="button" class="btn secondary">Actualizar</button>
+        <button id="btnEvaluate" type="button" class="btn secondary">Evaluar ahora</button>
+        <button id="btnTest" type="button" class="btn">Probar correo</button>
+      </div>
+    </div>
+
+    <nav class="alerts-tabs" aria-label="Submenu alertas">
+      <button class="alerts-tab active" type="button" data-panel="panelConfig">Configuracion</button>
+      <button class="alerts-tab" type="button" data-panel="panelEstado">Estado actual</button>
+      <button class="alerts-tab" type="button" data-panel="panelHistorial">Historial</button>
+    </nav>
+
+    <section id="panelConfig" class="alerts-panel">
+      <article class="card form">
+        <div class="alerts-form">
+          <div class="form-col">
+            <label class="form-label" for="recipientEmail">Correo destino</label>
+            <input id="recipientEmail" class="form-input" type="email" placeholder="powerfulcontrolsystem@gmail.com">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cooldownMinutes">Minutos entre alertas repetidas</label>
+            <input id="cooldownMinutes" class="form-input" type="number" min="1" step="1">
+          </div>
+          <label class="alerts-toggle"><input id="enabled" type="checkbox"> Activar alertas automaticas</label>
+        </div>
+
+        <div class="alerts-grid" style="margin-top:12px">
+          <section class="alerts-rule">
+            <h3>Disco VPS</h3>
+            <div class="alerts-rule-row">
+              <label class="alerts-toggle"><input id="diskEnabled" type="checkbox"> Vigilar disco</label>
+              <div class="form-col">
+                <label class="form-label" for="diskThreshold">Umbral %</label>
+                <input id="diskThreshold" class="form-input" type="number" min="1" max="100" step="0.1">
+              </div>
+            </div>
+          </section>
+
+          <section class="alerts-rule">
+            <h3>Trafico VPS</h3>
+            <div class="alerts-rule-row">
+              <label class="alerts-toggle"><input id="trafficEnabled" type="checkbox"> Vigilar trafico</label>
+              <div class="form-col">
+                <label class="form-label" for="trafficThresholdPct">Umbral %</label>
+                <input id="trafficThresholdPct" class="form-input" type="number" min="0" max="100" step="0.1">
+              </div>
+            </div>
+            <div class="form-col" style="margin-top:8px">
+              <label class="form-label" for="trafficThresholdGB">Umbral GB opcional</label>
+              <input id="trafficThresholdGB" class="form-input" type="number" min="0" step="0.1">
+              <div class="form-help">Si queda en 0, se usa el porcentaje contra el limite Hostinger configurado.</div>
+            </div>
+          </section>
+
+          <section class="alerts-rule">
+            <h3>Usuarios y sesiones</h3>
+            <div class="alerts-rule-row">
+              <label class="alerts-toggle"><input id="sessionsEnabled" type="checkbox"> Vigilar sesiones</label>
+              <div class="form-col">
+                <label class="form-label" for="sessionsThreshold">Maximo</label>
+                <input id="sessionsThreshold" class="form-input" type="number" min="1" step="1">
+              </div>
+            </div>
+          </section>
+
+          <section class="alerts-rule">
+            <h3>Conexiones PostgreSQL</h3>
+            <div class="alerts-rule-row">
+              <label class="alerts-toggle"><input id="dbConnectionsEnabled" type="checkbox"> Vigilar conexiones</label>
+              <div class="form-col">
+                <label class="form-label" for="dbConnectionsThreshold">Maximo</label>
+                <input id="dbConnectionsThreshold" class="form-input" type="number" min="1" step="1">
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="alerts-actions" style="margin-top:12px">
+          <button id="btnSave" type="button" class="btn">Guardar configuracion</button>
+        </div>
+        <div id="configMsg" class="form-help alerts-status"></div>
+      </article>
+    </section>
+
+    <section id="panelEstado" class="alerts-panel" hidden>
+      <div class="alerts-grid">
+        <div class="alerts-kpi"><span>Disco VPS</span><strong id="kpiDisk">-</strong><small id="kpiDiskDetail"></small></div>
+        <div class="alerts-kpi"><span>Trafico</span><strong id="kpiTraffic">-</strong><small id="kpiTrafficDetail"></small></div>
+        <div class="alerts-kpi"><span>Sesiones admin</span><strong id="kpiSessions">-</strong><small>Sesiones activas no expiradas.</small></div>
+        <div class="alerts-kpi"><span>Conexiones DB</span><strong id="kpiDB">-</strong><small>Conexiones reportadas por PostgreSQL.</small></div>
+      </div>
+      <article class="card form" style="margin-top:12px">
+        <h2 style="margin:0 0 8px">Evaluacion</h2>
+        <div class="alerts-table-wrap">
+          <table class="table alerts-table">
+            <thead><tr><th>Alerta</th><th>Valor</th><th>Umbral</th><th>Estado</th><th>Detalle</th></tr></thead>
+            <tbody id="candidateRows"><tr><td colspan="5" class="muted">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section id="panelHistorial" class="alerts-panel" hidden>
+      <article class="card form">
+        <h2 style="margin:0 0 8px">Historial de envios</h2>
+        <div class="alerts-table-wrap">
+          <table class="table alerts-table">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Valor</th><th>Correo</th><th>Resultado</th><th>Detalle</th></tr></thead>
+            <tbody id="eventRows"><tr><td colspan="6" class="muted">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const API = '/super/api/alertas_sistema';
+      const $ = (id) => document.getElementById(id);
+      let state = null;
+
+      function esc(v){
+        return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+      }
+      function num(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+      function setMsg(text, isErr){
+        const el = $('configMsg');
+        el.textContent = text || '';
+        el.className = isErr ? 'form-help error alerts-status' : 'form-help muted alerts-status';
+      }
+      function fmtBytes(n){
+        n = Number(n || 0);
+        if (!Number.isFinite(n) || n <= 0) return '0 B';
+        const units = ['B','KB','MB','GB','TB'];
+        let i = 0;
+        while(n >= 1024 && i < units.length - 1){ n /= 1024; i++; }
+        return n.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+      }
+      function badge(label, cls){
+        return '<span class="alerts-badge ' + cls + '">' + esc(label) + '</span>';
+      }
+
+      function fillConfig(cfg){
+        $('enabled').checked = !!cfg.enabled;
+        $('recipientEmail').value = cfg.recipient_email || 'powerfulcontrolsystem@gmail.com';
+        $('cooldownMinutes').value = cfg.cooldown_minutes || 60;
+        $('diskEnabled').checked = !!cfg.disk_enabled;
+        $('diskThreshold').value = cfg.disk_threshold_pct || 80;
+        $('trafficEnabled').checked = !!cfg.traffic_enabled;
+        $('trafficThresholdPct').value = cfg.traffic_threshold_pct || 80;
+        $('trafficThresholdGB').value = cfg.traffic_threshold_gb || 0;
+        $('sessionsEnabled').checked = !!cfg.sessions_enabled;
+        $('sessionsThreshold').value = cfg.sessions_threshold || 50;
+        $('dbConnectionsEnabled').checked = !!cfg.db_connections_enabled;
+        $('dbConnectionsThreshold').value = cfg.db_connections_threshold || 80;
+      }
+
+      function fillEvaluation(ev){
+        ev = ev || {};
+        const metric = ev.metric || {};
+        $('kpiDisk').textContent = num(ev.disk_percent).toFixed(1) + ' %';
+        $('kpiDiskDetail').textContent = fmtBytes(metric.disk_used || 0) + ' / ' + fmtBytes(metric.disk_total || 0);
+        if (num(ev.traffic_limit_gb) > 0) {
+          $('kpiTraffic').textContent = num(ev.traffic_percent).toFixed(1) + ' %';
+          $('kpiTrafficDetail').textContent = num(ev.traffic_total_gb).toFixed(2) + ' / ' + num(ev.traffic_limit_gb).toFixed(2) + ' GB';
+        } else {
+          $('kpiTraffic').textContent = num(ev.traffic_total_gb).toFixed(2) + ' GB';
+          $('kpiTrafficDetail').textContent = 'Sin limite Hostinger configurado.';
+        }
+        $('kpiSessions').textContent = String(ev.active_sessions || 0);
+        $('kpiDB').textContent = String(ev.db_connections || 0);
+        const rows = Array.isArray(ev.candidates) ? ev.candidates : [];
+        $('candidateRows').innerHTML = rows.length ? rows.map(c => {
+          const status = c.triggered
+            ? (c.skipped_cooldown ? badge('En enfriamiento', 'warn') : (c.correo_enviado ? badge('Enviada', 'ok') : badge('Activa', 'warn')))
+            : badge('Normal', 'ok');
+          return '<tr>' +
+            '<td>' + esc(c.titulo || c.tipo) + '</td>' +
+            '<td>' + esc(Number(c.valor || 0).toFixed(2) + ' ' + (c.unidad || '')) + '</td>' +
+            '<td>' + esc(Number(c.umbral || 0).toFixed(2) + ' ' + (c.unidad || '')) + '</td>' +
+            '<td>' + status + '</td>' +
+            '<td>' + esc(c.correo_error || c.detalle || '') + '</td>' +
+          '</tr>';
+        }).join('') : '<tr><td colspan="5" class="muted">Sin evaluaciones.</td></tr>';
+      }
+
+      function fillEvents(events){
+        events = Array.isArray(events) ? events : [];
+        $('eventRows').innerHTML = events.length ? events.map(item => {
+          const result = item.correo_enviado ? badge('Enviado', 'ok') : badge('Error', 'err');
+          return '<tr>' +
+            '<td>' + esc(item.fecha_evento || '') + '</td>' +
+            '<td>' + esc(item.tipo || '') + '</td>' +
+            '<td>' + esc(Number(item.valor || 0).toFixed(2) + ' ' + (item.unidad || '')) + '</td>' +
+            '<td>' + esc(item.destinatario || '') + '</td>' +
+            '<td>' + result + '</td>' +
+            '<td>' + esc(item.correo_error || item.detalle || '') + '</td>' +
+          '</tr>';
+        }).join('') : '<tr><td colspan="6" class="muted">Sin alertas registradas.</td></tr>';
+      }
+
+      async function loadAll(){
+        setMsg('Cargando alertas...', false);
+        const res = await fetch(API, { credentials:'same-origin' });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+        state = data;
+        fillConfig(data.config || {});
+        fillEvaluation(data.evaluation || {});
+        fillEvents(data.events || []);
+        setMsg('Configuracion cargada.', false);
+      }
+
+      async function saveConfig(){
+        const payload = {
+          enabled: $('enabled').checked,
+          recipient_email: $('recipientEmail').value.trim(),
+          cooldown_minutes: Math.max(1, Math.round(num($('cooldownMinutes').value))),
+          disk_enabled: $('diskEnabled').checked,
+          disk_threshold_pct: num($('diskThreshold').value),
+          traffic_enabled: $('trafficEnabled').checked,
+          traffic_threshold_pct: num($('trafficThresholdPct').value),
+          traffic_threshold_gb: num($('trafficThresholdGB').value),
+          sessions_enabled: $('sessionsEnabled').checked,
+          sessions_threshold: Math.max(1, Math.round(num($('sessionsThreshold').value))),
+          db_connections_enabled: $('dbConnectionsEnabled').checked,
+          db_connections_threshold: Math.max(1, Math.round(num($('dbConnectionsThreshold').value)))
+        };
+        setMsg('Guardando...', false);
+        const res = await fetch(API, { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+        fillConfig(data.config || {});
+        setMsg('Configuracion guardada.', false);
+      }
+
+      async function postAction(action){
+        setMsg('Procesando...', false);
+        const res = await fetch(API + '?action=' + encodeURIComponent(action), { method:'POST', credentials:'same-origin' });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || data.ok === false) throw new Error((data && data.error) || ('HTTP ' + res.status));
+        if (action === 'evaluate') {
+          fillEvaluation(data);
+          setMsg('Evaluacion ejecutada.', false);
+        } else {
+          setMsg('Correo de prueba enviado.', false);
+        }
+        await loadAll();
+      }
+
+      document.querySelectorAll('.alerts-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.alerts-tab').forEach(x => x.classList.toggle('active', x === btn));
+          document.querySelectorAll('.alerts-panel').forEach(panel => panel.hidden = panel.id !== btn.dataset.panel);
+        });
+      });
+      $('btnReload').addEventListener('click', () => loadAll().catch(err => setMsg(err.message, true)));
+      $('btnSave').addEventListener('click', () => saveConfig().catch(err => setMsg(err.message, true)));
+      $('btnEvaluate').addEventListener('click', () => postAction('evaluate').catch(err => setMsg(err.message, true)));
+      $('btnTest').addEventListener('click', () => postAction('test').catch(err => setMsg(err.message, true)));
+      loadAll().catch(err => setMsg(err.message, true));
+    })();
+  </script>
+</body>
+</html>
