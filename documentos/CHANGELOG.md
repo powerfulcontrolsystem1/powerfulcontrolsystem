@@ -1,3 +1,8 @@
+## [2026-05-11] Catalogos publicos de verticales sin sesion
+- [Seguridad] `backend/utils/utils.go` agrega a la lista publica `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
+- [Producto] La portada publica y las fichas comerciales pueden consultar el catalogo real de verticales sin depender de una sesion administrativa.
+- [QA] `backend/utils/auth_middleware_test.go` valida que ambas rutas pasen sin cookie y que las rutas privadas sigan protegidas.
+
 ## [2026-05-11] Sincronizacion idempotente de pagos verticales
 - [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` reutilizan `carritos_compras.referencia_externa` antes de crear carritos desde pagos historicos.
 - [Integracion] Las ventas centrales generadas por `sincronizar_nucleo` usan referencia estable por ID de pago y nombre estable, evitando colisiones por el indice unico `(empresa_id, nombre)`.

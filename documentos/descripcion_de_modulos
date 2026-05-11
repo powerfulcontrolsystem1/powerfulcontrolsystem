@@ -1,3 +1,9 @@
+2026-05-11: Catalogos publicos de verticales sin sesion
+- Modulos afectados: `verticales_nuevos`, `verticales_integracion`, `portal_publico`, `autenticacion`.
+- Cambio funcional: los endpoints `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` quedan disponibles sin cookie de administrador, como corresponde a su contrato publico.
+- Seguridad: se mantiene protegida la administracion; solo se abre el catalogo comercial/operativo de solo lectura.
+- QA: el middleware de autenticacion tiene prueba para ambas rutas publicas.
+
 2026-05-11: Sincronizacion idempotente de pagos en verticales clinico/fitness
 - Modulos afectados: `odontologia`, `gimnasio`, `carritos`, `ventas`, `pagos`.
 - Cambio funcional: la sincronizacion historica de pagos reutiliza carritos centrales ya creados por `referencia_externa` y genera nombres estables por pago cuando el registro ya tiene ID.

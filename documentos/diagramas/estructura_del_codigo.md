@@ -1,3 +1,9 @@
+## Actualizacion 2026-05-11 (catalogos publicos de verticales sin sesion)
+
+- `backend/main.go` registra los catalogos `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` como contratos publicos de lectura para portada, tarjetas y matriz comercial.
+- `backend/utils/utils.go` permite esas dos rutas en `AuthMiddleware` sin token de sesion; los endpoints empresa y super conservan autenticacion y permisos propios.
+- `backend/utils/auth_middleware_test.go` cubre ambos catalogos publicos para evitar regresiones que hagan aparecer verticales como cargados parcialmente por falta de sesion.
+
 ## Actualizacion 2026-05-11 (sincronizacion idempotente de pagos verticales)
 
 - `backend/db/odontologia.go` agrega referencia y nombre estables para carritos generados desde pagos odontologicos cuando el pago ya tiene ID.

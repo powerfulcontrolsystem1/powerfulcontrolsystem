@@ -23675,3 +23675,20 @@ Archivos modificados:
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
 - documentos/matriz_integracion_verticales.md
+
+2026-05-11: Catalogos publicos de verticales sin sesion
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- backend/utils/utils.go
+- backend/utils/auth_middleware_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_de_archivos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+Validacion:
+- go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1
+- go test ./... -count=1
+Motivo:
+- Las rutas publicas de catalogos verticales estaban registradas en main.go, pero el middleware exigia sesion y producia 401 en portada/matriz comercial.

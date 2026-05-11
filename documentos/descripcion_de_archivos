@@ -1,3 +1,10 @@
+- Actualizacion 2026-05-11: catalogos publicos de verticales sin sesion
+	- `backend/utils/utils.go` : declara como publicos de solo lectura `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
+	- `backend/utils/auth_middleware_test.go` : valida que ambos catalogos puedan consultarse sin sesion y que las rutas protegidas sigan exigiendo autenticacion.
+	- `documentos/diagramas/estructura_del_codigo.md` : registra el contrato publico de lectura para portada, tarjetas y matriz comercial.
+	- `documentos/matriz_roles_permisos_pos_multiempresa.md` : aclara que estos catalogos publicos no conceden operacion ni permisos empresariales.
+	- Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; `go test ./... -count=1`.
+
 - Actualizacion 2026-05-11: los 20 verticales nuevos quedan reales
 	- `backend/db/nuevos_verticales_bootstrap.go` : promueve los 20 verticales nuevos a produccion masiva con prioridad 1-20 y asegura tipos, preconfiguraciones y licencias para todos.
 	- `backend/handlers/empresa_verticales_nuevos.go` : acepta la accion super `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.

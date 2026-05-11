@@ -1,4 +1,5 @@
 2026-05-11: Nota operativa para integracion de verticales
+- `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` son rutas publicas de solo lectura para portada, tarjetas y matriz comercial. No conceden operacion sobre verticales, no exponen datos de empresas y no reemplazan los endpoints autenticados de `/api/empresa/...` o `/super/api/...`.
 - Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.
 - Los 20 verticales nuevos permanecen visibles como `plantilla_integrada_nucleo` porque usan el motor comun y no duplican clientes, productos/servicios, ventas ni pagos.
 - Para version masiva, la preconfiguracion marca los 20 verticales nuevos como `produccion_masiva` con prioridad 1-20.
