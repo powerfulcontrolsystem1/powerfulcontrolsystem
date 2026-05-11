@@ -1844,7 +1844,8 @@ prune_images=$pruneImages
 prune_containers=$pruneContainers
 
 echo "[INFO] Limpieza VPS: iniciando limpieza segura de temporales y caches."
-df -h / | awk 'NR==2 {print "[INFO] Disco antes limpieza: usado=" `$5 " libre=" `$4 " total=" `$2}'
+set -- `$(df -h / | tail -n 1)
+echo "[INFO] Disco antes limpieza: usado=`$5 libre=`$4 total=`$2"
 
 echo "[INFO] Limpieza VPS: eliminando paquetes temporales antiguos de sync en /tmp."
 find /tmp -maxdepth 1 -type f -name 'pcs_sync_*.tar.gz' -mmin +"`$temp_min_age" -print -delete 2>/dev/null | sed 's/^/[INFO] Eliminado: /'
@@ -1881,7 +1882,8 @@ if command -v docker >/dev/null 2>&1; then
   docker system df 2>/dev/null || true
 fi
 
-df -h / | awk 'NR==2 {print "[INFO] Disco despues limpieza: usado=" `$5 " libre=" `$4 " total=" `$2}'
+set -- `$(df -h / | tail -n 1)
+echo "[INFO] Disco despues limpieza: usado=`$5 libre=`$4 total=`$2"
 echo "[OK] Limpieza VPS completada sin tocar volumenes ni bases de datos."
 "@
   $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
