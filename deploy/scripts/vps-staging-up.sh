@@ -36,6 +36,15 @@ docker compose \
   -f deploy/docker-compose.staging.yml \
   config --quiet
 
+if [ "${RESET_STAGING:-0}" = "1" ]; then
+  echo "[WARN] RESET_STAGING=1: se eliminaran contenedores y volumenes de staging."
+  docker compose \
+    --env-file "$ENV_FILE" \
+    -f deploy/docker-compose.platform.yml \
+    -f deploy/docker-compose.staging.yml \
+    down -v
+fi
+
 docker compose \
   --env-file "$ENV_FILE" \
   -f deploy/docker-compose.platform.yml \
