@@ -23198,3 +23198,10 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-install-buildx.sh
+
+2026-05-11: fix: aislar staging y generar secretos
+PushStatus: OK
+Archivos modificados:
+- deploy/docker-compose.staging.yml
+- deploy/scripts/vps-staging-up.sh
+- documentos/historial_de_cambios

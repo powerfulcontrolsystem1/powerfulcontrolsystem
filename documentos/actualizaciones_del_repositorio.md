@@ -8436,3 +8436,9 @@ Archivos modificados:
 2026-05-11 01:24:15 - Mensaje: fix: instalar buildx con fallback oficial; Commit: 515ac1bd; PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-install-buildx.sh
+
+2026-05-11 01:29:03 - Mensaje: fix: aislar staging y generar secretos; Commit: 60d8c30f; PushStatus: OK
+Archivos modificados:
+- deploy/docker-compose.staging.yml
+- deploy/scripts/vps-staging-up.sh
+- documentos/historial_de_cambios
